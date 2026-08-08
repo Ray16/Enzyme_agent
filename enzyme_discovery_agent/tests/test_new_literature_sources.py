@@ -142,5 +142,59 @@ class TestCrossref(unittest.TestCase):
         self.assertEqual(p["source"], "crossref")
 
 
+class TestRequestIdentity(unittest.TestCase):
+    """API-key / polite-pool identifiers must be attached to outgoing URLs."""
+
+    def _capture_urls(self, call, *, return_value):
+        urls = []
+
+        def _fake(req, timeout=30):
+            urls.append(req.full_url)
+            return return_value
+
+        with mock.patch(_HTTP, side_effect=_fake):
+            call()
+        return urls
+
+    def test_openalex_sends_api_key_when_configured(self):
+        with mock.patch.object(literature.config, "OPENALEX_API_KEY", "OA-KEY-123"):
+            urls = self._capture_urls(
+                lambda: literature.search_openalex("enzyme", max_results=2),
+                return_value=_bytes({"results": []}),
+            )
+        self.assertTrue(any("api_key=OA-KEY-123" in u for u in urls), urls)
+
+    def test_openalex_omits_api_key_when_unset(self):
+        with mock.patch.object(literature.config, "OPENALEX_API_KEY", ""):
+            urls = self._capture_urls(
+                lambda: literature.search_openalex("enzyme", max_results=2),
+                return_value=_bytes({"results": []}),
+            )
+        self.assertFalse(any("api_key=" in u for u in urls), urls)
+
+    def test_pubmed_sends_tool_email_and_api_key(self):
+        # esearch returns one id, efetch returns an empty set (we only inspect URLs)
+        payloads = iter([
+            _bytes({"esearchresult": {"idlist": ["1"]}}),
+            b"<PubmedArticleSet></PubmedArticleSet>",
+        ])
+
+        def _fake(req, timeout=30):
+            _fake.urls.append(req.full_url)
+            return next(payloads)
+        _fake.urls = []
+
+        with mock.patch.object(literature.config, "NCBI_API_KEY", "NCBI-KEY-9"), \
+                mock.patch(_HTTP, side_effect=_fake):
+            literature.search_pubmed("beta-lactamase", max_results=2)
+
+        joined = " ".join(_fake.urls)
+        self.assertIn("api_key=NCBI-KEY-9", joined)
+        self.assertIn("tool=enzyme-discovery-agent", joined)
+        self.assertIn("email=", joined)
+        # both the esearch and efetch calls must carry the key
+        self.assertTrue(all("api_key=NCBI-KEY-9" in u for u in _fake.urls), _fake.urls)
+
+
 if __name__ == "__main__":
     unittest.main()
