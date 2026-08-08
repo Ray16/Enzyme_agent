@@ -621,7 +621,7 @@ def _batch_fetch_openalex_works(openalex_ids: list[str]) -> list[dict]:
             f"https://api.openalex.org/works?"
             f"filter=openalex:{pipe_ids}"
             f"&per-page={len(chunk)}"
-            f"&mailto=enzyme-agent@example.edu"
+            f"&mailto={config.OPENALEX_EMAIL}"
         )
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         try:
@@ -753,7 +753,7 @@ def deep_literature_search(
             f"https://api.openalex.org/works?"
             f"filter=doi:{urllib.parse.quote(doi_filter, safe='|:/')}"
             f"&per-page={len(seed_dois)}"
-            f"&mailto=enzyme-agent@example.edu"
+            f"&mailto={config.OPENALEX_EMAIL}"
         )
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         try:
