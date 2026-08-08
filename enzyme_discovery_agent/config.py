@@ -103,3 +103,23 @@ ARXIV_API = "https://export.arxiv.org/api"
 # Optional free key (semanticscholar.org).  Keyless works but the shared pool
 # 429s after ~a dozen calls; setting this raises the limit.  Zero-code to add.
 S2_API_KEY = os.environ.get("ENZYME_AGENT_S2_API_KEY", "")
+
+# --- Client-side rate limiting ---
+# Proactive per-host minimum interval between requests (seconds), enforced in
+# the shared HTTP client.  The agent runs tools in a thread pool, so several
+# searches can hit the same host at once; spacing them politely avoids the
+# bursts that trip 429s (especially the keyless Semantic Scholar pool).  Hosts
+# not listed here are unthrottled (interval 0).  Match on host substring.
+HTTP_MIN_INTERVAL_DEFAULT = 0.0
+HTTP_RATE_LIMITS = {
+    # Keyless S2 429s on bursts; a key raises the ceiling so we can go faster.
+    "api.semanticscholar.org": float(
+        os.environ.get("ENZYME_AGENT_S2_MIN_INTERVAL", "0.1" if S2_API_KEY else "1.0")
+    ),
+    "api.crossref.org": 0.4,              # polite pool ~3 req/s
+    "www.ebi.ac.uk": 0.2,                 # Europe PMC (be polite)
+    "eutils.ncbi.nlm.nih.gov": 0.34,      # NCBI ~3 req/s without an api_key
+    "api.openalex.org": 0.1,
+    "api.unpaywall.org": 0.1,
+    "api.biorxiv.org": 0.5,               # Cloudflare-fronted; do not hammer
+}
