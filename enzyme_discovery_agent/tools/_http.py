@@ -133,6 +133,8 @@ def request_with_retry(
     data = req.data
     method = req.get_method()
 
+    _respect_rate_limit(urllib.parse.urlparse(url).netloc)
+
     try:
         resp = session.request(
             method=method,
