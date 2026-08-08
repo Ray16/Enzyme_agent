@@ -215,7 +215,7 @@ def _parse_pubmed_article(article_elem) -> dict | None:
 def _pubmed_esearch_count(query: str) -> int:
     """Execute a PubMed eSearch and return the result count."""
     search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-    params = {"db": "pubmed", "term": query, "retmode": "json", "retmax": "0"}
+    params = _ncbi_params({"db": "pubmed", "term": query, "retmode": "json", "retmax": "0"})
     url = f"{search_url}?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
