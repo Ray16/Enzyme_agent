@@ -137,8 +137,9 @@ S2_API_KEY = os.environ.get("ENZYME_AGENT_S2_API_KEY", "")
 # x-ratelimit-limit=1000 credits/day at 10 credits per list call -- and the
 # parallel USD dimension agrees (x-ratelimit-limit-usd=0.1 at 0.001/call) --
 # i.e. ~100 searches/day before HTTP 409.  (An early announcement cited a lower
-# 100-credit figure; the live API currently reports 1000.)  A key raises it to
-# 100,000 credits/day.  Sent as the ``api_key`` query param.
+# 100-credit figure; the live API currently reports 1000.)  A free key raises
+# this ~10x -- observed x-ratelimit-limit=10000 credits/day (~1000 searches),
+# not the 100000 some docs claim.  Sent as the ``api_key`` query param.
 OPENALEX_API_KEY = os.environ.get("ENZYME_AGENT_OPENALEX_API_KEY", "")
 
 # NCBI E-utilities: a free api_key raises the limit from 3 to 10 req/s.  NCBI
