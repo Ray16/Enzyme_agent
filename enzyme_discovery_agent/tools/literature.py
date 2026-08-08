@@ -259,13 +259,13 @@ def search_pubmed(
     fetch_count = max_results * config.OVERFETCH_RATIO
 
     search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-    search_params = {
+    search_params = _ncbi_params({
         "db": "pubmed",
         "term": query,
         "retmax": str(fetch_count),
         "sort": "relevance",
         "retmode": "json",
-    }
+    })
     url = f"{search_url}?{urllib.parse.urlencode(search_params)}"
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
 
