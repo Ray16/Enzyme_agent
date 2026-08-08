@@ -3,6 +3,32 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
+
+
+def _load_dotenv() -> None:
+    """Minimal, dependency-free .env loader.
+
+    Populates ``os.environ`` from a gitignored ``.env`` at the repository root
+    WITHOUT overriding variables already present in the real environment (so an
+    exported var always wins).  This keeps secrets such as API keys out of
+    source control while still making them available to the agent.
+    """
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    try:
+        if not env_path.is_file():
+            return
+        for line in env_path.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
+    except OSError:
+        pass
+
+
+_load_dotenv()
 
 # --- LLM ---
 ARGO_BASE_URL = os.environ.get("ARGO_BASE_URL", "https://apps-dev.inside.anl.gov/argoapi/v1")
