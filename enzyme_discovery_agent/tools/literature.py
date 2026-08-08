@@ -1291,10 +1291,10 @@ def _search_pubmed_by_gene(gene_name: str, max_results: int = 5) -> list[dict]:
     """Quick PubMed search for a gene name, returning minimal paper dicts."""
     query = f'"{gene_name}" AND enzyme'
     search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-    params = urllib.parse.urlencode({
+    params = urllib.parse.urlencode(_ncbi_params({
         "db": "pubmed", "term": query,
         "retmax": str(max_results), "sort": "relevance", "retmode": "json",
-    })
+    }))
     req = urllib.request.Request(
         f"{search_url}?{params}", headers={"Accept": "application/json"}
     )
