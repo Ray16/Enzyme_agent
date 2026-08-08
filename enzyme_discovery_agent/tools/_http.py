@@ -18,6 +18,17 @@ logger = logging.getLogger("enzyme_agent")
 
 _RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504}
 
+# Mask credential-bearing query params before any URL/error string can reach a
+# log or a persisted run artifact.  requests' HTTPError message embeds the full
+# request URL ("... for url: https://...api_key=..."), so redact at the choke
+# point where exceptions are (re)raised.
+_SECRET_QS_RE = re.compile(r"((?:api_key|email|mailto)=)[^&\s]+", re.IGNORECASE)
+
+
+def _redact_secrets(text: str) -> str:
+    """Replace api_key/email/mailto query-param values with ``***``."""
+    return _SECRET_QS_RE.sub(r"\1***", text or "")
+
 # ---------------------------------------------------------------------------
 # Proactive per-host rate limiting
 # ---------------------------------------------------------------------------
