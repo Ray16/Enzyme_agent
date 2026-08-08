@@ -161,7 +161,7 @@ HTTP_RATE_LIMITS = {
     "www.ebi.ac.uk": 0.2,                 # Europe PMC ~10 req/s per IP; headroom
     # NCBI allows 3 req/s keyless, 10 req/s with an api_key.
     "eutils.ncbi.nlm.nih.gov": 0.1 if NCBI_API_KEY else 0.34,
-    "api.openalex.org": 0.1,             # 100 req/s with a key; daily credits bind
+    "api.openalex.org": 0.1,             # 10 req/s baseline; daily credits are the real cap
     "api.unpaywall.org": 0.1,
     "api.biorxiv.org": 0.5,               # Cloudflare-fronted; do not hammer
 }
