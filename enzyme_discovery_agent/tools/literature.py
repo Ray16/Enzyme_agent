@@ -451,6 +451,338 @@ def search_openalex(
 
 
 # ---------------------------------------------------------------------------
+# Europe PMC
+# ---------------------------------------------------------------------------
+
+def _europepmc_oa_pdf_url(result: dict) -> str:
+    """Pick an 'Open access' PDF URL from a Europe PMC result's fullTextUrlList.
+
+    The ``isOpenAccess`` boolean is known to lag the real license, so the
+    fullTextUrlList entry is the more trustworthy availability signal.
+    """
+    urls = (result.get("fullTextUrlList") or {}).get("fullTextUrl") or []
+    for entry in urls:
+        if (entry.get("availability") == "Open access"
+                and entry.get("documentStyle") == "pdf"):
+            return entry.get("url", "")
+    pmcid = result.get("pmcid")
+    if pmcid:
+        # The render endpoint is the reliable PDF route for OA-subset papers.
+        return f"https://europepmc.org/articles/{pmcid}?pdf=render"
+    return ""
+
+
+@tool(
+    description=(
+        "Search Europe PMC for biomedical/life-science articles with semantic "
+        "re-ranking. Best coverage of the biochem/molbio journal literature and, "
+        "unlike PubMed, returns PMCID + open-access flags so full text can be "
+        "fetched later. Supports free-text, TITLE:\"...\", DOI:..., EXT_ID:<pmid>."
+    ),
+    category="literature",
+    parallel_safe=True,
+    params={
+        "query": {
+            "type": "string",
+            "description": "Europe PMC query (free-text, or fielded e.g. TITLE:\"...\", AUTH:\"...\", DOI:...).",
+        },
+        "max_results": {
+            "type": "integer",
+            "description": "Maximum results to return (default 20).",
+            "default": 20,
+        },
+        "rerank_query": {
+            "type": "string",
+            "description": "Optional richer intent for semantic re-ranking.",
+            "default": "",
+        },
+    },
+)
+def search_europepmc(
+    query: str,
+    max_results: int = 20,
+    rerank_query: str = "",
+) -> dict:
+    """Search Europe PMC for scientific articles with semantic re-ranking."""
+    fetch_count = min(max_results * config.OVERFETCH_RATIO, 100)
+    params = {
+        "query": query,
+        "format": "json",
+        "resultType": "core",  # includes abstractText + fullTextUrlList
+        "pageSize": str(fetch_count),
+        "email": config.CONTACT_EMAIL,
+    }
+    url = f"{config.EUROPEPMC_API}/search?{urllib.parse.urlencode(params)}"
+    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+
+    try:
+        data = json.loads(request_with_retry(req, timeout=30).decode())
+    except Exception as e:
+        return {
+            "status": "error",
+            "summary": f"Europe PMC search failed: {e}",
+            "data": [],
+            "suggestions": ["Try simpler query terms or check network connectivity."],
+        }
+
+    results = []
+    for r in data.get("resultList", {}).get("result", []):
+        author_string = r.get("authorString", "") or ""
+        authors = [a.strip() for a in author_string.split(",") if a.strip()][:5]
+        results.append({
+            "title": r.get("title", ""),
+            "year": int(r["pubYear"]) if str(r.get("pubYear", "")).isdigit() else None,
+            "doi": r.get("doi", "") or "",
+            "pmid": r.get("pmid", "") or "",
+            "pmcid": r.get("pmcid", "") or "",
+            "journal": r.get("journalTitle", "") or "",
+            "authors": authors,
+            "abstract": (r.get("abstractText", "") or "")[:1500],
+            "cited_by_count": r.get("citedByCount", 0),
+            "is_open_access": (r.get("isOpenAccess") == "Y"),
+            "oa_pdf_url": _europepmc_oa_pdf_url(r),
+            "source": "europepmc",
+        })
+
+    if not results:
+        return {
+            "status": "partial",
+            "summary": f"No Europe PMC results for: {query[:60]}",
+            "data": [],
+            "count": 0,
+            "suggestions": ["Try broader terms, or search PubMed/OpenAlex for other coverage."],
+        }
+
+    reranked = _semantic_rerank(query=rerank_query or query, papers=results,
+                                max_results=max_results)
+    return {
+        "status": "success",
+        "summary": f"Found {len(reranked)} Europe PMC articles for: {query[:60]}",
+        "data": reranked,
+        "count": len(reranked),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Semantic Scholar
+# ---------------------------------------------------------------------------
+
+_S2_FIELDS = "title,year,venue,abstract,externalIds,openAccessPdf,citationCount,authors"
+
+
+@tool(
+    description=(
+        "Search Semantic Scholar for scholarly works with semantic re-ranking. "
+        "Uniquely returns the full identifier set (DOI, PMID, PMCID, arXiv id) "
+        "AND a direct open-access PDF link in a single call, so it is the best "
+        "front door for feeding downstream full-text retrieval."
+    ),
+    category="literature",
+    parallel_safe=True,
+    params={
+        "query": {
+            "type": "string",
+            "description": "Free-text search query.",
+        },
+        "max_results": {
+            "type": "integer",
+            "description": "Maximum results to return (default 20).",
+            "default": 20,
+        },
+        "rerank_query": {
+            "type": "string",
+            "description": "Optional richer intent for semantic re-ranking.",
+            "default": "",
+        },
+    },
+)
+def search_semantic_scholar(
+    query: str,
+    max_results: int = 20,
+    rerank_query: str = "",
+) -> dict:
+    """Search Semantic Scholar for scholarly works with semantic re-ranking."""
+    fetch_count = min(max_results * config.OVERFETCH_RATIO, 100)
+    params = {
+        "query": query,
+        "limit": str(fetch_count),
+        "fields": _S2_FIELDS,
+    }
+    url = f"{config.SEMANTIC_SCHOLAR_API}/paper/search?{urllib.parse.urlencode(params)}"
+    headers = {"Accept": "application/json"}
+    if config.S2_API_KEY:
+        headers["x-api-key"] = config.S2_API_KEY
+    req = urllib.request.Request(url, headers=headers)
+
+    try:
+        data = json.loads(request_with_retry(req, timeout=30).decode())
+    except Exception as e:
+        # The keyless pool 429s aggressively; surface an actionable hint.
+        rate_limited = "429" in str(e)
+        return {
+            "status": "partial" if rate_limited else "error",
+            "summary": f"Semantic Scholar search failed: {e}",
+            "data": [],
+            "suggestions": (
+                ["Rate limited on the keyless pool. Set ENZYME_AGENT_S2_API_KEY, "
+                 "or fall back to search_europepmc / search_crossref."]
+                if rate_limited else
+                ["Try simpler query terms or a different literature source."]
+            ),
+        }
+
+    results = []
+    for p in data.get("data", []) or []:
+        ext = p.get("externalIds") or {}
+        oa = p.get("openAccessPdf") or {}
+        authors = [a.get("name", "") for a in (p.get("authors") or []) if a.get("name")][:5]
+        results.append({
+            "title": p.get("title", "") or "",
+            "year": p.get("year"),
+            "doi": ext.get("DOI", "") or "",
+            "pmid": ext.get("PubMed", "") or "",
+            "pmcid": ext.get("PubMedCentral", "") or "",
+            "arxiv_id": ext.get("ArXiv", "") or "",
+            "journal": p.get("venue", "") or "",
+            "authors": authors,
+            "abstract": (p.get("abstract") or "")[:1500],
+            "cited_by_count": p.get("citationCount", 0),
+            "oa_status": oa.get("status", "") or "",
+            "oa_pdf_url": oa.get("url", "") or "",
+            "source": "semantic_scholar",
+        })
+
+    if not results:
+        return {
+            "status": "partial",
+            "summary": f"No Semantic Scholar results for: {query[:60]}",
+            "data": [],
+            "count": 0,
+            "suggestions": ["Try broader terms or another literature source."],
+        }
+
+    reranked = _semantic_rerank(query=rerank_query or query, papers=results,
+                                max_results=max_results)
+    return {
+        "status": "success",
+        "summary": f"Found {len(reranked)} Semantic Scholar works for: {query[:60]}",
+        "data": reranked,
+        "count": len(reranked),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Crossref (title -> DOI resolver)
+# ---------------------------------------------------------------------------
+
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _strip_tags(text: str) -> str:
+    """Strip JATS/HTML tags (Crossref abstracts are wrapped in JATS)."""
+    return _TAG_RE.sub("", text or "").strip()
+
+
+@tool(
+    description=(
+        "Resolve a title or bibliographic string to a DOI (and rich metadata) "
+        "via Crossref. Best title->DOI precision; inspect the returned "
+        "'crossref_score' to judge match confidence. Metadata only (no full text) "
+        "- use it to obtain clean DOIs to hand to full-text retrieval, and to "
+        "reach preprint servers (bioRxiv/ChemRxiv) that lack keyword search."
+    ),
+    category="literature",
+    parallel_safe=True,
+    params={
+        "query": {
+            "type": "string",
+            "description": "Bibliographic query (title works best; keywords also accepted).",
+        },
+        "max_results": {
+            "type": "integer",
+            "description": "Maximum results to return (default 10).",
+            "default": 10,
+        },
+        "rerank_query": {
+            "type": "string",
+            "description": "Optional richer intent for semantic re-ranking.",
+            "default": "",
+        },
+    },
+)
+def search_crossref(
+    query: str,
+    max_results: int = 10,
+    rerank_query: str = "",
+) -> dict:
+    """Resolve bibliographic queries to DOIs + metadata via Crossref."""
+    fetch_count = min(max_results * config.OVERFETCH_RATIO, 50)
+    params = {
+        "query.bibliographic": query,
+        "rows": str(fetch_count),
+        "mailto": config.CONTACT_EMAIL,
+        "select": ("DOI,title,container-title,author,issued,"
+                   "is-referenced-by-count,score,abstract,type"),
+    }
+    url = f"{config.CROSSREF_API}/works?{urllib.parse.urlencode(params)}"
+    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+
+    try:
+        data = json.loads(request_with_retry(req, timeout=30).decode())
+    except Exception as e:
+        return {
+            "status": "error",
+            "summary": f"Crossref search failed: {e}",
+            "data": [],
+            "suggestions": ["Try a more complete title string."],
+        }
+
+    results = []
+    for item in data.get("message", {}).get("items", []):
+        title_list = item.get("title") or [""]
+        journal_list = item.get("container-title") or [""]
+        authors = []
+        for a in item.get("author", [])[:5]:
+            name = " ".join(x for x in (a.get("given", ""), a.get("family", "")) if x).strip()
+            if name:
+                authors.append(name)
+        year = None
+        date_parts = (item.get("issued", {}).get("date-parts") or [[None]])[0]
+        if date_parts and isinstance(date_parts[0], int):
+            year = date_parts[0]
+        results.append({
+            "title": title_list[0] if title_list else "",
+            "year": year,
+            "doi": item.get("DOI", "") or "",
+            "journal": journal_list[0] if journal_list else "",
+            "authors": authors,
+            "abstract": _strip_tags(item.get("abstract", ""))[:1500],
+            "cited_by_count": item.get("is-referenced-by-count", 0),
+            "crossref_score": round(float(item.get("score", 0.0)), 2),
+            "type": item.get("type", ""),
+            "source": "crossref",
+        })
+
+    if not results:
+        return {
+            "status": "partial",
+            "summary": f"No Crossref results for: {query[:60]}",
+            "data": [],
+            "count": 0,
+            "suggestions": ["Provide a more complete or exact title."],
+        }
+
+    reranked = _semantic_rerank(query=rerank_query or query, papers=results,
+                                max_results=max_results)
+    return {
+        "status": "success",
+        "summary": f"Found {len(reranked)} Crossref records for: {query[:60]}",
+        "data": reranked,
+        "count": len(reranked),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Entity extraction from paper abstracts
 # ---------------------------------------------------------------------------
 
