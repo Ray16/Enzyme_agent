@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
-from enzyme_discovery_agent import config
+from enzyme_discovery_agent import config, provenance
 from enzyme_discovery_agent.bootstrap import register_builtin_tools
 from enzyme_discovery_agent.capabilities import create_run_dir, init_capabilities
 from enzyme_discovery_agent.context import ARTIFACT_CATEGORIES, compact_for_llm
@@ -95,6 +95,7 @@ class EnzymeAgent:
         self._confidence_report_text: str | None = None
         self._consecutive_no_tool_turns = 0
         self._notebook_tool_cooldown = 0
+        self._iterations_used = 0
 
         self._gate_state = AgentState(run_dir=self.run_dir)
         self._systematic_gate = SystematicCoverageGate()
@@ -141,6 +142,23 @@ class EnzymeAgent:
         with self._log_lock:
             with open(self._event_log_path, "a") as f:
                 f.write(json.dumps(event, default=str) + "\n")
+
+    def _checkpoint_transcript(self, messages: list, iteration: int) -> None:
+        """Persist the full conversation each iteration (crash-safe provenance).
+
+        The finalizer writes ``messages.json`` only at the end of a run, so an
+        interrupted campaign would otherwise lose its entire reasoning trace.
+        This rolling checkpoint is both a provenance record and the foundation
+        for future resume support.  Best-effort: never breaks the loop.
+        """
+        try:
+            payload = {"iteration": iteration, "messages": messages}
+            (self.run_dir / "agent_state" / "transcript.json").write_text(
+                json.dumps(payload, default=str)
+            )
+        except (OSError, TypeError) as exc:
+            logger.warning("Failed to checkpoint transcript at iteration %d: %s",
+                           iteration, exc)
 
     def _ensure_artifacts_dir(self) -> None:
         for subdir in ("literature", "database", "candidates"):
@@ -331,6 +349,18 @@ class EnzymeAgent:
         (self.run_dir / "target_context.json").write_text(
             json.dumps(self._target_context, indent=2, default=str) + "\n"
         )
+        # Run-level provenance: stamp the code revision, resolved config, and
+        # environment before any model work, so an interrupted run is still
+        # identifiable and a completed run is reproducible.
+        provenance.write_manifest_start(
+            self.run_dir,
+            query=query,
+            model=self.model_name,
+            config_module=config,
+            args={"max_iterations": self.max_iterations, "llm_timeout": self.llm_timeout},
+            substrate={"smiles": substrate_smiles, "name": substrate_name},
+            capabilities=self.capabilities,
+        )
         clear_search_history()
         self._ensure_artifacts_dir()
         token_usage = TokenUsage(model=self.model_name)
@@ -371,6 +401,7 @@ class EnzymeAgent:
         iteration = 0
         while iteration < self.max_iterations:
             iteration += 1
+            self._iterations_used = iteration
             self._iteration_start = _time.time()
             # Tool calls in the preceding iteration may have promoted a
             # candidate.  Synchronize before announcing state or asking the
@@ -621,6 +652,7 @@ class EnzymeAgent:
             # iteration will deterministically enter the evaluation gate even
             # when screening happened in the final permitted tool turn.
             self._sync_gate_state()
+            self._checkpoint_transcript(messages, iteration)
 
         self.log("Max iterations reached.")
         return self._finalize(messages, token_usage, "Max iterations reached")
@@ -645,4 +677,20 @@ class EnzymeAgent:
         self._log_event("run_complete", {
             "candidates": n_evals, "total_tokens": token_usage.total_tokens,
         })
+        # Close out run-level provenance: outcome, timing, tokens, and the
+        # human-readable RUN_SUMMARY.md.  Best-effort; never masks the report.
+        report_path = next(
+            (str(p) for name in ("report_confidence.md", "report_explorative.md")
+             if (p := self.run_dir / name).exists()),
+            None,
+        )
+        provenance.finalize_manifest(
+            self.run_dir,
+            status="completed",
+            iterations_used=self._iterations_used,
+            candidates_evaluated=n_evals,
+            tokens=token_usage.to_dict(),
+            outcome=final_text[:500] if final_text else None,
+            report_path=report_path,
+        )
         return report
