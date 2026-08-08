@@ -1117,6 +1117,7 @@ def deep_literature_search(
             f"filter=doi:{urllib.parse.quote(doi_filter, safe='|:/')}"
             f"&per-page={len(seed_dois)}"
             f"&mailto={config.OPENALEX_EMAIL}"
+            f"{_openalex_auth_qs()}"
         )
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         try:
