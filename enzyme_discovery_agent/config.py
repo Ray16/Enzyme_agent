@@ -71,11 +71,35 @@ MW_MODERATE_MISMATCH_THRESHOLD = 0.30  # ~3.3x MW ratio
 # Keep Sonnet 5 compatible: it rejects the legacy OpenAI temperature parameter.
 EXPLORATIVE_REPORT_TEMPERATURE = None
 
+# --- Contact identity for API "polite pools" ---
+# A real contact email is REQUIRED by Unpaywall (it 422-blocks example.com
+# addresses) and doubles as the polite-pool ``mailto`` for OpenAlex, Crossref,
+# and Europe PMC.  Overridable via env for other deployments.
+CONTACT_EMAIL = os.environ.get("ENZYME_AGENT_CONTACT_EMAIL", "palm.uchicago@gmail.com")
+
+# A browser-like User-Agent.  bioRxiv (Cloudflare) and some publishers reject
+# default library UAs; sending one avoids 403/challenge responses.
+HTTP_USER_AGENT = os.environ.get(
+    "ENZYME_AGENT_USER_AGENT",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0 Safari/537.36 EnzymeDiscoveryAgent/0.1",
+)
+
 # --- API endpoints ---
 UNIPROT_API = "https://rest.uniprot.org"
 KEGG_API = "https://rest.kegg.jp"
 NCBI_EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 OPENALEX_API = "https://api.openalex.org"
-OPENALEX_EMAIL = "enzyme-agent@example.edu"
+OPENALEX_EMAIL = CONTACT_EMAIL  # was a dead example.edu literal; now the real contact
 INTERPRO_API = "https://www.ebi.ac.uk/interpro/api"
 BIORXIV_API = "https://api.biorxiv.org"
+
+# Discovery + full-text sources added in the retrieval-expansion work.
+EUROPEPMC_API = "https://www.ebi.ac.uk/europepmc/webservices/rest"
+CROSSREF_API = "https://api.crossref.org"
+UNPAYWALL_API = "https://api.unpaywall.org/v2"
+SEMANTIC_SCHOLAR_API = "https://api.semanticscholar.org/graph/v1"
+ARXIV_API = "https://export.arxiv.org/api"
+# Optional free key (semanticscholar.org).  Keyless works but the shared pool
+# 429s after ~a dozen calls; setting this raises the limit.  Zero-code to add.
+S2_API_KEY = os.environ.get("ENZYME_AGENT_S2_API_KEY", "")
