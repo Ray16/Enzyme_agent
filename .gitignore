@@ -67,3 +67,6 @@ structural_modeling_pipeline/memory/
 .env
 *.key
 secrets.json
+
+# ---- Claude Code local settings (machine-local) ----
+.claude/
