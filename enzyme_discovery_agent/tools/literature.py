@@ -22,6 +22,34 @@ from enzyme_discovery_agent.tools._http import request_with_retry
 
 logger = logging.getLogger("enzyme_agent")
 
+
+# ---------------------------------------------------------------------------
+# Request-identity helpers (API keys + polite-pool identifiers)
+# ---------------------------------------------------------------------------
+
+def _ncbi_params(extra: dict) -> dict:
+    """Merge NCBI etiquette (tool/email) and an api_key when configured.
+
+    A free NCBI api_key raises the E-utilities limit from 3 to 10 req/s; NCBI
+    asks every request to carry ``tool`` and ``email``.  Caller-supplied keys
+    in ``extra`` win over the defaults.
+    """
+    params = {"tool": config.NCBI_TOOL, "email": config.CONTACT_EMAIL}
+    if config.NCBI_API_KEY:
+        params["api_key"] = config.NCBI_API_KEY
+    params.update(extra)
+    return params
+
+
+def _openalex_auth_qs() -> str:
+    """Return an ``&api_key=...`` URL fragment for OpenAlex, or "" when unset.
+
+    OpenAlex retired the mailto polite pool (2026-02-13); without a key the
+    daily budget is ~100 list requests before HTTP 409.
+    """
+    return f"&api_key={config.OPENALEX_API_KEY}" if config.OPENALEX_API_KEY else ""
+
+
 # ---------------------------------------------------------------------------
 # Semantic re-ranking
 # ---------------------------------------------------------------------------
