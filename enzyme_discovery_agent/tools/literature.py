@@ -294,11 +294,11 @@ def search_pubmed(
 
     # Fetch article details
     fetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
-    fetch_params = {
+    fetch_params = _ncbi_params({
         "db": "pubmed",
         "id": ",".join(pmids),
         "retmode": "xml",
-    }
+    })
     url = f"{fetch_url}?{urllib.parse.urlencode(fetch_params)}"
     req = urllib.request.Request(url)
 
