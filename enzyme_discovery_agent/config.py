@@ -133,9 +133,12 @@ ARXIV_API = "https://export.arxiv.org/api"
 S2_API_KEY = os.environ.get("ENZYME_AGENT_S2_API_KEY", "")
 
 # OpenAlex retired the mailto polite pool on 2026-02-13 and now meters by
-# credits: WITHOUT a key the free budget is ~1000 credits/day (~100 list calls
-# at 10 credits each) before HTTP 409; a free key raises it to 100,000/day.
-# Passed as the ``api_key`` query param.  Get one at https://openalex.org .
+# credits.  Live API headers (probed Aug 2026) report a KEYLESS budget of
+# x-ratelimit-limit=1000 credits/day at 10 credits per list call -- and the
+# parallel USD dimension agrees (x-ratelimit-limit-usd=0.1 at 0.001/call) --
+# i.e. ~100 searches/day before HTTP 409.  (An early announcement cited a lower
+# 100-credit figure; the live API currently reports 1000.)  A key raises it to
+# 100,000 credits/day.  Sent as the ``api_key`` query param.
 OPENALEX_API_KEY = os.environ.get("ENZYME_AGENT_OPENALEX_API_KEY", "")
 
 # NCBI E-utilities: a free api_key raises the limit from 3 to 10 req/s.  NCBI
