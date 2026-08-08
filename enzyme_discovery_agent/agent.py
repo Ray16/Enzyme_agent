@@ -213,7 +213,8 @@ class EnzymeAgent:
             self._search_log.append(f"{tool_name}:{query_desc[:30]}")
         if tool_name == "evaluate_candidate":
             self._candidate_count += 1
-        if tool_name in ("search_pubmed", "search_openalex"):
+        if tool_name in ("search_pubmed", "search_openalex", "search_europepmc",
+                         "search_semantic_scholar", "search_crossref"):
             papers = result.get("data", [])
             if isinstance(papers, list):
                 self._accumulated_papers.extend(papers)
