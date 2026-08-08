@@ -89,3 +89,13 @@ secrets.json
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+
+# ---- LaTeX build artifacts ----
+*.aux
+*.nav
+*.snm
+*.toc
+*.vrb
+*.fls
+*.fdb_latexmk
+*.synctex.gz
