@@ -72,6 +72,10 @@ def request_with_retry(
     url = req.full_url
     headers = dict(req.headers)
     headers.update(req.unredirected_hdrs)
+    # Some hosts (bioRxiv/Cloudflare, several publishers) reject the default
+    # library User-Agent.  Send a browser-like one unless the caller set its own.
+    if not any(k.lower() == "user-agent" for k in headers):
+        headers["User-Agent"] = config.HTTP_USER_AGENT
     data = req.data
     method = req.get_method()
 
