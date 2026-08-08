@@ -1,6 +1,7 @@
 """Shared HTTP helper with retry, exponential backoff, and connection pooling."""
 
 import logging
+import re
 import threading
 import time
 import urllib.error
