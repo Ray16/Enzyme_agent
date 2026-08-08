@@ -49,6 +49,15 @@ structural_modeling_pipeline/memory/
 *.tar
 *.tar.gz
 
+# ---- Binary documents & MD inputs (keep repo source/text only) ----
+*.pdf
+*.prmtop
+*.parm7
+*.inpcrd
+*.rst7
+*.mdcrd
+*.nc
+
 # ---- Large data / model assets (keep out of the code tree) ----
 /benchmark/
 /checkpoints/
