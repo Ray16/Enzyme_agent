@@ -104,39 +104,89 @@ def _semantic_rerank(
     title_key: str = "title",
     abstract_key: str = "abstract",
 ) -> list[dict]:
-    """Re-rank papers by semantic similarity to the query."""
+    """Re-rank papers by fusing native retrieval order with semantic similarity.
+
+    The input ``papers`` arrive in the source's own relevance order (PubMed,
+    OpenAlex, Europe PMC, Semantic Scholar all pre-rank).  Rather than discard
+    that signal, we compute a semantic (cosine) rank from embeddings and fuse
+    the two with Reciprocal Rank Fusion, so a paper strong on *either* axis
+    surfaces.  RRF governs ORDER only; inclusion is gated by ``min_score`` on
+    the cosine score -- a stable [0,1] scale -- so the threshold's meaning is
+    unchanged by fusion (the two can be recalibrated together).
+
+    Degrades gracefully to native order when the embedder is unavailable
+    (feature disabled or the optional dependency is missing).
+    """
+    if not papers:
+        return []
     model = _get_rerank_model()
     if model is None:
+        # Expected no-op: rerank disabled or sentence-transformers absent.
         return papers[:max_results]
 
+    # A failure computing embeddings/cosine is a genuine bug, NOT the expected
+    # "embedder unavailable" path -- surface it loudly (with traceback) instead
+    # of letting it masquerade as a graceful fallback.
     try:
-        from sklearn.metrics.pairwise import cosine_similarity
-
-        query_text = f"search_query: {query}"
-        doc_texts = [
-            f"search_document: {p.get(title_key, '')}. {p.get(abstract_key, '')[:500]}"
-            for p in papers
-        ]
-
-        q_emb = model.encode([query_text], normalize_embeddings=True,
-                             batch_size=1, show_progress_bar=False)
-        p_emb = model.encode(doc_texts, normalize_embeddings=True,
-                             batch_size=1, show_progress_bar=False)
-        sims = cosine_similarity(q_emb, p_emb)[0]
-
-        scored = []
-        for i, paper in enumerate(papers):
-            paper_copy = dict(paper)
-            paper_copy["semantic_score"] = round(float(sims[i]), 4)
-            scored.append(paper_copy)
-
-        scored.sort(key=lambda p: p["semantic_score"], reverse=True)
-        scored = [p for p in scored if p["semantic_score"] >= min_score]
-        return scored[:max_results]
-
+        sims = _semantic_scores(model, query, papers, title_key, abstract_key)
     except Exception as e:
-        logger.warning("Semantic re-ranking failed: %s", e)
+        logger.error("Semantic rerank computation failed; returning native "
+                     "order: %s", e, exc_info=True)
         return papers[:max_results]
+
+    return _rrf_fuse(papers, sims, max_results, min_score)
+
+
+def _semantic_scores(model, query, papers, title_key, abstract_key):
+    """Per-paper cosine similarity to the query.
+
+    Embeddings are normalized, so cosine is a plain dot product -- computed with
+    numpy (already present via pandas), which removes the previous undeclared
+    scikit-learn dependency entirely.
+    """
+    import numpy as np
+    query_text = f"search_query: {query}"
+    doc_texts = [
+        f"search_document: {p.get(title_key, '')}. {p.get(abstract_key, '')[:500]}"
+        for p in papers
+    ]
+    q_emb = model.encode([query_text], normalize_embeddings=True,
+                         batch_size=1, show_progress_bar=False)
+    p_emb = model.encode(doc_texts, normalize_embeddings=True,
+                         batch_size=32, show_progress_bar=False)
+    return np.asarray(p_emb) @ np.asarray(q_emb)[0]
+
+
+def _rrf_fuse(papers, sims, max_results, min_score, k: int = 60):
+    """Fuse native retrieval order with semantic (cosine) order via Reciprocal
+    Rank Fusion.
+
+    RRF sets ORDER (a paper high on *either* the source's native rank or the
+    cosine rank floats up); ``min_score`` gates INCLUSION on the cosine scale.
+    ``k`` is the standard RRF damping constant.  Attaches ``semantic_score`` and
+    ``rrf_score`` to each returned paper for auditability.
+    """
+    n = len(papers)
+    # native rank = input position (0 = most relevant per the source);
+    # cosine rank = position when sorted by similarity, descending.
+    cosine_order = sorted(range(n), key=lambda i: sims[i], reverse=True)
+    cosine_rank = {i: r for r, i in enumerate(cosine_order)}
+
+    fused = []
+    for i, paper in enumerate(papers):
+        rrf = 1.0 / (k + i) + 1.0 / (k + cosine_rank[i])
+        pc = dict(paper)
+        pc["semantic_score"] = round(float(sims[i]), 4)
+        pc["rrf_score"] = round(float(rrf), 6)
+        fused.append(pc)
+
+    fused.sort(key=lambda p: p["rrf_score"], reverse=True)
+    kept = [p for p in fused if p["semantic_score"] >= min_score]
+    # Never starve to empty purely on the floor: an over-tight threshold should
+    # degrade to the fused ranking, not return nothing.
+    if not kept:
+        kept = fused
+    return kept[:max_results]
 
 
 # ---------------------------------------------------------------------------
