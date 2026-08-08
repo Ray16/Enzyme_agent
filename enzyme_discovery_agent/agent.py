@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 import threading
 import time as _time
 import warnings
@@ -251,31 +250,6 @@ class EnzymeAgent:
         })
         return result
 
-    @staticmethod
-    def _recover_tool_calls_from_text(text: str) -> list[dict]:
-        """Parse tool_use dicts that Argo sometimes serializes into text content."""
-        import ast
-        recovered = []
-        parts = re.split(r"(?=\{['\"]id['\"]:\s*['\"]toolu_)", text)
-        for part in parts:
-            part = part.strip()
-            if not part.startswith("{"):
-                continue
-            try:
-                d = ast.literal_eval(part)
-                if isinstance(d, dict) and d.get("type") == "tool_use" and "name" in d:
-                    args = d.get("input", {})
-                    recovered.append({
-                        "id": d.get("id", f"recovered_{len(recovered)}"),
-                        "function": {
-                            "name": d["name"],
-                            "arguments": json.dumps(args) if isinstance(args, dict) else str(args),
-                        },
-                    })
-            except (ValueError, SyntaxError):
-                continue
-        return recovered
-
     def _infer_phase(self, iteration: int) -> str:
         if iteration <= 3:
             return "reaction_analysis"
@@ -482,22 +456,19 @@ class EnzymeAgent:
             assistant_msg = choice.message
             messages.append(assistant_msg.model_dump())
 
-            tool_calls = assistant_msg.tool_calls or []
-            text_content = assistant_msg.content or ""
-
-            if not tool_calls and text_content and "'type': 'tool_use'" in text_content:
-                recovered = self._recover_tool_calls_from_text(text_content)
-                if recovered:
-                    tool_calls = recovered
-                    self.log(f"Recovered {len(recovered)} tool calls from text")
-                    messages[-1]["tool_calls"] = [
-                        {"id": r["id"], "type": "function",
-                         "function": {"name": r["function"]["name"],
-                                      "arguments": r["function"]["arguments"]}}
-                        for r in recovered
-                    ]
-                    cleaned = re.split(r"\{['\"]id['\"]:\s*['\"]toolu_", text_content)[0].strip()
-                    messages[-1]["content"] = cleaned or f"[Recovered {len(recovered)} tool calls]"
+            # Normalize provider quirks at the client boundary: recovered tool
+            # calls (leaked into text by some Argo models) come back in a uniform
+            # shape so the loop below never has to know how they were serialized.
+            tool_calls, text_content, recovered = self.llm.extract_tool_calls(assistant_msg)
+            if recovered:
+                self.log(f"Recovered {len(tool_calls)} tool calls from text")
+                messages[-1]["tool_calls"] = [
+                    {"id": r["id"], "type": "function",
+                     "function": {"name": r["function"]["name"],
+                                  "arguments": r["function"]["arguments"]}}
+                    for r in tool_calls
+                ]
+                messages[-1]["content"] = text_content
 
             self.log(f"\n  ITERATION {iteration}/{self.max_iterations}  |  "
                      f"{len(tool_calls)} tool calls  |  "

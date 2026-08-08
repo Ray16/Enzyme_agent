@@ -99,6 +99,39 @@ class TestLLMClient(unittest.TestCase):
         self.assertEqual(response, "response")
         self.assertEqual(client.client.timeout, 17)
 
+    def test_extract_tool_calls_passthrough(self):
+        """Structured tool_calls are returned unchanged, recovered=False."""
+        native = [SimpleNamespace(id="c1")]
+        msg = SimpleNamespace(tool_calls=native, content="some reasoning")
+        calls, content, recovered = LLMClient.extract_tool_calls(msg)
+        self.assertIs(calls, native)
+        self.assertEqual(content, "some reasoning")
+        self.assertFalse(recovered)
+
+    def test_extract_tool_calls_recovers_leaked_tool_use(self):
+        """tool_use dicts leaked into text content are recovered and stripped."""
+        leaked = (
+            "I will search now. "
+            "{'id': 'toolu_123', 'type': 'tool_use', 'name': 'search_uniprot', "
+            "'input': {'query': 'nylon hydrolase'}}"
+        )
+        msg = SimpleNamespace(tool_calls=None, content=leaked)
+        calls, content, recovered = LLMClient.extract_tool_calls(msg)
+        self.assertTrue(recovered)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["function"]["name"], "search_uniprot")
+        self.assertIn("nylon hydrolase", calls[0]["function"]["arguments"])
+        # The leaked serialization is stripped from the human-readable content.
+        self.assertNotIn("toolu_", content)
+        self.assertIn("I will search now.", content)
+
+    def test_extract_tool_calls_no_marker_is_passthrough(self):
+        msg = SimpleNamespace(tool_calls=None, content="just prose, no tools")
+        calls, content, recovered = LLMClient.extract_tool_calls(msg)
+        self.assertFalse(recovered)
+        self.assertEqual(calls, [])
+        self.assertEqual(content, "just prose, no tools")
+
 
 class TestStageStateSync(unittest.TestCase):
     def test_registry_exposes_human_readable_enzyme_name(self):
