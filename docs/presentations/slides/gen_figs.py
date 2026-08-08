@@ -7,7 +7,7 @@ import numpy as np
 import json, os
 
 FIGS = os.path.join(os.path.dirname(__file__), 'figs')
-RUNS = '/nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/enzyme_discovery_agent/runs'
+RUNS = '/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs'
 
 # Color palette matching the beamer theme
 BLUE = '#144272'

@@ -3,8 +3,8 @@
 ## Context
 
 This plan implements features from the PhD candidacy proposal's Aim 1 (enzyme discovery agent) and Aim 2 (structure-aware evaluation). The work targets two codebases:
-- **enzyme_agent_refactor** (`/nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/enzyme_agent_refactor/`) -- new discovery tools
-- **experimental_feedback_refactor** (`/nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/experimental_feedback_refactor/`) -- structural analysis features
+- **enzyme_agent_refactor** (`/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_agent_refactor/`) -- new discovery tools
+- **experimental_feedback_refactor** (`/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/experimental_feedback_refactor/`) -- structural analysis features
 
 All new code is additive (new files or new functions appended to existing files). No existing functions are modified.
 
@@ -297,7 +297,7 @@ python design_active_site.py amide_synthetase \
 
 ### A1: ModelSEED Tools
 ```bash
-cd /nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/enzyme_agent_refactor
+cd /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_agent_refactor
 python -c "from tools.kbase import search_modelseed_reactions, get_modelseed_compound; \
   r = search_modelseed_reactions(ec_class='6.3.1'); print(r['summary']); \
   c = get_modelseed_compound(compound_id='cpd00053'); print(c['data']['name'], c['data']['smiles'])"
@@ -316,14 +316,14 @@ Expected: Returns publications about AsbB homologs across organisms.
 ```bash
 python -c "from tools.structural_evidence import get_structural_evaluation; \
   r = get_structural_evaluation(accession='A0A0F7RJ52', \
-    cofold_results_dir='/nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/experimental_feedback/analysis_results'); \
+    cofold_results_dir='/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/experimental_feedback/analysis_results'); \
   print(r['summary'])"
 ```
 Expected: Returns binding quality, pocket chemistry, and geometry for AsbA.
 
 ### B1: Sub-Region Descriptors
 ```bash
-cd /nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/experimental_feedback_refactor
+cd /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/experimental_feedback_refactor
 python substrate_pocket_descriptors.py amide_synthetase --dry-run
 ```
 Expected: Prints identified functional groups and sub-region residue counts without writing files.
@@ -331,7 +331,7 @@ Expected: Prints identified functional groups and sub-region residue counts with
 ### B2: LigandMPNN Design
 ```bash
 python design_active_site.py amide_synthetase --uids A0A0F7RJ52 --n-designs 2 --dry-run \
-  --ligandmpnn-path /nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/LigandMPNN
+  --ligandmpnn-path /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/LigandMPNN
 ```
 Expected: Prints LigandMPNN command that would be run, shows redesign targets and fixed residues.
 

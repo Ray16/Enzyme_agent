@@ -79,3 +79,13 @@ secrets.json
 
 # ---- Claude Code local settings (machine-local) ----
 .claude/
+
+# ---- LaTeX build artifacts ----
+*.aux
+*.nav
+*.snm
+*.toc
+*.vrb
+*.synctex.gz
+*.fls
+*.fdb_latexmk

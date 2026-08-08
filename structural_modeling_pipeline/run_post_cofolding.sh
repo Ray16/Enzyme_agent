@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-cd /nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/structural_modeling_pipeline
+cd /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_pipeline
 LOG="post_cofolding_pipeline.log"
 
 echo "$(date): Waiting for cofolding jobs to complete..." | tee $LOG

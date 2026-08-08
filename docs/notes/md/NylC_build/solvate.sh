@@ -4,8 +4,8 @@
 set -e
 export AMBERHOME=~/miniforge3
 TLEAP=~/miniforge3/bin/tleap
-cd /nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/md/NylC_build
-OUT=/nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/md
+cd /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/md/NylC_build
+OUT=/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/md
 
 HEAD='source leaprc.protein.ff19SB
 source leaprc.water.opc

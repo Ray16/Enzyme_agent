@@ -23,7 +23,7 @@ import numpy as np
 from scipy import stats
 
 # ── Paths ──────────────────────────────────────────────────────────────────
-BASE = Path("/nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/structural_modeling_pipeline")
+BASE = Path("/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_pipeline")
 CSV_PATH = BASE / "analysis_results" / "comprehensive_enzyme_table.csv"
 HOLO_POCKET_JSON = BASE / "analysis_results" / "holo_pocket_residues.json"
 HYDROLASE_POCKET_JSON = BASE / "amide_hydrolase" / "pocket_analysis.json"

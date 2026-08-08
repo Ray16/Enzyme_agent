@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-BASE=/nfs/lambda_stor_01/homes/rzhu/Biochemical_agent/structural_modeling_pipeline
+BASE=/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_pipeline
 BOLTZ_BIN=/homes/rzhu/miniforge3/envs/boltz-2/bin/boltz
 export LD_LIBRARY_PATH=/homes/rzhu/miniforge3/envs/boltz-2/lib:$LD_LIBRARY_PATH
 
