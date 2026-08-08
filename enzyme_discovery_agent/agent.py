@@ -448,7 +448,8 @@ class EnzymeAgent:
             )
             if response is None:
                 return self._finalize(messages, token_usage,
-                                      f"LLM failed at iteration {iteration}")
+                                      f"LLM failed at iteration {iteration}",
+                                      status="failed")
 
             token_usage.record(iteration, response)
 
@@ -634,6 +635,7 @@ class EnzymeAgent:
         token_usage: TokenUsage,
         final_text: str,
         force_completion: bool = False,
+        status: str = "completed",
     ) -> str:
         report, n_evals = RunFinalizer(self.run_dir, self.llm, self.log).finalize(
             messages=messages,
@@ -657,7 +659,7 @@ class EnzymeAgent:
         )
         provenance.finalize_manifest(
             self.run_dir,
-            status="completed",
+            status=status,
             iterations_used=self._iterations_used,
             candidates_evaluated=n_evals,
             tokens=token_usage.to_dict(),
