@@ -83,7 +83,14 @@ def _get_rerank_model():
             )
             return _RERANK_MODEL
         except Exception as e:
-            logger.warning("Could not load re-ranking model: %s", e)
+            # Reaching here means the feature is ENABLED but the model could not
+            # load -- a real misconfiguration, not a routine skip.  Be loud and
+            # actionable rather than silently degrading to native order.
+            logger.error(
+                "Semantic rerank is ENABLED but the model failed to load; "
+                "falling back to native retrieval order. Install the optional "
+                "dependency (pip install sentence-transformers). Cause: %s", e,
+            )
             return None
 
 
