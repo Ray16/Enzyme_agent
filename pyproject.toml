@@ -19,6 +19,13 @@ scoring = [
     "torch-geometric",
     "drfp",
 ]
+# Semantic re-ranking (RRF fusion over embeddings). Previously an UNDECLARED
+# import that silently no-oped where missing; now an explicit optional extra.
+# numpy comes via pandas (a core dep); scikit-learn is no longer needed
+# (cosine is a dot product on normalized embeddings).
+rerank = [
+    "sentence-transformers>=2.2",
+]
 
 [tool.setuptools.packages.find]
 include = ["enzyme_discovery_agent*"]
