@@ -53,15 +53,23 @@ Answer in JSON only:
 
 
 def _fetch_pubmed_abstract(pmid: str) -> str | None:
-    """Fetch abstract text for a PMID via NCBI E-utilities."""
-    url = (
-        f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
-        f"?db=pubmed&id={pmid}&rettype=abstract&retmode=text"
-    )
+    """Fetch abstract text for a PMID via NCBI E-utilities.
+
+    Routes through the shared HTTP client so it inherits the browser UA,
+    per-host throttling, retry/backoff, and secret redaction, and carries the
+    NCBI ``tool``/``email`` identifiers plus an ``api_key`` when configured.
+    """
+    params = {
+        "db": "pubmed", "id": pmid,
+        "rettype": "abstract", "retmode": "text",
+        "tool": config.NCBI_TOOL, "email": config.CONTACT_EMAIL,
+    }
+    if config.NCBI_API_KEY:
+        params["api_key"] = config.NCBI_API_KEY
+    url = f"{config.NCBI_EUTILS}/efetch.fcgi?{urllib.parse.urlencode(params)}"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "EnzymeAgent/1.0"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            text = resp.read().decode("utf-8", errors="replace")
+        req = urllib.request.Request(url)
+        text = request_with_retry(req, timeout=15).decode("utf-8", errors="replace")
         if len(text.strip()) < 50:
             return None
         return text.strip()[:3000]
