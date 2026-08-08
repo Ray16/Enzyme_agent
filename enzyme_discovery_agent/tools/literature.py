@@ -1308,9 +1308,9 @@ def _search_pubmed_by_gene(gene_name: str, max_results: int = 5) -> list[dict]:
         return []
 
     fetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
-    fetch_params = urllib.parse.urlencode({
+    fetch_params = urllib.parse.urlencode(_ncbi_params({
         "db": "pubmed", "id": ",".join(pmids), "retmode": "xml",
-    })
+    }))
     req2 = urllib.request.Request(f"{fetch_url}?{fetch_params}")
     try:
         xml_data = request_with_retry(req2, timeout=15).decode()
