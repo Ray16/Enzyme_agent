@@ -1,0 +1,46 @@
+This is BibTeX, Version 0.99d (TeX Live 2022/dev/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: candidacy_proposal.aux
+The style file: unsrtnat.bst
+Database file #1: citation.bib
+You've used 47 entries,
+            2481 wiz_defined-function locations,
+            854 strings with 16297 characters,
+and the built_in function-call counts, 21948 in all, are:
+= -- 1637
+> -- 1703
+< -- 12
++ -- 616
+- -- 522
+* -- 2036
+:= -- 3766
+add.period$ -- 172
+call.type$ -- 47
+change.case$ -- 94
+chr.to.int$ -- 47
+cite$ -- 47
+duplicate$ -- 889
+empty$ -- 1702
+format.name$ -- 586
+if$ -- 4428
+int.to.chr$ -- 1
+int.to.str$ -- 48
+missing$ -- 47
+newline$ -- 274
+num.names$ -- 141
+pop$ -- 328
+preamble$ -- 1
+purify$ -- 47
+quote$ -- 0
+skip$ -- 494
+stack$ -- 0
+substring$ -- 1011
+swap$ -- 96
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 329
+warning$ -- 0
+while$ -- 158
+width$ -- 0
+write$ -- 669

@@ -1,0 +1,21 @@
+# Top-level pipeline configuration.
+# Lists all projects to be analyzed together.
+
+projects:
+  - path: amide_synthetase
+    name: synthetase
+  - path: amide_hydrolase
+    name: hydrolase
+  - path: experimental_paper_modeling/paper1_amide_diads
+    name: paper1_diads
+  - path: experimental_paper_modeling/paper2_nis_synthetases
+    name: paper2_nis
+  - path: experimental_paper_modeling/paper3_hydrolases
+    name: paper3_hydrolases
+
+# Optional: environment overrides for external tools.
+# These can also be set via environment variables:
+#   FOLDSEEK_BIN, FOLDSEEK_DB, BOLTZ_CONDA_ENV
+# tools:
+#   foldseek_bin: ~/tools/foldseek/bin/foldseek
+#   foldseek_db: ~/tools/foldseek_db/pdb

@@ -1,0 +1,648 @@
+"""Core agent loop: thin orchestrator that delegates to specialized modules.
+
+Reduced from ~1915 lines to ~450 lines by extracting:
+- Gate logic -> gates/
+- Data models -> models/
+- Report/CSV/structure/image generation -> output/
+- LLM call + token tracking -> llm_client.py
+- Context compaction -> context.py
+- Prompts -> prompts/
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+import threading
+import time as _time
+import warnings
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from pathlib import Path
+
+from enzyme_discovery_agent import config
+from enzyme_discovery_agent.bootstrap import register_builtin_tools
+from enzyme_discovery_agent.capabilities import create_run_dir, init_capabilities
+from enzyme_discovery_agent.context import ARTIFACT_CATEGORIES, compact_for_llm
+from enzyme_discovery_agent.gates import AgentState, GatePipeline
+from enzyme_discovery_agent.gates.ec_triage import ECTriageGate, auto_screen_candidates
+from enzyme_discovery_agent.gates.discovery_coverage import DiscoveryCoverageGate
+from enzyme_discovery_agent.gates.evidence_selection import EvidenceSelectionGate
+from enzyme_discovery_agent.gates.entity_extraction import EntityExtractionGate
+from enzyme_discovery_agent.gates.homolog_expansion import HomologExpansionGate
+from enzyme_discovery_agent.gates.systematic_coverage import SystematicCoverageGate
+from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.models.candidate_registry import (
+    load_candidate_registry,
+    register_structural_homologs,
+)
+from enzyme_discovery_agent.models.target_profile import normalize_target_profile
+from enzyme_discovery_agent.output.finalizer import RunFinalizer
+from enzyme_discovery_agent.prompts import (
+    EXPLORATIVE_RERANK_PROMPT,
+    build_reflection_prompt,
+    build_state_header,
+    build_system_prompt,
+)
+from enzyme_discovery_agent.tool_registry import (
+    check_search_duplicate,
+    clear_search_history,
+    execute_tool,
+    get_all_tools,
+    get_parallel_safe_tools,
+    get_tools_by_category,
+    record_search,
+)
+
+warnings.filterwarnings("ignore", message=".*please use MorganGenerator.*")
+warnings.filterwarnings("ignore", message=".*not removing hydrogen.*")
+
+logger = logging.getLogger("enzyme_agent")
+
+class EnzymeAgent:
+    """LLM-driven enzyme discovery agent."""
+
+    def __init__(
+        self,
+        model: str = config.DEFAULT_MODEL,
+        output_dir: str | Path = "runs",
+        max_iterations: int = config.MAX_ITERATIONS,
+        llm_timeout: int = config.LLM_TIMEOUT,
+        query: str = "",
+    ):
+        register_builtin_tools()
+        self.llm = LLMClient(model=model)
+        self.model_name = model
+        self.max_iterations = max_iterations
+        self.llm_timeout = llm_timeout
+
+        self.run_dir = create_run_dir(Path(output_dir), query=query)
+        self.artifacts_dir = self.run_dir / "artifacts"
+
+        self.tools = get_all_tools()
+        self.parallel_safe = get_parallel_safe_tools()
+        self.capabilities = init_capabilities()
+
+        self._artifact_counter = 0
+        self._artifact_lock = threading.Lock()
+        self._log_lock = threading.Lock()
+        self._search_log: list[str] = []
+        self._candidate_count = 0
+        self._iteration_start: float = 0.0
+        self._accumulated_papers: list[dict] = []
+        self._literature_search_iterations: set[int] = set()
+        self._confidence_report_text: str | None = None
+        self._consecutive_no_tool_turns = 0
+        self._notebook_tool_cooldown = 0
+
+        self._gate_state = AgentState(run_dir=self.run_dir)
+        self._systematic_gate = SystematicCoverageGate()
+        self._evidence_selection_gate = EvidenceSelectionGate()
+        self._gate_pipeline = GatePipeline([
+            EntityExtractionGate(),
+            DiscoveryCoverageGate(),
+            ECTriageGate(),
+            HomologExpansionGate(),
+        ])
+
+        self._event_log_path = self.run_dir / "events.jsonl"
+        self._setup_logging()
+
+    def _setup_logging(self):
+        root_logger = logging.getLogger("enzyme_agent")
+        if not root_logger.handlers:
+            root_logger.setLevel(logging.DEBUG)
+            console = logging.StreamHandler()
+            console.setLevel(logging.INFO)
+            console.setFormatter(logging.Formatter(
+                "%(asctime)s | %(message)s", datefmt="%H:%M:%S"
+            ))
+            root_logger.addHandler(console)
+        file_handler = logging.FileHandler(self.run_dir / "agent_state" / "warnings.log")
+        file_handler.setLevel(logging.WARNING)
+        file_handler.setFormatter(logging.Formatter(
+            "[%(asctime)s %(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        ))
+        root_logger.addHandler(file_handler)
+
+    def log(self, msg: str, level: str = "info"):
+        entry = f"[{datetime.now().strftime('%H:%M:%S')}] {msg}"
+        with self._log_lock:
+            with open(self.run_dir / "console_log.txt", "a") as f:
+                f.write(entry + "\n")
+        if level == "warning":
+            logger.warning(msg)
+        else:
+            logger.info(msg)
+
+    def _log_event(self, event_type: str, data: dict | None = None):
+        event = {"ts": datetime.now().isoformat(), "type": event_type, **(data or {})}
+        with self._log_lock:
+            with open(self._event_log_path, "a") as f:
+                f.write(json.dumps(event, default=str) + "\n")
+
+    def _ensure_artifacts_dir(self) -> None:
+        for subdir in ("literature", "database", "candidates"):
+            (self.artifacts_dir / subdir).mkdir(parents=True, exist_ok=True)
+
+    def _save_artifact(self, category: str, tool_name: str, result: dict,
+                       tool_args: dict, iteration: int):
+        with self._artifact_lock:
+            self._artifact_counter += 1
+            counter = self._artifact_counter
+        filename = f"{tool_name}_{counter:03d}.json"
+        out_path = self.artifacts_dir / category / filename
+        artifact = {
+            "tool_name": tool_name, "args": tool_args,
+            "timestamp": datetime.now().isoformat(),
+            "iteration": iteration, "result": result,
+        }
+        try:
+            with open(out_path, "w") as f:
+                json.dump(artifact, f, indent=2, default=str)
+        except FileNotFoundError:
+            self._ensure_artifacts_dir()
+            try:
+                with open(out_path, "w") as f:
+                    json.dump(artifact, f, indent=2, default=str)
+            except Exception as e:
+                logger.warning("Failed to save artifact %s after retry: %s", filename, e)
+        except Exception as e:
+            logger.warning("Failed to save artifact %s: %s", filename, e)
+
+    def _execute_single_tool(self, tool_name: str, tool_args: dict, iteration: int) -> dict:
+        t0 = _time.time()
+
+        dup = check_search_duplicate(tool_name, tool_args)
+        if dup:
+            self.log(f"    ~ {tool_name}: deduplicated (similar search already done)")
+            self._log_event("tool_dedup", {"tool": tool_name, "args": tool_args})
+            return dup
+
+        query_preview = tool_args.get("query", tool_args.get("ec_number",
+                        tool_args.get("accession", tool_args.get("smiles", ""))))
+        self.log(f"    -> {tool_name}({str(query_preview)[:80]})")
+
+        injected = {"run_dir": str(self.run_dir)}
+        result = execute_tool(tool_name, tool_args, injected_args=injected)
+        result = json.loads(json.dumps(result, default=str))
+
+        elapsed = _time.time() - t0
+        record_search(tool_name, tool_args, result)
+
+        if tool_name in ARTIFACT_CATEGORIES:
+            query_desc = tool_args.get("query", tool_args.get("ec_number", tool_args.get("accession", "")))
+            self._search_log.append(f"{tool_name}:{query_desc[:30]}")
+        if tool_name == "evaluate_candidate":
+            self._candidate_count += 1
+        if tool_name in ("search_pubmed", "search_openalex"):
+            papers = result.get("data", [])
+            if isinstance(papers, list):
+                self._accumulated_papers.extend(papers)
+                self._literature_search_iterations.add(iteration)
+        if tool_name == "deep_literature_search":
+            refs = result.get("data", {})
+            if isinstance(refs, dict):
+                for paper_list in refs.values():
+                    if isinstance(paper_list, list):
+                        self._accumulated_papers.extend(paper_list)
+                self._literature_search_iterations.add(iteration)
+
+        category = ARTIFACT_CATEGORIES.get(tool_name)
+        if category:
+            self._save_artifact(category, tool_name, result, tool_args, iteration)
+
+        # Search results are leads, not candidates.  Bulk registration turns a
+        # broad database result into an unreviewed candidate pool.  Candidates
+        # enter the registry only through an explicit screen/evaluation step,
+        # or through bounded structural expansion from qualified seeds.
+        if tool_name == "search_structural_homologs" and result.get("status") == "success":
+            register_structural_homologs(self.run_dir, result)
+
+        status = result.get("status", "?")
+        summary = result.get("summary", "")
+        count = result.get("count", "")
+        status_icon = "+" if status == "success" else "~" if status == "partial" else "x"
+        count_str = f" [{count} results]" if count else ""
+        self.log(f"    {status_icon} {summary[:100]}{count_str} ({elapsed:.1f}s)")
+
+        self._log_event("tool_call", {
+            "tool": tool_name, "args": tool_args, "status": status,
+            "count": count or 0, "elapsed_s": round(elapsed, 2), "iteration": iteration,
+        })
+        return result
+
+    @staticmethod
+    def _recover_tool_calls_from_text(text: str) -> list[dict]:
+        """Parse tool_use dicts that Argo sometimes serializes into text content."""
+        import ast
+        recovered = []
+        parts = re.split(r"(?=\{['\"]id['\"]:\s*['\"]toolu_)", text)
+        for part in parts:
+            part = part.strip()
+            if not part.startswith("{"):
+                continue
+            try:
+                d = ast.literal_eval(part)
+                if isinstance(d, dict) and d.get("type") == "tool_use" and "name" in d:
+                    args = d.get("input", {})
+                    recovered.append({
+                        "id": d.get("id", f"recovered_{len(recovered)}"),
+                        "function": {
+                            "name": d["name"],
+                            "arguments": json.dumps(args) if isinstance(args, dict) else str(args),
+                        },
+                    })
+            except (ValueError, SyntaxError):
+                continue
+        return recovered
+
+    def _infer_phase(self, iteration: int) -> str:
+        if iteration <= 3:
+            return "reaction_analysis"
+        if self._candidate_count == 0:
+            return "discovery"
+        if self._candidate_count < 5:
+            return "candidate_evaluation"
+        return "ranking_and_report"
+
+    def _should_continue(self, iteration: int) -> bool:
+        if self._candidate_count == 0:
+            return iteration < self.max_iterations - 2
+        if self._candidate_count < 3:
+            return iteration < self.max_iterations - 2
+        if self._candidate_count < 10:
+            return iteration < self.max_iterations - 1
+        return False
+
+    def _sync_gate_state(self):
+        """Sync mutable agent state into the gate state dataclass."""
+        # Candidates are registered by database and structural-homolog tools,
+        # not only by explicit evaluate_candidate calls.  Use the registry as
+        # the source of truth so phase transitions cannot remain in discovery
+        # after candidates have already been found.
+        registry = load_candidate_registry(self.run_dir).get("candidates", {})
+        # Raw registry size can include many close homologs. Phase decisions
+        # should reflect distinct coarse families, not an unbounded hit count.
+        from enzyme_discovery_agent.gates.ec_triage import _family_key
+        active_candidates = {
+            acc: info for acc, info in registry.items()
+            if any(s.get("status") in {"screened", "evaluated", "ranked"}
+                   for s in info.get("statuses", []))
+        }
+        self._candidate_count = len({
+            _family_key(info.get("metadata", {}), acc)
+            for acc, info in active_candidates.items()
+        })
+        self._gate_state.candidate_count = self._candidate_count
+        self._gate_state.accumulated_papers = self._accumulated_papers
+        self._gate_state.lit_search_count = len(
+            getattr(self, "_literature_search_iterations", set())
+        )
+        self._gate_state.search_log = self._search_log
+
+    def run(
+        self,
+        query: str,
+        substrate_smiles: str | None = None,
+        substrate_name: str | None = None,
+        target_profile: dict | None = None,
+    ) -> str:
+        self.log(f"  Run ID:    {self.run_dir.name}")
+        self.log(f"  Model:     {self.model_name}")
+        self.log(f"  Query:     {query}")
+        if substrate_smiles:
+            self.log(f"  Substrate: {substrate_smiles}")
+        self._log_event("run_start", {
+            "query": query, "substrate": substrate_smiles, "model": self.model_name,
+        })
+
+        self._query = query
+        self._target_context = {
+            "query": query,
+            "substrate_smiles": substrate_smiles,
+            "substrate_name": substrate_name,
+            "target_profile": normalize_target_profile(target_profile),
+        }
+        # Gates run independently of the live agent instance. Persist the
+        # structured target once so automatic evaluation never has to infer it
+        # from a truncated notebook paragraph.
+        (self.run_dir / "target_context.json").write_text(
+            json.dumps(self._target_context, indent=2, default=str) + "\n"
+        )
+        clear_search_history()
+        self._ensure_artifacts_dir()
+        token_usage = TokenUsage(model=self.model_name)
+
+        system_prompt = build_system_prompt(
+            available_tools=list(get_tools_by_category().keys()),
+            capabilities=self.capabilities,
+        )
+
+        user_msg = query
+        profile = self._target_context["target_profile"]
+        if target_profile is not None:
+            user_msg += (
+                "\n\nTarget profile (constraints, not a scoring rubric):\n"
+                + json.dumps({
+                    "reaction": profile["reaction"],
+                    "substrate": profile["substrate"],
+                    "enzyme_requirements": profile["enzyme_requirements"],
+                    "required_evidence": profile["required_evidence"],
+                    "review_requirements": profile["review_requirements"],
+                    "discovery_coverage": profile["discovery_coverage"],
+                }, indent=2)
+            )
+        if substrate_smiles:
+            user_msg += f"\n\nSubstrate SMILES: {substrate_smiles}"
+        if substrate_name:
+            user_msg += f"\nSubstrate name: {substrate_name}"
+        user_msg += f"\n\nOutput directory: {self.run_dir}"
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_msg},
+        ]
+
+        # ``iteration`` is a budget for substantive model/tool work.  Gate
+        # interceptions only redirect orchestration and explicitly restore
+        # their credit below, so they cannot silently shorten a campaign.
+        iteration = 0
+        while iteration < self.max_iterations:
+            iteration += 1
+            self._iteration_start = _time.time()
+            # Tool calls in the preceding iteration may have promoted a
+            # candidate.  Synchronize before announcing state or asking the
+            # LLM for another turn, so the evaluation gate cannot miss a
+            # screen that occurred near the iteration limit.
+            self._sync_gate_state()
+
+            completion_iteration = max(
+                1, self.max_iterations - config.FINALIZATION_RESERVE_ITERATIONS + 1
+            )
+            if iteration >= completion_iteration:
+                self.log(
+                    "  Completion reserve reached; closing discovery and generating evaluated reports."
+                )
+                return self._finalize(
+                    messages, token_usage,
+                    "Completion reserve reached",
+                    force_completion=True,
+                )
+
+            state_header = build_state_header(
+                iteration=iteration, max_iterations=self.max_iterations,
+                candidate_count=self._candidate_count,
+                searches_done=self._search_log,
+                phase=self._infer_phase(iteration),
+            )
+
+            reflection_msg = None
+            if iteration > 1 and iteration % config.REFLECTION_INTERVAL == 0:
+                reflection_msg = build_reflection_prompt(iteration, self._candidate_count)
+
+            if reflection_msg:
+                messages.append({"role": "user", "content": f"{state_header}\n\n{reflection_msg}"})
+            elif iteration > 1:
+                messages.append({"role": "user", "content": state_header})
+
+            available_tools = self.tools
+            # Early turns must establish chemistry and retrieve evidence.
+            # Delaying optional notebook writes avoids provider-generated
+            # section-only calls before there is any evidence to summarize.
+            if iteration <= 3 or self._notebook_tool_cooldown:
+                available_tools = [
+                    tool for tool in self.tools
+                    if tool["function"]["name"] != "update_notebook"
+                ]
+                self._notebook_tool_cooldown -= 1
+            if self._gate_state.discovery_coverage_incomplete:
+                # The coverage gate is a hard evaluation boundary, but it
+                # must not discard a whole model turn.  Keep all discovery
+                # tools available so the model can close evidence gaps.
+                available_tools = [
+                    tool for tool in available_tools
+                    if tool["function"]["name"] != "evaluate_candidate"
+                ]
+            if self._gate_state.evidence_selection_prompted and self._candidate_count == 0:
+                # Once enough literature is gathered, do not spend the
+                # remaining campaign rediscovering the same landscape. Resolve
+                # identifiers and screen the bounded evidence-backed list.
+                selection_tools = {
+                    "screen_candidates", "search_uniprot", "lookup_genbank_to_uniprot",
+                    "get_notebook",
+                }
+                available_tools = [
+                    tool for tool in available_tools
+                    if tool["function"]["name"] in selection_tools
+                ]
+            response = self.llm.call(
+                messages=messages, tools=available_tools,
+                timeout=self.llm_timeout,
+            )
+            if response is None:
+                return self._finalize(messages, token_usage,
+                                      f"LLM failed at iteration {iteration}")
+
+            token_usage.record(iteration, response)
+
+            choice = response.choices[0]
+            assistant_msg = choice.message
+            messages.append(assistant_msg.model_dump())
+
+            tool_calls = assistant_msg.tool_calls or []
+            text_content = assistant_msg.content or ""
+
+            if not tool_calls and text_content and "'type': 'tool_use'" in text_content:
+                recovered = self._recover_tool_calls_from_text(text_content)
+                if recovered:
+                    tool_calls = recovered
+                    self.log(f"Recovered {len(recovered)} tool calls from text")
+                    messages[-1]["tool_calls"] = [
+                        {"id": r["id"], "type": "function",
+                         "function": {"name": r["function"]["name"],
+                                      "arguments": r["function"]["arguments"]}}
+                        for r in recovered
+                    ]
+                    cleaned = re.split(r"\{['\"]id['\"]:\s*['\"]toolu_", text_content)[0].strip()
+                    messages[-1]["content"] = cleaned or f"[Recovered {len(recovered)} tool calls]"
+
+            self.log(f"\n  ITERATION {iteration}/{self.max_iterations}  |  "
+                     f"{len(tool_calls)} tool calls  |  "
+                     f"{self._candidate_count} candidates")
+
+            # No tool calls: check if done
+            if not tool_calls:
+                self._consecutive_no_tool_turns += 1
+                if self._should_continue(iteration):
+                    if self._candidate_count == 0:
+                        recovery_instruction = (
+                            "You have not begun evidence-backed discovery. Take a concrete tool action now: "
+                            "analyze the substrate or search primary literature for direct target/substrate evidence. "
+                            "Do not return a plan or prose-only answer. Call at least one tool."
+                        )
+                    else:
+                        recovery_instruction = "You stopped before completing all phases. Continue with concrete tool calls."
+                    messages.append({
+                        "role": "user",
+                        "content": recovery_instruction,
+                    })
+                    continue
+                self._consecutive_no_tool_turns = 0
+                if self._confidence_report_text is None:
+                    self._confidence_report_text = text_content
+                    self.log("  Confidence report captured, requesting explorative re-ranking...")
+                    messages.append({"role": "user", "content": EXPLORATIVE_RERANK_PROMPT})
+                    continue
+                return self._finalize(messages, token_usage, text_content)
+
+            self._consecutive_no_tool_turns = 0
+
+            # Systematic coverage gate (fires during discovery, independent of eval calls)
+            has_eval_calls = any(
+                (tc.function.name if hasattr(tc, "function") else tc["function"]["name"])
+                == "evaluate_candidate"
+                for tc in tool_calls
+            )
+
+            self._sync_gate_state()
+            if self._evidence_selection_gate.should_fire(self._gate_state):
+                selection_result = self._evidence_selection_gate.execute(self._gate_state)
+                if selection_result.log_message:
+                    self.log(f"  Gate: {selection_result.log_message}")
+                for k, v in selection_result.state_updates.items():
+                    setattr(self._gate_state, k, v)
+                messages.pop()
+                messages.extend(selection_result.new_messages)
+                iteration -= 1
+                self.log("  Gate transition: iteration credit restored")
+                continue
+            if self._systematic_gate.should_fire(self._gate_state, has_eval_calls, messages):
+                sys_result = self._systematic_gate.execute(self._gate_state, messages)
+                if sys_result and sys_result.intercept:
+                    if sys_result.log_message:
+                        self.log(f"  Gate: {sys_result.log_message}")
+                    for k, v in sys_result.state_updates.items():
+                        setattr(self._gate_state, k, v)
+                    messages.pop()
+                    messages.extend(sys_result.new_messages)
+                    iteration -= 1
+                    self.log("  Gate transition: iteration credit restored")
+                    continue
+
+            # Pre-evaluation gates
+            if (
+                self._gate_state.candidate_count > 0
+                or has_eval_calls
+                or self._gate_state.critique_injected
+            ):
+                gate_result = self._gate_pipeline.check(
+                    self._gate_state, has_eval_calls, messages
+                )
+                if gate_result and gate_result.intercept:
+                    if gate_result.log_message:
+                        self.log(f"  Gate: {gate_result.log_message}")
+                    for k, v in gate_result.state_updates.items():
+                        setattr(self._gate_state, k, v)
+                    messages.pop()
+                    messages.extend(gate_result.new_messages)
+                    iteration -= 1
+                    self.log("  Gate transition: iteration credit restored")
+                    continue
+                for k, v in (gate_result.state_updates if gate_result else {}).items():
+                    setattr(self._gate_state, k, v)
+
+            # Parse and execute tool calls
+            parsed = []
+            for tc in tool_calls:
+                if hasattr(tc, "function"):
+                    name, args_raw, tc_id = tc.function.name, tc.function.arguments, tc.id
+                else:
+                    name = tc["function"]["name"]
+                    args_raw, tc_id = tc["function"]["arguments"], tc["id"]
+                try:
+                    args = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
+                except (json.JSONDecodeError, TypeError) as e:
+                    args = {"_parse_error": str(e), "_raw": str(args_raw)[:200]}
+                parsed.append((tc_id, name, args))
+
+            parallel = [(tc_id, n, a) for tc_id, n, a in parsed if n in self.parallel_safe]
+            sequential = [(tc_id, n, a) for tc_id, n, a in parsed if n not in self.parallel_safe]
+
+            results: dict[str, str] = {}
+            max_result_chars = config.MAX_RESULT_CHARS
+
+            def _exec(tc_id: str, name: str, args: dict):
+                result = self._execute_single_tool(name, args, iteration)
+                result_for_llm = compact_for_llm(result)
+                result_str = json.dumps(result_for_llm, default=str)
+                if len(result_str) > max_result_chars:
+                    result_str = (
+                        f"[NOTE: Result truncated to {max_result_chars} chars. "
+                        f"Full data saved to artifacts.]\n"
+                        + result_str[:max_result_chars]
+                    )
+                results[tc_id] = result_str
+
+            if len(parallel) > 1:
+                with ThreadPoolExecutor(max_workers=config.TOOL_THREAD_POOL_WORKERS) as pool:
+                    futures = [pool.submit(_exec, *p) for p in parallel]
+                    for f in futures:
+                        f.result()
+            else:
+                for p in parallel:
+                    _exec(*p)
+            for s in sequential:
+                _exec(*s)
+
+            for tc_id, name, args in parsed:
+                messages.append({
+                    "role": "tool", "tool_call_id": tc_id,
+                    "content": results[tc_id],
+                })
+
+            if any(name == "update_notebook" and not str(args.get("content", "")).strip()
+                   for _, name, args in parsed):
+                # Prevent a malformed notebook-only response from burning all
+                # remaining iterations.  The next two turns cannot select the
+                # write tool and must take a substantive discovery action.
+                self._notebook_tool_cooldown = max(self._notebook_tool_cooldown, 2)
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "Your notebook call had no content and was safely skipped. Do not retry it now; "
+                        "continue with a substantive discovery action. Only write a notebook note after "
+                        "you have concise, evidence-backed content to preserve."
+                    ),
+                })
+
+            # Make newly screened candidates visible immediately.  The next
+            # iteration will deterministically enter the evaluation gate even
+            # when screening happened in the final permitted tool turn.
+            self._sync_gate_state()
+
+        self.log("Max iterations reached.")
+        return self._finalize(messages, token_usage, "Max iterations reached")
+
+    def _finalize(
+        self,
+        messages: list,
+        token_usage: TokenUsage,
+        final_text: str,
+        force_completion: bool = False,
+    ) -> str:
+        report, n_evals = RunFinalizer(self.run_dir, self.llm, self.log).finalize(
+            messages=messages,
+            token_usage=token_usage,
+            query=getattr(self, "_query", "enzyme discovery"),
+            final_text=final_text,
+            target_context=getattr(self, "_target_context", None),
+            force_completion=force_completion,
+        )
+        self.log(f"  Candidates:     {n_evals} evaluated")
+        self.log(f"  Total tokens:   {token_usage.total_tokens:,}")
+        self._log_event("run_complete", {
+            "candidates": n_evals, "total_tokens": token_usage.total_tokens,
+        })
+        return report

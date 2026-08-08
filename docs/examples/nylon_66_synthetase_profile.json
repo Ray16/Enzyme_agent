@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "reaction": {
+    "class": "amide bond formation",
+    "direction": "synthesis"
+  },
+  "substrate": {
+    "physical_state": "soluble monomers and growing oligomers",
+    "access_constraint": "must support repeated coupling of diamine and diacid-derived building blocks"
+  },
+  "enzyme_requirements": {
+    "maturation": "evaluate whether maturation is needed for activity",
+    "assembly": "evaluate whether architecture can support iterative or processive polymer growth"
+  },
+  "required_evidence": [
+    "catalytic_center",
+    "pocket_engagement",
+    "cofold_confidence",
+    "ligand_burial"
+  ],
+  "review_requirements": [
+    "Assess catalytic geometry for amide bond formation using an activated carboxyl partner.",
+    "Assess reaction direction and required cofactors or activating chemistry.",
+    "Assess whether the enzyme can plausibly support repeated oligomer extension rather than a single terminal ligation."
+  ]
+}

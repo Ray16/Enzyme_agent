@@ -1,0 +1,69 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# ---- Environments ----
+.venv/
+venv/
+env/
+
+# ---- NFS / editor cruft ----
+.nfs*
+*.bak
+*.swp
+*~
+
+# ---- Run outputs (provenance lives in the run dirs, not in git) ----
+/runs/
+/logs/
+enzyme_discovery_agent/runs/
+*.log
+
+# ---- structural_modeling_pipeline: heavy data/results dirs (code is tracked) ----
+structural_modeling_pipeline/amide_synthetase/
+structural_modeling_pipeline/amide_hydrolase/
+structural_modeling_pipeline/experimental_paper_modeling/
+structural_modeling_pipeline/experimental_paper/
+structural_modeling_pipeline/email_package/
+structural_modeling_pipeline/all_structures/
+structural_modeling_pipeline/analysis_results/
+structural_modeling_pipeline/figures/
+structural_modeling_pipeline/slides/
+structural_modeling_pipeline/backup/
+structural_modeling_pipeline/memory/
+
+# ---- MD trajectories / large binaries ----
+*.dcd
+*.xtc
+*.trr
+*.h5
+*.hdf5
+*.zip
+*.tar
+*.tar.gz
+
+# ---- Large data / model assets (keep out of the code tree) ----
+/benchmark/
+/checkpoints/
+/foldseek_db/
+/archive/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.pdb
+*.cif
+*.mmcif
+*.npz
+
+# ---- Secrets ----
+.env
+*.key
+secrets.json

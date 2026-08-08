@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "reaction": {
+    "class": "target bond transformation",
+    "direction": "formation or cleavage"
+  },
+  "substrate": {
+    "physical_state": "replace with relevant substrate constraints"
+  },
+  "enzyme_requirements": {
+    "architecture": "replace with relevant operational constraints"
+  },
+  "review_requirements": [
+    "Replace with target-specific questions for structural review."
+  ],
+  "discovery_coverage": {
+    "minimum_screened_candidates": 6,
+    "minimum_distinct_families": 4,
+    "evidence_buckets": [
+      {
+        "name": "close substrate-context evidence",
+        "match_any": [
+          "replace with substrate or reaction descriptors found in curated annotations"
+        ],
+        "minimum_candidates": 2
+      },
+      {
+        "name": "required mechanistic capability",
+        "match_any": [
+          "replace with activation, cofactor, or product-context descriptors"
+        ],
+        "minimum_candidates": 1
+      }
+    ]
+  }
+}

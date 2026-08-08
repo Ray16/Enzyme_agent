@@ -1,0 +1,12 @@
+source leaprc.protein.ff19SB
+source leaprc.water.opc
+source leaprc.gaff2
+loadamberparams frcmod.ionslm_126_opc
+loadamberparams lig.frcmod
+LIG = loadmol2 lig.mol2
+PROT = loadpdb prot_clean.pdb
+COMPLEX = combine { PROT LIG }
+check COMPLEX
+solvatebox COMPLEX OPCBOX 12.0
+savepdb COMPLEX pass1.pdb
+quit

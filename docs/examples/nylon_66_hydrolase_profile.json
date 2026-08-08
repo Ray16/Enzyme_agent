@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "reaction": {
+    "class": "amide hydrolysis",
+    "direction": "hydrolysis"
+  },
+  "substrate": {
+    "physical_state": "insoluble polymer",
+    "access_constraint": "extended surface or groove access"
+  },
+  "enzyme_requirements": {
+    "maturation": "evaluate if mechanism family requires precursor processing",
+    "assembly": "evaluate if active architecture depends on oligomerization"
+  },
+  "required_evidence": [
+    "catalytic_center",
+    "pocket_engagement",
+    "cofold_confidence",
+    "ligand_burial"
+  ],
+  "review_requirements": [
+    "Assess catalytic geometry for amide hydrolysis in the raw structures.",
+    "Assess whether an accessible cleft or surface groove could engage an extended oligomeric substrate.",
+    "Assess whether maturation or autocleavage is compatible with the candidate sequence."
+  ]
+}
