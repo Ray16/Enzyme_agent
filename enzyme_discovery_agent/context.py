@@ -7,6 +7,9 @@ from enzyme_discovery_agent import config
 ARTIFACT_CATEGORIES = {
     "search_pubmed": "literature",
     "search_openalex": "literature",
+    "search_europepmc": "literature",
+    "search_semantic_scholar": "literature",
+    "search_crossref": "literature",
     "search_uniprot": "database",
     "fetch_uniprot_sequence": "database",
     "search_kegg_enzyme": "database",
