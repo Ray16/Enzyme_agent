@@ -147,16 +147,13 @@ def request_with_retry(
         resp.raise_for_status()
         return resp.content
     except requests.exceptions.HTTPError as e:
-        import urllib.error
         raise urllib.error.HTTPError(
             url, e.response.status_code, str(e),
             e.response.headers, None,
         ) from e
     except requests.exceptions.ConnectionError as e:
-        import urllib.error
         raise urllib.error.URLError(str(e)) from e
     except requests.exceptions.Timeout as e:
         raise TimeoutError(str(e)) from e
     except requests.exceptions.RequestException as e:
-        import urllib.error
         raise urllib.error.URLError(str(e)) from e
