@@ -984,6 +984,7 @@ def _batch_fetch_openalex_works(openalex_ids: list[str]) -> list[dict]:
             f"filter=openalex:{pipe_ids}"
             f"&per-page={len(chunk)}"
             f"&mailto={config.OPENALEX_EMAIL}"
+            f"{_openalex_auth_qs()}"
         )
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         try:
