@@ -422,6 +422,8 @@ def search_openalex(
         "mailto": config.OPENALEX_EMAIL,
         "sort": sort_param,
     }
+    if config.OPENALEX_API_KEY:
+        params["api_key"] = config.OPENALEX_API_KEY
     url = f"https://api.openalex.org/works?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
 
