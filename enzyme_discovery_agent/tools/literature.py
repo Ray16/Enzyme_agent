@@ -391,7 +391,7 @@ def search_openalex(
     params = {
         "search": query,
         "per-page": str(fetch_count),
-        "mailto": "enzyme-agent@example.edu",
+        "mailto": config.OPENALEX_EMAIL,
         "sort": sort_param,
     }
     url = f"https://api.openalex.org/works?{urllib.parse.urlencode(params)}"
