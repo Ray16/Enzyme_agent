@@ -8,6 +8,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from enzyme_discovery_agent import config
+
 logger = logging.getLogger("enzyme_agent")
 
 _RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504}
