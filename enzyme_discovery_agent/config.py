@@ -102,7 +102,20 @@ SEMANTIC_SCHOLAR_API = "https://api.semanticscholar.org/graph/v1"
 ARXIV_API = "https://export.arxiv.org/api"
 # Optional free key (semanticscholar.org).  Keyless works but the shared pool
 # 429s after ~a dozen calls; setting this raises the limit.  Zero-code to add.
+# NOTE: the documented KEYED default is still 1 req/s (higher only by grant),
+# so a key removes the shared-pool contention but not the per-second cap.
 S2_API_KEY = os.environ.get("ENZYME_AGENT_S2_API_KEY", "")
+
+# OpenAlex retired the mailto polite pool on 2026-02-13 and now meters by
+# credits: WITHOUT a key the free budget is ~1000 credits/day (~100 list calls
+# at 10 credits each) before HTTP 409; a free key raises it to 100,000/day.
+# Passed as the ``api_key`` query param.  Get one at https://openalex.org .
+OPENALEX_API_KEY = os.environ.get("ENZYME_AGENT_OPENALEX_API_KEY", "")
+
+# NCBI E-utilities: a free api_key raises the limit from 3 to 10 req/s.  NCBI
+# also asks every request to carry ``tool`` and ``email`` identifiers.
+NCBI_API_KEY = os.environ.get("ENZYME_AGENT_NCBI_API_KEY", "")
+NCBI_TOOL = "enzyme-discovery-agent"
 
 # --- Client-side rate limiting ---
 # Proactive per-host minimum interval between requests (seconds), enforced in
@@ -112,14 +125,14 @@ S2_API_KEY = os.environ.get("ENZYME_AGENT_S2_API_KEY", "")
 # not listed here are unthrottled (interval 0).  Match on host substring.
 HTTP_MIN_INTERVAL_DEFAULT = 0.0
 HTTP_RATE_LIMITS = {
-    # Keyless S2 429s on bursts; a key raises the ceiling so we can go faster.
-    "api.semanticscholar.org": float(
-        os.environ.get("ENZYME_AGENT_S2_MIN_INTERVAL", "0.1" if S2_API_KEY else "1.0")
-    ),
-    "api.crossref.org": 0.4,              # polite pool ~3 req/s
-    "www.ebi.ac.uk": 0.2,                 # Europe PMC (be polite)
-    "eutils.ncbi.nlm.nih.gov": 0.34,      # NCBI ~3 req/s without an api_key
-    "api.openalex.org": 0.1,
+    # Keyed default is 1 req/s (higher only by grant); the keyless shared pool
+    # is also best kept ~1/s.  Override via env if you hold an elevated grant.
+    "api.semanticscholar.org": float(os.environ.get("ENZYME_AGENT_S2_MIN_INTERVAL", "1.0")),
+    "api.crossref.org": 0.4,              # polite pool ~3 req/s (adapts via headers)
+    "www.ebi.ac.uk": 0.2,                 # Europe PMC ~10 req/s per IP; headroom
+    # NCBI allows 3 req/s keyless, 10 req/s with an api_key.
+    "eutils.ncbi.nlm.nih.gov": 0.1 if NCBI_API_KEY else 0.34,
+    "api.openalex.org": 0.1,             # 100 req/s with a key; daily credits bind
     "api.unpaywall.org": 0.1,
     "api.biorxiv.org": 0.5,               # Cloudflare-fronted; do not hammer
 }
