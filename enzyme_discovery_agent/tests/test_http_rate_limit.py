@@ -145,5 +145,45 @@ class TestRateLimiterConcurrentBurst(unittest.TestCase):
         self.assertGreaterEqual(elapsed, (n_threads - 1) * interval * 0.9)
 
 
+class _RaisingResponse:
+    def __init__(self, exc):
+        self.content = b""
+        self.status_code = exc.response.status_code
+        self.headers = {}
+        self._exc = exc
+
+    def raise_for_status(self):
+        raise self._exc
+
+
+class TestSecretRedaction(unittest.TestCase):
+    def setUp(self):
+        _reset_rate_state()
+
+    def test_api_key_is_redacted_from_raised_error(self):
+        import requests
+        import urllib.error
+
+        url_with_key = ("https://api.semanticscholar.org/graph/v1/paper/search"
+                        "?query=x&api_key=SECRET123")
+        exc = requests.exceptions.HTTPError(
+            f"429 Client Error: Too Many Requests for url: {url_with_key}")
+        exc.response = mock.Mock(status_code=429, headers={})
+        fake_session = mock.Mock()
+        fake_session.request.return_value = _RaisingResponse(exc)
+
+        with mock.patch.object(_http.config, "HTTP_RATE_LIMITS", {}), \
+                mock.patch.object(_http, "_get_session", return_value=fake_session):
+            req = urllib.request.Request(url_with_key)
+            with self.assertRaises(urllib.error.HTTPError) as cm:
+                _http.request_with_retry(req)
+
+        raised = cm.exception
+        self.assertNotIn("SECRET123", str(raised))
+        self.assertIn("api_key=***", str(raised))
+        # the stored URL attribute must be scrubbed too
+        self.assertNotIn("SECRET123", str(getattr(raised, "url", "") or ""))
+
+
 if __name__ == "__main__":
     unittest.main()
