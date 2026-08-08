@@ -2,6 +2,8 @@
 
 import logging
 import threading
+import time
+import urllib.parse
 import urllib.request
 
 import requests
@@ -13,6 +15,58 @@ from enzyme_discovery_agent import config
 logger = logging.getLogger("enzyme_agent")
 
 _RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504}
+
+# ---------------------------------------------------------------------------
+# Proactive per-host rate limiting
+# ---------------------------------------------------------------------------
+# Tools run concurrently in a thread pool, so several requests can target the
+# same host at once.  We serialize per-host requests through a lock and enforce
+# a minimum interval between them (config.HTTP_RATE_LIMITS), which prevents the
+# bursts that trip 429s -- complementing the reactive 429 retry below.  Hosts
+# with interval 0 skip the lock entirely, so unthrottled traffic is unaffected.
+_RATE_STATE: dict[str, float] = {}       # host -> last request monotonic time
+_RATE_LOCKS: dict[str, threading.Lock] = {}
+_RATE_LOCKS_GUARD = threading.Lock()
+
+
+def _host_min_interval(host: str) -> float:
+    """Return the configured minimum inter-request interval for a host."""
+    for fragment, interval in config.HTTP_RATE_LIMITS.items():
+        if fragment in host:
+            return interval
+    return config.HTTP_MIN_INTERVAL_DEFAULT
+
+
+def _get_host_lock(host: str) -> threading.Lock:
+    lock = _RATE_LOCKS.get(host)
+    if lock is None:
+        with _RATE_LOCKS_GUARD:
+            lock = _RATE_LOCKS.get(host)
+            if lock is None:
+                lock = threading.Lock()
+                _RATE_LOCKS[host] = lock
+    return lock
+
+
+def _respect_rate_limit(host: str) -> None:
+    """Block until at least the per-host minimum interval has elapsed.
+
+    Holds the per-host lock across the wait so concurrent callers to the same
+    host are spaced sequentially, not merely each delayed by a fixed amount.
+    """
+    interval = _host_min_interval(host)
+    if interval <= 0:
+        return
+    lock = _get_host_lock(host)
+    with lock:
+        last = _RATE_STATE.get(host)
+        now = time.monotonic()
+        if last is not None:
+            wait = interval - (now - last)
+            if wait > 0:
+                time.sleep(wait)
+                now = time.monotonic()
+        _RATE_STATE[host] = now
 
 # Thread-safe lazy singleton requests.Session with connection pooling
 _session: requests.Session | None = None
