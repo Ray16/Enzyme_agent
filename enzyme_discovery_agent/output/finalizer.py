@@ -211,7 +211,7 @@ class RunFinalizer:
                 # open-access mechanism-relevant paper in the pool — the bound is
                 # OA availability, not an arbitrary top-K.
                 mine_and_register_fulltext_accessions(
-                    self.run_dir, query, log_fn=self.log
+                    self.run_dir, query, log_fn=self.log, llm_client=self.llm
                 )
             except Exception as exc:  # never let mining block finalization
                 logger.warning("Full-text accession mining failed: %s", exc)
