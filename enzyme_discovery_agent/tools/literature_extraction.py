@@ -223,6 +223,42 @@ def extract_from_paper(
         return {}
 
 
+_RELEVANCE_SYSTEM = (
+    "You gate whether a paper is worth reading for an enzyme-discovery query. "
+    "Given its title and abstract, decide if it characterises or discusses an "
+    "ENZYME catalysing the query reaction TYPE — the right chemistry AND the "
+    "right direction. A purely chemical process, a materials/degradation study, "
+    "or the opposite reaction direction is NOT relevant even if it shares "
+    'keywords. Return ONLY JSON: {"relevant": true|false, "reason": "<=15 words"}.'
+)
+
+
+def is_paper_relevant(title: str, abstract: str, query: str, llm_client) -> tuple[bool, str]:
+    """Cheap title+abstract relevance gate (no full-text download).
+
+    Replaces the semantic-score threshold, which cannot tell a synthesis paper
+    from a degradation one on the same material.  On any error, returns
+    ``(True, ...)`` — fail OPEN so a gate failure never silently drops papers.
+    """
+    if not (title or abstract):
+        return True, "no metadata to judge"
+    from enzyme_discovery_agent import config
+    user = (f"Query: {query}\n\nTitle: {title}\n\nAbstract: {abstract[:1500]}")
+    try:
+        response = llm_client.call(
+            messages=[{"role": "system", "content": _RELEVANCE_SYSTEM},
+                      {"role": "user", "content": user}],
+            temperature=config.LLM_TEMPERATURE,
+            timeout=max(config.LLM_TIMEOUT, 120),
+        )
+        content = response.choices[0].message.content or ""
+        obj = json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
+        return bool(obj.get("relevant", True)), str(obj.get("reason", ""))
+    except Exception as exc:  # noqa: BLE001 - fail open
+        logger.debug("relevance gate error (failing open): %s", exc)
+        return True, "relevance gate error — kept"
+
+
 def _match_enzyme_record(
     records: list[dict], deposited_accession: str,
     organism: str = "", protein_name: str = "",
