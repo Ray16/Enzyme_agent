@@ -515,8 +515,10 @@ def generate_two_pass_report(
             "tier": 2,
             "rationale": "Not ranked by the model; recovered so it is not dropped.",
         })
-    if rank_cursor > len(parsed) and log_fn:
-        log_fn(f"  Recovered {rank_cursor - len(deduped)} candidate(s) the ranker omitted")
+    n_recovered = rank_cursor - len(deduped)
+    if n_recovered > 0 and log_fn:
+        log_fn(f"  Recovered {n_recovered} candidate(s) the ranker omitted "
+               f"(truncated or skipped output)")
 
     # Append polymer candidates at the bottom
     next_rank = len(pass1_ranking) + 1
