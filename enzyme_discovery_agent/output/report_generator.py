@@ -296,18 +296,59 @@ def _select_calibration_anchors(
 
 
 def _parse_scoring_response(text: str) -> list[dict] | None:
-    """Parse a JSON array from an LLM scoring response. Returns None on failure."""
+    """Parse a JSON array from an LLM scoring response.
+
+    Tolerant of truncation: a whole-list ranking can be cut off by the
+    completion-token cap mid-array, leaving no closing ``]``.  Rather than
+    discarding the entire ranking (and dropping to a worse ungated path), we
+    recover every complete ``{...}`` object that precedes the truncation point.
+    Returns None only when no complete object can be recovered.
+    """
     import re as _re
     import json as _json
 
-    # Find JSON array in response
+    start = text.find("[")
+    if start == -1:
+        return None
+    # Fast path: a well-formed, complete array.
     json_match = _re.search(r'\[\s*\{.*\}\s*\]', text, _re.DOTALL)
-    if not json_match:
-        return None
-    try:
-        return _json.loads(json_match.group())
-    except Exception:
-        return None
+    if json_match:
+        try:
+            return _json.loads(json_match.group())
+        except Exception:
+            pass
+    # Recovery path: scan object-by-object from the first '[', keeping every
+    # top-level {...} that parses, and stop at the first incomplete one.
+    recovered: list[dict] = []
+    depth = 0
+    obj_start = -1
+    in_str = False
+    esc = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                obj_start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and obj_start != -1:
+                try:
+                    recovered.append(_json.loads(text[obj_start:i + 1]))
+                except Exception:
+                    break
+                obj_start = -1
+    return recovered or None
 
 
 def _check_anchor_drift(
