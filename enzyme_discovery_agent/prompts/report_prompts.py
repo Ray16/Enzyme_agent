@@ -172,11 +172,10 @@ Native Substrates, Native Reaction, Family, Key PMID, Confidence, Rationale \
 (1 sentence focusing on WHY the substrate chemistry matches or doesn't). \
 NAMING — NEVER show a bare accession anywhere in the report. Always pair every \
 UniProt accession with the enzyme's name (the protein_name field) or, if that is \
-missing, its gene name, e.g. "Desferrioxamine synthetase DesD (A0ABN1NGB5)". This \
-applies EVERYWHERE accessions appear — family representatives, grouped member \
-lists, the candidate table, profiles, and reference tables. If only a generic \
-name is available (e.g. "AMP-ligase"), show that; use the bare accession only \
-when no name or gene exists at all.
+missing, its gene name, formatted as "<enzyme name> (<accession>)". This applies \
+EVERYWHERE accessions appear — family representatives, grouped member lists, the \
+candidate table, profiles, and reference tables. If only a generic name is \
+available, show that; use the bare accession only when no name or gene exists.
 HYPERLINKS — make external IDs clickable: \
 UniProt accession as [accession](https://www.uniprot.org/uniprot/{accession}), \
 Key PMID as [{pmid}](https://pubmed.ncbi.nlm.nih.gov/{pmid}).
