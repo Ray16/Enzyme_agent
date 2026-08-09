@@ -226,6 +226,191 @@ def _rrf_fuse(papers, sims, max_results, min_score, k: int = 60):
 
 
 # ---------------------------------------------------------------------------
+# Pool consolidation: cross-source dedup + record merge + single rerank
+# ---------------------------------------------------------------------------
+# Each search tool reranks only its own results, and the same paper is often
+# returned by several sources -- so it gets embedded repeatedly and the LLM sees
+# near-duplicates.  Consolidating the accumulated pool ONCE (dedup on a shared
+# key, merge fields across sources, then a single global RRF rerank) is cheaper
+# (one embedding pass, cache-backed) and ranks better (global order).
+
+def _normalize_title(title: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", (title or "").lower()).strip()
+
+
+def _paper_key(paper: dict):
+    """Stable identity for cross-source dedup: DOI, else PMID, else norm title."""
+    doi = (paper.get("doi") or "").lower().strip()
+    if doi:
+        return ("doi", doi)
+    pmid = str(paper.get("pmid") or "").strip()
+    if pmid:
+        return ("pmid", pmid)
+    nt = _normalize_title(paper.get("title", ""))
+    if nt:
+        return ("title", nt)
+    return None
+
+
+def _merge_records(a: dict, b: dict) -> dict:
+    """Merge duplicate ``b`` into ``a``: fill empty fields, keep longer abstract."""
+    merged = dict(a)
+    for k, v in b.items():
+        if k in ("source", "sources"):
+            continue  # provenance handled separately in dedupe_and_merge
+        av = merged.get(k)
+        if k == "abstract":
+            if len(v or "") > len(av or ""):
+                merged[k] = v
+        elif (av in (None, "", 0, [])) and v not in (None, "", 0, []):
+            merged[k] = v
+    return merged
+
+
+def dedupe_and_merge(papers: list[dict]) -> tuple[list[dict], dict]:
+    """Deduplicate across sources and merge records, preserving first-seen order.
+
+    Returns (unique_papers, stats).  Each unique paper gains a ``sources`` list
+    (union of the sources that surfaced it), so provenance survives the merge --
+    e.g. a paper from PubMed (no PMCID) merged with its Europe PMC record (has
+    PMCID) ends up routable to full text.
+    """
+    merged: dict = {}
+    order: list = []
+    src: dict = {}
+    unkeyable: list[dict] = []
+
+    def _add_src(key, paper):
+        s = paper.get("sources") or paper.get("source")
+        if isinstance(s, list):
+            src[key].update(x for x in s if x)
+        elif s:
+            src[key].add(s)
+
+    for p in papers:
+        key = _paper_key(p)
+        if key is None:
+            unkeyable.append(dict(p))
+            continue
+        if key in merged:
+            merged[key] = _merge_records(merged[key], p)
+        else:
+            merged[key] = dict(p)
+            order.append(key)
+            src[key] = set()
+        _add_src(key, p)
+
+    unique = []
+    for key in order:
+        rec = merged[key]
+        rec["sources"] = sorted(src[key])
+        unique.append(rec)
+    unique.extend(unkeyable)
+
+    stats = {
+        "raw": len(papers),
+        "unique": len(unique),
+        "duplicates_merged": len(papers) - len(unique),
+    }
+    return unique, stats
+
+
+def consolidate_pool(query: str, papers: list[dict], max_results: int = 25,
+                     min_score: float = config.RERANK_MIN_SCORE) -> dict:
+    """Dedup+merge a pooled paper set, then a single global RRF rerank.
+
+    Returns ``{"ranked": [...], "funnel": {...}}`` where the funnel carries
+    PRISMA-style counts for auditability.
+    """
+    unique, stats = dedupe_and_merge(papers)
+    ranked = _semantic_rerank(query, unique, max_results=max_results,
+                              min_score=min_score)
+    funnel = {
+        "raw": stats["raw"],
+        "unique": stats["unique"],
+        "duplicates_merged": stats["duplicates_merged"],
+        "kept": len(ranked),
+    }
+    return {"ranked": ranked, "funnel": funnel}
+
+
+def _recover_literature_papers(run_dir: str | None) -> list[dict]:
+    """Recover papers already collected this run from literature artifacts."""
+    if not run_dir:
+        return []
+    from pathlib import Path
+
+    recovered: list[dict] = []
+    for path in sorted((Path(run_dir) / "artifacts" / "literature").glob("*.json")):
+        try:
+            artifact = json.loads(path.read_text())
+            data = artifact.get("result", {}).get("data", [])
+            if isinstance(data, list):
+                recovered.extend(item for item in data if isinstance(item, dict))
+        except (OSError, json.JSONDecodeError, AttributeError):
+            continue
+    seen = set()
+    papers: list[dict] = []
+    for paper in recovered:
+        key = (paper.get("pmid"), paper.get("doi"), paper.get("title"))
+        if key in seen:
+            continue
+        seen.add(key)
+        papers.append(paper)
+    return papers
+
+
+@tool(
+    description=(
+        "Consolidate all literature gathered so far this run: deduplicate the "
+        "same paper across sources (merging fields, e.g. filling a PMCID from "
+        "Europe PMC onto a PubMed record), then produce a single globally "
+        "re-ranked shortlist. Call this after several searches, before deep "
+        "reading, to remove near-duplicates and get one clean ranked pool."
+    ),
+    category="literature",
+    parallel_safe=True,
+    injected_params=["run_dir"],
+    params={
+        "run_dir": {"type": "string", "description": "Agent run directory (injected)."},
+        "query": {
+            "type": "string",
+            "description": "Campaign intent to rank the consolidated pool against.",
+        },
+        "max_results": {
+            "type": "integer",
+            "description": "Size of the ranked shortlist to return (default 25).",
+            "default": 25,
+        },
+    },
+)
+def consolidate_literature(query: str, run_dir: str | None = None,
+                           max_results: int = 25) -> dict:
+    """Dedup+merge accumulated literature and return one globally-ranked pool."""
+    papers = _recover_literature_papers(run_dir)
+    if not papers:
+        return {
+            "status": "partial",
+            "summary": "No accumulated literature to consolidate yet.",
+            "data": [],
+            "count": 0,
+            "suggestions": ["Run literature searches first, then consolidate."],
+        }
+    result = consolidate_pool(query, papers, max_results=max_results)
+    f = result["funnel"]
+    logger.info("PRISMA funnel: raw=%d -> unique=%d (merged %d dups) -> kept=%d",
+                f["raw"], f["unique"], f["duplicates_merged"], f["kept"])
+    return {
+        "status": "success",
+        "summary": (f"Consolidated {f['raw']} hits -> {f['unique']} unique "
+                    f"(-{f['duplicates_merged']} dup) -> {f['kept']} ranked"),
+        "data": result["ranked"],
+        "funnel": f,
+        "count": f["kept"],
+    }
+
+
+# ---------------------------------------------------------------------------
 # PubMed
 # ---------------------------------------------------------------------------
 
