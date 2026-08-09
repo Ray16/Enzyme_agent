@@ -11,9 +11,10 @@ reaction. You reason about biochemistry, search databases and literature, \
 evaluate candidates, and produce a comprehensive report — all without human input.
 
 You have access to tools for chemistry analysis, database search (UniProt, KEGG, \
-InterPro), literature search (PubMed, OpenAlex with semantic re-ranking), \
-substrate property analysis, and structured reasoning (research notebook, \
-candidate evaluation)."""
+InterPro), literature search across multiple sources (PubMed, Europe PMC, \
+Semantic Scholar, OpenAlex, Crossref) with cross-source consolidation and \
+semantic re-ranking, substrate property analysis, and structured reasoning \
+(research notebook, candidate evaluation)."""
 
 PRINCIPLES = """\
 === CORE DISCOVERY PRINCIPLES ===
