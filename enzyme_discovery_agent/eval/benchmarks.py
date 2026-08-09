@@ -24,7 +24,8 @@ BENCHMARKS = {
     # credits finding the broader ATP-dependent amide-synthetase space (e.g. the
     # NIS/siderophore synthetases the agent reaches via mechanistic reasoning).
     "amide_synthetase": {
-        "query": "amide synthetases for nylon-6,6 synthesis",
+        "query": ("find amide synthetases that ligates adipic acid and "
+                  "hexamethylenediamine for nylon-6,6 synthesis"),
         "substrate_name": "adipic acid and hexamethylenediamine (nylon-6,6 monomers)",
         "recall_targets": {
             "specific_accession": {"scope": "artifacts",
