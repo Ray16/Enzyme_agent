@@ -58,6 +58,17 @@ DEFAULT_WORKFLOW = """\
 This is the recommended order. You CAN deviate when your reasoning warrants it \
 (e.g., if Phase 2 returns 0 candidates, immediately broaden search).
 
+ORDER OF OPERATIONS (follow this sequence — it avoids wasted tool calls):
+1. Analyze the reaction and substrates.
+2. Read LITERATURE to understand the MECHANISM and which enzyme FAMILIES form \
+this bond — reviews and mechanistic papers. This comes BEFORE any database search.
+3. Let that understanding drive DATABASE resolution: search UniProt for the \
+specific enzymes/families the literature named.
+4. Explore each family, screen a diverse set, then evaluate.
+Do NOT open with a metabolic database (ModelSeed) or by enumerating an EC class — \
+literature tells you what the reaction is and which families to resolve; databases \
+only resolve the specific members literature points you to.
+
 Phase 1 — REACTION ANALYSIS (this is the MOST IMPORTANT phase):
 
   Step A — Substrate analysis:
