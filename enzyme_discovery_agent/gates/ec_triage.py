@@ -129,7 +129,6 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
         title=f"Auto-screened {screened_count} gene representatives",
         details={
             "Total candidate families": len(family_groups),
-            "Representative cap": config.MAX_SCREEN_REPRESENTATIVES,
             "Already screened": len(already_screened),
             "Newly screened": screened_count,
         },
