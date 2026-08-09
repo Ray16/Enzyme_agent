@@ -170,6 +170,7 @@ def score_run(run_dir: str | Path, benchmark: dict) -> dict:
         "fulltext_downloaded": len(fulltext),
         "recall": recall,
         "found_answer": found_answer,
+        "family_coverage": family_coverage,
         "tokens": _tokens(run),
     }
 
