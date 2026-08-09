@@ -1361,11 +1361,13 @@ def _interleave(list_a: list, list_b: list):
 
 @tool(
     description=(
-        "Multi-hop snowball literature search. Searches PubMed + OpenAlex for seed "
-        "papers, follows their citation networks, extracts gene names and EC numbers "
-        "from all collected abstracts. Use this to discover specific enzyme/gene names "
-        "that you wouldn't find through direct keyword search — it follows reference "
-        "chains to find papers you didn't know to look for."
+        "Multi-hop snowball literature search. Finds seed papers across PubMed, "
+        "OpenAlex, Europe PMC and Semantic Scholar, then follows their citation "
+        "networks in BOTH directions — backward (references) AND forward (papers "
+        "that cite the seed) — and extracts gene names and EC numbers from all "
+        "collected abstracts. The single best tool for discovering specific "
+        "enzyme/gene names you wouldn't reach by keyword search: forward citations "
+        "surface newer work building on a mechanistically-relevant seed."
     ),
     category="literature",
     parallel_safe=True,
