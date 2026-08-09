@@ -323,6 +323,23 @@ class EnzymeAgent:
         })
 
         self._query = query
+        # Derive target-substrate SMILES when the caller did not supply them:
+        # without a target structure the substrate-accommodation axis is inert
+        # and ranking collapses to annotation depth (fame), unable to tell an
+        # amide ligase for a small aliphatic monomer from one for a bulky
+        # NRPS/siderophore substrate.  The substrate names come from the user's
+        # own query, so resolving them is task setup, not answer leakage.
+        if not substrate_smiles:
+            try:
+                from enzyme_discovery_agent.chemistry_logic import (
+                    resolve_substrate_names_to_smiles,
+                )
+                derived = resolve_substrate_names_to_smiles(substrate_name or query)
+                if derived:
+                    substrate_smiles = derived
+                    self.log(f"  Derived substrate SMILES: {substrate_smiles}")
+            except Exception as exc:  # never block a run on resolution
+                logger.warning("Substrate SMILES derivation failed: %s", exc)
         self._target_context = {
             "query": query,
             "substrate_smiles": substrate_smiles,
