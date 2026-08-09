@@ -75,6 +75,13 @@ RESULTS_LIST_CAP = 10
 # --- Literature search ---
 OVERFETCH_RATIO = 3
 RERANK_MIN_SCORE = 0.25
+# Stricter bar for which papers get full-text-mined for sequence accessions:
+# mining registers candidates, so it must not pull in irrelevant papers.  This
+# is only a coarse pre-filter to avoid fetching obvious off-topic PDFs; content
+# relevance is enforced by the deposit-cue window (accession must sit next to
+# "deposited/accession/GenBank" text) and by the downstream enzyme filter and
+# mechanism ranking.
+FULLTEXT_MINE_MIN_SCORE = 0.55
 # Keyword-result order is the reliable baseline.  Semantic re-ranking is
 # opt-in because its Torch/Transformers import can stall or destabilize an
 # otherwise network-bound discovery run.
