@@ -494,6 +494,30 @@ def generate_two_pass_report(
     for i, entry in enumerate(pass1_ranking, start=1):
         entry["rank"] = i
 
+    # Recover any candidate the ranker omitted (truncated output, or the LLM
+    # simply skipped it): append it rather than silently dropping it from the
+    # report.  Missing rows land mid-list at Tier 2 so the hard gate below can
+    # still push a mechanistically-inconsistent one to the bottom on evidence.
+    ranked_accs = {e.get("accession", "") for e in pass1_ranking}
+    rank_cursor = len(pass1_ranking)
+    for ev in rankable_evals:
+        d = ev.get("data", ev)
+        acc = d.get("accession", "")
+        if not acc or acc in ranked_accs:
+            continue
+        rank_cursor += 1
+        ranked_accs.add(acc)
+        pass1_ranking.append({
+            "rank": rank_cursor,
+            "accession": acc,
+            "gene": (d.get("gene_names") or [""])[0],
+            "score": tier_score.get(2, 5.0),
+            "tier": 2,
+            "rationale": "Not ranked by the model; recovered so it is not dropped.",
+        })
+    if rank_cursor > len(parsed) and log_fn:
+        log_fn(f"  Recovered {rank_cursor - len(deduped)} candidate(s) the ranker omitted")
+
     # Append polymer candidates at the bottom
     next_rank = len(pass1_ranking) + 1
     for ev in polymer_evals:
