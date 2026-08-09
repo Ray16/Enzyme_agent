@@ -477,15 +477,16 @@ P4. STRUCTURAL DATA: pdb_count > 0 > has_alphafold > neither.
 
 P5. ENGINEERING PRECEDENT: eng_papers and n_mutations (variants).
 
-OUTPUT FORMAT — return ONLY a JSON array, no prose, no markdown:
+OUTPUT FORMAT — return ONLY a JSON array, no prose, no markdown, NO rationale \
+field (the ranking is ordering-only; prose is written later):
 [
-  {"rank": 1, "accession": "...", "gene": "...", "tier": 1,
-   "rationale": "one sentence biochemical reasoning"},
-  {"rank": 2, ...},
+  {"rank": 1, "accession": "...", "gene": "...", "tier": 1},
+  {"rank": 2, "accession": "...", "gene": "...", "tier": 2},
   ...
 ]
 
-Tier assignment: Tier 1 = best 20%, Tier 2 = next 50%, Tier 3 = bottom 30%.
+Emit ONE compact object per line so the array stays parseable even if long. \
+Tier assignment: Tier 1 = best 20%, Tier 2 = next 50%, Tier 3 = bottom 30%. \
 Every candidate must appear exactly once. Total entries must equal the number \
 of candidates given.
 """
