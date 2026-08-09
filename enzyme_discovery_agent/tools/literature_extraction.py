@@ -177,7 +177,7 @@ _EXTRACT_SYSTEM = (
 
 def extract_from_paper(
     paper_text: str, deposited_accession: str, protein_name: str, llm_client,
-    query: str = "", max_chars: int = 48000,
+    query: str = "", organism: str = "", max_chars: int = 48000,
 ) -> dict:
     """LLM-extract from a paper's full text, in one focused pass:
 
