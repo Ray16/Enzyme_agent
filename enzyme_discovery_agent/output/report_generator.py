@@ -245,19 +245,45 @@ def _candidate_is_gated(data: dict) -> bool:
     return bool(data.get("critical_warnings"))
 
 
-def _best_fg_similarity(data: dict) -> float | None:
-    """Max functional-group similarity across the target substrates, if computed.
+def _accommodation_score(data: dict) -> float | None:
+    """Substrate-accommodation fit in [0,1], or None when not computed.
 
-    This is the substrate-accommodation signal: a pocket evolved for a very
-    different functional-group profile will not accept the target even with the
-    right chemistry.  Returns None when substrate SMILES were unavailable (the
-    axis is simply inactive), so callers treat it as neutral rather than bad.
+    The enzyme must bind EVERY target substrate, and a pocket accommodates a
+    substrate only if it fits on ALL physical axes — so:
+
+      * the fit of one (target-substrate → best-native) pair is the WORST of its
+        grounded similarities (functional groups, aliphatic chain length, size),
+        NOT just functional-group overlap; and
+      * the overall score is the WORST across the target substrates.
+
+    A native that is aromatic / cyclic where the target is aliphatic is further
+    capped, because a ring system the pocket evolved around will not admit a
+    linear aliphatic chain.  This bottleneck view (grounded facts, no tuned
+    weights) demotes an enzyme whose native merely shares a functional-group
+    TYPE with the target but is otherwise large, aromatic, or rigid — e.g. a
+    phosphoribosyl-imidazole ligase scored against a small aliphatic diamine,
+    which functional-group overlap alone wrongly rewarded.  Returns None when
+    substrate SMILES were unavailable, so callers treat it as neutral.
     """
     sim = data.get("substrate_similarity") or {}
     comps = sim.get("property_comparisons") or []
-    vals = [c.get("functional_group_similarity") for c in comps
-            if isinstance(c.get("functional_group_similarity"), (int, float))]
-    return max(vals) if vals else None
+    if not comps:
+        return None
+    per_substrate = []
+    for c in comps:
+        dims = [c.get(k) for k in (
+            "functional_group_similarity", "chain_length_similarity", "mw_similarity",
+        )]
+        dims = [d for d in dims if isinstance(d, (int, float))]
+        if not dims:
+            continue
+        fit = min(dims)
+        if c.get("aromaticity_match") is False:   # aromatic native, aliphatic target
+            fit = min(fit, 0.3)
+        if c.get("cyclicity_match") is False:     # ring native, acyclic target
+            fit = min(fit, 0.5)
+        per_substrate.append(fit)
+    return min(per_substrate) if per_substrate else None
 
 
 def _deterministic_mechanistic_ranking(
