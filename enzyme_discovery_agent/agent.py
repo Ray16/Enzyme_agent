@@ -232,10 +232,15 @@ class EnzymeAgent:
         if category:
             self._save_artifact(category, tool_name, result, tool_args, iteration)
 
-        # Search results are leads, not candidates.  Bulk registration turns a
-        # broad database result into an unreviewed candidate pool.  Candidates
-        # enter the registry only through an explicit screen/evaluation step,
-        # or through bounded structural expansion from qualified seeds.
+        # Broad-search then expand-within-family: register every distinct enzyme
+        # a search surfaces as a *discovered* lead so none is lost to the LLM's
+        # ad-hoc downselection.  These are leads, not final candidates — the
+        # auto-screen step consolidates orthologs to one gene representative and
+        # auto-evaluate triages each on mechanism feasibility, so the registry
+        # never becomes an unreviewed candidate pool.  (Structural homologs carry
+        # their own provenance and are registered separately.)
+        if tool_name == "search_uniprot" and result.get("status") in ("success", "partial"):
+            extract_and_register_from_search(self.run_dir, tool_name, result)
         if tool_name == "search_structural_homologs" and result.get("status") == "success":
             register_structural_homologs(self.run_dir, result)
 
