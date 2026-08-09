@@ -230,6 +230,20 @@ class RunFinalizer:
         candidate_dir = self.artifacts_dir / "candidates"
         candidate_dir.mkdir(parents=True, exist_ok=True)
         evaluations = self._load_evaluations()
+        # Write a provenance file per evaluated candidate, and for fact-poor leads
+        # that carry a paper link, recover their native substrates + mechanism
+        # from the paper's full text (curation misses them).  Mutates the
+        # evaluations in place so ranking sees the recovered substrates.  Fully
+        # defensive — never blocks finalization.
+        try:
+            from enzyme_discovery_agent.models.candidate_provenance import (
+                enrich_leads_and_write_provenance,
+            )
+            enrich_leads_and_write_provenance(
+                self.run_dir, evaluations, query, self.llm, log_fn=self.log
+            )
+        except Exception as exc:
+            logger.warning("Provenance/enrichment step failed: %s", exc)
         if evaluations:
             (candidate_dir / "all_evaluations.json").write_text(
                 json.dumps(evaluations, indent=2, default=str)
