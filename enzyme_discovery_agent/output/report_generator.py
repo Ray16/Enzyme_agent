@@ -286,6 +286,87 @@ def _accommodation_score(data: dict) -> float | None:
     return min(per_substrate) if per_substrate else None
 
 
+def _accommodation_facts_payload(data: dict) -> list[dict]:
+    """Grounded evidence for the LLM to REASON over — NOT a similarity score.
+
+    Per target substrate (matched to its closest native), the raw cheminformatic
+    facts: functional-group TYPES and COUNTS (target vs native), aliphatic chain
+    length, molecular weight, and whether the native carries aromatic/ring
+    character the target lacks.  The LLM decides accommodation from these; the
+    code never collapses them into a number.
+    """
+    sim = data.get("substrate_similarity") or {}
+    comps = sim.get("property_comparisons") or []
+    subs = []
+    for c in comps:
+        subs.append({
+            "target_fg_counts": {k: v for k, v in (c.get("functional_group_counts_target") or {}).items() if v},
+            "native_fg_counts": {k: v for k, v in (c.get("functional_group_counts_native") or {}).items() if v},
+            "target_aliphatic_chain": c.get("chain_length_target"),
+            "native_aliphatic_chain": c.get("chain_length_native"),
+            "target_mw": c.get("mw_target"),
+            "native_mw": c.get("mw_native"),
+            "native_has_aromatic_target_lacks": c.get("aromaticity_match") is False,
+            "native_has_ring_target_lacks": c.get("cyclicity_match") is False,
+        })
+    return subs
+
+
+def _llm_focus_rank(
+    shortlist: list[dict], query: str, llm_client, token_usage, log_fn=None,
+) -> list[dict] | None:
+    """Have the LLM RANK the shortlisted promising candidates by reasoning over
+    grounded substrate-accommodation facts.  Returns parsed rows or None.
+
+    Kept small (this model returns empty output above ~10-12 items when asked to
+    reason and emit a structured list), which is why we focus on the most
+    promising candidates rather than ranking the whole pool.
+    """
+    payload = []
+    for ev in shortlist:
+        d = ev.get("data", ev)
+        payload.append({
+            "accession": d.get("accession"),
+            "gene": (d.get("gene_names") or [""])[0],
+            "protein_name": d.get("protein_name", ""),
+            "native_substrates": [n.get("name") for n in d.get("native_substrates", []) if n.get("name")][:6],
+            "substrate_accommodation_evidence": _accommodation_facts_payload(d),
+        })
+    system = (
+        "You are ranking a SHORTLIST of the most promising enzyme candidates by "
+        "whether their active-site pocket could ACCOMMODATE BOTH target substrates "
+        "of the query reaction. Reason over the grounded cheminformatic EVIDENCE "
+        "given for each candidate (functional-group types and counts, aliphatic "
+        "chain length, molecular weight, aromatic/ring character) — do NOT rely on "
+        "fame or on a single shared functional group. A pocket evolved for a large, "
+        "aromatic, cyclic, or phosphorylated native substrate cannot admit a small "
+        "linear aliphatic molecule even when one functional-group type overlaps; a "
+        "native that matches the target on group counts AND size AND aliphatic "
+        "character is a genuine lead. Rank best-accommodating first.\n\n"
+        "Return ONLY a JSON array, one object per line:\n"
+        '[{"accession":"..","rank":1,"tier":1,"reason":"<=15 words citing the evidence"}]\n'
+        "tier 1 = strong accommodation, 2 = partial, 3 = poor."
+    )
+    user = (f"Target reaction / substrates: {query}\n\n"
+            f"Shortlist ({len(payload)} candidates) with evidence:\n"
+            + json.dumps(payload, default=str))
+    import json as _json
+    response = llm_client.call(
+        messages=[{"role": "system", "content": system},
+                  {"role": "user", "content": user}],
+        temperature=config.LLM_TEMPERATURE,
+        timeout=max(config.LLM_TIMEOUT, 600),
+    )
+    if response is None:
+        return None
+    token_usage.record("focus_rank", response)
+    content = response.choices[0].message.content or ""
+    parsed = _parse_scoring_response(content)
+    if not parsed and log_fn:
+        log_fn("  Focus-rank: LLM returned no parseable ranking; using fallback order")
+    return parsed
+
+
 def _deterministic_mechanistic_ranking(
     rankable_evals: list[dict], tier_score: dict[int, float],
 ) -> list[dict]:
