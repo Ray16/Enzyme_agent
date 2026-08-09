@@ -84,10 +84,6 @@ HISTORY_STUB_OVER_CHARS = 1_000
 # reason over more than ~10-12 at once), while the rest are ordered
 # deterministically beneath them.
 RANKING_FOCUS_SHORTLIST = 10
-# How many search hits to SHOW the LLM per result (context-size trim only).
-# Every hit is still registered/screened/evaluated from the full result — this
-# caps the VIEW, not coverage.  Generous so the model still sees good breadth.
-LLM_HIT_LIST_CAP = 20
 # Structures are staged only for the top ranked leads (a handoff artifact for
 # downstream modelling), never the whole evaluated pool.
 STRUCTURE_DOWNLOAD_TOP_N = 10
