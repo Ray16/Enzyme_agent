@@ -186,27 +186,29 @@ def extract_substrates_and_mechanism(
         return None
     obj = extract_from_paper(text, paper["deposited_accession"], protein_name,
                              llm_client, query=query)
-    related = obj.get("related_enzymes") or []
+    related = obj.get("homologs_or_related_enzymes") or []
+    base = {
+        "paper": paper,
+        "relevance_reason": obj.get("relevance_reason", ""),
+        "is_characterization_paper": obj.get("is_characterization_paper", False),
+        "homologs_or_related_enzymes": related,
+    }
     if not obj.get("paper_relevant", True):
-        return {"native_substrates": [], "mechanism": None, "paper": paper,
-                "paper_relevant": False,
-                "relevance_reason": obj.get("relevance_reason", ""),
-                "related_enzymes": related}
+        return {**base, "paper_relevant": False, "native_substrates": [],
+                "mechanism": None, "catalytic_residues": [], "characterization": []}
     rec = _match_enzyme_record(obj.get("enzymes") or [], paper["deposited_accession"])
     if not rec:
-        return {"native_substrates": [], "mechanism": None, "paper": paper,
-                "paper_relevant": False,
-                "relevance_reason": obj.get("relevance_reason",
-                                            "no characterised query-type enzyme found"),
-                "related_enzymes": related}
+        return {**base, "paper_relevant": False, "native_substrates": [],
+                "mechanism": None, "catalytic_residues": [], "characterization": [],
+                "relevance_reason": base["relevance_reason"] or "no characterised query-type enzyme found"}
     substrates = [{"name": n, "smiles": resolve_substrate_names_to_smiles(n)}
                   for n in (rec.get("native_substrates") or [])]
     return {
+        **base,
+        "paper_relevant": True,
         "native_substrates": substrates,
         "mechanism": rec.get("reaction"),
+        "catalytic_residues": rec.get("catalytic_residues") or [],
+        "characterization": rec.get("characterization") or [],
         "enzyme_name_in_paper": rec.get("name"),
-        "paper": paper,
-        "paper_relevant": True,
-        "relevance_reason": obj.get("relevance_reason", ""),
-        "related_enzymes": related,
     }
