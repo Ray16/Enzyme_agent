@@ -125,6 +125,11 @@ Phase 3 — CANDIDATE EVALUATION:
   - Call evaluate_candidate for ALL viable candidates
   - Review domain architecture, literature, substrate similarity
   - Use your own biochemistry judgment for ranking
+  - FETCH FULL TEXT with fetch_full_text for two sets: (1) the key MECHANISM \
+paper of each family (how the amide bond is actually formed), and (2) your \
+CANDIDATE enzymes' characterization papers. Abstracts omit the mechanism, \
+kinetics, and substrate scope that live in the methods/results/SI — full text is \
+what later stages parse for reaction mechanism and experimental measurements.
   - Persist a notebook note only if it records concise, evidence-backed conclusions.
 
 Phase 4 — RANKING & REPORT:
