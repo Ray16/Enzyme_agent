@@ -392,28 +392,36 @@ def mine_and_register_fulltext_accessions(
             manifest = []
     done = {m.get("key") for m in manifest}
 
-    # 1. Attempt full text for every RELEVANT paper.  There is no count cap
-    # (mining is token-free and non-OA papers fast-fail), but relevance IS gated:
-    # only papers clearing FULLTEXT_MINE_MIN_SCORE are mined, so off-topic papers
-    # never contribute accessions.  fetch_ceiling is only a runaway guard.
+    # 1. Attempt full text for every MECHANISM-RELEVANT paper.  There is no count
+    # cap (non-OA papers fast-fail); relevance is gated per paper by an LLM check
+    # on the title+abstract, so an off-topic paper is not even downloaded and its
+    # accessions never enter the pool.  fetch_ceiling is only a runaway guard.
     ranked = consolidate_pool(query, papers, max_results=len(papers))["ranked"]
-    relevant = [
-        p for p in ranked
-        if p.get("semantic_score") is None
-        or p.get("semantic_score", 0.0) >= config.FULLTEXT_MINE_MIN_SCORE
-    ]
+    from enzyme_discovery_agent.tools.literature_extraction import is_paper_relevant
     fetched = 0
-    for paper in relevant:
+    dropped = 0
+    for paper in ranked:
         if fetched >= fetch_ceiling:
             break
         key = _fulltext_key(paper)
         if key is None or key in done:
             continue
+        if llm_client is not None:
+            ok, reason = is_paper_relevant(
+                paper.get("title", ""), paper.get("abstract", ""), query, llm_client)
+            if not ok:
+                dropped += 1
+                logger.info("fulltext relevance gate dropped %s: %s",
+                            (paper.get("title") or "")[:60], reason)
+                continue
         rec = fetch_one(paper, dest)
         if rec:
             manifest.append(rec)
             done.add(key)
             fetched += 1
+    if log_fn and dropped:
+        log_fn(f"  Full-text relevance gate: dropped {dropped} off-topic paper(s) "
+               f"before download")
     if manifest:
         try:
             manifest_path.write_text(json.dumps(manifest, indent=2))
