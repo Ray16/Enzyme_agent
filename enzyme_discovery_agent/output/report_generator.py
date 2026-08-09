@@ -176,6 +176,105 @@ def _deterministic_evidence_ranking(query: str, all_evals: list[dict]) -> list[d
     ]
 
 
+def _candidate_is_gated(data: dict) -> bool:
+    """A hard mechanistic contradiction (direction / bond-type / severe-size
+    mismatch) disqualifies a candidate from the top, whatever else it has."""
+    return bool(data.get("critical_warnings"))
+
+
+def _best_fg_similarity(data: dict) -> float | None:
+    """Max functional-group similarity across the target substrates, if computed.
+
+    This is the substrate-accommodation signal: a pocket evolved for a very
+    different functional-group profile will not accept the target even with the
+    right chemistry.  Returns None when substrate SMILES were unavailable (the
+    axis is simply inactive), so callers treat it as neutral rather than bad.
+    """
+    sim = data.get("substrate_similarity") or {}
+    comps = sim.get("property_comparisons") or []
+    vals = [c.get("functional_group_similarity") for c in comps
+            if isinstance(c.get("functional_group_similarity"), (int, float))]
+    return max(vals) if vals else None
+
+
+def _deterministic_mechanistic_ranking(
+    rankable_evals: list[dict], tier_score: dict[int, float],
+) -> list[dict]:
+    """Rank by mechanistic compatibility deterministically — the reliable spine.
+
+    A single LLM call cannot reliably rank 100+ candidates (a thinking model
+    exhausts the completion budget on reasoning tokens and returns empty), so
+    the LLM ranking is best-effort only; THIS is the fallback that must never
+    mis-order.  It applies the P0–P5 framework as a strict lexicographic
+    priority over GROUNDED FACTS (no weighted composite):
+
+      P0 hard gate  — any critical_warning → bottom, Tier 3.
+      P1 substrate  — higher functional-group similarity ranks higher
+                      (neutral when substrate SMILES were unavailable).
+      P2 curation   — Swiss-Prot reviewed ranks higher.
+      P3 depth      — more characterisation papers ranks higher.
+      P4 structure  — experimental PDB > AlphaFold > none.
+      P5 engineering— more engineering papers ranks higher.
+    """
+    scored = []
+    for ev in rankable_evals:
+        d = ev.get("data", ev)
+        acc = d.get("accession", "")
+        if not acc:
+            continue
+        gated = _candidate_is_gated(d)
+        fg = _best_fg_similarity(d)
+        fg_key = -(fg if fg is not None else 0.5)  # None → neutral midpoint
+        lit = d.get("literature") or {}
+        struct = d.get("structural_data") or {}
+        struct_rank = 0 if (struct.get("pdb_ids")) else (1 if struct.get("has_alphafold") else 2)
+        key = (
+            1 if gated else 0,
+            fg_key,
+            0 if d.get("is_swissprot") else 1,
+            -int(lit.get("characterization_papers") or 0),
+            struct_rank,
+            -int(lit.get("engineering_papers") or 0),
+            acc,
+        )
+        scored.append((key, acc, d, gated))
+    scored.sort(key=lambda x: x[0])
+
+    clean = [s for s in scored if not s[3]]
+    n_clean = len(clean)
+    t1 = max(1, int(round(n_clean * 0.2)))
+    t2 = max(t1, int(round(n_clean * 0.7)))
+
+    ranking = []
+    clean_seen = 0
+    for i, (_, acc, d, gated) in enumerate(scored, start=1):
+        if gated:
+            tier = 3
+        else:
+            tier = 1 if clean_seen < t1 else (2 if clean_seen < t2 else 3)
+            clean_seen += 1
+        fg = _best_fg_similarity(d)
+        bits = []
+        if gated:
+            bits.append("HARD-GATED: " + "; ".join(d.get("critical_warnings", []))[:120])
+        if fg is not None:
+            bits.append(f"FG-sim={fg:.2f}")
+        if d.get("is_swissprot"):
+            bits.append("Swiss-Prot")
+        cp = (d.get("literature") or {}).get("characterization_papers")
+        if cp:
+            bits.append(f"{cp} char papers")
+        ranking.append({
+            "rank": i,
+            "accession": acc,
+            "gene": (d.get("gene_names") or [""])[0],
+            "score": tier_score.get(tier, 5.0),
+            "tier": tier,
+            "rationale": " | ".join(bits) or "mechanistic analogue",
+        })
+    return ranking
+
+
 def _retry_compact_llm_report(
     llm_client: LLMClient,
     query: str,
