@@ -138,10 +138,13 @@ def score_run(run_dir: str | Path, benchmark: dict) -> dict:
     found_answer = any(recall[n]["hit"] for n in primary if n in recall)
 
     # Family coverage: how many distinct amide-forming families the run spanned.
+    # Scored over the SELECTED CANDIDATES (their genes + rationales), not any
+    # mention anywhere — a family only counts if it made it into candidates.
     fam_spec = benchmark.get("family_coverage", {})
+    cand_text = _candidate_text(run)
     families = {
-        fam: {"hit": any(v.lower() in artifacts_text for v in vals),
-              "found": sorted(v for v in vals if v.lower() in artifacts_text)}
+        fam: {"hit": any(v.lower() in cand_text for v in vals),
+              "found": sorted(v for v in vals if v.lower() in cand_text)}
         for fam, vals in fam_spec.items()
     }
     n_hit = sum(1 for f in families.values() if f["hit"])
