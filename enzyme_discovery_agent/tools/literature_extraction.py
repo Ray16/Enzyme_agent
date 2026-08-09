@@ -223,17 +223,35 @@ def extract_from_paper(
         return {}
 
 
-def _match_enzyme_record(records: list[dict], deposited_accession: str) -> dict | None:
-    """Pick the extracted enzyme record for this candidate's deposited accession.
+def _match_enzyme_record(
+    records: list[dict], deposited_accession: str,
+    organism: str = "", protein_name: str = "",
+) -> dict | None:
+    """Pick the extracted enzyme record for THIS candidate.
 
-    Matches on the GenBank accession (version-insensitive); if only one enzyme
-    was characterized, use it.
+    A paper often characterises several enzymes, and the candidate's deposited
+    accession is frequently absent from the body text — so matching on the
+    accession alone silently returns the wrong enzyme.  Match, in order, on:
+    (1) the deposited GenBank accession, (2) the source ORGANISM, (3) the
+    protein name.  Only fall back to the sole record when there is exactly one.
     """
     base = deposited_accession.split(".")[0].lower()
     for rec in records:
-        gb = str(rec.get("genbank", "")).split(".")[0].lower()
-        if gb and gb == base:
+        if str(rec.get("genbank", "")).split(".")[0].lower() == base and base:
             return rec
+    org = (organism or "").lower().strip()
+    if org:
+        # match on the distinctive genus+species (first two tokens)
+        org_key = " ".join(org.split()[:2])
+        for rec in records:
+            if org_key and org_key in str(rec.get("organism", "")).lower():
+                return rec
+    name = (protein_name or "").lower().strip()
+    if name and name not in ("amp-ligase", "uncharacterized protein", ""):
+        for rec in records:
+            rn = str(rec.get("name", "")).lower()
+            if rn and (rn in name or name in rn):
+                return rec
     return records[0] if len(records) == 1 else None
 
 
