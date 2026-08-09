@@ -257,7 +257,7 @@ def _match_enzyme_record(
 
 def extract_substrates_and_mechanism(
     run_dir: Path, accession: str, source_tool: str, protein_name: str, llm_client,
-    query: str = "",
+    query: str = "", organism: str = "",
 ) -> dict | None:
     """Full recovery for one candidate: link paper → extract → resolve SMILES.
 
@@ -272,14 +272,15 @@ def extract_substrates_and_mechanism(
         text = Path(paper["text_path"]).read_text(errors="ignore")
     except OSError:
         return None
-    # Send the model a high-signal excerpt (anchored on this enzyme's identifiers)
-    # instead of the whole paper — ~4x fewer tokens, same extractable facts.
-    identifiers = [paper["deposited_accession"]] + [
-        w for w in (protein_name or "").split() if len(w) >= 3
-    ]
+    # Anchor the excerpt on signals that ARE in the body — the accession, the
+    # organism (genus+species), and the protein-name tokens — so the trimmed
+    # text centres on THIS enzyme rather than a co-characterised one.
+    identifiers = [paper["deposited_accession"]]
+    identifiers += [w for w in (protein_name or "").split() if len(w) >= 3]
+    identifiers += (organism or "").split()[:2]
     text = select_relevant_sections(text, identifiers=identifiers)
     obj = extract_from_paper(text, paper["deposited_accession"], protein_name,
-                             llm_client, query=query)
+                             llm_client, query=query, organism=organism)
     related = obj.get("homologs_or_related_enzymes") or []
     base = {
         "paper": paper,
