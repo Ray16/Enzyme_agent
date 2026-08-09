@@ -582,6 +582,53 @@ def _chebi_smiles_by_name(name: str) -> str | None:
         },
     },
 )
+# Domain-name tokens that identify a catalytic (enzyme) domain.  Matched against
+# InterPro/Pfam DOMAIN names only — never the protein name, which carries pathway
+# context (e.g. "... siderophore biosynthesis transcriptional regulator") that
+# would misclassify a regulator as an enzyme.
+_ENZYME_DOMAIN_TOKENS = (
+    "synthetase", "synthase", "ligase", "transferase", "hydrolase", "kinase",
+    "carboxylase", "oxygenase", "reductase", "dehydrogenase", "catalytic",
+    "amp-binding", "atp-grasp", "iuca/iucc", "amidotransferase", "aminotransferase",
+    "isomerase", " lyase", "mutase", "phosphatase", "epimerase", "dioxygenase",
+    "monooxygenase", "deaminase", "amidase", "acyltransferase", "peptidase",
+    "decarboxylase", "cyclase",
+)
+
+
+def _catalytic_family(domain_architecture, ec_numbers, catalytic_activities):
+    """Resolve the enzyme FAMILY from the catalytic domain, and flag non-enzymes.
+
+    Returns ``(is_enzyme, family_name, family_id)``.  The family is taken from a
+    catalytic (enzyme-activity) InterPro/Pfam domain, never the first domain —
+    which for a multidomain enzyme is often a fold or accessory motif (so asnB /
+    murC land under the wrong entry), and for co-cluster contaminants (Fur-type
+    regulators, membrane-fusion transporters) is the ONLY domain, so those
+    resolve to no enzyme family and are filtered out rather than polluting the
+    family view.  An entry still counts as an enzyme if it carries an EC number
+    or a curated catalytic activity, so curated enzymes are never dropped.
+    """
+    doms = [d for d in (domain_architecture or []) if isinstance(d, dict)]
+
+    def _is_enzyme_dom(dm):
+        name = (dm.get("name") or "").lower()
+        return any(tok in name for tok in _ENZYME_DOMAIN_TOKENS)
+
+    enzyme_doms = [d for d in doms if _is_enzyme_dom(d)]
+    is_enzyme = bool(ec_numbers or catalytic_activities or enzyme_doms)
+    # Prefer a family-type enzyme domain (most specific), then any enzyme domain.
+    fam = next((d for d in enzyme_doms if d.get("type") == "family"), None) \
+        or (enzyme_doms[0] if enzyme_doms else None)
+    if fam is None:
+        # EC/activity-positive but no matched enzyme domain: still group it by a
+        # family-type domain if one exists, else the first domain.
+        fam = next((d for d in doms if d.get("type") == "family"), None) \
+            or (doms[0] if doms else None)
+    if fam is None:
+        return is_enzyme, "", ""
+    return is_enzyme, fam.get("name", ""), fam.get("accession", "")
+
+
 def evaluate_candidate(
     run_dir: Path | str,
     accession: str,
