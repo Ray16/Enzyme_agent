@@ -199,14 +199,18 @@ def _accommodation_facts(target_smiles: str, native_smiles: list[str]) -> list[d
     return facts
 
 
-def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, log_fn=None):
-    """For each evaluated candidate, write a provenance file — running literature
-    extraction for fact-poor leads that carry a paper link so their native
-    substrates/mechanism are recovered from the paper (not just curation).
+def enrich_leads_and_write_provenance(
+    run_dir, evaluations, query, llm_client, log_fn=None, max_papers=15,
+):
+    """Write a provenance file per evaluated candidate, recovering native
+    substrates + mechanism from the paper for fact-poor leads that carry a paper
+    link (curation misses them).
 
-    Fully defensive: any failure on one candidate is logged and skipped; this
-    step must never block finalization.  Mutates the in-memory ``evaluations`` so
-    downstream ranking sees the recovered substrates.
+    Extracts ONCE PER PAPER (cached) — a paper characterises several enzymes, so
+    one call serves every candidate deposited in it — and matches each candidate
+    to its own enzyme by organism/name.  Bounded by ``max_papers``.  Fully
+    defensive: any per-item failure is logged and skipped; never blocks
+    finalization.  Mutates ``evaluations`` in place so ranking sees the recovery.
     """
     import json as _json
     from pathlib import Path as _Path
@@ -220,48 +224,105 @@ def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, l
     except Exception:
         target_smiles = ""
 
-    n_enriched = n_prov = 0
+    # Group fact-poor, paper-linked candidates by their paper so each paper is
+    # read at most once.
+    from enzyme_discovery_agent.tools.literature_extraction import (
+        find_candidate_paper, extract_from_paper, _match_enzyme_record,
+        select_relevant_sections,
+    )
+    from enzyme_discovery_agent.chemistry_logic import resolve_substrate_names_to_smiles
+
+    by_paper: dict[str, list] = {}
+    src_by_acc: dict[str, str] = {}
     for ev in evaluations:
         d = ev.get("data", ev)
         acc = d.get("accession", "")
         if not acc:
             continue
         src = reg.get(acc, {}).get("metadata", {}).get("source_tool", "")
-        extraction = None
-        fact_poor = not (d.get("native_substrates"))
-        if fact_poor and "fulltext_genbank" in src and llm_client is not None:
-            try:
-                from enzyme_discovery_agent.tools.literature_extraction import (
-                    extract_substrates_and_mechanism,
-                )
-                extraction = extract_substrates_and_mechanism(
-                    run, acc, src, d.get("protein_name", ""), llm_client,
-                    query=query, organism=d.get("organism", ""),
-                )
-            except Exception as exc:
-                logger.warning("literature enrichment failed for %s: %s", acc, exc)
-                extraction = None
-            if extraction and extraction.get("native_substrates"):
-                lit_natives = [{"name": s["name"], "smiles": s["smiles"], "chebi_id": ""}
-                               for s in extraction["native_substrates"] if s.get("smiles")]
-                if lit_natives:
-                    d["native_substrates"] = lit_natives
-                    facts = _accommodation_facts(target_smiles, [s["smiles"] for s in lit_natives])
-                    if facts:
-                        d.setdefault("substrate_similarity", {})["property_comparisons"] = facts
-                    n_enriched += 1
+        src_by_acc[acc] = src
+        if not d.get("native_substrates") and "fulltext_genbank" in src and llm_client is not None:
+            paper = find_candidate_paper(run, src)
+            if paper:
+                by_paper.setdefault(paper["text_path"], []).append((d, acc, src, paper))
+
+    extraction_by_acc: dict[str, dict] = {}
+    n_enriched = 0
+    for i, (path, group) in enumerate(by_paper.items()):
+        if i >= max_papers:
+            if log_fn:
+                log_fn(f"  Provenance: reached max_papers={max_papers}; "
+                       f"{len(by_paper) - max_papers} paper(s) not extracted this pass")
+            break
+        try:
+            text = _Path(path).read_text(errors="ignore")
+        except OSError:
+            continue
+        organisms = [g[0].get("organism", "") for g in group]
+        names = [g[0].get("protein_name", "") for g in group]
+        anchors = [group[0][3]["deposited_accession"]]
+        for o in organisms:
+            anchors += o.split()[:2]
+        for n in names:
+            anchors += [w for w in n.split() if len(w) >= 3]
+        try:
+            obj = extract_from_paper(
+                select_relevant_sections(text, identifiers=anchors),
+                group[0][3]["deposited_accession"], names[0], llm_client,
+                query=query, organism=organisms[0],
+            )
+        except Exception as exc:
+            logger.warning("literature extraction failed for paper %s: %s", path, exc)
+            continue
+        paper = group[0][3]
+        for d, acc, src, _ in group:
+            rec = _match_enzyme_record(obj.get("enzymes") or [], paper["deposited_accession"],
+                                       organism=d.get("organism", ""),
+                                       protein_name=d.get("protein_name", ""))
+            if not rec:
+                continue
+            subs = [{"name": n, "smiles": resolve_substrate_names_to_smiles(n)}
+                    for n in (rec.get("native_substrates") or [])]
+            lit_natives = [{"name": s["name"], "smiles": s["smiles"], "chebi_id": ""}
+                           for s in subs if s.get("smiles")]
+            extraction_by_acc[acc] = {
+                "paper": paper, "native_substrates": subs,
+                "mechanism": rec.get("reaction"),
+                "catalytic_residues": rec.get("catalytic_residues") or [],
+                "characterization": rec.get("characterization") or [],
+                "homologs_or_related_enzymes": obj.get("homologs_or_related_enzymes") or [],
+                "is_characterization_paper": obj.get("is_characterization_paper", False),
+                "paper_relevant": obj.get("paper_relevant", True),
+                "relevance_reason": obj.get("relevance_reason", ""),
+            }
+            if lit_natives:
+                d["native_substrates"] = lit_natives
+                facts = _accommodation_facts(target_smiles, [s["smiles"] for s in lit_natives])
+                if facts:
+                    d.setdefault("substrate_similarity", {})["property_comparisons"] = facts
+                n_enriched += 1
+
+    # Write a provenance file for every evaluated candidate.
+    n_prov = 0
+    for ev in evaluations:
+        d = ev.get("data", ev)
+        acc = d.get("accession", "")
+        if not acc:
+            continue
         accom = (d.get("substrate_similarity") or {}).get("property_comparisons", [])
         try:
-            prov = build_candidate_provenance(d, source_tool=src,
-                                              literature_extraction=extraction,
-                                              accommodation_facts=accom)
+            prov = build_candidate_provenance(
+                d, source_tool=src_by_acc.get(acc, ""),
+                literature_extraction=extraction_by_acc.get(acc),
+                accommodation_facts=accom,
+            )
             write_candidate_provenance(run, prov)
             n_prov += 1
         except Exception as exc:
             logger.warning("provenance write failed for %s: %s", acc, exc)
     if log_fn:
-        log_fn(f"  Provenance: wrote {n_prov} files; enriched {n_enriched} "
-               f"fact-poor lead(s) from literature")
+        log_fn(f"  Provenance: wrote {n_prov} files; recovered substrates for "
+               f"{n_enriched} fact-poor lead(s) from {min(len(by_paper), max_papers)} paper(s)")
     return n_enriched
 
 
