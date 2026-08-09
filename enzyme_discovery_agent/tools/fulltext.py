@@ -356,18 +356,20 @@ def _resolve_embl_accession(acc: str, cap: int = 50) -> list[str]:
 
 
 def mine_and_register_fulltext_accessions(
-    run_dir, query: str, fetch_ceiling: int = 250, max_proteins: int = 400, log_fn=None,
+    run_dir, query: str, fetch_ceiling: int = 250, max_proteins: int = 400,
+    log_fn=None, llm_client=None,
 ) -> list[str]:
-    """Fetch top mechanism-relevant papers' full text and register the sequence
+    """Fetch mechanism-relevant papers' full text and register the sequence
     accessions deposited in them as discovered candidates.
 
-    Fully deterministic — regex over downloaded text plus UniProt REST resolution,
-    with NO full text ever placed in the LLM context, so it adds no prompt tokens.
-    This is the only route to characterized-but-metadata-invisible enzymes whose
-    identity is tied to their paper solely through a deposited GenBank accession
-    (no gene name, only a generic activity annotation).  Resolved candidates flow
-    into the normal screen/evaluate pipeline, where the non-enzyme filter and
-    mechanism ranking handle the surrounding cluster context.
+    Accession mining itself is deterministic (regex + UniProt REST, no full text
+    in the LLM context).  Which papers are mined is gated by a MECHANISM-relevance
+    check on each paper's title+abstract (``is_paper_relevant``) — a lexical/
+    semantic score cannot tell a synthesis paper from a degradation one, so it let
+    off-topic papers through; the mechanism gate does not.  The gate needs an LLM;
+    when ``llm_client`` is None it is skipped (all papers kept).  This is the only
+    route to characterized-but-metadata-invisible enzymes tied to their paper
+    solely through a deposited accession.
     """
     from enzyme_discovery_agent.models.candidate_registry import (
         UNIPROT_ACC_RE,
