@@ -100,10 +100,25 @@ Measurement tiers:
 
 ---
 
-## Open / queued (each to be logged with its result)
-- Agent A/B harness (`eval/`) — the instrument; makes every entry above measurable.
-- Forward-citation chasing (multi-source snowball + `cited_by`, 60/40 budget).
-- Saturation as a measured novelty-rate gate.
-- Query planning as structured, axis-diverse Step-D output (leakage-safe).
-- Then: revisit non-literature layers (reaction/substrate analysis, candidate
-  reasoning, structural) — same measure-then-keep discipline.
+## Component roadmap — literature exploration
+
+The workflow as components (analysis spec → search → consolidate → mine →
+resolve → read), each judged by its effect on `eval/` metrics.
+
+| # | Component | State | Next improvement | Exp |
+|---|-----------|-------|------------------|-----|
+| C1 | Query planning (analysis→spec) | prompt Step-D only | leakage-safe axis-diverse queries (enzyme class / cofactor-mechanism / bond / synonyms) the fan-out consumes | E11 |
+| C2 | Multi-source retrieval | ✅ 5 sources | source routing by intent; avoid firing all sources per query | — |
+| C3 | Rank fusion / relevance | ✅ RRF | calibrate cosine floor on benchmarks (leave-one-out); rerank default-on gate | E12 |
+| C4 | Consolidation (dedup/merge) | ✅ built, ❌ agent never calls it | make it a GATE before evidence-selection | E9 |
+| C5 | Citation chasing (snowball) | backward only, PubMed+OpenAlex | + forward (`cited_by`) + multi-source seeds, 60/40 budget | **E10 (now)** |
+| C6 | Entity extraction / provenance | regex on abstracts | run on consolidated pool; mine full-text too; disambiguation | E13 |
+| C7 | Identifier resolution (UniProt) | ✅ per-name + GenBank | organism-scoped disambiguation for reused gene names | E14 |
+| C8 | Full-text acquisition | ✅ built | wire into flow (fetch top-ranked before evaluation) | E15 |
+| C9 | Saturation / stopping | paper-count threshold | measured novelty-rate gate (stop when new-unique collapses) | E16 |
+| C10 | Efficiency (throughput/tokens) | ✅ throttle+cache | token-cost pass (E8 = 1.47M tokens, prompt-heavy) | E17 |
+| C11 | Measurement | ✅ adaptive eval + firewall | keep adaptive as goals move | ongoing |
+
+Building order (by leverage on the confirmed goal — surface DdaG/SfaB):
+**E10 (citation chasing) → E11 (query planning) → E9 (consolidation gate)**, then
+C6/C8/C9/C10. Each: unit tests, then a scored run vs the E8 baseline.
