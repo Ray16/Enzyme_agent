@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from enzyme_discovery_agent import config
 from enzyme_discovery_agent.gates import AgentState, GateResult
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
 from enzyme_discovery_agent.models.candidate_registry import register_structural_homologs
