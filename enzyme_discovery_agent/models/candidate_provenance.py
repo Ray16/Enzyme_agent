@@ -317,7 +317,7 @@ def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, l
             logger.warning("provenance write failed for %s: %s", acc, exc)
     if log_fn:
         log_fn(f"  Provenance: wrote {n_prov} files; recovered substrates for "
-               f"{n_enriched} fact-poor lead(s) from {min(len(by_paper), max_papers)} paper(s)")
+               f"{n_enriched} fact-poor lead(s) from {len(by_paper)} paper(s)")
     return n_enriched
 
 
