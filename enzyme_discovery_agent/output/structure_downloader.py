@@ -8,6 +8,7 @@ import logging
 import re
 from pathlib import Path
 
+from enzyme_discovery_agent import config
 from enzyme_discovery_agent.models.candidate_registry import UNIPROT_ACC_RE
 from enzyme_discovery_agent.tools._http import _get_session
 
@@ -19,8 +20,17 @@ def download_candidate_structures(
     report_text: str,
     artifacts_dir: Path,
     log_fn=None,
+    top_n: int | None = None,
 ) -> None:
-    """Download PDB/AlphaFold structures for evaluated candidates."""
+    """Stage 3D structures for the TOP candidates only (not the whole pool).
+
+    Structures are a handoff artifact for downstream structural modelling, so
+    only the leads an experimentalist would actually model are worth fetching.
+    Previously this downloaded a structure for EVERY evaluated candidate (~135
+    network fetches per run/report regen); now it is capped to the top ranked
+    candidates.
+    """
+    top_n = top_n or config.STRUCTURE_DOWNLOAD_TOP_N
     evals_path = artifacts_dir / "candidates" / "all_evaluations.json"
     if not evals_path.exists():
         return
@@ -43,16 +53,29 @@ def download_candidate_structures(
     if not eval_lookup:
         return
 
-    seen = set()
-    ranked_accessions = []
+    # Prefer the persisted ranking order (top leads first); fall back to the
+    # accessions the report profiles.  Either way, cap to the top N — do NOT
+    # append the rest of the evaluated pool.
+    seen: set[str] = set()
+    ranked_accessions: list[str] = []
+    try:
+        ranking = json.loads((run_dir / "pass1_ranking.json").read_text())
+        for entry in ranking:
+            acc = entry.get("accession", "")
+            if acc in eval_lookup and acc not in seen:
+                seen.add(acc)
+                ranked_accessions.append(acc)
+    except (OSError, json.JSONDecodeError):
+        pass
     for match in UNIPROT_ACC_RE.finditer(report_text):
         acc = match.group(1)
         if acc in eval_lookup and acc not in seen:
             seen.add(acc)
             ranked_accessions.append(acc)
-    for acc in eval_lookup:
-        if acc not in seen:
-            ranked_accessions.append(acc)
+
+    ranked_accessions = ranked_accessions[:top_n]
+    if log_fn:
+        log_fn(f"  Staging structures for top {len(ranked_accessions)} candidates")
 
     out_dir = run_dir / "top_candidates"
     out_dir.mkdir(exist_ok=True)
