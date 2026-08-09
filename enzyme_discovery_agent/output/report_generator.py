@@ -758,14 +758,21 @@ def generate_two_pass_report(
         log_fn(f"  Ortholog collapse: folded {n_folded} same-enzyme ortholog(s) "
                f"into representatives ({len(pass1_ranking)} distinct entries)")
 
+    # Coverage is measured over accessions actually represented (each entry
+    # plus its folded orthologs), NOT the number of visible entries — ortholog
+    # collapse legitimately shrinks the entry count and must not read as
+    # truncation.
+    n_covered = sum(1 + len(e.get("orthologs", [])) for e in pass1_ranking)
     n_ranked = len(pass1_ranking)
     n_total = len(all_evals)
     if log_fn:
-        log_fn(f"  Pass 1 complete: ranked {n_ranked}/{n_total} candidates")
+        log_fn(f"  Pass 1 complete: {n_ranked} distinct entries covering "
+               f"{n_covered}/{n_total} candidates")
 
-    if n_ranked < n_total * 0.8:
+    if n_covered < n_total * 0.8:
         if log_fn:
-            log_fn(f"  WARNING: only {n_ranked}/{n_total} ranked — LLM may have truncated")
+            log_fn(f"  WARNING: only {n_covered}/{n_total} candidates covered — "
+                   f"LLM may have truncated")
 
     # Persist the durable ranking before asking the provider to write prose.
     # This also makes a report-generation retry/recovery independent of the
