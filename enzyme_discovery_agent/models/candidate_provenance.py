@@ -80,6 +80,10 @@ def build_candidate_provenance(
         }
 
     paper_ref = None
+    catalytic_residues: list[dict] = []
+    characterization: list[dict] = []
+    homologs: list[dict] = []
+    is_characterization_paper = False
     if literature_extraction:
         paper = literature_extraction.get("paper") or {}
         paper_ref = {"doi": paper.get("doi"), "title": paper.get("title"),
@@ -102,6 +106,21 @@ def build_candidate_provenance(
                 "paper_doi": paper.get("doi"),
                 "paper_title": paper.get("title"),
             }
+        catalytic_residues = literature_extraction.get("catalytic_residues") or []
+        # Every measured result keeps the conditions it was obtained under and the
+        # paper it came from — a number without its conditions/source is not usable.
+        for m in literature_extraction.get("characterization", []) or []:
+            characterization.append({
+                "metric": m.get("metric"),
+                "value": m.get("value"),
+                "units": m.get("units"),
+                "substrate": m.get("substrate"),
+                "conditions": m.get("conditions") or {},
+                "paper_doi": paper.get("doi"),
+                "paper_title": paper.get("title"),
+            })
+        homologs = literature_extraction.get("homologs_or_related_enzymes") or []
+        is_characterization_paper = bool(literature_extraction.get("is_characterization_paper"))
 
     struct = eval_data.get("structural_data") or {}
     lit = eval_data.get("literature") or {}
