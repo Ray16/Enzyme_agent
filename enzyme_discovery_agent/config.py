@@ -78,6 +78,13 @@ RESULTS_LIST_CAP = 10
 HISTORY_KEEP_RECENT_TOOL_MSGS = 16
 HISTORY_STUB_OVER_CHARS = 1_000
 
+# --- Ranking ---
+# Focus ranking: the LLM reasons over the grounded evidence of only the most
+# promising candidates (this thinking model returns empty output when asked to
+# reason over more than ~10-12 at once), while the rest are ordered
+# deterministically beneath them.
+RANKING_FOCUS_SHORTLIST = 10
+
 # --- Literature search ---
 OVERFETCH_RATIO = 3
 RERANK_MIN_SCORE = 0.25
