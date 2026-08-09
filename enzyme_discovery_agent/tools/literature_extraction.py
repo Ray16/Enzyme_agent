@@ -291,7 +291,8 @@ def extract_substrates_and_mechanism(
     if not obj.get("paper_relevant", True):
         return {**base, "paper_relevant": False, "native_substrates": [],
                 "mechanism": None, "catalytic_residues": [], "characterization": []}
-    rec = _match_enzyme_record(obj.get("enzymes") or [], paper["deposited_accession"])
+    rec = _match_enzyme_record(obj.get("enzymes") or [], paper["deposited_accession"],
+                               organism=organism, protein_name=protein_name)
     if not rec:
         return {**base, "paper_relevant": False, "native_substrates": [],
                 "mechanism": None, "catalytic_residues": [], "characterization": [],
