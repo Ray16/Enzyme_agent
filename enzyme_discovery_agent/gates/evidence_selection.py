@@ -29,15 +29,18 @@ class EvidenceSelectionGate:
                 {
                     "role": "user",
                     "content": (
-                        "EVIDENCE COLLECTION CHECKPOINT: sufficient literature has been gathered. "
-                        "You have completed several literature-search rounds and should now have evidence "
-                        "across several mechanistically distinct families. "
-                        "From the papers and identifier lookups already available, select at most 20 concrete "
-                        "accessions with a direct target/substrate assay, a close substrate analogue, or a "
-                        "distinct supported mechanism. Resolve a "
-                        "specific literature-derived gene/accession if needed, then call screen_candidates "
-                        "on that bounded accession list. Do not promote a search-result page, and do not "
-                        "continue generic literature or database searches before screening."
+                        "EVIDENCE COLLECTION CHECKPOINT: sufficient literature has been gathered "
+                        "across several mechanistically distinct families. Now REGISTER candidates "
+                        "COMPREHENSIVELY — do NOT downselect here. For EVERY distinct enzyme "
+                        "family / mechanism you have found, resolve a representative enzyme to a "
+                        "UniProt accession and call screen_candidates on it, so a representative of "
+                        "EVERY family enters the candidate registry. A family you found but did not "
+                        "screen is a lost candidate. RELEVANCE FILTERING HAPPENS LATER, at "
+                        "triage/evaluation — NOT here; registration must be inclusive so that "
+                        "evaluation can judge each family on catalytic-mechanism feasibility. Do "
+                        "not promote an entire search-result page (pick ONE well-characterized "
+                        "representative per family), and do not continue generic literature or "
+                        "database searches before screening."
                     ),
                 },
             ],
