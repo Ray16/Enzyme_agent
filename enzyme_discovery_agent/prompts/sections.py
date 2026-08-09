@@ -187,26 +187,44 @@ biological contexts where the target bond type occurs. Think systematically:
 For each context, identify the specific enzymes and search for them individually."""
 
 LITERATURE_GUIDANCE = """\
-=== LITERATURE STRATEGY ===
+=== LITERATURE STRATEGY (targeted → parallel → consolidated) ===
 
-- Start BROAD: find review papers and field overviews first
-- Use MULTIPLE query formulations for the same concept
-- Construct specific PubMed queries with field tags: '[Title/Abstract]'
-- Search BOTH PubMed AND OpenAlex (different coverage)
-- Use rerank_query parameter for richer semantic matching when the search \
-query is a short keyword
-- IMPORTANT: Abstracts often do NOT contain specific enzyme/gene names — \
-those are in the full text. When you find a highly relevant paper, use \
-deep_literature_search to follow its references. The referenced papers will \
-have those enzyme names in their OWN titles and abstracts. This is the most \
-effective way to discover specific gene names without needing full text access.
-- Call extract_entities on search results to automatically pull out gene \
-names, EC numbers, and enzyme family names from paper abstracts.
+Your Step-D search specification drives this. Turn its evidence_terms, \
+analog_terms, and identifiers into targeted queries, then work in rounds:
+
+1. FAN OUT IN PARALLEL. Issue SEVERAL searches in ONE step — multiple tool \
+calls in the same turn run concurrently, so batch them rather than searching \
+one source at a time. Cover a concept with multiple short (3-5 word) query \
+formulations, routing to each source's strength:
+   - search_semantic_scholar — best single front door: one call returns \
+DOI + PMID + PMCID + arXiv id and an open-access PDF link.
+   - search_europepmc — best biomedical full-text coverage; returns PMCID and \
+open-access flags.
+   - search_pubmed — precise MeSH / '[Title/Abstract]' field queries.
+   - search_openalex — broad coverage and citation counts.
+   - search_crossref — resolve a known paper TITLE to a DOI (metadata only).
+
+2. CONSOLIDATE. After a fan-out round, call consolidate_literature(query=<the \
+campaign intent>) to deduplicate the same paper across sources, merge their \
+fields (e.g. fill a PMCID onto a PubMed record), and return ONE globally \
+re-ranked pool. Reason and mine over the consolidated pool — not the raw \
+per-source hits — so you never pay to read near-duplicates.
+
+3. MINE ENTITIES from the consolidated pool: call extract_entities to pull \
+gene names, EC numbers, families, and accessions; resolve each NEW name in \
+UniProt individually.
+
+4. CHASE CITATIONS for coverage. Abstracts often omit specific enzyme/gene \
+names (they live in full text). For your 2-3 most relevant papers, call \
+deep_literature_search to follow citation networks — referenced papers carry \
+those names in their own titles/abstracts.
+
+Use rerank_query for richer semantic matching when a query is a short keyword.
 
 MANDATORY before evaluation:
-- You MUST call extract_entities() on your literature results to mine gene \
-names from paper abstracts. The system will block evaluation until this is done.
-- Search UniProt for any NEW gene names discovered through entity extraction.
+- Consolidate, then call extract_entities() on the consolidated literature to \
+mine gene names. The system blocks evaluation until entity extraction is done.
+- Search UniProt for every NEW gene name discovered through entity extraction.
 - Call deep_literature_search on at least 1 highly relevant paper to follow \
 citation networks — this discovers enzymes whose names only appear in full text."""
 
