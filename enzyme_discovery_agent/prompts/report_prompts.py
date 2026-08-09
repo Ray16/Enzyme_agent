@@ -177,8 +177,6 @@ Key PMID as [{pmid}](https://pubmed.ncbi.nlm.nih.gov/{pmid}).
 SMILES in parentheses, e.g. "spermidine (`[NH3+]CCCC[NH2+]CCC[NH3+]`)". \
 Extract names from catalytic_activities text and SMILES from native_substrates \
 or property_comparisons fields. Format: "name (`SMILES`)" separated by "; ".
-- **Native Reaction**: if a reaction_image path is provided in the data, include \
-it as `![rxn](reaction_image_path)`. Otherwise, write "—".
 
 5. Top candidate profiles (top 4-5, ~100 words each):
    - Native reaction
