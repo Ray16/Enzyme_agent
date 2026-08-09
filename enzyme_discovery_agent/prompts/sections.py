@@ -517,15 +517,15 @@ Pocket analysis tools are available. Use them when:
 - You want to identify key residues for engineering"""
 
 MODELSEED_GUIDANCE = """\
-=== MODELSEED REACTION DATABASE ===
+=== MODELSEED REACTION DATABASE (SUPPORTING tool — use AFTER literature) ===
 
-Use search_modelseed_reactions to understand the REACTION LANDSCAPE around your \
-target bond type, and get_modelseed_compound to resolve compound IDs into SMILES \
-for substrate comparison.
+Understand the mechanism from LITERATURE first. ModelSeed is a metabolic-model \
+database: it will NOT contain non-natural targets (e.g. nylon monomers), and it \
+is NOT how you understand your reaction or name mechanisms — reviews and \
+mechanistic papers do that. Do NOT open a campaign with ModelSeed; reach for it \
+only as a SUPPORTING tool once literature has named the families/mechanisms.
 
-What this is for:
-- Checking which reaction chemistries exist for the target bond type, so you can \
-  name mechanisms and recognise a close analogue when literature surfaces one
+What this is for (secondary, after literature):
 - Resolving substrate/product structures for fingerprint and property comparison
 - Confirming that an EC class you are about to use as a REJECTION filter really \
   does correspond to the bond type and direction you think it does
