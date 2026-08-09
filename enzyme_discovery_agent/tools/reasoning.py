@@ -879,19 +879,12 @@ def evaluate_candidate(
 
     mutagenesis_data = _extract_mutagenesis(entry)
 
-    # InterPro family
-    interpro_family = ""
-    interpro_family_id = ""
-    for dom in domain_architecture:
-        if isinstance(dom, dict) and dom.get("type") == "family":
-            interpro_family = dom.get("name", "")
-            interpro_family_id = dom.get("accession", "")
-            break
-    if not interpro_family and domain_architecture:
-        first = domain_architecture[0]
-        if isinstance(first, dict):
-            interpro_family = first.get("name", "")
-            interpro_family_id = first.get("accession", "")
+    # InterPro family, resolved from the CATALYTIC domain (not the first domain),
+    # with a non-enzyme flag so regulators/transporters that co-occur in the same
+    # gene clusters are filtered rather than grouped as spurious families.
+    is_enzyme, interpro_family, interpro_family_id = _catalytic_family(
+        domain_architecture, ec_numbers, catalytic_activities
+    )
 
     # Build evaluation result
     eval_data = {
