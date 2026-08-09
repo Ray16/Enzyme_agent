@@ -335,8 +335,8 @@ def _resolve_embl_accession(acc: str, cap: int = 50) -> list[str]:
     Skips genome-scale deposits (hundreds of proteins) that would flood the
     registry, keeping cluster-scale deposits (tens) where the relevant enzyme
     lives.  A biosynthetic-gene-cluster accession resolves to the whole cluster
-    (e.g. KY427327 -> 18 proteins incl. SfaB), so it must not be truncated to the
-    resolver's default 10, which would drop the target.
+    (tens of proteins), so it must not be truncated to the resolver's default
+    10, which could drop the target enzyme sitting deeper in the cluster.
     """
     params = {"query": f"xref:embl-{acc}", "format": "json",
               "size": str(cap + 1), "fields": "accession"}
