@@ -182,6 +182,13 @@ def compact_provenance_for_ranking(provenance: dict) -> dict:
     subs = []
     for s in provenance.get("native_substrates", []):
         subs.append({"name": s.get("name"), "source": s.get("source", "").split(":")[0]})
+    # Compact measured results: metric=value(units) on substrate — the strongest
+    # activity signal for ranking; full conditions stay in the on-disk file.
+    measured = [
+        f"{m.get('metric')}={m.get('value')}{m.get('units') or ''}"
+        + (f" on {m.get('substrate')}" if m.get("substrate") else "")
+        for m in (provenance.get("characterization_results") or [])[:6]
+    ]
     return {
         "accession": provenance.get("accession"),
         "name": provenance.get("protein_name") or (provenance.get("gene_names") or [""])[0],
@@ -193,7 +200,8 @@ def compact_provenance_for_ranking(provenance: dict) -> dict:
             "cofactor": mech.get("cofactor"),
         },
         "substrate_accommodation_vs_target": provenance.get("substrate_accommodation_vs_target", []),
-        "characterization": provenance.get("characterization"),
+        "measured_results": measured,
+        "characterization_paper_count": provenance.get("characterization", {}).get("characterization_papers", 0),
         "has_structure": provenance.get("structure", {}).get("has_pdb")
         or provenance.get("structure", {}).get("has_alphafold"),
         "critical_warnings": provenance.get("critical_warnings", []),
