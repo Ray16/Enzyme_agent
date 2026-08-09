@@ -1,32 +1,56 @@
 """Ground-truth benchmark campaigns for literature-exploration evaluation.
 
-Answer identities are used ONLY to score a run after the fact (did the answer
-survive?), NEVER as input to the agent's search — this preserves the leakage
-firewall (the agent must reach these blind, from the target chemistry).
+DESIGN: goals change, so recall is **data-driven**. Each benchmark declares any
+number of named ``recall_targets``; the scorer (metrics.py) computes each one
+generically, so redefining or adding a goal is a benchmark edit — never a code
+change. A target has:
+    scope  - "papers"    : match against retrieved paper titles+abstracts
+             "artifacts" : match against ALL run artifacts (papers + resolved
+                           UniProt/candidate records, so accessions/enzyme
+                           functions count)
+    values - lowercase substrings; a target "hits" if ANY value is found, and
+             its recall = fraction of values found (useful when you want ALL of
+             a specific set, e.g. both answer accessions).
+``primary_targets`` names which targets define ``found_answer`` (strict ground
+truth); other targets are reported as diagnostics (e.g. mechanism-class recall).
 
-Each benchmark:
-  query           - the campaign prompt given to the agent
-  substrate_name  - optional substrate hint (as a user would provide)
-  answer_accessions - UniProt accessions of the confirmed answer enzyme(s)
-  answer_markers  - lowercase gene-name / trivial-name substrings that identify
-                    an answer-bearing paper in a title/abstract
+Answer identities are used ONLY to score after the fact — never fed to the
+agent — preserving the leakage firewall.
 """
 
 BENCHMARKS = {
-    # Amide-synthetase ligation: confirmed RECALL FAILURE under generic queries;
-    # answers are ATP-grasp amide ligases reachable only via trivial-name queries.
+    # Amide-synthetase ligation. Strict answers = the dapdiamide ATP-grasp
+    # ligases (recall failure under generic queries). Mechanism-class target
+    # credits finding the broader ATP-dependent amide-synthetase space (e.g. the
+    # NIS/siderophore synthetases the agent reaches via mechanistic reasoning).
     "amide_synthetase": {
         "query": "amide synthetases for nylon-6,6 synthesis",
         "substrate_name": "adipic acid and hexamethylenediamine (nylon-6,6 monomers)",
-        "answer_accessions": ["E2JA32", "A0A2H4T912"],   # DdaG, SfaB
-        "answer_markers": ["dapdiamide", "ddag", "sfab"],
+        "recall_targets": {
+            "specific_accession": {"scope": "artifacts",
+                                   "values": ["e2ja32", "a0a2h4t912"]},
+            "specific_member": {"scope": "papers",
+                                "values": ["dapdiamide", "ddag", "sfab"]},
+            "mechanism_class": {"scope": "artifacts",
+                                "values": ["amide ligase", "amide bond synthetase",
+                                           "atp-grasp", "adenylation",
+                                           "nonribosomal", "siderophore synthetase",
+                                           "nis synthetase"]},
+        },
+        "primary_targets": ["specific_accession", "specific_member"],
     },
-    # Nylon hydrolysis: recall-OK / precision-imperfect (NylC vs NylB/NylA cascade).
+    # Nylon hydrolysis: recall-OK / precision-imperfect (NylC vs NylB/NylA).
     "nylon_hydrolase": {
         "query": "enzymes that hydrolyze nylon-6 oligomers",
         "substrate_name": "nylon-6 oligomer (6-aminohexanoate linear oligomer)",
-        "answer_accessions": [],   # add confirmed accession(s) when available
-        "answer_markers": ["nylc", "nylb", "nyla", "6-aminohexanoate",
-                           "nylon oligomer hydrolase"],
+        "recall_targets": {
+            "specific_member": {"scope": "papers",
+                                "values": ["nylc", "nylb", "nyla",
+                                           "6-aminohexanoate", "nylon oligomer hydrolase"]},
+            "mechanism_class": {"scope": "artifacts",
+                                "values": ["amidase", "hydrolase", "beta-lactamase fold",
+                                           "n-terminal nucleophile"]},
+        },
+        "primary_targets": ["specific_member"],
     },
 }
