@@ -42,6 +42,26 @@ Measurement tiers:
 - **Measured:** pending — check `fetch_full_text_calls > 0` and that
   `artifacts/fulltext/` populates on the next run.
 
+### E14 — Register-ALL + mechanism-feasibility triage (Workstream A) ⏳
+- **A1 (no downselect at screening):** the evidence-selection gate no longer says
+  "select at most 20 accessions" — it now says register a representative of EVERY
+  distinct family/mechanism (do NOT downselect; a family found-but-unscreened is a
+  lost candidate; relevance filtering happens LATER at triage). Raised the runaway
+  caps 20/5 → 40/15 so no real family is dropped before triage.
+- **A2 (mechanism-feasibility as primary triage, not promiscuity):** reordered the
+  ranking framework — #1 is now CATALYTIC-MECHANISM FEASIBILITY (direction +
+  amide-via-ATP-activation + FREE-molecule substrate TOPOLOGY: disqualify
+  carrier-protein-tethered / polymer-primer mechanisms that can't ligate two free
+  molecules). Substrate similarity (MW/Tanimoto/FG) demoted to INFORMATIONAL
+  context, explicitly NOT a feasibility filter (promiscuity is unreliable to
+  predict). Uses facts already computed — no composite score (facts-not-composites).
+- **Firewall improved:** switched to word-boundary matching (the marker "nyla"
+  was false-matching inside "ade-nyla-tion"; real leakage is the token as a word).
+- **Measured:** pending replicate runs — expect `family_coverage.candidates`↑ (no
+  pre-triage drops) and the final list ordered by mechanism feasibility (free-molecule
+  ligases up; carrier-protein/polymer mechanisms down) rather than mechanism-class
+  alone. Suite green.
+
 ### E-coverage — Family coverage leaks at SELECTION, not search 🔬 (diagnosis)
 - **Finding (E11 run, user-flagged):** the ranked candidates are ATP-grasp-heavy
   and MISS the NIS-synthetase family (DesD/AsbA/AsbB/IucA/IucC — the dicarboxylate
