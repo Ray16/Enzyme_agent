@@ -73,19 +73,28 @@ def find_candidate_paper(run_dir: Path, source_tool: str) -> dict | None:
 
 
 _EXTRACT_SYSTEM = (
-    "You extract grounded facts about a characterized enzyme from its paper. "
-    "For the enzyme identified by the given deposited sequence accession (and any "
-    "co-characterized enzymes deposited alongside it), return ONLY JSON:\n"
-    '{"enzymes":[{"name":"..","genbank":"..",'
+    "You read an enzymology paper and extract grounded facts. The reaction of "
+    "interest is described in the query. Return ONLY JSON:\n"
+    "{\n"
+    '  "paper_relevant": true|false,\n'
+    '  "relevance_reason": "<=20 words: does this paper characterize an ENZYME '
+    'that catalyses the query reaction TYPE (right chemistry AND direction)?",\n'
+    '  "enzymes": [{"name":"..","genbank":"..",'
     '"native_substrates":["exact chemical names resolvable to a structure"],'
     '"reaction":{"bond_formed":"amide|ester|thioester|peptide|other",'
     '"direction":"formation|cleavage","cofactor":"ATP|none|..",'
     '"reactive_groups":"which group on each substrate forms the bond",'
-    '"summary":"<=25 words"}}]}\n'
+    '"summary":"<=25 words"}}],\n'
+    '  "related_enzymes": [{"name":"..","organism":"..","why_relevant":"<=15 words"}]\n'
+    "}\n"
     "native_substrates are the ACTUAL acids/amines/acceptors the enzyme acts on, "
     "named precisely (e.g. 'cadaverine', '5-chlorovaleric acid'), not generic "
-    "classes. If the paper does not characterize the enzyme's reaction, return "
-    '{"enzymes":[]} — do not guess.'
+    "classes. related_enzymes = OTHER enzymes the paper names/cites in its body "
+    "(not just the abstract) that catalyse the SAME reaction type and are worth "
+    "following up — omit incidental mentions. Set paper_relevant=false (and "
+    'enzymes=[]) when the paper does not characterise a query-type enzyme reaction '
+    "(e.g. a purely chemical process, or the opposite reaction direction). Do not "
+    "guess substrates or enzymes that are not in the text."
 )
 
 
