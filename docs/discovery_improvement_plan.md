@@ -17,19 +17,27 @@ extraction).
 
 ---
 
-## A — Candidate flow: register-all → triage → relevant-only  (HIGHEST: "candidates aren't good")
-Root cause: a gatekeeper (evidence-selection → agent hand-picks ≤20 accessions;
-`MAX_SCREEN_REPRESENTATIVES=20`) drops enzymes BEFORE registration. DesD was
-resolved (50 UniProt hits) but never registered → never triaged → invisible.
-- **A1 Comprehensive registration:** register a representative of EVERY resolved
-  gene/family (not a hand-picked subset). "Resolved but unregistered" = a leak.
-- **A2 Triage does the filtering:** evaluate/triage all registered; the FINAL
-  ranked list includes only the relevant ones. Relevance must weight
+## A — Candidate flow: register-ALL → triage → relevant-only  (HIGHEST: "candidates aren't good")
+CORE PRINCIPLE (user): **the agent must NOT downselect at the screening step.**
+Every found enzyme is registered; downselection happens ONLY at triage/relevance.
+Root cause of the current failure: the agent hand-picks ≤20 accessions to screen
+(`MAX_SCREEN_REPRESENTATIVES=20`; evidence-selection gate says "select at most 20
+accessions"), so found enzymes (DesD, resolved from 50 UniProt hits) are thrown
+away BEFORE registration → never triaged → invisible.
+- **A1 No downselection at screening.** Register EVERY found enzyme (every
+  resolved gene / evidence-backed accession). Remove/neutralize the ≤20 cap and
+  the "pick at most 20" gate instruction. (Nuance to confirm: "found" = enzymes
+  discovered via evidence, e.g. DesD/PuuA/McbA — a raw 500-hit UniProt *result
+  page* is still a lead; but a resolved gene like DesD MUST get its representative
+  registered, never dropped.)
+- **A2 Triage is the ONLY filter.** Evaluate/triage every registered enzyme; the
+  FINAL ranked list includes only the relevant ones. Relevance must weight
   **substrate accommodation** (can it act on a C6 diacid + C6 diamine?), not
-  mechanism class alone — that's why mechanism-matched but substrate-wrong
-  enzymes currently top the list.
-- Measure: `family_coverage.candidates`==1.0; every explored family has ≥1
-  registered rep; final list substrate-relevant.
+  mechanism class alone — that's why mechanism-matched-but-substrate-wrong enzymes
+  currently top the list. Irrelevant ones are triaged out of the final list but
+  were at least registered + evaluated.
+- Measure: every explored/resolved family has ≥1 registered rep (0 "resolved but
+  unregistered" leaks); `family_coverage.candidates`==1.0; final list substrate-relevant.
 
 ## B — Full-text acquisition wired correctly (feeds downstream mechanism/measurement extraction)
 Root cause: after the evidence-selection gate, `agent.py` restricts tools to a
