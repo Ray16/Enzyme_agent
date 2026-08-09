@@ -157,7 +157,8 @@ ANTI_PATTERNS = """\
 3-5 word queries with field tags like [Title/Abstract].
 - Do NOT skip families you identified in your reaction analysis. For EVERY mechanism and \
 natural product you listed, there must be a corresponding database search.
-- Do NOT keep expanding near-duplicate families once direct and mechanistically distinct representatives are present. Pivot to evaluation when the focused coverage checklist is satisfied."""
+- Do NOT keep expanding near-duplicate families once direct and mechanistically distinct representatives are present. Pivot to evaluation when the focused coverage checklist is satisfied.
+- Do NOT converge on a SINGLE mechanism family. If your candidate list is dominated by one fold/mechanism, you have UNDER-explored — go find and screen representatives of the OTHER distinct families you identified in Step B before evaluating. A family you searched but never resolved/screened does not count as covered."""
 
 SEARCH_GUIDANCE = """\
 === SEARCH STRATEGY ===
