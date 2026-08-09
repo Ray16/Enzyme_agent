@@ -440,6 +440,10 @@ def generate_two_pass_report(
         # preferable to an incompatible request parameter.
         temperature=config.LLM_TEMPERATURE,
         timeout=max(config.LLM_TIMEOUT, 900),
+        # One JSON row per candidate: the whole ranked list must fit in a single
+        # completion, or it truncates and the two-pass gate is lost.  Scale the
+        # ceiling to the candidate count (~40 tokens/row) with a generous floor.
+        max_tokens=max(8192, len(rankable_evals) * 60),
     )
 
     if response is None:
