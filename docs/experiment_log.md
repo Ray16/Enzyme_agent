@@ -20,6 +20,25 @@ Measurement tiers:
 
 ## 2026-08-08
 
+### E10 — Forward-citation chasing + multi-source snowball — ✅ recall lever
+- **Change:** `deep_literature_search` now (a) seeds from all 4 abstract sources
+  (was PubMed+OpenAlex only), and (b) follows citations BOTH ways — backward
+  references AND forward `cites:` (URL built from the work id, since OpenAlex
+  dropped `cited_by_api_url` from work objects) — split 60/40 backward/forward
+  with a per-seed cap so a landmark seed's thousands of citers can't flood.
+- **Hypothesis:** forward citations from a mechanistically-relevant seed reach the
+  specific answer members that keyword search misses.
+- **Measured (deterministic, leakage-clean):** query "ATP-grasp amide bond ligase
+  enzyme" (mechanism only — NO dapdiamide/DdaG) → 22 forward citations →
+  extracted gene names include **DdaG and DdaF** (answer-family, E2JA32). An
+  off-axis query ("ATP-dependent amide synthetase peptide") does not recover them.
+  Bug found + fixed live: OpenAlex removed `cited_by_api_url` → forward was 0
+  until built from the work id. 5 unit tests; suite 116 green.
+- **Result:** ✅ FIRST recall improvement — citation chasing recovers the specific
+  answer members from a clean mechanism query. Query-dependent (right
+  mechanism-family query lands it) → motivates E11 (query planning). Next: full
+  agent A/B to confirm the agent-in-loop recovers DdaG.
+
 ### E8 — Parallel multi-source steering (prompt + gates) — ✅ use / ❌ recall
 - **Change:** rewrote LITERATURE_GUIDANCE / Phase-2 / ROLE / reflection so the
   agent fans out across all five sources in parallel, then consolidates; evidence
