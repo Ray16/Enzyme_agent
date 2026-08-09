@@ -49,13 +49,13 @@ FINALIZATION_RESERVE_ITERATIONS = 8
 # --- Tool execution ---
 TOOL_THREAD_POOL_WORKERS = 4
 MAX_RESULT_CHARS = 20_000
-# Breadth is gathered as literature/database leads; EC annotations remain
-# compatibility gates, never a source of bulk candidates.  A larger but still
-# auditable, evidence-led shortlist is then evaluated across distinct folds.
-# (The EC-to-UniProt bulk retrieval path was removed rather than zeroed out;
-# see gates/systematic_coverage.py.)
-MAX_SCREEN_REPRESENTATIVES = 20
-MAX_EXPLORATORY_FAMILY_REPRESENTATIVES = 5
+# One representative per distinct enzyme FAMILY is registered (auto_screen picks
+# the best member per gene/family).  These caps are a RUNAWAY safety only — NOT a
+# downselection: they must be high enough that every real mechanism family gets a
+# registered representative (relevance filtering happens later at triage, not by
+# capping registration).  Raised from 20/5 so no family is dropped before triage.
+MAX_SCREEN_REPRESENTATIVES = 40
+MAX_EXPLORATORY_FAMILY_REPRESENTATIVES = 15
 EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
 MIN_LITERATURE_SEARCH_ROUNDS = 3
 
