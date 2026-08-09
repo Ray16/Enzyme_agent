@@ -20,16 +20,26 @@ Measurement tiers:
 
 ## 2026-08-08
 
-### E8 — Parallel multi-source steering (prompt + gates) ⏳
+### E8 — Parallel multi-source steering (prompt + gates) — ✅ use / ❌ recall
 - **Change:** rewrote LITERATURE_GUIDANCE / Phase-2 / ROLE / reflection so the
   agent fans out across all five sources in parallel, then consolidates; evidence
   gate now counts *unique* papers; `consolidate_literature` exempt from query-dedup.
 - **Hypothesis:** the agent will use the new tools coherently (fan-out → consolidate
-  → mine) instead of PubMed/OpenAlex-only habits.
-- **Measured:** first live smoke (amide campaign, rerank on) — iteration 2 issued a
-  6-call parallel fan-out across Semantic Scholar + Europe PMC + OpenAlex + PubMed;
-  iteration 3 resolved discovered gene names in UniProt. Steering demonstrably fires.
-- **Result:** ⏳ fan-out confirmed live; full recall/token A/B vs old steering pending.
+  → mine) AND recover more of the answer-family.
+- **Measured — first full agent run** (amide campaign, rerank on, `eval/score_run`):
+  `max_fanout=10`, `n_sources_used=5` (all sources incl. Europe PMC + Semantic
+  Scholar), 88 unique papers (6.4% redundancy), 12 iters, 57 tool calls, **1.47M
+  tokens**, 9 candidates (siderophore synthetases DesD/IucA/IucC — real amide-bond
+  synthetases but NOT the answer-family). `consolidate_literature calls = 0`,
+  `fetch_full_text calls = 0`, `answer_marker_recall = 0.0`, `found_answer = False`.
+- **Result:** ✅ the agent now genuinely USES the new tools — parallel fan-out across
+  all 5 sources (the "does it use them" goal is met). ❌ but two gaps: (a)
+  `consolidate_literature` was **never called** despite the prompt → steering-only
+  isn't enough, it needs a GATE; (b) answer-family recall is still **0** — more
+  sources/parallelism did NOT fix recall. This confirms **at the agent level** what
+  the deterministic demo showed: query planning + forward-citation chasing are the
+  real recall levers. Drives E9 (consolidation gate), E10 (forward-citation),
+  E11 (query planning) — each A/B'd against `eval/`.
 
 ### E7 — Full-text acquisition layer ✅ (mechanics) / ⏳ (agent value)
 - **Change:** `tools/fulltext.py::fetch_full_text` downloads verified PDF/XML for
