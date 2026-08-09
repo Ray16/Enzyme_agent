@@ -1459,9 +1459,12 @@ def deep_literature_search(
             for work in data.get("results", []):
                 backward_ids.extend(
                     work.get("referenced_works", [])[:max_refs_per_seed])
-                cb = work.get("cited_by_api_url")
-                if cb and work.get("cited_by_count", 0) > 0:
-                    cited_by_urls.append(cb)
+                # OpenAlex dropped cited_by_api_url from work objects, so build
+                # the forward (cites:) query from the work's own id.
+                wid = (work.get("id") or "").rsplit("/", 1)[-1]  # W123...
+                if wid and work.get("cited_by_count", 0) > 0:
+                    cited_by_urls.append(
+                        f"{config.OPENALEX_API}/works?filter=cites:{wid}")
         except Exception as e:
             logger.warning("Deep search: failed to fetch seed works: %s", e)
 
