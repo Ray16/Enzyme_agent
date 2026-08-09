@@ -478,8 +478,6 @@ native_substrates or property_comparisons. Format: "compound_name (`SMILES`)" \
 separated by "; ". If a native_substrates field is present, use names and SMILES \
 from there. Otherwise, extract names from catalytic_activities equations and \
 pair with SMILES from property_comparisons.
-- **Native Reaction**: if a reaction_image path is provided in the evaluation data, \
-include it as `![rxn](reaction_image_path)`. If not available, write "—".
 - **Swiss-Prot**: Reviewed in Swiss-Prot (manually curated)? (Y/N)
 - **PDB**: list PDB codes or count; "—" if none
 - **AF**: AlphaFold model available? (Y/N)
