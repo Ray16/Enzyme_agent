@@ -36,8 +36,26 @@ Measurement tiers:
   until built from the work id. 5 unit tests; suite 116 green.
 - **Result:** ✅ FIRST recall improvement — citation chasing recovers the specific
   answer members from a clean mechanism query. Query-dependent (right
-  mechanism-family query lands it) → motivates E11 (query planning). Next: full
-  agent A/B to confirm the agent-in-loop recovers DdaG.
+  mechanism-family query lands it) → motivates E11.
+- **Agent A/B (full run, E10 active):** found_answer STILL False (specific 0.0,
+  mechanism-class 1.0), 106 unique papers, 1.41M tokens. **Root cause (precise):**
+  the agent encountered ATP-grasp heavily in keyword results (11× in evaluations)
+  but called `deep_literature_search` only ONCE — on `'NIS synthetase ... diamine
+  diacid'` (the siderophore family), NOT the ATP-grasp family that reaches DdaG.
+  So the tool works; the agent under-uses it (one snowball, wrong family). Also
+  hit an intermittent nomic-embed tensor-size error (caught by the split-except →
+  degraded to native order; non-fatal, transformers-5.14 vs nomic incompatibility
+  — known issue). **→ E11: citation-chase per distinct mechanism family.**
+
+### E11 — Citation chasing per mechanism family (steering) ⏳
+- **Change:** LITERATURE_GUIDANCE + Phase-2 now instruct running
+  `deep_literature_search` once per DISTINCT mechanism family (Step-B enumeration),
+  not just the top papers / one family — each family's citation network reaches
+  different specific enzymes; a single snowball misses the others. Leakage-safe
+  (says "cover all your mechanisms", never names the answer family).
+- **Hypothesis:** snowballing every mechanism family (incl. the ATP-grasp path the
+  agent already found in keywords) will surface DdaG that the single NIS snowball missed.
+- **Measured:** pending agent A/B vs the E10 run above.
 
 ### E8 — Parallel multi-source steering (prompt + gates) — ✅ use / ❌ recall
 - **Change:** rewrote LITERATURE_GUIDANCE / Phase-2 / ROLE / reflection so the
