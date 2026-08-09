@@ -466,6 +466,49 @@ def generate_two_pass_report(
         })
         next_rank += 1
 
+    # ── Deterministic hard gate: enforce P0 in code, not on the LLM ────────
+    # A reaction-direction, bond-type, or severe-size contradiction is a hard
+    # mechanistic disqualifier — an amide *hydrolase* cannot be a top candidate
+    # for an amide-*formation* target, however deep its characterisation.  The
+    # ranking prompt asks the LLM to bottom these (P0), but a generative ranker
+    # applies that softly and keeps floating "direct amide-chemistry" cleavage
+    # enzymes to the top.  ``critical_warnings`` holds ONLY these three hard
+    # contradictions (bond-type / direction / severe-size mismatch), so enforce
+    # it deterministically: pin every warned candidate to Tier 3 and sort it
+    # below all mechanistically-consistent candidates, preserving the LLM's
+    # relative order within each group.
+    gated_accs = {
+        ev.get("data", ev).get("accession", "")
+        for ev in all_evals
+        if ev.get("data", ev).get("critical_warnings")
+    }
+    gated_accs.discard("")
+    if gated_accs:
+        n_gated = 0
+        for entry in pass1_ranking:
+            if entry.get("accession") in gated_accs:
+                n_gated += 1
+                entry["tier"] = 3
+                entry["score"] = min(entry.get("score", 2.0), 1.5)
+                if "hard-gated" not in entry.get("rationale", "").lower():
+                    entry["rationale"] = (
+                        "HARD-GATED (mechanistic contradiction — "
+                        "reaction-direction / bond-type / size mismatch); ranked "
+                        "below all mechanistically consistent candidates. "
+                        + entry.get("rationale", "")
+                    ).strip()
+        pass1_ranking.sort(
+            key=lambda e: (
+                1 if e.get("accession") in gated_accs else 0,
+                e.get("rank", 9999),
+            )
+        )
+        for i, entry in enumerate(pass1_ranking, start=1):
+            entry["rank"] = i
+        if log_fn:
+            log_fn(f"  Hard gate: demoted {n_gated} candidate(s) with a "
+                   f"mechanistic contradiction below all consistent candidates")
+
     n_ranked = len(pass1_ranking)
     n_total = len(all_evals)
     if log_fn:
