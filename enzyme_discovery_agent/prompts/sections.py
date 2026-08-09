@@ -293,22 +293,33 @@ priority over later ones.
 
 RANKING FRAMEWORK (apply in this order):
 
-1. SUBSTRATE COMPATIBILITY (highest priority):
-   - Evaluate EACH substrate in the target reaction independently using the \
-per_substrate_match field. For multi-substrate reactions, a candidate must \
-match well on ALL substrates, not just one.
-   - PRIMARY SIGNAL: Compare fg_counts_target vs fg_counts_native for each \
-substrate. The functional group COUNTS tell you whether the enzyme's \
-binding pocket has evolved to recognize the specific chemical features \
-present in the target substrate. Count mismatches (e.g., native has \
-fewer amines or extra carboxyls compared to target) indicate the pocket \
-relies on recognition features the target lacks, or vice versa.
-   - SECONDARY SIGNAL: MW similarity and chain length similarity indicate \
-whether the active site cavity can physically accommodate the target.
-   - REFERENCE ONLY: Tanimoto scores provide general structural context but \
-are not reliable discriminators for non-natural target substrates — most \
-candidates will have low Tanimoto regardless of suitability. Do not use \
-Tanimoto as a primary ranking criterion.
+1. CATALYTIC-MECHANISM FEASIBILITY (highest priority — can the reaction proceed \
+AT ALL given the mechanism?):
+   Do NOT try to predict whether the active site will accept the non-native \
+target substrate — substrate promiscuity is a HARD, unreliable prediction even \
+computationally. Instead ask whether the CATALYTIC MECHANISM could support the \
+target transformation:
+   - DIRECTION: the native reaction must run in the target direction (for a \
+bond-FORMATION target: a ligation/condensation/synthesis mechanism, NOT a \
+hydrolase/cleavage enzyme). A direction mismatch is disqualifying.
+   - BOND CHEMISTRY: the mechanism must form the TARGET bond via a compatible \
+activation (for ATP-dependent amide ligation: an acyl-phosphate or \
+aminoacyl-adenylate intermediate). Use reaction_chemistry, catalytic_activities, EC.
+   - SUBSTRATE TOPOLOGY (the decisive discriminator): the mechanism must act on \
+FREE small-molecule substrates matching the target's topology (here: two free \
+small molecules — a free diacid + a free diamine). DISQUALIFY / strongly \
+downrank mechanisms that REQUIRE a carrier-protein-tethered substrate (NRPS \
+adenylation domains; substrate_class = carrier_protein_tethered) or a POLYMER \
+PRIMER (cyanophycin-type; substrate_class = polymer) — they cannot ligate two \
+free molecules, regardless of substrate identity.
+   - Honor critical_warnings (see REACTION CHEMISTRY VALIDATION) as feasibility failures.
+   SUBSTRATE SIMILARITY IS NOT A FEASIBILITY FILTER: the per_substrate_match \
+facts (MW, chain length, functional-group counts, Tanimoto) describe how \
+DIFFERENT the native substrate is from the target. Treat this as CONTEXT for \
+engineering difficulty, NOT a reject signal — a mechanistically-feasible enzyme \
+with a dissimilar native substrate is a valid engineering candidate (enzymes are \
+promiscuous). Do NOT disqualify a mechanistically-feasible candidate solely \
+because native != target substrate; Tanimoto especially is reference-only.
 
 2. CHARACTERIZATION LEVEL:
    - Prefer the best-characterized representative of each enzyme family.
