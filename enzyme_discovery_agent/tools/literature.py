@@ -144,24 +144,52 @@ def _semantic_rerank(
     return _rrf_fuse(papers, sims, max_results, min_score)
 
 
+# Embedding cache: within (and across) searches in a campaign the same abstract
+# recurs constantly.  Cache normalized embeddings by (model, text-hash) so each
+# unique document is encoded once, not once per search that surfaces it.
+_EMBED_CACHE: dict[tuple[str, str], list[float]] = {}
+_EMBED_CACHE_LOCK = threading.Lock()
+
+
+def _embed_texts(model, texts: list[str]):
+    """Return normalized embeddings for ``texts``, encoding only cache misses."""
+    import numpy as np
+    out: list[list[float] | None] = [None] * len(texts)
+    misses, miss_slots = [], []
+    for i, t in enumerate(texts):
+        h = (_RERANK_MODEL_NAME, hashlib.sha1(t.encode("utf-8")).hexdigest())
+        cached = _EMBED_CACHE.get(h)
+        if cached is not None:
+            out[i] = cached
+        else:
+            misses.append(t)
+            miss_slots.append((i, h))
+    if misses:
+        emb = np.asarray(model.encode(misses, normalize_embeddings=True,
+                                      batch_size=32, show_progress_bar=False))
+        with _EMBED_CACHE_LOCK:
+            for j, (i, h) in enumerate(miss_slots):
+                vec = emb[j].tolist()
+                _EMBED_CACHE[h] = vec
+                out[i] = vec
+    return np.asarray(out)
+
+
 def _semantic_scores(model, query, papers, title_key, abstract_key):
     """Per-paper cosine similarity to the query.
 
     Embeddings are normalized, so cosine is a plain dot product -- computed with
     numpy (already present via pandas), which removes the previous undeclared
-    scikit-learn dependency entirely.
+    scikit-learn dependency entirely.  Encoding is cached per unique text.
     """
-    import numpy as np
     query_text = f"search_query: {query}"
     doc_texts = [
         f"search_document: {p.get(title_key, '')}. {p.get(abstract_key, '')[:500]}"
         for p in papers
     ]
-    q_emb = model.encode([query_text], normalize_embeddings=True,
-                         batch_size=1, show_progress_bar=False)
-    p_emb = model.encode(doc_texts, normalize_embeddings=True,
-                         batch_size=32, show_progress_bar=False)
-    return np.asarray(p_emb) @ np.asarray(q_emb)[0]
+    q_emb = _embed_texts(model, [query_text])[0]
+    p_emb = _embed_texts(model, doc_texts)
+    return p_emb @ q_emb
 
 
 def _rrf_fuse(papers, sims, max_results, min_score, k: int = 60):
