@@ -365,35 +365,33 @@ def _llm_focus_rank(
     reason and emit a structured list), which is why we focus on the most
     promising candidates rather than ranking the whole pool.
     """
-    payload = []
-    for ev in shortlist:
-        d = ev.get("data", ev)
-        payload.append({
-            "accession": d.get("accession"),
-            "gene": (d.get("gene_names") or [""])[0],
-            "protein_name": d.get("protein_name", ""),
-            "native_substrates": [n.get("name") for n in d.get("native_substrates", []) if n.get("name")][:6],
-            "substrate_accommodation_evidence": _accommodation_facts_payload(d),
-        })
+    payload = [_candidate_evidence_payload(ev.get("data", ev)) for ev in shortlist]
     system = (
-        "You are ranking a SHORTLIST of the most promising enzyme candidates by "
-        "whether their active-site pocket could ACCOMMODATE BOTH target substrates "
-        "of the query reaction. Reason over the grounded cheminformatic EVIDENCE "
-        "given for each candidate (functional-group types and counts, aliphatic "
-        "chain length, molecular weight, aromatic/ring character) — do NOT rely on "
-        "fame or on a single shared functional group. A pocket evolved for a large, "
-        "aromatic, cyclic, or phosphorylated native substrate cannot admit a small "
-        "linear aliphatic molecule even when one functional-group type overlaps; a "
-        "native that matches the target on group counts AND size AND aliphatic "
-        "character is a genuine lead. Rank best-accommodating first.\n\n"
-        "Return ONLY a JSON array, one object per line:\n"
-        '[{"accession":"..","rank":1,"tier":1,"reason":"<=15 words citing the evidence"}]\n'
-        "tier 1 = strong accommodation, 2 = partial, 3 = poor."
+        "You are ranking a SHORTLIST of the most promising enzyme candidates for a "
+        "target reaction. Reason over the grounded EVIDENCE given per candidate — "
+        "never fame or name recognition. Weigh, in this order:\n"
+        "1. SUBSTRATE ACCOMMODATION (primary): can the pocket physically fit BOTH "
+        "target substrates? Compare functional-group types AND counts, aliphatic "
+        "chain length, molecular weight, and aromatic/ring character. A pocket "
+        "evolved for a large, aromatic, cyclic, or phosphorylated native substrate "
+        "CANNOT admit a small linear aliphatic molecule even when one functional-"
+        "group type overlaps. A native matching on group counts AND size AND "
+        "aliphatic character is a genuine lead.\n"
+        "2. REACTION/MECHANISM: it should form (not cleave) the target bond type via "
+        "the target chemistry; a cleavage/hydrolysis direction is a strong negative.\n"
+        "3. PROVENANCE: Swiss-Prot review, characterization and engineering papers, "
+        "and studied mutations increase confidence and engineerability.\n"
+        "4. FEASIBILITY: available structure (PDB/AlphaFold) and bacterial/E. coli "
+        "expression ease downstream work.\n\n"
+        "Rank the most promising first. Return ONLY a JSON array, one object per "
+        "line:\n"
+        '[{"accession":"..","rank":1,"tier":1,"reason":"<=20 words citing the '
+        'specific evidence"}]\n'
+        "tier 1 = strong lead, 2 = partial, 3 = weak."
     )
     user = (f"Target reaction / substrates: {query}\n\n"
             f"Shortlist ({len(payload)} candidates) with evidence:\n"
             + json.dumps(payload, default=str))
-    import json as _json
     response = llm_client.call(
         messages=[{"role": "system", "content": system},
                   {"role": "user", "content": user}],
