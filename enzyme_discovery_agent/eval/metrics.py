@@ -92,21 +92,15 @@ def _fulltext_manifest(run: Path) -> list[dict]:
 
 
 def _tokens(run: Path) -> int | None:
-    """Best-effort total-token read from the provenance manifest."""
-    path = run / "manifest.json"
+    """Total tokens for the run, from token_usage.json (the agent writes it)."""
+    path = run / "token_usage.json"
     if not path.exists():
         return None
     try:
         data = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
         return None
-    for key in ("total_tokens", "tokens"):
-        if isinstance(data.get(key), int):
-            return data[key]
-    usage = data.get("token_usage") or data.get("usage") or {}
-    if isinstance(usage, dict) and isinstance(usage.get("total_tokens"), int):
-        return usage["total_tokens"]
-    return None
+    return data.get("total_tokens") if isinstance(data.get("total_tokens"), int) else None
 
 
 def score_run(run_dir: str | Path, benchmark: dict) -> dict:
