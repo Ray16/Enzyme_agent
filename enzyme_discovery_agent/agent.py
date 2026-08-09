@@ -33,6 +33,7 @@ from enzyme_discovery_agent.gates.homolog_expansion import HomologExpansionGate
 from enzyme_discovery_agent.gates.systematic_coverage import SystematicCoverageGate
 from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.candidate_registry import (
+    extract_and_register_from_search,
     load_candidate_registry,
     register_structural_homologs,
 )
