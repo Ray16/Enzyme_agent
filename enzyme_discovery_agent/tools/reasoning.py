@@ -898,6 +898,7 @@ def evaluate_candidate(
     # Build evaluation result
     eval_data = {
         "accession": accession,
+        "is_enzyme": is_enzyme,
         "protein_name": protein_name,
         "gene_names": gene_names,
         "alternative_names": alternative_names,
