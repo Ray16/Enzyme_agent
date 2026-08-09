@@ -98,8 +98,8 @@ _EXTRACT_SYSTEM = (
     '"relationship":"homolog|same_family|cited_analogue","identity":"% if stated",'
     '"why_relevant":"<=15 words"}]\n'
     "}\n"
-    "Rules: native_substrates = the ACTUAL acids/amines/acceptors, named precisely "
-    "(e.g. 'cadaverine', '5-chlorovaleric acid'), not generic classes. "
+    "Rules: native_substrates = the ACTUAL acids/amines/acceptors, each named as a "
+    "specific compound (not a generic class), so it resolves to one structure. "
     "catalytic_residues = active-site residues the paper identifies (mutagenesis / "
     "structure), for downstream structural modelling. characterization = MEASURED "
     "results; ALWAYS attach the experimental conditions they were obtained under "
