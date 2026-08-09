@@ -925,7 +925,12 @@ def build_pass2_profile_prompt(
         "Write the confidence-weighted report. The ranking above is authoritative "
         "— use it for section 3 (candidate table). Write detailed Tier 1 profiles "
         "only for the top candidates whose full data is provided above. "
-        "For candidates not in the full data, use the ranking summary above."
+        "For candidates not in the full data, use the ranking summary above.\n\n"
+        "IMPORTANT — orthologs: where an entry lists 'same enzyme in N other "
+        "organisms', it is ONE enzyme. Give it a SINGLE table row / profile using "
+        "the representative accession, and note the organism spread (e.g. "
+        "'conserved across N organisms incl. …'). Do NOT create a separate row per "
+        "organism, and do NOT let one enzyme's orthologs fill multiple ranks."
     )
 
     return [
