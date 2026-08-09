@@ -38,6 +38,22 @@ BENCHMARKS = {
                                            "nis synthetase"]},
         },
         "primary_targets": ["specific_accession", "specific_member"],
+        # Coverage: the distinct amide-BOND-FORMING enzyme families the agent
+        # should span. A run is "narrow" if it covers only one or two. NIS
+        # synthetases couple dicarboxylate + diamine — closest to nylon chemistry.
+        "family_coverage": {
+            "atp_grasp_ligase": ["atp-grasp", "d-ala-d-ala", "mur ligase",
+                                 "glutathione synthetase", "dapdiamide"],
+            "nis_synthetase": ["nis synthetase", "nrps-independent siderophore",
+                               "iuca", "iucc", "asba", "asbb", "desd",
+                               "aerobactin", "petrobactin", "rhizobactin"],
+            "adenylation_nrps": ["adenylation domain", "nonribosomal peptide",
+                                 "amide bond synthetase", "mcba", "sfab"],
+            "amidotransferase": ["asparagine synthetase", "glutamine synthetase",
+                                 "amidotransferase"],
+            "acyl_transfer": ["n-acyltransferase", "acyl-coa", "gnat acetyltransferase"],
+            "amidase_reverse": ["amidase", "acylase", "aminoacylase", "peptidase"],
+        },
     },
     # Nylon hydrolysis: recall-OK / precision-imperfect (NylC vs NylB/NylA).
     "nylon_hydrolase": {
