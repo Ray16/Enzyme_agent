@@ -64,10 +64,13 @@ whitelist that OMITS `fetch_full_text` → it is stripped, so it never fires
 Root cause: 98% of tokens are PROMPT; context re-sent every call grows 18k→148k;
 NO prompt caching. (817K win was fewer iterations, not lower per-iteration cost —
 still ~90K/iter.)
-- **C1** verify Argo passes Anthropic `cache_control`; if so cache the static
-  system prompt (+ message prefix). ~10x lever on the repeated prefix.
-- **C2** context compaction: evict raw per-source search results once
-  `consolidate_literature` has run; window old turns.
+- **C1 — RESULT: prompt caching NOT available on Argo/lambda5.** Tested: identical
+  prefixes give `cached_tokens=0` (no auto-cache); Anthropic `cache_control` is
+  accepted but caches nothing through this proxy. So the ~10x caching lever is OUT.
+  → **Context compaction is therefore the PRIMARY token lever.**
+- **C2 (now primary)** context compaction: evict/summarize raw per-source search
+  results once `consolidate_literature` has run (the consolidated pool supersedes
+  them); window old turns so the re-sent history stops growing 18k→148k.
 - **C3** tighten the system prompt (grown to ~7.8k tokens via steering).
 - Measure: tokens/run, prompt-token share, per-iteration prompt size.
 
