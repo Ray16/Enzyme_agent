@@ -193,11 +193,18 @@ def extract_from_paper(
     """
     if not paper_text:
         return {}
+    target = (
+        f"This paper deposited sequence accession {deposited_accession} "
+        f"(UniProt annotation: {protein_name or 'uncharacterized'}"
+        + (f", organism: {organism}" if organism else "") + "). "
+        "List EVERY characterised enzyme in the paper (there may be several); for "
+        "each give its name, organism, and — where the paper links it — its "
+        "deposited accession, so the target enzyme above can be identified by its "
+        "accession/organism/name rather than assumed."
+    )
     user = (
         f"Query reaction of interest: {query or 'enzymatic reaction'}\n\n"
-        f"This paper deposited sequence accession {deposited_accession} "
-        f"(UniProt annotation: {protein_name or 'uncharacterized'}). Extract per "
-        f"the schema.\n\nPAPER:\n{paper_text[:max_chars]}"
+        f"{target}\n\nPAPER:\n{paper_text[:max_chars]}"
     )
     from enzyme_discovery_agent import config
     response = llm_client.call(
