@@ -120,11 +120,11 @@ def extract_from_paper(
 
       * ``paper_relevant`` + ``relevance_reason`` — does it characterise a
         query-type enzyme reaction (right chemistry AND direction)?  This is the
-        proper relevance filter: a semantic score cannot tell an amide-*synthetase*
-        paper from a nylon-*depolymerisation* one, but the mechanism can;
+        proper relevance filter: a lexical/semantic score cannot tell a synthesis
+        paper from a degradation one on the same material, but the mechanism can;
       * ``enzymes`` — the characterised enzyme(s): native substrates + mechanism;
-      * ``related_enzymes`` — other query-type enzymes named in the BODY (which
-        abstract-level extraction misses) → discovery leads.
+      * ``homologs_or_related_enzymes`` — other query-type enzymes named in the
+        BODY (which abstract-level extraction misses) → discovery leads.
 
     Returns ``{}`` on an empty/unparseable response.
     """
