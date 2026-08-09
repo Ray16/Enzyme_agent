@@ -266,6 +266,7 @@ def _parse_pubmed_article(article_elem) -> dict | None:
         "year": year,
         "doi": doi,
         "abstract": abstract[:1500],
+        "source": "pubmed",
     }
 
 
