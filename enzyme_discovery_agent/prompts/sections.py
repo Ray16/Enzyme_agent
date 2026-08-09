@@ -100,12 +100,12 @@ Phase 2 — DISCOVERY (database + literature search):
     evidence-linked set of accessions and call screen_candidates explicitly before
     they enter the candidate registry. Never promote an entire result page.
   - For each NEW gene name found in literature, search UniProt for it
-  - REFERENCE MINING (critical for coverage): When you find a highly relevant \
-paper (one that directly discusses the target reaction or closely related \
-enzymes), call deep_literature_search with a query matching that paper's topic. \
-This follows the paper's citation network and extracts gene names from \
-referenced papers — discovering enzymes whose names only appear in full text, \
-not abstracts. Do this for your 2-3 most relevant papers.
+  - REFERENCE MINING (critical for coverage): call deep_literature_search ONCE \
+PER DISTINCT MECHANISM FAMILY from your Step B enumeration — query each family by \
+its mechanism (activated intermediate / fold), not just your single most relevant \
+paper. Its backward+forward citation network surfaces specific enzymes (gene \
+names) that keyword search and the OTHER mechanism families miss. Covering only \
+one family is the most common way the specific target enzyme is never found.
   - After deep_literature_search returns extracted gene names, search UniProt \
 for each new gene name individually.
   - GAP CHECK: Go back to your Step C molecule list. For each molecule, verify \
