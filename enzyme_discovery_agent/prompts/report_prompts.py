@@ -161,11 +161,11 @@ This column is informational — it does NOT affect rank position.
 prioritizes biochemical suitability over experimental confidence.
 
 3. Enzyme families discovered: a summary table with columns: \
-Family, Fold/Mechanism, # Candidates, # Top Tier, Representative (gene names), \
-Why Relevant (1 sentence — what makes this family's native chemistry relevant \
-to the target reaction). Group candidates by their InterPro family or \
-structural fold. This section gives the reader an immediate bird's-eye view \
-of the enzyme landscape before diving into individual candidates.
+Family, Fold/Mechanism, # Candidates, # Top Tier, Representatives (enzyme name — \
+accession, for each), Why Relevant (1 sentence — what makes this family's native \
+chemistry relevant to the target reaction). Group candidates by their InterPro \
+family or structural fold. This section gives the reader an immediate bird's-eye \
+view of the enzyme landscape before diving into individual candidates.
 
 4. Candidate table with columns: Rank, UniProt, Name, Gene, Organism, EC, \
 Native Substrates, Native Reaction, Family, Key PMID, Confidence, Rationale \
