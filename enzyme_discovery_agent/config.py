@@ -71,6 +71,12 @@ ABSTRACT_TRUNCATE_CHARS = 200
 DESCRIPTION_TRUNCATE_CHARS = 200
 PAPER_LIST_CAP = 8
 RESULTS_LIST_CAP = 10
+# Prompt-history pruning: keep the most recent N tool results at full size and
+# stub older ones (their state is durably persisted).  Bounds the re-sent
+# prompt, which is ~97% of loop token spend.  Generous by default so the model
+# always sees several recent evidence turns in full.
+HISTORY_KEEP_RECENT_TOOL_MSGS = 16
+HISTORY_STUB_OVER_CHARS = 1_000
 
 # --- Literature search ---
 OVERFETCH_RATIO = 3
