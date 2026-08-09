@@ -361,10 +361,6 @@ def _compact_eval_for_report(
                 for ns in native_subs if ns.get("smiles")
             ]
 
-        rxn_img = d.get("reaction_image")
-        if rxn_img:
-            compact["reaction_image"] = rxn_img
-
         lit = d.get("literature", {})
         compact["characterization_papers"] = lit.get("characterization_papers", 0)
         compact["engineering_papers"] = lit.get("engineering_papers", 0)
