@@ -84,6 +84,9 @@ HISTORY_STUB_OVER_CHARS = 1_000
 # reason over more than ~10-12 at once), while the rest are ordered
 # deterministically beneath them.
 RANKING_FOCUS_SHORTLIST = 10
+# Structures are staged only for the top ranked leads (a handoff artifact for
+# downstream modelling), never the whole evaluated pool.
+STRUCTURE_DOWNLOAD_TOP_N = 10
 
 # --- Literature search ---
 OVERFETCH_RATIO = 3
