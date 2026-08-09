@@ -471,6 +471,13 @@ class EnzymeAgent:
                     tool for tool in available_tools
                     if tool["function"]["name"] in selection_tools
                 ]
+            # Cap prompt growth: the re-sent history is 97% of token spend and
+            # grows unboundedly as raw tool dumps accumulate.  Everything a later
+            # turn needs is already persisted (candidate registry, notebook,
+            # artifacts), so stub the CONTENT of tool results older than the most
+            # recent few turns.  Messages are kept (never removed) so tool_call /
+            # tool-result pairing stays intact.
+            self._prune_tool_history(messages)
             response = self.llm.call(
                 messages=messages, tools=available_tools,
                 timeout=self.llm_timeout,
