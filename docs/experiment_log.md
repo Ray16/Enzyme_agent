@@ -55,7 +55,18 @@ Measurement tiers:
   (says "cover all your mechanisms", never names the answer family).
 - **Hypothesis:** snowballing every mechanism family (incl. the ATP-grasp path the
   agent already found in keywords) will surface DdaG that the single NIS snowball missed.
-- **Measured:** pending agent A/B vs the E10 run above.
+- **Measured — full agent A/B vs E10:** `deep_search_calls` 1 → **4** (agent now
+  snowballs nylon-hydrolase, McbA, **ATP-grasp ligase**, lipase families). Recall:
+  `specific_accession` hit=True (**E2JA32**), `specific_member` hit=True
+  (**dapdiamide, ddag**), **`found_answer` False → TRUE**. 107 unique papers,
+  1.78M tokens (up from 1.41M — more snowballs cost more). Leakage-clean: the
+  agent derived "ATP-grasp ligase" from its own mechanism reasoning; firewall test
+  still green.
+- **Result:** ✅✅ **RECALL GAP CLOSED.** E10 (forward-citation tool) + E11
+  (per-mechanism-family steering) together make the agent-in-loop surface the
+  specific answer (DdaG / E2JA32) that generic search missed 0/131 — the confirmed
+  direction, achieved and measured. Cost: +0.37M tokens → C10 (token efficiency)
+  is the natural next lever; also E9 (consolidation gate, still 0 calls).
 
 ### E8 — Parallel multi-source steering (prompt + gates) — ✅ use / ❌ recall
 - **Change:** rewrote LITERATURE_GUIDANCE / Phase-2 / ROLE / reflection so the
