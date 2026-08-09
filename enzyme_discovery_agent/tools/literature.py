@@ -366,9 +366,13 @@ def _recover_literature_papers(run_dir: str | None) -> list[dict]:
         "same paper across sources (merging fields, e.g. filling a PMCID from "
         "Europe PMC onto a PubMed record), then produce a single globally "
         "re-ranked shortlist. Call this after several searches, before deep "
-        "reading, to remove near-duplicates and get one clean ranked pool."
+        "reading, to remove near-duplicates and get one clean ranked pool. "
+        "Safe to call repeatedly as the pool grows."
     ),
-    category="literature",
+    # 'reasoning' (not 'literature') so repeated consolidation over a growing
+    # pool is never blocked by the literature-search query-dedup, and so it is
+    # not miscounted as a fresh literature-search round.
+    category="reasoning",
     parallel_safe=True,
     injected_params=["run_dir"],
     params={
