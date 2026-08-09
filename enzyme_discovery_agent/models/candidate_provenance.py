@@ -248,12 +248,7 @@ def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, l
 
     extraction_by_acc: dict[str, dict] = {}
     n_enriched = 0
-    for i, (path, group) in enumerate(by_paper.items()):
-        if i >= max_papers:
-            if log_fn:
-                log_fn(f"  Provenance: reached max_papers={max_papers}; "
-                       f"{len(by_paper) - max_papers} paper(s) not extracted this pass")
-            break
+    for path, group in by_paper.items():
         try:
             text = _Path(path).read_text(errors="ignore")
         except OSError:
