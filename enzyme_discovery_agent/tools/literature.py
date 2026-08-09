@@ -1491,7 +1491,8 @@ def deep_literature_search(
     return {
         "status": "success",
         "summary": (
-            f"Deep search: {len(seeds)} seeds, {len(ref_papers)} refs, "
+            f"Deep search: {len(seeds)} seeds, {len(backward_papers)} backward + "
+            f"{len(forward_papers)} forward citations, "
             f"{len(entities.get('gene_names', []))} genes, "
             f"{len(entities.get('ec_numbers', []))} ECs extracted"
         ),
@@ -1500,6 +1501,8 @@ def deep_literature_search(
             "extracted_entities": entities,
             "stats": {
                 "seed_count": len(seeds),
+                "backward_refs": len(backward_papers),
+                "forward_citations": len(forward_papers),
                 "references_fetched": len(ref_papers),
                 "total_papers_scanned": len(papers_with_text),
             },
