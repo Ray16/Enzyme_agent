@@ -73,28 +73,42 @@ def find_candidate_paper(run_dir: Path, source_tool: str) -> dict | None:
 
 
 _EXTRACT_SYSTEM = (
-    "You read an enzymology paper and extract grounded facts. The reaction of "
-    "interest is described in the query. Return ONLY JSON:\n"
+    "You read an enzymology paper (full text) and extract grounded, structured "
+    "facts. The reaction of interest is in the query. Report ONLY what the text "
+    "states — never guess; omit a field rather than invent it. Return ONLY JSON:\n"
     "{\n"
     '  "paper_relevant": true|false,\n'
-    '  "relevance_reason": "<=20 words: does this paper characterize an ENZYME '
-    'that catalyses the query reaction TYPE (right chemistry AND direction)?",\n'
-    '  "enzymes": [{"name":"..","genbank":"..",'
-    '"native_substrates":["exact chemical names resolvable to a structure"],'
-    '"reaction":{"bond_formed":"amide|ester|thioester|peptide|other",'
+    '  "relevance_reason": "<=20 words: does it characterise/discuss an ENZYME for '
+    'the query reaction TYPE (right chemistry AND direction)?",\n'
+    '  "is_characterization_paper": true|false,\n'
+    '  "enzymes": [{\n'
+    '     "name":"..", "genbank":"..",\n'
+    '     "native_substrates":["exact chemical names resolvable to a structure"],\n'
+    '     "reaction":{"bond_formed":"amide|ester|thioester|peptide|other",'
     '"direction":"formation|cleavage","cofactor":"ATP|none|..",'
-    '"reactive_groups":"which group on each substrate forms the bond",'
-    '"summary":"<=25 words"}}],\n'
-    '  "related_enzymes": [{"name":"..","organism":"..","why_relevant":"<=15 words"}]\n'
+    '"reactive_groups":"group on each substrate that forms the bond","summary":"<=25 words"},\n'
+    '     "catalytic_residues":[{"residue":"e.g. Lys528","role":"<=8 words"}],\n'
+    '     "characterization":[{"metric":"kcat|Km|kcat/Km|conversion|yield|'
+    'specific_activity|titer|growth_rate|Tm|optimum_pH|optimum_temperature|other",'
+    '"value":"..","units":"..","substrate":"which substrate/condition it was '
+    'measured on","conditions":{"temperature":"..","pH":"..","buffer":"..",'
+    '"substrate_concentration":"..","cofactor":"..","host_or_system":"..","time":".."}}]\n'
+    '  }],\n'
+    '  "homologs_or_related_enzymes":[{"name":"..","organism":"..",'
+    '"relationship":"homolog|same_family|cited_analogue","identity":"% if stated",'
+    '"why_relevant":"<=15 words"}]\n'
     "}\n"
-    "native_substrates are the ACTUAL acids/amines/acceptors the enzyme acts on, "
-    "named precisely (e.g. 'cadaverine', '5-chlorovaleric acid'), not generic "
-    "classes. related_enzymes = OTHER enzymes the paper names/cites in its body "
-    "(not just the abstract) that catalyse the SAME reaction type and are worth "
-    "following up — omit incidental mentions. Set paper_relevant=false (and "
-    'enzymes=[]) when the paper does not characterise a query-type enzyme reaction '
-    "(e.g. a purely chemical process, or the opposite reaction direction). Do not "
-    "guess substrates or enzymes that are not in the text."
+    "Rules: native_substrates = the ACTUAL acids/amines/acceptors, named precisely "
+    "(e.g. 'cadaverine', '5-chlorovaleric acid'), not generic classes. "
+    "catalytic_residues = active-site residues the paper identifies (mutagenesis / "
+    "structure), for downstream structural modelling. characterization = MEASURED "
+    "results; ALWAYS attach the experimental conditions they were obtained under "
+    "(a number without its conditions is not useful). Set is_characterization_paper "
+    "false if no kinetics/activity/conversion are reported. "
+    "homologs_or_related_enzymes = OTHER query-type enzymes named ANYWHERE in the "
+    "body (not just the abstract) worth following up — omit incidental mentions. "
+    "Set paper_relevant=false and enzymes=[] when the paper does not concern a "
+    "query-type enzyme reaction (purely chemical process, or opposite direction)."
 )
 
 
