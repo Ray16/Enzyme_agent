@@ -57,6 +57,12 @@ MAX_RESULT_CHARS = 20_000
 MAX_SCREEN_REPRESENTATIVES = 40
 MAX_EXPLORATORY_FAMILY_REPRESENTATIVES = 15
 EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
+# Structural (Foldseek) expansion seeds per run.  Kept bounded so Foldseek stays
+# a within-family expansion, not another broad search, but 2 was too tight once
+# the registry spans many evaluated families — it fanned out from only the top
+# two, missing neighbours (e.g. achromobactin/petrobactin NIS synthetases) of
+# lower-ranked but distinct seeds.
+MAX_STRUCTURAL_EXPANSION_SEEDS = 6
 MIN_LITERATURE_SEARCH_ROUNDS = 3
 
 # --- LLM context compaction ---
