@@ -312,3 +312,143 @@ def fetch_full_text(query: str, run_dir: str | None = None,
         "count": len(fetched),
         "fulltext_dir": str(dest),
     }
+
+
+# Sequence-accession patterns for full-text mining.  Deposited accessions live in
+# the Methods / Data-Availability sections, never abstracts, and are the ONLY
+# stable link to enzymes that carry no gene name and only a generic protein name
+# (e.g. SfaB / A0A2H4T912, annotated merely "AMP-ligase") — which neither
+# gene-name nor function-text search can reach.  Nucleotide accessions are
+# 1-2 letters + 6 digits (KY427327) or the newer 4+8/10 form; protein accessions
+# are 3 letters + 5-7 digits.
+_NUCLEOTIDE_ACC_RE = re.compile(r"\b([A-Z]{1,2}\d{6}|[A-Z]{4}\d{8,10})\b")
+_PROTEIN_ACC_RE = re.compile(r"\b([A-Z]{3}\d{5,7})(?:\.\d+)?\b")
+_DEPOSIT_CUES = (
+    "accession", "deposited", "genbank", "ena ", "uniprot", "data availab",
+    "nucleotide sequence", "embl", "ncbi", "gene cluster",
+)
+
+
+def _resolve_embl_accession(acc: str, cap: int = 50) -> list[str]:
+    """Deterministically map an EMBL/GenBank accession to UniProt accessions.
+
+    Skips genome-scale deposits (hundreds of proteins) that would flood the
+    registry, keeping cluster-scale deposits (tens) where the relevant enzyme
+    lives.  A biosynthetic-gene-cluster accession resolves to the whole cluster
+    (e.g. KY427327 -> 18 proteins incl. SfaB), so it must not be truncated to the
+    resolver's default 10, which would drop the target.
+    """
+    params = {"query": f"xref:embl-{acc}", "format": "json",
+              "size": str(cap + 1), "fields": "accession"}
+    url = "https://rest.uniprot.org/uniprotkb/search?" + urllib.parse.urlencode(params)
+    try:
+        raw = request_with_retry(
+            urllib.request.Request(url, headers={"Accept": "application/json"}),
+            timeout=20,
+        )
+        results = json.loads(raw.decode()).get("results", [])
+    except Exception as e:
+        logger.debug("EMBL xref resolve failed for %s: %s", acc, e)
+        return []
+    if len(results) > cap:  # genome-scale deposit — too noisy to register
+        return []
+    return [r.get("primaryAccession") for r in results if r.get("primaryAccession")]
+
+
+def mine_and_register_fulltext_accessions(
+    run_dir, query: str, max_papers: int = 5, max_proteins: int = 120, log_fn=None,
+) -> list[str]:
+    """Fetch top mechanism-relevant papers' full text and register the sequence
+    accessions deposited in them as discovered candidates.
+
+    Fully deterministic — regex over downloaded text plus UniProt REST resolution,
+    with NO full text ever placed in the LLM context, so it adds no prompt tokens.
+    This is the only route to characterized-but-metadata-invisible enzymes such as
+    SfaB, whose identity is tied to its paper solely through a deposited GenBank
+    accession.  Resolved candidates flow into the normal screen/evaluate pipeline,
+    where the non-enzyme filter and mechanism ranking handle the cluster context.
+    """
+    from enzyme_discovery_agent.models.candidate_registry import (
+        UNIPROT_ACC_RE,
+        update_candidate_registry,
+    )
+
+    run = Path(run_dir)
+    papers = _recover_literature_papers(run)
+    if not papers:
+        return []
+
+    dest = run / "artifacts" / "fulltext"
+    dest.mkdir(parents=True, exist_ok=True)
+    manifest_path = dest / "manifest.json"
+    manifest: list[dict] = []
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            manifest = []
+    done = {m.get("key") for m in manifest}
+
+    # 1. Ensure full text for the top mechanism-relevant papers (bounded).
+    ranked = consolidate_pool(query, papers, max_results=max_papers * 3)["ranked"]
+    fetched = 0
+    for paper in ranked:
+        if fetched >= max_papers:
+            break
+        key = _fulltext_key(paper)
+        if key is None or key in done:
+            continue
+        rec = fetch_one(paper, dest)
+        if rec:
+            manifest.append(rec)
+            done.add(key)
+            fetched += 1
+    if manifest:
+        try:
+            manifest_path.write_text(json.dumps(manifest, indent=2))
+        except OSError:
+            pass
+
+    # 2. Mine deposit-context accessions from the stored full text (no LLM).
+    genbank: set[str] = set()
+    uniprot: set[str] = set()
+    cue_re = re.compile("|".join(re.escape(c) for c in _DEPOSIT_CUES))
+    for txt in dest.glob("*.txt"):
+        try:
+            text = txt.read_text(errors="ignore")
+        except OSError:
+            continue
+        # Restrict matches to short windows around deposit cues: bounds the count
+        # and eliminates the false positives a bare accession regex would hit.
+        for m in cue_re.finditer(text.lower()):
+            window = text[max(0, m.start() - 60): m.start() + 200]
+            genbank.update(a.split(".")[0] for a in _NUCLEOTIDE_ACC_RE.findall(window))
+            genbank.update(_PROTEIN_ACC_RE.findall(window))
+            uniprot.update(UNIPROT_ACC_RE.findall(window))
+
+    # 3. Register UniProt directly; resolve GenBank -> UniProt (cluster-scale).
+    registered: list[str] = []
+
+    def _register(acc: str, source: str):
+        update_candidate_registry(run, acc, "discovered", metadata={"source_tool": source})
+        registered.append(acc)
+
+    for acc in sorted(uniprot):
+        if len(registered) >= max_proteins:
+            break
+        _register(acc, "fulltext_uniprot")
+    for gb in sorted(genbank):
+        if len(registered) >= max_proteins:
+            break
+        for acc in _resolve_embl_accession(gb):
+            if len(registered) >= max_proteins:
+                break
+            _register(acc, f"fulltext_genbank:{gb}")
+
+    if log_fn:
+        log_fn(
+            f"  Full-text mining: {fetched} papers fetched, "
+            f"{len(genbank)} GenBank + {len(uniprot)} UniProt accessions "
+            f"-> {len(registered)} candidates registered"
+        )
+    return registered
