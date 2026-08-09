@@ -389,11 +389,15 @@ def mine_and_register_fulltext_accessions(
             manifest = []
     done = {m.get("key") for m in manifest}
 
-    # 1. Ensure full text for the top mechanism-relevant papers (bounded).
-    ranked = consolidate_pool(query, papers, max_results=max_papers * 3)["ranked"]
+    # 1. Attempt full text for EVERY mechanism-relevant paper.  Fetching is
+    # token-free, and non-open-access papers fast-fail, so the effective bound is
+    # open-access availability, not an arbitrary top-K — a target whose paper
+    # ranks just outside a small cap would otherwise be lost.  fetch_ceiling is
+    # only a runaway guard against a pathological pool.
+    ranked = consolidate_pool(query, papers, max_results=len(papers))["ranked"]
     fetched = 0
     for paper in ranked:
-        if fetched >= max_papers:
+        if fetched >= fetch_ceiling:
             break
         key = _fulltext_key(paper)
         if key is None or key in done:
