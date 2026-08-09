@@ -32,14 +32,29 @@ Measurement tiers:
   tokens**, 9 candidates (siderophore synthetases DesD/IucA/IucC — real amide-bond
   synthetases but NOT the answer-family). `consolidate_literature calls = 0`,
   `fetch_full_text calls = 0`, `answer_marker_recall = 0.0`, `found_answer = False`.
+- **Adaptive recall breakdown** (eval targets): `mechanism_class` recall = **1.0**
+  (found the ENTIRE ATP-dependent amide-synthetase space: atp-grasp, amide ligase,
+  adenylation, nis/siderophore synthetase, nonribosomal, amide bond synthetase);
+  `specific_member` (dapdiamide/DdaG/SfaB) = **0.0**; `specific_accession`
+  (E2JA32/A0A2H4T912) = **0.0**.
 - **Result:** ✅ the agent now genuinely USES the new tools — parallel fan-out across
-  all 5 sources (the "does it use them" goal is met). ❌ but two gaps: (a)
-  `consolidate_literature` was **never called** despite the prompt → steering-only
-  isn't enough, it needs a GATE; (b) answer-family recall is still **0** — more
-  sources/parallelism did NOT fix recall. This confirms **at the agent level** what
-  the deterministic demo showed: query planning + forward-citation chasing are the
-  real recall levers. Drives E9 (consolidation gate), E10 (forward-citation),
+  all 5 sources — AND its mechanistic reasoning is excellent (100% mechanism-class).
+  ❌ two gaps: (a) `consolidate_literature` **never called** despite the prompt →
+  steering-only isn't enough, needs a GATE; (b) the **specific** answer members
+  (DdaG/SfaB) are still not surfaced from literature/database — the confirmed
+  direction (per user) is to make those appear. Query planning + forward-citation
+  chasing are the levers. Drives E9 (consolidation gate), E10 (forward-citation),
   E11 (query planning) — each A/B'd against `eval/`.
+
+### M-infra — Adaptive, leakage-safe measurement 🔬
+- **Adaptive recall:** benchmarks declare named `recall_targets` (scope
+  papers/artifacts, any values) with `primary_targets` defining strict success;
+  the scorer computes them generically, so a changed goal is a benchmark edit, not
+  a code change. Separates "found the mechanism class" from "found the specific answer".
+- **Leakage firewall (enforced by test):** the specific answer identifiers live
+  ONLY in `eval/`; `test_leakage_firewall.py` asserts none appear in the agent
+  runtime and that the agent never imports `eval` — so recall numbers can't be
+  inflated by the answer leaking into the search. Verified clean.
 
 ### E7 — Full-text acquisition layer ✅ (mechanics) / ⏳ (agent value)
 - **Change:** `tools/fulltext.py::fetch_full_text` downloads verified PDF/XML for
