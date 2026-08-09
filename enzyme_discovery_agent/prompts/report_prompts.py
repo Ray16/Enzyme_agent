@@ -253,7 +253,7 @@ found; (d) the most promising family and top 1-2 candidates with names/IDs; \
 
 ## 2. Enzyme Families Discovered
 Summary table: Family, Fold/Mechanism, # Candidates, # Top Tier, \
-Representative (gene names), Why Relevant (1 sentence).
+Representatives (enzyme name — accession, for each), Why Relevant (1 sentence).
 
 ## 3. Candidate Table
 CRITICAL REQUIREMENT: Every single candidate in the evaluation data MUST appear \
