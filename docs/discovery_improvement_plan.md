@@ -30,12 +30,20 @@ away BEFORE registration → never triaged → invisible.
   discovered via evidence, e.g. DesD/PuuA/McbA — a raw 500-hit UniProt *result
   page* is still a lead; but a resolved gene like DesD MUST get its representative
   registered, never dropped.)
-- **A2 Triage is the ONLY filter.** Evaluate/triage every registered enzyme; the
-  FINAL ranked list includes only the relevant ones. Relevance must weight
-  **substrate accommodation** (can it act on a C6 diacid + C6 diamine?), not
-  mechanism class alone — that's why mechanism-matched-but-substrate-wrong enzymes
-  currently top the list. Irrelevant ones are triaged out of the final list but
-  were at least registered + evaluated.
+- **A2 Triage = catalytic-MECHANISM feasibility (NOT promiscuity prediction).**
+  Predicting whether an active site will accept a non-native substrate is a hard,
+  unreliable problem even computationally. So relevance is instead: **can the
+  reaction proceed GIVEN THE CATALYTIC MECHANISM?** Primary, data-answerable signals:
+    (i) direction (formation, not cleavage);
+    (ii) bond chemistry (amide via an ATP-activated acyl-phosphate/adenylate);
+    (iii) substrate TOPOLOGY — the mechanism must ligate TWO FREE small molecules
+         (free diacid + free diamine). Mechanisms needing a carrier-protein-tethered
+         substrate (NRPS adenylation) or a polymer primer (cyanophycin) CANNOT do
+         this and are downranked, regardless of substrate identity.
+  Substrate-similarity facts (MW/Tanimoto/FG, already computed) stay INFORMATIONAL
+  context, not a hard predictor. Most of these mechanism signals already exist in
+  evaluate_candidate as soft warnings (direction reject, bond-type, `substrate_class`
+  = polymer/carrier_protein_tethered) — A2 ELEVATES them to the primary ranking axis.
 - Measure: every explored/resolved family has ≥1 registered rep (0 "resolved but
   unregistered" leaks); `family_coverage.candidates`==1.0; final list substrate-relevant.
 
