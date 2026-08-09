@@ -465,12 +465,12 @@ def _deterministic_mechanistic_ranking(
         else:
             tier = 1 if clean_seen < t1 else (2 if clean_seen < t2 else 3)
             clean_seen += 1
-        fg = _best_fg_similarity(d)
+        fit = _accommodation_score(d)
         bits = []
         if gated:
             bits.append("HARD-GATED: " + "; ".join(d.get("critical_warnings", []))[:120])
-        if fg is not None:
-            bits.append(f"FG-sim={fg:.2f}")
+        if fit is not None:
+            bits.append(f"accommodation={fit:.2f}")
         if d.get("is_swissprot"):
             bits.append("Swiss-Prot")
         cp = (d.get("literature") or {}).get("characterization_papers")
