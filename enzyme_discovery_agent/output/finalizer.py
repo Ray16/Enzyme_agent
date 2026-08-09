@@ -199,9 +199,9 @@ class RunFinalizer:
             # and register them as candidates.  Deterministic (regex + REST, no
             # full text in the LLM context), so it adds no prompt tokens; it is
             # the only route to characterized enzymes that carry no gene name and
-            # only a generic protein annotation (e.g. SfaB), reachable solely via
-            # the GenBank accession deposited in their paper.  Runs BEFORE screen
-            # so the resolved candidates are screened and evaluated with the rest.
+            # only a generic protein annotation, reachable solely via the GenBank
+            # accession deposited in their paper.  Runs BEFORE screen so the
+            # resolved candidates are screened and evaluated with the rest.
             try:
                 from enzyme_discovery_agent.tools.fulltext import (
                     mine_and_register_fulltext_accessions,
