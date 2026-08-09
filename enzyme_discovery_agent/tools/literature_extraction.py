@@ -100,21 +100,27 @@ _EXTRACT_SYSTEM = (
 
 def extract_from_paper(
     paper_text: str, deposited_accession: str, protein_name: str, llm_client,
-    max_chars: int = 48000,
-) -> list[dict]:
-    """LLM-extract native substrates + mechanism for the paper's enzyme(s).
+    query: str = "", max_chars: int = 48000,
+) -> dict:
+    """LLM-extract from a paper's full text, in one focused pass:
 
-    Returns a list of ``{name, genbank, native_substrates, reaction}`` dicts
-    (empty if the paper does not characterize the reaction — which also flags the
-    paper as irrelevant for this candidate).
+      * ``paper_relevant`` + ``relevance_reason`` — does it characterise a
+        query-type enzyme reaction (right chemistry AND direction)?  This is the
+        proper relevance filter: a semantic score cannot tell an amide-*synthetase*
+        paper from a nylon-*depolymerisation* one, but the mechanism can;
+      * ``enzymes`` — the characterised enzyme(s): native substrates + mechanism;
+      * ``related_enzymes`` — other query-type enzymes named in the BODY (which
+        abstract-level extraction misses) → discovery leads.
+
+    Returns ``{}`` on an empty/unparseable response.
     """
     if not paper_text:
-        return []
+        return {}
     user = (
+        f"Query reaction of interest: {query or 'enzymatic reaction'}\n\n"
         f"This paper deposited sequence accession {deposited_accession} "
-        f"(UniProt annotation: {protein_name or 'uncharacterized'}). Extract each "
-        f"characterized enzyme's native/accepted substrates and reaction "
-        f"mechanism.\n\nPAPER:\n{paper_text[:max_chars]}"
+        f"(UniProt annotation: {protein_name or 'uncharacterized'}). Extract per "
+        f"the schema.\n\nPAPER:\n{paper_text[:max_chars]}"
     )
     from enzyme_discovery_agent import config
     response = llm_client.call(
@@ -124,14 +130,13 @@ def extract_from_paper(
         timeout=max(config.LLM_TIMEOUT, 500),
     )
     if response is None:
-        return []
+        return {}
     content = response.choices[0].message.content or ""
     try:
-        obj = json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
+        return json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
     except (AttributeError, json.JSONDecodeError):
         logger.debug("literature extraction: unparseable response for %s", deposited_accession)
-        return []
-    return obj.get("enzymes", []) or []
+        return {}
 
 
 def _match_enzyme_record(records: list[dict], deposited_accession: str) -> dict | None:
