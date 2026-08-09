@@ -176,6 +176,68 @@ def _deterministic_evidence_ranking(query: str, all_evals: list[dict]) -> list[d
     ]
 
 
+def _ortholog_key(data: dict) -> str | None:
+    """Group true orthologs — the SAME enzyme in different organisms — together.
+
+    Uses the normalised gene symbol plus the primary EC number.  Suffix noise
+    that only distinguishes copies of one enzyme (``puuA``, ``puuA-I``,
+    ``puuA-II``, ``puuA_1``, ``puuA_2``) is stripped so they collapse, while
+    genuinely different enzymes that merely share a gene letter or an EC do NOT
+    (different gene stem or different EC → different key).  Only i/v/x are
+    treated as roman suffixes so a gene legitimately ending in 'c'/'d'/'m'
+    (murC, iucC) is left intact.
+    """
+    genes = data.get("gene_names") or []
+    gene = (genes[0] if genes else "").lower().strip()
+    gene = re.sub(r"[\s_\-]*(?:[ivx]+|\d+)$", "", gene)  # drop paralog/copy suffix
+    ec = (data.get("ec_numbers") or [""])[0]
+    if gene and ec:
+        return f"{gene}|{ec}"
+    if gene:
+        return f"gene:{gene}"
+    name = re.sub(r"\b\d+\b", "", (data.get("protein_name") or "").lower()).strip()
+    name = re.sub(r"\s+", " ", name)
+    return f"name:{name}" if name else None
+
+
+def _collapse_orthologs(
+    pass1_ranking: list[dict], acc_to_eval: dict[str, dict],
+) -> list[dict]:
+    """Collapse same-enzyme orthologs into one representative entry.
+
+    Experimentalists want DISTINCT enzyme families at the top, not the same
+    enzyme repeated across a dozen organisms (one enzyme was filling 7 of the
+    top 10 slots).  The best-ranked member of each ortholog group stays as the
+    entry; the others are attached as ``orthologs`` (accession + organism) so
+    the enzyme is represented once but its organism spread is preserved, not
+    lost.  Rank order is otherwise unchanged.
+    """
+    groups: dict[str, dict] = {}
+    order: list[str] = []
+    for entry in pass1_ranking:
+        acc = entry.get("accession", "")
+        ev = acc_to_eval.get(acc, {})
+        d = ev.get("data", ev)
+        key = _ortholog_key(d) or f"acc:{acc}"
+        if key not in groups:
+            entry.setdefault("orthologs", [])
+            groups[key] = entry
+            order.append(key)
+        else:
+            rep = groups[key]
+            rep.setdefault("orthologs", []).append({
+                "accession": acc,
+                "organism": d.get("organism", ""),
+                "gene": entry.get("gene", ""),
+            })
+    collapsed = [groups[k] for k in order]
+    for i, entry in enumerate(collapsed, start=1):
+        entry["rank"] = i
+        if entry.get("orthologs"):
+            entry["n_orthologs"] = len(entry["orthologs"])
+    return collapsed
+
+
 def _candidate_is_gated(data: dict) -> bool:
     """A hard mechanistic contradiction (direction / bond-type / severe-size
     mismatch) disqualifies a candidate from the top, whatever else it has."""
