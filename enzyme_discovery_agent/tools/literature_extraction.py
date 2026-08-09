@@ -155,11 +155,13 @@ def _match_enzyme_record(records: list[dict], deposited_accession: str) -> dict 
 
 def extract_substrates_and_mechanism(
     run_dir: Path, accession: str, source_tool: str, protein_name: str, llm_client,
+    query: str = "",
 ) -> dict | None:
     """Full recovery for one candidate: link paper → extract → resolve SMILES.
 
     Returns ``{native_substrates:[{name,smiles}], mechanism:{...}, paper:{...},
-    paper_relevant: bool}`` or None when no paper link exists.
+    paper_relevant, relevance_reason, related_enzymes:[...]}`` or None when no
+    paper link exists.
     """
     paper = find_candidate_paper(Path(run_dir), source_tool)
     if not paper:
@@ -168,21 +170,29 @@ def extract_substrates_and_mechanism(
         text = Path(paper["text_path"]).read_text(errors="ignore")
     except OSError:
         return None
-    records = extract_from_paper(text, paper["deposited_accession"], protein_name, llm_client)
-    rec = _match_enzyme_record(records, paper["deposited_accession"])
-    if not rec:
-        # No extractable characterized reaction → the paper is not a relevant
-        # characterization of this enzyme.
+    obj = extract_from_paper(text, paper["deposited_accession"], protein_name,
+                             llm_client, query=query)
+    related = obj.get("related_enzymes") or []
+    if not obj.get("paper_relevant", True):
         return {"native_substrates": [], "mechanism": None, "paper": paper,
-                "paper_relevant": False}
-    substrates = []
-    for name in (rec.get("native_substrates") or []):
-        smiles = resolve_substrate_names_to_smiles(name)
-        substrates.append({"name": name, "smiles": smiles})
+                "paper_relevant": False,
+                "relevance_reason": obj.get("relevance_reason", ""),
+                "related_enzymes": related}
+    rec = _match_enzyme_record(obj.get("enzymes") or [], paper["deposited_accession"])
+    if not rec:
+        return {"native_substrates": [], "mechanism": None, "paper": paper,
+                "paper_relevant": False,
+                "relevance_reason": obj.get("relevance_reason",
+                                            "no characterised query-type enzyme found"),
+                "related_enzymes": related}
+    substrates = [{"name": n, "smiles": resolve_substrate_names_to_smiles(n)}
+                  for n in (rec.get("native_substrates") or [])]
     return {
         "native_substrates": substrates,
         "mechanism": rec.get("reaction"),
         "enzyme_name_in_paper": rec.get("name"),
         "paper": paper,
         "paper_relevant": True,
+        "relevance_reason": obj.get("relevance_reason", ""),
+        "related_enzymes": related,
     }
