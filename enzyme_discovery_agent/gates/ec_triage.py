@@ -72,9 +72,17 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
 
     representatives: list[tuple[int, int, str]] = []
     for family, members in family_groups.items():
+        # Keep a member if it is known to be full-length (>=100 aa) OR if its
+        # length is not known yet.  Full-text-mined accessions are registered
+        # WITHOUT a length (only their source); screening is the step that
+        # fetches the length, so applying a >=100 cutoff here — before the
+        # length exists — silently discards exactly the deterministically
+        # recovered enzymes we mined the literature to reach.  Genuine short
+        # fragments (a KNOWN length below 100) are still dropped.
         members = [
             (acc, info) for acc, info in members
-            if info.get("metadata", {}).get("seq_length", 0) >= 100
+            if (info.get("metadata", {}).get("seq_length") or 0) >= 100
+            or not info.get("metadata", {}).get("seq_length")
         ]
         if not members:
             continue
