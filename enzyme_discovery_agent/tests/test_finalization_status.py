@@ -75,8 +75,8 @@ class TestFinalizationStageStatus(unittest.TestCase):
         self.assertIn("provider down", stage["error"])
 
     def test_stage_without_declared_artifact_still_completes(self):
-        self.finalizer._run_finalization_stage("reaction_images", lambda: None)
-        self.assertEqual(self._status()["stages"]["reaction_images"]["status"], "completed")
+        self.finalizer._run_finalization_stage("exploration_summary", lambda: None)
+        self.assertEqual(self._status()["stages"]["exploration_summary"]["status"], "completed")
 
 
 class TestEmptyRunOutcome(unittest.TestCase):
