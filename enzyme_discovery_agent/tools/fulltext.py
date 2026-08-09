@@ -356,7 +356,7 @@ def _resolve_embl_accession(acc: str, cap: int = 50) -> list[str]:
 
 
 def mine_and_register_fulltext_accessions(
-    run_dir, query: str, max_papers: int = 5, max_proteins: int = 120, log_fn=None,
+    run_dir, query: str, fetch_ceiling: int = 250, max_proteins: int = 400, log_fn=None,
 ) -> list[str]:
     """Fetch top mechanism-relevant papers' full text and register the sequence
     accessions deposited in them as discovered candidates.
