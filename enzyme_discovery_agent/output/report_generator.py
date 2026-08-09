@@ -435,8 +435,8 @@ def _deterministic_mechanistic_ranking(
         if not acc:
             continue
         gated = _candidate_is_gated(d)
-        fg = _best_fg_similarity(d)
-        fg_key = -(fg if fg is not None else 0.5)  # None → neutral midpoint
+        fit = _accommodation_score(d)
+        fit_key = -(fit if fit is not None else 0.5)  # None → neutral midpoint
         lit = d.get("literature") or {}
         struct = d.get("structural_data") or {}
         struct_rank = 0 if (struct.get("pdb_ids")) else (1 if struct.get("has_alphafold") else 2)
