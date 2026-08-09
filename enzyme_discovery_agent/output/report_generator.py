@@ -545,39 +545,42 @@ def generate_two_pass_report(
         max_tokens=max(8192, len(rankable_evals) * 60),
     )
 
-    if response is None:
-        if log_fn:
-            log_fn("  Pass 1 ranking failed — falling back to single-pass")
-        return generate_report("confidence", run_dir, all_evals, query,
-                               llm_client, token_usage, log_fn)
-
-    token_usage.record("pass1_ranking", response)
-    content = response.choices[0].message.content or ""
-    parsed = _parse_scoring_response(content)
-
-    if not parsed:
-        if log_fn:
-            log_fn("  Pass 1 JSON parse failed — falling back to single-pass")
-        return generate_report("confidence", run_dir, all_evals, query,
-                               llm_client, token_usage, log_fn)
-
-    if log_fn:
-        log_fn(f"  Pass 1: LLM ranked {len(parsed)} candidates")
-
-    # Build pass1_ranking from parsed output; assign numeric score from tier
     tier_score = {1: 8.0, 2: 5.0, 3: 2.0}
-    pass1_ranking = []
-    for entry in parsed:
-        tier = entry.get("tier", 2)
-        pass1_ranking.append({
-            "rank": entry.get("rank", 0),
-            "accession": entry.get("accession", ""),
-            "gene": entry.get("gene", ""),
-            "score": tier_score.get(tier, 5.0),
-            "tier": tier,
-            "rationale": entry.get("rationale", ""),
-        })
-    pass1_ranking.sort(key=lambda e: e.get("rank", 9999))
+    parsed = None
+    if response is not None:
+        token_usage.record("pass1_ranking", response)
+        content = response.choices[0].message.content or ""
+        parsed = _parse_scoring_response(content)
+
+    # The single whole-list LLM ranking is BEST-EFFORT only: a thinking model
+    # can spend the entire completion budget on reasoning tokens and return
+    # empty content (finish_reason=length), and a long list can truncate.  When
+    # it does not yield a usable ranking for most candidates, fall back to the
+    # DETERMINISTIC GATED ranking — never to an ungated single-pass prose
+    # report, which is what previously let direction-mismatch hydrolases (an
+    # amide *cleavage* enzyme for an amide *formation* target) float to the top.
+    usable = bool(parsed) and len(parsed) >= 0.6 * max(1, len(rankable_evals))
+    if usable:
+        if log_fn:
+            log_fn(f"  Pass 1: LLM ranked {len(parsed)} candidates")
+        pass1_ranking = []
+        for entry in parsed:
+            tier = entry.get("tier", 2)
+            pass1_ranking.append({
+                "rank": entry.get("rank", 0),
+                "accession": entry.get("accession", ""),
+                "gene": entry.get("gene", ""),
+                "score": tier_score.get(tier, 5.0),
+                "tier": tier,
+                "rationale": entry.get("rationale", ""),
+            })
+        pass1_ranking.sort(key=lambda e: e.get("rank", 9999))
+    else:
+        if log_fn:
+            got = 0 if not parsed else len(parsed)
+            log_fn(f"  Pass 1 LLM ranking unusable ({got}/{len(rankable_evals)} rows); "
+                   f"using deterministic gated ranking")
+        pass1_ranking = _deterministic_mechanistic_ranking(rankable_evals, tier_score)
 
     # Deduplicate (LLM may hallucinate polymer candidates it knows from training)
     seen_accs = set()
