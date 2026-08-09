@@ -31,16 +31,19 @@ class EvidenceSelectionGate:
                     "content": (
                         "EVIDENCE COLLECTION CHECKPOINT: sufficient literature has been gathered "
                         "across several mechanistically distinct families. Now REGISTER candidates "
-                        "COMPREHENSIVELY — do NOT downselect here. For EVERY distinct enzyme "
-                        "family / mechanism you have found, resolve a representative enzyme to a "
-                        "UniProt accession and call screen_candidates on it, so a representative of "
-                        "EVERY family enters the candidate registry. A family you found but did not "
+                        "COMPREHENSIVELY — do NOT downselect here. Register EVERY DISTINCT ENZYME "
+                        "you have found: across all families AND the distinct members within each "
+                        "family (different genes catalysing related-but-distinct reactions are "
+                        "SEPARATE candidates — do not collapse them into one 'family representative'). "
+                        "Resolve each distinct enzyme to a UniProt accession and call "
+                        "screen_candidates. Consolidate ONLY orthologs (the SAME enzyme from "
+                        "different organisms → one representative). An enzyme you found but did not "
                         "screen is a lost candidate. RELEVANCE FILTERING HAPPENS LATER, at "
-                        "triage/evaluation — NOT here; registration must be inclusive so that "
-                        "evaluation can judge each family on catalytic-mechanism feasibility. Do "
-                        "not promote an entire search-result page (pick ONE well-characterized "
-                        "representative per family), and do not continue generic literature or "
-                        "database searches before screening."
+                        "triage/evaluation — NOT here; registration must be inclusive so evaluation "
+                        "can judge each enzyme on catalytic-mechanism feasibility. Do not register a "
+                        "raw 500-row search-result page wholesale, but every enzyme you actually "
+                        "resolved must be registered; do not continue generic literature or database "
+                        "searches before screening."
                     ),
                 },
             ],
