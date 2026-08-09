@@ -1081,13 +1081,18 @@ def evaluate_candidate(
             "Structure": "yes" if structural_data.get("has_structure") else "no",
         },
     )
-    update_candidate_registry(run_dir, accession, "evaluated", metadata={
+    # A non-enzyme (no EC, no catalytic activity, no catalytic domain) is a
+    # co-cluster contaminant, not a candidate: mark it rejected so it is excluded
+    # from the family view and ranking rather than registered as a family.
+    eval_status = "evaluated" if is_enzyme else "rejected"
+    update_candidate_registry(run_dir, accession, eval_status, metadata={
         "protein_name": protein_name,
         "gene_names": gene_names,
         "organism": organism,
         "sequence_length": seq_length,
         "ec_numbers": ec_numbers,
         "catalytic_activities": catalytic_activities[:3],
+        "is_enzyme": is_enzyme,
         "interpro_family": interpro_family,
         "interpro_family_id": interpro_family_id,
         "literature": literature,
