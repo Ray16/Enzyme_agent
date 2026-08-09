@@ -294,8 +294,8 @@ One subsection per Tier 1 candidate:
 
 ## 5. Key Literature References
 Table: PMID (hyperlinked), Authors, Title, Candidate(s), Relevance. 8-12 papers. \
-The Candidate(s) column lists the UniProt accession(s) of the candidate(s) each \
-reference supports, so readers can trace evidence to specific enzymes.
+The Candidate(s) column lists each supported candidate as "<enzyme name> \
+(<accession>)", so readers can trace evidence to specific named enzymes.
 
 ## 6. Mechanistic Summary
 Table: Family/Fold, Mechanism, EC Class, Candidates, Best Representative.
