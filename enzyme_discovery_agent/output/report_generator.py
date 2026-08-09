@@ -734,65 +734,79 @@ def generate_two_pass_report(
         log_fn(f"  Hard filter: {len(polymer_evals)} polymer-substrate candidates "
                f"pushed to bottom ({', '.join(polymer_genes)})")
 
-    # ── Pass 1: single mechanistic ranking call ───────────────────────────
-    if log_fn:
-        log_fn(f"  Pass 1: mechanistic ranking of {len(rankable_evals)} candidates...")
-
-    messages = build_mechanistic_ranking_prompt(
-        query=query,
-        all_evals=rankable_evals,
-        notebook_context=notebook_text,
-    )
-
-    response = llm_client.call(
-        messages=messages,
-        # Sonnet 5 rejects the legacy OpenAI temperature parameter.  The
-        # ranking prompt is deterministic in structure; provider defaults are
-        # preferable to an incompatible request parameter.
-        temperature=config.LLM_TEMPERATURE,
-        timeout=max(config.LLM_TIMEOUT, 900),
-        # One JSON row per candidate: the whole ranked list must fit in a single
-        # completion, or it truncates and the two-pass gate is lost.  Scale the
-        # ceiling to the candidate count (~40 tokens/row) with a generous floor.
-        max_tokens=max(8192, len(rankable_evals) * 60),
-    )
-
+    # ── Pass 1: FOCUS ranking (code narrows, LLM reasons over evidence) ───
+    # A single LLM call cannot rank the whole pool — this thinking model returns
+    # empty output above ~10-12 items asked to reason and emit a structured list.
+    # So: (1) a deterministic, gated baseline orders everything reliably;
+    # (2) we shortlist the most promising fact-bearing, non-contradictory
+    # candidates; (3) the LLM REASONS over their full grounded evidence
+    # (substrate accommodation, mechanism, provenance, feasibility) to rank just
+    # those.  Code narrows; the LLM judges the leads.
     tier_score = {1: 8.0, 2: 5.0, 3: 2.0}
-    parsed = None
-    if response is not None:
-        token_usage.record("pass1_ranking", response)
-        content = response.choices[0].message.content or ""
-        parsed = _parse_scoring_response(content)
+    baseline = _deterministic_mechanistic_ranking(rankable_evals, tier_score)
+    acc_to_eval = {ev.get("data", ev).get("accession", ""): ev for ev in all_evals}
 
-    # The single whole-list LLM ranking is BEST-EFFORT only: a thinking model
-    # can spend the entire completion budget on reasoning tokens and return
-    # empty content (finish_reason=length), and a long list can truncate.  When
-    # it does not yield a usable ranking for most candidates, fall back to the
-    # DETERMINISTIC GATED ranking — never to an ungated single-pass prose
-    # report, which is what previously let direction-mismatch hydrolases (an
-    # amide *cleavage* enzyme for an amide *formation* target) float to the top.
-    usable = bool(parsed) and len(parsed) >= 0.6 * max(1, len(rankable_evals))
-    if usable:
-        if log_fn:
-            log_fn(f"  Pass 1: LLM ranked {len(parsed)} candidates")
-        pass1_ranking = []
-        for entry in parsed:
-            tier = entry.get("tier", 2)
+    shortlist = []
+    for entry in baseline:
+        if len(shortlist) >= config.RANKING_FOCUS_SHORTLIST:
+            break
+        ev = acc_to_eval.get(entry.get("accession", ""))
+        if not ev:
+            continue
+        d = ev.get("data", ev)
+        if _candidate_is_gated(d):
+            continue
+        if not (d.get("substrate_similarity") or {}).get("property_comparisons"):
+            continue
+        shortlist.append(ev)
+
+    if log_fn:
+        log_fn(f"  Focus ranking: LLM reasoning over the {len(shortlist)} most "
+               f"promising candidates (of {len(rankable_evals)})")
+    llm_rows = (_llm_focus_rank(shortlist, query, llm_client, token_usage, log_fn)
+                if shortlist else None)
+
+    pass1_ranking = []
+    if llm_rows:
+        short_accs = {ev.get("data", ev).get("accession", "") for ev in shortlist}
+        placed = set()
+        for r in sorted(llm_rows, key=lambda x: x.get("rank", 9999)):
+            acc = r.get("accession", "")
+            if acc not in short_accs or acc in placed:
+                continue
+            placed.add(acc)
+            d = acc_to_eval.get(acc, {}).get("data", {})
+            tier = r.get("tier", 1)
             pass1_ranking.append({
-                "rank": entry.get("rank", 0),
-                "accession": entry.get("accession", ""),
-                "gene": entry.get("gene", ""),
+                "rank": len(pass1_ranking) + 1,
+                "accession": acc,
+                "gene": (d.get("gene_names") or [""])[0],
                 "score": tier_score.get(tier, 5.0),
                 "tier": tier,
-                "rationale": entry.get("rationale", ""),
+                "rationale": r.get("reason", "") or "LLM-reasoned lead",
             })
-        pass1_ranking.sort(key=lambda e: e.get("rank", 9999))
-    else:
+        for ev in shortlist:  # keep any shortlist member the LLM omitted
+            acc = ev.get("data", ev).get("accession", "")
+            if acc not in placed:
+                d = ev.get("data", ev)
+                pass1_ranking.append({
+                    "rank": len(pass1_ranking) + 1, "accession": acc,
+                    "gene": (d.get("gene_names") or [""])[0],
+                    "score": tier_score.get(2, 5.0), "tier": 2,
+                    "rationale": "Shortlisted; not ordered by the model.",
+                })
         if log_fn:
-            got = 0 if not parsed else len(parsed)
-            log_fn(f"  Pass 1 LLM ranking unusable ({got}/{len(rankable_evals)} rows); "
-                   f"using deterministic gated ranking")
-        pass1_ranking = _deterministic_mechanistic_ranking(rankable_evals, tier_score)
+            log_fn(f"  Focus ranking: LLM ranked {len(placed)} promising candidates")
+    elif log_fn:
+        log_fn("  Focus ranking unavailable; using deterministic gated baseline")
+
+    # Append the rest of the pool (below the focused leads) in deterministic
+    # order, so the report still covers everything.
+    focus_accs = {e["accession"] for e in pass1_ranking}
+    for entry in baseline:
+        if entry.get("accession") not in focus_accs:
+            entry["rank"] = len(pass1_ranking) + 1
+            pass1_ranking.append(entry)
 
     # Deduplicate (LLM may hallucinate polymer candidates it knows from training)
     seen_accs = set()
