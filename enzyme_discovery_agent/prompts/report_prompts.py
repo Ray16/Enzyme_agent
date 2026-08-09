@@ -892,12 +892,23 @@ def build_pass2_profile_prompt(
     """
     compact_top = _compact_eval_for_report(top_evals, include_pdb_ids=True)
 
-    # Build ranked summary for all candidates to give the LLM full context
-    all_ranked_summary = "\n".join(
-        f"  #{r['rank']} (Tier {r['tier']}) {r['gene']} ({r['accession']}): "
-        f"{r.get('rationale','')}"
-        for r in pass1_ranking
-    )
+    # Build ranked summary for all candidates to give the LLM full context.
+    # Same-enzyme orthologs are folded into their representative and listed
+    # inline, so one enzyme occupies one ranked entry (not one row per organism).
+    def _summary_line(r: dict) -> str:
+        line = (f"  #{r['rank']} (Tier {r['tier']}) {r['gene']} ({r['accession']}): "
+                f"{r.get('rationale','')}")
+        orths = r.get("orthologs") or []
+        if orths:
+            shown = ", ".join(
+                f"{o['accession']} ({o.get('organism','')})" for o in orths[:8]
+            )
+            more = "" if len(orths) <= 8 else f", +{len(orths) - 8} more"
+            line += (f"\n      └ same enzyme in {len(orths)} other organism(s): "
+                     f"{shown}{more}")
+        return line
+
+    all_ranked_summary = "\n".join(_summary_line(r) for r in pass1_ranking)
 
     parts = [f"Target query: {query}"]
     if notebook_context.strip():
