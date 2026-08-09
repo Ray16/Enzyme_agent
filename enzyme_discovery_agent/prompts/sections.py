@@ -90,10 +90,12 @@ Phase 1 — REACTION ANALYSIS (this is the MOST IMPORTANT phase):
   - Proceed directly to targeted literature and identifier searches.
 
 Phase 2 — DISCOVERY (database + literature search):
-  - Search literature for direct target/substrate/product evidence first.
+  - Search literature for direct target/substrate/product evidence first, using
+    a PARALLEL multi-source fan-out (see LITERATURE STRATEGY): issue several
+    search_* calls in ONE step, then call consolidate_literature to deduplicate,
+    merge, and globally re-rank into one clean pool before mining or reasoning.
   - Resolve EVERY literature-derived gene name or accession in UniProt individually.
   - Search InterPro only for families supported by the literature or close analogues.
-  - Search OpenAlex only to fill a documented evidence gap.
   - Treat every database result as a LEAD, not a candidate. Select only a small,
     evidence-linked set of accessions and call screen_candidates explicitly before
     they enter the candidate registry. Never promote an entire result page.
