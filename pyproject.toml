@@ -26,6 +26,11 @@ scoring = [
 rerank = [
     "sentence-transformers>=2.2",
 ]
+# Full-text acquisition: PDF text extraction (XML full text needs no dep).
+# Without this, PDFs are still downloaded and stored -- just not text-extracted.
+fulltext = [
+    "pymupdf>=1.23",
+]
 
 [tool.setuptools.packages.find]
 include = ["enzyme_discovery_agent*"]
