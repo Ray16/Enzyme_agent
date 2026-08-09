@@ -145,7 +145,7 @@ _EXTRACT_SYSTEM = (
     'the query reaction TYPE (right chemistry AND direction)?",\n'
     '  "is_characterization_paper": true|false,\n'
     '  "enzymes": [{\n'
-    '     "name":"..", "genbank":"..",\n'
+    '     "name":"..", "genbank":"..", "organism":"source organism if stated",\n'
     '     "native_substrates":["exact chemical names resolvable to a structure"],\n'
     '     "reaction":{"bond_formed":"amide|ester|thioester|peptide|other",'
     '"direction":"formation|cleavage","cofactor":"ATP|none|..",'
