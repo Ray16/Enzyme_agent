@@ -20,6 +20,24 @@ Measurement tiers:
 
 ## 2026-08-08
 
+### E-coverage — Family coverage leaks at SELECTION, not search 🔬 (diagnosis)
+- **Finding (E11 run, user-flagged):** the ranked candidates are ATP-grasp-heavy
+  and MISS the NIS-synthetase family (DesD/AsbA/AsbB/IucA/IucC — the dicarboxylate
+  + diamine coupling closest to nylon chemistry) and drop McbA (adenylation).
+- **New metric `family_coverage`** (eval/) measured at two stages: `searched`
+  vs `candidates`, with `dropped` = searched−kept. E11 run: **searched=1.00,
+  candidates=0.83, DROPPED=[nis_synthetase]**. (First cut scanned all artifacts →
+  falsely reported 1.0; fixed to scan the KEPT candidate set — a lenient metric
+  is worse than none.)
+- **Localized the leak:** McbA was searched AND resolved (`search_uniprot(McbA …
+  Marinactinospora)` → 1 hit) but never screened/evaluated → it's the
+  search→candidate SELECTION step that narrows to ATP-grasp, not search breadth.
+- **→ Fix direction:** family-diverse SELECTION — promote a representative from
+  EACH distinct family found, don't converge. Touches evidence-selection /
+  screen_candidates. Also separate bugs this run: report_confidence.md truncated
+  (report-gen token cutoff); `fetch_full_text` never called (absent from the
+  system prompt entirely).
+
 ### E10 — Forward-citation chasing + multi-source snowball — ✅ recall lever
 - **Change:** `deep_literature_search` now (a) seeds from all 4 abstract sources
   (was PubMed+OpenAlex only), and (b) follows citations BOTH ways — backward
