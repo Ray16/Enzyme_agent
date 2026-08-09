@@ -744,6 +744,20 @@ def generate_two_pass_report(
             log_fn(f"  Hard gate: demoted {n_gated} candidate(s) with a "
                    f"mechanistic contradiction below all consistent candidates")
 
+    # ── Collapse orthologs: one enzyme, one entry ─────────────────────────
+    # The same enzyme in many organisms was occupying many top slots (7 of the
+    # top 10 were PuuA copies).  Experimentalists want distinct enzyme families,
+    # so fold same-enzyme orthologs into a single representative that carries the
+    # list of organisms it appears in.  Runs AFTER the gate so a representative
+    # inherits the correct tier.
+    _acc_to_eval = {ev.get("data", ev).get("accession", ""): ev for ev in all_evals}
+    n_before_collapse = len(pass1_ranking)
+    pass1_ranking = _collapse_orthologs(pass1_ranking, _acc_to_eval)
+    n_folded = n_before_collapse - len(pass1_ranking)
+    if n_folded > 0 and log_fn:
+        log_fn(f"  Ortholog collapse: folded {n_folded} same-enzyme ortholog(s) "
+               f"into representatives ({len(pass1_ranking)} distinct entries)")
+
     n_ranked = len(pass1_ranking)
     n_total = len(all_evals)
     if log_fn:
