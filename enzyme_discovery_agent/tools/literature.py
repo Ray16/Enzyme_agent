@@ -1436,9 +1436,13 @@ def deep_literature_search(
             "data": {"seed_papers": [], "extracted_entities": {}, "stats": {}},
         }
 
-    # Step 3: Get referenced works from OpenAlex
+    # Step 3: From each seed's OpenAlex work, collect BACKWARD reference ids and
+    # the FORWARD cited_by URL. The global budget is split so forward citations
+    # do not starve backward coverage (a landmark seed has thousands of citers).
+    BACKWARD_CAP, FORWARD_CAP = 60, 40
     seed_dois = [s["doi"] for s in seeds if s.get("doi")]
-    all_ref_ids = []
+    backward_ids: list[str] = []
+    cited_by_urls: list[str] = []
 
     if seed_dois:
         doi_filter = "|".join(f"https://doi.org/{d}" for d in seed_dois)
@@ -1453,17 +1457,21 @@ def deep_literature_search(
         try:
             data = json.loads(request_with_retry(req, timeout=30).decode())
             for work in data.get("results", []):
-                refs = work.get("referenced_works", [])
-                all_ref_ids.extend(refs[:max_refs_per_seed])
+                backward_ids.extend(
+                    work.get("referenced_works", [])[:max_refs_per_seed])
+                cb = work.get("cited_by_api_url")
+                if cb and work.get("cited_by_count", 0) > 0:
+                    cited_by_urls.append(cb)
         except Exception as e:
-            logger.warning("Deep search: failed to fetch seed references: %s", e)
+            logger.warning("Deep search: failed to fetch seed works: %s", e)
 
-    # Step 4: Deduplicate and batch-fetch references
-    unique_ref_ids = list(dict.fromkeys(all_ref_ids))[:100]
-
-    ref_papers = []
-    if unique_ref_ids:
-        ref_papers = _batch_fetch_openalex_works(unique_ref_ids)
+    # Step 4: fetch backward references (batch by id) and forward citations
+    # (top-cited citers per seed), each within its budget, then dedup together.
+    unique_back = list(dict.fromkeys(backward_ids))[:BACKWARD_CAP]
+    backward_papers = _batch_fetch_openalex_works(unique_back) if unique_back else []
+    forward_papers = _fetch_forward_citations(
+        cited_by_urls, per_seed=max_refs_per_seed, total_cap=FORWARD_CAP)
+    ref_papers = _dedup_papers(backward_papers + forward_papers)
 
     # Step 5: Extract entities from all collected papers
     all_papers = seeds + ref_papers
