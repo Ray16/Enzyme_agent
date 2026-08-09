@@ -41,10 +41,14 @@ class TestLeakageFirewall(unittest.TestCase):
     def test_no_answer_terms_in_agent_runtime(self):
         forbidden = _forbidden_terms()
         self.assertTrue(forbidden, "no forbidden terms resolved — check benchmarks")
+        # Match answer terms as whole tokens, NOT substrings: a short gene marker
+        # like "nyla" must not false-positive inside legitimate vocabulary such as
+        # "ade-NYLA-tion". Real leakage is the gene/accession as its own word.
+        patterns = {t: re.compile(r"\b" + re.escape(t) + r"\b") for t in forbidden}
         offenders = []
         for p in _runtime_files():
             text = p.read_text(errors="ignore").lower()
-            offenders += [(p.name, t) for t in forbidden if t in text]
+            offenders += [(p.name, t) for t, rx in patterns.items() if rx.search(text)]
         self.assertEqual(offenders, [], f"answer terms leaked into agent runtime: {offenders}")
 
     def test_agent_runtime_does_not_import_eval(self):
