@@ -55,11 +55,13 @@ class TestScoreRun(unittest.TestCase):
         self.assertEqual(m["papers_unique"], 2)              # DOI dup merged
         self.assertGreater(m["redundancy"], 0)
         self.assertEqual(m["fulltext_downloaded"], 1)
-        # recall: markers from paper text, accession from the database artifact
-        self.assertIn("ddag", m["answer_markers_found"])
-        self.assertIn("dapdiamide", m["answer_markers_found"])
-        self.assertIn("e2ja32", m["answer_accessions_found"])
-        self.assertTrue(m["found_answer"])
+        # adaptive recall: specific member from paper text, accession from the
+        # database artifact, mechanism-class as a diagnostic.
+        self.assertIn("ddag", m["recall"]["specific_member"]["found"])
+        self.assertIn("dapdiamide", m["recall"]["specific_member"]["found"])
+        self.assertIn("e2ja32", m["recall"]["specific_accession"]["found"])
+        self.assertTrue(m["recall"]["mechanism_class"]["hit"])  # "amide ligase"
+        self.assertTrue(m["found_answer"])                      # a primary target hit
 
     def test_empty_run_scores_zero_recall(self):
         with tempfile.TemporaryDirectory() as tmp:
