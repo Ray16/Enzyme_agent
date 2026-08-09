@@ -47,10 +47,15 @@ def _recover_literature_papers(run: Path) -> list[dict]:
 
 
 def _dedup(papers: list[dict]) -> list[dict]:
+    # Use the SAME identity key the agent's consolidation uses (DOI -> PMID ->
+    # normalized title), so papers_unique matches real pipeline behavior.
+    from enzyme_discovery_agent.tools.literature import _paper_key
     seen, out = set(), []
     for p in papers:
-        key = ((p.get("doi") or "").lower(), str(p.get("pmid") or ""),
-               (p.get("title") or "").lower().strip())
+        key = _paper_key(p)
+        if key is None:
+            out.append(p)  # unkeyable: keep (can't dedup safely)
+            continue
         if key in seen:
             continue
         seen.add(key)
