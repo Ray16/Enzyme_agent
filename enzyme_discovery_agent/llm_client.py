@@ -137,6 +137,7 @@ class LLMClient:
         temperature: float | None = config.LLM_TEMPERATURE,
         timeout: int = config.LLM_TIMEOUT,
         max_retries: int = 3,
+        max_tokens: int | None = None,
     ):
         """Call the LLM with retry logic. Returns the response or None on failure."""
         for attempt in range(max_retries):
@@ -149,6 +150,13 @@ class LLMClient:
                     kwargs["temperature"] = temperature
                 if tools:
                     kwargs["tools"] = tools
+                # Whole-list ranking calls emit one JSON row per candidate; the
+                # provider's default completion cap (~4k tokens) silently
+                # truncates them past ~100 candidates, which then fails to parse
+                # and drops the ranker to a worse ungated path.  Let callers lift
+                # the ceiling for those calls.
+                if max_tokens is not None:
+                    kwargs["max_tokens"] = max_tokens
 
                 # Apply the timeout to the HTTP client itself.  A
                 # ThreadPoolExecutor timeout is not sufficient here: leaving
