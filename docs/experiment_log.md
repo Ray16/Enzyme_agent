@@ -62,11 +62,19 @@ Measurement tiers:
   1.78M tokens (up from 1.41M — more snowballs cost more). Leakage-clean: the
   agent derived "ATP-grasp ligase" from its own mechanism reasoning; firewall test
   still green.
-- **Result:** ✅✅ **RECALL GAP CLOSED.** E10 (forward-citation tool) + E11
-  (per-mechanism-family steering) together make the agent-in-loop surface the
-  specific answer (DdaG / E2JA32) that generic search missed 0/131 — the confirmed
-  direction, achieved and measured. Cost: +0.37M tokens → C10 (token efficiency)
-  is the natural next lever; also E9 (consolidation gate, still 0 calls).
+- **Result:** ⚠️ **ATTRIBUTION RETRACTED (n=1 confound).** `found_answer` IS True
+  — but tracing the run shows DdaG came from a plain KEYWORD query
+  (`search_pubmed_002`: "amide bond synthetase ATP-dependent" → the DdaG/DdaF
+  paper) → UniProt `gene:ddaG` → E2JA32. NOT from the per-family citation chasing
+  I credited (and `deep_literature_search` isn't even artifacted, so its snowballs
+  are untraceable). The E10→E11 flip cannot be attributed to the steering: the
+  real driver was a keyword query landing the paper, i.e. LLM run-to-run variance.
+  **Lesson: n=1 per condition cannot separate signal from LLM noise.** Required
+  fixes before any recall attribution: (1) REPLICATES n>=3/condition, compare
+  recall RATES; (2) a PROVENANCE metric in eval/ (which tool+query first surfaced
+  each answer term — path-provenance per feedback_data_leakage); (3) artifact
+  deep_literature_search so its contribution is traceable. E11 may still raise the
+  hit probability by broadening mechanism-query coverage, but that is now UNPROVEN.
 
 ### E8 — Parallel multi-source steering (prompt + gates) — ✅ use / ❌ recall
 - **Change:** rewrote LITERATURE_GUIDANCE / Phase-2 / ROLE / reflection so the
