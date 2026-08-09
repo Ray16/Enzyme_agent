@@ -265,8 +265,6 @@ Char. | Eng. | Tanimoto | Key PMID | Tier | Rationale |
 SMILES in parentheses. Extract from native_substrates field (preferred) or \
 from catalytic_activities text + property_comparisons SMILES. Format each as \
 "compound_name (`SMILES`)" separated by "; ".
-- **Native Reaction**: if a reaction_image path is provided in the data, include \
-it as `![rxn](reaction_image_path)`. Otherwise, write "—".
 
 HYPERLINKS — make external IDs clickable: \
 UniProt as [accession](https://www.uniprot.org/uniprot/{accession}), \
