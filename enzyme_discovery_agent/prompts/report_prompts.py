@@ -274,11 +274,11 @@ from catalytic_activities text + property_comparisons SMILES. Format each as \
 
 NAMING — NEVER show a bare accession anywhere in the report. Always pair every \
 UniProt accession with the enzyme's name (protein_name) or, if missing, its gene \
-name, e.g. "Desferrioxamine synthetase DesD (A0ABN1NGB5)". This applies \
-EVERYWHERE accessions appear — the Representative column, grouped member lists, \
-the candidate table, Top Candidate Profiles, and the Candidate(s) column of the \
-references table. If only a generic name exists (e.g. "AMP-ligase"), show that; \
-use a bare accession only when no name or gene exists at all.
+name, formatted as "<enzyme name> (<accession>)". This applies EVERYWHERE \
+accessions appear — the Representative column, grouped member lists, the \
+candidate table, Top Candidate Profiles, and the Candidate(s) column of the \
+references table. If only a generic name exists, show that; use a bare accession \
+only when no name or gene exists at all.
 HYPERLINKS — make external IDs clickable: \
 UniProt as [accession](https://www.uniprot.org/uniprot/{accession}), \
 PDB as [{pdb_id}](https://www.rcsb.org/structure/{pdb_id}), \
