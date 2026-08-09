@@ -1273,6 +1273,80 @@ def _batch_fetch_openalex_works(openalex_ids: list[str]) -> list[dict]:
     return all_results
 
 
+def _openalex_work_to_paper(work: dict) -> dict:
+    """Parse a raw OpenAlex work object into the standard paper dict."""
+    authors = []
+    for authorship in work.get("authorships", [])[:5]:
+        name = authorship.get("author", {}).get("display_name", "")
+        if name:
+            authors.append(name)
+    return {
+        "title": work.get("title", "") or "",
+        "year": work.get("publication_year"),
+        "doi": _clean_openalex_doi(work),
+        "cited_by_count": work.get("cited_by_count", 0),
+        "authors": authors,
+        "abstract": _reconstruct_openalex_abstract(work),
+        "openalex_id": work.get("id", ""),
+        "source": "openalex",
+    }
+
+
+def _fetch_forward_citations(cited_by_urls: list[str], per_seed: int,
+                             total_cap: int) -> list[dict]:
+    """Fetch the most-cited works that CITE each seed (forward snowball).
+
+    A seed's ``cited_by_api_url`` can point at thousands of citers, so take only
+    the top ``per_seed`` by citation count per seed, and stop at ``total_cap``.
+    """
+    papers: list[dict] = []
+    for cb in cited_by_urls:
+        if len(papers) >= total_cap:
+            break
+        sep = "&" if "?" in cb else "?"
+        url = (f"{cb}{sep}per-page={per_seed}&sort=cited_by_count:desc"
+               f"&mailto={config.OPENALEX_EMAIL}{_openalex_auth_qs()}")
+        try:
+            data = json.loads(request_with_retry(
+                urllib.request.Request(url, headers={"Accept": "application/json"}),
+                timeout=30).decode())
+        except Exception as e:
+            logger.warning("Forward-citation fetch failed: %s", e)
+            continue
+        for work in data.get("results", []):
+            papers.append(_openalex_work_to_paper(work))
+            if len(papers) >= total_cap:
+                break
+    return papers
+
+
+def _dedup_papers(papers: list[dict]) -> list[dict]:
+    """Dedup a list of paper dicts by OpenAlex id, else DOI, else title."""
+    seen, out = set(), []
+    for p in papers:
+        key = ((p.get("openalex_id") or "").strip()
+               or (p.get("doi") or "").strip().lower()
+               or (p.get("title") or "").strip().lower())
+        if not key:
+            out.append(p)
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(p)
+    return out
+
+
+def _round_robin(lists: list[list]):
+    """Interleave any number of lists for source diversity."""
+    i, maxlen = 0, max((len(x) for x in lists), default=0)
+    while i < maxlen:
+        for lst in lists:
+            if i < len(lst):
+                yield lst[i]
+        i += 1
+
+
 def _interleave(list_a: list, list_b: list):
     """Interleave two lists for diversity."""
     i, j = 0, 0
