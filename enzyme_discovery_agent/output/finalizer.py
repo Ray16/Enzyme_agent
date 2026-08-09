@@ -210,10 +210,6 @@ class RunFinalizer:
         (self.run_dir / "token_usage.json").write_text(json.dumps(token_usage.to_dict(), indent=2))
 
         self._run_finalization_stage(
-            "reaction_images",
-            lambda: generate_native_reaction_images(self.run_dir, evaluations, log_fn=self.log),
-        )
-        self._run_finalization_stage(
             "confidence_report",
             lambda: generate_two_pass_report(
                 self.run_dir, evaluations, query, self.llm, token_usage, self.log
