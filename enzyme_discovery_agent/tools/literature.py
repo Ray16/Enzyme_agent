@@ -513,6 +513,7 @@ def search_openalex(
             "authors": authors,
             "abstract": abstract,
             "openalex_id": work.get("id", ""),
+            "source": "openalex",
         })
 
     if not results:
