@@ -160,7 +160,7 @@ class EnzymeAgent:
                            iteration, exc)
 
     def _ensure_artifacts_dir(self) -> None:
-        for subdir in ("literature", "database", "candidates"):
+        for subdir in ("literature", "database", "candidates", "fulltext"):
             (self.artifacts_dir / subdir).mkdir(parents=True, exist_ok=True)
 
     def _save_artifact(self, category: str, tool_name: str, result: dict,
