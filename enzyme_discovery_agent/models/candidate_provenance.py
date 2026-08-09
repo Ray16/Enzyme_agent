@@ -199,17 +199,17 @@ def _accommodation_facts(target_smiles: str, native_smiles: list[str]) -> list[d
     return facts
 
 
-def enrich_leads_and_write_provenance(
-    run_dir, evaluations, query, llm_client, log_fn=None, max_papers=15,
-):
+def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, log_fn=None):
     """Write a provenance file per evaluated candidate, recovering native
     substrates + mechanism from the paper for fact-poor leads that carry a paper
     link (curation misses them).
 
     Extracts ONCE PER PAPER (cached) — a paper characterises several enzymes, so
     one call serves every candidate deposited in it — and matches each candidate
-    to its own enzyme by organism/name.  Bounded by ``max_papers``.  Fully
-    defensive: any per-item failure is logged and skipped; never blocks
+    to its own enzyme by organism/name.  Cost is naturally bounded by the number
+    of DISTINCT papers that deposited a mined accession (a small set), so there
+    is no arbitrary paper cap — every fact-poor lead with a paper gets enriched.
+    Fully defensive: any per-item failure is logged and skipped; never blocks
     finalization.  Mutates ``evaluations`` in place so ranking sees the recovery.
     """
     import json as _json
