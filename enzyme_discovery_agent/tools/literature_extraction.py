@@ -72,6 +72,69 @@ def find_candidate_paper(run_dir: Path, source_tool: str) -> dict | None:
     return None
 
 
+# Cues that mark the extraction-relevant content, so we send the model the
+# high-signal parts of a paper instead of all 48k chars.  Starter set — easy to
+# extend.  Windows around these (plus around the enzyme's own identifiers) cover
+# the priority sections (Results/Methods/tables/kinetics) even when PDF-extracted
+# text has lost its section headings.
+_SECTION_HEADINGS = (
+    "abstract", "results", "materials and methods", "methods", "experimental",
+    "substrate scope", "enzyme characterization", "kinetic",
+)
+_DATA_CUES = (
+    "kcat", "k cat", "km", "k m", "kcat/km", "turnover", "specific activity",
+    "conversion", "yield", "titer", "titre", "growth rate", "u/mg", "µmol",
+    "umol", "mm ", "mM", "°c", " ph ", "buffer", "incubat", "expressed in",
+    "purified", "mutant", "variant", "active site", "catalytic residue",
+)
+
+
+def select_relevant_sections(
+    text: str, identifiers: list[str], max_chars: int = 12000, window: int = 700,
+) -> str:
+    """Return a high-signal excerpt: the abstract head plus windows around section
+    headings, quantitative/condition cues, and the enzyme's own identifiers.
+
+    Cuts a ~48k-char paper to ~10-12k while keeping what the extraction schema
+    needs (substrates, mechanism, catalytic residues, kinetics + conditions,
+    cited enzymes).  Section-agnostic so it works on PDF-extracted flat text as
+    well as XML-derived text.
+    """
+    if len(text) <= max_chars:
+        return text
+    low = text.lower()
+    spans: list[tuple[int, int]] = [(0, 1500)]  # abstract / opening always kept
+    cues = list(_SECTION_HEADINGS) + list(_DATA_CUES) + [
+        i.lower() for i in identifiers if i and len(i) >= 3
+    ]
+    for cue in cues:
+        start = 0
+        while True:
+            idx = low.find(cue, start)
+            if idx == -1:
+                break
+            spans.append((max(0, idx - window), idx + window))
+            start = idx + window  # stride so one dense region is not re-scanned forever
+    # Merge overlapping spans, then accumulate up to the budget.
+    spans.sort()
+    merged: list[list[int]] = []
+    for s, e in spans:
+        if merged and s <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], e)
+        else:
+            merged.append([s, e])
+    out, total = [], 0
+    for s, e in merged:
+        chunk = text[s:e]
+        if total + len(chunk) > max_chars:
+            chunk = chunk[: max_chars - total]
+        out.append(chunk)
+        total += len(chunk)
+        if total >= max_chars:
+            break
+    return "\n[...]\n".join(out)
+
+
 _EXTRACT_SYSTEM = (
     "You read an enzymology paper (full text) and extract grounded, structured "
     "facts. The reaction of interest is in the query. Report ONLY what the text "
