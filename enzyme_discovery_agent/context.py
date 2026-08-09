@@ -31,14 +31,6 @@ CAP_LIST_KEYS = {
     "results": config.RESULTS_LIST_CAP, "entries": config.RESULTS_LIST_CAP,
     "hits": config.RESULTS_LIST_CAP, "reasoning": 3, "function_comments": 2,
     "catalytic_activities": 3, "authors": 3,
-    # Search tools return their hit list under "data"; a single search can return
-    # up to UNIPROT_MAX_RESULTS_CAP (50) hits, all of which are ALREADY registered
-    # from the FULL, uncompacted result before this compaction runs (agent.py
-    # registers the raw result; this only trims the LLM's view).  So the LLM is
-    # shown a representative slice with a "+N more" marker while screening and
-    # evaluation still cover every hit — this is a context-size trim, NOT a
-    # coverage/breadth cap.
-    "data": config.LLM_HIT_LIST_CAP,
 }
 
 
