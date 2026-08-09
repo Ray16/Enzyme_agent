@@ -1402,26 +1402,22 @@ def deep_literature_search(
     """Multi-hop snowball search with automatic entity extraction."""
     seed_pool_size = max(max_seed_papers * 4, 20)
 
-    # Step 1: Search PubMed + OpenAlex for seed papers
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        fut_pubmed = pool.submit(
-            search_pubmed, query, max_results=seed_pool_size,
-            rerank_query=rerank_query,
-        )
-        fut_openalex = pool.submit(
-            search_openalex, query, max_results=seed_pool_size,
-            rerank_query=rerank_query,
-        )
-        pm_result = fut_pubmed.result()
-        oa_result = fut_openalex.result()
+    # Step 1: Search all sources in parallel for seed papers.
+    seed_fns = (search_pubmed, search_openalex, search_europepmc,
+                search_semantic_scholar)
+    with ThreadPoolExecutor(max_workers=len(seed_fns)) as pool:
+        futs = [pool.submit(fn, query, max_results=seed_pool_size,
+                            rerank_query=rerank_query) for fn in seed_fns]
+        source_papers = []
+        for fut in futs:
+            r = fut.result()
+            source_papers.append(
+                r.get("data", []) if r.get("status") != "error" else [])
 
-    pm_papers = pm_result.get("data", []) if pm_result.get("status") != "error" else []
-    oa_papers = oa_result.get("data", []) if oa_result.get("status") != "error" else []
-
-    # Step 2: Deduplicate by DOI, interleave for diversity
+    # Step 2: Deduplicate by DOI, round-robin across sources for diversity.
     seen_dois = set()
     seeds = []
-    for paper in _interleave(pm_papers, oa_papers):
+    for paper in _round_robin(source_papers):
         if isinstance(paper, dict) and "error" in paper:
             continue
         doi = (paper.get("doi") or "").strip().lower()
