@@ -442,7 +442,7 @@ def _deterministic_mechanistic_ranking(
         struct_rank = 0 if (struct.get("pdb_ids")) else (1 if struct.get("has_alphafold") else 2)
         key = (
             1 if gated else 0,
-            fg_key,
+            fit_key,
             0 if d.get("is_swissprot") else 1,
             -int(lit.get("characterization_papers") or 0),
             struct_rank,
