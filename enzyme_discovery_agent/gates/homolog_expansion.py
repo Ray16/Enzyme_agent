@@ -45,8 +45,9 @@ class HomologExpansionGate:
             if not has_critical:
                 qualified.append((acc, meta.get("protein_name", acc)))
 
-        # A small cap prevents Foldseek from becoming another broad expansion.
-        seeds = qualified[:2]
+        # A bounded cap keeps Foldseek a within-family expansion, not a broad
+        # search, while still seeding from more than the top couple of families.
+        seeds = qualified[:config.MAX_STRUCTURAL_EXPANSION_SEEDS]
         if not seeds:
             return GateResult(
                 intercept=False,
