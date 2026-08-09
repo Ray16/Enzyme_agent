@@ -206,8 +206,12 @@ class RunFinalizer:
                 from enzyme_discovery_agent.tools.fulltext import (
                     mine_and_register_fulltext_accessions,
                 )
+                # No small cap: mining is deterministic (regex + REST, zero LLM
+                # tokens), so the only real bound is open-access availability —
+                # fetch every mechanism-relevant OA paper, not an arbitrary top-K,
+                # or a target whose paper ranks just outside the cap is lost.
                 mine_and_register_fulltext_accessions(
-                    self.run_dir, query, max_papers=5, log_fn=self.log
+                    self.run_dir, query, max_papers=40, log_fn=self.log
                 )
             except Exception as exc:  # never let mining block finalization
                 logger.warning("Full-text accession mining failed: %s", exc)
