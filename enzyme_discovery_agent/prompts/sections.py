@@ -89,29 +89,37 @@ Phase 1 — REACTION ANALYSIS (this is the MOST IMPORTANT phase):
     * EC constraints: only direction/bond-class exclusions
   - Proceed directly to targeted literature and identifier searches.
 
-Phase 2 — DISCOVERY (database + literature search):
-  - Search literature for direct target/substrate/product evidence first, using
-    a PARALLEL multi-source fan-out (see LITERATURE STRATEGY): issue several
-    search_* calls in ONE step, then call consolidate_literature to deduplicate,
-    merge, and globally re-rank into one clean pool before mining or reasoning.
-  - Resolve EVERY literature-derived gene name or accession in UniProt individually.
-  - Search InterPro only for families supported by the literature or close analogues.
-  - Treat every database result as a LEAD, not a candidate. Select only a small,
-    evidence-linked set of accessions and call screen_candidates explicitly before
-    they enter the candidate registry. Never promote an entire result page.
-  - For each NEW gene name found in literature, search UniProt for it
-  - REFERENCE MINING (critical for coverage): call deep_literature_search ONCE \
-PER DISTINCT MECHANISM FAMILY from your Step B enumeration — query each family by \
-its mechanism (activated intermediate / fold), not just your single most relevant \
-paper. Its backward+forward citation network surfaces specific enzymes (gene \
-names) that keyword search and the OTHER mechanism families miss. Covering only \
-one family is the most common way the specific target enzyme is never found.
-  - After deep_literature_search returns extracted gene names, search UniProt \
-for each new gene name individually.
-  - GAP CHECK: Go back to your Step C molecule list. For each molecule, verify \
-you found the enzyme that makes it. If not, search again with different terms.
-  - Every enzyme name in your notebook MUST have a corresponding search call
-  - A notebook update is optional; prioritize evidence retrieval and screening.
+Phase 2 — DISCOVERY (search BROADLY -> explore EACH family -> screen a
+DIVERSE set). Work these three stages in order; do not jump to evaluation after
+exploring only one family.
+
+  2a. SEARCH BROADLY across families. Parallel multi-source fan-out (see \
+LITERATURE STRATEGY): issue several search_* calls in ONE step, then call \
+consolidate_literature to deduplicate, merge, and globally re-rank into one clean \
+pool. Goal of this stage: surface EVERY distinct mechanism family you listed in \
+Step B — not depth yet, breadth.
+
+  2b. EXPLORE WITHIN EACH FAMILY (do NOT converge on the first one that yields \
+hits). For EVERY distinct mechanism family from Step B, dig in to find its actual \
+members:
+    - deep_literature_search once per family (its backward+forward citation \
+network surfaces specific enzymes the OTHER families miss);
+    - resolve that family's gene names / accessions in UniProt individually;
+    - use InterPro / family-member search to pull representatives.
+    A family with ZERO resolved representatives is an UNEXPLORED family — go back \
+and explore it before you screen. This per-family depth is where the best \
+substrate-matched candidates come from.
+
+  2c. SCREEN a FAMILY-DIVERSE set. Treat every result as a LEAD, not a candidate. \
+Select a small, evidence-linked set that includes AT LEAST ONE representative \
+from EACH family you explored, and call screen_candidates on it. Never promote an \
+entire result page, and never let one family (typically the first with hits) \
+crowd the others out of the candidate list.
+
+  - GAP CHECK: for each Step C molecule AND each Step B family, verify you found \
+and screened a representative. If a family has none, it is under-explored — \
+search again before evaluating.
+  - A notebook update is optional; prioritize per-family exploration and screening.
 
 Phase 3 — CANDIDATE EVALUATION:
   - Call evaluate_candidate for ALL viable candidates
