@@ -363,10 +363,11 @@ def mine_and_register_fulltext_accessions(
 
     Fully deterministic — regex over downloaded text plus UniProt REST resolution,
     with NO full text ever placed in the LLM context, so it adds no prompt tokens.
-    This is the only route to characterized-but-metadata-invisible enzymes such as
-    SfaB, whose identity is tied to its paper solely through a deposited GenBank
-    accession.  Resolved candidates flow into the normal screen/evaluate pipeline,
-    where the non-enzyme filter and mechanism ranking handle the cluster context.
+    This is the only route to characterized-but-metadata-invisible enzymes whose
+    identity is tied to their paper solely through a deposited GenBank accession
+    (no gene name, only a generic activity annotation).  Resolved candidates flow
+    into the normal screen/evaluate pipeline, where the non-enzyme filter and
+    mechanism ranking handle the surrounding cluster context.
     """
     from enzyme_discovery_agent.models.candidate_registry import (
         UNIPROT_ACC_RE,
