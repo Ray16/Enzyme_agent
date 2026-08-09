@@ -174,6 +174,97 @@ def load_candidate_provenance(run_dir: Path, accession: str) -> dict | None:
         return None
 
 
+def _accommodation_facts(target_smiles: str, native_smiles: list[str]) -> list[dict]:
+    """Compute per-target-substrate accommodation facts from stored/extracted
+    native SMILES (RDKit only, no network)."""
+    if not target_smiles or not native_smiles:
+        return []
+    try:
+        from enzyme_discovery_agent.chemistry_logic import compare_substrate_properties
+        from enzyme_discovery_agent.tools.chemistry import compute_fingerprint_similarity
+        from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
+    except Exception:
+        return []
+    facts = []
+    for t in [s for s in target_smiles.split(".") if s.strip()]:
+        best, bn = 0.0, ""
+        for n in native_smiles:
+            sim = compute_fingerprint_similarity(t, n).get("data", {}).get("similarity", 0.0)
+            if sim > best:
+                best, bn = sim, n
+        if bn:
+            p = compare_substrate_properties(t, bn, compute_substrate_properties)
+            if p:
+                facts.append(p)
+    return facts
+
+
+def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, log_fn=None):
+    """For each evaluated candidate, write a provenance file — running literature
+    extraction for fact-poor leads that carry a paper link so their native
+    substrates/mechanism are recovered from the paper (not just curation).
+
+    Fully defensive: any failure on one candidate is logged and skipped; this
+    step must never block finalization.  Mutates the in-memory ``evaluations`` so
+    downstream ranking sees the recovered substrates.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+    from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
+
+    run = _Path(run_dir)
+    reg = load_candidate_registry(run).get("candidates", {})
+    try:
+        tc = _json.loads((run / "target_context.json").read_text())
+        target_smiles = tc.get("substrate_smiles") or ""
+    except Exception:
+        target_smiles = ""
+
+    n_enriched = n_prov = 0
+    for ev in evaluations:
+        d = ev.get("data", ev)
+        acc = d.get("accession", "")
+        if not acc:
+            continue
+        src = reg.get(acc, {}).get("metadata", {}).get("source_tool", "")
+        extraction = None
+        fact_poor = not (d.get("native_substrates"))
+        if fact_poor and "fulltext_genbank" in src and llm_client is not None:
+            try:
+                from enzyme_discovery_agent.tools.literature_extraction import (
+                    extract_substrates_and_mechanism,
+                )
+                extraction = extract_substrates_and_mechanism(
+                    run, acc, src, d.get("protein_name", ""), llm_client,
+                    query=query, organism=d.get("organism", ""),
+                )
+            except Exception as exc:
+                logger.warning("literature enrichment failed for %s: %s", acc, exc)
+                extraction = None
+            if extraction and extraction.get("native_substrates"):
+                lit_natives = [{"name": s["name"], "smiles": s["smiles"], "chebi_id": ""}
+                               for s in extraction["native_substrates"] if s.get("smiles")]
+                if lit_natives:
+                    d["native_substrates"] = lit_natives
+                    facts = _accommodation_facts(target_smiles, [s["smiles"] for s in lit_natives])
+                    if facts:
+                        d.setdefault("substrate_similarity", {})["property_comparisons"] = facts
+                    n_enriched += 1
+        accom = (d.get("substrate_similarity") or {}).get("property_comparisons", [])
+        try:
+            prov = build_candidate_provenance(d, source_tool=src,
+                                              literature_extraction=extraction,
+                                              accommodation_facts=accom)
+            write_candidate_provenance(run, prov)
+            n_prov += 1
+        except Exception as exc:
+            logger.warning("provenance write failed for %s: %s", acc, exc)
+    if log_fn:
+        log_fn(f"  Provenance: wrote {n_prov} files; enriched {n_enriched} "
+               f"fact-poor lead(s) from literature")
+    return n_enriched
+
+
 def compact_provenance_for_ranking(provenance: dict) -> dict:
     """The decision-relevant projection the LLM ranks over — small enough that the
     model does not exhaust its budget (the full file stays on disk for audit and
