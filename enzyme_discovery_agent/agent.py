@@ -289,7 +289,12 @@ class EnzymeAgent:
             for acc, info in active_candidates.items()
         })
         self._gate_state.candidate_count = self._candidate_count
-        self._gate_state.accumulated_papers = self._accumulated_papers
+        # Count DISTINCT papers for gate sufficiency: now that several sources
+        # feed the pool, the same paper arrives multiple times and must not
+        # inflate the "enough literature" signal (which would stop search early).
+        from enzyme_discovery_agent.tools.literature import dedupe_and_merge
+        unique_papers, _ = dedupe_and_merge(self._accumulated_papers)
+        self._gate_state.accumulated_papers = unique_papers
         self._gate_state.lit_search_count = len(
             getattr(self, "_literature_search_iterations", set())
         )
