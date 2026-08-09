@@ -195,6 +195,22 @@ class RunFinalizer:
                     "evaluating the bounded screened pool and recording the gaps as report limitations.",
                     level="warning",
                 )
+            # Mine deposited sequence accessions from the top papers' FULL TEXT
+            # and register them as candidates.  Deterministic (regex + REST, no
+            # full text in the LLM context), so it adds no prompt tokens; it is
+            # the only route to characterized enzymes that carry no gene name and
+            # only a generic protein annotation (e.g. SfaB), reachable solely via
+            # the GenBank accession deposited in their paper.  Runs BEFORE screen
+            # so the resolved candidates are screened and evaluated with the rest.
+            try:
+                from enzyme_discovery_agent.tools.fulltext import (
+                    mine_and_register_fulltext_accessions,
+                )
+                mine_and_register_fulltext_accessions(
+                    self.run_dir, query, max_papers=5, log_fn=self.log
+                )
+            except Exception as exc:  # never let mining block finalization
+                logger.warning("Full-text accession mining failed: %s", exc)
             auto_screen_candidates(self.run_dir, log_fn=self.log)
             # A bounded screen can legitimately occur in the final agent turn.
             # Finalization is the last safe backstop: never emit an empty report
