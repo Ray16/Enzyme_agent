@@ -49,23 +49,14 @@ FINALIZATION_RESERVE_ITERATIONS = 8
 # --- Tool execution ---
 TOOL_THREAD_POOL_WORKERS = 4
 MAX_RESULT_CHARS = 20_000
-# One representative per distinct enzyme FAMILY is registered (auto_screen picks
-# the best member per gene/family).  These caps are a RUNAWAY safety only — NOT a
-# downselection: they must be high enough that every real mechanism family gets a
-# registered representative (relevance filtering happens later at triage, not by
-# capping registration).  Raised from 20/5 so no family is dropped before triage.
-# Screen one representative per DISTINCT GENE.  Orthologs are already collapsed
-# to one rep upstream, so these bound distinct genes, not raw hits.  Kept high
-# because evaluate_candidate is deterministic and cheap, and the mechanism-
-# feasibility ranking (not screening) is where relevance filtering belongs.
-# CRITICAL: the "exploratory" (tier-2) bucket holds TrEMBL-annotated enzymes
-# that LACK curated catalytic_activities — which for siderophore/NIS and other
-# ATP-grasp synthetases (desD, iucA, iucC, mcbA, sbnE...) is the mechanism-
-# RELEVANT set, not noise.  A tight tier-2 cap therefore dropped exactly the
-# enzymes closest to the target chemistry, so both caps are generous enough to
-# screen every distinct gene a broad search surfaces.
-MAX_SCREEN_REPRESENTATIVES = 80
-MAX_EXPLORATORY_FAMILY_REPRESENTATIVES = 45
+# Screening is NOT capped.  auto_screen collapses orthologs to one representative
+# per distinct gene, then screens and evaluates EVERY such representative — one
+# screen per distinct enzyme, not per raw hit.  Capping here previously dropped
+# whole families before evaluation; worse, the dropped tier-2 ("uncurated")
+# bucket is exactly where TrEMBL-annotated NIS/ATP-grasp synthetases (desD, iucA,
+# mcbA, sbnE...) land, i.e. the enzymes closest to the target chemistry.
+# Relevance filtering happens later, at the mechanism-feasibility ranking, never
+# by dropping genes before evaluation.
 EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
 # Structural (Foldseek) expansion seeds per run.  Kept bounded so Foldseek stays
 # a within-family expansion, not another broad search, but 2 was too tight once
