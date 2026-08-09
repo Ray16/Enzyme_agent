@@ -216,10 +216,14 @@ per-source hits — so you never pay to read near-duplicates.
 gene names, EC numbers, families, and accessions; resolve each NEW name in \
 UniProt individually.
 
-4. CHASE CITATIONS for coverage. Abstracts often omit specific enzyme/gene \
-names (they live in full text). For your 2-3 most relevant papers, call \
-deep_literature_search to follow citation networks — referenced papers carry \
-those names in their own titles/abstracts.
+4. CHASE CITATIONS per MECHANISM FAMILY. deep_literature_search follows citation \
+networks BOTH ways (backward references AND forward citing works) and mines gene \
+names from them — it reaches specific enzymes that keyword search misses. Run it \
+ONCE PER DISTINCT MECHANISM FAMILY you enumerated in Step B (one snowball for each \
+activated-intermediate / fold family), NOT just once — each family's citation \
+neighborhood contains DIFFERENT specific enzymes, so a single snowball leaves \
+whole families unexplored. This is the most common way the specific target enzyme \
+gets missed.
 
 Use rerank_query for richer semantic matching when a query is a short keyword.
 
