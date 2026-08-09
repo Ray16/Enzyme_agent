@@ -80,6 +80,29 @@ def _all_artifact_text(run: Path) -> str:
     return " ".join(chunks).lower()
 
 
+def _candidate_text(run: Path) -> str:
+    """Lowercased text of the SELECTED candidates (genes + rationales + registry).
+
+    This is what survived into evaluation/ranking — distinct from what was merely
+    searched — so coverage over it measures the kept set, not the search breadth.
+    """
+    chunks = []
+    for name in ("pass1_ranking.json", "candidate_registry.json",
+                 "exploration_summary.json", "candidates.csv"):
+        p = run / name
+        if p.exists():
+            try:
+                chunks.append(p.read_text())
+            except OSError:
+                continue
+    for p in glob.glob(str(run / "artifacts" / "candidates" / "*.json")):
+        try:
+            chunks.append(Path(p).read_text())
+        except OSError:
+            continue
+    return " ".join(chunks).lower()
+
+
 def _fulltext_manifest(run: Path) -> list[dict]:
     path = run / "artifacts" / "fulltext" / "manifest.json"
     if not path.exists():
