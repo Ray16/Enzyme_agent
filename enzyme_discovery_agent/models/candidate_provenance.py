@@ -135,6 +135,10 @@ def build_candidate_provenance(
         "discovery": _discovery_from_source(source_tool),
         "native_substrates": native,
         "mechanism": mechanism,
+        "catalytic_residues": catalytic_residues,
+        "is_characterization_paper": is_characterization_paper,
+        "characterization_results": characterization,
+        "homologs_or_related_enzymes": homologs,
         "paper": paper_ref,
         "substrate_accommodation_vs_target": accommodation_facts or [],
         "provenance_note": (
