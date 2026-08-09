@@ -87,7 +87,7 @@ _EXTRACT_SYSTEM = (
     '     "reaction":{"bond_formed":"amide|ester|thioester|peptide|other",'
     '"direction":"formation|cleavage","cofactor":"ATP|none|..",'
     '"reactive_groups":"group on each substrate that forms the bond","summary":"<=25 words"},\n'
-    '     "catalytic_residues":[{"residue":"e.g. Lys528","role":"<=8 words"}],\n'
+    '     "catalytic_residues":[{"residue":"<one-letter/three-letter + position>","role":"<=8 words"}],\n'
     '     "characterization":[{"metric":"kcat|Km|kcat/Km|conversion|yield|'
     'specific_activity|titer|growth_rate|Tm|optimum_pH|optimum_temperature|other",'
     '"value":"..","units":"..","substrate":"which substrate/condition it was '
