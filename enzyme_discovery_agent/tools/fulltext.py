@@ -389,14 +389,18 @@ def mine_and_register_fulltext_accessions(
             manifest = []
     done = {m.get("key") for m in manifest}
 
-    # 1. Attempt full text for EVERY mechanism-relevant paper.  Fetching is
-    # token-free, and non-open-access papers fast-fail, so the effective bound is
-    # open-access availability, not an arbitrary top-K — a target whose paper
-    # ranks just outside a small cap would otherwise be lost.  fetch_ceiling is
-    # only a runaway guard against a pathological pool.
+    # 1. Attempt full text for every RELEVANT paper.  There is no count cap
+    # (mining is token-free and non-OA papers fast-fail), but relevance IS gated:
+    # only papers clearing FULLTEXT_MINE_MIN_SCORE are mined, so off-topic papers
+    # never contribute accessions.  fetch_ceiling is only a runaway guard.
     ranked = consolidate_pool(query, papers, max_results=len(papers))["ranked"]
+    relevant = [
+        p for p in ranked
+        if p.get("semantic_score") is None
+        or p.get("semantic_score", 0.0) >= config.FULLTEXT_MINE_MIN_SCORE
+    ]
     fetched = 0
-    for paper in ranked:
+    for paper in relevant:
         if fetched >= fetch_ceiling:
             break
         key = _fulltext_key(paper)
