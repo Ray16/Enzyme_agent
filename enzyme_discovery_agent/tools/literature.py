@@ -1148,28 +1148,9 @@ def extract_entities(
     if papers is None:
         papers = []
     if not papers and run_dir:
-        # The model often knows that it wants entity extraction but should not
-        # have to reconstruct a large paper payload in a tool argument.  Use
-        # the durable search artifacts already written by this same run.
-        from pathlib import Path
-
-        recovered = []
-        for path in sorted((Path(run_dir) / "artifacts" / "literature").glob("*.json")):
-            try:
-                artifact = json.loads(path.read_text())
-                data = artifact.get("result", {}).get("data", [])
-                if isinstance(data, list):
-                    recovered.extend(item for item in data if isinstance(item, dict))
-            except (OSError, json.JSONDecodeError, AttributeError):
-                continue
-        seen = set()
-        papers = []
-        for paper in recovered:
-            key = (paper.get("pmid"), paper.get("doi"), paper.get("title"))
-            if key in seen:
-                continue
-            seen.add(key)
-            papers.append(paper)
+        # Reuse the durable search artifacts already written by this run rather
+        # than making the model reconstruct a large paper payload as an argument.
+        papers = _recover_literature_papers(run_dir)
 
     gene_hits = defaultdict(set)
     ec_hits = defaultdict(set)
