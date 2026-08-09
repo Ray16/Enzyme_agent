@@ -23,26 +23,34 @@ Low / Minimal) but should NOT affect ranking position.
 
 RANKING CRITERIA (in order of priority):
 
-1. SUBSTRATE CHEMISTRY MATCH (dominant criterion):
-   - Evaluate EACH substrate independently using per_substrate_match. For \
-multi-substrate reactions, check ALL substrates — a good match on one \
-with a poor match on another is less promising than moderate matches on both.
-   - PRIMARY SIGNAL: Compare fg_counts_target vs fg_counts_native for each \
-substrate. Differences in functional group counts indicate the binding \
-pocket has evolved for different recognition features than the target \
-presents.
-   - SECONDARY SIGNAL: MW similarity and chain length similarity for cavity \
-size compatibility.
-   - Tanimoto is REFERENCE ONLY — not reliable for non-natural targets.
+1. CATALYTIC-MECHANISM FEASIBILITY (dominant criterion — can the reaction \
+proceed at all given the mechanism?):
+   - Do NOT try to predict substrate acceptance / promiscuity — it is an \
+unreliable prediction. Ask whether the CATALYTIC MECHANISM supports the target \
+transformation:
+   - DIRECTION: the native reaction runs in the target direction (bond FORMATION \
+→ ligation/condensation, NOT hydrolysis/cleavage).
+   - BOND CHEMISTRY: forms the target bond via a compatible activation (amide via \
+an ATP-dependent acyl-phosphate / aminoacyl-adenylate). Reason from the \
+MECHANISM, not the native pathway's downstream fate — if the native product is \
+later cyclized/polymerized/decorated in vivo, the enzyme may still make the \
+simpler amide in vitro, so that does not disqualify it.
+   - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on FREE small \
+molecules matching the target's topology (here: two free molecules — a free \
+diacid + a free diamine). Rank DOWN mechanisms that require a \
+carrier-protein-tethered substrate (NRPS adenylation; substrate_class = \
+carrier_protein_tethered) or a polymer primer (cyanophycin-type; substrate_class \
+= polymer) — they cannot ligate two free molecules regardless of substrate identity.
 
-2. MECHANISM COMPATIBILITY:
-   - Is the core enzymatic mechanism suitable for the target transformation?
-   - Focus on the fundamental bond-forming chemistry, not on what happens to \
-the product downstream in the native pathway
-   - If the native product undergoes further processing (cyclization, \
-polymerization, decoration) in vivo, that does not necessarily mean the \
-enzyme cannot produce simpler intermediates in vitro — reason from the \
-mechanism, not the final native product
+2. SUBSTRATE CHEMISTRY CONTEXT (informational — NOT a dominant filter, NOT a \
+promiscuity predictor):
+   - per_substrate_match (fg_counts, MW / chain-length similarity, Tanimoto) \
+describes how DIFFERENT the native substrate is from the target — treat it as \
+CONTEXT for engineering difficulty, not as a feasibility signal. A \
+mechanistically-feasible enzyme with a dissimilar native substrate is still a \
+promising explorative candidate (enzymes are promiscuous). Do NOT rank a \
+mechanistically-feasible candidate down solely for substrate dissimilarity; \
+Tanimoto is reference-only.
 
 3. ENGINEERING POTENTIAL (inferred from biology):
    - Demonstrated substrate promiscuity or flexibility
@@ -88,26 +96,34 @@ indicates confidence level — it does NOT affect ranking position.
 
 RANKING CRITERIA (in order of priority):
 
-1. SUBSTRATE CHEMISTRY MATCH (dominant criterion):
-   - Evaluate EACH substrate independently using per_substrate_match. For \
-multi-substrate reactions, check ALL substrates — a good match on one \
-with a poor match on another is less promising than moderate matches on both.
-   - PRIMARY SIGNAL: Compare fg_counts_target vs fg_counts_native for each \
-substrate. Differences in functional group counts indicate the binding \
-pocket has evolved for different recognition features than the target \
-presents.
-   - SECONDARY SIGNAL: MW similarity and chain length similarity for cavity \
-size compatibility.
-   - Tanimoto is REFERENCE ONLY — not reliable for non-natural targets.
+1. CATALYTIC-MECHANISM FEASIBILITY (dominant criterion — can the reaction \
+proceed at all given the mechanism?):
+   - Do NOT try to predict substrate acceptance / promiscuity — it is an \
+unreliable prediction. Ask whether the CATALYTIC MECHANISM supports the target \
+transformation:
+   - DIRECTION: the native reaction runs in the target direction (bond FORMATION \
+→ ligation/condensation, NOT hydrolysis/cleavage).
+   - BOND CHEMISTRY: forms the target bond via a compatible activation (amide via \
+an ATP-dependent acyl-phosphate / aminoacyl-adenylate). Reason from the \
+MECHANISM, not the native pathway's downstream fate — if the native product is \
+later cyclized/polymerized/decorated in vivo, the enzyme may still make the \
+simpler amide in vitro, so that does not disqualify it.
+   - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on FREE small \
+molecules matching the target's topology (here: two free molecules — a free \
+diacid + a free diamine). Rank DOWN mechanisms that require a \
+carrier-protein-tethered substrate (NRPS adenylation; substrate_class = \
+carrier_protein_tethered) or a polymer primer (cyanophycin-type; substrate_class \
+= polymer) — they cannot ligate two free molecules regardless of substrate identity.
 
-2. MECHANISM COMPATIBILITY:
-   - Is the core enzymatic mechanism suitable for the target transformation?
-   - Focus on the fundamental bond-forming chemistry, not on what happens to \
-the product downstream in the native pathway
-   - If the native product undergoes further processing (cyclization, \
-polymerization, decoration) in vivo, that does not necessarily mean the \
-enzyme cannot produce simpler intermediates in vitro — reason from the \
-mechanism, not the final native product
+2. SUBSTRATE CHEMISTRY CONTEXT (informational — NOT a dominant filter, NOT a \
+promiscuity predictor):
+   - per_substrate_match (fg_counts, MW / chain-length similarity, Tanimoto) \
+describes how DIFFERENT the native substrate is from the target — treat it as \
+CONTEXT for engineering difficulty, not as a feasibility signal. A \
+mechanistically-feasible enzyme with a dissimilar native substrate is still a \
+promising explorative candidate (enzymes are promiscuous). Do NOT rank a \
+mechanistically-feasible candidate down solely for substrate dissimilarity; \
+Tanimoto is reference-only.
    - If native substrates carry modifications not present in the target \
 substrates, note this as context but reason about whether the core \
 bond-forming step still applies
