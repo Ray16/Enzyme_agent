@@ -287,13 +287,12 @@ def _accommodation_score(data: dict) -> float | None:
 
 
 def _accommodation_facts_payload(data: dict) -> list[dict]:
-    """Grounded evidence for the LLM to REASON over — NOT a similarity score.
+    """Substrate-accommodation evidence for the LLM to REASON over (not a score).
 
-    Per target substrate (matched to its closest native), the raw cheminformatic
-    facts: functional-group TYPES and COUNTS (target vs native), aliphatic chain
-    length, molecular weight, and whether the native carries aromatic/ring
-    character the target lacks.  The LLM decides accommodation from these; the
-    code never collapses them into a number.
+    Per target substrate (matched to its closest native): functional-group TYPES
+    and COUNTS (target vs native), aliphatic chain length, molecular weight, and
+    whether the native carries aromatic/ring character the target lacks.  The LLM
+    decides accommodation from these; the code never collapses them to a number.
     """
     sim = data.get("substrate_similarity") or {}
     comps = sim.get("property_comparisons") or []
@@ -310,6 +309,50 @@ def _accommodation_facts_payload(data: dict) -> list[dict]:
             "native_has_ring_target_lacks": c.get("cyclicity_match") is False,
         })
     return subs
+
+
+def _candidate_evidence_payload(data: dict) -> dict:
+    """The full grounded evidence the LLM ranks a promising candidate on.
+
+    Four groups, so promise = accommodates the substrate AND is the right
+    reaction AND is actually usable: substrate-accommodation facts (primary),
+    reaction/mechanism, experimental provenance, and structure/expression
+    feasibility.  All are facts pulled from the evaluation; no scoring here.
+    """
+    lit = data.get("literature") or {}
+    struct = data.get("structural_data") or {}
+    mut = data.get("mutagenesis") or {}
+    expr = data.get("expression_data") or {}
+    chem = data.get("reaction_chemistry") or {}
+    cats = data.get("catalytic_activities") or []
+    return {
+        "accession": data.get("accession"),
+        "gene": (data.get("gene_names") or [""])[0],
+        "protein_name": data.get("protein_name", ""),
+        "organism": data.get("organism", ""),
+        "ec": data.get("ec_numbers") or [],
+        "family": data.get("interpro_family", ""),
+        "native_substrates": [n.get("name") for n in data.get("native_substrates", []) if n.get("name")][:6],
+        "reaction": {
+            "native_reaction": (cats[0][:160] if cats else ""),
+            "bond_types": chem.get("bond_types"),
+            "direction": chem.get("reaction_direction"),
+        },
+        "substrate_accommodation": _accommodation_facts_payload(data),
+        "provenance": {
+            "swissprot_reviewed": bool(data.get("is_swissprot")),
+            "characterization_papers": lit.get("characterization_papers", 0),
+            "engineering_papers": lit.get("engineering_papers", 0),
+            "n_mutations_studied": mut.get("n_mutations", 0),
+        },
+        "feasibility": {
+            "has_pdb": bool(struct.get("pdb_ids")),
+            "has_alphafold": bool(struct.get("has_alphafold")),
+            "ecoli_expression": bool(expr.get("ecoli_expression")),
+            "bacterial_expression": bool(expr.get("bacterial_expression")),
+            "eukaryotic_origin": bool(expr.get("is_eukaryote")),
+        },
+    }
 
 
 def _llm_focus_rank(
