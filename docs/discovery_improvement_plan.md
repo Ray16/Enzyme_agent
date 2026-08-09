@@ -47,13 +47,18 @@ away BEFORE registration → never triaged → invisible.
 - Measure: every explored/resolved family has ≥1 registered rep (0 "resolved but
   unregistered" leaks); `family_coverage.candidates`==1.0; final list substrate-relevant.
 
-## B — Full-text acquisition wired correctly (feeds downstream mechanism/measurement extraction)
+## B — Full-text acquisition, GROUPED BY FAMILY (feeds downstream mechanism/measurement extraction)
 Root cause: after the evidence-selection gate, `agent.py` restricts tools to a
 whitelist that OMITS `fetch_full_text` → it is stripped, so it never fires
 (0 calls every run) regardless of the prompt.
 - **B1** add `fetch_full_text` to the post-gate whitelist (or fetch pre-gate).
-- **B2** fire it on each family's mechanism paper + registered candidates.
-- Measure: `fetch_full_text_calls>0`, `artifacts/fulltext/` populated.
+- **B2** GROUP retrieved papers BY ENZYME FAMILY (= reaction mechanism — same
+  thing). For each family, fetch full text of AS MANY papers as possible about
+  its REPRESENTATIVE enzymes (comprehensive per family, not top-N globally) — a
+  shared mechanism is best extracted from the whole family's literature. Store
+  under fulltext/ keyed by family so downstream mechanism/measurement parsing
+  works per-family.
+- Measure: `fetch_full_text_calls>0`; per-family full-text counts; fulltext/ populated.
 
 ## C — Token efficiency (user priority)
 Root cause: 98% of tokens are PROMPT; context re-sent every call grows 18k→148k;
