@@ -665,6 +665,35 @@ class EnzymeAgent:
         self.log("Max iterations reached.")
         return self._finalize(messages, token_usage, "Max iterations reached")
 
+    def _prune_tool_history(
+        self,
+        messages: list,
+        keep_recent: int = config.HISTORY_KEEP_RECENT_TOOL_MSGS,
+        stub_over: int = config.HISTORY_STUB_OVER_CHARS,
+    ) -> None:
+        """Stub the content of tool results older than the most recent
+        ``keep_recent`` tool messages, in place.
+
+        The prompt re-sent each iteration is the dominant cost (in one run: 2.1M
+        of 2.2M loop tokens were prompt, growing 19k -> 164k as raw tool dumps
+        piled up).  A later turn never needs the raw dump of an old search: the
+        candidates it surfaced are already in the registry, the reasoning is in
+        the notebook, and the full result is on disk under artifacts/.  So the
+        old tool CONTENT is replaced with a short stub while the message itself
+        is kept, preserving the assistant tool_call / tool-result pairing the
+        provider requires.  Recent results stay full so the model still reasons
+        over fresh evidence.
+        """
+        tool_positions = [i for i, m in enumerate(messages) if m.get("role") == "tool"]
+        if len(tool_positions) <= keep_recent:
+            return
+        stub = ("[elided older tool result — candidates are in the registry, "
+                "reasoning is in the notebook, full data is under artifacts/]")
+        for i in tool_positions[:-keep_recent]:
+            content = messages[i].get("content")
+            if isinstance(content, str) and len(content) > stub_over and content != stub:
+                messages[i]["content"] = stub
+
     def _finalize(
         self,
         messages: list,
