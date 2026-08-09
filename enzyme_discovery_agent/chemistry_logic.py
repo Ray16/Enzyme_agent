@@ -68,6 +68,70 @@ def get_chebi_name(chebi_id: str) -> str | None:
     return _chebi_name_cache.get(chebi_id)
 
 
+_name_smiles_cache: dict[str, str | None] = {}
+
+
+def _pubchem_name_to_smiles(name: str) -> str | None:
+    """Resolve one chemical name to a canonical SMILES via PubChem PUG REST."""
+    key = name.strip().lower()
+    if not key:
+        return None
+    if key in _name_smiles_cache:
+        return _name_smiles_cache[key]
+    smiles = None
+    # Try the modern property token first, then the legacy one: PubChem renamed
+    # CanonicalSMILES -> SMILES/ConnectivitySMILES across API versions, and which
+    # one a deployment serves is not stable.
+    for prop in ("SMILES", "CanonicalSMILES", "IsomericSMILES"):
+        url = ("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
+               f"{urllib.parse.quote(name.strip())}/property/{prop}/JSON")
+        try:
+            raw = request_with_retry(
+                urllib.request.Request(url, headers={"Accept": "application/json"}),
+                timeout=20,
+            )
+            props = json.loads(raw.decode()).get("PropertyTable", {}).get("Properties", [])
+            for entry in props:
+                val = entry.get(prop) or entry.get("SMILES") or entry.get("CanonicalSMILES")
+                if val:
+                    smiles = val.strip()
+                    break
+        except Exception as e:  # noqa: BLE001 - try the next property token
+            logger.debug("PubChem name->SMILES failed for %s (%s): %s", name, prop, e)
+        if smiles:
+            break
+    _name_smiles_cache[key] = smiles
+    return smiles
+
+
+def resolve_substrate_names_to_smiles(text: str | None) -> str | None:
+    """Resolve a free-text substrate description to a dot-joined SMILES string.
+
+    The target substrates come straight from the user's query (they are the
+    reaction inputs, not any answer enzyme), so resolving them to structure is
+    task setup, not leakage.  Splits a phrase like "A and B (context note)" into
+    individual reagent names, drops parenthetical qualifiers, and resolves each
+    via PubChem; returns the components joined by '.' (RDKit's mixture form) so
+    substrate-accommodation comparison has real structures to score against.
+    Returns None if nothing resolves, leaving the axis inactive rather than
+    guessing.
+    """
+    if not text:
+        return None
+    core = re.sub(r"\(.*?\)", " ", text)          # drop "(nylon-6,6 monomers)" etc.
+    parts = re.split(r"\band\b|[,;+/]", core, flags=re.IGNORECASE)
+    names = [p.strip(" .") for p in parts if p.strip(" .")]
+    resolved: list[str] = []
+    for name in names:
+        # Skip obvious non-reagent words that survive splitting.
+        if len(name) < 3 or name.lower() in {"monomer", "monomers", "substrate", "substrates"}:
+            continue
+        smi = _pubchem_name_to_smiles(name)
+        if smi:
+            resolved.append(smi)
+    return ".".join(resolved) if resolved else None
+
+
 # --------------------------------------------------------------------------
 # Reaction chemistry classification
 # --------------------------------------------------------------------------
