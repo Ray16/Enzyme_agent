@@ -114,15 +114,28 @@ def score_run(run_dir: str | Path, benchmark: dict) -> dict:
     papers = _recover_literature_papers(run)
     unique = _dedup(papers)
 
-    markers = [m.lower() for m in benchmark.get("answer_markers", [])]
-    accessions = [a.lower() for a in benchmark.get("answer_accessions", [])]
-
     def _text(p):
         return ((p.get("title") or "") + " " + (p.get("abstract") or "")).lower()
 
-    marker_hits = sorted({m for p in unique for m in markers if m in _text(p)})
-    artifact_text = _all_artifact_text(run)
-    acc_hits = sorted({a for a in accessions if a in artifact_text})
+    papers_text = " ".join(_text(p) for p in unique)
+    artifacts_text = _all_artifact_text(run)
+
+    # Data-driven recall: score every declared target generically, so the goal
+    # can change by editing the benchmark, not this scorer.
+    targets = _resolve_targets(benchmark)
+    recall: dict[str, dict] = {}
+    for name, tgt in targets.items():
+        hay = papers_text if tgt.get("scope") == "papers" else artifacts_text
+        vals = [v.lower() for v in tgt.get("values", [])]
+        found = sorted(v for v in vals if v in hay)
+        recall[name] = {
+            "found": found,
+            "n": len(vals),
+            "recall": round(len(found) / len(vals), 3) if vals else None,
+            "hit": bool(found),
+        }
+    primary = benchmark.get("primary_targets") or list(targets.keys())
+    found_answer = any(recall[n]["hit"] for n in primary if n in recall)
 
     fulltext = _fulltext_manifest(run)
     sources_used = sorted(t for t in tools if t in _LIT_TOOLS)
@@ -140,12 +153,21 @@ def score_run(run_dir: str | Path, benchmark: dict) -> dict:
         "papers_unique": len(unique),
         "redundancy": round(1 - len(unique) / len(papers), 3) if papers else 0.0,
         "fulltext_downloaded": len(fulltext),
-        "answer_markers_found": marker_hits,
-        "answer_marker_recall": (round(len(marker_hits) / len(markers), 3)
-                                 if markers else None),
-        "answer_accessions_found": acc_hits,
-        "answer_accession_recall": (round(len(acc_hits) / len(accessions), 3)
-                                    if accessions else None),
-        "found_answer": bool(marker_hits or acc_hits),
+        "recall": recall,
+        "found_answer": found_answer,
         "tokens": _tokens(run),
     }
+
+
+def _resolve_targets(benchmark: dict) -> dict:
+    """Return recall targets, supporting the legacy answer_* keys too."""
+    if benchmark.get("recall_targets"):
+        return benchmark["recall_targets"]
+    targets = {}
+    if benchmark.get("answer_accessions"):
+        targets["specific_accession"] = {"scope": "artifacts",
+                                         "values": benchmark["answer_accessions"]}
+    if benchmark.get("answer_markers"):
+        targets["specific_member"] = {"scope": "papers",
+                                      "values": benchmark["answer_markers"]}
+    return targets
