@@ -137,6 +137,21 @@ def score_run(run_dir: str | Path, benchmark: dict) -> dict:
     primary = benchmark.get("primary_targets") or list(targets.keys())
     found_answer = any(recall[n]["hit"] for n in primary if n in recall)
 
+    # Family coverage: how many distinct amide-forming families the run spanned.
+    fam_spec = benchmark.get("family_coverage", {})
+    families = {
+        fam: {"hit": any(v.lower() in artifacts_text for v in vals),
+              "found": sorted(v for v in vals if v.lower() in artifacts_text)}
+        for fam, vals in fam_spec.items()
+    }
+    n_hit = sum(1 for f in families.values() if f["hit"])
+    family_coverage = {
+        "covered": sorted(f for f, d in families.items() if d["hit"]),
+        "missed": sorted(f for f, d in families.items() if not d["hit"]),
+        "fraction": round(n_hit / len(families), 3) if families else None,
+        "detail": families,
+    }
+
     fulltext = _fulltext_manifest(run)
     sources_used = sorted(t for t in tools if t in _LIT_TOOLS)
 
