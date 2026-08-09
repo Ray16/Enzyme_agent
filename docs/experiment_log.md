@@ -20,6 +20,28 @@ Measurement tiers:
 
 ## 2026-08-08
 
+### E12 — Broad → per-family exploration → family-diverse screening ⏳
+- **Change (steering, Phase 2 restructured):** explicit 3-stage shape — (2a) search
+  broadly across families → (2b) EXPLORE WITHIN EACH family (deep_search per family
+  + resolve its members in UniProt + InterPro) — "a family with zero resolved
+  representatives is unexplored" → (2c) SCREEN a set with ≥1 representative per
+  family. Added anti-pattern: don't converge on one mechanism family. Leakage-safe
+  (talks about "the families you identified", never the answer). Targets the
+  measured drop-off (E-coverage: NIS synthetase searched but dropped at selection).
+- **Hypothesis:** forcing per-family exploration + diverse screening raises
+  `family_coverage.candidates` and stops dropping NIS-synthetase / McbA.
+- **Measured:** pending — needs REPLICATE runs (n>=3), scored on
+  `family_coverage.candidates` + `dropped`, to beat LLM variance (the E11 lesson).
+
+### E13 — fetch_full_text wired for mechanism + candidate papers ⏳
+- **Change:** Phase 3 now instructs `fetch_full_text` on (1) each family's key
+  MECHANISM paper and (2) candidate enzymes' characterization papers — the tool
+  was previously absent from the prompt entirely (0 calls in every run). Framed for
+  the downstream goal: full text is what later stages parse for reaction mechanism
+  and experimental measurements.
+- **Measured:** pending — check `fetch_full_text_calls > 0` and that
+  `artifacts/fulltext/` populates on the next run.
+
 ### E-coverage — Family coverage leaks at SELECTION, not search 🔬 (diagnosis)
 - **Finding (E11 run, user-flagged):** the ranked candidates are ATP-grasp-heavy
   and MISS the NIS-synthetase family (DesD/AsbA/AsbB/IucA/IucC — the dicarboxylate
