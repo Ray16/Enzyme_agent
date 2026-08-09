@@ -137,22 +137,29 @@ def score_run(run_dir: str | Path, benchmark: dict) -> dict:
     primary = benchmark.get("primary_targets") or list(targets.keys())
     found_answer = any(recall[n]["hit"] for n in primary if n in recall)
 
-    # Family coverage: how many distinct amide-forming families the run spanned.
-    # Scored over the SELECTED CANDIDATES (their genes + rationales), not any
-    # mention anywhere — a family only counts if it made it into candidates.
+    # Family coverage, measured at TWO stages so the drop-off is visible:
+    #   searched   - family appears anywhere the agent retrieved (breadth of search)
+    #   candidates - family survives into the ranked candidate list (what's kept)
+    # families "dropped" (searched but not in candidates) localize the leak to the
+    # search->candidate SELECTION step, exactly the McbA case.
     fam_spec = benchmark.get("family_coverage", {})
     cand_text = _candidate_text(run)
-    families = {
-        fam: {"hit": any(v.lower() in cand_text for v in vals),
-              "found": sorted(v for v in vals if v.lower() in cand_text)}
-        for fam, vals in fam_spec.items()
-    }
-    n_hit = sum(1 for f in families.values() if f["hit"])
+
+    def _cov(hay):
+        hit = {f: any(v.lower() in hay for v in vals) for f, vals in fam_spec.items()}
+        n = sum(hit.values())
+        return {
+            "covered": sorted(f for f, h in hit.items() if h),
+            "missed": sorted(f for f, h in hit.items() if not h),
+            "fraction": round(n / len(fam_spec), 3) if fam_spec else None,
+        }
+
+    searched, candidates = _cov(artifacts_text), _cov(cand_text)
     family_coverage = {
-        "covered": sorted(f for f, d in families.items() if d["hit"]),
-        "missed": sorted(f for f, d in families.items() if not d["hit"]),
-        "fraction": round(n_hit / len(families), 3) if families else None,
-        "detail": families,
+        "searched": searched,
+        "candidates": candidates,
+        # searched but did NOT survive into candidates = selection drop-off
+        "dropped": sorted(set(searched["covered"]) - set(candidates["covered"])),
     }
 
     fulltext = _fulltext_manifest(run)
