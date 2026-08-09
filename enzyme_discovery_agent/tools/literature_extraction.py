@@ -247,6 +247,12 @@ def extract_substrates_and_mechanism(
         text = Path(paper["text_path"]).read_text(errors="ignore")
     except OSError:
         return None
+    # Send the model a high-signal excerpt (anchored on this enzyme's identifiers)
+    # instead of the whole paper — ~4x fewer tokens, same extractable facts.
+    identifiers = [paper["deposited_accession"]] + [
+        w for w in (protein_name or "").split() if len(w) >= 3
+    ]
+    text = select_relevant_sections(text, identifiers=identifiers)
     obj = extract_from_paper(text, paper["deposited_accession"], protein_name,
                              llm_client, query=query)
     related = obj.get("homologs_or_related_enzymes") or []
