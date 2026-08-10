@@ -164,7 +164,7 @@ def score_run(run_dir: str | Path, benchmark: dict) -> dict:
     #   searched   - family appears anywhere the agent retrieved (breadth of search)
     #   candidates - family survives into the ranked candidate list (what's kept)
     # families "dropped" (searched but not in candidates) localize the leak to the
-    # search->candidate SELECTION step, exactly the McbA case.
+    # search->candidate SELECTION step.
     fam_spec = benchmark.get("family_coverage", {})
     cand_text = _candidate_text(run)
 
