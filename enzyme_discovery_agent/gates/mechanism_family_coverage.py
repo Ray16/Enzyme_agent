@@ -87,22 +87,36 @@ class MechanismFamilyGate:
         )
 
         lines = []
-        for f in families:
+        for i, f in enumerate(families):
             terms = "; ".join(f.get("literature_terms") or f["descriptors"])
-            lines.append(f"- {f['name']}: {terms}")
+            marker = " [MOST PROMISING — substrate match]" if i == 0 else ""
+            reason = f.get("promise_reason")
+            reason_txt = f" (why: {reason})" if reason and i == 0 else ""
+            lines.append(f"- {f['name']}{marker}: {terms}{reason_txt}")
         families_block = "\n".join(lines)
+        top_name = families[0]["name"]
 
         guidance = (
             "MECHANISM-FAMILY COVERAGE. The target bond-forming reaction can be "
-            "catalysed by several DISTINCT enzyme families/folds. Try to cover "
-            "EACH of these families from the LITERATURE — run targeted literature "
-            "searches with the terms below, fetch full text, and register a "
-            "representative per family. Crucially, within each family look for the "
-            "MEMBER whose native substrate RESEMBLES THE TARGET substrates (their "
-            "reactive groups and size), not the family's textbook archetype — "
-            "search the fold CROSSED with the target substrate class. Do not "
-            "converge on one family or skip a family because the first papers "
-            "named a different one:\n"
+            "catalysed by several DISTINCT enzyme families/folds, listed below in "
+            "DESCENDING order of how closely each family's native substrates "
+            "resemble the target substrates.\n"
+            "STRATEGY — go DEEP before broad. Do NOT spend equal budget on every "
+            "family, and do NOT wander into families whose bond DIRECTION or type "
+            "does not match the target reaction. Instead:\n"
+            f"1. EXPAND on the most promising family first ('{top_name}'): run "
+            "SEVERAL targeted literature + sequence-database searches that CROSS "
+            "that fold with the target substrate class, fetch full text, and "
+            "register MULTIPLE members — especially the ones whose native "
+            "substrate most resembles the target's reactive groups and size, plus "
+            "their close homologs/orthologs — not just one representative.\n"
+            "2. Then TOUCH each remaining family at least once (one representative "
+            "from the literature) so no distinct fold is missed, and expand any "
+            "that also turn out to fit the target substrates well.\n"
+            "Within every family, look for the MEMBER whose native substrate "
+            "RESEMBLES THE TARGET substrates, not the family's textbook archetype. "
+            "Do not converge prematurely on a family the first papers happened to "
+            "name:\n"
             f"{families_block}"
         )
         return GateResult(
