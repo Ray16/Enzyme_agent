@@ -318,15 +318,15 @@ target transformation:
    - DIRECTION: the native reaction must run in the target direction (for a \
 bond-FORMATION target: a ligation/condensation/synthesis mechanism, NOT a \
 hydrolase/cleavage enzyme). A direction mismatch is disqualifying.
-   - BOND CHEMISTRY: the mechanism must form the TARGET bond via a compatible \
-activation (for ATP-dependent amide ligation: an acyl-phosphate or \
-aminoacyl-adenylate intermediate). Use reaction_chemistry, catalytic_activities, EC.
+   - BOND CHEMISTRY: the mechanism must form the TARGET bond via a \
+mechanistically compatible activation for that bond type. Use \
+reaction_chemistry, catalytic_activities, EC.
    - SUBSTRATE TOPOLOGY (the decisive discriminator): the mechanism must act on \
 substrates whose TOPOLOGY matches the target's (free small molecules, when the \
 target substrates are free small molecules). DISQUALIFY / strongly \
-downrank mechanisms that REQUIRE a carrier-protein-tethered substrate (NRPS \
-adenylation domains; substrate_class = carrier_protein_tethered) or a POLYMER \
-PRIMER (cyanophycin-type; substrate_class = polymer) — they cannot ligate two \
+downrank mechanisms that REQUIRE a carrier-protein-tethered substrate \
+(substrate_class = carrier_protein_tethered) or a POLYMERIC \
+PRIMER (substrate_class = polymer) — they cannot ligate two \
 free molecules, regardless of substrate identity.
    - Honor critical_warnings (see REACTION CHEMISTRY VALIDATION) as feasibility failures.
    SUBSTRATE SIMILARITY IS NOT A FEASIBILITY FILTER: the per_substrate_match \
