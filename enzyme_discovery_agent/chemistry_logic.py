@@ -104,6 +104,40 @@ def _pubchem_name_to_smiles(name: str) -> str | None:
     return smiles
 
 
+_SUBSTRATE_EXTRACT_SYSTEM = (
+    "Extract the CHEMICAL SUBSTRATES (the reaction inputs / reactants) named in "
+    "an enzyme-discovery query, so they can be resolved to structures. Return "
+    "ONLY the substrate compound names actually written in the query, as JSON: "
+    '{"substrates":["..",".."]}. Compound names only — no enzymes, no products, '
+    "no application or context words. If the query names no specific substrate, "
+    'return {"substrates":[]}.'
+)
+
+
+def extract_reaction_substrate_names(query: str, llm_client) -> list[str]:
+    """LLM-extract the target reaction's substrate NAMES from a free-text query.
+
+    A whole query sentence does not resolve to a structure; the named reactants
+    inside it do.  Answer-agnostic: this pulls the reaction INPUTS the user wrote
+    (task setup), never any enzyme.  Returns [] on any failure.
+    """
+    if not query or llm_client is None:
+        return []
+    try:
+        response = llm_client.call(
+            messages=[{"role": "system", "content": _SUBSTRATE_EXTRACT_SYSTEM},
+                      {"role": "user", "content": query}],
+            temperature=config.LLM_TEMPERATURE,
+            timeout=max(config.LLM_TIMEOUT, 60),
+        )
+        content = response.choices[0].message.content or ""
+        obj = json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
+        return [str(s).strip() for s in (obj.get("substrates") or []) if str(s).strip()]
+    except Exception as exc:  # noqa: BLE001 - degrade to the raw-text path
+        logger.debug("substrate-name extraction failed: %s", exc)
+        return []
+
+
 def resolve_substrate_names_to_smiles(text: str | None) -> str | None:
     """Resolve a free-text substrate description to a dot-joined SMILES string.
 
