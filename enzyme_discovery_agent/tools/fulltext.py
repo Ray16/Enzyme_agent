@@ -523,6 +523,7 @@ def _register_named_enzymes_from_fulltext(
     from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
 
     registered: list[str] = []
+    paper_records: list[dict] = []
     for meta in manifest[:_MAX_NAMED_PAPERS]:
         if len(registered) >= remaining:
             break
