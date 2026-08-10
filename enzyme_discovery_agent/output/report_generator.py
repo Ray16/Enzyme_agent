@@ -1011,6 +1011,11 @@ def generate_report(
         token_usage: Token usage accumulator
         log_fn: Optional logging function (msg: str) -> None
     """
+    # Drop failed evaluations (data is None): not candidates, and the prompt
+    # builders below assume dict data.
+    all_evals = [e for e in (all_evals or [])
+                 if isinstance(e, dict) and isinstance(e.get("data", e), dict)]
+
     if not all_evals:
         if log_fn:
             log_fn(f"  Skipping {report_type} report -- no evaluations available")
