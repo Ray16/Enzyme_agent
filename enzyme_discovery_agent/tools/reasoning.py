@@ -609,7 +609,7 @@ def _catalytic_family(domain_architecture, ec_numbers, catalytic_activities):
     ),
     category="reasoning",
     parallel_safe=True,
-    injected_params=["run_dir"],
+    injected_params=["run_dir", "llm_client"],
     params={
         "run_dir": {"type": "string", "description": "Agent run directory (injected)."},
         "accession": {
