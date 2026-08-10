@@ -193,44 +193,35 @@ class RunFinalizer:
         (self.run_dir / "discovery_coverage.json").write_text(
             json.dumps(coverage, indent=2, default=str) + "\n"
         )
-        if coverage["covered"] or force_completion:
-            if force_completion and not coverage["covered"]:
-                self.log(
-                    "  Completion reserve reached with incomplete discovery coverage; "
-                    "evaluating the bounded screened pool and recording the gaps as report limitations.",
-                    level="warning",
-                )
-            # Mine deposited sequence accessions from the top papers' FULL TEXT
-            # and register them as candidates.  Deterministic (regex + REST, no
-            # full text in the LLM context), so it adds no prompt tokens; it is
-            # the only route to characterized enzymes that carry no gene name and
-            # only a generic protein annotation, reachable solely via the GenBank
-            # accession deposited in their paper.  Runs BEFORE screen so the
-            # resolved candidates are screened and evaluated with the rest.
-            try:
-                from enzyme_discovery_agent.tools.fulltext import (
-                    mine_and_register_fulltext_accessions,
-                )
-                # No recall cap: mining is deterministic (regex + REST, zero LLM
-                # tokens) and non-OA papers fast-fail, so it fetches every
-                # open-access mechanism-relevant paper in the pool — the bound is
-                # OA availability, not an arbitrary top-K.
-                mine_and_register_fulltext_accessions(
-                    self.run_dir, query, log_fn=self.log, llm_client=self.llm
-                )
-            except Exception as exc:  # never let mining block finalization
-                logger.warning("Full-text accession mining failed: %s", exc)
-            auto_screen_candidates(self.run_dir, log_fn=self.log)
-            # A bounded screen can legitimately occur in the final agent turn.
-            # Finalization is the last safe backstop: never emit an empty report
-            # merely because the normal evaluation gate had no subsequent turn.
-            _auto_evaluate_all(self.run_dir, log_fn=self.log)
-        else:
+        # Finalization is the LAST backstop — there is no later turn — so always
+        # evaluate the screened pool.  A run that discovered and screened
+        # candidates must never emit an empty report merely because coverage is
+        # incomplete; the gaps are recorded as report limitations instead.
+        if not coverage["covered"]:
             self.log(
-                "  Discovery coverage incomplete; skipping automatic evaluation and ranking: "
+                "  Discovery coverage incomplete; evaluating the screened pool anyway "
+                "and recording the gaps as report limitations: "
                 + "; ".join(coverage["missing"]),
                 level="warning",
             )
+        # Mine deposited sequence accessions from the top papers' FULL TEXT and
+        # register them as candidates.  Deterministic (regex + REST, no full text
+        # in the LLM context), so it adds no prompt tokens; it is the only route
+        # to characterized enzymes that carry no gene name and only a generic
+        # protein annotation, reachable solely via the GenBank accession
+        # deposited in their paper.  Runs BEFORE screen so the resolved
+        # candidates are screened and evaluated with the rest.
+        try:
+            from enzyme_discovery_agent.tools.fulltext import (
+                mine_and_register_fulltext_accessions,
+            )
+            mine_and_register_fulltext_accessions(
+                self.run_dir, query, log_fn=self.log, llm_client=self.llm
+            )
+        except Exception as exc:  # never let mining block finalization
+            logger.warning("Full-text accession mining failed: %s", exc)
+        auto_screen_candidates(self.run_dir, log_fn=self.log)
+        _auto_evaluate_all(self.run_dir, log_fn=self.log)
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
         candidate_dir = self.artifacts_dir / "candidates"
         candidate_dir.mkdir(parents=True, exist_ok=True)
