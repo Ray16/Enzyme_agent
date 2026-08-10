@@ -131,7 +131,7 @@ def summarise_family_profile(members: list[dict]) -> dict:
     """Condense scored members into the family's distinct native-reaction profile."""
     directions: dict[str, int] = {}
     distinct_reactions: list[str] = []
-    counts = {"warm": 0, "cold": 0, "neutral": 0}
+    counts = {"warm": 0, "tepid": 0, "cold": 0, "neutral": 0}
     for m in members:
         counts[m["tag"]] = counts.get(m["tag"], 0) + 1
         d = m.get("direction")
@@ -144,9 +144,71 @@ def summarise_family_profile(members: list[dict]) -> dict:
         "directions": directions,
         "distinct_reactions": distinct_reactions,
         "warm_members": counts["warm"],
+        "tepid_members": counts["tepid"],
         "cold_members": counts["cold"],
         "neutral_members": counts["neutral"],
     }
+
+
+# --------------------------------------------------------------------------
+# Substrate resemblance (network: ChEBI -> SMILES -> property comparison)
+# --------------------------------------------------------------------------
+
+def _member_substrate_chebis(entry: dict) -> list[str]:
+    """Non-cofactor ChEBI participant ids from a member's catalytic activity.
+
+    The enumeration response carries each reaction's ChEBI participants, so the
+    member's actual substrates are available without a second fetch.  Cofactors
+    (ATP/AMP/PPi/H2O/...) are dropped so only the transformed substrates remain.
+    """
+    ids: list[str] = []
+    for c in entry.get("comments", []):
+        if c.get("commentType") != "CATALYTIC ACTIVITY":
+            continue
+        for x in c.get("reaction", {}).get("reactionCrossReferences", []):
+            if x.get("database") != "ChEBI":
+                continue
+            cid = x.get("id", "")
+            if cid and cid not in COFACTOR_CHEBI_IDS and cid not in ids:
+                ids.append(cid)
+    return ids
+
+
+def _substrate_fit(member_smiles: list[str], target_smiles: list[str]) -> float | None:
+    """Coarse native-vs-target substrate resemblance in [0,1], or None.
+
+    For EACH target substrate, take the best functional-group / chain-length /
+    size match among the member's substrates, then average across the target
+    substrates (the enzyme must handle every target substrate).  Aromatic/ring
+    mismatches are SOFT down-weights, never hard caps — this steers where to dig,
+    it does not disqualify.
+    """
+    if not member_smiles or not target_smiles:
+        return None
+    from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
+
+    per_target = []
+    for t in target_smiles:
+        best = 0.0
+        for n in member_smiles:
+            cmp = compare_substrate_properties(t, n, compute_substrate_properties)
+            if not cmp:
+                continue
+            dims = [cmp.get(k) for k in (
+                "functional_group_similarity", "chain_length_similarity",
+                "mw_similarity",
+            )]
+            dims = [d for d in dims if isinstance(d, (int, float))]
+            if not dims:
+                continue
+            fit = sum(dims) / len(dims)
+            if cmp.get("aromaticity_match") is False:
+                fit *= 0.7          # soft down-weight, NOT a hard cap
+            if cmp.get("cyclicity_match") is False:
+                fit *= 0.85
+            best = max(best, fit)
+        per_target.append(best)
+    return round(sum(per_target) / len(per_target), 3) if per_target else None
 
 
 # --------------------------------------------------------------------------
