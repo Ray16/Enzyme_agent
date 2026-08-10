@@ -159,7 +159,7 @@ def update_candidate_registry(
 
         try:
             with open(run_dir / "candidate_registry.json", "w") as f:
-                json.dump(registry, f, indent=2, default=str)
+                json.dump(_to_file_view(registry), f, indent=2, default=str)
         except Exception as e:
             logger.warning("Failed to write candidate registry: %s", e)
 
