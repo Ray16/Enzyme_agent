@@ -206,7 +206,7 @@ class EnzymeAgent:
                         tool_args.get("accession", tool_args.get("smiles", ""))))
         self.log(f"    -> {tool_name}({str(query_preview)[:80]})")
 
-        injected = {"run_dir": str(self.run_dir)}
+        injected = {"run_dir": str(self.run_dir), "llm_client": self.llm}
         result = execute_tool(tool_name, tool_args, injected_args=injected)
         result = json.loads(json.dumps(result, default=str))
 
