@@ -62,29 +62,14 @@ class MechanismFamilyGate:
             json.dumps(families, indent=2) + "\n"
         )
 
-        # Express each family as a discovery-coverage evidence bucket, so the
-        # existing coverage gate requires a screened member of each before
-        # evaluation.  Merge into the run's target profile.
-        buckets = [
-            {"name": f["name"], "match_any": f["descriptors"], "minimum_candidates": 1}
-            for f in families
-        ]
-        profile = ctx.get("target_profile") or {}
-        cov = profile.get("discovery_coverage") or {}
-        existing = {b.get("name") for b in cov.get("evidence_buckets", [])}
-        cov["evidence_buckets"] = cov.get("evidence_buckets", []) + [
-            b for b in buckets if b["name"] not in existing
-        ]
-        # Require at least as many distinct families as we derived.
-        cov["minimum_distinct_families"] = max(
-            cov.get("minimum_distinct_families", 0), len(families)
-        )
-        profile["discovery_coverage"] = cov
-        ctx["target_profile"] = profile
-        try:
-            ctx_path.write_text(json.dumps(ctx, indent=2) + "\n")
-        except OSError as exc:
-            logger.warning("could not persist mechanism-family coverage: %s", exc)
+        # SOFT guidance only — do NOT turn the families into hard coverage
+        # buckets or raise minimum_distinct_families.  The coverage matcher does a
+        # literal text match against candidate metadata, and abstract fold
+        # descriptors ("glutamine synthetase fold", "adenylation") never appear
+        # verbatim in UniProt annotations, so a hard requirement would be
+        # impossible to satisfy and would block evaluation entirely (an empty
+        # report).  Coverage is encouraged through the guidance below and the
+        # generic distinct-family contract, not enforced per derived family.
 
         append_exploration_log(
             state.run_dir,
