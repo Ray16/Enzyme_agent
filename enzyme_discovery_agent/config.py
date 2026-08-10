@@ -48,6 +48,10 @@ FINALIZATION_RESERVE_ITERATIONS = 8
 
 # --- Tool execution ---
 TOOL_THREAD_POOL_WORKERS = 4
+# Concurrency for the full-text harvest: papers are downloaded and read (LLM
+# extraction) in parallel rather than one at a time.  Bounded to stay polite to
+# publisher servers and the LLM endpoint.
+FULLTEXT_HARVEST_WORKERS = 6
 MAX_RESULT_CHARS = 20_000
 # Screening is NOT capped.  auto_screen collapses orthologs to one representative
 # per distinct gene, then screens and evaluates EVERY such representative — one
