@@ -153,14 +153,15 @@ def _member_substrate_chebis(entry: dict) -> list[str]:
     return ids
 
 
-def _substrate_fit(member_smiles: list[str], target_smiles: list[str]) -> float | None:
-    """Coarse native-vs-target substrate resemblance in [0,1], or None.
+def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict | None:
+    """Report GROUNDED substrate-resemblance facts (no blended score, no weights).
 
-    For EACH target substrate, take the best functional-group / chain-length /
-    size match among the member's substrates, then average across the target
-    substrates (the enzyme must handle every target substrate).  Aromatic/ring
-    mismatches are SOFT down-weights, never hard caps — this steers where to dig,
-    it does not disqualify.
+    For EACH target substrate, pick the member substrate with the best functional-
+    group overlap and keep its raw comparison numbers.  Report the WORST-matched
+    target as the headline (the enzyme must accommodate every target substrate — a
+    'handle all' modelling choice, not a tuned weight), plus the raw functional
+    groups and size ratio.  Returns None when nothing resolves.  The agent weighs
+    these; nothing here converts them into a verdict.
     """
     if not member_smiles or not target_smiles:
         return None
@@ -168,26 +169,35 @@ def _substrate_fit(member_smiles: list[str], target_smiles: list[str]) -> float 
 
     per_target = []
     for t in target_smiles:
-        best = 0.0
+        best = None
         for n in member_smiles:
             cmp = compare_substrate_properties(t, n, compute_substrate_properties)
             if not cmp:
                 continue
-            dims = [cmp.get(k) for k in (
-                "functional_group_similarity", "chain_length_similarity",
-                "mw_similarity",
-            )]
-            dims = [d for d in dims if isinstance(d, (int, float))]
-            if not dims:
+            fg = cmp.get("functional_group_similarity")
+            if fg is None:
                 continue
-            fit = sum(dims) / len(dims)
-            if cmp.get("aromaticity_match") is False:
-                fit *= 0.7          # soft down-weight, NOT a hard cap
-            if cmp.get("cyclicity_match") is False:
-                fit *= 0.85
-            best = max(best, fit)
-        per_target.append(best)
-    return round(sum(per_target) / len(per_target), 3) if per_target else None
+            if best is None or fg > best["fg"]:
+                best = {
+                    "fg": fg,
+                    "size_ratio": cmp.get("mw_similarity"),
+                    "aromaticity_match": cmp.get("aromaticity_match"),
+                    "fg_target": cmp.get("functional_groups_target") or [],
+                    "fg_native": cmp.get("functional_groups_native") or [],
+                }
+        if best is not None:
+            per_target.append(best)
+    if not per_target:
+        return None
+
+    sizes = [p["size_ratio"] for p in per_target if p.get("size_ratio") is not None]
+    return {
+        "functional_group_similarity": round(min(p["fg"] for p in per_target), 3),
+        "size_ratio": round(min(sizes), 3) if sizes else None,
+        "functional_groups_target": sorted({g for p in per_target for g in p["fg_target"]}),
+        "functional_groups_native": sorted({g for p in per_target for g in p["fg_native"]}),
+        "native_aromatic_target_lacks": any(p.get("aromaticity_match") is False for p in per_target),
+    }
 
 
 # --------------------------------------------------------------------------
