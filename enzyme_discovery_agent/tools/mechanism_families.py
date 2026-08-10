@@ -86,14 +86,32 @@ def derive_mechanism_families(
             timeout=max(config.LLM_TIMEOUT, 120),
         )
         content = response.choices[0].message.content or ""
-        obj = json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
     except Exception as exc:  # noqa: BLE001 - degrade gracefully
         logger.warning("mechanism-family derivation failed: %s", exc)
         return []
 
+    raw = []
+    try:
+        raw = (json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
+               .get("families") or [])
+    except Exception:  # noqa: BLE001
+        # A long response can truncate mid-list and break whole-blob parsing.
+        # Family objects contain no nested braces, so salvage each complete one
+        # independently (the truncated tail simply won't match).
+        for blob in re.findall(r"\{[^{}]*\}", content):
+            try:
+                item = json.loads(blob)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(item, dict) and item.get("name"):
+                raw.append(item)
+    if not raw:
+        logger.warning("mechanism-family derivation returned no parseable families")
+        return []
+
     families = []
     seen = set()
-    for fam in (obj.get("families") or [])[:max_families]:
+    for fam in raw[:max_families]:
         name = str(fam.get("name") or "").strip()
         descriptors = _clean_terms(fam.get("descriptors"))
         lit_terms = _clean_terms(fam.get("literature_terms"))
