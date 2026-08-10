@@ -223,7 +223,7 @@ EXHAUSTIVE SEARCH: Before pivoting to evaluation, you must search across ALL \
 biological contexts where the target bond type occurs. Think systematically:
 - Primary metabolism (amino acid biosynthesis, cofactor biosynthesis)
 - Cell wall / membrane biosynthesis
-- Secondary metabolites (antibiotics, siderophores, toxins)
+- Secondary metabolites / natural products (antibiotics, toxins, etc.)
 - Storage compounds and biopolymers
 - Post-translational modifications
 - Xenobiotic metabolism
