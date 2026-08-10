@@ -52,8 +52,8 @@ simpler product in vitro, so that does not disqualify it.
    - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on substrates whose \
 TOPOLOGY matches the target's (free small molecules, when the target substrates \
 are free small molecules). Rank DOWN mechanisms that require a \
-carrier-protein-tethered substrate (NRPS adenylation; substrate_class = \
-carrier_protein_tethered) or a polymer primer (cyanophycin-type; substrate_class \
+carrier-protein-tethered substrate (substrate_class = \
+carrier_protein_tethered) or a polymeric-primer substrate (substrate_class \
 = polymer) when the target substrates are free molecules — they cannot ligate \
 free molecules regardless of substrate identity.
 
@@ -156,8 +156,8 @@ simpler product in vitro, so that does not disqualify it.
    - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on substrates whose \
 TOPOLOGY matches the target's (free small molecules, when the target substrates \
 are free small molecules). Rank DOWN mechanisms that require a \
-carrier-protein-tethered substrate (NRPS adenylation; substrate_class = \
-carrier_protein_tethered) or a polymer primer (cyanophycin-type; substrate_class \
+carrier-protein-tethered substrate (substrate_class = \
+carrier_protein_tethered) or a polymeric-primer substrate (substrate_class \
 = polymer) when the target substrates are free molecules — they cannot ligate \
 free molecules regardless of substrate identity.
 
