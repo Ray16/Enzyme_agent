@@ -316,8 +316,8 @@ hydrolase/cleavage enzyme). A direction mismatch is disqualifying.
 activation (for ATP-dependent amide ligation: an acyl-phosphate or \
 aminoacyl-adenylate intermediate). Use reaction_chemistry, catalytic_activities, EC.
    - SUBSTRATE TOPOLOGY (the decisive discriminator): the mechanism must act on \
-FREE small-molecule substrates matching the target's topology (here: two free \
-small molecules — a free diacid + a free diamine). DISQUALIFY / strongly \
+substrates whose TOPOLOGY matches the target's (free small molecules, when the \
+target substrates are free small molecules). DISQUALIFY / strongly \
 downrank mechanisms that REQUIRE a carrier-protein-tethered substrate (NRPS \
 adenylation domains; substrate_class = carrier_protein_tethered) or a POLYMER \
 PRIMER (cyanophycin-type; substrate_class = polymer) — they cannot ligate two \
