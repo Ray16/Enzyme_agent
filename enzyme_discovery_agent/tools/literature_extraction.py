@@ -224,12 +224,21 @@ def extract_from_paper(
 
 
 _RELEVANCE_SYSTEM = (
-    "You gate whether a paper is worth reading for an enzyme-discovery query. "
-    "Given its title and abstract, decide if it characterises or discusses an "
-    "ENZYME catalysing the query reaction TYPE — the right chemistry AND the "
-    "right direction. A purely chemical process, a materials/degradation study, "
-    "or the opposite reaction direction is NOT relevant even if it shares "
-    'keywords. Return ONLY JSON: {"relevant": true|false, "reason": "<=15 words"}.'
+    "You gate whether a paper is worth reading during the EXPLORATION stage of an "
+    "enzyme-discovery query. Given its title and abstract, decide if it "
+    "characterises or discusses an ENZYME catalysing the query reaction TYPE — "
+    "the same BOND-FORMING CHEMISTRY and the same DIRECTION (e.g. forming vs "
+    "cleaving the bond).\n"
+    "Judge by the REACTION TYPE and enzyme MECHANISM, NOT by the specific "
+    "substrates named in the query. An enzyme that forms the same kind of bond on "
+    "ANALOGOUS substrates (a different acid + amine, a related diacid/diamine, a "
+    "model substrate) IS relevant — substrate scope and specificity are assessed "
+    "later, not here. Do NOT require the paper to name the query's exact "
+    "molecules. Mechanistically related enzyme families are relevant even without "
+    "the exact substrates.\n"
+    "Only a purely chemical (non-enzymatic) process, an unrelated bond chemistry, "
+    "or the OPPOSITE reaction direction is NOT relevant. When unsure, keep it. "
+    'Return ONLY JSON: {"relevant": true|false, "reason": "<=15 words"}.'
 )
 
 
