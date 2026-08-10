@@ -1105,6 +1105,7 @@ def evaluate_candidate(
     update_candidate_registry(run_dir, accession, eval_status, metadata={
         "protein_name": protein_name,
         "gene_names": gene_names,
+        "literature_name": literature_name,
         "organism": organism,
         "sequence_length": seq_length,
         "ec_numbers": ec_numbers,
