@@ -57,10 +57,15 @@ def find_candidate_paper(run_dir: Path, source_tool: str) -> dict | None:
     acc = m.group(1)
     ft_dir = run_dir / "artifacts" / "fulltext"
     manifest = _load_fulltext_manifest(run_dir)
-    for txt in ft_dir.glob("*.txt"):
+    # Read via the manifest's relative text paths (text lives under txt/ in the
+    # current layout), rather than globbing the top-level folder.
+    for rec in manifest:
+        tf = rec.get("text_file")
+        if not tf:
+            continue
+        txt = ft_dir / tf
         try:
             if acc in txt.read_text(errors="ignore"):
-                rec = next((r for r in manifest if r.get("text_file") == txt.name), {})
                 return {
                     "deposited_accession": acc,
                     "text_path": str(txt),
