@@ -249,6 +249,14 @@ class RunFinalizer:
             )
         except Exception as exc:
             logger.warning("Provenance/enrichment step failed: %s", exc)
+        # Categorise the harvested full text by enzyme family (papers_enzymes.csv
+        # + families_index.json), now that the registry carries each candidate's
+        # family.  Fully defensive — never blocks finalization.
+        try:
+            from enzyme_discovery_agent.tools.fulltext import write_fulltext_family_index
+            write_fulltext_family_index(self.run_dir, log_fn=self.log)
+        except Exception as exc:
+            logger.warning("Full-text family index failed: %s", exc)
         if evaluations:
             (candidate_dir / "all_evaluations.json").write_text(
                 json.dumps(evaluations, indent=2, default=str)
