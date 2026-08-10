@@ -573,7 +573,7 @@ What this is NOT for:
   close substrate analogues, and structural homology of qualified seeds.
 - Do NOT expand every EC number returned into a UniProt search.
 
-Coverage caveat: some relevant families (for example synthetases that lack an \
+Coverage caveat: some relevant enzyme families (for example those that lack an \
 assigned EC number) will not appear here at all. Absence from ModelSEED is not \
 evidence of absence — use literature search for those."""
 
