@@ -337,8 +337,18 @@ class EnzymeAgent:
             try:
                 from enzyme_discovery_agent.chemistry_logic import (
                     resolve_substrate_names_to_smiles,
+                    extract_reaction_substrate_names,
                 )
-                derived = resolve_substrate_names_to_smiles(substrate_name or query)
+                # A whole query sentence does not resolve to a structure; extract
+                # the named reactants first (the target substrates the reaction
+                # ligates), then resolve those.  Fall back to the raw text.
+                derived = None
+                if not substrate_name:
+                    names = extract_reaction_substrate_names(query, self.llm)
+                    if names:
+                        derived = resolve_substrate_names_to_smiles(" and ".join(names))
+                if not derived:
+                    derived = resolve_substrate_names_to_smiles(substrate_name or query)
                 if derived:
                     substrate_smiles = derived
                     self.log(f"  Derived substrate SMILES: {substrate_smiles}")
