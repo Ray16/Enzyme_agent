@@ -732,3 +732,73 @@ def mine_and_register_fulltext_accessions(
             f"-> {len(registered)} candidates registered"
         )
     return registered
+
+
+def write_fulltext_family_index(run_dir, log_fn=None) -> None:
+    """Categorise the harvested full text BY ENZYME FAMILY.
+
+    Joins the per-paper enzyme records (``papers_enzymes.json``, written during
+    the harvest) to each resolved accession's family in the candidate registry,
+    and writes two artifacts under ``artifacts/fulltext/``:
+      * ``papers_enzymes.csv`` — one row per (paper, enzyme), sorted by family:
+        family, enzyme, paper's name for it, organism, accession, role, title, doi;
+      * ``families_index.json`` — family -> the papers/enzymes under it.
+    Best run at finalization, when the registry carries each candidate's family.
+    """
+    import csv as _csv
+    from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
+
+    run = Path(run_dir)
+    dest = run / "artifacts" / "fulltext"
+    try:
+        papers = json.loads((dest / "papers_enzymes.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        return
+    reg = load_candidate_registry(run).get("candidates", {})
+
+    def _meta(acc):
+        return (reg.get(acc) or {}).get("metadata", {})
+
+    rows = []
+    for p in papers:
+        for role in ("enzymes", "homologs"):
+            for ez in p.get(role, []):
+                accs = ez.get("accessions") or [""]
+                for acc in accs:
+                    meta = _meta(acc)
+                    rows.append({
+                        "family": meta.get("interpro_family") or "(unresolved)",
+                        "enzyme": (reg.get(acc) or {}).get("enzyme_name") or ez.get("name", ""),
+                        "paper_name_for_enzyme": ez.get("name", ""),
+                        "organism": ez.get("organism", ""),
+                        "accession": acc,
+                        "role": role[:-1],
+                        "paper_title": p.get("title", ""),
+                        "doi": p.get("doi", ""),
+                    })
+    rows.sort(key=lambda r: (r["family"], r["paper_title"]))
+
+    try:
+        with open(dest / "papers_enzymes.csv", "w", newline="") as f:
+            writer = _csv.DictWriter(f, fieldnames=[
+                "family", "enzyme", "paper_name_for_enzyme", "organism",
+                "accession", "role", "paper_title", "doi",
+            ])
+            writer.writeheader()
+            writer.writerows(rows)
+    except OSError as exc:
+        logger.warning("could not write papers_enzymes.csv: %s", exc)
+
+    families: dict[str, list] = {}
+    for r in rows:
+        families.setdefault(r["family"], []).append({
+            "enzyme": r["enzyme"], "accession": r["accession"],
+            "paper_title": r["paper_title"], "doi": r["doi"],
+        })
+    try:
+        (dest / "families_index.json").write_text(json.dumps(families, indent=2) + "\n")
+    except OSError:
+        pass
+    if log_fn:
+        log_fn(f"  Full-text family index: {len(rows)} enzyme mentions across "
+               f"{len(families)} families -> papers_enzymes.csv")
