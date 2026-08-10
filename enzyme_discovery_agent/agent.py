@@ -104,6 +104,7 @@ class EnzymeAgent:
         self._systematic_gate = SystematicCoverageGate()
         self._literature_harvest_gate = LiteratureHarvestGate(self.llm, self.log)
         self._mechanism_family_gate = MechanismFamilyGate(self.llm, self.log)
+        self._family_survey_gate = FamilySurveyGate(self.log)
         self._evidence_selection_gate = EvidenceSelectionGate()
         self._gate_pipeline = GatePipeline([
             EntityExtractionGate(),
