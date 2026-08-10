@@ -633,11 +633,11 @@ def mine_and_register_fulltext_accessions(
                 break
             _register(acc, f"fulltext_genbank:{gb}")
 
-    # 4. Literature-NAMED enzymes: a paper names query-type enzymes it deposits
-    #    no sequence for (cited analogues / prior art — e.g. DdaG/DdaF/McbA in an
-    #    amide-bond-synthetase review).  Resolve each by name+organism and
-    #    register — the only route to an enzyme mentioned by NAME with no
-    #    accession in the text.  LLM-gated; skipped when no llm_client.
+    # 4. Literature-NAMED enzymes: a paper names target-reaction enzymes it
+    #    deposits no sequence for (cited analogues / prior art).  Resolve each by
+    #    name+organism and register — the only route to an enzyme mentioned by
+    #    NAME with no accession in the text.  LLM-gated; skipped when no
+    #    llm_client.
     n_named = 0
     if llm_client is not None and len(registered) < max_proteins:
         try:
