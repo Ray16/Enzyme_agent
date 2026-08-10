@@ -502,17 +502,19 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     profile = summarise_family_profile(members)
 
     warm = profile["warm_members"]
+    tepid = profile["tepid_members"]
     cold = profile["cold_members"]
     logger.info(
-        "Family survey: %s (fold %s, %d reviewed members); %d warm / %d cold vs target",
-        source, fold_id, fold_size, warm, cold,
+        "Family survey: %s (fold %s, %d reviewed members); %d warm / %d tepid / %d cold vs target",
+        source, fold_id, fold_size, warm, tepid, cold,
     )
 
     return {
         "status": "success",
         "summary": (
-            f"{source} ({fold_size} reviewed members): "
-            f"{warm} native reactions match the target direction, {cold} are opposite."
+            f"{source} ({fold_size} reviewed members): {warm} WARM (target "
+            f"direction + target-like substrates), {tepid} tepid (right direction, "
+            f"different substrate), {cold} opposite-direction."
         ),
         "data": {
             "seed_accession": seed_accession or None,
