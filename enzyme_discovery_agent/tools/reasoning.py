@@ -549,8 +549,8 @@ def _chebi_smiles_by_name(name: str) -> str | None:
 # would be leakage — cf. the leakage firewall).  "Enzyme unless positively a
 # non-enzyme" is also conservative: it can only ever drop a proven non-enzyme,
 # never a relevant enzyme.  Matched against InterPro/Pfam DOMAIN names only, not
-# the protein name (which carries pathway context like "... siderophore
-# biosynthesis transcriptional regulator" that would misclassify a regulator).
+# the protein name (which carries pathway context like "... biosynthesis
+# transcriptional regulator" that would misclassify a regulator).
 _NON_ENZYME_DOMAIN_TOKENS = (
     "regulat", "transcription", "dna-binding", "dna binding", "helix-turn-helix",
     " hth", "winged helix", "homeodomain", "receptor", "transporter",
