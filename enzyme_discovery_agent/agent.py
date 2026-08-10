@@ -337,16 +337,15 @@ class EnzymeAgent:
             try:
                 from enzyme_discovery_agent.chemistry_logic import (
                     resolve_substrate_names_to_smiles,
-                    extract_reaction_substrate_names,
+                    reason_target_substrate_smiles,
                 )
-                # A whole query sentence does not resolve to a structure; extract
-                # the named reactants first (the target substrates the reaction
-                # ligates), then resolve those.  Fall back to the raw text.
+                # The agent reasons about the reaction + substrates at the outset,
+                # so REASON the target-substrate SMILES from the query (a whole
+                # sentence does not resolve to a structure).  Fall back to a
+                # name->PubChem lookup on the supplied name or raw text.
                 derived = None
                 if not substrate_name:
-                    names = extract_reaction_substrate_names(query, self.llm)
-                    if names:
-                        derived = resolve_substrate_names_to_smiles(" and ".join(names))
+                    derived = reason_target_substrate_smiles(query, self.llm)
                 if not derived:
                     derived = resolve_substrate_names_to_smiles(substrate_name or query)
                 if derived:
