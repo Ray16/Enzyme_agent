@@ -64,6 +64,41 @@ class TestMemberClassification(unittest.TestCase):
         )
         self.assertEqual(result["tag"], "neutral")
 
+    def test_right_direction_similar_substrate_is_warm(self):
+        # Same direction AND a high substrate_fit -> WARM.
+        result = classify_member_reaction(
+            ["6.3.2.1"], "x = y", target_direction="formation",
+            target_bond_types={"amide"}, substrate_fit=0.8,
+        )
+        self.assertEqual(result["tag"], "warm")
+
+    def test_right_direction_dissimilar_substrate_is_tepid(self):
+        # Same direction but a LOW substrate_fit -> tepid, not warm: the fold
+        # makes the target bond, but on a substrate unlike the target.
+        result = classify_member_reaction(
+            ["6.3.2.1"], "x = y", target_direction="formation",
+            target_bond_types={"amide"}, substrate_fit=0.1,
+        )
+        self.assertEqual(result["tag"], "tepid")
+
+    def test_substrate_fit_orders_within_warm(self):
+        hi = classify_member_reaction(
+            ["6.3.2.1"], "x = y", target_direction="formation",
+            target_bond_types=set(), substrate_fit=0.9,
+        )
+        lo = classify_member_reaction(
+            ["6.3.2.1"], "x = y", target_direction="formation",
+            target_bond_types=set(), substrate_fit=0.6,
+        )
+        self.assertGreater(hi["score"], lo["score"])
+
+    def test_opposite_direction_stays_cold_regardless_of_substrate(self):
+        result = classify_member_reaction(
+            ["3.5.1.4"], "amide + H2O = acid + amine", target_direction="formation",
+            target_bond_types=set(), substrate_fit=0.9,
+        )
+        self.assertEqual(result["tag"], "cold")
+
 
 class TestFamilyProfile(unittest.TestCase):
     def test_profile_counts_and_distinct_reactions(self):
