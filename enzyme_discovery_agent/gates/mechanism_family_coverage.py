@@ -117,7 +117,17 @@ class MechanismFamilyGate:
             "RESEMBLES THE TARGET substrates, not the family's textbook archetype. "
             "Do not converge prematurely on a family the first papers happened to "
             "name:\n"
-            f"{families_block}"
+            f"{families_block}\n"
+            "GROUND THE CHOICE IN THE FAMILY'S NATIVE REACTIONS. Once you have a "
+            "candidate enzyme in hand, call survey_family_reactions on a "
+            "representative candidate of EACH promising family. It resolves that "
+            "candidate's fold family and lists the fold's reviewed members WITH "
+            "THEIR NATIVE REACTIONS, comparing each to the target reaction "
+            "(direction + bond type). CONCENTRATE expansion on the family whose "
+            "members' native reactions MATCH the target reaction, and DEPRIORITIZE "
+            "families whose native reactions run opposite or unrelated to it. This "
+            "is soft guidance to steer where you dig, not a hard requirement — let "
+            "the surveyed native-reaction fit, not a family label, decide."
         )
         return GateResult(
             intercept=True,
