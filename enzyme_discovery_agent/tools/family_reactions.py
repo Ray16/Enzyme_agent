@@ -443,51 +443,58 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
 
     members: list[dict] = []
     chebi_cache: dict[str, str | None] = {}
-    n_substrate_scored = 0
     for entry in raw_members:
         acc = entry.get("primaryAccession", "")
         if not acc:
             continue
         ec = _member_ec(entry)
         native_reaction = _member_native_reaction(entry)
+        facts = classify_member_reaction(ec, native_reaction, target_direction, target_bonds)
 
-        # Structurally score substrate resemblance for non-opposite members only,
-        # up to a cap (ChEBI lookups cost network) — direction alone tags the rest.
-        substrate_fit = None
-        if target_smiles and n_substrate_scored < _SUBSTRATE_SCORE_CAP:
-            direction_only = classify_member_reaction(
-                ec, native_reaction, target_direction, target_bonds
-            )
-            if direction_only["tag"] != "cold":
-                smiles = []
-                for cid in _member_substrate_chebis(entry):
-                    if cid not in chebi_cache:
-                        try:
-                            chebi_cache[cid] = resolve_chebi_smiles(cid)
-                        except Exception:  # noqa: BLE001
-                            chebi_cache[cid] = None
-                    if chebi_cache[cid]:
-                        smiles.append(chebi_cache[cid])
-                substrate_fit = _substrate_fit(smiles, target_smiles)
-                if substrate_fit is not None:
-                    n_substrate_scored += 1
+        # Substrate-resemblance FACTS for every non-opposite member (opposite
+        # direction is already a grounded dead end, so skip its ChEBI lookups).
+        substrate = None
+        if target_smiles and facts["direction_vs_target"] != "opposite":
+            smiles = []
+            for cid in _member_substrate_chebis(entry):
+                if cid not in chebi_cache:
+                    try:
+                        chebi_cache[cid] = resolve_chebi_smiles(cid)
+                    except Exception:  # noqa: BLE001
+                        chebi_cache[cid] = None
+                if chebi_cache[cid]:
+                    smiles.append(chebi_cache[cid])
+            substrate = _substrate_facts(smiles, target_smiles)
 
-        scored = classify_member_reaction(
-            ec, native_reaction, target_direction, target_bonds, substrate_fit
-        )
         members.append({
             "accession": acc,
             "name": _member_name(entry),
             "ec": ec,
             "native_reaction": native_reaction,
-            "direction": scored["direction"],
-            "bond_types": scored["bond_types"],
-            "substrate_fit": scored["substrate_fit"],
-            "tag": scored["tag"],
-            "score": scored["score"],
+            "direction": facts["direction"],
+            "direction_vs_target": facts["direction_vs_target"],
+            "bond_types": facts["bond_types"],
+            "shared_bond_type": facts["shared_bond_type"],
+            "substrate": substrate,
         })
 
-    members.sort(key=lambda m: (-m["score"], m["accession"]))
+    # Presentation order over GROUNDED axes (not a verdict): same-direction first,
+    # then higher functional-group overlap, then closer size.  No cutoff — the
+    # agent reads the numbers and decides where to expand.
+    _dir_rank = {"same": 0, "unknown": 1, "unrelated": 2, "opposite": 3}
+
+    def _order_key(m: dict):
+        sub = m.get("substrate") or {}
+        fg = sub.get("functional_group_similarity")
+        sz = sub.get("size_ratio")
+        return (
+            _dir_rank.get(m.get("direction_vs_target"), 1),
+            -(fg if fg is not None else -1.0),
+            -(sz if sz is not None else -1.0),
+            m["accession"],
+        )
+
+    members.sort(key=_order_key)
     profile = summarise_family_profile(members)
 
     warm = profile["warm_members"]
