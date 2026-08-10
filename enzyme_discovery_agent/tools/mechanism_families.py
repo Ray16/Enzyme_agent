@@ -69,17 +69,8 @@ def _clean_terms(terms) -> list[str]:
     return out
 
 
-def derive_mechanism_families(
-    query: str, substrate_smiles: str, llm_client, max_families: int = 8,
-) -> list[dict]:
-    """Derive the distinct mechanism families that can catalyse the reaction.
-
-    Returns a list of ``{"name", "descriptors", "literature_terms"}`` (possibly
-    empty on failure — the caller degrades gracefully to the generic
-    distinct-family count).
-    """
-    if llm_client is None:
-        return []
+def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: int) -> list[dict]:
+    """A single derivation call -> parsed family dicts (may be empty)."""
     from enzyme_discovery_agent import config
 
     user = f"Target reaction / query: {query}"
@@ -94,7 +85,7 @@ def derive_mechanism_families(
         )
         content = response.choices[0].message.content or ""
     except Exception as exc:  # noqa: BLE001 - degrade gracefully
-        logger.warning("mechanism-family derivation failed: %s", exc)
+        logger.warning("mechanism-family derivation call failed: %s", exc)
         return []
 
     raw = []
@@ -112,26 +103,48 @@ def derive_mechanism_families(
                 continue
             if isinstance(item, dict) and item.get("name"):
                 raw.append(item)
-    if not raw:
-        logger.warning("mechanism-family derivation returned no parseable families")
-        return []
 
-    families = []
-    seen = set()
+    out = []
     for fam in raw[:max_families]:
         name = str(fam.get("name") or "").strip()
         descriptors = _clean_terms(fam.get("descriptors"))
         lit_terms = _clean_terms(fam.get("literature_terms"))
-        key = name.casefold()
-        if not name or not descriptors or key in seen:
+        if not name or not descriptors:
             continue
-        seen.add(key)
-        families.append({
-            "name": name,
-            "descriptors": descriptors,
-            "literature_terms": lit_terms,
-        })
-    return families
+        out.append({"name": name, "descriptors": descriptors, "literature_terms": lit_terms})
+    return out
+
+
+def derive_mechanism_families(
+    query: str, substrate_smiles: str, llm_client, max_families: int = 8,
+    min_families: int = 4, max_attempts: int = 3,
+) -> list[dict]:
+    """Derive the distinct mechanism families that can catalyse the reaction.
+
+    A single LLM call sometimes returns only ONE family (a truncated or
+    degenerate response), which collapses the whole downstream family navigation
+    (nothing to prune BETWEEN).  So sample up to ``max_attempts`` times and UNION
+    the families by name until at least ``min_families`` distinct ones are
+    gathered — cheap insurance against a degenerate single sample; usually one
+    call suffices.  Returns [] only if every attempt yields nothing.
+    """
+    if llm_client is None:
+        return []
+
+    families: list[dict] = []
+    seen: set[str] = set()
+    for _ in range(max_attempts):
+        for fam in _derive_once(query, substrate_smiles, llm_client, max_families):
+            key = fam["name"].casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            families.append(fam)
+        if len(families) >= min_families or len(families) >= max_families:
+            break
+    if not families:
+        logger.warning("mechanism-family derivation returned no parseable families")
+    return families[:max_families]
 
 
 _RANK_SYSTEM = (
