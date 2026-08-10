@@ -247,10 +247,10 @@ _RELEVANCE_SYSTEM = (
     "without characterising a query-type enzyme; and reject a PURELY CHEMICAL "
     "(non-enzymatic) process or an unrelated bond chemistry / opposite direction.\n"
     "IMPORTANT: an ENZYMATIC or BIOCATALYTIC synthesis paper IS relevant even when "
-    "its GOAL is a polymer/material or an applied product (e.g. enzymatic/"
-    "biocatalytic synthesis of a polyamide or its monomers/precursors) — the "
-    "APPLICATION framing does not make it a materials study; keep it. Only a "
-    "materials/polymer paper with NO enzymatic transformation is off-topic.\n"
+    "its GOAL is an applied product, polymer, or material (or its monomers/"
+    "precursors) — the APPLICATION framing does not make it a materials study; "
+    "keep it. Only a materials/chemistry paper with NO enzymatic transformation "
+    "is off-topic.\n"
     "When a genuine enzyme paper is borderline on substrate, keep it. "
     'Return ONLY JSON: {"relevant": true|false, "reason": "<=15 words"}.'
 )
