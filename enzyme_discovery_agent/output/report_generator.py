@@ -261,9 +261,9 @@ def _accommodation_score(data: dict) -> float | None:
     capped, because a ring system the pocket evolved around will not admit a
     linear aliphatic chain.  This bottleneck view (grounded facts, no tuned
     weights) demotes an enzyme whose native merely shares a functional-group
-    TYPE with the target but is otherwise large, aromatic, or rigid — e.g. a
-    phosphoribosyl-imidazole ligase scored against a small aliphatic diamine,
-    which functional-group overlap alone wrongly rewarded.  Returns None when
+    TYPE with the target but is otherwise much larger, aromatic, or rigid — a
+    bulky native scored against a small flexible target, which functional-group
+    overlap alone wrongly rewarded.  Returns None when
     substrate SMILES were unavailable, so callers treat it as neutral.
     """
     sim = data.get("substrate_similarity") or {}
