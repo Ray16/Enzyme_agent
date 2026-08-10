@@ -20,6 +20,7 @@ _BUILTIN_TOOL_MODULES = (
     "enzyme_discovery_agent.tools.literature",
     "enzyme_discovery_agent.tools.fulltext",
     "enzyme_discovery_agent.tools.reasoning",
+    "enzyme_discovery_agent.tools.family_reactions",
     "enzyme_discovery_agent.tools.structural_evidence",
     "enzyme_discovery_agent.tools.structure_io",
     "enzyme_discovery_agent.tools.structural_homolog_search",
