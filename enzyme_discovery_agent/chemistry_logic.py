@@ -104,38 +104,60 @@ def _pubchem_name_to_smiles(name: str) -> str | None:
     return smiles
 
 
-_SUBSTRATE_EXTRACT_SYSTEM = (
-    "Extract the CHEMICAL SUBSTRATES (the reaction inputs / reactants) named in "
-    "an enzyme-discovery query, so they can be resolved to structures. Return "
-    "ONLY the substrate compound names actually written in the query, as JSON: "
-    '{"substrates":["..",".."]}. Compound names only — no enzymes, no products, '
-    "no application or context words. If the query names no specific substrate, "
+_SUBSTRATE_REASON_SYSTEM = (
+    "At the start of an enzyme-discovery task you reason about the target reaction "
+    "and its substrates. From the query, identify the CHEMICAL SUBSTRATES (the "
+    "reaction inputs / reactants the enzyme must ligate or act on) and give each "
+    "one's SMILES, reasoning as a chemist from the compound names in the query. "
+    "Return ONLY JSON: {\"substrates\":[{\"name\":\"..\",\"smiles\":\"..\"}]}. "
+    "Substrates only — not enzymes, not products, not solvents or cofactors. Give "
+    "a valid canonical SMILES for each. If the query names no specific substrate, "
     'return {"substrates":[]}.'
 )
 
 
-def extract_reaction_substrate_names(query: str, llm_client) -> list[str]:
-    """LLM-extract the target reaction's substrate NAMES from a free-text query.
+def reason_target_substrate_smiles(query: str, llm_client) -> str | None:
+    """Reason the target reaction's substrate SMILES from a free-text query.
 
-    A whole query sentence does not resolve to a structure; the named reactants
-    inside it do.  Answer-agnostic: this pulls the reaction INPUTS the user wrote
-    (task setup), never any enzyme.  Returns [] on any failure.
+    The agent already reasons about the reaction and substrates at the initial
+    stage, so the SMILES are REASONED by the model (it knows common reagents),
+    then validated with RDKit; an invalid/blank one falls back to a PubChem
+    name lookup.  Answer-agnostic: these are the reaction INPUTS the user named
+    (task setup), never any enzyme.  Returns a '.'-joined SMILES string, or None.
     """
     if not query or llm_client is None:
-        return []
+        return None
     try:
         response = llm_client.call(
-            messages=[{"role": "system", "content": _SUBSTRATE_EXTRACT_SYSTEM},
+            messages=[{"role": "system", "content": _SUBSTRATE_REASON_SYSTEM},
                       {"role": "user", "content": query}],
             temperature=config.LLM_TEMPERATURE,
             timeout=max(config.LLM_TIMEOUT, 60),
         )
         content = response.choices[0].message.content or ""
         obj = json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
-        return [str(s).strip() for s in (obj.get("substrates") or []) if str(s).strip()]
     except Exception as exc:  # noqa: BLE001 - degrade to the raw-text path
-        logger.debug("substrate-name extraction failed: %s", exc)
-        return []
+        logger.debug("substrate reasoning failed: %s", exc)
+        return None
+
+    try:
+        from rdkit import Chem
+    except Exception:  # noqa: BLE001
+        Chem = None
+    out = []
+    for s in obj.get("substrates") or []:
+        if not isinstance(s, dict):
+            continue
+        name = str(s.get("name", "")).strip()
+        smi = str(s.get("smiles", "")).strip()
+        valid = None
+        if smi and Chem is not None and Chem.MolFromSmiles(smi) is not None:
+            valid = Chem.CanonSmiles(smi)          # reasoned SMILES, validated
+        elif name:
+            valid = _pubchem_name_to_smiles(name)  # fallback: resolve the name
+        if valid:
+            out.append(valid)
+    return ".".join(out) if out else None
 
 
 def resolve_substrate_names_to_smiles(text: str | None) -> str | None:
