@@ -195,6 +195,16 @@ are more reliable than gene names for cross-referencing proteins from literature
 - Think about what NATURAL METABOLITES contain the same bond type as the target \
 product. Each metabolite name becomes a literature search term: \
 "[metabolite] biosynthesis enzyme".
+- SEARCH THE GOAL, the way a domain expert would on a general search engine — \
+not only the abstract enzyme mechanism. Turn the TARGET PRODUCT / APPLICATION \
+and the SPECIFIC SUBSTRATES named in the query into direct queries: \
+"[product] enzymatic synthesis", "biocatalytic [product]", "enzymatic \
+[substrate A] [substrate B]", "[application] biosynthesis". These \
+GOAL-anchored queries surface applied/biosynthesis papers that NAME the exact \
+enzymes — the ones a mechanism-only keyword query misses — and the semantic \
+sources (search_openalex, search_semantic_scholar) rank them well even on a \
+natural-language phrasing. Always run several goal-anchored queries alongside \
+the mechanism-anchored ones.
 - Aim for 12-20 diverse search terms covering different biological contexts and
   mechanistic families. Search-result pages may contain hundreds of leads, but
   keep them out of the candidate registry until an individual accession has an
