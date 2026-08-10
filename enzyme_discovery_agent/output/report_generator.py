@@ -182,8 +182,8 @@ def _ortholog_key(data: dict) -> str | None:
     """Group true orthologs — the SAME enzyme in different organisms — together.
 
     Uses the normalised gene symbol plus the primary EC number.  Suffix noise
-    that only distinguishes copies of one enzyme (``puuA``, ``puuA-I``,
-    ``puuA-II``, ``puuA_1``, ``puuA_2``) is stripped so they collapse, while
+    that only distinguishes copies of one enzyme (e.g. ``geneX``, ``geneX-1``,
+    ``geneX-II``, ``geneX_2``) is stripped so they collapse, while
     genuinely different enzymes that merely share a gene letter or an EC do NOT
     (different gene stem or different EC → different key).  Only i/v/x are
     treated as roman suffixes so a gene legitimately ending in 'c'/'d'/'m'
