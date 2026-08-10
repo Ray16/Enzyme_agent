@@ -597,6 +597,20 @@ class EnzymeAgent:
                     iteration -= 1
                     self.log("  Gate transition: iteration credit restored")
                     continue
+            # Auto-run the family-reaction survey once families + seeds exist, and
+            # inject the grounded family landscape so the agent navigates by it.
+            if self._family_survey_gate.should_fire(self._gate_state):
+                fs_result = self._family_survey_gate.execute(self._gate_state)
+                for k, v in fs_result.state_updates.items():
+                    setattr(self._gate_state, k, v)
+                if fs_result.intercept:
+                    if fs_result.log_message:
+                        self.log(f"  Gate: {fs_result.log_message}")
+                    messages.pop()
+                    messages.extend(fs_result.new_messages)
+                    iteration -= 1
+                    self.log("  Gate transition: iteration credit restored")
+                    continue
             if self._evidence_selection_gate.should_fire(self._gate_state):
                 selection_result = self._evidence_selection_gate.execute(self._gate_state)
                 if selection_result.log_message:
