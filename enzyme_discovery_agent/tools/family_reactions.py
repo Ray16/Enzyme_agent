@@ -86,26 +86,46 @@ def classify_member_reaction(
     }
 
 
+def _distribution(values: list[float]) -> dict | None:
+    """Min/median/max of a list of numbers (or None if empty) — a grounded
+    summary the agent reads, with no threshold applied."""
+    vals = sorted(v for v in values if isinstance(v, (int, float)))
+    if not vals:
+        return None
+    n = len(vals)
+    med = vals[n // 2] if n % 2 else (vals[n // 2 - 1] + vals[n // 2]) / 2
+    return {"n": n, "min": round(vals[0], 3), "median": round(med, 3), "max": round(vals[-1], 3)}
+
+
 def summarise_family_profile(members: list[dict]) -> dict:
-    """Condense scored members into the family's distinct native-reaction profile."""
-    directions: dict[str, int] = {}
+    """Condense members into the family's GROUNDED native-reaction picture.
+
+    Reports the direction breakdown and the distribution of substrate-resemblance
+    numbers across members — no warm/tepid tally, no cutoff.  The agent compares
+    these family-level distributions to decide which fold's members most resemble
+    the target and expand there.
+    """
+    direction_counts: dict[str, int] = {}
     distinct_reactions: list[str] = []
-    counts = {"warm": 0, "tepid": 0, "cold": 0, "neutral": 0}
+    fg_sims: list[float] = []
+    size_ratios: list[float] = []
     for m in members:
-        counts[m["tag"]] = counts.get(m["tag"], 0) + 1
-        d = m.get("direction")
-        if d:
-            directions[d] = directions.get(d, 0) + 1
+        dv = m.get("direction_vs_target") or "unknown"
+        direction_counts[dv] = direction_counts.get(dv, 0) + 1
+        sub = m.get("substrate") or {}
+        if sub.get("functional_group_similarity") is not None:
+            fg_sims.append(sub["functional_group_similarity"])
+        if sub.get("size_ratio") is not None:
+            size_ratios.append(sub["size_ratio"])
         rxn = (m.get("native_reaction") or "").strip()
         if rxn and rxn not in distinct_reactions and len(distinct_reactions) < 12:
             distinct_reactions.append(rxn)
     return {
-        "directions": directions,
+        "n_members": len(members),
+        "direction_vs_target_counts": direction_counts,
+        "functional_group_similarity": _distribution(fg_sims),
+        "size_ratio": _distribution(size_ratios),
         "distinct_reactions": distinct_reactions,
-        "warm_members": counts["warm"],
-        "tepid_members": counts["tepid"],
-        "cold_members": counts["cold"],
-        "neutral_members": counts["neutral"],
     }
 
 
