@@ -220,15 +220,18 @@ def _member_native_reaction(entry: dict) -> str:
 
 @tool(
     description=(
-        "Survey a candidate enzyme's FOLD FAMILY by its native reactions. Given a "
-        "candidate accession you have already found, this resolves the candidate's "
-        "most specific fold family, enumerates that fold's reviewed members WITH "
-        "THEIR NATIVE REACTIONS from UniProt, and compares each native reaction to "
-        "the target reaction this run is pursuing (direction + bond type). Use it "
-        "to SEE what a family actually catalyses and decide whether to concentrate "
-        "expansion on that family (its members' native reactions match the target) "
-        "or move on (they are opposite/unrelated), turning family navigation into a "
-        "data-grounded decision instead of a guess."
+        "Survey a FOLD FAMILY by its native reactions. Give it EITHER a candidate "
+        "accession you have already found (its most specific fold family is "
+        "surveyed) OR an InterPro fold id directly (e.g. one returned by "
+        "search_interpro, so you can go target reaction -> derived family -> "
+        "search_interpro -> survey without needing a candidate in hand first). It "
+        "enumerates that fold's reviewed members WITH THEIR NATIVE REACTIONS from "
+        "UniProt and compares each native reaction to the target reaction this run "
+        "is pursuing (direction + bond type). Use it to SEE what a family actually "
+        "catalyses and decide whether to concentrate expansion on it (its members' "
+        "native reactions match the target) or move on (they are opposite/"
+        "unrelated), turning family navigation into a data-grounded decision "
+        "instead of a guess."
     ),
     category="reasoning",
     parallel_safe=True,
@@ -239,66 +242,104 @@ def _member_native_reaction(entry: dict) -> str:
             "type": "string",
             "description": (
                 "UniProt accession of a candidate you have already found; its fold "
-                "family is the one surveyed."
+                "family is the one surveyed. Provide this OR interpro_id."
             ),
+            "default": "",
+        },
+        "interpro_id": {
+            "type": "string",
+            "description": (
+                "InterPro fold id (e.g. IPR012345) to survey directly, such as one "
+                "returned by search_interpro. Provide this OR seed_accession; if "
+                "both are given, interpro_id takes precedence."
+            ),
+            "default": "",
         },
     },
 )
-def survey_family_reactions(run_dir: Path | str, seed_accession: str) -> dict:
-    """Enumerate a candidate's fold family and rank members by native-reaction fit."""
+def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
+                            interpro_id: str = "") -> dict:
+    """Enumerate a fold family and rank members by native-reaction fit.
+
+    Entry point is EITHER a candidate accession (its most specific fold is
+    resolved) OR an InterPro fold id supplied directly.
+    """
     run_dir = Path(run_dir)
     seed_accession = (seed_accession or "").strip()
-    if not seed_accession:
+    interpro_id = (interpro_id or "").strip().upper()
+    if not seed_accession and not interpro_id:
         return {
             "status": "error",
-            "summary": "No seed accession provided.",
+            "summary": "Provide either a seed_accession or an interpro_id.",
             "data": None,
-            "suggestions": ["Pass the accession of a candidate you have found."],
+            "suggestions": [
+                "Pass a found candidate's accession, or an InterPro fold id "
+                "(e.g. one from search_interpro)."
+            ],
         }
 
     target_direction, target_bonds = _target_profile_for_run(run_dir)
 
-    try:
-        fold_ids = _seed_fold_ids(seed_accession)
-    except Exception as e:  # noqa: BLE001 - a failed lookup should not crash the run
-        logger.warning("Fold lookup failed for %s: %s", seed_accession, e)
-        return {
-            "status": "error",
-            "summary": f"Could not resolve fold ids for {seed_accession}: {e}",
-            "data": None,
-        }
-
-    if not fold_ids:
-        return {
-            "status": "partial",
-            "summary": f"{seed_accession} has no fold-family annotation to survey.",
-            "data": {"seed_accession": seed_accession, "fold_id": None, "members": []},
-        }
-
-    # Pick the MOST SPECIFIC fold: the fewest reviewed members, but more than one
-    # (a singleton fold tells us nothing) and not an entire superfamily.
-    counts: dict[str, int] = {}
-    for fid in fold_ids:
+    # Determine the fold to survey.  Direct InterPro id honours the caller's
+    # choice; a seed accession resolves the candidate's most specific fold.
+    if interpro_id:
+        source = f"InterPro {interpro_id}"
+        fold_id = interpro_id
         try:
-            counts[fid] = _reviewed_member_count(fid)
+            fold_size = _reviewed_member_count(fold_id)
         except Exception as e:  # noqa: BLE001
-            logger.debug("Member count failed for %s: %s", fid, e)
-    fold_id = min(
-        (f for f, c in counts.items() if 1 < c < _LIST_PAGE_MAX),
-        key=lambda f: counts[f],
-        default=None,
-    )
-    if not fold_id:
-        return {
-            "status": "partial",
-            "summary": (
-                f"No fold of a surveyable size found for {seed_accession} "
-                f"(folds seen: {counts or 'none'})."
-            ),
-            "data": {"seed_accession": seed_accession, "fold_id": None, "members": []},
-        }
+            logger.warning("Member count failed for %s: %s", fold_id, e)
+            fold_size = 0
+        if fold_size <= 1:
+            return {
+                "status": "partial",
+                "summary": f"InterPro {fold_id} has no surveyable reviewed members.",
+                "data": {"seed_accession": seed_accession or None, "fold_id": fold_id,
+                         "fold_size": fold_size, "members": []},
+            }
+    else:
+        source = f"{seed_accession} fold"
+        try:
+            fold_ids = _seed_fold_ids(seed_accession)
+        except Exception as e:  # noqa: BLE001 - a failed lookup should not crash the run
+            logger.warning("Fold lookup failed for %s: %s", seed_accession, e)
+            return {
+                "status": "error",
+                "summary": f"Could not resolve fold ids for {seed_accession}: {e}",
+                "data": None,
+            }
 
-    fold_size = counts[fold_id]
+        if not fold_ids:
+            return {
+                "status": "partial",
+                "summary": f"{seed_accession} has no fold-family annotation to survey.",
+                "data": {"seed_accession": seed_accession, "fold_id": None, "members": []},
+            }
+
+        # Pick the MOST SPECIFIC fold: the fewest reviewed members, but more than
+        # one (a singleton fold tells us nothing) and not an entire superfamily.
+        counts: dict[str, int] = {}
+        for fid in fold_ids:
+            try:
+                counts[fid] = _reviewed_member_count(fid)
+            except Exception as e:  # noqa: BLE001
+                logger.debug("Member count failed for %s: %s", fid, e)
+        fold_id = min(
+            (f for f, c in counts.items() if 1 < c < _LIST_PAGE_MAX),
+            key=lambda f: counts[f],
+            default=None,
+        )
+        if not fold_id:
+            return {
+                "status": "partial",
+                "summary": (
+                    f"No fold of a surveyable size found for {seed_accession} "
+                    f"(folds seen: {counts or 'none'})."
+                ),
+                "data": {"seed_accession": seed_accession, "fold_id": None, "members": []},
+            }
+        fold_size = counts[fold_id]
+        source = f"{seed_accession} fold {fold_id}"
     try:
         raw_members = _reviewed_members(fold_id, size=_MEMBER_CAP)
     except Exception as e:  # noqa: BLE001
