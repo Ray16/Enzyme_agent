@@ -353,7 +353,8 @@ def fetch_full_text(query: str, run_dir: str | None = None,
         logger.warning("Failed to write fulltext manifest: %s", e)
 
     summary = (f"Downloaded full text for {len(fetched)} paper(s) "
-               f"(examined {examined}); {len(manifest)} total in this run.")
+               f"(examined {examined}, {gated} dropped as off-topic/"
+               f"wrong-direction before download); {len(manifest)} total in this run.")
     return {
         "status": "success" if fetched else "partial",
         "summary": summary,
