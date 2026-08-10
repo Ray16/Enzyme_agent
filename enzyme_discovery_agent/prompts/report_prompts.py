@@ -67,7 +67,7 @@ substrate.
    - TEMPER with PROMISCUITY / ENGINEERABILITY: enzymes are promiscuous, so do \
 NOT bury a mechanistically-compatible enzyme that acts on FREE SMALL molecules \
 merely because its native substrate is chemically dissimilar. Dissimilarity \
-alone is not disqualifying; a gross two-substrate size/topology mismatch is.
+alone is not disqualifying; a gross multi-substrate size/topology mismatch is.
 
 3. ENGINEERING POTENTIAL (inferred from biology):
    - Demonstrated substrate promiscuity or flexibility
@@ -157,7 +157,7 @@ substrate.
    - TEMPER with PROMISCUITY / ENGINEERABILITY: enzymes are promiscuous, so do \
 NOT bury a mechanistically-compatible enzyme that acts on FREE SMALL molecules \
 merely because its native substrate is chemically dissimilar. Dissimilarity \
-alone is not disqualifying; a gross two-substrate size/topology mismatch is. If \
+alone is not disqualifying; a gross multi-substrate size/topology mismatch is. If \
 native substrates carry modifications absent in the target, reason about whether \
 the core bond-forming step still applies.
 
