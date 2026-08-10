@@ -19,6 +19,7 @@ class AgentState:
     lit_search_count: int = 0
     entity_extraction_done: bool = False
     literature_harvest_done: bool = False
+    mechanism_families_done: bool = False
     critique_injected: bool = False
     eval_gate_fired: bool = False
     ec_triage_done: bool = False
