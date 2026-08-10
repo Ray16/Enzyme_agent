@@ -69,8 +69,8 @@ def _solr_query(core: str, q: str, fl: str, rows: int = _MAX_ROWS) -> dict | Non
         "keyword": {
             "type": "string",
             "description": (
-                "Optional text filter on reaction name or definition, "
-                "e.g. 'amide', 'amine', 'glutamate', 'siderophore'. "
+                "Optional text filter on reaction name or definition — a "
+                "substring of the reaction name, or a substrate/product keyword. "
                 "Applied as AND with EC class."
             ),
             "default": "",
