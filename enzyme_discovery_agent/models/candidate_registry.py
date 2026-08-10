@@ -29,7 +29,7 @@ def _enzyme_name(metadata: dict) -> str:
     UniProt accessions are stable identifiers, but they are not useful as the
     only visible label in a run artifact.  Prefer the name the discovering paper
     gave the enzyme (an enzyme found only via a deposited accession often carries
-    a generic UniProt annotation — "AMP-ligase" — while the paper calls it by a
+    a generic, uninformative UniProt annotation while the paper calls it by a
     recognisable name); then the curated gene symbol; then the protein name.
     """
     lit_name = str(metadata.get("literature_name") or "").strip()
