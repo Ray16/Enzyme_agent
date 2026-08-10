@@ -355,8 +355,8 @@ def _resolve_embl_accession(acc: str, cap: int = 50) -> list[str]:
     return [r.get("primaryAccession") for r in results if r.get("primaryAccession")]
 
 
-# A gene symbol: one letter then alphanumerics/-/_.  Multi-word names (e.g.
-# "amide bond synthetase") are resolved via protein_name, never gene:.
+# A gene symbol: one letter then alphanumerics/-/_.  Multi-word protein names
+# are resolved via protein_name, never gene:.
 _GENE_TOKEN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{1,20}$")
 # Bound on literature-NAMED enzymes resolved per run, and papers read for them.
 _MAX_NAMED_ENZYMES = 40
@@ -389,22 +389,55 @@ def _entry_gene_names(entry: dict) -> list[str]:
     return out
 
 
+def _entry_ecs(entry: dict) -> list[str]:
+    rec = (entry.get("proteinDescription") or {}).get("recommendedName") or {}
+    return [e.get("value") for e in rec.get("ecNumbers", []) or [] if e.get("value")]
+
+
+def _entry_name_head(entry: dict) -> str:
+    rec = (entry.get("proteinDescription") or {}).get("recommendedName") or {}
+    full = (rec.get("fullName") or {}).get("value", "")
+    toks = [t for t in re.split(r"[^A-Za-z0-9]+", full.lower()) if len(t) >= 4]
+    return " ".join(toks[:3])
+
+
+def _functionally_coherent(entries: list[dict]) -> bool:
+    """Do these entries denote ONE enzyme (the same function across organisms),
+    rather than unrelated proteins that merely share a gene symbol?
+
+    A symbol can be reused for functionally different proteins across taxa, so a
+    name is only trustworthy without an organism when the entries carrying it
+    agree on function.  Coherent = they share an EC number, or a common
+    protein-name head; incoherent = a symbol collision, left for the
+    organism-anchored path.
+    """
+    if len(entries) <= 1:
+        return True
+    ec_sets = [set(_entry_ecs(e)) for e in entries]
+    if all(ec_sets) and set.intersection(*ec_sets):
+        return True
+    heads = {_entry_name_head(e) for e in entries}
+    heads.discard("")
+    return len(heads) == 1
+
+
 def _resolve_named_enzyme(name: str, organism: str) -> str | None:
-    """Resolve an enzyme NAMED in a paper body to a UniProt accession, using the
-    organism as a disambiguator.
+    """Resolve an enzyme NAMED in a paper's body to a UniProt accession, using
+    the stated organism as a disambiguator.
 
-    A paper names query-type enzymes it deposits no sequence for (cited
-    analogues / prior art) — e.g. an amide-bond-synthetase review names DdaG,
-    DdaF, McbA.  The deposited-accession miner is blind to these (no accession in
-    the text); this recovers them by name.
+    A paper commonly names target-reaction enzymes for which it deposits no
+    sequence of its own (cited analogues / prior art).  The deposited-accession
+    miner is blind to these (no accession in the text); this recovers them by
+    name.
 
-    Precision policy, because a bare gene symbol collides across taxa (``mcbA``
-    is E. coli microcin B17 *and* an amide synthetase):
+    A gene symbol can be reused for functionally unrelated proteins across taxa,
+    so the policy is precision-first:
       * organism stated  -> organism-anchored query (precise; admits unreviewed);
-      * organism absent   -> accept ONLY when a SINGLE reviewed (Swiss-Prot)
-        entry carries that exact gene name.  ``ddaG`` has one reviewed entry
-        (E2JA32) → accepted; ``mcbA`` has several → rejected as ambiguous.
-    Returns the accession, or None when nothing resolves confidently.
+      * organism absent   -> accept the reviewed (Swiss-Prot) entries carrying
+        that symbol ONLY when they are functionally coherent (one enzyme, which
+        may legitimately span several organisms); an incoherent symbol is left
+        for the organism-anchored path.
+    Returns a representative accession, or None when nothing resolves confidently.
     """
     name = (name or "").strip()
     organism = (organism or "").strip()
@@ -423,13 +456,14 @@ def _resolve_named_enzyme(name: str, organism: str) -> str | None:
 
     if is_gene:
         reviewed = _uniprot_search(
-            f"gene:{name} AND reviewed:true", size=5, fields="accession,gene_names"
+            f"gene:{name} AND reviewed:true", size=10,
+            fields="accession,gene_names,protein_name,ec",
         )
         exact = [
             r for r in reviewed
             if any(gn.lower() == name.lower() for gn in _entry_gene_names(r))
         ]
-        if len(exact) == 1:
+        if exact and _functionally_coherent(exact):
             return exact[0].get("primaryAccession")
     return None
 
@@ -442,12 +476,12 @@ def _register_named_enzymes_from_fulltext(
     papers' body text and register each as a candidate.
 
     For each relevance-ranked paper, the LLM extracts the characterised enzymes
-    and the cited homologs/related enzymes (name + organism); each is resolved by
+    and the cited/related enzymes (name + organism); each is resolved by
     name+organism (:func:`_resolve_named_enzyme`) and registered.  Literature
     builds on literature, so every fetched paper becomes a set of grounded leads
-    — this is the route to an enzyme mentioned only by NAME (no accession in the
-    text), which the deterministic accession miner cannot reach.  Needs an LLM;
-    no-op without one.
+    — the route to an enzyme mentioned only by NAME (no accession in the text),
+    which the deterministic accession miner cannot reach.  Needs an LLM; no-op
+    without one.
     """
     if llm_client is None or remaining <= 0:
         return []
