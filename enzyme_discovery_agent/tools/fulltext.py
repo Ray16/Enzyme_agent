@@ -527,29 +527,36 @@ def _register_named_enzymes_from_fulltext(
     from enzyme_discovery_agent.tools.literature_extraction import extract_from_paper
     from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
 
-    registered: list[str] = []
-    paper_records: list[dict] = []
-    for meta in manifest[:_MAX_NAMED_PAPERS]:
-        if len(registered) >= remaining:
-            break
+    # Read each paper (one LLM extraction call) IN PARALLEL — the slow part —
+    # then resolve + register SEQUENTIALLY so the remaining/dedup budget stays
+    # correct.
+    def _read_and_extract(meta):
         tf = meta.get("text_file")
         if not tf:
-            continue
-        txt = dest / tf
+            return (meta, None)
         try:
-            text = txt.read_text(errors="ignore")
+            text = (dest / tf).read_text(errors="ignore")
         except OSError:
-            continue
+            return (meta, None)
         if not text.strip():
-            continue
-        doi = meta.get("doi") or meta.get("key") or txt.stem
+            return (meta, None)
         try:
-            obj = extract_from_paper(text, "", "", llm_client, query=query)
+            return (meta, extract_from_paper(text, "", "", llm_client, query=query))
         except Exception as e:  # noqa: BLE001 - never block mining
             logger.debug("named-enzyme extraction failed for %s: %s", tf, e)
-            continue
+            return (meta, None)
+
+    with ThreadPoolExecutor(max_workers=config.FULLTEXT_HARVEST_WORKERS) as pool:
+        extracted = list(pool.map(_read_and_extract, manifest[:_MAX_NAMED_PAPERS]))
+
+    registered: list[str] = []
+    paper_records: list[dict] = []
+    for meta, obj in extracted:
+        if len(registered) >= remaining:
+            break
         if not obj:
             continue
+        doi = meta.get("doi") or meta.get("key") or (meta.get("text_file") or "")
         enzymes = obj.get("enzymes") or []
         homologs = obj.get("homologs_or_related_enzymes") or []
         rec = {
