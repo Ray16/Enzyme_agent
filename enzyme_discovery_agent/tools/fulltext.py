@@ -27,6 +27,7 @@ import re
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from enzyme_discovery_agent import config
