@@ -708,7 +708,7 @@ the specific identity of native substrates or downstream pathway products.
    - Compare tgt_fg vs nat_fg for EACH substrate independently.
    - A pocket evolved for substrates with the same functional group profile as \
 the target substrates is more compatible than one evolved for substrates with \
-additional or different decorations (e.g., hydroxyl, amide, carboxyl groups not \
+additional or different decorations (extra functional groups or substituents not \
 present in the target).
    - mw_sim and chain_sim indicate cavity size fit — large mismatches suggest \
 the binding pocket has different spatial requirements.
