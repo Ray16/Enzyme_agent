@@ -64,16 +64,22 @@ def classify_member_reaction(
     native_reaction: str,
     target_direction: str | None,
     target_bond_types: set[str],
+    substrate_fit: float | None = None,
 ) -> dict:
     """Score one family member's native reaction against the target reaction.
 
-    WARM  -> same reaction direction as the target (shared bond type strengthens
-             it); this family member does the kind of chemistry the target needs.
-    COLD  -> opposite direction (formation vs cleavage); pursuing it is a dead end.
+    WARM  -> same direction as the target AND (when substrate structures were
+             resolved) native substrates that RESEMBLE the target substrates.
+             This member does the target chemistry ON target-like substrates.
+    tepid -> right direction but substrates DON'T resemble the target (e.g. a
+             fold that forms the target bond on a large cofactor / nucleotide /
+             polymer substrate) — real chemistry, wrong substrate.
+    COLD  -> opposite direction (formation vs cleavage); a dead end.
     neutral -> direction unknown or unrelated.
 
-    Pure and side-effect-free so the WARM/COLD logic can be unit-tested with
-    fixture dicts and no network access.
+    ``substrate_fit`` is a 0..1 native-vs-target substrate similarity, or None
+    when substrate structures were not resolved (then tagging falls back to
+    direction only, the historical behaviour).  Pure and side-effect-free.
     """
     chem = classify_reaction_chemistry(
         ec_numbers, [native_reaction] if native_reaction else []
@@ -86,7 +92,7 @@ def classify_member_reaction(
     shared_bond = bool(nbonds & target_bond_types)
 
     # Ordering score: same direction dominates, a shared bond type refines within
-    # it, an opposite direction pushes the member to the bottom.
+    # it, substrate resemblance refines further, an opposite direction sinks it.
     score = 0
     if same_direction:
         score += 2
@@ -94,11 +100,20 @@ def classify_member_reaction(
         score -= 2
     if shared_bond:
         score += 1
+    if substrate_fit is not None:
+        score += round(2.0 * substrate_fit, 2)
 
-    if same_direction:
-        tag = "warm"
-    elif opposite_direction:
+    if opposite_direction:
         tag = "cold"
+    elif substrate_fit is None:
+        # Direction-only fallback (no substrate structures resolved).
+        tag = "warm" if same_direction else "neutral"
+    elif same_direction and substrate_fit >= _WARM_FIT_THRESHOLD:
+        tag = "warm"
+    elif same_direction:
+        tag = "tepid"                       # right direction, substrate mismatch
+    elif substrate_fit >= _WARM_FIT_THRESHOLD:
+        tag = "tepid"                       # substrate matches but direction unclear
     else:
         tag = "neutral"
 
@@ -106,6 +121,7 @@ def classify_member_reaction(
         "direction": ndir,
         "bond_types": sorted(nbonds),
         "shared_bond": shared_bond,
+        "substrate_fit": substrate_fit,
         "score": score,
         "tag": tag,
     }
