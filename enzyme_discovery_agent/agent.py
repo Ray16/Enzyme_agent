@@ -564,6 +564,20 @@ class EnzymeAgent:
                 iteration -= 1
                 self.log("  Gate transition: iteration credit restored")
                 continue
+            # Derive the reaction's distinct mechanism families and make each a
+            # coverage requirement, searched from literature before evaluation.
+            if self._mechanism_family_gate.should_fire(self._gate_state):
+                mf_result = self._mechanism_family_gate.execute(self._gate_state)
+                for k, v in mf_result.state_updates.items():
+                    setattr(self._gate_state, k, v)
+                if mf_result.intercept:
+                    if mf_result.log_message:
+                        self.log(f"  Gate: {mf_result.log_message}")
+                    messages.pop()
+                    messages.extend(mf_result.new_messages)
+                    iteration -= 1
+                    self.log("  Gate transition: iteration credit restored")
+                    continue
             if self._evidence_selection_gate.should_fire(self._gate_state):
                 selection_result = self._evidence_selection_gate.execute(self._gate_state)
                 if selection_result.log_message:
