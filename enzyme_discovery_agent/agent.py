@@ -29,6 +29,7 @@ from enzyme_discovery_agent.gates.ec_triage import ECTriageGate, auto_screen_can
 from enzyme_discovery_agent.gates.discovery_coverage import DiscoveryCoverageGate
 from enzyme_discovery_agent.gates.evidence_selection import EvidenceSelectionGate
 from enzyme_discovery_agent.gates.entity_extraction import EntityExtractionGate
+from enzyme_discovery_agent.gates.literature_harvest import LiteratureHarvestGate
 from enzyme_discovery_agent.gates.homolog_expansion import HomologExpansionGate
 from enzyme_discovery_agent.gates.systematic_coverage import SystematicCoverageGate
 from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
