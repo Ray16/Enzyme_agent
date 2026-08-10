@@ -645,6 +645,7 @@ def evaluate_candidate(
     target_reaction_type: str = "",
     target_substrate_description: str = "",
     target_substrate_smiles: str = "",
+    llm_client=None,
 ) -> dict:
     """Evaluate an enzyme candidate using multiple data sources."""
     run_dir = Path(run_dir)
