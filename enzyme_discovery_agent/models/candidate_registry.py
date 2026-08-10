@@ -141,6 +141,7 @@ def update_candidate_registry(
 
         if accession not in registry["candidates"]:
             registry["candidates"][accession] = {
+                "accession": accession,
                 "statuses": [],
                 "first_seen": now,
                 "last_updated": now,
@@ -148,6 +149,7 @@ def update_candidate_registry(
             }
 
         entry = registry["candidates"][accession]
+        entry["accession"] = accession
         if status:
             entry["statuses"].append({"status": status, "timestamp": now})
         entry["last_updated"] = now
