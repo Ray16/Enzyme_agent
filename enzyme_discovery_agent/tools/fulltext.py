@@ -496,6 +496,7 @@ def _register_named_enzymes_from_fulltext(
     if llm_client is None or remaining <= 0:
         return []
     from enzyme_discovery_agent.tools.literature_extraction import extract_from_paper
+    from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
 
     registered: list[str] = []
     for meta in manifest[:_MAX_NAMED_PAPERS]:
@@ -519,17 +520,32 @@ def _register_named_enzymes_from_fulltext(
             continue
         if not obj:
             continue
-        leads = [(e.get("name"), e.get("organism")) for e in (obj.get("enzymes") or [])]
+        enzymes = obj.get("enzymes") or []
+        # (a) Enzymes whose sequence this paper DEPOSITED: attach the paper's
+        #     name to the candidate the deposited-accession miner already
+        #     registered — its UniProt annotation is often generic, so the paper
+        #     name is the recognisable identity.  Metadata-only (no new status).
+        for e in enzymes:
+            nm = (e.get("name") or "").strip()
+            gb = (e.get("genbank") or "").strip()
+            if not nm or not gb:
+                continue
+            for acc in _resolve_embl_accession(gb):
+                update_candidate_registry(run, acc, None, {"literature_name": nm})
+        # (b) Enzymes/homologs NAMED but not deposited here: resolve by name and
+        #     register, carrying the paper's name as the candidate's label.
+        leads = [(e.get("name"), e.get("organism")) for e in enzymes]
         leads += [(h.get("name"), h.get("organism"))
                   for h in (obj.get("homologs_or_related_enzymes") or [])]
         for nm, org in leads:
             if len(registered) >= remaining:
                 break
+            name = (nm or "").strip()
             acc = _resolve_named_enzyme(nm, org)
             if not acc or acc in already:
                 continue
             already.add(acc)
-            register_fn(acc, f"fulltext_named:{(nm or '').strip()}@{doi}")
+            register_fn(acc, f"fulltext_named:{name}@{doi}", name)
             registered.append(acc)
     return registered
 
