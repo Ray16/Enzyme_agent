@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +33,30 @@ def _provenance_dir(run_dir: Path) -> Path:
     d = Path(run_dir) / "provenance"
     d.mkdir(parents=True, exist_ok=True)
     return d
+
+
+def _name_slug(provenance: dict) -> str:
+    """A filesystem-safe enzyme-name slug for the provenance filename.
+
+    Prefers the protein name, then the first gene name; empty when neither is
+    known (some TrEMBL leads have no name), so the caller falls back to the
+    accession alone.  Non-alphanumerics collapse to single hyphens; the
+    accession is never part of the slug so it stays an unambiguous suffix.
+    """
+    name = (provenance.get("protein_name") or "").strip()
+    if not name:
+        genes = provenance.get("gene_names") or []
+        name = (genes[0] if genes else "") or ""
+    slug = re.sub(r"[^A-Za-z0-9]+", "-", name).strip("-")
+    return slug[:60].strip("-")
+
+
+def _provenance_filename(provenance: dict) -> str:
+    """``<enzyme-name-slug>_<accession>.json`` — human-readable, and the
+    accession suffix keeps it unique when names are blank or duplicated."""
+    acc = provenance.get("accession") or "unknown"
+    slug = _name_slug(provenance)
+    return f"{slug}_{acc}.json" if slug else f"{acc}.json"
 
 
 def _discovery_from_source(source_tool: str) -> dict:
