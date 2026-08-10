@@ -164,11 +164,15 @@ def _seed_fold_ids(seed_accession: str) -> list[str]:
 
 
 def _reviewed_member_count(fold_id: str) -> int:
-    """Count reviewed members of a fold via the cheap list endpoint."""
+    """Reviewed-member count of a fold via the cheap list endpoint.
+
+    Returns the exact count for a fold below one page, or ``_LIST_PAGE_MAX`` as a
+    saturation sentinel (>= a full page) for a superfamily-sized fold.
+    """
     q = urllib.parse.quote(f"(xref:interpro-{fold_id}) AND (reviewed:true)")
     url = (
         f"https://rest.uniprot.org/uniprotkb/search?query={q}"
-        f"&format=list&size={_MAX_FOLD_SIZE + 1}"
+        f"&format=list&size={_LIST_PAGE_MAX}"
     )
     req = urllib.request.Request(url, headers={"Accept": "text/plain"})
     body = request_with_retry(req, timeout=30).decode()
