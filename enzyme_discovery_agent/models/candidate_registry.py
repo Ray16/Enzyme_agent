@@ -85,13 +85,15 @@ def normalize_candidate_registry_file(run_dir: Path) -> dict:
 def update_candidate_registry(
     run_dir: Path,
     accession: str,
-    status: str,
+    status: str | None,
     metadata: dict | None = None,
 ) -> None:
-    """Update a candidate's status in the registry.
+    """Update a candidate's status and/or metadata in the registry.
 
     Statuses are appended, never overwritten.
     Status transitions: discovered -> screened -> evaluated -> ranked / rejected
+    Pass ``status=None`` for a metadata-only update (e.g. attaching the paper's
+    enzyme name to an already-registered candidate) without appending a status.
     """
     now = datetime.now().isoformat()
 
@@ -108,7 +110,8 @@ def update_candidate_registry(
             }
 
         entry = registry["candidates"][accession]
-        entry["statuses"].append({"status": status, "timestamp": now})
+        if status:
+            entry["statuses"].append({"status": status, "timestamp": now})
         entry["last_updated"] = now
         if metadata:
             entry["metadata"].update(metadata)
