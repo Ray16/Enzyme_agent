@@ -44,11 +44,11 @@ unreliable prediction. Ask whether the CATALYTIC MECHANISM supports the target \
 transformation:
    - DIRECTION: the native reaction runs in the target direction (bond FORMATION \
 → ligation/condensation, NOT hydrolysis/cleavage).
-   - BOND CHEMISTRY: forms the target bond via a compatible activation (amide via \
-an ATP-dependent acyl-phosphate / aminoacyl-adenylate). Reason from the \
+   - BOND CHEMISTRY: forms the target bond via a mechanistically compatible \
+activation for that bond type. Reason from the \
 MECHANISM, not the native pathway's downstream fate — if the native product is \
 later cyclized/polymerized/decorated in vivo, the enzyme may still make the \
-simpler amide in vitro, so that does not disqualify it.
+simpler product in vitro, so that does not disqualify it.
    - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on substrates whose \
 TOPOLOGY matches the target's (free small molecules, when the target substrates \
 are free small molecules). Rank DOWN mechanisms that require a \
@@ -148,11 +148,11 @@ unreliable prediction. Ask whether the CATALYTIC MECHANISM supports the target \
 transformation:
    - DIRECTION: the native reaction runs in the target direction (bond FORMATION \
 → ligation/condensation, NOT hydrolysis/cleavage).
-   - BOND CHEMISTRY: forms the target bond via a compatible activation (amide via \
-an ATP-dependent acyl-phosphate / aminoacyl-adenylate). Reason from the \
+   - BOND CHEMISTRY: forms the target bond via a mechanistically compatible \
+activation for that bond type. Reason from the \
 MECHANISM, not the native pathway's downstream fate — if the native product is \
 later cyclized/polymerized/decorated in vivo, the enzyme may still make the \
-simpler amide in vitro, so that does not disqualify it.
+simpler product in vitro, so that does not disqualify it.
    - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on substrates whose \
 TOPOLOGY matches the target's (free small molecules, when the target substrates \
 are free small molecules). Rank DOWN mechanisms that require a \
