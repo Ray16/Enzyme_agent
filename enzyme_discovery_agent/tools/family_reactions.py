@@ -497,20 +497,22 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     members.sort(key=_order_key)
     profile = summarise_family_profile(members)
 
-    warm = profile["warm_members"]
-    tepid = profile["tepid_members"]
-    cold = profile["cold_members"]
+    fg = profile.get("functional_group_similarity")
+    dv = profile.get("direction_vs_target_counts", {})
+    fg_txt = (f"functional-group similarity max {fg['max']}, median {fg['median']}"
+              if fg else "substrate similarity unavailable")
     logger.info(
-        "Family survey: %s (fold %s, %d reviewed members); %d warm / %d tepid / %d cold vs target",
-        source, fold_id, fold_size, warm, tepid, cold,
+        "Family survey: %s (fold %s, %d members); direction %s; %s",
+        source, fold_id, fold_size, dv, fg_txt,
     )
 
     return {
         "status": "success",
         "summary": (
-            f"{source} ({fold_size} reviewed members): {warm} WARM (target "
-            f"direction + target-like substrates), {tepid} tepid (right direction, "
-            f"different substrate), {cold} opposite-direction."
+            f"{source} ({fold_size} reviewed members). Direction vs target: {dv}. "
+            f"Substrate {fg_txt}. These are grounded numbers — compare this family's "
+            f"distribution against the others you survey and reason about which "
+            f"fold's members most resemble the target before expanding."
         ),
         "data": {
             "seed_accession": seed_accession or None,
