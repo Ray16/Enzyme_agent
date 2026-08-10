@@ -21,8 +21,11 @@ from pathlib import Path
 
 from enzyme_discovery_agent.chemistry_logic import (
     classify_reaction_chemistry,
+    compare_substrate_properties,
     extract_target_bond_type,
+    resolve_chebi_smiles,
 )
+from enzyme_discovery_agent.static.cofactors import COFACTOR_CHEBI_IDS
 from enzyme_discovery_agent.tool_registry import tool
 from enzyme_discovery_agent.tools._http import request_with_retry
 
