@@ -377,18 +377,18 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     warm = profile["warm_members"]
     cold = profile["cold_members"]
     logger.info(
-        "Family survey: %s -> fold %s (%d reviewed members); %d warm / %d cold vs target",
-        seed_accession, fold_id, fold_size, warm, cold,
+        "Family survey: %s (fold %s, %d reviewed members); %d warm / %d cold vs target",
+        source, fold_id, fold_size, warm, cold,
     )
 
     return {
         "status": "success",
         "summary": (
-            f"{seed_accession} fold {fold_id} ({fold_size} reviewed members): "
+            f"{source} ({fold_size} reviewed members): "
             f"{warm} native reactions match the target direction, {cold} are opposite."
         ),
         "data": {
-            "seed_accession": seed_accession,
+            "seed_accession": seed_accession or None,
             "fold_id": fold_id,
             "fold_size": fold_size,
             "target_direction": target_direction,
