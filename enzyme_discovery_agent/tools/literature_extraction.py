@@ -334,7 +334,9 @@ def _match_enzyme_record(
             if org_key and org_key in str(rec.get("organism", "")).lower():
                 return rec
     name = (protein_name or "").lower().strip()
-    if name and name not in ("amp-ligase", "uncharacterized protein", ""):
+    _generic = ("uncharacterized protein", "hypothetical protein",
+                "putative protein", "")
+    if name and name not in _generic:
         for rec in records:
             rn = str(rec.get("name", "")).lower()
             if rn and (rn in name or name in rn):
