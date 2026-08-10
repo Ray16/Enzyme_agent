@@ -28,9 +28,11 @@ from enzyme_discovery_agent.tools._http import request_with_retry
 
 logger = logging.getLogger("enzyme_agent")
 
-# A fold small enough to characterise but not a whole superfamily.  Probe with
-# the cheap "list" format up to this ceiling; pick the most specific fold below.
-_MAX_FOLD_SIZE = 4000
+# UniProt caps a search page at 500 rows, so the cheap "list" probe saturates
+# there: a fold returning a full page has AT LEAST this many reviewed members and
+# is treated as a whole superfamily (not the most-specific fold we want), while a
+# short page is the fold's exact reviewed-member count.
+_LIST_PAGE_MAX = 500
 _MEMBER_CAP = 120
 
 # Directions that are genuine opposites (a cleavage fold cannot be steered into a
