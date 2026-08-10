@@ -116,7 +116,7 @@ def normalize_candidate_registry_file(run_dir: Path) -> dict:
         path = run_dir / "candidate_registry.json"
         if path.exists():
             with open(path, "w") as f:
-                json.dump(registry, f, indent=2, default=str)
+                json.dump(_to_file_view(registry), f, indent=2, default=str)
         return registry
 
 
