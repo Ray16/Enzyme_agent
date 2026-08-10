@@ -717,6 +717,11 @@ def generate_two_pass_report(
     from enzyme_discovery_agent.models.notebook import get_notebook_text_for_report
     notebook_text = get_notebook_text_for_report(run_dir)
 
+    # Drop failed evaluations (data is None, e.g. an entry that could not be
+    # fetched): they are not candidates, and the code below assumes dict data.
+    all_evals = [e for e in (all_evals or [])
+                 if isinstance(e, dict) and isinstance(e.get("data", e), dict)]
+
     # ── Hard filter: separate polymer candidates ──────────────────────────
     polymer_evals = [
         ev for ev in all_evals
