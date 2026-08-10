@@ -914,8 +914,8 @@ def generate_two_pass_report(
                    f"mechanistic contradiction below all consistent candidates")
 
     # ── Collapse orthologs: one enzyme, one entry ─────────────────────────
-    # The same enzyme in many organisms was occupying many top slots (7 of the
-    # top 10 were PuuA copies).  Experimentalists want distinct enzyme families,
+    # The same enzyme in many organisms was occupying many top slots (most of
+    # the top slots were copies of one enzyme).  Experimentalists want distinct enzyme families,
     # so fold same-enzyme orthologs into a single representative that carries the
     # list of organisms it appears in.  Runs AFTER the gate so a representative
     # inherits the correct tier.
