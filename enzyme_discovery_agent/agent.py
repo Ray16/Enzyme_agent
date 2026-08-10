@@ -338,9 +338,9 @@ class EnzymeAgent:
         # Derive target-substrate SMILES when the caller did not supply them:
         # without a target structure the substrate-accommodation axis is inert
         # and ranking collapses to annotation depth (fame), unable to tell an
-        # amide ligase for a small aliphatic monomer from one for a bulky
-        # NRPS/siderophore substrate.  The substrate names come from the user's
-        # own query, so resolving them is task setup, not answer leakage.
+        # enzyme whose substrate fits the target from one built for a bulky or
+        # tethered substrate.  The substrate names come from the user's own
+        # query, so resolving them is task setup, not answer leakage.
         if not substrate_smiles:
             try:
                 from enzyme_discovery_agent.chemistry_logic import (
