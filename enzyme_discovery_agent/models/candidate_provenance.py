@@ -1,7 +1,8 @@
 """Per-candidate provenance file: the single source of truth for its evidence.
 
-One JSON file per candidate under ``<run>/provenance/<accession>.json``, recording
-WHAT we know about the candidate and WHERE each piece came from:
+One JSON file per candidate under ``<run>/provenance/<enzyme-name>_<accession>.json``
+(name for readability, accession suffix for uniqueness), recording WHAT we know
+about the candidate and WHERE each piece came from:
 
   * discovery — how the candidate was found (search / structural homolog /
     full-text mining of a deposited accession);
