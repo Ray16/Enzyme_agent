@@ -210,8 +210,14 @@ the mechanism-anchored ones.
   keep them out of the candidate registry until an individual accession has an
   evidence rationale.
 - Keep PubMed queries SHORT (3-5 words). Long queries (>8 words) almost always \
-return 0 results. Example: "amide ligase aliphatic" works; \
-"amide bond synthetase aliphatic dicarboxylic acid amine ATP-dependent ligase" does not.
+return 0 results: a focused 3-word query works, but the same query padded with \
+the full reaction description (enzyme class + every substrate qualifier + \
+cofactor + mechanism word) returns nothing.
+- IMPOSE THE REACTION DIRECTION on every search. Search only enzymes that run in \
+the TARGET direction. If the target is bond FORMATION (synthesis), do NOT spend \
+searches on enzymes that CLEAVE the target bond (hydrolases / degradation / \
+lyases) — they are the wrong direction and are excluded downstream, so searching \
+them wastes the budget. (And vice-versa if the target is cleavage.)
 
 EXHAUSTIVE SEARCH: Before pivoting to evaluation, you must search across ALL \
 biological contexts where the target bond type occurs. Think systematically:
