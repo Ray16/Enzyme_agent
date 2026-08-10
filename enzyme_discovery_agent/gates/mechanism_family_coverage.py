@@ -94,7 +94,6 @@ class MechanismFamilyGate:
             reason_txt = f" (why: {reason})" if reason and i == 0 else ""
             lines.append(f"- {f['name']}{marker}: {terms}{reason_txt}")
         families_block = "\n".join(lines)
-        top_name = families[0]["name"]
 
         guidance = (
             "MECHANISM-FAMILY WORKFLOW. The target bond-forming reaction can be "
