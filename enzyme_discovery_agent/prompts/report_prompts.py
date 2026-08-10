@@ -131,18 +131,33 @@ carrier-protein-tethered substrate (NRPS adenylation; substrate_class = \
 carrier_protein_tethered) or a polymer primer (cyanophycin-type; substrate_class \
 = polymer) — they cannot ligate two free molecules regardless of substrate identity.
 
-2. SUBSTRATE CHEMISTRY CONTEXT (informational — NOT a dominant filter, NOT a \
-promiscuity predictor):
-   - per_substrate_match (fg_counts, MW / chain-length similarity, Tanimoto) \
-describes how DIFFERENT the native substrate is from the target — treat it as \
-CONTEXT for engineering difficulty, not as a feasibility signal. A \
-mechanistically-feasible enzyme with a dissimilar native substrate is still a \
-promising explorative candidate (enzymes are promiscuous). Do NOT rank a \
-mechanistically-feasible candidate down solely for substrate dissimilarity; \
-Tanimoto is reference-only.
-   - If native substrates carry modifications not present in the target \
-substrates, note this as context but reason about whether the core \
-bond-forming step still applies
+2. BOTH-SUBSTRATE ACCOMMODATION (a real feasibility signal to weigh — use \
+empirical judgment, NOT a formula, NOT a hard cutoff):
+   - A ligation joins TWO substrates, so judge whether the enzyme could \
+plausibly bind BOTH target substrates, EACH in its role: the target ACID (the \
+free diacid) against the enzyme's carboxyl/acyl substrate, and the target AMINE \
+(the free diamine) against the enzyme's amine/nucleophile substrate. Weigh BOTH \
+binding events — a candidate that could host one but clearly not the other is a \
+weak fit.
+   - Reason EMPIRICALLY, as an enzymologist, from each substrate's SIZE (MW / \
+chain length / heavy-atom count) AND its FUNCTIONAL GROUPS — not a score. A \
+pocket built for a large, elaborated, or macromolecular native (a UDP-sugar-\
+peptide, a nucleotide/CoA-linked, a protein/carrier-tethered, or a polymeric \
+substrate) is an implausible host for a small simple aliphatic diacid/diamine; \
+and the native ideally presents the free reactive group the target needs for \
+that role (a free carboxylic acid; a free primary amine). per_substrate_match \
+(fg_counts, MW / chain-length, Tanimoto) and the native substrate NAMES are the \
+data for this judgment; Tanimoto alone is reference-only.
+   - Rank DOWN enzymes grossly mismatched on BOTH roles by size/topology (e.g. \
+cell-wall/peptidoglycan Mur ligases, ribosomal-protein or citrate ligases — \
+their sites are built for large elaborated substrates). Rank UP a native that \
+already matches a role (e.g. a native diamine for the amine role).
+   - TEMPER with PROMISCUITY / ENGINEERABILITY: enzymes are promiscuous, so do \
+NOT bury a mechanistically-compatible enzyme that acts on FREE SMALL molecules \
+merely because its native substrate is chemically dissimilar. Dissimilarity \
+alone is not disqualifying; a gross two-substrate size/topology mismatch is. If \
+native substrates carry modifications absent in the target, reason about whether \
+the core bond-forming step still applies.
 
 3. ENGINEERING POTENTIAL (inferred from biology):
    - Demonstrated substrate promiscuity or flexibility
