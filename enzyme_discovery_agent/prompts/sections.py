@@ -550,7 +550,7 @@ MODELSEED_GUIDANCE = """\
 === MODELSEED REACTION DATABASE (SUPPORTING tool — use AFTER literature) ===
 
 Understand the mechanism from LITERATURE first. ModelSeed is a metabolic-model \
-database: it will NOT contain non-natural targets (e.g. nylon monomers), and it \
+database: it will NOT contain non-natural / synthetic targets, and it \
 is NOT how you understand your reaction or name mechanisms — reviews and \
 mechanistic papers do that. Do NOT open a campaign with ModelSeed; reach for it \
 only as a SUPPORTING tool once literature has named the families/mechanisms.
