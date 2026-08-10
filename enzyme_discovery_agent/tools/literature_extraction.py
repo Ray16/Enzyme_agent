@@ -240,8 +240,14 @@ def is_paper_relevant(title: str, abstract: str, query: str, llm_client) -> tupl
     from a degradation one on the same material.  On any error, returns
     ``(True, ...)`` — fail OPEN so a gate failure never silently drops papers.
     """
-    if not (title or abstract):
-        return True, "no metadata to judge"
+    # The abstract is the only content this gate can judge on: a bare title does
+    # not reveal whether a paper CHARACTERISES a query-type enzyme, and the model
+    # defaults to "not relevant" when handed a title alone — silently dropping
+    # abstract-less primary papers (peer-review components, deposit records)
+    # that are exactly the ones worth reading.  With no substantive abstract,
+    # fail OPEN: keep it for full-text screening, which reads the body anyway.
+    if len((abstract or "").strip()) < 40:
+        return True, "no abstract to judge — kept for full-text screening"
     from enzyme_discovery_agent import config
     user = (f"Query: {query}\n\nTitle: {title}\n\nAbstract: {abstract[:1500]}")
     try:
