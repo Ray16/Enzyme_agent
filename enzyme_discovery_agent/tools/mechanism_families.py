@@ -37,9 +37,15 @@ _SYSTEM = (
     "  - descriptors: annotation/domain/fold words that identify its members in "
     "a sequence database (e.g. the adenylation domain, an ATP-grasp fold, a "
     "carrier-protein ligase, a condensation domain) — generic mechanism terms;\n"
-    "  - literature_terms: reaction- and mechanism-anchored search phrases.\n"
+    "  - literature_terms: search phrases that CROSS the family/fold with the "
+    "TARGET SUBSTRATE CLASS — the reactive groups, size, and type of the "
+    "reaction inputs in the query (e.g. a fold paired with the target's "
+    "substrate class). This steers the search to the family MEMBER whose "
+    "substrate resembles the target, not just the family's textbook archetype; "
+    "include for each family at least one such fold-plus-target-substrate term.\n"
     "STRICT: do NOT name any specific enzyme, gene, protein, natural product, or "
-    "organism anywhere — only mechanism/fold classes and generic descriptors. "
+    "organism anywhere — only mechanism/fold classes, generic descriptors, and "
+    "the target substrate's own chemical class from the query. "
     'Return ONLY JSON: {"families":[{"name":"..","descriptors":["..",".."],'
     '"literature_terms":["..",".."]}]}'
 )
