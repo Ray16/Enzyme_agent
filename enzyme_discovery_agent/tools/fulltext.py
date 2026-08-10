@@ -639,27 +639,53 @@ def mine_and_register_fulltext_accessions(
     # accessions never enter the pool.  fetch_ceiling is only a runaway guard.
     ranked = consolidate_pool(query, papers, max_results=len(papers))["ranked"]
     from enzyme_discovery_agent.tools.literature_extraction import is_paper_relevant
-    fetched = 0
-    dropped = 0
+    workers = config.FULLTEXT_HARVEST_WORKERS
+
+    # Candidate papers not already fetched (bounded by fetch_ceiling).
+    todo = []
     for paper in ranked:
-        if fetched >= fetch_ceiling:
+        if len(todo) >= fetch_ceiling:
             break
         key = _fulltext_key(paper)
-        if key is None or key in done:
-            continue
-        if llm_client is not None:
+        if key is not None and key not in done:
+            todo.append(paper)
+
+    # Relevance gate (LLM, per paper) IN PARALLEL — mechanism relevance on
+    # title+abstract, so an off-topic paper is never downloaded.
+    dropped = 0
+    if llm_client is not None and todo:
+        def _relevant(paper):
             ok, reason = is_paper_relevant(
                 paper.get("title", ""), paper.get("abstract", ""), query, llm_client)
             if not ok:
-                dropped += 1
                 logger.info("fulltext relevance gate dropped %s: %s",
                             (paper.get("title") or "")[:60], reason)
-                continue
-        rec = fetch_one(paper, dest)
-        if rec:
-            manifest.append(rec)
-            done.add(key)
-            fetched += 1
+            return ok
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            flags = list(pool.map(_relevant, todo))
+        relevant = [p for p, ok in zip(todo, flags) if ok]
+        dropped = sum(1 for ok in flags if not ok)
+    else:
+        relevant = todo
+
+    # Pre-assign title basenames sequentially (collision-safe), then DOWNLOAD the
+    # papers IN PARALLEL — downloads are I/O-bound, so a worker pool cuts the
+    # harvest wall-clock from sum-of-downloads to about the slowest download.
+    taken: set = set()
+    plan = []
+    for p in relevant:
+        base = _paper_basename(p, _fulltext_key(p), dest, taken=taken)
+        taken.add(base)
+        plan.append((p, base))
+    fetched = 0
+    if plan:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            recs = list(pool.map(lambda pb: fetch_one(pb[0], dest, basename=pb[1]), plan))
+        for rec in recs:
+            if rec:
+                manifest.append(rec)
+                done.add(rec["key"])
+                fetched += 1
     if log_fn and dropped:
         log_fn(f"  Full-text relevance gate: dropped {dropped} off-topic paper(s) "
                f"before download")
