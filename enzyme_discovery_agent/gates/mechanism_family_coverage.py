@@ -86,16 +86,16 @@ class MechanismFamilyGate:
 
         guidance = (
             "MECHANISM-FAMILY COVERAGE. The target bond-forming reaction can be "
-            "catalysed by several DISTINCT enzyme families/folds. Before you "
-            "evaluate, cover EACH of these families from the LITERATURE — run "
-            "targeted literature searches with the terms below, fetch full text, "
-            "and register at least one representative per family. Do not converge "
-            "on one family or skip a family because the first papers named a "
-            "different one:\n"
-            f"{families_block}\n\n"
-            "Evaluation stays deferred until each family has a screened "
-            "representative (or you have searched it and shown it has no viable "
-            "member)."
+            "catalysed by several DISTINCT enzyme families/folds. Try to cover "
+            "EACH of these families from the LITERATURE — run targeted literature "
+            "searches with the terms below, fetch full text, and register a "
+            "representative per family. Crucially, within each family look for the "
+            "MEMBER whose native substrate RESEMBLES THE TARGET substrates (their "
+            "reactive groups and size), not the family's textbook archetype — "
+            "search the fold CROSSED with the target substrate class. Do not "
+            "converge on one family or skip a family because the first papers "
+            "named a different one:\n"
+            f"{families_block}"
         )
         return GateResult(
             intercept=True,
