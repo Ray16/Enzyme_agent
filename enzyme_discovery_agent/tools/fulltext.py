@@ -173,27 +173,31 @@ def _slug(key: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", key)[:120]
 
 
-def _paper_basename(paper: dict, key: str, dest: Path) -> str:
+def _paper_basename(paper: dict, key: str, dest: Path, taken=()) -> str:
     """A clean, TITLE-based filename stem for a paper's artifacts.
 
     Titles read far better than DOI slugs in a folder listing.  Unique within
     the fulltext folder: a title collision with a different already-fetched
-    paper falls back to a short key suffix.  Empty title -> the DOI/key slug.
+    paper (on disk) or an already-assigned one in ``taken`` (for a batch being
+    fetched concurrently) falls back to a short key suffix.  Empty title -> the
+    DOI/key slug.
     """
     title = (paper.get("title") or "").strip()
     slug = re.sub(r"[^A-Za-z0-9]+", "-", title).strip("-")[:80].strip("-")
     if not slug:
         return _slug(key)
-    collides = any(p.exists() for p in (
+    collides = slug in taken or any(p.exists() for p in (
         dest / f"{slug}.pdf", dest / "xml" / f"{slug}.xml", dest / "txt" / f"{slug}.txt",
     ))
     return f"{slug}__{_slug(key)[:10]}" if collides else slug
 
 
-def fetch_one(paper: dict, dest: Path) -> dict | None:
+def fetch_one(paper: dict, dest: Path, basename: str | None = None) -> dict | None:
     """Run the fallback chain for one paper; save verified bytes + text.
 
-    Returns a manifest record on success, or None if no source yielded a
+    ``basename`` may be pre-assigned by a concurrent caller (so parallel
+    downloads do not race on title-collision detection); otherwise it is derived
+    here.  Returns a manifest record on success, or None if no source yielded a
     verified full text.
     """
     arxiv = (paper.get("arxiv_id") or "").strip()
