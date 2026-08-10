@@ -42,6 +42,18 @@ _MEMBER_CAP = 120
 # formation target and vice versa).  Mirrors the screening direction guard.
 _OPPOSITE_DIRECTIONS = {("formation", "cleavage"), ("cleavage", "formation")}
 
+# A member whose native reaction runs the RIGHT direction but on substrates that
+# do NOT resemble the target (different functional groups / size / aromaticity)
+# is only "tepid": right chemistry, wrong substrate.  WARM requires BOTH the
+# direction AND a substrate resemblance at/above this fit.  The threshold is
+# deliberately loose — this steers coarse navigation, it is not a feasibility
+# filter (a mechanistically-feasible enzyme with a dissimilar substrate is still
+# a valid engineering candidate; this only decides where to dig FIRST).
+_WARM_FIT_THRESHOLD = 0.5
+# Resolving member substrates to structures costs ChEBI lookups; bound how many
+# members are structurally scored per survey (direction alone tags the rest).
+_SUBSTRATE_SCORE_CAP = 60
+
 
 # --------------------------------------------------------------------------
 # Pure classification (offline-testable — no network)
