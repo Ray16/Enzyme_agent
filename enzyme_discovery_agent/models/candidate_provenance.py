@@ -185,18 +185,25 @@ def build_candidate_provenance(
 
 
 def write_candidate_provenance(run_dir: Path, provenance: dict) -> Path:
-    acc = provenance.get("accession", "unknown")
-    path = _provenance_dir(run_dir) / f"{acc}.json"
+    path = _provenance_dir(run_dir) / _provenance_filename(provenance)
     path.write_text(json.dumps(provenance, indent=2, default=str) + "\n")
     return path
 
 
 def load_candidate_provenance(run_dir: Path, accession: str) -> dict | None:
-    path = _provenance_dir(run_dir) / f"{accession}.json"
-    try:
-        return json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return None
+    """Look up a candidate's provenance by accession.
+
+    Files are named ``<name-slug>_<accession>.json`` (accession suffix), so match
+    on the suffix; fall back to the legacy ``<accession>.json`` layout.
+    """
+    d = _provenance_dir(run_dir)
+    candidates = sorted(d.glob(f"*_{accession}.json")) + [d / f"{accession}.json"]
+    for path in candidates:
+        try:
+            return json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+    return None
 
 
 def _accommodation_facts(target_smiles: str, native_smiles: list[str]) -> list[dict]:
