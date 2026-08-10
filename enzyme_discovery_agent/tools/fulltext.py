@@ -266,7 +266,7 @@ def fetch_one(paper: dict, dest: Path, basename: str | None = None) -> dict | No
     ),
     category="reasoning",  # not 'literature': it reads, it is not a new search
     parallel_safe=False,
-    injected_params=["run_dir"],
+    injected_params=["run_dir", "llm_client"],
     params={
         "run_dir": {"type": "string", "description": "Agent run directory (injected)."},
         "query": {
