@@ -483,33 +483,6 @@ def _fallback_substrate_lookup(
         except Exception as e:
             logger.debug("Rhea fallback failed for %s: %s", rhea_id, e)
 
-    if results:
-        return results
-
-    # 2. KEGG: look up by EC number and parse substrate compound names
-    from enzyme_discovery_agent.tools.database import search_kegg_enzyme
-    for ec in ec_numbers[:2]:
-        if not re.match(r'^\d+\.\d+\.\d+\.\d+$', ec):
-            continue
-        try:
-            kegg_result = search_kegg_enzyme(ec)
-            reactions = kegg_result.get("data", [{}])[0].get("reactions", [])
-            for rxn_text in reactions[:1]:
-                # Strip KEGG reaction IDs like [RN:R12354]
-                rxn_text = re.sub(r'\[RN:[A-Z0-9]+\]', '', rxn_text).strip()
-                # Only use the left side of the equation (substrates)
-                substrates_side = rxn_text.split("=")[0]
-                for compound in re.split(r'\s*\+\s*', substrates_side):
-                    cname = compound.strip()
-                    if not cname or len(cname) < 3:
-                        continue
-                    smi = _chebi_smiles_by_name(cname)
-                    if smi:
-                        results.append({"chebi_id": "", "name": cname,
-                                        "smiles": smi, "source": "kegg_fallback"})
-        except Exception as e:
-            logger.debug("KEGG substrate fallback failed for %s: %s", ec, e)
-
     return results
 
 
