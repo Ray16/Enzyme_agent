@@ -602,7 +602,7 @@ def _simplify_interpro_query(query: str) -> list[str]:
     params={
         "query": {
             "type": "string",
-            "description": "Search terms (e.g., 'NIS synthetase', 'ATP-grasp').",
+            "description": "Search terms (an enzyme family / fold name, EC, or keyword).",
         },
         "max_results": {
             "type": "integer",
