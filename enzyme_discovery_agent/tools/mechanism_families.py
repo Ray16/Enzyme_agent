@@ -132,3 +132,77 @@ def derive_mechanism_families(
             "literature_terms": lit_terms,
         })
     return families
+
+
+_RANK_SYSTEM = (
+    "You are an enzymology strategist. You are given the TARGET reaction's "
+    "substrates and a list of candidate enzyme MECHANISM families (folds). Rank "
+    "the families by how closely each family's ARCHETYPAL native substrates "
+    "resemble the TARGET substrates — judged ONLY on chemistry: the reactive "
+    "functional groups involved in the bond, how many of each are present, the "
+    "carbon-chain size, and saturation/aromaticity. A family whose members "
+    "natively act on substrates bearing the same reactive groups, in the same "
+    "count and a similar size, ranks HIGHER. Reason from substrate shape, not "
+    "from any known enzyme.\n"
+    "STRICT: do NOT name any specific enzyme, gene, protein, natural product, or "
+    "organism. Refer to families only by the names given to you, and describe "
+    "substrates only by their chemical class/groups/size.\n"
+    'Return ONLY JSON: {"ranking":[{"name":"<exact family name from the list>",'
+    '"resemblance":"high|medium|low","reason":"<one short clause on substrate '
+    'shape>"}, ...]} covering every family, best match first.'
+)
+
+
+def rank_families_by_substrate_resemblance(
+    families: list[dict], query: str, substrate_smiles: str, llm_client,
+) -> list[dict]:
+    """Order derived families by how well their native substrates resemble the
+    target substrates (the substrate axis — leakage-safe).
+
+    Returns the same family dicts, reordered best-match-first, each annotated
+    with ``promise`` (high/medium/low) and ``promise_reason``.  Degrades to the
+    input order (unannotated) on any failure so the caller never depends on it.
+    """
+    if llm_client is None or len(families) <= 1:
+        return families
+    from enzyme_discovery_agent import config
+
+    listing = "\n".join(
+        f"- {f['name']}: {'; '.join(f.get('descriptors') or [])}" for f in families
+    )
+    user = f"Target reaction / query: {query}"
+    if substrate_smiles:
+        user += f"\nTarget substrate SMILES: {substrate_smiles}"
+    user += f"\n\nFamilies to rank:\n{listing}"
+    try:
+        response = llm_client.call(
+            messages=[{"role": "system", "content": _RANK_SYSTEM},
+                      {"role": "user", "content": user}],
+            temperature=config.LLM_TEMPERATURE,
+            timeout=max(config.LLM_TIMEOUT, 120),
+        )
+        content = response.choices[0].message.content or ""
+        ranking = (json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
+                   .get("ranking") or [])
+    except Exception as exc:  # noqa: BLE001 - degrade gracefully
+        logger.warning("mechanism-family ranking failed: %s", exc)
+        return families
+
+    by_key = {f["name"].casefold(): f for f in families}
+    ordered = []
+    for row in ranking:
+        fam = by_key.pop(str(row.get("name") or "").strip().casefold(), None)
+        if fam is None:
+            continue
+        resemblance = str(row.get("resemblance") or "").strip().lower()
+        fam["promise"] = resemblance if resemblance in {"high", "medium", "low"} else "medium"
+        # Strip any stray gene-symbol-like token from the free-text reason.
+        reason_tokens = [
+            tok for tok in str(row.get("reason") or "").split()
+            if not _ENZYME_TOKEN_RE.match(tok.strip(".,;:()"))
+        ]
+        fam["promise_reason"] = " ".join(reason_tokens).strip()
+        ordered.append(fam)
+    # Any family the ranker omitted keeps its original relative order at the end.
+    ordered.extend(by_key.values())
+    return ordered
