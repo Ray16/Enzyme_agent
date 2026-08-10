@@ -24,17 +24,18 @@ Low / Minimal) but should NOT affect ranking position.
 RANKING CRITERIA (in order of priority):
 
 0. FUNCTIONAL-CLASS PREREQUISITE (a HARD GATE — apply FIRST, and let it OVERRIDE \
-curation/citation depth): a candidate must belong to a catalytic CLASS that can \
-form the target bond. If its annotated function, protein name, or EC is a \
-DIFFERENT class — a transferase (methyl/glycosyl/acyl), a hydrolase / esterase / \
-amidase, an oxidoreductase / dehydrogenase, a protease, a kinase, a lyase, or a \
-NON-catalytic / structural protein (no EC, no reaction) — it CANNOT catalyse the \
-target reaction and MUST go to the BOTTOM tier, no matter how well-characterised, \
-highly-cited, or SwissProt-reviewed it is. A large literature count or reviewed \
-status is FAME, not mechanism, and NEVER promotes a wrong-class protein. Order in \
-stages: (i) correct catalytic class (this gate); (ii) correct chemistry / \
-substrate fit (criteria below); curation and citation depth are only a FINAL \
-tiebreaker AMONG correct-class, chemistry-fitting candidates.
+curation/citation depth): a candidate must belong to a catalytic class that \
+performs the TARGET reaction — forming the target bond by the target mechanism. \
+If its annotated function / protein name / EC places it in a catalytic class \
+that carries out a DIFFERENT reaction TYPE than the target, or if it is a \
+NON-catalytic / structural protein with no reaction at all, it CANNOT catalyse \
+the target reaction and MUST go to the BOTTOM tier — no matter how \
+well-characterised, highly-cited, or SwissProt-reviewed it is. A large \
+literature count or reviewed status is FAME, not mechanism, and NEVER promotes a \
+class-mismatched protein. Order in stages: (i) the candidate's catalytic class \
+matches the target reaction (this gate); (ii) correct chemistry / substrate fit \
+(criteria below); curation and citation depth are only a FINAL tiebreaker AMONG \
+correct-class, chemistry-fitting candidates.
 
 1. CATALYTIC-MECHANISM FEASIBILITY (dominant criterion — can the reaction \
 proceed at all given the mechanism?):
@@ -127,17 +128,18 @@ indicates confidence level — it does NOT affect ranking position.
 RANKING CRITERIA (in order of priority):
 
 0. FUNCTIONAL-CLASS PREREQUISITE (a HARD GATE — apply FIRST, and let it OVERRIDE \
-curation/citation depth): a candidate must belong to a catalytic CLASS that can \
-form the target bond. If its annotated function, protein name, or EC is a \
-DIFFERENT class — a transferase (methyl/glycosyl/acyl), a hydrolase / esterase / \
-amidase, an oxidoreductase / dehydrogenase, a protease, a kinase, a lyase, or a \
-NON-catalytic / structural protein (no EC, no reaction) — it CANNOT catalyse the \
-target reaction and MUST go to the BOTTOM tier, no matter how well-characterised, \
-highly-cited, or SwissProt-reviewed it is. A large literature count or reviewed \
-status is FAME, not mechanism, and NEVER promotes a wrong-class protein. Order in \
-stages: (i) correct catalytic class (this gate); (ii) correct chemistry / \
-substrate fit (criteria below); curation and citation depth are only a FINAL \
-tiebreaker AMONG correct-class, chemistry-fitting candidates.
+curation/citation depth): a candidate must belong to a catalytic class that \
+performs the TARGET reaction — forming the target bond by the target mechanism. \
+If its annotated function / protein name / EC places it in a catalytic class \
+that carries out a DIFFERENT reaction TYPE than the target, or if it is a \
+NON-catalytic / structural protein with no reaction at all, it CANNOT catalyse \
+the target reaction and MUST go to the BOTTOM tier — no matter how \
+well-characterised, highly-cited, or SwissProt-reviewed it is. A large \
+literature count or reviewed status is FAME, not mechanism, and NEVER promotes a \
+class-mismatched protein. Order in stages: (i) the candidate's catalytic class \
+matches the target reaction (this gate); (ii) correct chemistry / substrate fit \
+(criteria below); curation and citation depth are only a FINAL tiebreaker AMONG \
+correct-class, chemistry-fitting candidates.
 
 1. CATALYTIC-MECHANISM FEASIBILITY (dominant criterion — can the reaction \
 proceed at all given the mechanism?):
