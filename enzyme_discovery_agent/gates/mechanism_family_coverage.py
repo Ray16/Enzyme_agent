@@ -40,6 +40,7 @@ class MechanismFamilyGate:
     def execute(self, state: AgentState) -> GateResult:
         from enzyme_discovery_agent.tools.mechanism_families import (
             derive_mechanism_families,
+            rank_families_by_substrate_resemblance,
         )
 
         ctx_path = state.run_dir / "target_context.json"
@@ -51,6 +52,13 @@ class MechanismFamilyGate:
         substrate = ctx.get("substrate_smiles") or ""
 
         families = derive_mechanism_families(query, substrate, self.llm)
+        if families:
+            # Order families by how closely their native substrates resemble the
+            # target substrates, so guidance can steer search DEPTH into the most
+            # promising family instead of spreading budget thinly across all.
+            families = rank_families_by_substrate_resemblance(
+                families, query, substrate, self.llm
+            )
         if not families:
             # Derivation unavailable — leave the generic coverage contract in
             # place and don't fire again.
