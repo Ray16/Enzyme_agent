@@ -164,12 +164,49 @@ def update_candidate_registry(
             logger.warning("Failed to write candidate registry: %s", e)
 
 
+_OPPOSITE_DIRECTIONS = {("formation", "cleavage"), ("cleavage", "formation")}
+
+
+def _is_opposite_direction(native: str | None, target: str | None) -> bool:
+    """True only on a CONFIDENT opposite-direction call (formation vs cleavage).
+
+    Unknown / transfer / redox / None on either side returns False, so the guard
+    never drops a candidate it cannot confidently disqualify — those fall through
+    to be registered and screened as usual.
+    """
+    return bool(native) and bool(target) and (native, target) in _OPPOSITE_DIRECTIONS
+
+
+def _target_direction(run_dir: Path) -> str | None:
+    """Read the run's declared target bond direction (answer-agnostic).
+
+    Mirrors the screening-time source so registration and screening agree.
+    """
+    try:
+        from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+        ctx = json.loads((run_dir / "target_context.json").read_text())
+        reaction = (ctx.get("target_profile") or {}).get("reaction") or {}
+        text = " ".join(filter(None, [
+            str(reaction.get("class", "")),
+            str(reaction.get("direction", "")),
+            str(ctx.get("query", "")),
+        ]))
+        return extract_target_bond_type(text).get("direction")
+    except (OSError, json.JSONDecodeError, AttributeError, KeyError):
+        return None
+
+
 def extract_and_register_from_search(
     run_dir: Path,
     tool_name: str,
     result: dict,
 ) -> list[str]:
     """Extract candidates from search results and register as discovered.
+
+    A search hit whose native reaction runs OPPOSITE the target's bond direction
+    (a cleavage/hydrolysis enzyme when the target is bond formation, or vice
+    versa) is chemically disqualified and is NOT registered as a lead — the call
+    is EC-based, so it stays answer-agnostic and never names an enzyme class.
 
     For search_uniprot, parses structured data to capture gene names and
     sequence lengths. For other tools, falls back to regex extraction.
