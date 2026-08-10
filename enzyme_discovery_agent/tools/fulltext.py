@@ -648,12 +648,17 @@ def mine_and_register_fulltext_accessions(
             pass
 
     # 2. Mine deposit-context accessions from the stored full text (no LLM).
+    #    Read via the manifest's relative text paths so it is agnostic to the
+    #    on-disk layout (text lives under txt/ in the current layout).
     genbank: set[str] = set()
     uniprot: set[str] = set()
     cue_re = re.compile("|".join(re.escape(c) for c in _DEPOSIT_CUES))
-    for txt in dest.glob("*.txt"):
+    for m in manifest:
+        tf = m.get("text_file")
+        if not tf:
+            continue
         try:
-            text = txt.read_text(errors="ignore")
+            text = (dest / tf).read_text(errors="ignore")
         except OSError:
             continue
         # Restrict matches to short windows around deposit cues: bounds the count
