@@ -271,6 +271,14 @@ class EnzymeAgent:
         return "ranking_and_report"
 
     def _should_continue(self, iteration: int) -> bool:
+        # Keep exploring for at least ~half the iteration budget before allowing
+        # an early finalization.  A literature-first pass reaches a handful of
+        # coarse families quickly, but the budget is meant for BROADER and DEEPER
+        # coverage — searching each derived mechanism family and its specific
+        # members (the target-substrate-matched one).  Stopping at iter ~9 of 30
+        # leaves the run shallow.  A genuinely broad pool may still finalize.
+        if iteration < self.max_iterations // 2 and self._candidate_count < 20:
+            return True
         if self._candidate_count == 0:
             return iteration < self.max_iterations - 2
         if self._candidate_count < 3:
