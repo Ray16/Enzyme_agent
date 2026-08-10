@@ -247,6 +247,23 @@ _RELEVANCE_SYSTEM = (
 )
 
 
+# Titles that are NOT research articles — conference posters/proceedings, front
+# matter, indexes, errata.  Dropped even when abstract-less, so the fail-open
+# below keeps real abstract-less primary papers without keeping this junk.
+_NON_ARTICLE_RE = re.compile(
+    r"\bposters?\b|poster session|poster abstract|\bproceedings\b|"
+    r"table of contents|^\s*contents\s*$|author index|subject index|"
+    r"^\s*index\s*$|errat(?:um|a)\b|corrigend|front ?matter|back ?matter|"
+    r"supplementary (?:material|information|data)\b|meeting abstracts?|"
+    r"conference abstracts?|abstracts? of the\b",
+    re.IGNORECASE,
+)
+
+
+def _is_non_article(title: str) -> bool:
+    return bool(_NON_ARTICLE_RE.search((title or "").strip()))
+
+
 def is_paper_relevant(title: str, abstract: str, query: str, llm_client) -> tuple[bool, str]:
     """Cheap title+abstract relevance gate (no full-text download).
 
@@ -254,6 +271,11 @@ def is_paper_relevant(title: str, abstract: str, query: str, llm_client) -> tupl
     from a degradation one on the same material.  On any error, returns
     ``(True, ...)`` — fail OPEN so a gate failure never silently drops papers.
     """
+    # Drop obvious non-articles (posters, proceedings, front matter, errata) by
+    # title first — even abstract-less ones, so the fail-open below does not let
+    # this junk through.
+    if _is_non_article(title):
+        return False, "not a research article (poster/proceedings/front matter)"
     # The abstract is the only content this gate can judge on: a bare title does
     # not reveal whether a paper CHARACTERISES a query-type enzyme, and the model
     # defaults to "not relevant" when handed a title alone — silently dropping
