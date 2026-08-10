@@ -570,7 +570,12 @@ def _register_named_enzymes_from_fulltext(
         #     registered (its UniProt annotation is often generic).  Enzymes
         # (b) named but not deposited here: resolve by name and register,
         #     carrying the paper's name as the candidate's label.
-        def _handle(nm, org, gb, bucket):
+        # ``kind`` distinguishes an enzyme CHARACTERISED in this paper ("named":
+        # the paper is directly relevant, a real evidence source) from one merely
+        # CITED / named as a related analogue ("cited": a valid discovery LEAD,
+        # but this paper does not characterise it — its evidence lives in its own
+        # primary literature, reached later via its accession).
+        def _handle(nm, org, gb, bucket, kind):
             nm = (nm or "").strip()
             org = org or ""
             accs = []
@@ -585,15 +590,16 @@ def _register_named_enzymes_from_fulltext(
                     accs = [acc]
                     if acc not in already and len(registered) < remaining:
                         already.add(acc)
-                        register_fn(acc, f"fulltext_named:{nm}@{doi}", nm)
+                        register_fn(acc, f"fulltext_{kind}:{nm}@{doi}", nm)
                         registered.append(acc)
-            bucket.append({"name": nm, "organism": org, "accessions": accs})
+            bucket.append({"name": nm, "organism": org, "accessions": accs,
+                           "relationship": kind})
 
         for e in enzymes:
             _handle(e.get("name"), e.get("organism"), (e.get("genbank") or "").strip(),
-                    rec["enzymes"])
+                    rec["enzymes"], "named")
         for h in homologs:
-            _handle(h.get("name"), h.get("organism"), "", rec["homologs"])
+            _handle(h.get("name"), h.get("organism"), "", rec["homologs"], "cited")
         paper_records.append(rec)
 
     try:
