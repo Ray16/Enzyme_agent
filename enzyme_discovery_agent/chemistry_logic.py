@@ -174,7 +174,7 @@ def resolve_substrate_names_to_smiles(text: str | None) -> str | None:
     """
     if not text:
         return None
-    core = re.sub(r"\(.*?\)", " ", text)          # drop "(nylon-6,6 monomers)" etc.
+    core = re.sub(r"\(.*?\)", " ", text)          # drop parenthetical context notes
     parts = re.split(r"\band\b|[,;+/]", core, flags=re.IGNORECASE)
     names = [p.strip(" .") for p in parts if p.strip(" .")]
     resolved: list[str] = []
