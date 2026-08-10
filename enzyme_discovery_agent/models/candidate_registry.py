@@ -27,9 +27,14 @@ def _enzyme_name(metadata: dict) -> str:
     """Return the most useful human-readable label for a registry candidate.
 
     UniProt accessions are stable identifiers, but they are not useful as the
-    only visible label in a run artifact.  Prefer the curated gene symbol and
-    fall back to the protein name when no gene is assigned.
+    only visible label in a run artifact.  Prefer the name the discovering paper
+    gave the enzyme (an enzyme found only via a deposited accession often carries
+    a generic UniProt annotation — "AMP-ligase" — while the paper calls it by a
+    recognisable name); then the curated gene symbol; then the protein name.
     """
+    lit_name = str(metadata.get("literature_name") or "").strip()
+    if lit_name:
+        return lit_name
     genes = metadata.get("gene_names") or []
     if isinstance(genes, str):
         genes = [genes]
