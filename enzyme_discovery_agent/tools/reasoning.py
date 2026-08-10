@@ -443,14 +443,20 @@ def screen_candidates(run_dir: Path | str, accessions: list[str]) -> dict:
 
 def _fallback_substrate_lookup(
     rhea_ids: list[str],
-    ec_numbers: list[str],
-    gene_names: list[str],
-    protein_name: str,
 ) -> list[dict]:
-    """Try Rhea then KEGG to get native substrate SMILES when UniProt has none."""
+    """Resolve native substrate SMILES from the enzyme's OWN Rhea reaction IDs.
+
+    Rhea IDs come from the enzyme's UniProt catalytic-activity annotation, so the
+    participants are THIS enzyme's actual substrates.  We deliberately do NOT
+    fall back to EC->reaction (KEGG/BRENDA): an EC number is a reaction CLASS, so
+    its archetype substrate is often not this enzyme's substrate — a plausible-
+    but-wrong value would silently corrupt the substrate-accommodation score.
+    The reported-but-reliable fallback is the characterization paper, handled by
+    the caller.
+    """
     results: list[dict] = []
 
-    # 1. Rhea: fetch compound participants from Rhea reaction IDs
+    # Rhea: fetch compound participants from Rhea reaction IDs
     for rhea_id in rhea_ids[:3]:
         try:
             # Use undirected Rhea ID (always even; Rhea IDs come in sets of 4)
