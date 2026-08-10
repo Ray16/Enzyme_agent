@@ -11,6 +11,10 @@ logger = logging.getLogger("enzyme_agent")
 
 def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -> None:
     """Generate a CSV file with all evaluated candidates."""
+    # Drop failed evaluations (data is None): not candidates, and the row
+    # builder below assumes dict data.
+    all_evals = [e for e in (all_evals or [])
+                 if isinstance(e, dict) and isinstance(e.get("data", e), dict)]
     if not all_evals:
         return
 
