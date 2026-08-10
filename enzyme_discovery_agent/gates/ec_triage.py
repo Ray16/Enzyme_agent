@@ -102,8 +102,8 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
     # collapsed to one rep per gene above, so this is one screen per DISTINCT
     # enzyme, not per raw hit.  Capping here previously dropped whole families
     # before evaluation — and because the tier-2 ("uncurated") bucket is where
-    # TrEMBL-annotated NIS/ATP-grasp synthetases (desD, iucA, mcbA, sbnE...) land,
-    # the cap systematically discarded the enzymes closest to the target
+    # TrEMBL-annotated (uncurated) candidate enzymes land, the cap systematically
+    # discarded the enzymes often closest to the target
     # chemistry.  Relevance filtering belongs at the mechanism-feasibility
     # ranking, never at pre-evaluation screening.
     representatives.sort()
