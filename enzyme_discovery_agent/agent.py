@@ -548,6 +548,20 @@ class EnzymeAgent:
             )
 
             self._sync_gate_state()
+            # Literature-first: harvest full-text-mined enzymes as discovery
+            # seeds BEFORE the agent registers/expands candidates, so tested
+            # enzymes lead and database search expands around them.
+            if self._literature_harvest_gate.should_fire(self._gate_state):
+                harvest_result = self._literature_harvest_gate.execute(self._gate_state)
+                if harvest_result.log_message:
+                    self.log(f"  Gate: {harvest_result.log_message}")
+                for k, v in harvest_result.state_updates.items():
+                    setattr(self._gate_state, k, v)
+                messages.pop()
+                messages.extend(harvest_result.new_messages)
+                iteration -= 1
+                self.log("  Gate transition: iteration credit restored")
+                continue
             if self._evidence_selection_gate.should_fire(self._gate_state):
                 selection_result = self._evidence_selection_gate.execute(self._gate_state)
                 if selection_result.log_message:
