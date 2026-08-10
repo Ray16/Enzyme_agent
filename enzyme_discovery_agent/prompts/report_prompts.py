@@ -23,6 +23,19 @@ Low / Minimal) but should NOT affect ranking position.
 
 RANKING CRITERIA (in order of priority):
 
+0. FUNCTIONAL-CLASS PREREQUISITE (a HARD GATE — apply FIRST, and let it OVERRIDE \
+curation/citation depth): a candidate must belong to a catalytic CLASS that can \
+form the target bond. If its annotated function, protein name, or EC is a \
+DIFFERENT class — a transferase (methyl/glycosyl/acyl), a hydrolase / esterase / \
+amidase, an oxidoreductase / dehydrogenase, a protease, a kinase, a lyase, or a \
+NON-catalytic / structural protein (no EC, no reaction) — it CANNOT catalyse the \
+target reaction and MUST go to the BOTTOM tier, no matter how well-characterised, \
+highly-cited, or SwissProt-reviewed it is. A large literature count or reviewed \
+status is FAME, not mechanism, and NEVER promotes a wrong-class protein. Order in \
+stages: (i) correct catalytic class (this gate); (ii) correct chemistry / \
+substrate fit (criteria below); curation and citation depth are only a FINAL \
+tiebreaker AMONG correct-class, chemistry-fitting candidates.
+
 1. CATALYTIC-MECHANISM FEASIBILITY (dominant criterion — can the reaction \
 proceed at all given the mechanism?):
    - Do NOT try to predict substrate acceptance / promiscuity — it is an \
@@ -112,6 +125,19 @@ Swiss-Prot status, crystal structures) is recorded as REFERENCE DATA that \
 indicates confidence level — it does NOT affect ranking position.
 
 RANKING CRITERIA (in order of priority):
+
+0. FUNCTIONAL-CLASS PREREQUISITE (a HARD GATE — apply FIRST, and let it OVERRIDE \
+curation/citation depth): a candidate must belong to a catalytic CLASS that can \
+form the target bond. If its annotated function, protein name, or EC is a \
+DIFFERENT class — a transferase (methyl/glycosyl/acyl), a hydrolase / esterase / \
+amidase, an oxidoreductase / dehydrogenase, a protease, a kinase, a lyase, or a \
+NON-catalytic / structural protein (no EC, no reaction) — it CANNOT catalyse the \
+target reaction and MUST go to the BOTTOM tier, no matter how well-characterised, \
+highly-cited, or SwissProt-reviewed it is. A large literature count or reviewed \
+status is FAME, not mechanism, and NEVER promotes a wrong-class protein. Order in \
+stages: (i) correct catalytic class (this gate); (ii) correct chemistry / \
+substrate fit (criteria below); curation and citation depth are only a FINAL \
+tiebreaker AMONG correct-class, chemistry-fitting candidates.
 
 1. CATALYTIC-MECHANISM FEASIBILITY (dominant criterion — can the reaction \
 proceed at all given the mechanism?):
