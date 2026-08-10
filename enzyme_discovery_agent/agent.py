@@ -100,6 +100,7 @@ class EnzymeAgent:
 
         self._gate_state = AgentState(run_dir=self.run_dir)
         self._systematic_gate = SystematicCoverageGate()
+        self._literature_harvest_gate = LiteratureHarvestGate(self.llm, self.log)
         self._evidence_selection_gate = EvidenceSelectionGate()
         self._gate_pipeline = GatePipeline([
             EntityExtractionGate(),
