@@ -43,27 +43,27 @@ carrier_protein_tethered) or a polymer primer (cyanophycin-type; substrate_class
 = polymer) when the target substrates are free molecules — they cannot ligate \
 free molecules regardless of substrate identity.
 
-2. BOTH-SUBSTRATE ACCOMMODATION (a real feasibility signal to weigh — use \
+2. MULTI-SUBSTRATE ACCOMMODATION (a real feasibility signal to weigh — use \
 empirical judgment, NOT a formula, NOT a hard cutoff):
-   - A ligation joins TWO substrates, so judge whether the enzyme could \
-plausibly bind BOTH target substrates, EACH in its role: the target ACID (the \
-free diacid) against the enzyme's carboxyl/acyl substrate, and the target AMINE \
-(the free diamine) against the enzyme's amine/nucleophile substrate. Weigh BOTH \
-binding events — a candidate that could host one but clearly not the other is a \
-weak fit.
+   - When the target reaction joins MORE THAN ONE substrate, judge whether the \
+enzyme could plausibly bind EVERY target substrate, each in its mechanistic role \
+(match each target substrate to the enzyme's corresponding native substrate for \
+that role — donor to donor, acceptor to acceptor). Weigh ALL binding events — a \
+candidate that could host one target substrate but clearly not another is a weak \
+fit.
    - Reason EMPIRICALLY, as an enzymologist, from each substrate's SIZE (MW / \
 chain length / heavy-atom count) AND its FUNCTIONAL GROUPS — not a score. A \
-pocket built for a large, elaborated, or macromolecular native (a UDP-sugar-\
-peptide, a nucleotide/CoA-linked, a protein/carrier-tethered, or a polymeric \
-substrate) is an implausible host for a small simple aliphatic diacid/diamine; \
-and the native ideally presents the free reactive group the target needs for \
-that role (a free carboxylic acid; a free primary amine). per_substrate_match \
-(fg_counts, MW / chain-length, Tanimoto) and the native substrate NAMES are the \
-data for this judgment; Tanimoto alone is reference-only.
-   - Rank DOWN enzymes grossly mismatched on BOTH roles by size/topology (e.g. \
-cell-wall/peptidoglycan Mur ligases, ribosomal-protein or citrate ligases — \
-their sites are built for large elaborated substrates). Rank UP a native that \
-already matches a role (e.g. a native diamine for the amine role).
+pocket built for a large, elaborated, or macromolecular native (a sugar-\
+nucleotide-peptide, a nucleotide/CoA-linked, a protein/carrier-tethered, or a \
+polymeric substrate) is an implausible host for a small, simple target \
+substrate; and the native ideally presents the free reactive group the target \
+substrate needs for that role. per_substrate_match (fg_counts, MW / \
+chain-length, Tanimoto) and the native substrate NAMES are the data for this \
+judgment; Tanimoto alone is reference-only.
+   - Rank DOWN enzymes grossly mismatched on ALL roles by size/topology (a site \
+built for a large, elaborated substrate is a poor host for a small, simple \
+target substrate). Rank UP a native that already matches a role's target \
+substrate.
    - TEMPER with PROMISCUITY / ENGINEERABILITY: enzymes are promiscuous, so do \
 NOT bury a mechanistically-compatible enzyme that acts on FREE SMALL molecules \
 merely because its native substrate is chemically dissimilar. Dissimilarity \
@@ -133,27 +133,27 @@ carrier_protein_tethered) or a polymer primer (cyanophycin-type; substrate_class
 = polymer) when the target substrates are free molecules — they cannot ligate \
 free molecules regardless of substrate identity.
 
-2. BOTH-SUBSTRATE ACCOMMODATION (a real feasibility signal to weigh — use \
+2. MULTI-SUBSTRATE ACCOMMODATION (a real feasibility signal to weigh — use \
 empirical judgment, NOT a formula, NOT a hard cutoff):
-   - A ligation joins TWO substrates, so judge whether the enzyme could \
-plausibly bind BOTH target substrates, EACH in its role: the target ACID (the \
-free diacid) against the enzyme's carboxyl/acyl substrate, and the target AMINE \
-(the free diamine) against the enzyme's amine/nucleophile substrate. Weigh BOTH \
-binding events — a candidate that could host one but clearly not the other is a \
-weak fit.
+   - When the target reaction joins MORE THAN ONE substrate, judge whether the \
+enzyme could plausibly bind EVERY target substrate, each in its mechanistic role \
+(match each target substrate to the enzyme's corresponding native substrate for \
+that role — donor to donor, acceptor to acceptor). Weigh ALL binding events — a \
+candidate that could host one target substrate but clearly not another is a weak \
+fit.
    - Reason EMPIRICALLY, as an enzymologist, from each substrate's SIZE (MW / \
 chain length / heavy-atom count) AND its FUNCTIONAL GROUPS — not a score. A \
-pocket built for a large, elaborated, or macromolecular native (a UDP-sugar-\
-peptide, a nucleotide/CoA-linked, a protein/carrier-tethered, or a polymeric \
-substrate) is an implausible host for a small simple aliphatic diacid/diamine; \
-and the native ideally presents the free reactive group the target needs for \
-that role (a free carboxylic acid; a free primary amine). per_substrate_match \
-(fg_counts, MW / chain-length, Tanimoto) and the native substrate NAMES are the \
-data for this judgment; Tanimoto alone is reference-only.
-   - Rank DOWN enzymes grossly mismatched on BOTH roles by size/topology (e.g. \
-cell-wall/peptidoglycan Mur ligases, ribosomal-protein or citrate ligases — \
-their sites are built for large elaborated substrates). Rank UP a native that \
-already matches a role (e.g. a native diamine for the amine role).
+pocket built for a large, elaborated, or macromolecular native (a sugar-\
+nucleotide-peptide, a nucleotide/CoA-linked, a protein/carrier-tethered, or a \
+polymeric substrate) is an implausible host for a small, simple target \
+substrate; and the native ideally presents the free reactive group the target \
+substrate needs for that role. per_substrate_match (fg_counts, MW / \
+chain-length, Tanimoto) and the native substrate NAMES are the data for this \
+judgment; Tanimoto alone is reference-only.
+   - Rank DOWN enzymes grossly mismatched on ALL roles by size/topology (a site \
+built for a large, elaborated substrate is a poor host for a small, simple \
+target substrate). Rank UP a native that already matches a role's target \
+substrate.
    - TEMPER with PROMISCUITY / ENGINEERABILITY: enzymes are promiscuous, so do \
 NOT bury a mechanistically-compatible enzyme that acts on FREE SMALL molecules \
 merely because its native substrate is chemically dissimilar. Dissimilarity \
