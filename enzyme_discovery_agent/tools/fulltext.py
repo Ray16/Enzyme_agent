@@ -546,32 +546,48 @@ def _register_named_enzymes_from_fulltext(
         if not obj:
             continue
         enzymes = obj.get("enzymes") or []
+        homologs = obj.get("homologs_or_related_enzymes") or []
+        rec = {
+            "title": meta.get("title", ""), "doi": doi,
+            "source": meta.get("source", ""), "format": meta.get("format", ""),
+            "enzymes": [], "homologs": [],
+        }
+
         # (a) Enzymes whose sequence this paper DEPOSITED: attach the paper's
         #     name to the candidate the deposited-accession miner already
-        #     registered — its UniProt annotation is often generic, so the paper
-        #     name is the recognisable identity.  Metadata-only (no new status).
+        #     registered (its UniProt annotation is often generic).  Enzymes
+        # (b) named but not deposited here: resolve by name and register,
+        #     carrying the paper's name as the candidate's label.
+        def _handle(nm, org, gb, bucket):
+            nm = (nm or "").strip()
+            org = org or ""
+            accs = []
+            if gb:
+                accs = _resolve_embl_accession(gb)
+                for acc in accs:
+                    if nm:
+                        update_candidate_registry(run, acc, None, {"literature_name": nm})
+            elif nm:
+                acc = _resolve_named_enzyme(nm, org)
+                if acc:
+                    accs = [acc]
+                    if acc not in already and len(registered) < remaining:
+                        already.add(acc)
+                        register_fn(acc, f"fulltext_named:{nm}@{doi}", nm)
+                        registered.append(acc)
+            bucket.append({"name": nm, "organism": org, "accessions": accs})
+
         for e in enzymes:
-            nm = (e.get("name") or "").strip()
-            gb = (e.get("genbank") or "").strip()
-            if not nm or not gb:
-                continue
-            for acc in _resolve_embl_accession(gb):
-                update_candidate_registry(run, acc, None, {"literature_name": nm})
-        # (b) Enzymes/homologs NAMED but not deposited here: resolve by name and
-        #     register, carrying the paper's name as the candidate's label.
-        leads = [(e.get("name"), e.get("organism")) for e in enzymes]
-        leads += [(h.get("name"), h.get("organism"))
-                  for h in (obj.get("homologs_or_related_enzymes") or [])]
-        for nm, org in leads:
-            if len(registered) >= remaining:
-                break
-            name = (nm or "").strip()
-            acc = _resolve_named_enzyme(nm, org)
-            if not acc or acc in already:
-                continue
-            already.add(acc)
-            register_fn(acc, f"fulltext_named:{name}@{doi}", name)
-            registered.append(acc)
+            _handle(e.get("name"), e.get("organism"), (e.get("genbank") or "").strip(),
+                    rec["enzymes"])
+        for h in homologs:
+            _handle(h.get("name"), h.get("organism"), "", rec["homologs"])
+        paper_records.append(rec)
+
+    try:
+        (dest / "papers_enzymes.json").write_text(json.dumps(paper_records, indent=2) + "\n")
+    except OSError:
+        pass
     return registered
 
 
