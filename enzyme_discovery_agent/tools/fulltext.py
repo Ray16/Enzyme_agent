@@ -242,7 +242,7 @@ def fetch_one(paper: dict, dest: Path) -> dict | None:
             "title": (paper.get("title") or "")[:200],
             "doi": doi, "pmcid": pmcid, "arxiv_id": arxiv,
             "source": source, "format": fmt,
-            "file": fname, "bytes": len(content),
+            "file": rel_file, "bytes": len(content),
             "text_file": text_file, "text_chars": len(text),
             "verified": True,
         }
