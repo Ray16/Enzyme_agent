@@ -771,11 +771,38 @@ def evaluate_candidate(
                             "smiles": smi,
                         })
 
-    # Fallback: if UniProt gave no substrate SMILES, try Rhea then KEGG
+    # Substrate-source cascade — measured or reported ONLY, never inferred.
+    # 1) UniProt catalyticActivity -> ChEBI -> SMILES (above; most reliable).
+    # 2) The enzyme's own Rhea reaction IDs -> ChEBI -> SMILES (still measured).
+    literature_name = ""
     if not native_substrates_info:
-        native_substrates_info = _fallback_substrate_lookup(
-            rhea_ids, ec_numbers, gene_names, protein_name
-        )
+        native_substrates_info = _fallback_substrate_lookup(rhea_ids)
+
+    # 3) Characterization paper (reported): for sparse entries (often TrEMBL)
+    # with no structured reaction, read THIS enzyme's paper and take the native
+    # substrates it reports, plus the name the paper gives the enzyme.  No
+    # EC-archetype or homology guessing feeds the substrate axis.
+    if not native_substrates_info and llm_client is not None:
+        try:
+            from enzyme_discovery_agent.tools.literature_extraction import (
+                extract_substrates_and_mechanism,
+            )
+            source_tool = existing.get("metadata", {}).get("source_tool", "")
+            lit = extract_substrates_and_mechanism(
+                run_dir, accession, source_tool, protein_name, llm_client,
+                query=target_reaction_type, organism=organism,
+            )
+            if lit and lit.get("paper_relevant"):
+                for ns in lit.get("native_substrates") or []:
+                    if ns.get("smiles"):
+                        native_substrates_info.append({
+                            "chebi_id": "", "name": ns.get("name", ""),
+                            "smiles": ns["smiles"], "source": "literature",
+                        })
+                literature_name = (lit.get("enzyme_name_in_paper") or "").strip()
+        except Exception as e:  # never let the fallback block evaluation
+            logger.debug("literature substrate fallback failed for %s: %s",
+                         accession, e)
 
     # Substrate similarity
     substrate_similarity = {}
