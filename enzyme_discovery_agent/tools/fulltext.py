@@ -643,8 +643,11 @@ def mine_and_register_fulltext_accessions(
     # 3. Register UniProt directly; resolve GenBank -> UniProt (cluster-scale).
     registered: list[str] = []
 
-    def _register(acc: str, source: str):
-        update_candidate_registry(run, acc, "discovered", metadata={"source_tool": source})
+    def _register(acc: str, source: str, lit_name: str = ""):
+        meta = {"source_tool": source}
+        if lit_name:
+            meta["literature_name"] = lit_name
+        update_candidate_registry(run, acc, "discovered", metadata=meta)
         registered.append(acc)
 
     for acc in sorted(uniprot):
