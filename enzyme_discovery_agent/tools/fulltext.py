@@ -228,7 +228,7 @@ def fetch_one(paper: dict, dest: Path, basename: str | None = None) -> dict | No
         content, fmt = got
         # Clean layout: PDFs at the top level; XML and extracted text in their
         # own subfolders; every file named by the paper TITLE.
-        base = _paper_basename(paper, key, dest)
+        base = basename or _paper_basename(paper, key, dest)
         rel_file = f"xml/{base}.xml" if fmt == "xml" else f"{base}.{fmt}"
         src_path = dest / rel_file
         src_path.parent.mkdir(parents=True, exist_ok=True)
