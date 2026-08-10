@@ -43,10 +43,15 @@ class RunFinalizer:
                     artifact = json.load(handle)
                 result = artifact.get("result", artifact)
                 data = result.get("data", result)
+                # Drop failed evaluations (e.g. "could not fetch UniProt entry"):
+                # their data is None, they are not candidates, and the report /
+                # CSV / enrichment consumers all assume a dict here.
+                if not isinstance(data, dict):
+                    continue
                 # Exclude non-enzymes (regulators/transporters that co-occur in the
                 # same gene clusters); they are not candidates and must not appear
                 # as families in the report.
-                if isinstance(data, dict) and data.get("is_enzyme") is False:
+                if data.get("is_enzyme") is False:
                     continue
                 evaluations.append(result)
             except (OSError, json.JSONDecodeError) as exc:
