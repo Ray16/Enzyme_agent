@@ -281,10 +281,18 @@ def fetch_one(paper: dict, dest: Path, basename: str | None = None) -> dict | No
     },
 )
 def fetch_full_text(query: str, run_dir: str | None = None,
-                    max_papers: int = 8) -> dict:
+                    max_papers: int = 8, llm_client=None) -> dict:
     """Fetch + store verified full text for the top-ranked discovered papers."""
     if not run_dir:
         return {"status": "error", "summary": "No run_dir available.", "data": []}
+
+    # The model may hand max_papers back as a string ("8"); coerce so the
+    # downstream slice / consolidate_pool call never sees a non-integer.
+    try:
+        max_papers = int(max_papers)
+    except (TypeError, ValueError):
+        max_papers = 8
+    max_papers = max(1, max_papers)
 
     papers = _recover_literature_papers(run_dir)
     if not papers:
@@ -309,13 +317,29 @@ def fetch_full_text(query: str, run_dir: str | None = None,
             manifest = []
     done = {m.get("key") for m in manifest}
 
-    fetched, examined = [], 0
+    # Relevance gate BEFORE download: a semantic rank cannot tell an enzymatic
+    # transformation from a purely chemical one on the same product, nor a
+    # bond-forming reaction from its reverse — so it would pull off-topic and
+    # opposite-direction papers whose deposited accessions then pollute the
+    # candidate pool.  Gate each paper on title+abstract first; only download
+    # what passes.  Fails OPEN (keeps the paper) when no LLM is available.
+    from enzyme_discovery_agent.tools.literature_extraction import is_paper_relevant
+
+    fetched, examined, gated = [], 0, 0
     for paper in ranked:
         if len(fetched) >= max_papers:
             break
         key = _fulltext_key(paper)
         if key is None or key in done:
             continue
+        if llm_client is not None:
+            ok, reason = is_paper_relevant(
+                paper.get("title", ""), paper.get("abstract", ""), query, llm_client)
+            if not ok:
+                gated += 1
+                logger.info("fetch_full_text relevance gate dropped %s: %s",
+                            (paper.get("title") or "")[:60], reason)
+                continue
         examined += 1
         rec = fetch_one(paper, dest)
         if rec:
