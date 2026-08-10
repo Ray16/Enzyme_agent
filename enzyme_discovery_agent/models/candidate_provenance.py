@@ -69,6 +69,14 @@ def _discovery_from_source(source_tool: str) -> dict:
     if st.startswith("fulltext_uniprot"):
         return {"route": "full_text_mining", "source_tool": st,
                 "note": "UniProt accession mined from paper full text"}
+    if st.startswith("fulltext_named:"):
+        return {"route": "literature_named", "source_tool": st,
+                "note": "characterised in a paper's full text (a direct evidence source)"}
+    if st.startswith("fulltext_cited:"):
+        return {"route": "literature_cited", "source_tool": st,
+                "note": "named only as a cited/related analogue in another paper — "
+                        "a discovery LEAD; that paper does not characterise it, so "
+                        "its evidence must come from its own primary literature"}
     if "structural" in st:
         return {"route": "structural_homology", "source_tool": st}
     return {"route": "sequence_search", "source_tool": st or "search_uniprot"}
