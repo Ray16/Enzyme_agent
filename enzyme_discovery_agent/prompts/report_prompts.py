@@ -35,12 +35,13 @@ an ATP-dependent acyl-phosphate / aminoacyl-adenylate). Reason from the \
 MECHANISM, not the native pathway's downstream fate — if the native product is \
 later cyclized/polymerized/decorated in vivo, the enzyme may still make the \
 simpler amide in vitro, so that does not disqualify it.
-   - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on FREE small \
-molecules matching the target's topology (here: two free molecules — a free \
-diacid + a free diamine). Rank DOWN mechanisms that require a \
+   - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on substrates whose \
+TOPOLOGY matches the target's (free small molecules, when the target substrates \
+are free small molecules). Rank DOWN mechanisms that require a \
 carrier-protein-tethered substrate (NRPS adenylation; substrate_class = \
 carrier_protein_tethered) or a polymer primer (cyanophycin-type; substrate_class \
-= polymer) — they cannot ligate two free molecules regardless of substrate identity.
+= polymer) when the target substrates are free molecules — they cannot ligate \
+free molecules regardless of substrate identity.
 
 2. BOTH-SUBSTRATE ACCOMMODATION (a real feasibility signal to weigh — use \
 empirical judgment, NOT a formula, NOT a hard cutoff):
@@ -124,12 +125,13 @@ an ATP-dependent acyl-phosphate / aminoacyl-adenylate). Reason from the \
 MECHANISM, not the native pathway's downstream fate — if the native product is \
 later cyclized/polymerized/decorated in vivo, the enzyme may still make the \
 simpler amide in vitro, so that does not disqualify it.
-   - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on FREE small \
-molecules matching the target's topology (here: two free molecules — a free \
-diacid + a free diamine). Rank DOWN mechanisms that require a \
+   - SUBSTRATE TOPOLOGY (decisive): the mechanism must act on substrates whose \
+TOPOLOGY matches the target's (free small molecules, when the target substrates \
+are free small molecules). Rank DOWN mechanisms that require a \
 carrier-protein-tethered substrate (NRPS adenylation; substrate_class = \
 carrier_protein_tethered) or a polymer primer (cyanophycin-type; substrate_class \
-= polymer) — they cannot ligate two free molecules regardless of substrate identity.
+= polymer) when the target substrates are free molecules — they cannot ligate \
+free molecules regardless of substrate identity.
 
 2. BOTH-SUBSTRATE ACCOMMODATION (a real feasibility signal to weigh — use \
 empirical judgment, NOT a formula, NOT a hard cutoff):
