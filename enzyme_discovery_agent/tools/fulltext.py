@@ -221,13 +221,20 @@ def fetch_one(paper: dict, dest: Path) -> dict | None:
         if not got:
             continue
         content, fmt = got
-        fname = f"{_slug(key)}.{fmt}"
-        (dest / fname).write_bytes(content)
+        # Clean layout: PDFs at the top level; XML and extracted text in their
+        # own subfolders; every file named by the paper TITLE.
+        base = _paper_basename(paper, key, dest)
+        rel_file = f"xml/{base}.xml" if fmt == "xml" else f"{base}.{fmt}"
+        src_path = dest / rel_file
+        src_path.parent.mkdir(parents=True, exist_ok=True)
+        src_path.write_bytes(content)
         text = _jats_to_text(content) if fmt == "xml" else _pdf_to_text(content)
         text_file = ""
         if text:
-            text_file = f"{_slug(key)}.txt"
-            (dest / text_file).write_text(text)
+            text_file = f"txt/{base}.txt"
+            text_path = dest / text_file
+            text_path.parent.mkdir(parents=True, exist_ok=True)
+            text_path.write_text(text)
         logger.info("fulltext: fetched %s via %s (%s, %d bytes, %d chars)",
                     key, source, fmt, len(content), len(text))
         return {
