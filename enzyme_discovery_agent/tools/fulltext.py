@@ -394,31 +394,41 @@ def _entry_ecs(entry: dict) -> list[str]:
     return [e.get("value") for e in rec.get("ecNumbers", []) or [] if e.get("value")]
 
 
-def _entry_name_head(entry: dict) -> str:
+# Generic words that carry no functional signal, so they must not make two
+# unrelated proteins look coherent.
+_NAME_STOPWORDS = frozenset({
+    "protein", "putative", "probable", "uncharacterized", "hypothetical",
+    "family", "domain", "containing", "type", "chain", "subunit", "like",
+    "alpha", "beta", "gamma", "delta", "component", "related",
+})
+
+
+def _entry_name_tokens(entry: dict) -> set:
     rec = (entry.get("proteinDescription") or {}).get("recommendedName") or {}
     full = (rec.get("fullName") or {}).get("value", "")
-    toks = [t for t in re.split(r"[^A-Za-z0-9]+", full.lower()) if len(t) >= 4]
-    return " ".join(toks[:3])
+    return {
+        t for t in re.split(r"[^A-Za-z0-9]+", full.lower())
+        if len(t) >= 4 and t not in _NAME_STOPWORDS
+    }
 
 
 def _functionally_coherent(entries: list[dict]) -> bool:
-    """Do these entries denote ONE enzyme (the same function across organisms),
-    rather than unrelated proteins that merely share a gene symbol?
+    """Do these entries denote ONE enzyme (the same function, which may span
+    several organisms), rather than unrelated proteins sharing a gene symbol?
 
     A symbol can be reused for functionally different proteins across taxa, so a
     name is only trustworthy without an organism when the entries carrying it
-    agree on function.  Coherent = they share an EC number, or a common
-    protein-name head; incoherent = a symbol collision, left for the
-    organism-anchored path.
+    agree on function.  Coherent = they share an EC number, or a significant
+    (non-generic) protein-name token; incoherent = a symbol collision, left for
+    the organism-anchored path.
     """
     if len(entries) <= 1:
         return True
     ec_sets = [set(_entry_ecs(e)) for e in entries]
     if all(ec_sets) and set.intersection(*ec_sets):
         return True
-    heads = {_entry_name_head(e) for e in entries}
-    heads.discard("")
-    return len(heads) == 1
+    tok_sets = [t for t in (_entry_name_tokens(e) for e in entries) if t]
+    return bool(tok_sets) and bool(set.intersection(*tok_sets))
 
 
 def _resolve_named_enzyme(name: str, organism: str) -> str | None:
