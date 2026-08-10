@@ -443,15 +443,48 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             "data": {"seed_accession": seed_accession, "fold_id": fold_id, "members": []},
         }
 
+    # Target substrate structures — enable the substrate-resemblance dimension so
+    # a member that makes the target bond on the WRONG substrate is only tepid.
+    try:
+        ctx = json.loads((run_dir / "target_context.json").read_text())
+        target_smiles = [s.strip() for s in (ctx.get("substrate_smiles") or "").split(".")
+                         if s.strip()]
+    except (OSError, json.JSONDecodeError):
+        target_smiles = []
+
     members: list[dict] = []
+    chebi_cache: dict[str, str | None] = {}
+    n_substrate_scored = 0
     for entry in raw_members:
         acc = entry.get("primaryAccession", "")
         if not acc:
             continue
         ec = _member_ec(entry)
         native_reaction = _member_native_reaction(entry)
+
+        # Structurally score substrate resemblance for non-opposite members only,
+        # up to a cap (ChEBI lookups cost network) — direction alone tags the rest.
+        substrate_fit = None
+        if target_smiles and n_substrate_scored < _SUBSTRATE_SCORE_CAP:
+            direction_only = classify_member_reaction(
+                ec, native_reaction, target_direction, target_bonds
+            )
+            if direction_only["tag"] != "cold":
+                smiles = []
+                for cid in _member_substrate_chebis(entry):
+                    if cid not in chebi_cache:
+                        try:
+                            chebi_cache[cid] = resolve_chebi_smiles(cid)
+                        except Exception:  # noqa: BLE001
+                            chebi_cache[cid] = None
+                    if chebi_cache[cid]:
+                        smiles.append(chebi_cache[cid])
+                substrate_fit = _substrate_fit(smiles, target_smiles)
+                if substrate_fit is not None:
+                    n_substrate_scored += 1
+
         scored = classify_member_reaction(
-            ec, native_reaction, target_direction, target_bonds
+            ec, native_reaction, target_direction, target_bonds, substrate_fit
         )
         members.append({
             "accession": acc,
@@ -460,6 +493,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             "native_reaction": native_reaction,
             "direction": scored["direction"],
             "bond_types": scored["bond_types"],
+            "substrate_fit": scored["substrate_fit"],
             "tag": scored["tag"],
             "score": scored["score"],
         })
