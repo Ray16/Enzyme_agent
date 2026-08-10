@@ -284,7 +284,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str) -> dict:
         except Exception as e:  # noqa: BLE001
             logger.debug("Member count failed for %s: %s", fid, e)
     fold_id = min(
-        (f for f, c in counts.items() if 1 < c <= _MAX_FOLD_SIZE),
+        (f for f, c in counts.items() if 1 < c < _LIST_PAGE_MAX),
         key=lambda f: counts[f],
         default=None,
     )
