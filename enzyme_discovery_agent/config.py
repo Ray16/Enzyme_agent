@@ -57,8 +57,8 @@ MAX_RESULT_CHARS = 20_000
 # per distinct gene, then screens and evaluates EVERY such representative — one
 # screen per distinct enzyme, not per raw hit.  Capping here previously dropped
 # whole families before evaluation; worse, the dropped tier-2 ("uncurated")
-# bucket is exactly where TrEMBL-annotated NIS/ATP-grasp synthetases (desD, iucA,
-# mcbA, sbnE...) land, i.e. the enzymes closest to the target chemistry.
+# bucket is exactly where TrEMBL-annotated (uncurated) candidate enzymes land —
+# often the ones closest to the target chemistry.
 # Relevance filtering happens later, at the mechanism-feasibility ranking, never
 # by dropping genes before evaluation.
 EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
