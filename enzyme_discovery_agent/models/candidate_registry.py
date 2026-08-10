@@ -218,11 +218,28 @@ def extract_and_register_from_search(
     query_desc = result.get("summary", "")[:80] or f"{tool_name} search"
     data = result.get("data", {})
     registered = []
+    direction_dropped = 0
 
     if tool_name == "search_uniprot" and isinstance(data, list):
+        from enzyme_discovery_agent.chemistry_logic import classify_reaction_chemistry
+        target_direction = _target_direction(run_dir)
         for entry in data:
             acc = entry.get("accession", "")
             if not acc or not UNIPROT_ACC_RE.match(acc):
+                continue
+            ec_numbers = entry.get("ec_numbers", [])
+            native_direction = classify_reaction_chemistry(
+                ec_numbers, entry.get("catalytic_activities", []),
+            ).get("reaction_direction")
+            if _is_opposite_direction(native_direction, target_direction):
+                direction_dropped += 1
+                append_exploration_log(
+                    run_dir, entry_type="REJECT",
+                    title=f"{acc} not registered — reaction-direction mismatch",
+                    details={"Reason": (
+                        f"native reaction direction is {native_direction}, "
+                        f"opposite the target's {target_direction} direction")},
+                )
                 continue
             gene_names = entry.get("gene_names", [])
             update_candidate_registry(run_dir, acc, "discovered", metadata={
@@ -232,9 +249,21 @@ def extract_and_register_from_search(
                 "organism": entry.get("organism", ""),
                 "seq_length": entry.get("seq_length", 0),
                 "function": entry.get("function", ""),
+                "ec_numbers": ec_numbers,
                 "catalytic_activities": entry.get("catalytic_activities", []),
             })
             registered.append(acc)
+
+        # Surface the direction filter back to the agent so it learns the search
+        # targeted the OPPOSITE reaction type, and stops mining that class.
+        if direction_dropped and isinstance(result, dict):
+            result["summary"] = (
+                f"{result.get('summary', '')} | {direction_dropped} hit(s) "
+                f"excluded before registration: native reaction runs opposite the "
+                f"target's {target_direction} direction (a search for the reverse "
+                f"reaction type)."
+            )
+            result["direction_excluded"] = direction_dropped
     else:
         result_str = json.dumps(data, default=str)
         accessions = set(UNIPROT_ACC_RE.findall(result_str))
