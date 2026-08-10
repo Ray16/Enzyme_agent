@@ -107,8 +107,8 @@ def _pubchem_name_to_smiles(name: str) -> str | None:
 _SUBSTRATE_REASON_SYSTEM = (
     "At the start of an enzyme-discovery task you reason about the target reaction "
     "and its substrates. From the query, identify the CHEMICAL SUBSTRATES (the "
-    "reaction inputs / reactants the enzyme must ligate or act on) and give each "
-    "one's SMILES, reasoning as a chemist from the compound names in the query. "
+    "reaction inputs / reactants the enzyme must act on) and give each one's "
+    "SMILES, reasoning as a chemist from the compound names in the query. "
     "Return ONLY JSON: {\"substrates\":[{\"name\":\"..\",\"smiles\":\"..\"}]}. "
     "Substrates only — not enzymes, not products, not solvents or cofactors. Give "
     "a valid canonical SMILES for each. If the query names no specific substrate, "
