@@ -355,6 +355,141 @@ def _resolve_embl_accession(acc: str, cap: int = 50) -> list[str]:
     return [r.get("primaryAccession") for r in results if r.get("primaryAccession")]
 
 
+# A gene symbol: one letter then alphanumerics/-/_.  Multi-word names (e.g.
+# "amide bond synthetase") are resolved via protein_name, never gene:.
+_GENE_TOKEN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{1,20}$")
+# Bound on literature-NAMED enzymes resolved per run, and papers read for them.
+_MAX_NAMED_ENZYMES = 40
+_MAX_NAMED_PAPERS = 15
+
+
+def _uniprot_search(query: str, size: int = 5, fields: str = "accession") -> list[dict]:
+    params = {"query": query, "format": "json", "size": str(size), "fields": fields}
+    url = "https://rest.uniprot.org/uniprotkb/search?" + urllib.parse.urlencode(params)
+    try:
+        raw = request_with_retry(
+            urllib.request.Request(url, headers={"Accept": "application/json"}),
+            timeout=20,
+        )
+        return json.loads(raw.decode()).get("results", [])
+    except Exception as e:  # noqa: BLE001
+        logger.debug("uniprot search failed (%s): %s", query[:60], e)
+        return []
+
+
+def _entry_gene_names(entry: dict) -> list[str]:
+    out = []
+    for g in entry.get("genes", []) or []:
+        gn = (g.get("geneName") or {}).get("value")
+        if gn:
+            out.append(gn)
+        for syn in g.get("synonyms", []) or []:
+            if syn.get("value"):
+                out.append(syn["value"])
+    return out
+
+
+def _resolve_named_enzyme(name: str, organism: str) -> str | None:
+    """Resolve an enzyme NAMED in a paper body to a UniProt accession, using the
+    organism as a disambiguator.
+
+    A paper names query-type enzymes it deposits no sequence for (cited
+    analogues / prior art) — e.g. an amide-bond-synthetase review names DdaG,
+    DdaF, McbA.  The deposited-accession miner is blind to these (no accession in
+    the text); this recovers them by name.
+
+    Precision policy, because a bare gene symbol collides across taxa (``mcbA``
+    is E. coli microcin B17 *and* an amide synthetase):
+      * organism stated  -> organism-anchored query (precise; admits unreviewed);
+      * organism absent   -> accept ONLY when a SINGLE reviewed (Swiss-Prot)
+        entry carries that exact gene name.  ``ddaG`` has one reviewed entry
+        (E2JA32) → accepted; ``mcbA`` has several → rejected as ambiguous.
+    Returns the accession, or None when nothing resolves confidently.
+    """
+    name = (name or "").strip()
+    organism = (organism or "").strip()
+    if not name:
+        return None
+    is_gene = bool(_GENE_TOKEN_RE.match(name))
+    esc = name.replace('"', " ")
+    name_clause = f'(gene:{name} OR protein_name:"{esc}")' if is_gene else f'protein_name:"{esc}"'
+
+    if organism:
+        org = organism.replace('"', " ").strip()
+        hits = _uniprot_search(f'{name_clause} AND organism_name:"{org}"', size=5)
+        if hits:
+            hits.sort(key=lambda e: 0 if "reviewed" in str(e.get("entryType", "")).lower() else 1)
+            return hits[0].get("primaryAccession")
+
+    if is_gene:
+        reviewed = _uniprot_search(
+            f"gene:{name} AND reviewed:true", size=5, fields="accession,gene_names"
+        )
+        exact = [
+            r for r in reviewed
+            if any(gn.lower() == name.lower() for gn in _entry_gene_names(r))
+        ]
+        if len(exact) == 1:
+            return exact[0].get("primaryAccession")
+    return None
+
+
+def _register_named_enzymes_from_fulltext(
+    run, query: str, dest: Path, manifest: list[dict], llm_client, register_fn,
+    already: set, remaining: int,
+) -> list[str]:
+    """Literature-driven discovery channel: harvest enzymes NAMED in the fetched
+    papers' body text and register each as a candidate.
+
+    For each relevance-ranked paper, the LLM extracts the characterised enzymes
+    and the cited homologs/related enzymes (name + organism); each is resolved by
+    name+organism (:func:`_resolve_named_enzyme`) and registered.  Literature
+    builds on literature, so every fetched paper becomes a set of grounded leads
+    — this is the route to an enzyme mentioned only by NAME (no accession in the
+    text), which the deterministic accession miner cannot reach.  Needs an LLM;
+    no-op without one.
+    """
+    if llm_client is None or remaining <= 0:
+        return []
+    from enzyme_discovery_agent.tools.literature_extraction import extract_from_paper
+
+    registered: list[str] = []
+    for meta in manifest[:_MAX_NAMED_PAPERS]:
+        if len(registered) >= remaining:
+            break
+        tf = meta.get("text_file")
+        if not tf:
+            continue
+        txt = dest / tf
+        try:
+            text = txt.read_text(errors="ignore")
+        except OSError:
+            continue
+        if not text.strip():
+            continue
+        doi = meta.get("doi") or meta.get("key") or txt.stem
+        try:
+            obj = extract_from_paper(text, "", "", llm_client, query=query)
+        except Exception as e:  # noqa: BLE001 - never block mining
+            logger.debug("named-enzyme extraction failed for %s: %s", tf, e)
+            continue
+        if not obj:
+            continue
+        leads = [(e.get("name"), e.get("organism")) for e in (obj.get("enzymes") or [])]
+        leads += [(h.get("name"), h.get("organism"))
+                  for h in (obj.get("homologs_or_related_enzymes") or [])]
+        for nm, org in leads:
+            if len(registered) >= remaining:
+                break
+            acc = _resolve_named_enzyme(nm, org)
+            if not acc or acc in already:
+                continue
+            already.add(acc)
+            register_fn(acc, f"fulltext_named:{(nm or '').strip()}@{doi}")
+            registered.append(acc)
+    return registered
+
+
 def mine_and_register_fulltext_accessions(
     run_dir, query: str, fetch_ceiling: int = 250, max_proteins: int = 400,
     log_fn=None, llm_client=None,
