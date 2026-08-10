@@ -46,21 +46,59 @@ def _enzyme_name(metadata: dict) -> str:
 def _normalize_registry(registry: dict) -> dict:
     """Backfill display fields for registries written by older agent versions."""
     candidates = registry.setdefault("candidates", {})
-    for entry in candidates.values():
+    for key, entry in candidates.items():
         metadata = entry.setdefault("metadata", {})
-        # Keep this top-level so a human can scan candidate_registry.json
-        # without knowing the internal UniProt metadata schema.
+        # Keep these top-level so a human can scan candidate_registry.json
+        # without knowing the internal UniProt metadata schema.  ``accession`` is
+        # the functional identity (the file may be keyed by enzyme name).
+        entry.setdefault("accession", key)
         entry["enzyme_name"] = _enzyme_name(metadata)
     return registry
 
 
+def _rekey_by_accession(registry: dict) -> dict:
+    """Key candidates by their internal accession — the functional identity every
+    accessor uses — tolerating both the enzyme-name-keyed file layout and the
+    legacy accession-keyed one."""
+    out: dict = {}
+    for key, entry in registry.get("candidates", {}).items():
+        acc = entry.get("accession") or key
+        entry["accession"] = acc
+        out[acc] = entry
+    registry["candidates"] = out
+    return registry
+
+
+def _to_file_view(registry: dict) -> dict:
+    """Enzyme-name-keyed view for on-disk readability: key each candidate by its
+    enzyme name (accession when no name is known); a name shared by two
+    accessions is disambiguated with the accession, so no entry is lost. The
+    accession stays inside each entry, so :func:`_rekey_by_accession` restores
+    the functional key on load."""
+    out: dict = {}
+    for acc, entry in registry.get("candidates", {}).items():
+        entry.setdefault("accession", acc)
+        name = (entry.get("enzyme_name") or "").strip()
+        key = name or acc
+        if key in out and out[key].get("accession") != acc:
+            key = f"{name} ({acc})" if name else acc
+        base, i = key, 2
+        while key in out and out[key].get("accession") != acc:
+            key, i = f"{base} ({i})", i + 1
+        out[key] = entry
+    return {**registry, "candidates": out}
+
+
 def load_candidate_registry(run_dir: Path) -> dict:
-    """Load or initialize the candidate registry from run_dir/candidate_registry.json."""
+    """Load or initialize the candidate registry from run_dir/candidate_registry.json.
+
+    The file is keyed by enzyme name for readability; this returns it re-keyed by
+    accession (the functional identity every caller expects)."""
     path = run_dir / "candidate_registry.json"
     if path.exists():
         try:
             with open(path) as f:
-                return _normalize_registry(json.load(f))
+                return _rekey_by_accession(_normalize_registry(json.load(f)))
         except (json.JSONDecodeError, OSError):
             pass
     return {"candidates": {}}
