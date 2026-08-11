@@ -1264,7 +1264,11 @@ def generate_two_pass_explorative(
                          if ev.get("data", ev).get("requires_polymer_substrate", False)]
         rankable_evals = [ev for ev in all_evals
                           if not ev.get("data", ev).get("requires_polymer_substrate", False)]
-        ranking = _deterministic_mechanistic_ranking(rankable_evals, tier_score)
+        _stopped, _ontarget, _ = _family_relevance_partition(run_dir, all_evals)
+        ranking = _deterministic_mechanistic_ranking(
+            rankable_evals, tier_score,
+            family_rank_by_acc=_family_rank_map(_stopped, _ontarget),
+        )
         next_rank = len(ranking) + 1
         for ev in polymer_evals:
             d = ev.get("data", ev)
