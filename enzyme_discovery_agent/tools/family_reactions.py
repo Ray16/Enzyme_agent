@@ -138,6 +138,7 @@ def summarise_family_profile(members: list[dict]) -> dict:
     holistic_fits: list[float] = []
     native_chain_lengths: list[int] = []
     native_mws: list[float] = []
+    axis_vals: dict[str, list[float]] = {a: [] for a in _HOLISTIC_SIM_AXES}
     n_span_both = 0
     for m in members:
         dv = m.get("direction_vs_target") or "unknown"
@@ -149,6 +150,10 @@ def summarise_family_profile(members: list[dict]) -> dict:
             size_ratios.append(sub["size_ratio"])
         if sub.get("chain_length_similarity") is not None:
             chain_sims.append(sub["chain_length_similarity"])
+        dims = sub.get("dimensions") or {}
+        for a in _HOLISTIC_SIM_AXES:
+            if isinstance(dims.get(a), (int, float)):
+                axis_vals[a].append(dims[a])
         hf = _holistic_fit(sub)
         if hf is not None:
             holistic_fits.append(hf)
