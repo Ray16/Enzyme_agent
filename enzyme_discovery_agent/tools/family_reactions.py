@@ -179,6 +179,11 @@ def summarise_family_profile(members: list[dict]) -> dict:
         "size_ratio": _distribution(size_ratios),
         "chain_length_similarity": _distribution(chain_sims),
         "holistic_fit": _distribution(holistic_fits),
+        # Median per-axis similarity across members — the even-handed vector that
+        # drives the native-substrate-fit radar/bar for experimentalists.
+        "axis_medians": {
+            a: _distribution(v)["median"] for a, v in axis_vals.items() if v
+        },
         # Native-substrate ranges/breadth: pocket SIZE preference has direction
         # (favours larger vs smaller), and aromatic/aliphatic is not binary — some
         # members span both.  Report ranges + breadth, not a symmetric ratio/flag.
