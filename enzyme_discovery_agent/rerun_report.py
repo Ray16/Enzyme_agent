@@ -107,7 +107,9 @@ def main():
     if not args.resume or explorative_missing_or_empty:
         finalizer._run_finalization_stage(
             "explorative_report",
-            lambda: generate_report("explorative", run_dir, all_evals, query, llm_client, token_usage, log),
+            lambda: generate_two_pass_explorative(
+                run_dir, all_evals, query, llm_client, token_usage, log, top_n=args.top_n,
+            ),
         )
     finalizer._run_finalization_stage(
         "exploration_summary", lambda: write_exploration_summary(run_dir, log_fn=log),
