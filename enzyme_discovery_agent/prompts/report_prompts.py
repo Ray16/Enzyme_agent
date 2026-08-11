@@ -1001,7 +1001,7 @@ def build_pass2_profile_prompt(
     )
 
     return [
-        {"role": "system", "content": CONFIDENCE_REPORT_SYSTEM},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": "\n\n".join(parts)},
     ]
 
