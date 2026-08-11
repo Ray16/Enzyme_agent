@@ -97,6 +97,31 @@ def _distribution(values: list[float]) -> dict | None:
     return {"n": n, "min": round(vals[0], 3), "median": round(med, 3), "max": round(vals[-1], 3)}
 
 
+# Similarity axes (each already 0-1, 1 = identical) that make up the holistic
+# substrate fit.  Averaged with EQUAL weight — no axis is privileged.  The mean is
+# only a presentation/ordering aid; it is NOT a verdict (the agent reasons over the
+# full per-dimension vector, not this single number).
+_HOLISTIC_SIM_AXES = (
+    "functional_group_similarity", "mw_similarity", "volume_similarity",
+    "chain_length_similarity", "tpsa_similarity", "logp_similarity",
+)
+
+
+def _holistic_fit(sub: dict | None) -> float | None:
+    """Equal-weight mean of every available similarity axis for one member's
+    substrate fit (0-1); None when nothing resolved.  Unbiased by construction —
+    each dimension contributes equally, so ordering never favours a subset."""
+    dims = (sub or {}).get("dimensions") or {}
+    vals = [dims[a] for a in _HOLISTIC_SIM_AXES if isinstance(dims.get(a), (int, float))]
+    if not vals:  # fall back to headline axes when the full vector is unavailable
+        vals = [v for v in (
+            (sub or {}).get("functional_group_similarity"),
+            (sub or {}).get("size_ratio"),
+            (sub or {}).get("chain_length_similarity"),
+        ) if isinstance(v, (int, float))]
+    return round(sum(vals) / len(vals), 3) if vals else None
+
+
 def summarise_family_profile(members: list[dict]) -> dict:
     """Condense members into the family's GROUNDED native-reaction picture.
 
