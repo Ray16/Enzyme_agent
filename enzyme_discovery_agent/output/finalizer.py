@@ -289,7 +289,7 @@ class RunFinalizer:
         self._run_finalization_stage(
             "candidates_csv",
             lambda: generate_candidates_csv(self.run_dir, evaluations, log_fn=self.log),
-            produces=self.run_dir / "candidates.csv",
+            produces=self.run_dir / "ranked_candidates.csv",
         )
         handoff_path = self._run_finalization_stage(
             "structural_modeling_handoff",
