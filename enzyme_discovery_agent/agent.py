@@ -297,6 +297,31 @@ class EnzymeAgent:
         self._log_event("tool_call", tool_event)
         return result
 
+    def _uncovered_promising_families(self) -> list[dict]:
+        """Promising derived families that no search has drilled yet.
+
+        Reads the run's own ``mechanism_families.json`` and compares each
+        promising family's distinctive terms against every search query issued.
+        Returns the families still un-searched, so the loop can steer the agent to
+        DIFFERENT families before it finalizes.  Best-effort: any read/parse
+        failure yields an empty list (the guard simply does not fire)."""
+        try:
+            families = json.loads(
+                (self.run_dir / "mechanism_families.json").read_text()
+            )
+        except (OSError, ValueError, TypeError):
+            return []
+        try:
+            from enzyme_discovery_agent.tools.mechanism_families import (
+                unexplored_promising_families,
+            )
+            return unexplored_promising_families(
+                families, getattr(self, "_search_queries", [])
+            )
+        except Exception as exc:  # noqa: BLE001 - guard must never break the loop
+            logger.warning("coverage guard failed: %s", exc)
+            return []
+
     def _infer_phase(self, iteration: int) -> str:
         if iteration <= 3:
             return "reaction_analysis"
