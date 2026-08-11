@@ -141,7 +141,7 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
                 })
 
         if log_fn:
-            log_fn(f"  Candidates CSV:  {csv_path}")
+            log_fn(f"  Ranked candidates CSV:  {csv_path}")
 
     except Exception as e:
         logger.warning("Failed to generate candidates CSV: %s", e)
