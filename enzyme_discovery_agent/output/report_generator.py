@@ -1247,31 +1247,11 @@ def generate_two_pass_report(
             log_fn(f"  WARNING: only {n_covered}/{n_total} candidates covered — "
                    f"LLM may have truncated")
 
-    # ── Continuous grounded score + rule-based tier LABEL ─────────────────
-    # Replace the {tier: 8/5/2} buckets (which collapsed the pool into 3-4 tied
-    # values) with a continuous, explainable score per candidate — substrate fit +
-    # on-target family + CAPPED evidence — plus a tier LABEL from grounded RULES,
-    # not a percentile.  The RANK ORDER is left to the family-bound + reasoned
-    # pipeline above: that captures substrate relevance the sparse numeric fit
-    # misses, and sorting on the numeric score alone regresses (when fit is
-    # uninformative the capped evidence term dominates and fame creeps back).  So
-    # the score/tier are an informative, differentiating OVERLAY on the good order,
-    # not the order itself.
-    fold_fit = _fold_fit_map(run_dir)
-    for entry in pass1_ranking:
-        acc = entry.get("accession", "")
-        ev = acc_to_eval.get(acc)
-        if not ev:
-            continue
-        d = ev.get("data", ev)
-        score, tier, breakdown = _grounded_ranking_score(
-            d, acc in ontarget_accs, acc in stopped_accs,
-            bool(d.get("critical_warnings")), fold_fit.get(acc),
-        )
-        entry["score"] = score
-        entry["tier"] = tier
-        entry["tier_label"] = _TIER_LABEL.get(tier, "")
-        entry["score_breakdown"] = breakdown
+    # NOTE: continuous-score / rule-tier overlay under design review — see
+    # _grounded_ranking_score.  A single collapsed number either regresses the
+    # order (sorting on it lets capped evidence dominate when substrate fit is
+    # uninformative) or contradicts the reasoned rank (overlaid).  Left OFF pending
+    # the chosen design (reasoned tier bands + grounded breakdown columns).
 
     # Persist the durable ranking before asking the provider to write prose.
     # This also makes a report-generation retry/recovery independent of the
