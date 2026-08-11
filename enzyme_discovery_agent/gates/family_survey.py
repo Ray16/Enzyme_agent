@@ -127,6 +127,7 @@ class FamilySurveyGate:
             members = d.get("members") or []
             self._all_folds[got] = {
                 "fold_id": got,
+                "fold_name": d.get("fold_name"),
                 "source": source_of.get(fid, "discovered"),
                 "n_members": prof.get("n_members"),
                 "direction_vs_target_counts": prof.get("direction_vs_target_counts"),
