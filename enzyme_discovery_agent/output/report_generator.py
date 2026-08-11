@@ -957,7 +957,10 @@ def generate_two_pass_report(
     for entry in baseline:
         if len(shortlist) >= config.RANKING_FOCUS_SHORTLIST:
             break
-        ev = acc_to_eval.get(entry.get("accession", ""))
+        acc = entry.get("accession", "")
+        if acc in stopped_accs:
+            continue  # agent stopped this fold — never offer it as a top lead
+        ev = acc_to_eval.get(acc)
         if not ev:
             continue
         d = ev.get("data", ev)
