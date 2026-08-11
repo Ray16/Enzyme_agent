@@ -23,6 +23,98 @@ UNIPROT_ACC_RE = re.compile(
 )
 
 
+def family_key(metadata: dict, accession: str) -> str:
+    """Return a stable, coarse family key without relying on one gene label.
+
+    The canonical definition of "which enzyme family a candidate belongs to",
+    used both for screening (orthologs collapse to one representative) and for
+    search-novelty accounting (how many *distinct families* a search surfaced
+    versus how many redundant orthologs).  Kept here in the low-level registry
+    module so both the registry and the gates share one definition; the gates
+    re-export it as ``_family_key`` for backward compatibility.
+    """
+    genes = metadata.get("gene_names", [])
+    if genes:
+        return f"gene:{genes[0].lower()}"
+    name = re.sub(r"\b\d+\b", "", metadata.get("protein_name", "").lower())
+    name = re.sub(r"\s+", " ", name).strip()
+    return f"name:{name}" if name else f"accession:{accession}"
+
+
+def family_label(metadata: dict, accession: str) -> str:
+    """Best-available family partition key for a candidate.
+
+    Prefers the catalytic InterPro family resolved at *evaluation*
+    (``interpro_family_id`` -- multi-domain-aware, the honest family) and falls
+    back to the coarse gene/name :func:`family_key` for candidates not yet
+    evaluated.  A candidate's label therefore *sharpens* from gene-level to
+    InterPro-level as the run invests attention in it, so accuracy lands on the
+    ranked set without paying an InterPro lookup for the discarded ortholog tail.
+    """
+    ipr_id = str(metadata.get("interpro_family_id") or "").strip()
+    if ipr_id:
+        return f"ipr:{ipr_id}"
+    return family_key(metadata, accession)
+
+
+def family_display(metadata: dict, accession: str) -> str:
+    """Human-readable family name for the index (InterPro name + id when known)."""
+    ipr_id = str(metadata.get("interpro_family_id") or "").strip()
+    name = str(metadata.get("interpro_family") or "").strip()
+    if ipr_id:
+        return f"{name} ({ipr_id})" if name else ipr_id
+    return family_key(metadata, accession)
+
+
+def build_families_index(candidates: dict) -> dict:
+    """Group an accession-keyed candidate pool into a family index.
+
+    Index *over* the shared pool -- candidates keep their accession identity; a
+    family is a label with its member accessions and the furthest lifecycle
+    status any member reached.  A candidate belongs to exactly one label (its
+    best-available family), so the index is a clean partition of the pool.
+    """
+    families: dict = {}
+    for acc, info in candidates.items():
+        meta = info.get("metadata", {})
+        label = family_label(meta, acc)
+        fam = families.setdefault(label, {
+            "family": family_display(meta, acc),
+            "interpro_id": meta.get("interpro_family_id") or None,
+            "members": [],
+            "_statuses": set(),
+        })
+        fam["members"].append(acc)
+        # A family's display sharpens to the InterPro name as soon as ANY member
+        # is evaluated, even if the label is still gene-based for the others.
+        if meta.get("interpro_family_id") and not fam["interpro_id"]:
+            fam["interpro_id"] = meta.get("interpro_family_id")
+            fam["family"] = family_display(meta, acc)
+        for s in info.get("statuses", []):
+            if s.get("status"):
+                fam["_statuses"].add(s["status"])
+    for fam in families.values():
+        fam["n_members"] = len(fam["members"])
+        fam["statuses"] = sorted(fam.pop("_statuses"))
+    # Largest families first: the ortholog-heavy ones a reader wants to see.
+    return dict(sorted(families.items(), key=lambda kv: -kv[1]["n_members"]))
+
+
+def load_families(run_dir: Path) -> dict:
+    """Return the family index from the on-disk registry (current as of last write)."""
+    path = Path(run_dir) / "candidate_registry.json"
+    if path.exists():
+        try:
+            with open(path) as f:
+                fams = json.load(f).get("families")
+                if isinstance(fams, dict):
+                    return fams
+        except (json.JSONDecodeError, OSError):
+            pass
+    # Fall back to computing from the pool if an older file lacks the index.
+    return build_families_index(load_candidate_registry(run_dir).get("candidates", {}))
+
+
 def _enzyme_name(metadata: dict) -> str:
     """Return the most useful human-readable label for a registry candidate.
 
@@ -86,7 +178,12 @@ def _to_file_view(registry: dict) -> dict:
         while key in out and out[key].get("accession") != acc:
             key, i = f"{base} ({i})", i + 1
         out[key] = entry
-    return {**registry, "candidates": out}
+    # Fold a fresh family index into the file so the on-disk registry is itself
+    # partitioned by family (index-over-pool: candidates keep identity, families
+    # are a view).  Computed from the accession-keyed pool; the explicit key wins
+    # over any stale ``families`` carried in from a prior load.
+    families = build_families_index(registry.get("candidates", {}))
+    return {**registry, "candidates": out, "families": families}
 
 
 def load_candidate_registry(run_dir: Path) -> dict:
@@ -220,9 +317,36 @@ def extract_and_register_from_search(
     registered = []
     direction_dropped = 0
 
+    # Snapshot the registry BEFORE this search so novelty can be measured: a
+    # broad text search returns dozens of orthologs of the same enzyme, and the
+    # raw hit count then reads as broad discovery when it is mostly redundant
+    # re-import.  Recording new-vs-known accessions and distinct-vs-known
+    # *families* turns "50 hits" into the honest "50 hits, 1 family, 0 new".
+    _prior = load_candidate_registry(run_dir).get("candidates", {})
+    _prior_accs = set(_prior)
+    _prior_families = {
+        family_key(info.get("metadata", {}), acc) for acc, info in _prior.items()
+    }
+    _hit_families: set[str] = set()
+
+    ortholog_capped = 0
     if tool_name == "search_uniprot" and isinstance(data, list):
+        from enzyme_discovery_agent import config
         from enzyme_discovery_agent.chemistry_logic import classify_reaction_chemistry
         target_direction = _target_direction(run_dir)
+
+        # Existing representatives already registered per distinct enzyme
+        # (family_key), so the ortholog cap is GLOBAL across the run — a family
+        # that already has its quota gains no more orthologs from a later search.
+        _fam_counts: dict[str, int] = {}
+        for _acc, _info in _prior.items():
+            _fam_counts[family_key(_info.get("metadata", {}), _acc)] = \
+                _fam_counts.get(family_key(_info.get("metadata", {}), _acc), 0) + 1
+
+        # Collect direction-eligible hits, grouped by enzyme family, so we can
+        # keep only the best few representatives per family instead of every
+        # ortholog the search returned.
+        eligible: dict[str, list[dict]] = {}
         for entry in data:
             acc = entry.get("accession", "")
             if not acc or not UNIPROT_ACC_RE.match(acc):
@@ -241,18 +365,37 @@ def extract_and_register_from_search(
                         f"opposite the target's {target_direction} direction")},
                 )
                 continue
-            gene_names = entry.get("gene_names", [])
-            update_candidate_registry(run_dir, acc, "discovered", metadata={
-                "source_tool": tool_name,
-                "gene_names": gene_names,
-                "protein_name": entry.get("name", ""),
-                "organism": entry.get("organism", ""),
-                "seq_length": entry.get("seq_length", 0),
-                "function": entry.get("function", ""),
-                "ec_numbers": ec_numbers,
-                "catalytic_activities": entry.get("catalytic_activities", []),
-            })
-            registered.append(acc)
+            fk = family_key(
+                {"gene_names": entry.get("gene_names", []),
+                 "protein_name": entry.get("name", "")}, acc)
+            eligible.setdefault(fk, []).append(entry)
+
+        cap = getattr(config, "MAX_REPRESENTATIVES_PER_FAMILY", 2)
+        for fk, entries in eligible.items():
+            # Best representatives first: characterised (catalytic activity), then
+            # annotated (EC), then a Swiss-Prot-style accession, then longer chain.
+            entries.sort(key=lambda e: (
+                1 if e.get("catalytic_activities") else 0,
+                1 if e.get("ec_numbers") else 0,
+                1 if re.match(r"^[OPQ][0-9][A-Z0-9]{3}[0-9]$", e.get("accession", "")) else 0,
+                e.get("seq_length") or 0,
+            ), reverse=True)
+            slots = max(0, cap - _fam_counts.get(fk, 0))
+            for entry in entries[:slots]:
+                acc = entry.get("accession", "")
+                update_candidate_registry(run_dir, acc, "discovered", metadata={
+                    "source_tool": tool_name,
+                    "gene_names": entry.get("gene_names", []),
+                    "protein_name": entry.get("name", ""),
+                    "organism": entry.get("organism", ""),
+                    "seq_length": entry.get("seq_length", 0),
+                    "function": entry.get("function", ""),
+                    "ec_numbers": entry.get("ec_numbers", []),
+                    "catalytic_activities": entry.get("catalytic_activities", []),
+                })
+                registered.append(acc)
+                _hit_families.add(fk)
+            ortholog_capped += max(0, len(entries) - slots)
 
         # Surface the direction filter back to the agent so it learns the search
         # targeted the OPPOSITE reaction type, and stops mining that class.
@@ -272,6 +415,38 @@ def extract_and_register_from_search(
                 "source_tool": tool_name,
             })
             registered.append(acc)
+            _hit_families.add(family_key({}, acc))
+
+    # Novelty accounting: distinguish genuinely new leads from re-imported
+    # orthologs, and new families from ones already represented.  Attached to
+    # ``result`` (so the agent sees novelty, not just volume) and emitted as a
+    # structured event (so the replayable stream records the ortholog collapse).
+    n_new = sum(1 for acc in registered if acc not in _prior_accs)
+    novelty = {
+        "hits": len(data) if isinstance(data, list) else len(registered),
+        "registered": len(registered),
+        "new_accessions": n_new,
+        "known_accessions": len(registered) - n_new,
+        "distinct_families": len(_hit_families),
+        "new_families": len(_hit_families - _prior_families),
+        # Members beyond the first per family in THIS search: the ortholog
+        # redundancy the raw hit count hides.
+        "redundant_orthologs": max(0, len(registered) - len(_hit_families)),
+    }
+    if isinstance(result, dict):
+        result["novelty"] = novelty
+        if registered:
+            result["summary"] = (
+                f"{result.get('summary', '')} | {novelty['registered']} registered "
+                f"across {novelty['distinct_families']} distinct famil"
+                f"{'y' if novelty['distinct_families'] == 1 else 'ies'} "
+                f"({novelty['new_families']} new to this run); "
+                f"{novelty['known_accessions']} already-known, "
+                f"{novelty['redundant_orthologs']} extra orthologs of surfaced families."
+            )
+    if registered:
+        from enzyme_discovery_agent.models.event_log import append_event
+        append_event(run_dir, "candidates_registered", tool=tool_name, **novelty)
 
     if registered:
         labeled = []
