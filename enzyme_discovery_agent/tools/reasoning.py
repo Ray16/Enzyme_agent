@@ -46,7 +46,7 @@ def _fetch_uniprot_entry_light(accession: str) -> dict | None:
 
     url = (
         f"https://rest.uniprot.org/uniprotkb/{accession}.json"
-        f"?fields=accession,protein_name,ec,organism_name,gene_names,cc_catalytic_activity"
+        f"?fields=accession,protein_name,ec,organism_name,gene_names,cc_catalytic_activity,xref_interpro,length"
     )
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
@@ -56,6 +56,12 @@ def _fetch_uniprot_entry_light(accession: str) -> dict | None:
         return None
 
     parsed = _parse_uniprot_json(data)
+    # InterPro fold ids let the screening step group representatives by fold
+    # family for relevance budgeting without a second lookup.
+    interpro_ids = [
+        x.get("id", "") for x in data.get("uniProtKBCrossReferences", [])
+        if x.get("database") == "InterPro" and x.get("id")
+    ]
     return {
         "accession": accession,
         "protein_name": parsed["protein_name"],
@@ -64,6 +70,8 @@ def _fetch_uniprot_entry_light(accession: str) -> dict | None:
         "function": parsed["function"][:300],
         "organism": parsed["organism"],
         "gene_names": parsed["gene_names"],
+        "interpro_ids": interpro_ids,
+        "seq_length": data.get("sequence", {}).get("length", 0),
     }
 
 
@@ -404,6 +412,10 @@ def screen_candidates(run_dir: Path | str, accessions: list[str]) -> dict:
                 "gene_names": entry.get("gene_names", []),
                 "function": entry.get("function", ""),
                 "seq_length": entry.get("seq_length", 0),
+                # InterPro fold ids fetched free with the light screen call; kept
+                # so the registry can group by fold before evaluation resolves the
+                # single catalytic family.
+                "interpro_ids": entry.get("interpro_ids", []),
             })
         else:
             results.append({

@@ -325,27 +325,49 @@ def fetch_full_text(query: str, run_dir: str | None = None,
     # what passes.  Fails OPEN (keeps the paper) when no LLM is available.
     from enzyme_discovery_agent.tools.literature_extraction import is_paper_relevant
 
-    fetched, examined, gated = [], 0, 0
+    # De-duplicate candidates by full-text key and drop already-fetched papers so
+    # concurrent workers never target the same output file or re-download.
+    candidates, seen_keys = [], set()
     for paper in ranked:
-        if len(fetched) >= max_papers:
-            break
         key = _fulltext_key(paper)
-        if key is None or key in done:
+        if key is None or key in done or key in seen_keys:
             continue
+        seen_keys.add(key)
+        candidates.append((key, paper))
+
+    def _gate_and_fetch(item):
+        """Relevance-gate then download ONE paper (both per-paper network/LLM
+        latency, independent across papers) — runs on a worker thread."""
+        key, paper = item
         if llm_client is not None:
             ok, reason = is_paper_relevant(
                 paper.get("title", ""), paper.get("abstract", ""), query, llm_client)
             if not ok:
-                gated += 1
-                logger.info("fetch_full_text relevance gate dropped %s: %s",
-                            (paper.get("title") or "")[:60], reason)
-                continue
-        examined += 1
-        rec = fetch_one(paper, dest)
-        if rec:
-            manifest.append(rec)
-            done.add(key)
-            fetched.append(rec)
+                return "gated", key, (paper.get("title") or "")[:60], reason, None
+        return "fetched", key, None, None, fetch_one(paper, dest)
+
+    # Download + gate papers CONCURRENTLY instead of one at a time.  Work in waves
+    # sized to the remaining need so we stop near max_papers without downloading
+    # the whole (3x) candidate pool; a full successful wave is exactly `need`, so
+    # the total never overshoots max_papers and no orphan files are left.
+    # Aggregation stays on this thread, so manifest/done/fetched need no lock.
+    fetched, examined, gated = [], 0, 0
+    i = 0
+    with ThreadPoolExecutor(max_workers=config.FULLTEXT_HARVEST_WORKERS) as pool:
+        while i < len(candidates) and len(fetched) < max_papers:
+            wave = candidates[i:i + max(1, max_papers - len(fetched))]
+            i += len(wave)
+            for kind, key, title, reason, rec in pool.map(_gate_and_fetch, wave):
+                if kind == "gated":
+                    gated += 1
+                    logger.info("fetch_full_text relevance gate dropped %s: %s",
+                                title, reason)
+                    continue
+                examined += 1
+                if rec:
+                    manifest.append(rec)
+                    done.add(key)
+                    fetched.append(rec)
 
     try:
         manifest_path.write_text(json.dumps(manifest, indent=2))

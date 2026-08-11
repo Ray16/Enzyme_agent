@@ -18,23 +18,20 @@ from enzyme_discovery_agent import config
 from enzyme_discovery_agent.chemistry_logic import classify_reaction_chemistry
 from enzyme_discovery_agent.gates import AgentState, GateResult
 from enzyme_discovery_agent.models.candidate_registry import (
+    family_key as _family_key,
     load_candidate_registry,
     update_candidate_registry,
 )
+from enzyme_discovery_agent.models.event_log import append_event
 from enzyme_discovery_agent.models.exploration_log import append_exploration_log
 from enzyme_discovery_agent.models.notebook import load_notebook
 from enzyme_discovery_agent.tools._http import request_with_retry
 
 logger = logging.getLogger("enzyme_agent")
 
-def _family_key(metadata: dict, accession: str) -> str:
-    """Return a stable, coarse family key without relying on one gene label."""
-    genes = metadata.get("gene_names", [])
-    if genes:
-        return f"gene:{genes[0].lower()}"
-    name = re.sub(r"\b\d+\b", "", metadata.get("protein_name", "").lower())
-    name = re.sub(r"\s+", " ", name).strip()
-    return f"name:{name}" if name else f"accession:{accession}"
+# ``_family_key`` is re-exported from the registry module (the canonical
+# definition) so the registry and every gate group candidates identically.
+# Kept under this name for the modules that import it from here.
 
 
 def _evidence_tier(metadata: dict) -> int:
@@ -47,12 +44,18 @@ def _evidence_tier(metadata: dict) -> int:
 
 
 def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
-    """Auto-screen a capped, diverse set of family representatives.
+    """Auto-screen a relevance-budgeted, fold-diverse set of representatives.
 
-    Groups all discovered candidates by gene name, picks the best
-    representative per gene (prefer longest sequence), and screens
-    those that haven't been screened yet.
+    Collapses orthologs to one representative per gene (prefer longest sequence),
+    then regroups those representatives by FOLD family and screens a budgeted
+    subset: every fold keeps a floor of representatives (breadth is never dropped)
+    while extra evaluation depth flows to the folds whose members' native
+    reactions most resemble the target (same reaction direction, closer
+    substrate).  The grounded family landscape is persisted as a side effect.
     """
+    import concurrent.futures
+
+    from enzyme_discovery_agent.gates.family_relevance import build_relevance_and_allocate
     from enzyme_discovery_agent.tools.reasoning import _fetch_uniprot_entry_light
 
     registry = load_candidate_registry(run_dir)
@@ -70,7 +73,9 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
         if any(s["status"] in ("screened", "evaluated") for s in info.get("statuses", [])):
             already_screened.add(acc)
 
-    representatives: list[tuple[int, int, str]] = []
+    # One representative per distinct gene (orthologs collapsed).  These are the
+    # DISTINCT enzymes; fold-relevance budgeting decides which get evaluated.
+    gene_reps: list[str] = []
     for family, members in family_groups.items():
         # Keep a member if it is known to be full-length (>=100 aa) OR if its
         # length is not known yet.  Full-text-mined accessions are registered
@@ -90,56 +95,86 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
             key=lambda x: x[1].get("metadata", {}).get("seq_length", 0),
             reverse=True,
         )
-        best_acc = members[0][0]
-        if best_acc not in already_screened:
-            representatives.append((
-                _evidence_tier(members[0][1].get("metadata", {})),
-                -members[0][1].get("metadata", {}).get("seq_length", 0),
-                best_acc,
-            ))
+        gene_reps.append(members[0][0])
 
-    # No cap: screen EVERY distinct-gene representative.  Orthologs are already
-    # collapsed to one rep per gene above, so this is one screen per DISTINCT
-    # enzyme, not per raw hit.  Capping here previously dropped whole families
-    # before evaluation — and because the tier-2 ("uncurated") bucket is where
-    # TrEMBL-annotated (uncurated) candidate enzymes land, the cap systematically
-    # discarded the enzymes often closest to the target
-    # chemistry.  Relevance filtering belongs at the mechanism-feasibility
-    # ranking, never at pre-evaluation screening.
-    representatives.sort()
-    representatives = [accession for _, _, accession in representatives]
-
-    if not representatives:
+    if not gene_reps:
         return
 
+    # Fetch light annotations (EC, catalytic activity, InterPro folds, length)
+    # for every representative up front — this is the same volume of light
+    # fetches as before (we previously fetched one per screened rep), just moved
+    # ahead of selection so fold and direction are known when budgeting.
+    def _light(acc):
+        return acc, _fetch_uniprot_entry_light(acc)
+
+    entry_by_acc: dict[str, dict] = {}
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=config.TOOL_THREAD_POOL_WORKERS
+    ) as pool:
+        for acc, entry in pool.map(_light, gene_reps):
+            if entry:
+                entry_by_acc[acc] = entry
+
+    if not entry_by_acc:
+        return
+
+    # Regroup by fold and spend the evaluation budget by grounded relevance.
+    reps = [(acc, entry_by_acc[acc]) for acc in gene_reps if acc in entry_by_acc]
+    selected, landscape = build_relevance_and_allocate(run_dir, reps)
+    if not selected:
+        # Degrade to the prior behaviour (screen every representative) rather
+        # than screen nothing, if fold budgeting produced no selection.
+        selected = set(entry_by_acc)
+
     if log_fn:
-        log_fn(f"  Auto-screening {len(representatives)} family representatives "
-               f"({len(family_groups)} families, {len(already_screened)} already screened)")
+        n_extra = sum(1 for f in landscape if f["n_selected_for_evaluation"] > 1)
+        log_fn(f"  Auto-screening {len(selected)} of {len(reps)} representatives "
+               f"across {len(landscape)} fold families "
+               f"({n_extra} given extra depth by relevance, "
+               f"{len(already_screened)} already screened)")
 
     screened_count = 0
-    for i in range(0, len(representatives), 10):
-        batch = representatives[i:i + 10]
-        for acc in batch:
-            entry = _fetch_uniprot_entry_light(acc)
-            if entry:
-                update_candidate_registry(run_dir, acc, "screened", metadata={
-                    "protein_name": entry.get("protein_name", ""),
-                    "organism": entry.get("organism", ""),
-                    "ec_numbers": entry.get("ec_numbers", []),
-                    "catalytic_activities": entry.get("catalytic_activities", []),
-                    "function": entry.get("function", ""),
-                })
-                screened_count += 1
+    for acc in selected:
+        if acc in already_screened:
+            continue
+        entry = entry_by_acc.get(acc)
+        if entry:
+            update_candidate_registry(run_dir, acc, "screened", metadata={
+                "protein_name": entry.get("protein_name", ""),
+                "organism": entry.get("organism", ""),
+                "ec_numbers": entry.get("ec_numbers", []),
+                "catalytic_activities": entry.get("catalytic_activities", []),
+                "function": entry.get("function", ""),
+                # Persist the fold ids fetched free with the light screen call so
+                # family grouping survives past this transient allocation step.
+                "interpro_ids": entry.get("interpro_ids", []),
+            })
+            screened_count += 1
 
+    # Record what was deprioritised so a bounded budget never reads as "covered
+    # everything" — the folds held at their floor are visible in the landscape.
+    floored_folds = [f for f in landscape if f["n_representatives"] > f["n_selected_for_evaluation"]]
     append_exploration_log(
         run_dir,
         entry_type="SCREEN",
-        title=f"Auto-screened {screened_count} gene representatives",
+        title=f"Auto-screened {screened_count} relevance-budgeted representatives",
         details={
-            "Total candidate families": len(family_groups),
+            "Distinct genes": len(reps),
+            "Fold families": len(landscape),
+            "Selected for evaluation": len(selected),
+            "Folds held at floor (deprioritised depth)": len(floored_folds),
             "Already screened": len(already_screened),
             "Newly screened": screened_count,
         },
+    )
+    append_event(
+        run_dir, "candidates_screened",
+        newly_screened=screened_count,
+        distinct_genes=len(reps),
+        fold_families=len(landscape),
+        selected_for_evaluation=len(selected),
+        folds_held_at_floor=len(floored_folds),
+        already_screened=len(already_screened),
     )
     if log_fn:
         log_fn(f"  Auto-screening complete: {screened_count} newly screened")
@@ -267,6 +302,11 @@ def _auto_evaluate_all(run_dir: Path, log_fn=None) -> int:
             "Total screened": len(to_evaluate),
             "Successfully evaluated": evaluated,
         },
+    )
+    append_event(
+        run_dir, "candidates_evaluated",
+        evaluated=evaluated,
+        screened_pending=len(to_evaluate),
     )
 
     return evaluated
