@@ -1003,6 +1003,120 @@ def generate_two_pass_report(
                f"{n_ranked} candidates ranked, top {len(top_evals)} profiled")
 
 
+def generate_two_pass_explorative(
+    run_dir: Path,
+    all_evals: list[dict],
+    query: str,
+    llm_client: LLMClient,
+    token_usage: TokenUsage,
+    log_fn=None,
+    top_n: int = 30,
+) -> None:
+    """Suitability-only (explorative) report, rendered by the robust two-pass path.
+
+    Mirrors ``generate_two_pass_report`` but ranks on a chemistry-only spine
+    (``evidence_tiebreak=False``: hard gate + substrate accommodation, curation/
+    citation ignored) so the order answers "which native chemistry is closest to
+    the target?" independently of how well-studied each enzyme is — a genuinely
+    different ordering from the confidence report.
+
+    Crucially it does NOT ask the model to rank+format all candidates in one
+    call (that reliably returns empty on a thinking model and dropped the old
+    explorative report into a generic-evidence fallback).  A deterministic
+    ranking is the spine; the LLM only writes profiles for the top ``top_n``.
+    """
+    import json as _json
+
+    notebook_text = get_notebook_text_for_report(run_dir)
+    all_evals = [e for e in (all_evals or [])
+                 if isinstance(e, dict) and isinstance(e.get("data", e), dict)]
+    if not all_evals:
+        if log_fn:
+            log_fn("  Skipping explorative report -- no evaluations available")
+        return
+
+    tier_score = {1: 8.0, 2: 5.0, 3: 2.0}
+    polymer_evals = [ev for ev in all_evals
+                     if ev.get("data", ev).get("requires_polymer_substrate", False)]
+    rankable_evals = [ev for ev in all_evals
+                      if not ev.get("data", ev).get("requires_polymer_substrate", False)]
+
+    # Chemistry-only spine: hard gate + substrate accommodation, evidence ignored.
+    ranking = _deterministic_mechanistic_ranking(
+        rankable_evals, tier_score, evidence_tiebreak=False
+    )
+    # Push polymer-primer candidates to the bottom — they cannot ligate two free
+    # molecules regardless of chemistry.
+    next_rank = len(ranking) + 1
+    for ev in polymer_evals:
+        d = ev.get("data", ev)
+        acc = d.get("accession", "")
+        if not acc:
+            continue
+        ranking.append({
+            "rank": next_rank, "accession": acc,
+            "gene": (d.get("gene_names") or [""])[0],
+            "score": 1.0, "tier": 3,
+            "rationale": "Polymer substrate enzyme — requires primer, cannot ligate two free molecules.",
+        })
+        next_rank += 1
+
+    acc_to_eval = {ev.get("data", ev).get("accession", ""): ev for ev in all_evals}
+    ranking = _collapse_orthologs(ranking, acc_to_eval)
+    for i, entry in enumerate(ranking, start=1):
+        entry["rank"] = i
+
+    # Persist the durable chemistry ranking before the provider writes prose, so
+    # a retry/recovery is independent of the second call.
+    (run_dir / "explorative_ranking.json").write_text(_json.dumps(ranking, indent=2) + "\n")
+
+    top_accs = [r["accession"] for r in ranking[:top_n] if r.get("accession")]
+    top_evals = [acc_to_eval[acc] for acc in top_accs if acc in acc_to_eval]
+
+    if log_fn:
+        log_fn(f"  Explorative report: chemistry-ranked {len(ranking)} distinct "
+               f"entries; writing profiles for top {len(top_evals)}")
+
+    messages = build_pass2_profile_prompt(
+        query, top_evals, ranking, notebook_text,
+        system_prompt=EXPLORATIVE_REPORT_SYSTEM,
+        report_label="suitability-focused (explorative)",
+    )
+    temperature = config.EXPLORATIVE_REPORT_TEMPERATURE
+    if temperature is None:
+        temperature = config.LLM_TEMPERATURE
+
+    report_text = ""
+    try:
+        response = llm_client.call(
+            messages=messages, temperature=temperature,
+            timeout=max(config.LLM_TIMEOUT, 900),
+        )
+        if response is not None:
+            token_usage.record("explorative_report", response)
+            report_text = strip_preamble(response.choices[0].message.content or "")
+    except Exception as exc:
+        logger.warning("Explorative pass-2 call failed: %s", exc)
+
+    if is_error_text(report_text):
+        if log_fn:
+            log_fn("  Explorative report empty; retrying with compact LLM prompt")
+        report_text = _retry_compact_llm_report(llm_client, query, all_evals, ranking)
+
+    if is_error_text(report_text):
+        # Never emit a stub: render the chemistry ranking deterministically.
+        if log_fn:
+            log_fn("  Explorative report still empty; writing deterministic ranking")
+        _write_deterministic_report(
+            run_dir, "report_explorative.md", query, all_evals, ranking=ranking
+        )
+        return
+
+    (run_dir / "report_explorative.md").write_text(report_text)
+    if log_fn:
+        log_fn(f"  Explorative report: {len(report_text)} chars")
+
+
 def generate_report(
     report_type: str,
     run_dir: Path,
