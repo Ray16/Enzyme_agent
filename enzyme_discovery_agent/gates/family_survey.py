@@ -21,82 +21,127 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from enzyme_discovery_agent.gates import AgentState, GateResult
-from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
 from enzyme_discovery_agent.tool_registry import execute_tool
 
 logger = logging.getLogger("enzyme_agent")
 
-_MAX_SEEDS = 8          # candidates whose folds we survey (deduped by fold)
-_MAX_FOLDS_SHOWN = 6    # folds presented back to the agent
-_WORKERS = 4
+_MAX_NEW_FOLDS_PER_FIRING = 16   # folds surveyed per firing (bounds compute)
+_MAX_FOLDS_SHOWN = 12            # folds presented back to the agent
+_WORKERS = 6
 
 
 class FamilySurveyGate:
-    """Auto-run the family-reaction survey and inject the grounded family map."""
+    """Comprehensively survey the InterPro folds relevant to the run and inject
+    the grounded family map.
+
+    Folds come from TWO sources so no relevant family is missed: (1) each derived
+    mechanism family resolved to a fold via search_interpro (covers a family with
+    no discovered candidate yet), and (2) the most-specific fold of every distinct
+    gene in the discovered pool (covers a discovered-but-unscreened family — e.g.
+    a highly target-like ligase that never got screened).  Accumulates across
+    firings and re-runs as the discovered pool grows, so late-discovered families
+    are surveyed too.
+    """
+
+    # Cap on firings: the survey accumulates folds, so a few passes cover the pool
+    # as it grows without re-surveying folds already done.
+    _MAX_ATTEMPTS = 6
 
     def __init__(self, log_fn=None):
         self.log = log_fn or (lambda *a, **k: None)
+        self._attempts = 0
+        self._last_attempt_count = -1
+        self._surveyed_folds: set[str] = set()   # folds already surveyed
+        self._all_folds: dict[str, dict] = {}     # fold_id -> landscape entry
+        self._count_cache: dict[str, int] = {}    # fold -> reviewed-member count
+        self._fold_cache: dict[str, str | None] = {}  # accession -> most-specific fold
 
     def should_fire(self, state: AgentState) -> bool:
-        # After families are derived and enough candidate seeds exist to survey.
+        # After families are derived and some candidates exist.  Re-fire as the
+        # pool grows so folds discovered later get surveyed too; each firing only
+        # surveys folds NOT already done, so re-runs stay cheap.
         return (
             not state.family_survey_done
             and state.mechanism_families_done
             and state.candidate_count >= 3
+            and self._attempts < self._MAX_ATTEMPTS
+            and state.candidate_count > self._last_attempt_count
         )
 
-    def _seeds(self, run_dir) -> list[str]:
-        """Representative candidate accessions to survey, best-characterised first."""
-        registry = load_candidate_registry(run_dir).get("candidates", {})
-        scored = []
-        for acc, info in registry.items():
-            statuses = {s.get("status") for s in info.get("statuses", [])}
-            if "rejected" in statuses:
-                continue
-            # Prefer evaluated > screened > discovered as seeds.
-            rank = (0 if "evaluated" in statuses else
-                    1 if "screened" in statuses else 2)
-            scored.append((rank, acc))
-        scored.sort()
-        return [acc for _, acc in scored[:_MAX_SEEDS]]
+    def _derived_families(self, run_dir) -> list[dict]:
+        try:
+            return json.loads((run_dir / "mechanism_families.json").read_text())
+        except (OSError, json.JSONDecodeError):
+            return []
 
     def execute(self, state: AgentState) -> GateResult:
+        from enzyme_discovery_agent.gates.family_relevance import collect_survey_folds
+
         run_dir = state.run_dir
-        seeds = self._seeds(run_dir)
-        if not seeds:
-            return GateResult(intercept=False, state_updates={"family_survey_done": True})
+        self._attempts += 1
+        self._last_attempt_count = state.candidate_count
+        # Only give up permanently once retries are exhausted; an empty early
+        # attempt should leave the gate open to retry with more seeds.
+        give_up = {"family_survey_done": True} if self._attempts >= self._MAX_ATTEMPTS else {}
+
+        # Comprehensive fold set: derived families (via search_interpro) + every
+        # distinct discovered gene's fold.  Only survey folds not already done.
+        targets = collect_survey_folds(
+            run_dir, self._derived_families(run_dir),
+            self._count_cache, self._fold_cache,
+        )
+        source_of = {t["fold_id"]: t["source"] for t in targets}
+        new_folds = [t["fold_id"] for t in targets
+                     if t["fold_id"] not in self._surveyed_folds][:_MAX_NEW_FOLDS_PER_FIRING]
+        if not new_folds and not self._all_folds:
+            if give_up:
+                self.log("  Gate: family survey resolved no surveyable folds after "
+                         f"{self._attempts} attempts; proceeding without a landscape")
+            return GateResult(intercept=False, state_updates=give_up)
+        if not new_folds:
+            # Nothing new this pass; leave the gate open for later growth.
+            return GateResult(intercept=False, state_updates=give_up)
 
         inj = {"run_dir": str(run_dir)}
 
-        def _survey(acc):
+        def _survey(fid):
             try:
                 return execute_tool("survey_family_reactions",
-                                    {"seed_accession": acc}, injected_args=inj)
+                                    {"interpro_id": fid}, injected_args=inj)
             except Exception as exc:  # noqa: BLE001 - never let a survey crash the loop
-                logger.debug("family survey failed for %s: %s", acc, exc)
+                logger.debug("family survey failed for %s: %s", fid, exc)
                 return None
 
         with ThreadPoolExecutor(max_workers=_WORKERS) as pool:
-            results = list(pool.map(_survey, seeds))
+            results = list(pool.map(_survey, new_folds))
 
-        # Keep one landscape entry per DISTINCT fold (candidates share folds).
-        folds: dict[str, dict] = {}
-        for r in results:
+        for fid, r in zip(new_folds, results):
+            self._surveyed_folds.add(fid)
             if not r or r.get("status") != "success":
                 continue
             d = r.get("data") or {}
-            fid = d.get("fold_id")
-            if not fid or fid in folds:
+            got = d.get("fold_id") or fid
+            if got in self._all_folds:
                 continue
             prof = d.get("family_reaction_profile", {})
             members = d.get("members") or []
-            folds[fid] = {
-                "fold_id": fid,
-                "seed": d.get("seed_accession"),
+            self._all_folds[got] = {
+                "fold_id": got,
+                "source": source_of.get(fid, "discovered"),
                 "n_members": prof.get("n_members"),
                 "direction_vs_target_counts": prof.get("direction_vs_target_counts"),
                 "functional_group_similarity": prof.get("functional_group_similarity"),
                 "size_ratio": prof.get("size_ratio"),
+                # Comprehensive, even-handed native-substrate-fit picture (drives
+                # the fit radar/bar for experimentalists): equal-weight holistic
+                # fit, per-axis medians, native size range, and aromatic/aliphatic
+                # breadth (a permissive pocket that spans both).
+                "holistic_fit": prof.get("holistic_fit"),
+                "axis_medians": prof.get("axis_medians"),
+                "native_chain_length_range": prof.get("native_chain_length_range"),
+                "native_mw_range": prof.get("native_mw_range"),
+                "members_spanning_aromatic_and_aliphatic":
+                    prof.get("members_spanning_aromatic_and_aliphatic"),
                 "top_members": [
                     {"accession": m.get("accession"),
                      "native_reaction": (m.get("native_reaction") or "")[:80],
@@ -106,14 +151,17 @@ class FamilySurveyGate:
                 ],
             }
 
-        if not folds:
-            return GateResult(intercept=False, state_updates={"family_survey_done": True})
+        if not self._all_folds:
+            if give_up:
+                self.log("  Gate: family survey resolved no surveyable folds after "
+                         f"{self._attempts} attempts; proceeding without a landscape")
+            return GateResult(intercept=False, state_updates=give_up)
 
         # Order folds by how closely their members resemble the target (max
         # functional-group similarity) — a presentation order over a grounded
         # number, NOT a cutoff.
         ordered = sorted(
-            folds.values(),
+            self._all_folds.values(),
             key=lambda f: -((f.get("functional_group_similarity") or {}).get("max") or -1.0),
         )[:_MAX_FOLDS_SHOWN]
 
@@ -130,7 +178,7 @@ class FamilySurveyGate:
             fg = f.get("functional_group_similarity") or {}
             sz = f.get("size_ratio") or {}
             lines.append(
-                f"- fold {f['fold_id']} (from {f.get('seed')}, {f.get('n_members')} "
+                f"- fold {f['fold_id']} ({f.get('source', 'discovered')}, {f.get('n_members')} "
                 f"reviewed members): direction {f.get('direction_vs_target_counts')}; "
                 f"functional-group similarity max {fg.get('max')} / median {fg.get('median')}; "
                 f"size ratio max {sz.get('max')} / median {sz.get('median')}"
@@ -145,8 +193,10 @@ class FamilySurveyGate:
         landscape_block = "\n".join(lines)
 
         guidance = (
-            "FAMILY LANDSCAPE (auto-surveyed from your candidates' fold families). "
-            "For each fold below are GROUNDED NUMBERS — how its reviewed members' "
+            "FAMILY LANDSCAPE (auto-surveyed comprehensively: your derived "
+            "mechanism families resolved via InterPro, PLUS every distinct fold "
+            "your discovered candidates fall into — so no relevant family is "
+            "missed). For each fold below are GROUNDED NUMBERS — how its reviewed members' "
             "native reactions compare to the target: direction vs target, and how "
             "closely their native substrates resemble the target (functional-group "
             "overlap, size ratio). No cutoff or label is applied — YOU reason over "
@@ -157,19 +207,30 @@ class FamilySurveyGate:
             "substrates are far larger / decorated with extra groups. Prefer reading "
             "the resembling members' OWN characterizing papers over broad keyword "
             "search.\n"
-            f"{landscape_block}"
+            f"{landscape_block}\n\n"
+            "THEN ACT ON THIS: call set_family_focus(stop=[...], expand=[...], "
+            "reasons={fold_id: why}) using the InterPro fold ids listed above — "
+            "STOP the folds whose members' native substrates are unlike the target "
+            "(peptide, amino acid, nucleotide, sugar, or cofactor) or run the "
+            "opposite direction, and EXPAND the folds whose native reactions "
+            "resemble the target. The evaluation budget HONOURS your decision: a "
+            "stopped fold is waived from the coverage floor, so this is how you "
+            "stop wasting evaluation on off-target families. Give a one-line reason "
+            "per fold. You can revise later by calling it again."
         )
         return GateResult(
             intercept=True,
             new_messages=[
                 {"role": "assistant",
-                 "content": f"Auto-surveyed {len(ordered)} fold "
-                            f"{'family' if len(ordered) == 1 else 'families'} my "
-                            "candidates fall into; comparing their native reactions "
-                            "to the target."},
+                 "content": f"Comprehensively surveyed {len(self._all_folds)} fold "
+                            f"{'family' if len(self._all_folds) == 1 else 'families'} "
+                            "(derived mechanism families + every distinct discovered "
+                            "fold); comparing their native reactions to the target."},
                 {"role": "user", "content": guidance},
             ],
-            log_message=f"Family survey: {len(ordered)} fold(s) surveyed and "
-                        "landscape injected",
-            state_updates={"family_survey_done": True},
+            log_message=f"Family survey: {len(self._all_folds)} fold(s) surveyed "
+                        f"(+{len(new_folds)} this pass) and landscape injected",
+            # Do NOT mark done on success: re-fire as the discovered pool grows so
+            # late-appearing families get surveyed too (bounded by _MAX_ATTEMPTS).
+            state_updates=give_up,
         )
