@@ -1247,11 +1247,16 @@ def generate_two_pass_report(
             log_fn(f"  WARNING: only {n_covered}/{n_total} candidates covered — "
                    f"LLM may have truncated")
 
-    # NOTE: continuous-score / rule-tier overlay under design review — see
-    # _grounded_ranking_score.  A single collapsed number either regresses the
-    # order (sorting on it lets capped evidence dominate when substrate fit is
-    # uninformative) or contradicts the reasoned rank (overlaid).  Left OFF pending
-    # the chosen design (reasoned tier bands + grounded breakdown columns).
+    # ── Reasoned tier BANDS + grounded fact columns (replaces {8/5/2}) ────
+    # The reasoned rank above is kept as the order.  On top of it we assign a
+    # tier LABEL as CONTIGUOUS bands (a strong-lead prefix, a worth-testing middle,
+    # a weak/gated tail) and attach the GROUNDED FACTS behind each verdict —
+    # substrate fit, evidence level, family relevance, reaction direction — instead
+    # of collapsing everything into a single misleading number.  A single numeric
+    # score is deliberately NOT used: sorting on it regresses (fame dominates when
+    # substrate fit is uninformative) and overlaying it contradicts the rank.
+    _annotate_reasoned_tiers(pass1_ranking, acc_to_eval, ontarget_accs, stopped_accs,
+                             _fold_fit_map(run_dir))
 
     # Persist the durable ranking before asking the provider to write prose.
     # This also makes a report-generation retry/recovery independent of the
