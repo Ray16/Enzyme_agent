@@ -614,35 +614,31 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
 
     def _order_key(m: dict):
         sub = m.get("substrate") or {}
-        fg = sub.get("functional_group_similarity")
-        cl = sub.get("chain_length_similarity")
-        sz = sub.get("size_ratio")
-        # Grounded ordering (not a verdict): same direction, then functional-group
-        # overlap, then MAIN-CHAIN closeness, then overall size.  Chain length is
-        # ranked ahead of MW so a same-FG member with a matching main chain leads.
+        fit = _holistic_fit(sub)
+        # Bond change (reaction direction) is the reaction requirement, so it leads;
+        # then the EQUAL-WEIGHT holistic substrate fit (no axis privileged); then a
+        # stable accession tiebreak.  Ordering is a presentation aid, not a verdict.
         return (
             _dir_rank.get(m.get("direction_vs_target"), 1),
-            -(fg if fg is not None else -1.0),
-            -(cl if cl is not None else -1.0),
-            -(sz if sz is not None else -1.0),
+            -(fit if fit is not None else -1.0),
             m["accession"],
         )
 
     members.sort(key=_order_key)
     profile = summarise_family_profile(members)
 
-    fg = profile.get("functional_group_similarity")
-    cl = profile.get("chain_length_similarity")
     dv = profile.get("direction_vs_target_counts", {})
-    n_arom = profile.get("members_native_aromatic_target_lacks", 0)
+    hf = profile.get("holistic_fit")
+    clr = profile.get("native_chain_length_range")
+    n_span = profile.get("members_spanning_aromatic_and_aliphatic", 0)
     n_mem = profile.get("n_members", 0)
     fit_parts = []
-    if fg:
-        fit_parts.append(f"functional-group overlap max {fg['max']}/median {fg['median']}")
-    if cl:
-        fit_parts.append(f"main-chain-length match max {cl['max']}/median {cl['median']}")
-    if n_arom:
-        fit_parts.append(f"{n_arom}/{n_mem} members carry aromatic/ring character the target lacks")
+    if hf:
+        fit_parts.append(f"holistic fit max {hf['max']}/median {hf['median']}")
+    if clr:
+        fit_parts.append(f"native main-chain length {clr[0]}-{clr[1]}")
+    if n_span:
+        fit_parts.append(f"{n_span}/{n_mem} members act on both aromatic & aliphatic natives")
     fit_txt = "; ".join(fit_parts) if fit_parts else "substrate fit unavailable"
     logger.info(
         "Family survey: %s (fold %s, %d members); direction %s; %s",
@@ -653,11 +649,12 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
         "status": "success",
         "summary": (
             f"{source} ({fold_size} reviewed members). Direction vs target: {dv}. "
-            f"Substrate fit: {fit_txt}. These are grounded numbers — reason about BOTH "
-            f"the bond change (direction vs target) AND substrate fit: functional "
-            f"groups can match while MAIN-CHAIN LENGTH or aromatic/aliphatic character "
-            f"do not. Compare this family's distribution against the others you survey "
-            f"and expand the folds whose members most resemble the target on ALL axes."
+            f"Substrate fit ({fit_txt}). Reason HOLISTICALLY over the full per-member "
+            f"dimension vector (functional groups, MW, main-chain length, volume, "
+            f"flexibility, polarity, aromatic/ring character) TOGETHER with the bond "
+            f"change — no single axis decides. Native breadth matters: a pocket that "
+            f"spans aromatic+aliphatic or a wide size range may accept a different "
+            f"substrate class. Compare families and expand the best-fitting."
         ),
         "data": {
             "seed_accession": seed_accession or None,
