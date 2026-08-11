@@ -613,6 +613,38 @@ class EnzymeAgent:
                         "content": recovery_instruction,
                     })
                     continue
+                # Coverage guard: the agent thinks it is done, but do not finalize
+                # while a family it ITSELF derived as promising was never searched.
+                # Nudge a bounded number of times with that family's own terms,
+                # steering budget to DIFFERENT families instead of more orthologs.
+                uncovered = self._uncovered_promising_families()
+                if uncovered and self._coverage_nudges_used < config.MAX_FAMILY_COVERAGE_NUDGES:
+                    self._coverage_nudges_used += 1
+                    lines = []
+                    for fam in uncovered[:4]:
+                        terms = "; ".join(
+                            fam.get("literature_terms") or fam.get("descriptors") or []
+                        )
+                        lines.append(f"- {fam.get('name', 'family')}: {terms}")
+                    self.log(
+                        f"  Coverage checkpoint: {len(uncovered)} promising family(ies) "
+                        f"never searched; nudging targeted search "
+                        f"({self._coverage_nudges_used}/{config.MAX_FAMILY_COVERAGE_NUDGES})"
+                    )
+                    self._log_event("coverage_checkpoint", {
+                        "iteration": iteration,
+                        "uncovered_families": [f.get("name") for f in uncovered],
+                        "nudge": self._coverage_nudges_used,
+                    })
+                    messages.append({"role": "user", "content": (
+                        "COVERAGE CHECKPOINT — do not finalize yet. You derived these "
+                        "mechanism families as promising but never searched them. Run a "
+                        "TARGETED search for EACH (search_uniprot and/or primary "
+                        "literature with the terms below), then screen only the grounded "
+                        "hits. Do NOT expand more orthologs of families you already have "
+                        "— reach these DIFFERENT families:\n" + "\n".join(lines)
+                    )})
+                    continue
                 self._consecutive_no_tool_turns = 0
                 if self._confidence_report_text is None:
                     self._confidence_report_text = text_content
