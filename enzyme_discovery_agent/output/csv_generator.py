@@ -115,8 +115,12 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
 
                 writer.writerow({
                     "rank": rank_info.get("rank", ""),
-                    "score": rank_info.get("score", ""),
                     "tier": rank_info.get("tier", ""),
+                    "tier_label": rank_info.get("tier_label", ""),
+                    "substrate_fit": rank_info.get("substrate_fit", ""),
+                    "evidence_level": rank_info.get("evidence_level", ""),
+                    "family_relevance": rank_info.get("family_relevance", ""),
+                    "direction": rank_info.get("direction", ""),
                     "accession": acc,
                     "uniprot_url": f"https://www.uniprot.org/uniprot/{acc}" if acc else "",
                     "protein_name": d.get("protein_name", ""),
