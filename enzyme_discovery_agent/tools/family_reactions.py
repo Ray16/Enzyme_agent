@@ -697,6 +697,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
         "data": {
             "seed_accession": seed_accession or None,
             "fold_id": fold_id,
+            "fold_name": interpro_name(fold_id),
             "fold_size": fold_size,
             "target_direction": target_direction,
             "target_bond_types": sorted(target_bonds),
