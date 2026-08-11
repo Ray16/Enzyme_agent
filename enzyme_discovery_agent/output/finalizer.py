@@ -290,6 +290,13 @@ class RunFinalizer:
             lambda: write_exploration_summary(self.run_dir, log_fn=self.log),
             produces=self.run_dir / "exploration_summary.json",
         )
+        # Native-substrate-fit picture for experimentalists: a radar of per-axis
+        # fit + native pocket-size ranges for the top families (best-effort).
+        self._run_finalization_stage(
+            "family_fit_plot",
+            lambda: render_family_fit_plot(self.run_dir, log_fn=self.log),
+            produces=self.run_dir / "family_substrate_fit.png",
+        )
         self._run_finalization_stage(
             "candidates_csv",
             lambda: generate_candidates_csv(self.run_dir, evaluations, log_fn=self.log),
