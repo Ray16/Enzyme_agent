@@ -1247,6 +1247,32 @@ def generate_two_pass_report(
             log_fn(f"  WARNING: only {n_covered}/{n_total} candidates covered — "
                    f"LLM may have truncated")
 
+    # ── Continuous grounded score + rule-based tier LABEL ─────────────────
+    # Replace the {tier: 8/5/2} buckets (which collapsed the pool into 3-4 tied
+    # values) with a continuous, explainable score per candidate — substrate fit +
+    # on-target family + CAPPED evidence — and a tier LABEL from grounded rules,
+    # not a percentile.  Order by the score so rank and score agree and the whole
+    # pool is differentiated.  Gated / off-target entries carry a capped score, so
+    # they still sink to the bottom.
+    fold_fit = _fold_fit_map(run_dir)
+    for entry in pass1_ranking:
+        acc = entry.get("accession", "")
+        ev = acc_to_eval.get(acc)
+        if not ev:
+            continue
+        d = ev.get("data", ev)
+        score, tier, breakdown = _grounded_ranking_score(
+            d, acc in ontarget_accs, acc in stopped_accs,
+            bool(d.get("critical_warnings")), fold_fit.get(acc),
+        )
+        entry["score"] = score
+        entry["tier"] = tier
+        entry["tier_label"] = _TIER_LABEL.get(tier, "")
+        entry["score_breakdown"] = breakdown
+    pass1_ranking.sort(key=lambda e: -float(e.get("score") or 0.0))  # stable on ties
+    for i, entry in enumerate(pass1_ranking, start=1):
+        entry["rank"] = i
+
     # Persist the durable ranking before asking the provider to write prose.
     # This also makes a report-generation retry/recovery independent of the
     # second provider call.
