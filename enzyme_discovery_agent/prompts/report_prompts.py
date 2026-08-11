@@ -997,11 +997,28 @@ def build_pass2_profile_prompt(
         f"## Full Evaluation Data for Top {len(top_evals)} Candidates\n\n"
         + json.dumps(compact_top, indent=2, default=str)
     )
+    if authoritative_ranking:
+        order_instruction = (
+            f"Write the {report_label} report. The ranking above is authoritative "
+            "— use it for section 3 (candidate table). Write detailed Tier 1 profiles "
+            "only for the top candidates whose full data is provided above. "
+            "For candidates not in the full data, use the ranking summary above.\n\n"
+        )
+    else:
+        order_instruction = (
+            f"Write the {report_label} report. Treat the list above as the CANDIDATE "
+            "POOL, not a fixed order: RE-RANK it by biochemical suitability for the "
+            "target reaction alone — how closely each enzyme's native chemistry "
+            "(bond formed, reaction direction, substrate size/topology/functional "
+            "groups) matches the target — and do NOT let curation status, citation "
+            "depth, or structure availability change a rank position (record those "
+            "only in the Confidence column). Reason over the full per-substrate data "
+            "provided above for the top candidates. Write detailed profiles for your "
+            "top candidates; for the rest, place them by suitability using the pool "
+            "summary above.\n\n"
+        )
     parts.append(
-        f"Write the {report_label} report. The ranking above is authoritative "
-        "— use it for section 3 (candidate table). Write detailed Tier 1 profiles "
-        "only for the top candidates whose full data is provided above. "
-        "For candidates not in the full data, use the ranking summary above.\n\n"
+        order_instruction +
         "IMPORTANT — orthologs: where an entry lists 'same enzyme in N other "
         "organisms', it is ONE enzyme. Give it a SINGLE table row / profile using "
         "the representative accession, and note the organism spread (e.g. "
