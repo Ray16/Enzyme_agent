@@ -88,7 +88,7 @@ def _candidate_text(run: Path) -> str:
     """
     chunks = []
     for name in ("pass1_ranking.json", "candidate_registry.json",
-                 "exploration_summary.json", "candidates.csv"):
+                 "exploration_summary.json", "ranked_candidates.csv"):
         p = run / name
         if p.exists():
             try:
