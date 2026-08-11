@@ -1113,7 +1113,8 @@ def generate_two_pass_explorative(
         if log_fn:
             log_fn("  Explorative report still empty; writing deterministic ranking")
         _write_deterministic_report(
-            run_dir, "report_explorative.md", query, all_evals, ranking=ranking
+            run_dir, "report_explorative.md", query, all_evals, ranking=ranking,
+            ranking_filename="explorative_ranking.json",
         )
         return
 
