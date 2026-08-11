@@ -947,6 +947,7 @@ def build_pass2_profile_prompt(
     notebook_context: str = "",
     system_prompt: str = CONFIDENCE_REPORT_SYSTEM,
     report_label: str = "confidence-weighted",
+    authoritative_ranking: bool = True,
 ) -> list[dict]:
     """Build Pass 2 messages: write narrative report for top-tier candidates.
 
@@ -956,6 +957,14 @@ def build_pass2_profile_prompt(
     ``system_prompt``/``report_label`` let the same robust top-N render drive
     either report: the confidence-weighted view (default) or the suitability-
     only explorative view (``EXPLORATIVE_REPORT_SYSTEM``).
+
+    ``authoritative_ranking`` — when True the supplied ranking fixes the report
+    order (confidence view).  When False (explorative view) the ranking is only
+    the candidate POOL and the model RE-RANKS it by biochemical suitability,
+    ignoring curation/citation depth for ordering — the whole point of the
+    explorative view.  The deterministic spine cannot produce that order itself
+    when the substrate-accommodation signal is sparse, so the model does it here
+    by reasoning over the full per-substrate data provided above.
     """
     compact_top = _compact_eval_for_report(top_evals, include_pdb_ids=True)
 
