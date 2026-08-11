@@ -236,6 +236,14 @@ class EnzymeAgent:
         elapsed = _time.time() - t0
         record_search(tool_name, tool_args, result)
 
+        # Accumulate every search's query text so the family-coverage guard can
+        # tell which derived families were actually drilled vs only named.
+        _q = tool_args.get("query") or tool_args.get("term") or tool_args.get("terms")
+        if isinstance(_q, (list, tuple)):
+            _q = " ".join(str(x) for x in _q)
+        if _q:
+            self._search_queries.append(str(_q))
+
         if tool_name in ARTIFACT_CATEGORIES:
             query_desc = tool_args.get("query", tool_args.get("ec_number", tool_args.get("accession", "")))
             self._search_log.append(f"{tool_name}:{query_desc[:30]}")
