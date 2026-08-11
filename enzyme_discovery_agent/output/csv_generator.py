@@ -33,8 +33,12 @@ def _load_ranking(run_dir: Path) -> dict[str, dict]:
             continue
         info = {
             "rank": entry.get("rank"),
-            "score": entry.get("score", ""),
             "tier": entry.get("tier", ""),
+            "tier_label": entry.get("tier_label", ""),
+            "substrate_fit": entry.get("substrate_fit", ""),
+            "evidence_level": entry.get("evidence_level", ""),
+            "family_relevance": entry.get("family_relevance", ""),
+            "direction": entry.get("direction", ""),
         }
         lookup[acc] = {**info, "is_ortholog": False}
         for orth in entry.get("orthologs", []) or []:
