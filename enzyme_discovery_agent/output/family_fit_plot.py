@@ -153,7 +153,7 @@ def render_family_fit_plot(
                       alpha=0.7)
             ax_b.plot([lo, hi], [y, y], "|", color=color, markersize=10)
         ax_b.set_yticks(ys)
-        ax_b.set_yticklabels([f.get("fold_id", "?") for f in plottable], fontsize=8)
+        ax_b.set_yticklabels([_fold_label(f, max_len=28) for f in plottable], fontsize=8)
         tcl = _target_chain_length(run_dir)
         if tcl is not None:
             ax_b.axvline(tcl, color="crimson", linestyle="--", linewidth=1.4,
