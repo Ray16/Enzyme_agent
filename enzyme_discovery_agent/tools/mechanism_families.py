@@ -32,6 +32,33 @@ _SYSTEM = (
     "ligase/synthetase superfamilies that reach the same product) must each be "
     "listed. Aim for the complete set of plausible families, not just the most "
     "obvious one.\n"
+    "REQUIRED BREADTH: list AT LEAST 4 DISTINCT families, ideally 5-8, each a "
+    "genuinely different structural fold or activation chemistry (a different "
+    "activated intermediate, cofactor use, or catalytic-domain fold). Do NOT "
+    "collapse several folds into ONE broad umbrella/superfamily entry: if two "
+    "folds use different activation chemistry or belong to different structural "
+    "superfamilies, they are SEPARATE families and must be listed separately, "
+    "even when they reach the same bond. A single-family answer is wrong for "
+    "almost every bond-forming reaction — enumerate the alternatives.\n"
+    "DIRECTION CONSTRAINT (strict): include ONLY families whose NATIVE reaction "
+    "proceeds in the SAME direction as the target reaction (the direction named "
+    "or implied by the query). EXCLUDE any family whose native reaction runs the "
+    "OPPOSITE direction to the target — do NOT list a family that natively "
+    "catalyses the REVERSE transformation, even if it is theoretically reversible "
+    "or could be pushed 'in reverse' under engineered conditions. Native "
+    "direction must match the target direction; a family that natively undoes the "
+    "target transformation is not a valid family and must be omitted.\n"
+    "CHEMISTRY-MATCH CONSTRAINT (strict): every family must natively make the "
+    "SAME bond/linkage as the target, acting DIRECTLY on FREE substrates of the "
+    "same chemical class as the target inputs. EXCLUDE a family if (a) its native "
+    "product is a DIFFERENT bond/linkage than the target's, or (b) it requires "
+    "its donor to be pre-activated as a carrier-bound or otherwise chemically "
+    "activated form instead of the free substrate class the target starts from, "
+    "or (c) its native product is only an intermediate en route to — not — the "
+    "target's finished bond. Mechanistic adjacency ('a step on the way', 'could "
+    "be diverted to the target', 'shares an activation step') is NOT sufficient: "
+    "the family's OWN native transformation must itself be the target's bond on "
+    "the target's kind of free substrates, or omit it.\n"
     "For EACH family give:\n"
     "  - name: a short family / fold name (a mechanism class, not an enzyme);\n"
     "  - descriptors: annotation/domain/fold words that identify its members in "
@@ -69,13 +96,27 @@ def _clean_terms(terms) -> list[str]:
     return out
 
 
-def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: int) -> list[dict]:
-    """A single derivation call -> parsed family dicts (may be empty)."""
+def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: int,
+                 exclude: list[str] | None = None) -> list[dict]:
+    """A single derivation call -> parsed family dicts (may be empty).
+
+    ``exclude`` names families already found on prior attempts; the model is
+    asked for ADDITIONAL distinct folds beyond them, so a retry broadens the set
+    instead of repeating the first (often single, umbrella) answer.
+    """
     from enzyme_discovery_agent import config
 
     user = f"Target reaction / query: {query}"
     if substrate_smiles:
         user += f"\nSubstrate SMILES: {substrate_smiles}"
+    if exclude:
+        user += (
+            "\n\nYou have ALREADY listed these families: " + "; ".join(exclude) +
+            ".\nList ONLY ADDITIONAL, genuinely DISTINCT folds/activation "
+            "chemistries NOT already covered above — different structural "
+            "superfamilies or a different activated intermediate/cofactor. Do "
+            "not restate or rename the ones above."
+        )
     try:
         response = llm_client.call(
             messages=[{"role": "system", "content": _SYSTEM},
@@ -117,7 +158,7 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
 
 def derive_mechanism_families(
     query: str, substrate_smiles: str, llm_client, max_families: int = 8,
-    min_families: int = 4, max_attempts: int = 3,
+    min_families: int = 4, max_attempts: int = 4,
 ) -> list[dict]:
     """Derive the distinct mechanism families that can catalyse the reaction.
 
@@ -134,7 +175,12 @@ def derive_mechanism_families(
     families: list[dict] = []
     seen: set[str] = set()
     for _ in range(max_attempts):
-        for fam in _derive_once(query, substrate_smiles, llm_client, max_families):
+        # After the first attempt, tell the model what it already produced so a
+        # retry ADDS distinct folds rather than repeating a single umbrella
+        # family (the observed collapse mode) that the name-dedup then discards.
+        exclude = [f["name"] for f in families] or None
+        for fam in _derive_once(query, substrate_smiles, llm_client, max_families,
+                                exclude=exclude):
             key = fam["name"].casefold()
             if key in seen:
                 continue
@@ -219,3 +265,55 @@ def rank_families_by_substrate_resemblance(
     # Any family the ranker omitted keeps its original relative order at the end.
     ordered.extend(by_key.values())
     return ordered
+
+
+# Generic tokens shared across bond-forming mechanism families — useless for
+# deciding whether a SPECIFIC family was actually searched, because they appear
+# in almost every family's description.  Answer-agnostic: these are reaction-
+# shape words, not any enzyme or answer name.
+_GENERIC_FAMILY_TOKENS = frozenset({
+    "atp", "adp", "amp", "gtp", "dependent", "fold", "domain", "superfamily",
+    "family", "enzyme", "ligase", "synthetase", "synthase", "transferase",
+    "bond", "acid", "amine", "amino", "free", "carboxylate", "carboxylic",
+    "intermediate", "substrate", "primary", "secondary", "group", "type",
+    "like", "variant", "binding", "active", "site", "metal", "cofactor",
+    "reaction", "formation", "class", "catalytic", "mechanism", "nucleotide",
+    "and", "the", "of", "with", "via", "for", "an", "a",
+})
+
+
+def _family_search_tokens(fam: dict) -> set[str]:
+    """Distinctive lowercase tokens for a derived family (name + descriptors),
+    minus the generic reaction vocabulary shared by all families."""
+    text = " ".join([
+        str(fam.get("name", "")),
+        " ".join(fam.get("descriptors") or []),
+    ]).lower()
+    toks = re.findall(r"[a-z][a-z0-9\-]{2,}", text)
+    return {t for t in toks if t not in _GENERIC_FAMILY_TOKENS}
+
+
+def unexplored_promising_families(
+    families: list[dict],
+    search_queries: list[str],
+    promise_levels: tuple[str, ...] = ("high", "medium"),
+) -> list[dict]:
+    """Promising derived families NOT yet touched by any targeted search.
+
+    A family counts as explored once ANY recorded search query contains one of
+    its DISTINCTIVE tokens (family name / descriptor words, minus generic
+    reaction vocabulary).  Used to keep a run from finalizing while a family it
+    derived as promising was never actually searched — the observed failure where
+    the pool saturated on one fold and other promising families the agent had
+    itself named were left undrilled.  Pure and deterministic (offline-testable);
+    the caller bounds how many times it forces a targeted search.
+    """
+    haystack = " ".join(search_queries).lower()
+    unexplored = []
+    for fam in families or []:
+        if str(fam.get("promise", "")).lower() not in promise_levels:
+            continue
+        toks = _family_search_tokens(fam)
+        if toks and not any(t in haystack for t in toks):
+            unexplored.append(fam)
+    return unexplored
