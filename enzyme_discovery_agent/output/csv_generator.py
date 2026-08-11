@@ -106,7 +106,12 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
                     ns["smiles"] for ns in native_subs if ns.get("smiles")
                 )
 
+                rank_info = ranking.get(acc, {})
+
                 writer.writerow({
+                    "rank": rank_info.get("rank", ""),
+                    "score": rank_info.get("score", ""),
+                    "tier": rank_info.get("tier", ""),
                     "accession": acc,
                     "uniprot_url": f"https://www.uniprot.org/uniprot/{acc}" if acc else "",
                     "protein_name": d.get("protein_name", ""),
