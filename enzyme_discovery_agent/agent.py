@@ -99,6 +99,12 @@ class EnzymeAgent:
         self._consecutive_no_tool_turns = 0
         self._notebook_tool_cooldown = 0
         self._iterations_used = 0
+        # Family-coverage guard state: every search query issued (so we can tell
+        # which derived families were actually drilled) and how many coverage
+        # nudges we have spent (bounded so coverage is encouraged, never a hard
+        # block that could stall the run).
+        self._search_queries: list[str] = []
+        self._coverage_nudges_used = 0
 
         self._gate_state = AgentState(run_dir=self.run_dir)
         self._systematic_gate = SystematicCoverageGate()
@@ -144,10 +150,25 @@ class EnzymeAgent:
             logger.info(msg)
 
     def _log_event(self, event_type: str, data: dict | None = None):
-        event = {"ts": datetime.now().isoformat(), "type": event_type, **(data or {})}
-        with self._log_lock:
-            with open(self._event_log_path, "a") as f:
-                f.write(json.dumps(event, default=str) + "\n")
+        # Delegate to the canonical, module-level event stream so the agent,
+        # gates, and the registry all write one source-of-truth JSONL with a
+        # shared lock and a monotonic per-run ``seq``.  Best-effort inside.
+        from enzyme_discovery_agent.models.event_log import append_event
+        append_event(self.run_dir, event_type, **(data or {}))
+
+    def _log_gate(self, gate: str, result, iteration: int):
+        """Log a gate that fired: to the human console (as before) and to the
+        canonical event stream, so a redirect that reshaped the run is visible
+        in the replayable record instead of only in console prose."""
+        msg = getattr(result, "log_message", None)
+        if msg:
+            self.log(f"  Gate: {msg}")
+        self._log_event("gate", {
+            "gate": gate,
+            "message": msg,
+            "intercept": bool(getattr(result, "intercept", False)),
+            "iteration": iteration,
+        })
 
     def _checkpoint_transcript(self, messages: list, iteration: int) -> None:
         """Persist the full conversation each iteration (crash-safe provenance).
@@ -257,10 +278,15 @@ class EnzymeAgent:
         count_str = f" [{count} results]" if count else ""
         self.log(f"    {status_icon} {summary[:100]}{count_str} ({elapsed:.1f}s)")
 
-        self._log_event("tool_call", {
+        tool_event = {
             "tool": tool_name, "args": tool_args, "status": status,
             "count": count or 0, "elapsed_s": round(elapsed, 2), "iteration": iteration,
-        })
+        }
+        # Carry search novelty onto the tool_call itself so every search records
+        # how much was actually new, not just how many hits it returned.
+        if isinstance(result.get("novelty"), dict):
+            tool_event["novelty"] = result["novelty"]
+        self._log_event("tool_call", tool_event)
         return result
 
     def _infer_phase(self, iteration: int) -> str:
@@ -434,6 +460,11 @@ class EnzymeAgent:
             # LLM for another turn, so the evaluation gate cannot miss a
             # screen that occurred near the iteration limit.
             self._sync_gate_state()
+            self._log_event("iteration_start", {
+                "iteration": iteration,
+                "phase": self._infer_phase(iteration),
+                "candidate_count": self._candidate_count,
+            })
 
             completion_iteration = max(
                 1, self.max_iterations - config.FINALIZATION_RESERVE_ITERATIONS + 1
@@ -511,6 +542,17 @@ class EnzymeAgent:
                                       status="failed")
 
             token_usage.record(iteration, response)
+            # Per-call token cost into the canonical stream: a 100-iteration
+            # campaign's spend is otherwise only a single total at finalize.
+            if token_usage.calls:
+                last = token_usage.calls[-1]
+                self._log_event("llm_call", {
+                    "iteration": iteration,
+                    "prompt_tokens": last.get("prompt_tokens", 0),
+                    "completion_tokens": last.get("completion_tokens", 0),
+                    "total_tokens": last.get("total_tokens", 0),
+                    "cumulative_tokens": token_usage.total_tokens,
+                })
 
             choice = response.choices[0]
             assistant_msg = choice.message
@@ -533,6 +575,18 @@ class EnzymeAgent:
             self.log(f"\n  ITERATION {iteration}/{self.max_iterations}  |  "
                      f"{len(tool_calls)} tool calls  |  "
                      f"{self._candidate_count} candidates")
+
+            # Record the model's decision for THIS turn -- the reasoning text and
+            # the batch of tools it chose -- so the "why" behind the actions is a
+            # first-class event, not something buried in the raw transcript.
+            def _tc_name(tc):
+                return tc.function.name if hasattr(tc, "function") else tc["function"]["name"]
+            self._log_event("assistant_decision", {
+                "iteration": iteration,
+                "n_tool_calls": len(tool_calls),
+                "tools": [_tc_name(tc) for tc in tool_calls],
+                "reasoning": (text_content or "").strip()[:800],
+            })
 
             # No tool calls: check if done
             if not tool_calls:
@@ -567,15 +621,22 @@ class EnzymeAgent:
                 == "evaluate_candidate"
                 for tc in tool_calls
             )
+            # A set_family_focus call is the agent acting on the family landscape.
+            # The pre-evaluation gates below intercept by POPPING the assistant
+            # message, which would discard this call before it executes — so the
+            # agent's expand/stop decision would silently never land.  When the
+            # turn carries a focus call, let NO gate intercept it: the tool runs,
+            # the decision persists to family_decisions.json, and the eval gates
+            # fire on the NEXT turn with the stops already in place.
+            has_focus_call = any(_tc_name(tc) == "set_family_focus" for tc in tool_calls)
 
             self._sync_gate_state()
             # Literature-first: harvest full-text-mined enzymes as discovery
             # seeds BEFORE the agent registers/expands candidates, so tested
             # enzymes lead and database search expands around them.
-            if self._literature_harvest_gate.should_fire(self._gate_state):
+            if not has_focus_call and self._literature_harvest_gate.should_fire(self._gate_state):
                 harvest_result = self._literature_harvest_gate.execute(self._gate_state)
-                if harvest_result.log_message:
-                    self.log(f"  Gate: {harvest_result.log_message}")
+                self._log_gate("literature_harvest", harvest_result, iteration)
                 for k, v in harvest_result.state_updates.items():
                     setattr(self._gate_state, k, v)
                 messages.pop()
@@ -585,13 +646,12 @@ class EnzymeAgent:
                 continue
             # Derive the reaction's distinct mechanism families and make each a
             # coverage requirement, searched from literature before evaluation.
-            if self._mechanism_family_gate.should_fire(self._gate_state):
+            if not has_focus_call and self._mechanism_family_gate.should_fire(self._gate_state):
                 mf_result = self._mechanism_family_gate.execute(self._gate_state)
                 for k, v in mf_result.state_updates.items():
                     setattr(self._gate_state, k, v)
                 if mf_result.intercept:
-                    if mf_result.log_message:
-                        self.log(f"  Gate: {mf_result.log_message}")
+                    self._log_gate("mechanism_family", mf_result, iteration)
                     messages.pop()
                     messages.extend(mf_result.new_messages)
                     iteration -= 1
@@ -599,22 +659,20 @@ class EnzymeAgent:
                     continue
             # Auto-run the family-reaction survey once families + seeds exist, and
             # inject the grounded family landscape so the agent navigates by it.
-            if self._family_survey_gate.should_fire(self._gate_state):
+            if not has_focus_call and self._family_survey_gate.should_fire(self._gate_state):
                 fs_result = self._family_survey_gate.execute(self._gate_state)
                 for k, v in fs_result.state_updates.items():
                     setattr(self._gate_state, k, v)
                 if fs_result.intercept:
-                    if fs_result.log_message:
-                        self.log(f"  Gate: {fs_result.log_message}")
+                    self._log_gate("family_survey", fs_result, iteration)
                     messages.pop()
                     messages.extend(fs_result.new_messages)
                     iteration -= 1
                     self.log("  Gate transition: iteration credit restored")
                     continue
-            if self._evidence_selection_gate.should_fire(self._gate_state):
+            if not has_focus_call and self._evidence_selection_gate.should_fire(self._gate_state):
                 selection_result = self._evidence_selection_gate.execute(self._gate_state)
-                if selection_result.log_message:
-                    self.log(f"  Gate: {selection_result.log_message}")
+                self._log_gate("evidence_selection", selection_result, iteration)
                 for k, v in selection_result.state_updates.items():
                     setattr(self._gate_state, k, v)
                 messages.pop()
@@ -622,11 +680,10 @@ class EnzymeAgent:
                 iteration -= 1
                 self.log("  Gate transition: iteration credit restored")
                 continue
-            if self._systematic_gate.should_fire(self._gate_state, has_eval_calls, messages):
+            if not has_focus_call and self._systematic_gate.should_fire(self._gate_state, has_eval_calls, messages):
                 sys_result = self._systematic_gate.execute(self._gate_state, messages)
                 if sys_result and sys_result.intercept:
-                    if sys_result.log_message:
-                        self.log(f"  Gate: {sys_result.log_message}")
+                    self._log_gate("systematic_coverage", sys_result, iteration)
                     for k, v in sys_result.state_updates.items():
                         setattr(self._gate_state, k, v)
                     messages.pop()
@@ -635,8 +692,10 @@ class EnzymeAgent:
                     self.log("  Gate transition: iteration credit restored")
                     continue
 
-            # Pre-evaluation gates
-            if (
+            # Pre-evaluation gates.  Skipped on a focus-call turn so the agent's
+            # set_family_focus executes and its stop/expand decisions persist
+            # before auto-screen/eval spends the budget (they fire next turn).
+            if not has_focus_call and (
                 self._gate_state.candidate_count > 0
                 or has_eval_calls
                 or self._gate_state.critique_injected
@@ -645,8 +704,7 @@ class EnzymeAgent:
                     self._gate_state, has_eval_calls, messages
                 )
                 if gate_result and gate_result.intercept:
-                    if gate_result.log_message:
-                        self.log(f"  Gate: {gate_result.log_message}")
+                    self._log_gate("pre_evaluation", gate_result, iteration)
                     for k, v in gate_result.state_updates.items():
                         setattr(self._gate_state, k, v)
                     messages.pop()
@@ -778,7 +836,12 @@ class EnzymeAgent:
         self.log(f"  Candidates:     {n_evals} evaluated")
         self.log(f"  Total tokens:   {token_usage.total_tokens:,}")
         self._log_event("run_complete", {
-            "candidates": n_evals, "total_tokens": token_usage.total_tokens,
+            "candidates": n_evals,
+            "total_tokens": token_usage.total_tokens,
+            "prompt_tokens": token_usage.total_prompt_tokens,
+            "completion_tokens": token_usage.total_completion_tokens,
+            "iterations_used": self._iterations_used,
+            "status": status,
         })
         # Close out run-level provenance: outcome, timing, tokens, and the
         # human-readable RUN_SUMMARY.md.  Best-effort; never masks the report.
