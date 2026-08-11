@@ -182,6 +182,34 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
         return None
     from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
 
+    # Member-level native characterization across ALL of a member's substrates —
+    # so breadth is visible and not collapsed to a single yes/no.  Aromatic vs
+    # aliphatic is NOT absolute: an enzyme that natively acts on BOTH (a permissive
+    # pocket) should not be excluded by one substrate's aromatic flag.  Likewise a
+    # pocket has a size PREFERENCE with direction (some favour larger substrates,
+    # some smaller), so report the native size RANGE, not just a symmetric ratio.
+    native_props = []
+    for n in member_smiles:
+        try:
+            native_props.append(compute_substrate_properties(n))
+        except Exception:  # noqa: BLE001 - one bad SMILES must not sink the member
+            continue
+    native_character = None
+    if native_props:
+        arom = any(p.is_aromatic for p in native_props)
+        aliph = any(not p.is_aromatic for p in native_props)
+        chains = [p.longest_aliphatic_chain for p in native_props]
+        mws = [p.molecular_weight for p in native_props]
+        native_character = {
+            "aromatic": arom,
+            "aliphatic": aliph,
+            # Broad specificity: acts on both aromatic and aliphatic natives (e.g.
+            # a permissive pocket) — a positive signal, not a mismatch.
+            "spans_aromatic_and_aliphatic": arom and aliph,
+            "native_chain_length_range": [min(chains), max(chains)],
+            "native_mw_range": [round(min(mws)), round(max(mws))],
+        }
+
     per_target = []
     for t in target_smiles:
         best = None
