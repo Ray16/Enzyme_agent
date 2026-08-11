@@ -266,8 +266,8 @@ class RunFinalizer:
         )
         self._run_finalization_stage(
             "explorative_report",
-            lambda: generate_report(
-                "explorative", self.run_dir, evaluations, query, self.llm, token_usage, self.log
+            lambda: generate_two_pass_explorative(
+                self.run_dir, evaluations, query, self.llm, token_usage, self.log
             ),
             produces=self.run_dir / "report_explorative.md",
         )
