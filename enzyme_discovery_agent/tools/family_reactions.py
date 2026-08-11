@@ -109,6 +109,9 @@ def summarise_family_profile(members: list[dict]) -> dict:
     distinct_reactions: list[str] = []
     fg_sims: list[float] = []
     size_ratios: list[float] = []
+    chain_sims: list[float] = []
+    n_aromatic_mismatch = 0
+    n_ring_mismatch = 0
     for m in members:
         dv = m.get("direction_vs_target") or "unknown"
         direction_counts[dv] = direction_counts.get(dv, 0) + 1
@@ -117,6 +120,12 @@ def summarise_family_profile(members: list[dict]) -> dict:
             fg_sims.append(sub["functional_group_similarity"])
         if sub.get("size_ratio") is not None:
             size_ratios.append(sub["size_ratio"])
+        if sub.get("chain_length_similarity") is not None:
+            chain_sims.append(sub["chain_length_similarity"])
+        if sub.get("native_aromatic_target_lacks"):
+            n_aromatic_mismatch += 1
+        if sub.get("native_ring_target_lacks"):
+            n_ring_mismatch += 1
         rxn = (m.get("native_reaction") or "").strip()
         if rxn and rxn not in distinct_reactions and len(distinct_reactions) < 12:
             distinct_reactions.append(rxn)
@@ -125,6 +134,12 @@ def summarise_family_profile(members: list[dict]) -> dict:
         "direction_vs_target_counts": direction_counts,
         "functional_group_similarity": _distribution(fg_sims),
         "size_ratio": _distribution(size_ratios),
+        # Main-chain-length match distribution and how many members carry
+        # aromatic/ring character the target lacks — the axes that discriminate
+        # once functional-group overlap saturates.  Facts, not a verdict.
+        "chain_length_similarity": _distribution(chain_sims),
+        "members_native_aromatic_target_lacks": n_aromatic_mismatch,
+        "members_native_ring_target_lacks": n_ring_mismatch,
         "distinct_reactions": distinct_reactions,
     }
 
