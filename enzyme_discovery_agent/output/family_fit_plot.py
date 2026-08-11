@@ -28,7 +28,7 @@ _AXES: list[tuple[str, str]] = [
     ("chain_length_similarity", "Main-chain\nlength"),
     ("volume_similarity", "Volume"),
     ("tpsa_similarity", "Polarity\n(TPSA)"),
-    ("logp_similarity", "Hydrophob.\n(logP)"),
+    ("logP_similarity", "Hydrophob.\n(logP)"),
 ]
 
 
