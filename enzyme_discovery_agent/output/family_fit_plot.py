@@ -50,9 +50,18 @@ def _target_chain_length(run_dir: Path) -> int | None:
         return None
 
 
-def _fold_short(fold_id: str, source: str | None) -> str:
-    src = (source or "").split(":")[0]
-    return f"{fold_id}" + (f"\n({src})" if src and src != "discovered" else "")
+def _fold_label(f: dict, max_len: int = 34) -> str:
+    """Human-readable family label — the InterPro NAME, never the bare id.  Uses
+    the landscape's stored name, else resolves the id, else falls back to the id."""
+    name = f.get("fold_name")
+    if not name:
+        try:
+            from enzyme_discovery_agent.tools.family_reactions import interpro_name
+            name = interpro_name(f.get("fold_id", ""))
+        except Exception:  # noqa: BLE001
+            name = None
+    name = (name or f.get("fold_id") or "?").strip()
+    return name if len(name) <= max_len else name[: max_len - 1] + "…"
 
 
 def render_family_fit_plot(
