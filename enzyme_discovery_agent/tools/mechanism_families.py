@@ -289,7 +289,9 @@ def _family_search_tokens(fam: dict) -> set[str]:
         str(fam.get("name", "")),
         " ".join(fam.get("descriptors") or []),
     ]).lower()
-    toks = re.findall(r"[a-z][a-z0-9\-]{2,}", text)
+    # Split on hyphens too, so a compound like "atp-dependent" reduces to its
+    # component words and both fall to the generic stopword filter.
+    toks = re.findall(r"[a-z][a-z0-9]{2,}", text)
     return {t for t in toks if t not in _GENERIC_FAMILY_TOKENS}
 
 
