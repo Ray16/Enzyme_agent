@@ -1167,17 +1167,24 @@ def generate_two_pass_explorative(
     except Exception as exc:
         logger.warning("Explorative pass-2 call failed: %s", exc)
 
-    if is_error_text(report_text):
-        if log_fn:
-            log_fn("  Explorative report empty; retrying with compact LLM prompt")
-        report_text = _retry_compact_llm_report(
-            llm_client, query, all_evals, ranking, suitability_first=True
-        )
+    # The long-form call reliably returns empty on this thinking model, and the
+    # compact retry is itself flaky (intermittently a truncated header stub), so
+    # retry it a couple of times and accept the first response that actually
+    # covers several ranked candidates — not merely clears the 100-char floor.
+    if not _looks_like_report(report_text, ranking):
+        for attempt in range(2):
+            if log_fn:
+                log_fn(f"  Explorative report thin; compact retry {attempt + 1}/2")
+            report_text = _retry_compact_llm_report(
+                llm_client, query, all_evals, ranking, suitability_first=True
+            )
+            if _looks_like_report(report_text, ranking):
+                break
 
-    if is_error_text(report_text):
+    if not _looks_like_report(report_text, ranking):
         # Never emit a stub: render the chemistry ranking deterministically.
         if log_fn:
-            log_fn("  Explorative report still empty; writing deterministic ranking")
+            log_fn("  Explorative report still thin; writing deterministic ranking")
         _write_deterministic_report(
             run_dir, "report_explorative.md", query, all_evals, ranking=ranking,
             ranking_filename="explorative_ranking.json",
