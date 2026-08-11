@@ -1148,7 +1148,9 @@ def generate_two_pass_explorative(
     if is_error_text(report_text):
         if log_fn:
             log_fn("  Explorative report empty; retrying with compact LLM prompt")
-        report_text = _retry_compact_llm_report(llm_client, query, all_evals, ranking)
+        report_text = _retry_compact_llm_report(
+            llm_client, query, all_evals, ranking, suitability_first=True
+        )
 
     if is_error_text(report_text):
         # Never emit a stub: render the chemistry ranking deterministically.
