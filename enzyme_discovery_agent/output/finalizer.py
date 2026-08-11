@@ -18,6 +18,7 @@ from enzyme_discovery_agent.gates.discovery_coverage import assess_discovery_cov
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
 from enzyme_discovery_agent.output.csv_generator import generate_candidates_csv
 from enzyme_discovery_agent.output.exploration_summary import write_exploration_summary
+from enzyme_discovery_agent.output.family_fit_plot import render_family_fit_plot
 from enzyme_discovery_agent.output.report_generator import (
     generate_two_pass_explorative,
     generate_two_pass_report,
