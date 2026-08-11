@@ -509,15 +509,24 @@ def _retry_compact_llm_report(
     query: str,
     all_evals: list[dict],
     ranking: list[dict] | None = None,
+    suitability_first: bool = False,
 ) -> str:
-    """Request a concise LLM report after an empty long-form completion."""
+    """Request a concise LLM report after an empty long-form completion.
+
+    ``suitability_first`` switches the compact prompt to the explorative
+    philosophy: the supplied ranking is only the candidate POOL and the model
+    RE-RANKS by biochemical suitability alone (bond/direction/substrate fit),
+    ignoring curation/citation depth for ordering — so the compact fallback,
+    which is what actually ships when the long-form call returns empty, still
+    produces a chemistry-first view distinct from the confidence report.
+    """
     import json as _json
 
     ranking = ranking or _deterministic_evidence_ranking(query, all_evals)
     facts = []
     for item in all_evals:
         data = item.get("data", item)
-        facts.append({
+        fact = {
             "accession": data.get("accession"),
             "protein_name": data.get("protein_name"),
             "gene_names": data.get("gene_names"),
@@ -525,11 +534,38 @@ def _retry_compact_llm_report(
             "ec_numbers": data.get("ec_numbers"),
             "native_activity": (data.get("catalytic_activities") or [""])[0],
             "critical_warnings": data.get("critical_warnings") or [],
-        })
+        }
+        if suitability_first:
+            # Give the model the substrate signal it needs to re-rank by chemistry.
+            subs = data.get("native_substrates") or []
+            fact["native_substrates"] = "; ".join(
+                s.get("name", "") for s in subs if s.get("name")
+            )
+            fit = _accommodation_score(data)
+            if fit is not None:
+                fact["substrate_accommodation"] = round(fit, 2)
+        facts.append(fact)
+    if suitability_first:
+        instruction = (
+            "Write a concise Markdown SUITABILITY-FOCUSED (explorative) enzyme-candidate "
+            "report using only the evidence below. Return Markdown text, beginning with '#'. "
+            "Do not return JSON, tool calls, or an empty response. Treat the ranking below as "
+            "the candidate POOL only: RE-RANK candidates by biochemical suitability for the "
+            "target reaction ALONE — how closely each native chemistry matches the target bond "
+            "formed, reaction direction, and substrate size/topology/functional groups. Do NOT "
+            "let curation status or citation depth change a rank position; note those only as a "
+            "confidence label. Push any candidate with a bond-type/direction/size critical "
+            "warning to the bottom. Always name each enzyme, never a bare accession. "
+            "Distinguish direct evidence from inference.\n\n"
+        )
+    else:
+        instruction = (
+            "Write a concise Markdown enzyme-candidate report using only the evidence below. "
+            "Return Markdown text, beginning with '#'. Do not return JSON, tool calls, or an empty response. "
+            "Preserve the supplied ranking and distinguish direct evidence from inference.\n\n"
+        )
     prompt = (
-        "Write a concise Markdown enzyme-candidate report using only the evidence below. "
-        "Return Markdown text, beginning with '#'. Do not return JSON, tool calls, or an empty response. "
-        "Preserve the supplied ranking and distinguish direct evidence from inference.\n\n"
+        instruction +
         f"Target:\n{query}\n\nRanking:\n{_json.dumps(ranking, indent=2)}\n\n"
         f"Candidate facts:\n{_json.dumps(facts, indent=2)}"
     )
