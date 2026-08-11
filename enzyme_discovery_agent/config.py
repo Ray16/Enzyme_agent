@@ -82,6 +82,12 @@ EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
 # two, missing the family neighbours of lower-ranked but distinct seeds.
 MAX_STRUCTURAL_EXPANSION_SEEDS = 6
 MIN_LITERATURE_SEARCH_ROUNDS = 3
+# Family-coverage guard: a run must not finalize while a mechanism family the
+# agent itself derived as promising (high/medium) was never targeted by a search.
+# Each unexplored family triggers a bounded targeted-search nudge; after this many
+# nudges the run may finalize anyway (escape hatch — coverage is encouraged, never
+# hard-blocked, so a family whose descriptors resist search can't stall the run).
+MAX_FAMILY_COVERAGE_NUDGES = 4
 
 # --- LLM context compaction ---
 ABSTRACT_TRUNCATE_CHARS = 200
