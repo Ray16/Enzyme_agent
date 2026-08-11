@@ -1019,16 +1019,19 @@ def generate_two_pass_explorative(
 ) -> None:
     """Suitability-only (explorative) report, rendered by the robust two-pass path.
 
-    Mirrors ``generate_two_pass_report`` but ranks on a chemistry-only spine
-    (``evidence_tiebreak=False``: hard gate + substrate accommodation, curation/
-    citation ignored) so the order answers "which native chemistry is closest to
-    the target?" independently of how well-studied each enzyme is — a genuinely
-    different ordering from the confidence report.
+    Uses the SAME robust top-N render as the confidence report instead of the
+    old single giant call that ranked+formatted every candidate at once — that
+    call reliably returned empty on a thinking model and dropped the explorative
+    report into a generic-evidence fallback (bare accessions, everything Tier 3).
 
-    Crucially it does NOT ask the model to rank+format all candidates in one
-    call (that reliably returns empty on a thinking model and dropped the old
-    explorative report into a generic-evidence fallback).  A deterministic
-    ranking is the spine; the LLM only writes profiles for the top ``top_n``.
+    The candidate POOL is the confidence report's ``pass1_ranking.json`` (an
+    LLM-focus-ranked, ortholog-collapsed, robust spine) when present; the model
+    then RE-RANKS it by biochemical suitability alone via the explorative system
+    prompt (see ``authoritative_ranking=False``).  We do NOT rank on a pure
+    chemistry spine in code because the substrate-accommodation signal is often
+    too sparse to order candidates (most sit at a neutral default), so a code
+    sort would degenerate to alphabetical; the model does the suitability
+    ordering by reasoning over the full per-substrate data.
     """
     import json as _json
 
@@ -1040,52 +1043,55 @@ def generate_two_pass_explorative(
             log_fn("  Skipping explorative report -- no evaluations available")
         return
 
-    tier_score = {1: 8.0, 2: 5.0, 3: 2.0}
-    polymer_evals = [ev for ev in all_evals
-                     if ev.get("data", ev).get("requires_polymer_substrate", False)]
-    rankable_evals = [ev for ev in all_evals
-                      if not ev.get("data", ev).get("requires_polymer_substrate", False)]
-
-    # Chemistry-only spine: hard gate + substrate accommodation, evidence ignored.
-    ranking = _deterministic_mechanistic_ranking(
-        rankable_evals, tier_score, evidence_tiebreak=False
-    )
-    # Push polymer-primer candidates to the bottom — they cannot ligate two free
-    # molecules regardless of chemistry.
-    next_rank = len(ranking) + 1
-    for ev in polymer_evals:
-        d = ev.get("data", ev)
-        acc = d.get("accession", "")
-        if not acc:
-            continue
-        ranking.append({
-            "rank": next_rank, "accession": acc,
-            "gene": (d.get("gene_names") or [""])[0],
-            "score": 1.0, "tier": 3,
-            "rationale": "Polymer substrate enzyme — requires primer, cannot ligate two free molecules.",
-        })
-        next_rank += 1
-
     acc_to_eval = {ev.get("data", ev).get("accession", ""): ev for ev in all_evals}
-    ranking = _collapse_orthologs(ranking, acc_to_eval)
-    for i, entry in enumerate(ranking, start=1):
-        entry["rank"] = i
+    tier_score = {1: 8.0, 2: 5.0, 3: 2.0}
 
-    # Persist the durable chemistry ranking before the provider writes prose, so
-    # a retry/recovery is independent of the second call.
-    (run_dir / "explorative_ranking.json").write_text(_json.dumps(ranking, indent=2) + "\n")
+    # Prefer the confidence report's durable ranking as the candidate pool; it is
+    # robust and ortholog-collapsed.  Fall back to a deterministic mechanistic
+    # spine (evidence tiebreak KEPT, so it never degenerates to alphabetical) if
+    # the explorative report is generated standalone before the confidence one.
+    ranking: list[dict] = []
+    p1_path = run_dir / "pass1_ranking.json"
+    if p1_path.exists():
+        try:
+            ranking = _json.loads(p1_path.read_text())
+        except (OSError, ValueError):
+            ranking = []
+    if not ranking:
+        polymer_evals = [ev for ev in all_evals
+                         if ev.get("data", ev).get("requires_polymer_substrate", False)]
+        rankable_evals = [ev for ev in all_evals
+                          if not ev.get("data", ev).get("requires_polymer_substrate", False)]
+        ranking = _deterministic_mechanistic_ranking(rankable_evals, tier_score)
+        next_rank = len(ranking) + 1
+        for ev in polymer_evals:
+            d = ev.get("data", ev)
+            acc = d.get("accession", "")
+            if not acc:
+                continue
+            ranking.append({
+                "rank": next_rank, "accession": acc,
+                "gene": (d.get("gene_names") or [""])[0],
+                "score": 1.0, "tier": 3,
+                "rationale": "Polymer substrate enzyme — requires primer, cannot ligate two free molecules.",
+            })
+            next_rank += 1
+        ranking = _collapse_orthologs(ranking, acc_to_eval)
+        for i, entry in enumerate(ranking, start=1):
+            entry["rank"] = i
 
     top_accs = [r["accession"] for r in ranking[:top_n] if r.get("accession")]
     top_evals = [acc_to_eval[acc] for acc in top_accs if acc in acc_to_eval]
 
     if log_fn:
-        log_fn(f"  Explorative report: chemistry-ranked {len(ranking)} distinct "
-               f"entries; writing profiles for top {len(top_evals)}")
+        log_fn(f"  Explorative report: {len(ranking)} candidate pool; model "
+               f"re-ranks top {len(top_evals)} by suitability")
 
     messages = build_pass2_profile_prompt(
         query, top_evals, ranking, notebook_text,
         system_prompt=EXPLORATIVE_REPORT_SYSTEM,
         report_label="suitability-focused (explorative)",
+        authoritative_ranking=False,
     )
     temperature = config.EXPLORATIVE_REPORT_TEMPERATURE
     if temperature is None:
