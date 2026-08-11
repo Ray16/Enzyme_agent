@@ -774,6 +774,107 @@ def _check_anchor_drift(
             )
 
 
+# ---------------------------------------------------------------------------
+# Family-relevance binding: the agent's grounded stop/expand decisions over the
+# fold landscape become AUTHORITATIVE over ranking.  A member of a fold the agent
+# STOPPED (native chemistry unlike the target) is hard-gated to the bottom like a
+# mechanistic contradiction; a member of an on-target fold (agent-expanded, or
+# direction == "same" in the grounded landscape) is floated into Tier-1
+# eligibility, so a from-scratch LLM re-rank can no longer promote a stopped-
+# family enzyme on characterisation depth alone.  Answer-agnostic by
+# construction: the folds and their relevance come from the run's OWN discovered
+# candidates measured against its OWN target — no hardcoded family.
+# ---------------------------------------------------------------------------
+
+def _registry_fold_map(run_dir: Path) -> dict[str, set[str]]:
+    """accession -> {InterPro fold ids}, from screened-candidate registry
+    metadata (the light screen call persists ``interpro_ids`` there for exactly
+    the evaluated set).  Empty dict when the registry is unavailable."""
+    try:
+        from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
+        reg = load_candidate_registry(run_dir).get("candidates", {})
+    except Exception:  # noqa: BLE001 - ranking must never crash on a registry read
+        return {}
+    out: dict[str, set[str]] = {}
+    for v in reg.values():
+        if not isinstance(v, dict):
+            continue
+        acc = v.get("accession")
+        ids = (v.get("metadata") or {}).get("interpro_ids")
+        if acc and ids:
+            out.setdefault(acc, set()).update(i for i in ids if i)
+    return out
+
+
+def _family_relevance_partition(
+    run_dir: Path, all_evals: list[dict],
+) -> tuple[set[str], set[str], dict[str, str]]:
+    """Partition candidate accessions by the agent's grounded family decisions.
+
+    Returns ``(stopped_accs, ontarget_accs, stop_reason_by_acc)``:
+      * ``stopped_accs`` — members of a fold the agent marked ``stop`` (off-target
+        native chemistry); hard-gated to the bottom of the ranking.
+      * ``ontarget_accs`` — members of an agent-``expand``ed fold, or of a fold the
+        grounded landscape scored direction ``same`` vs the target; Tier-1 eligible.
+    A stop takes precedence over on-target (the agent's explicit judgement wins).
+    Degrades to empty sets when the landscape / decisions are absent, so a run
+    without family navigation ranks exactly as it did before.
+    """
+    try:
+        from enzyme_discovery_agent.models.family_decisions import load_family_decisions
+        decisions = load_family_decisions(run_dir)
+    except Exception:  # noqa: BLE001
+        decisions = {}
+    stopped_folds, stop_reason_by_fold, ontarget_folds = set(), {}, set()
+    for fid, v in decisions.items():
+        if not isinstance(v, dict):
+            continue
+        if v.get("decision") == "stop":
+            stopped_folds.add(fid)
+            stop_reason_by_fold[fid] = v.get("reason") or ""
+        elif v.get("decision") == "expand":
+            ontarget_folds.add(fid)
+    # The grounded landscape adds folds whose members natively run the SAME
+    # direction as the target even where the agent issued no explicit expand.
+    try:
+        budget = json.loads((run_dir / "family_budget.json").read_text())
+        for f in budget if isinstance(budget, list) else []:
+            fid = f.get("fold_id")
+            if (fid and f.get("direction_vs_target") == "same"
+                    and not f.get("agent_stopped")):
+                ontarget_folds.add(fid)
+    except (OSError, ValueError, AttributeError):
+        pass
+    ontarget_folds -= stopped_folds
+
+    fold_map = _registry_fold_map(run_dir)
+    stopped_accs: set[str] = set()
+    ontarget_accs: set[str] = set()
+    stop_reason_by_acc: dict[str, str] = {}
+    for ev in all_evals:
+        acc = ev.get("data", ev).get("accession")
+        if not acc:
+            continue
+        ids = fold_map.get(acc)
+        if not ids:
+            continue
+        hit = ids & stopped_folds
+        if hit:
+            stopped_accs.add(acc)
+            stop_reason_by_acc[acc] = stop_reason_by_fold.get(sorted(hit)[0], "")
+        elif ids & ontarget_folds:
+            ontarget_accs.add(acc)
+    return stopped_accs, ontarget_accs, stop_reason_by_acc
+
+
+def _family_rank_map(stopped_accs: set[str], ontarget_accs: set[str]) -> dict[str, int]:
+    """{accession -> 0 on-target | 2 stopped} for the deterministic spine
+    (neutral accessions are simply absent → default 1).  Stop dominates."""
+    fr = {acc: 0 for acc in ontarget_accs}
+    fr.update({acc: 2 for acc in stopped_accs})
+    return fr
+
+
 def generate_two_pass_report(
     run_dir: Path,
     all_evals: list[dict],
