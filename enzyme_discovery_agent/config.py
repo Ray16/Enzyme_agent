@@ -53,14 +53,28 @@ TOOL_THREAD_POOL_WORKERS = 4
 # publisher servers and the LLM endpoint.
 FULLTEXT_HARVEST_WORKERS = 6
 MAX_RESULT_CHARS = 20_000
-# Screening is NOT capped.  auto_screen collapses orthologs to one representative
-# per distinct gene, then screens and evaluates EVERY such representative — one
-# screen per distinct enzyme, not per raw hit.  Capping here previously dropped
-# whole families before evaluation; worse, the dropped tier-2 ("uncurated")
-# bucket is exactly where TrEMBL-annotated (uncurated) candidate enzymes land —
-# often the ones closest to the target chemistry.
-# Relevance filtering happens later, at the mechanism-feasibility ranking, never
-# by dropping genes before evaluation.
+# Screening allocates a RELEVANCE BUDGET across fold families, it does not blindly
+# cap.  auto_screen collapses orthologs to one representative per distinct gene,
+# groups those representatives by their fold family, and then spends a bounded
+# evaluation budget where the grounded signal is: EVERY fold keeps at least
+# FAMILY_EVAL_FLOOR_PER_FOLD representative (no family is dropped before
+# evaluation — the earlier concern that a flat cap discarded whole families, and
+# with them the uncurated/TrEMBL bucket closest to the target chemistry), while
+# EXTRA depth flows to the folds whose members' native reactions most resemble
+# the target (same reaction direction, closer substrate).  A blind per-gene screen
+# instead spent budget evenly and let one large off-target fold crowd out the
+# on-target ones.  The floor guarantees breadth; the budget concentrates depth.
+FAMILY_EVAL_BUDGET = 40           # target number of representatives to evaluate
+FAMILY_EVAL_FLOOR_PER_FOLD = 1    # always evaluate at least this many per fold
+FAMILY_EVAL_MAX_PER_FOLD = 6      # never spend more than this on any one fold
+# Ortholog fan-out cap at DISCOVERY.  A broad family search returns dozens of
+# orthologs of the SAME enzyme (one run registered 66 copies of a single gene),
+# which crowds out family diversity — the pool re-discovers one enzyme in many
+# organisms instead of reaching the next distinct family.  Register only the best
+# few representatives per distinct enzyme (family_key); the rest are surplus
+# orthologs, trivially re-queried later once an enzyme proves interesting.  The
+# goal is efficient exploration of DIFFERENT families, not ortholog breadth.
+MAX_REPRESENTATIVES_PER_FAMILY = 2
 EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
 # Structural (Foldseek) expansion seeds per run.  Kept bounded so Foldseek stays
 # a within-family expansion, not another broad search, but 2 was too tight once
