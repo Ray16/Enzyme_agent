@@ -989,7 +989,7 @@ def build_pass2_profile_prompt(
         + json.dumps(compact_top, indent=2, default=str)
     )
     parts.append(
-        "Write the confidence-weighted report. The ranking above is authoritative "
+        f"Write the {report_label} report. The ranking above is authoritative "
         "— use it for section 3 (candidate table). Write detailed Tier 1 profiles "
         "only for the top candidates whose full data is provided above. "
         "For candidates not in the full data, use the ranking summary above.\n\n"
