@@ -1092,14 +1092,28 @@ def generate_two_pass_report(
         if ev.get("data", ev).get("critical_warnings")
     }
     gated_accs.discard("")
+    # An agent-STOPPED fold is a grounded off-target verdict — enforce it with the
+    # same deterministic teeth as a mechanistic contradiction, so a from-scratch
+    # LLM re-rank cannot float a stopped-family enzyme back to the top on fame.
+    gated_accs |= stopped_accs
     if gated_accs:
         n_gated = 0
         for entry in pass1_ranking:
-            if entry.get("accession") in gated_accs:
+            acc = entry.get("accession")
+            if acc in gated_accs:
                 n_gated += 1
                 entry["tier"] = 3
                 entry["score"] = min(entry.get("score", 2.0), 1.5)
-                if "hard-gated" not in entry.get("rationale", "").lower():
+                if acc in stopped_accs and "off-target family" not in entry.get("rationale", "").lower():
+                    reason = (stop_reasons.get(acc, "") or "").strip()
+                    entry["rationale"] = (
+                        "OFF-TARGET FAMILY (agent stopped this fold"
+                        + (f": {reason[:140]}" if reason else " — native chemistry unlike the target")
+                        + "); ranked below on-target candidates. "
+                        + entry.get("rationale", "")
+                    ).strip()
+                elif "hard-gated" not in entry.get("rationale", "").lower() and \
+                        "off-target family" not in entry.get("rationale", "").lower():
                     entry["rationale"] = (
                         "HARD-GATED (mechanistic contradiction — "
                         "reaction-direction / bond-type / size mismatch); ranked "
