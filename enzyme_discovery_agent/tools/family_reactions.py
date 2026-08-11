@@ -110,8 +110,10 @@ def summarise_family_profile(members: list[dict]) -> dict:
     fg_sims: list[float] = []
     size_ratios: list[float] = []
     chain_sims: list[float] = []
-    n_aromatic_mismatch = 0
-    n_ring_mismatch = 0
+    holistic_fits: list[float] = []
+    native_chain_lengths: list[int] = []
+    native_mws: list[float] = []
+    n_span_both = 0
     for m in members:
         dv = m.get("direction_vs_target") or "unknown"
         direction_counts[dv] = direction_counts.get(dv, 0) + 1
@@ -122,24 +124,40 @@ def summarise_family_profile(members: list[dict]) -> dict:
             size_ratios.append(sub["size_ratio"])
         if sub.get("chain_length_similarity") is not None:
             chain_sims.append(sub["chain_length_similarity"])
-        if sub.get("native_aromatic_target_lacks"):
-            n_aromatic_mismatch += 1
-        if sub.get("native_ring_target_lacks"):
-            n_ring_mismatch += 1
+        hf = _holistic_fit(sub)
+        if hf is not None:
+            holistic_fits.append(hf)
+        nc = sub.get("native_character") or {}
+        if nc.get("spans_aromatic_and_aliphatic"):
+            n_span_both += 1
+        rng = nc.get("native_chain_length_range")
+        if rng:
+            native_chain_lengths.extend(rng)
+        mrng = nc.get("native_mw_range")
+        if mrng:
+            native_mws.extend(mrng)
         rxn = (m.get("native_reaction") or "").strip()
         if rxn and rxn not in distinct_reactions and len(distinct_reactions) < 12:
             distinct_reactions.append(rxn)
     return {
         "n_members": len(members),
         "direction_vs_target_counts": direction_counts,
+        # Per-axis distributions AND an equal-weight holistic-fit distribution, so
+        # no single axis is privileged — the agent weighs the whole picture.  Facts,
+        # not a verdict.
         "functional_group_similarity": _distribution(fg_sims),
         "size_ratio": _distribution(size_ratios),
-        # Main-chain-length match distribution and how many members carry
-        # aromatic/ring character the target lacks — the axes that discriminate
-        # once functional-group overlap saturates.  Facts, not a verdict.
         "chain_length_similarity": _distribution(chain_sims),
-        "members_native_aromatic_target_lacks": n_aromatic_mismatch,
-        "members_native_ring_target_lacks": n_ring_mismatch,
+        "holistic_fit": _distribution(holistic_fits),
+        # Native-substrate ranges/breadth: pocket SIZE preference has direction
+        # (favours larger vs smaller), and aromatic/aliphatic is not binary — some
+        # members span both.  Report ranges + breadth, not a symmetric ratio/flag.
+        "native_chain_length_range": (
+            [min(native_chain_lengths), max(native_chain_lengths)]
+            if native_chain_lengths else None),
+        "native_mw_range": (
+            [min(native_mws), max(native_mws)] if native_mws else None),
+        "members_spanning_aromatic_and_aliphatic": n_span_both,
         "distinct_reactions": distinct_reactions,
     }
 
