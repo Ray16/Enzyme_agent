@@ -177,11 +177,22 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
             fg = cmp.get("functional_group_similarity")
             if fg is None:
                 continue
-            if best is None or fg > best["fg"]:
+            cl = cmp.get("chain_length_similarity")
+            # Pick a member's own closest substrate by functional-group overlap,
+            # breaking ties by MAIN-CHAIN closeness — the FG axis saturates (a
+            # carboxyl/amine is near-universal here), so without the chain tiebreak
+            # this would pick an arbitrarily-sized substrate among FG ties.
+            key = (fg, cl if cl is not None else -1.0)
+            if best is None or key > best["_key"]:
                 best = {
+                    "_key": key,
                     "fg": fg,
                     "size_ratio": cmp.get("mw_similarity"),
+                    "chain_length_similarity": cl,
+                    "chain_length_target": cmp.get("chain_length_target"),
+                    "chain_length_native": cmp.get("chain_length_native"),
                     "aromaticity_match": cmp.get("aromaticity_match"),
+                    "cyclicity_match": cmp.get("cyclicity_match"),
                     "fg_target": cmp.get("functional_groups_target") or [],
                     "fg_native": cmp.get("functional_groups_native") or [],
                 }
@@ -190,13 +201,27 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
     if not per_target:
         return None
 
-    sizes = [p["size_ratio"] for p in per_target if p.get("size_ratio") is not None]
+    def _worst(field: str):
+        vals = [p[field] for p in per_target if p.get(field) is not None]
+        return round(min(vals), 3) if vals else None
+
+    # Report size/chain numbers for the WORST-fitting target substrate — the one
+    # that governs whether the pocket can host every target (facts, not a verdict).
+    worst_cl = min(
+        per_target,
+        key=lambda p: (p["chain_length_similarity"]
+                       if p.get("chain_length_similarity") is not None else 1.0),
+    )
     return {
         "functional_group_similarity": round(min(p["fg"] for p in per_target), 3),
-        "size_ratio": round(min(sizes), 3) if sizes else None,
+        "size_ratio": _worst("size_ratio"),
+        "chain_length_similarity": _worst("chain_length_similarity"),
+        "chain_length_target": worst_cl.get("chain_length_target"),
+        "chain_length_native": worst_cl.get("chain_length_native"),
         "functional_groups_target": sorted({g for p in per_target for g in p["fg_target"]}),
         "functional_groups_native": sorted({g for p in per_target for g in p["fg_native"]}),
         "native_aromatic_target_lacks": any(p.get("aromaticity_match") is False for p in per_target),
+        "native_ring_target_lacks": any(p.get("cyclicity_match") is False for p in per_target),
     }
 
 
@@ -523,4 +548,79 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             "family_reaction_profile": profile,
             "members": members,
         },
+    }
+
+
+@tool(
+    description=(
+        "Act on the family landscape: decide which fold families to EXPAND "
+        "(keep pursuing / evaluate in depth) and which to STOP (set aside, not "
+        "worth evaluation budget). Call this AFTER reasoning over the surveyed "
+        "family landscape. Pass InterPro fold ids exactly as shown in the "
+        "landscape (e.g. IPR011810). STOP a fold when its reviewed members' "
+        "native reactions do not resemble the target — e.g. the native substrate "
+        "is a peptide, amino acid, nucleotide, sugar, or cofactor while the target "
+        "is a small aliphatic substrate, or the reaction runs the opposite "
+        "direction. A stopped fold is then waived from the evaluation floor, so "
+        "the budget concentrates on the folds you judged relevant instead of the "
+        "framework forcing coverage of an off-target family. Decisions are "
+        "revisitable: call again to resume a fold if later evidence warrants. "
+        "ALWAYS give a one-line reason per fold so the decision is auditable."
+    ),
+    category="reasoning",
+    parallel_safe=False,
+    injected_params=["run_dir"],
+    params={
+        "run_dir": {"type": "string", "description": "Agent run directory (injected)."},
+        "stop": {
+            "type": "array", "items": {"type": "string"}, "default": [],
+            "description": (
+                "InterPro fold ids to STOP expanding/evaluating (off-target chemistry)."
+            ),
+        },
+        "expand": {
+            "type": "array", "items": {"type": "string"}, "default": [],
+            "description": (
+                "InterPro fold ids to keep EXPANDING (native reactions resemble the target)."
+            ),
+        },
+        "reasons": {
+            "type": "object", "default": {},
+            "description": (
+                "Map of fold id -> one-line reason for the decision (why stop / why expand)."
+            ),
+        },
+    },
+)
+def set_family_focus(run_dir: Path | str, stop: list | None = None,
+                     expand: list | None = None, reasons: dict | None = None) -> dict:
+    """Record the agent's expand/stop decisions over surveyed fold families.
+
+    Persists to ``family_decisions.json`` (revisitable) and emits ``family_decision``
+    events; the pre-evaluation budget then waives the breadth floor for stopped
+    folds.  This is the action channel that lets the agent's reasoning over the
+    family landscape actually steer where evaluation budget is spent.
+    """
+    from enzyme_discovery_agent.models.family_decisions import record_family_decisions
+
+    stop = stop or []
+    expand = expand or []
+    if not stop and not expand:
+        return {
+            "status": "partial",
+            "summary": "No fold ids given; pass stop=[...] and/or expand=[...] from the landscape.",
+            "data": None,
+        }
+    decisions = record_family_decisions(
+        run_dir, expand=expand, stop=stop, reasons=reasons or {})
+    stopped_now = sorted(k for k, v in decisions.items() if v.get("decision") == "stop")
+    return {
+        "status": "success",
+        "summary": (
+            f"Family focus recorded: {len(expand)} expand, {len(stop)} stop. "
+            f"{len(stopped_now)} fold(s) now set aside from the evaluation budget."
+        ),
+        "data": {"stopped": stopped_now,
+                 "expanded": sorted(k for k, v in decisions.items()
+                                    if v.get("decision") == "expand")},
     }
