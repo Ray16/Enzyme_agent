@@ -10,7 +10,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
 from enzyme_discovery_agent.output.finalizer import RunFinalizer
-from enzyme_discovery_agent.output.report_generator import generate_report, generate_two_pass_report
+from enzyme_discovery_agent.output.report_generator import (
+    generate_two_pass_explorative,
+    generate_two_pass_report,
+)
 from enzyme_discovery_agent.output.exploration_summary import write_exploration_summary
 from enzyme_discovery_agent.output.csv_generator import generate_candidates_csv
 from enzyme_discovery_agent.output.structure_downloader import download_candidate_structures
