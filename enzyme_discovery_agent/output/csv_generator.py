@@ -1,16 +1,51 @@
-"""Generate candidates.csv from evaluation data."""
+"""Generate ranked_candidates.csv from evaluation data."""
 
 from __future__ import annotations
 
 import csv
+import json
 import logging
 from pathlib import Path
 
 logger = logging.getLogger("enzyme_agent")
 
 
+def _load_ranking(run_dir: Path) -> dict[str, dict]:
+    """Map each accession -> {rank, score, tier} from pass1_ranking.json.
+
+    The ranking consolidates orthologs under a primary accession; give each
+    ortholog the same rank/score/tier so every CSV row is ranked, and mark it
+    so primaries sort ahead of their orthologs.
+    """
+    ranking_path = run_dir / "pass1_ranking.json"
+    if not ranking_path.exists():
+        return {}
+    try:
+        entries = json.loads(ranking_path.read_text())
+    except (OSError, ValueError) as exc:
+        logger.warning("Could not read pass1_ranking.json: %s", exc)
+        return {}
+
+    lookup: dict[str, dict] = {}
+    for entry in entries or []:
+        acc = entry.get("accession")
+        if not acc:
+            continue
+        info = {
+            "rank": entry.get("rank"),
+            "score": entry.get("score", ""),
+            "tier": entry.get("tier", ""),
+        }
+        lookup[acc] = {**info, "is_ortholog": False}
+        for orth in entry.get("orthologs", []) or []:
+            oacc = orth.get("accession")
+            if oacc and oacc not in lookup:
+                lookup[oacc] = {**info, "is_ortholog": True}
+    return lookup
+
+
 def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -> None:
-    """Generate a CSV file with all evaluated candidates."""
+    """Generate ranked_candidates.csv: evaluated candidates ordered by rank."""
     # Drop failed evaluations (data is None): not candidates, and the row
     # builder below assumes dict data.
     all_evals = [e for e in (all_evals or [])
@@ -18,8 +53,23 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
     if not all_evals:
         return
 
-    csv_path = run_dir / "candidates.csv"
+    ranking = _load_ranking(run_dir)
+    # Order rows by rank; unranked candidates fall to the bottom, keeping their
+    # relative order.  Primaries sort ahead of their orthologs at the same rank.
+    unranked = float("inf")
+
+    def sort_key(ev):
+        acc = ev.get("data", ev).get("accession", "")
+        info = ranking.get(acc)
+        if not info or info.get("rank") is None:
+            return (unranked, True, "")
+        return (info["rank"], info.get("is_ortholog", False), acc)
+
+    all_evals = sorted(all_evals, key=sort_key)
+
+    csv_path = run_dir / "ranked_candidates.csv"
     fieldnames = [
+        "rank", "score", "tier",
         "gene", "accession", "uniprot_url", "protein_name", "organism",
         "ec_numbers", "interpro_family", "is_swissprot", "sequence_length",
         "pdb_ids", "has_alphafold", "alphafold_url",
