@@ -432,17 +432,23 @@ def extract_and_register_from_search(
         # Members beyond the first per family in THIS search: the ortholog
         # redundancy the raw hit count hides.
         "redundant_orthologs": max(0, len(registered) - len(_hit_families)),
+        # Surplus orthologs the family cap DROPPED (not registered): budget saved
+        # for exploring different families rather than re-importing one enzyme.
+        "dropped_orthologs": ortholog_capped,
     }
     if isinstance(result, dict):
         result["novelty"] = novelty
         if registered:
+            dropped_note = (
+                f"; {novelty['dropped_orthologs']} surplus ortholog(s) dropped by the "
+                f"family cap (re-queryable on demand)" if novelty["dropped_orthologs"] else ""
+            )
             result["summary"] = (
                 f"{result.get('summary', '')} | {novelty['registered']} registered "
                 f"across {novelty['distinct_families']} distinct famil"
                 f"{'y' if novelty['distinct_families'] == 1 else 'ies'} "
                 f"({novelty['new_families']} new to this run); "
-                f"{novelty['known_accessions']} already-known, "
-                f"{novelty['redundant_orthologs']} extra orthologs of surfaced families."
+                f"{novelty['known_accessions']} already-known{dropped_note}."
             )
     if registered:
         from enzyme_discovery_agent.models.event_log import append_event
