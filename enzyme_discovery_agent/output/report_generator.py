@@ -440,6 +440,7 @@ def _llm_focus_rank(
 def _deterministic_mechanistic_ranking(
     rankable_evals: list[dict], tier_score: dict[int, float],
     evidence_tiebreak: bool = True,
+    family_rank_by_acc: dict[str, int] | None = None,
 ) -> list[dict]:
     """Rank by mechanistic compatibility deterministically — the reliable spine.
 
@@ -450,6 +451,12 @@ def _deterministic_mechanistic_ranking(
     priority over GROUNDED FACTS (no weighted composite):
 
       P0 hard gate  — any critical_warning → bottom, Tier 3.
+      PF family     — the agent's grounded fold decision: an on-target fold
+                      (expanded / direction == same) ranks above a neutral fold,
+                      which ranks above a stopped (off-target) fold.  This makes
+                      the run's own family navigation authoritative over ranking,
+                      ahead of the fame signals below (neutral when no family
+                      landscape exists, so a plain run is unaffected).
       P1 substrate  — higher functional-group similarity ranks higher
                       (neutral when substrate SMILES were unavailable).
       P2 curation   — Swiss-Prot reviewed ranks higher.
@@ -458,10 +465,13 @@ def _deterministic_mechanistic_ranking(
       P5 engineering— more engineering papers ranks higher.
 
     ``evidence_tiebreak`` controls P2–P5: when False the order is decided by
-    the hard gate and substrate chemistry alone (evidence ignored), which is
-    the suitability-only spine the explorative report ranks on — a curation/
-    citation-agnostic view of which native chemistry is closest to the target.
+    the hard gate, family relevance, and substrate chemistry alone (evidence
+    ignored), which is the suitability-only spine the explorative report ranks
+    on — a curation/citation-agnostic view of which native chemistry is closest
+    to the target.  ``family_rank_by_acc`` maps accession → {0 on-target,
+    1 neutral, 2 stopped}; absent accessions default to neutral.
     """
+    family_rank_by_acc = family_rank_by_acc or {}
     scored = []
     for ev in rankable_evals:
         d = ev.get("data", ev)
@@ -469,6 +479,7 @@ def _deterministic_mechanistic_ranking(
         if not acc:
             continue
         gated = _candidate_is_gated(d)
+        fam_rank = family_rank_by_acc.get(acc, 1)
         fit = _accommodation_score(d)
         fit_key = -(fit if fit is not None else 0.5)  # None → neutral midpoint
         lit = d.get("literature") or {}
@@ -477,6 +488,7 @@ def _deterministic_mechanistic_ranking(
         if evidence_tiebreak:
             key = (
                 1 if gated else 0,
+                fam_rank,
                 fit_key,
                 0 if d.get("is_swissprot") else 1,
                 -int(lit.get("characterization_papers") or 0),
@@ -485,9 +497,9 @@ def _deterministic_mechanistic_ranking(
                 acc,
             )
         else:
-            # Suitability-only: hard gate, then substrate chemistry, then a
-            # stable accession tiebreak.  No curation/citation/structure signal.
-            key = (1 if gated else 0, fit_key, acc)
+            # Suitability-only: hard gate, family relevance, then substrate
+            # chemistry, then a stable accession tiebreak.  No curation signal.
+            key = (1 if gated else 0, fam_rank, fit_key, acc)
         scored.append((key, acc, d, gated))
     scored.sort(key=lambda x: x[0])
 
