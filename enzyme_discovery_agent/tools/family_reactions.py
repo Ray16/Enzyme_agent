@@ -103,7 +103,7 @@ def _distribution(values: list[float]) -> dict | None:
 # full per-dimension vector, not this single number).
 _HOLISTIC_SIM_AXES = (
     "functional_group_similarity", "mw_similarity", "volume_similarity",
-    "chain_length_similarity", "tpsa_similarity", "logp_similarity",
+    "chain_length_similarity", "tpsa_similarity", "logP_similarity",
 )
 
 
