@@ -196,47 +196,62 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
             # Pick a member's own closest substrate by functional-group overlap,
             # breaking ties by MAIN-CHAIN closeness — the FG axis saturates (a
             # carboxyl/amine is near-universal here), so without the chain tiebreak
-            # this would pick an arbitrarily-sized substrate among FG ties.
+            # this would pick an arbitrarily-sized substrate among FG ties.  Keep
+            # the FULL comparison so every grounded dimension is available.
             key = (fg, cl if cl is not None else -1.0)
             if best is None or key > best["_key"]:
-                best = {
-                    "_key": key,
-                    "fg": fg,
-                    "size_ratio": cmp.get("mw_similarity"),
-                    "chain_length_similarity": cl,
-                    "chain_length_target": cmp.get("chain_length_target"),
-                    "chain_length_native": cmp.get("chain_length_native"),
-                    "aromaticity_match": cmp.get("aromaticity_match"),
-                    "cyclicity_match": cmp.get("cyclicity_match"),
-                    "fg_target": cmp.get("functional_groups_target") or [],
-                    "fg_native": cmp.get("functional_groups_native") or [],
-                }
+                best = {"_key": key, "fg": fg, "cmp": cmp}
         if best is not None:
             per_target.append(best)
     if not per_target:
         return None
 
     def _worst(field: str):
-        vals = [p[field] for p in per_target if p.get(field) is not None]
+        vals = [p["cmp"].get(field) for p in per_target
+                if p["cmp"].get(field) is not None]
         return round(min(vals), 3) if vals else None
 
-    # Report size/chain numbers for the WORST-fitting target substrate — the one
-    # that governs whether the pocket can host every target (facts, not a verdict).
-    worst_cl = min(
+    # The bottleneck target substrate (worst main-chain fit) governs whether the
+    # pocket can host EVERY target substrate; report its full dimension vector.
+    worst = min(
         per_target,
-        key=lambda p: (p["chain_length_similarity"]
-                       if p.get("chain_length_similarity") is not None else 1.0),
-    )
+        key=lambda p: (p["cmp"].get("chain_length_similarity")
+                       if p["cmp"].get("chain_length_similarity") is not None else 1.0),
+    )["cmp"]
+
+    # Comprehensive grounded fit, evaluated from the native SMILES across every
+    # physicochemical dimension the comparison computes — no blended score, no
+    # weights.  The agent reasons over the whole vector (bond change + fit); the
+    # headline keys below stay for the ordering/allocation spine.
+    dimensions = {
+        k: worst.get(k) for k in (
+            "functional_group_similarity",
+            "mw_target", "mw_native", "mw_similarity",
+            "volume_similarity",
+            "chain_length_target", "chain_length_native", "chain_length_similarity",
+            "rotatable_bonds_target", "rotatable_bonds_native", "rotatable_bonds_diff",
+            "hbd_diff", "hba_diff", "tpsa_similarity", "logp_similarity",
+            "aromaticity_match", "cyclicity_match",
+            "functional_group_counts_target", "functional_group_counts_native",
+        ) if worst.get(k) is not None
+    }
     return {
+        # Headline axes (kept flat for the ordering + budget-allocation spine).
         "functional_group_similarity": round(min(p["fg"] for p in per_target), 3),
-        "size_ratio": _worst("size_ratio"),
+        "size_ratio": _worst("mw_similarity"),
         "chain_length_similarity": _worst("chain_length_similarity"),
-        "chain_length_target": worst_cl.get("chain_length_target"),
-        "chain_length_native": worst_cl.get("chain_length_native"),
-        "functional_groups_target": sorted({g for p in per_target for g in p["fg_target"]}),
-        "functional_groups_native": sorted({g for p in per_target for g in p["fg_native"]}),
-        "native_aromatic_target_lacks": any(p.get("aromaticity_match") is False for p in per_target),
-        "native_ring_target_lacks": any(p.get("cyclicity_match") is False for p in per_target),
+        "chain_length_target": worst.get("chain_length_target"),
+        "chain_length_native": worst.get("chain_length_native"),
+        "native_aromatic_target_lacks": any(
+            p["cmp"].get("aromaticity_match") is False for p in per_target),
+        "native_ring_target_lacks": any(
+            p["cmp"].get("cyclicity_match") is False for p in per_target),
+        "functional_groups_target": sorted(
+            {g for p in per_target for g in (p["cmp"].get("functional_groups_target") or [])}),
+        "functional_groups_native": sorted(
+            {g for p in per_target for g in (p["cmp"].get("functional_groups_native") or [])}),
+        # Full multi-dimensional fit vector for the bottleneck target substrate.
+        "dimensions": dimensions,
     }
 
 
