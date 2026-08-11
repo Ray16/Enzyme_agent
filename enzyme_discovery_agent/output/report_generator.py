@@ -43,6 +43,28 @@ def is_error_text(text: str) -> bool:
     )
 
 
+def _looks_like_report(text: str, ranking: list[dict], min_hits: int = 4) -> bool:
+    """A real candidate report covers several ranked candidates, not just a header.
+
+    A thinking model at temperature intermittently returns a truncated stub
+    (e.g. just the title + one line) that clears ``is_error_text``'s 100-char
+    floor but is not a usable report.  Require the prose to actually mention
+    several of the ranked accessions/genes before accepting it; otherwise the
+    caller falls through to a deterministic render built directly from data.
+    """
+    if is_error_text(text):
+        return False
+    hits = 0
+    for entry in ranking[: max(min_hits * 3, 12)]:
+        acc = entry.get("accession") or ""
+        gene = entry.get("gene") or ""
+        if (acc and acc in text) or (gene and len(gene) > 2 and gene in text):
+            hits += 1
+            if hits >= min_hits:
+                return True
+    return hits >= min_hits
+
+
 def _write_deterministic_report(
     run_dir: Path,
     filename: str,
