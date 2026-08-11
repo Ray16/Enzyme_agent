@@ -936,7 +936,21 @@ def generate_two_pass_report(
     # (substrate accommodation, mechanism, provenance, feasibility) to rank just
     # those.  Code narrows; the LLM judges the leads.
     tier_score = {1: 8.0, 2: 5.0, 3: 2.0}
-    baseline = _deterministic_mechanistic_ranking(rankable_evals, tier_score)
+    # Bind the agent's grounded family stop/expand decisions to ranking BEFORE
+    # any tiering: on-target-fold members become Tier-1 eligible and stopped-fold
+    # members are hard-gated below, so the from-scratch LLM re-rank can no longer
+    # promote a stopped-family enzyme (e.g. a heavily-characterised off-target
+    # ligase) over an on-target one on fame alone.
+    stopped_accs, ontarget_accs, stop_reasons = _family_relevance_partition(
+        run_dir, all_evals
+    )
+    family_rank_by_acc = _family_rank_map(stopped_accs, ontarget_accs)
+    if log_fn and (stopped_accs or ontarget_accs):
+        log_fn(f"  Family binding: floated {len(ontarget_accs)} on-target-fold "
+               f"candidate(s), gated {len(stopped_accs)} stopped-fold candidate(s)")
+    baseline = _deterministic_mechanistic_ranking(
+        rankable_evals, tier_score, family_rank_by_acc=family_rank_by_acc
+    )
     acc_to_eval = {ev.get("data", ev).get("accession", ""): ev for ev in all_evals}
 
     shortlist = []
