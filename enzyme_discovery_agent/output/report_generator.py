@@ -960,6 +960,77 @@ def _grounded_ranking_score(
 _TIER_LABEL = {1: "strong lead", 2: "worth testing", 3: "weak / gated"}
 
 
+def _evidence_level(d: dict) -> str:
+    """Coarse, explainable curation/characterisation level (a FACT surfaced as a
+    column, never the thing that decides rank)."""
+    lit = d.get("literature") or {}
+    struct = d.get("structural_data") or {}
+    cp = int(lit.get("characterization_papers") or 0)
+    sw = bool(d.get("is_swissprot"))
+    has_struct = bool(struct.get("pdb_ids") or struct.get("has_alphafold"))
+    if sw and cp >= 3 and has_struct:
+        return "high"
+    if sw and cp >= 1:
+        return "medium"
+    if sw or cp >= 1:
+        return "low"
+    return "none"
+
+
+def _reaction_direction(d: dict) -> str:
+    chem = d.get("reaction_chemistry") or {}
+    return str(chem.get("reaction_direction") or "-")
+
+
+def _annotate_reasoned_tiers(
+    ranking: list[dict], acc_to_eval: dict, ontarget: set[str], stopped: set[str],
+    fold_fit: dict[str, float],
+) -> None:
+    """Attach a tier LABEL (contiguous bands over the reasoned rank) and the
+    grounded facts behind it to each ranking entry, in place.
+
+    Bands, walking the rank order:
+      * ``weak / gated`` - a mechanistic contradiction (direction / bond / size)
+        or an off-target (agent-stopped) family.
+      * ``strong lead`` - the LEADING contiguous run of on-target, evidence-backed
+        candidates; the band closes at the first that fails either test.
+      * ``worth testing`` - every other direction-correct candidate.
+    No single collapsed score: the ``score`` field is dropped in favour of the
+    grounded columns (substrate fit, evidence level, family relevance, direction).
+    """
+    in_strong_band = True
+    for entry in ranking:
+        acc = entry.get("accession", "")
+        ev = acc_to_eval.get(acc)
+        d = ev.get("data", ev) if ev else {}
+        gated = bool(d.get("critical_warnings")) or acc in stopped
+        on_target = acc in ontarget
+        lit = d.get("literature") or {}
+        has_evidence = bool(d.get("is_swissprot")) and int(lit.get("characterization_papers") or 0) > 0
+
+        if gated:
+            tier = 3
+        elif in_strong_band and on_target and has_evidence:
+            tier = 1
+        else:
+            in_strong_band = False
+            tier = 2
+
+        fit = _accommodation_score(d)
+        if fit is None:
+            fit = fold_fit.get(acc)
+        entry["tier"] = tier
+        entry["tier_label"] = _TIER_LABEL.get(tier, "")
+        entry["substrate_fit"] = round(fit, 2) if isinstance(fit, (int, float)) else None
+        entry["evidence_level"] = _evidence_level(d)
+        entry["family_relevance"] = (
+            "off-target(stopped)" if acc in stopped
+            else ("on-target" if on_target else "neutral")
+        )
+        entry["direction"] = _reaction_direction(d)
+        entry.pop("score", None)  # the collapsed 8/5/2 number is gone by design
+
+
 def generate_two_pass_report(
     run_dir: Path,
     all_evals: list[dict],
