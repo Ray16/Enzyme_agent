@@ -526,10 +526,15 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     def _order_key(m: dict):
         sub = m.get("substrate") or {}
         fg = sub.get("functional_group_similarity")
+        cl = sub.get("chain_length_similarity")
         sz = sub.get("size_ratio")
+        # Grounded ordering (not a verdict): same direction, then functional-group
+        # overlap, then MAIN-CHAIN closeness, then overall size.  Chain length is
+        # ranked ahead of MW so a same-FG member with a matching main chain leads.
         return (
             _dir_rank.get(m.get("direction_vs_target"), 1),
             -(fg if fg is not None else -1.0),
+            -(cl if cl is not None else -1.0),
             -(sz if sz is not None else -1.0),
             m["accession"],
         )
@@ -538,21 +543,32 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     profile = summarise_family_profile(members)
 
     fg = profile.get("functional_group_similarity")
+    cl = profile.get("chain_length_similarity")
     dv = profile.get("direction_vs_target_counts", {})
-    fg_txt = (f"functional-group similarity max {fg['max']}, median {fg['median']}"
-              if fg else "substrate similarity unavailable")
+    n_arom = profile.get("members_native_aromatic_target_lacks", 0)
+    n_mem = profile.get("n_members", 0)
+    fit_parts = []
+    if fg:
+        fit_parts.append(f"functional-group overlap max {fg['max']}/median {fg['median']}")
+    if cl:
+        fit_parts.append(f"main-chain-length match max {cl['max']}/median {cl['median']}")
+    if n_arom:
+        fit_parts.append(f"{n_arom}/{n_mem} members carry aromatic/ring character the target lacks")
+    fit_txt = "; ".join(fit_parts) if fit_parts else "substrate fit unavailable"
     logger.info(
         "Family survey: %s (fold %s, %d members); direction %s; %s",
-        source, fold_id, fold_size, dv, fg_txt,
+        source, fold_id, fold_size, dv, fit_txt,
     )
 
     return {
         "status": "success",
         "summary": (
             f"{source} ({fold_size} reviewed members). Direction vs target: {dv}. "
-            f"Substrate {fg_txt}. These are grounded numbers — compare this family's "
-            f"distribution against the others you survey and reason about which "
-            f"fold's members most resemble the target before expanding."
+            f"Substrate fit: {fit_txt}. These are grounded numbers — reason about BOTH "
+            f"the bond change (direction vs target) AND substrate fit: functional "
+            f"groups can match while MAIN-CHAIN LENGTH or aromatic/aliphatic character "
+            f"do not. Compare this family's distribution against the others you survey "
+            f"and expand the folds whose members most resemble the target on ALL axes."
         ),
         "data": {
             "seed_accession": seed_accession or None,
