@@ -411,6 +411,7 @@ def _llm_focus_rank(
 
 def _deterministic_mechanistic_ranking(
     rankable_evals: list[dict], tier_score: dict[int, float],
+    evidence_tiebreak: bool = True,
 ) -> list[dict]:
     """Rank by mechanistic compatibility deterministically — the reliable spine.
 
@@ -427,6 +428,11 @@ def _deterministic_mechanistic_ranking(
       P3 depth      — more characterisation papers ranks higher.
       P4 structure  — experimental PDB > AlphaFold > none.
       P5 engineering— more engineering papers ranks higher.
+
+    ``evidence_tiebreak`` controls P2–P5: when False the order is decided by
+    the hard gate and substrate chemistry alone (evidence ignored), which is
+    the suitability-only spine the explorative report ranks on — a curation/
+    citation-agnostic view of which native chemistry is closest to the target.
     """
     scored = []
     for ev in rankable_evals:
@@ -440,15 +446,20 @@ def _deterministic_mechanistic_ranking(
         lit = d.get("literature") or {}
         struct = d.get("structural_data") or {}
         struct_rank = 0 if (struct.get("pdb_ids")) else (1 if struct.get("has_alphafold") else 2)
-        key = (
-            1 if gated else 0,
-            fit_key,
-            0 if d.get("is_swissprot") else 1,
-            -int(lit.get("characterization_papers") or 0),
-            struct_rank,
-            -int(lit.get("engineering_papers") or 0),
-            acc,
-        )
+        if evidence_tiebreak:
+            key = (
+                1 if gated else 0,
+                fit_key,
+                0 if d.get("is_swissprot") else 1,
+                -int(lit.get("characterization_papers") or 0),
+                struct_rank,
+                -int(lit.get("engineering_papers") or 0),
+                acc,
+            )
+        else:
+            # Suitability-only: hard gate, then substrate chemistry, then a
+            # stable accession tiebreak.  No curation/citation/structure signal.
+            key = (1 if gated else 0, fit_key, acc)
         scored.append((key, acc, d, gated))
     scored.sort(key=lambda x: x[0])
 
