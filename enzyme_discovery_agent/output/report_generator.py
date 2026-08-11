@@ -49,6 +49,7 @@ def _write_deterministic_report(
     query: str,
     all_evals: list[dict],
     ranking: list[dict] | None = None,
+    ranking_filename: str = "pass1_ranking.json",
 ) -> None:
     """Write a factual report when a provider returns an empty completion.
 
@@ -56,6 +57,10 @@ def _write_deterministic_report(
     avoids silently treating a zero-token provider response as successful
     scientific reporting.  This renderer deliberately preserves individual
     evidence fields rather than manufacturing a composite score.
+
+    ``ranking_filename`` names the machine-readable ranking to (re)write so the
+    explorative fallback persists its own chemistry ranking without clobbering
+    the confidence report's ``pass1_ranking.json``.
     """
     by_accession = {
         item.get("data", item).get("accession", ""): item.get("data", item)
@@ -65,7 +70,7 @@ def _write_deterministic_report(
         ranking = _deterministic_evidence_ranking(query, all_evals)
     # Keep the machine-readable ranking synchronized with the visible report.
     import json as _json
-    (run_dir / "pass1_ranking.json").write_text(_json.dumps(ranking, indent=2) + "\n")
+    (run_dir / ranking_filename).write_text(_json.dumps(ranking, indent=2) + "\n")
 
     lines = [
         "# Candidate evaluation report",
