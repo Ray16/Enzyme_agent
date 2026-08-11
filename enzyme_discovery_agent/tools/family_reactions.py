@@ -278,8 +278,11 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
             {g for p in per_target for g in (p["cmp"].get("functional_groups_target") or [])}),
         "functional_groups_native": sorted(
             {g for p in per_target for g in (p["cmp"].get("functional_groups_native") or [])}),
-        # Full multi-dimensional fit vector for the bottleneck target substrate.
+        # Full multi-dimensional fit vector for the bottleneck target substrate —
+        # every axis the comparison computes, so the agent weighs the WHOLE vector
+        # (no single axis pre-privileged), and the member's native breadth/size.
         "dimensions": dimensions,
+        "native_character": native_character,
     }
 
 
