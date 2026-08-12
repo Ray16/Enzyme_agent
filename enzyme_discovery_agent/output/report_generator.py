@@ -868,11 +868,18 @@ def _family_relevance_partition(
 
 
 def _family_rank_map(stopped_accs: set[str], ontarget_accs: set[str]) -> dict[str, int]:
-    """{accession -> 0 on-target | 2 stopped} for the deterministic spine
-    (neutral accessions are simply absent → default 1).  Stop dominates."""
-    fr = {acc: 0 for acc in ontarget_accs}
-    fr.update({acc: 2 for acc in stopped_accs})
-    return fr
+    """{accession -> 0 on-target} for the deterministic spine (neutral accessions
+    are simply absent → default 1).
+
+    A grounded on-target fold (reaction direction == target) gets a mild boost.
+    A fold the agent STOPPED does NOT sink its members here: a stop is a coarse,
+    fold-level BREADTH decision (and an unreliable one — a single wrong stop can
+    land on the very family that answers the query), so making it authoritative
+    over per-candidate ranking buries correct candidates beneath unrelated
+    analogues.  Stopped members therefore stay neutral; the stop survives only as
+    an informational ``family_relevance`` annotation, never as a ranking penalty.
+    """
+    return {acc: 0 for acc in ontarget_accs}
 
 
 def _fold_fit_map(run_dir: Path) -> dict[str, float]:
@@ -894,67 +901,6 @@ def _fold_fit_map(run_dir: Path) -> dict[str, float]:
             if acc:
                 out.setdefault(acc, float(hf))
     return out
-
-
-# Continuous grounded ranking score — replaces the old {tier: 8/5/2} buckets that
-# collapsed the whole pool into 3-4 values (24 candidates tied at 5.0).  Substrate
-# fit and the reaction (direction / on-target family) DOMINATE; curation depth and
-# structure ("fame") are a small, CAPPED secondary term, so characterisation can
-# never outweigh chemistry — the original mis-ranking.  Every component is a
-# grounded fact and is recorded so a score is explainable, and the tier LABEL comes
-# from rules on those facts, not a percentile bucket.
-def _grounded_ranking_score(
-    d: dict, on_target: bool, stopped: bool, gated: bool, fold_fit: float | None = None,
-) -> tuple[float, int, dict]:
-    """Return ``(score_0_10, tier, breakdown)`` for one candidate."""
-    lit = d.get("literature") or {}
-    struct = d.get("structural_data") or {}
-
-    # Substrate fit (0-1): per-candidate accommodation, else the fold's holistic
-    # fit, else a neutral midpoint (unknown — not penalised).
-    fit = _accommodation_score(d)
-    fit_source = "accommodation"
-    if fit is None and fold_fit is not None:
-        fit, fit_source = float(fold_fit), "family_fit"
-    if fit is None:
-        fit, fit_source = 0.5, "unknown"
-
-    # Evidence (0-1): a CAPPED secondary signal (curation + characterisation +
-    # structure).  Capped so it cannot dominate substrate/family chemistry.
-    evidence = 0.0
-    if d.get("is_swissprot"):
-        evidence += 0.4
-    evidence += 0.4 * min(int(lit.get("characterization_papers") or 0), 3) / 3.0
-    if struct.get("pdb_ids"):
-        evidence += 0.2
-    elif struct.get("has_alphafold"):
-        evidence += 0.1
-    evidence = min(evidence, 1.0)
-
-    family = 1.0 if on_target else 0.0
-    # Chemistry-led composite in [0,1]: fit 0.5, family 0.3, evidence 0.2.
-    core = 0.5 * fit + 0.3 * family + 0.2 * evidence
-    if gated or stopped:  # wrong direction/bond/size, or an off-target family
-        core = min(core, 0.18)
-    score = round(core * 10.0, 2)
-
-    # Rule-based tier LABEL (explainable; NOT a fixed-fraction bucket):
-    direction_ok = not gated
-    has_evidence = bool(d.get("is_swissprot")) and int(lit.get("characterization_papers") or 0) > 0
-    if gated or stopped:
-        tier = 3
-    elif on_target and direction_ok and has_evidence:
-        tier = 1
-    elif direction_ok:
-        tier = 2
-    else:
-        tier = 3
-    breakdown = {
-        "substrate_fit": round(fit, 3), "fit_source": fit_source,
-        "family_on_target": on_target, "evidence": round(evidence, 3),
-        "gated_or_off_target": bool(gated or stopped),
-    }
-    return score, tier, breakdown
 
 
 _TIER_LABEL = {1: "strong lead", 2: "worth testing", 3: "weak / gated"}
