@@ -216,6 +216,24 @@ def finalize_manifest(
         logger.warning("Failed to write RUN_SUMMARY.md: %s", e)
 
 
+def _read_run_outcome(run_dir: Path) -> str | None:
+    """Return the finalizer's semantic run outcome, if it recorded one.
+
+    Read from ``finalization_status.json`` (written by ``RunFinalizer``).  Purely
+    best-effort: a missing/unreadable file just means we fall back to the caller's
+    free-text outcome.
+    """
+    path = run_dir / "finalization_status.json"
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    outcome = (data.get("run_outcome") or {}).get("outcome")
+    return outcome or None
+
+
 def _wall_clock_seconds(started: str | None, finished: str) -> float | None:
     if not started:
         return None
