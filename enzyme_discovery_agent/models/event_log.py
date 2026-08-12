@@ -76,7 +76,7 @@ def append_event(run_dir: str | Path, event_type: str, **fields) -> None:
         with _event_lock:
             event = {
                 "seq": _next_seq(run_dir, run_key),
-                "ts": datetime.now().isoformat(),
+                "ts": datetime.now().astimezone().isoformat(),
                 "type": event_type,
                 **fields,
             }
