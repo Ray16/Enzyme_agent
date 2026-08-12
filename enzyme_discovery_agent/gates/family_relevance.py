@@ -267,6 +267,7 @@ def build_relevance_and_allocate(
     floor: int | None = None,
     cap: int | None = None,
     workers: int = 4,
+    protected: set[str] | None = None,
 ) -> tuple[set[str], list[dict]]:
     """Group gene representatives by fold, spend the evaluation budget by
     relevance, and persist the grounded family landscape.
@@ -277,7 +278,16 @@ def build_relevance_and_allocate(
     — the accessions to evaluate and the per-fold landscape (also written to
     ``family_landscape.json``).  Degrades gracefully: any representative whose
     fold cannot be resolved becomes its own singleton fold, so it is still
-    evaluated (never silently dropped)."""
+    evaluated (never silently dropped).
+
+    ``protected`` accessions are ALWAYS selected for evaluation regardless of any
+    fold-level stop verdict.  A fold ``stop`` is a BREADTH decision (do not expand
+    into orthologs of a fold the agent judged off-target); it must not silently
+    delete a specific enzyme the reading step surfaced by name.  Without this, a
+    named candidate that happens to be the sole representative of a stopped fold is
+    dropped before evaluation on the strength of the fold's generic annotation,
+    never on its own evidence."""
+    protected = protected or set()
     budget = config.FAMILY_EVAL_BUDGET if budget is None else budget
     floor = config.FAMILY_EVAL_FLOOR_PER_FOLD if floor is None else floor
     cap = config.FAMILY_EVAL_MAX_PER_FOLD if cap is None else cap
