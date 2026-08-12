@@ -170,11 +170,16 @@ class RunFinalizer:
         except Exception as exc:  # Continue producing independent deliverables.
             logger.exception("Finalization stage %s failed", stage)
             self._record_stage(stage, "failed", error=str(exc))
+            self._emit_event("stage_failed", stage=stage, error=str(exc))
             self.log(f"  Finalization stage failed: {stage}: {exc}", level="warning")
             return None
         if produces is not None and not produces.exists():
             self._record_stage(
                 stage, "incomplete",
+                detail=f"expected artifact not written: {produces.name}",
+            )
+            self._emit_event(
+                "stage_incomplete", stage=stage,
                 detail=f"expected artifact not written: {produces.name}",
             )
             self.log(
