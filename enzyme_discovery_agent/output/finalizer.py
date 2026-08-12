@@ -109,6 +109,20 @@ class RunFinalizer:
             pass
         return {"stages": {}}
 
+    def _emit_event(self, event_type: str, **fields: Any) -> None:
+        """Mirror a finalization event into the structured run event stream.
+
+        ``finalization_status.json`` is the resumable checkpoint; ``events.jsonl``
+        is the append-only audit stream.  Emitting failures/degradations here too
+        keeps the event stream a complete health record — a stage failure is
+        queryable without cross-reading the status file.  Best-effort.
+        """
+        try:
+            from enzyme_discovery_agent.models.event_log import append_event
+            append_event(self.run_dir, event_type, **fields)
+        except Exception:  # noqa: BLE001 - telemetry must never break finalize
+            pass
+
     def _record_stage(
         self,
         stage: str,
