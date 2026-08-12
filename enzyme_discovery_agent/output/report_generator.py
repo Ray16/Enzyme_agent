@@ -23,6 +23,26 @@ from enzyme_discovery_agent.prompts.report_prompts import (
 logger = logging.getLogger("enzyme_agent")
 
 
+def _emit_degradation(run_dir: Path, report: str, mode: str, detail: str = "") -> None:
+    """Record a report-quality degradation in the structured event stream.
+
+    Report generation silently retries and, on a persistently thin LLM response,
+    falls back to a deterministic render.  Those fallbacks still write a report
+    file, so the finalization stage reads as ``completed`` and the degradation is
+    invisible to anything but the console log.  Emitting a typed event makes run
+    quality queryable: ``mode`` is ``compact_retry`` (a retry was attempted) or
+    ``deterministic_fallback`` (the LLM report was abandoned for a data render).
+    Best-effort — telemetry must never break report delivery.
+    """
+    try:
+        from enzyme_discovery_agent.models.event_log import append_event
+        append_event(
+            run_dir, "report_degraded", report=report, mode=mode, detail=detail
+        )
+    except Exception:  # noqa: BLE001 - never let telemetry abort a report
+        pass
+
+
 def strip_preamble(text: str) -> str:
     """Strip LLM preamble before the first markdown header."""
     idx = text.find("\n#")
