@@ -273,6 +273,35 @@ def _is_non_article(title: str) -> bool:
     return bool(_NON_ARTICLE_RE.search((title or "").strip()))
 
 
+def mechanism_gate_query(run_dir, fallback_query: str) -> str:
+    """A substrate-free, mechanism-only description of the target for the
+    relevance gate: ``<bond> bond <direction>`` derived from the run's reaction
+    analysis (e.g. "amide bond formation (ligation / synthesis)").
+
+    The gate must judge a paper by REACTION TYPE, not by the specific substrates
+    or applied product named in the query — but handing it the raw query lets the
+    literal product framing dominate, so it drops mechanistically-relevant papers
+    that never mention that product.  Distilling to bond + direction removes that
+    fixation.  Falls back to the raw query when the bond type is unknown.  Uses
+    only the grounded bond-type / direction (no specific family), so it carries no
+    answer hint.
+    """
+    try:
+        from enzyme_discovery_agent.tools.family_reactions import _target_profile_for_run
+        direction, bonds = _target_profile_for_run(Path(run_dir))
+    except Exception:  # noqa: BLE001 - gate must never crash on target parsing
+        return fallback_query
+    if not bonds:
+        return fallback_query
+    bond_str = " / ".join(sorted(bonds))
+    dir_phrase = {
+        "formation": "formation (ligation / synthesis)",
+        "cleavage": "cleavage (hydrolysis / degradation)",
+    }.get(direction or "", direction or "")
+    target = f"an enzyme that catalyses {bond_str} bond {dir_phrase}".strip()
+    return target
+
+
 def is_paper_relevant(title: str, abstract: str, query: str, llm_client) -> tuple[bool, str]:
     """Cheap title+abstract relevance gate (no full-text download).
 
