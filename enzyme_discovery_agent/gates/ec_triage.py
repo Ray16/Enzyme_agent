@@ -73,6 +73,14 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
         if any(s["status"] in ("screened", "evaluated") for s in info.get("statuses", [])):
             already_screened.add(acc)
 
+    # Candidates the reading step surfaced BY NAME.  These are protected end to
+    # end: kept as their own representative through the ortholog collapse below,
+    # and force-selected for evaluation regardless of any fold-level stop verdict.
+    literature_named = {
+        acc for acc, info in candidates.items()
+        if str(info.get("metadata", {}).get("literature_name") or "").strip()
+    }
+
     # One representative per distinct gene (orthologs collapsed).  These are the
     # DISTINCT enzymes; fold-relevance budgeting decides which get evaluated.
     gene_reps: list[str] = []
