@@ -15,7 +15,8 @@ to fail a campaign) and depends only on the standard library.
 Event envelope (every event): ``{seq, ts, type, ...fields}``.
   * ``seq`` -- monotonic per-run ordinal, seeded from the existing file so it
     stays stable across a resume / process restart.
-  * ``ts``  -- ISO-8601 local timestamp (matches the pre-existing events).
+  * ``ts``  -- ISO-8601 timezone-aware local timestamp (local wall clock with an
+    explicit UTC offset, so it is unambiguous and comparable across log files).
   * ``type`` -- the event kind; downstream readers filter on it.
 
 Adding new event *types* or new *fields* is always safe: consumers
