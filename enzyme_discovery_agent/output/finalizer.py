@@ -120,7 +120,7 @@ class RunFinalizer:
         payload = self._load_finalization_status()
         payload.setdefault("stages", {})[stage] = {
             "status": status,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now().astimezone().isoformat(),
             **({"error": error} if error else {}),
             **({"detail": detail} if detail else {}),
         }
@@ -130,7 +130,7 @@ class RunFinalizer:
         """Record a top-level verdict so an empty run is not mistaken for a good one."""
         payload = self._load_finalization_status()
         payload["run_outcome"] = {
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now().astimezone().isoformat(),
             **fields,
         }
         self._finalization_status_path.write_text(json.dumps(payload, indent=2) + "\n")
