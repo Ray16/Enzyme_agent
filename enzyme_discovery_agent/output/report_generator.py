@@ -34,6 +34,10 @@ def _emit_degradation(run_dir: Path, report: str, mode: str, detail: str = "") -
     ``deterministic_fallback`` (the LLM report was abandoned for a data render).
     Best-effort — telemetry must never break report delivery.
     """
+    # Route to warnings.log too: it is fed by the module logger at WARNING level,
+    # whereas the callers' log_fn writes at INFO, so without this a degradation is
+    # absent from the run's single warnings channel.
+    logger.warning("report degraded (%s/%s): %s", report, mode, detail or "-")
     try:
         from enzyme_discovery_agent.models.event_log import append_event
         append_event(
