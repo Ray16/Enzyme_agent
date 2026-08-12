@@ -439,6 +439,34 @@ def _member_native_reaction(entry: dict) -> str:
 # Tool
 # --------------------------------------------------------------------------
 
+_interpro_name_cache: dict[str, str] = {}
+
+
+def interpro_name(fold_id: str) -> str:
+    """Human-readable InterPro family name for a fold id (cached, best-effort).
+
+    Falls back to the id itself on any failure, so callers can always display
+    SOMETHING.  Plots and reports should show the NAME, never the bare IPR id."""
+    if not fold_id or not str(fold_id).startswith("IPR"):
+        return fold_id
+    if fold_id in _interpro_name_cache:
+        return _interpro_name_cache[fold_id]
+    name = fold_id
+    try:
+        from enzyme_discovery_agent.tools.database import _interpro_fetch
+        data = _interpro_fetch(
+            [f"https://www.ebi.ac.uk/interpro/api/entry/interpro/{fold_id}"],
+            context="InterPro name",
+        )
+        nm = (((data or {}).get("metadata") or {}).get("name") or {}).get("name")
+        if nm:
+            name = nm
+    except Exception:  # noqa: BLE001 - a name lookup must never break a survey
+        pass
+    _interpro_name_cache[fold_id] = name
+    return name
+
+
 @tool(
     description=(
         "Survey a FOLD FAMILY by its native reactions. Give it EITHER a candidate "
@@ -478,34 +506,6 @@ def _member_native_reaction(entry: dict) -> str:
         },
     },
 )
-_interpro_name_cache: dict[str, str] = {}
-
-
-def interpro_name(fold_id: str) -> str:
-    """Human-readable InterPro family name for a fold id (cached, best-effort).
-
-    Falls back to the id itself on any failure, so callers can always display
-    SOMETHING.  Plots and reports should show the NAME, never the bare IPR id."""
-    if not fold_id or not str(fold_id).startswith("IPR"):
-        return fold_id
-    if fold_id in _interpro_name_cache:
-        return _interpro_name_cache[fold_id]
-    name = fold_id
-    try:
-        from enzyme_discovery_agent.tools.database import _interpro_fetch
-        data = _interpro_fetch(
-            [f"https://www.ebi.ac.uk/interpro/api/entry/interpro/{fold_id}"],
-            context="InterPro name",
-        )
-        nm = (((data or {}).get("metadata") or {}).get("name") or {}).get("name")
-        if nm:
-            name = nm
-    except Exception:  # noqa: BLE001 - a name lookup must never break a survey
-        pass
-    _interpro_name_cache[fold_id] = name
-    return name
-
-
 def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
                             interpro_id: str = "") -> dict:
     """Enumerate a fold family and rank members by native-reaction fit.
