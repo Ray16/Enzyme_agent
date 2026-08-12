@@ -711,12 +711,18 @@ def mine_and_register_fulltext_accessions(
             todo.append(paper)
 
     # Relevance gate (LLM, per paper) IN PARALLEL — mechanism relevance on
-    # title+abstract, so an off-topic paper is never downloaded.
+    # title+abstract, so an off-topic paper is never downloaded.  The gate is
+    # judged against a MECHANISM-ONLY target (bond + direction), not the raw
+    # substrate-laden query: the literal product framing was dropping the
+    # mechanistic primary literature that names characterised enzymes but never
+    # mentions the query's specific product.
+    from enzyme_discovery_agent.tools.literature_extraction import mechanism_gate_query
+    gate_query = mechanism_gate_query(run, query)
     dropped = 0
     if llm_client is not None and todo:
         def _relevant(paper):
             ok, reason = is_paper_relevant(
-                paper.get("title", ""), paper.get("abstract", ""), query, llm_client)
+                paper.get("title", ""), paper.get("abstract", ""), gate_query, llm_client)
             if not ok:
                 logger.info("fulltext relevance gate dropped %s: %s",
                             (paper.get("title") or "")[:60], reason)
