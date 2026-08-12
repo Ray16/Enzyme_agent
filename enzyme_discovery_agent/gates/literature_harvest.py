@@ -47,14 +47,29 @@ class LiteratureHarvestGate:
     def execute(self, state: AgentState) -> GateResult:
         from enzyme_discovery_agent.tools.fulltext import (
             mine_and_register_fulltext_accessions,
+            seed_mechanism_literature,
         )
 
         query = ""
+        substrate = ""
         try:
             tc = json.loads((state.run_dir / "target_context.json").read_text())
             query = tc.get("query", "") or ""
+            substrate = tc.get("substrate_smiles", "") or ""
         except Exception:  # noqa: BLE001 - query is best-effort context
             pass
+
+        # Ensure the MECHANISM primary literature is in the pool before mining:
+        # run the derived families' own search phrases, so a product-anchored
+        # keyword search cannot leave the harvest with only application/materials
+        # papers and none of the characterised enzymes.
+        try:
+            seed_mechanism_literature(
+                state.run_dir, query, substrate,
+                llm_client=self.llm, log_fn=self.log,
+            )
+        except Exception as exc:  # noqa: BLE001 - seeding must not block the harvest
+            logger.warning("Mechanism-literature seeding failed: %s", exc)
 
         self.log("  Literature harvest: reading full text of the primary "
                  "literature to seed discovery with tested enzymes...")
