@@ -1194,10 +1194,12 @@ def generate_two_pass_report(
         if ev.get("data", ev).get("critical_warnings")
     }
     gated_accs.discard("")
-    # An agent-STOPPED fold is a grounded off-target verdict — enforce it with the
-    # same deterministic teeth as a mechanistic contradiction, so a from-scratch
-    # LLM re-rank cannot float a stopped-family enzyme back to the top on fame.
-    gated_accs |= stopped_accs
+    # A fold-level STOP is NOT given the deterministic teeth of a mechanistic
+    # contradiction: hard-gating every stopped-fold member to Tier 3 let one wrong
+    # stop bury the correct answer family below unrelated analogues.  Only genuine
+    # per-candidate contradictions (``critical_warnings`` — bond-type / direction /
+    # severe-size mismatch) hard-gate.  A stop remains an informational annotation
+    # (``family_relevance``), and its members still rank by their own grounded facts.
     if gated_accs:
         n_gated = 0
         for entry in pass1_ranking:
