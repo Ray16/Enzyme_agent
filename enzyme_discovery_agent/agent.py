@@ -200,7 +200,7 @@ class EnzymeAgent:
         out_path = self.artifacts_dir / category / filename
         artifact = {
             "tool_name": tool_name, "args": tool_args,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now().astimezone().isoformat(),
             "iteration": iteration, "result": result,
         }
         try:
@@ -614,11 +614,20 @@ class EnzymeAgent:
             # first-class event, not something buried in the raw transcript.
             def _tc_name(tc):
                 return tc.function.name if hasattr(tc, "function") else tc["function"]["name"]
+            reasoning = _extract_reasoning(assistant_msg, text_content)
             self._log_event("assistant_decision", {
                 "iteration": iteration,
                 "n_tool_calls": len(tool_calls),
                 "tools": [_tc_name(tc) for tc in tool_calls],
-                "reasoning": (text_content or "").strip()[:800],
+                "reasoning": reasoning[:800],
+                # Distinguish "the model gave no rationale" from "we failed to
+                # capture one": most tool-calling turns carry empty content, so an
+                # empty reasoning field is expected, not a logging bug.
+                "reasoning_source": (
+                    "text" if (text_content or "").strip()
+                    else "thinking" if reasoning
+                    else "none"
+                ),
             })
 
             # No tool calls: check if done
