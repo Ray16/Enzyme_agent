@@ -193,11 +193,20 @@ def finalize_manifest(
     manifest.setdefault("timing", {})
     manifest["timing"]["finished_at"] = finished
     manifest["timing"]["wall_clock_s"] = wall
+    # The finalizer records a SEMANTIC verdict (reports_delivered /
+    # evaluated_but_no_report / no_candidates_evaluated) in
+    # finalization_status.json.  Prefer it as the headline outcome so the summary
+    # never disagrees with that file.  The ``outcome`` argument carries the
+    # agent's free-text final message, which is often empty on a clean run; keep
+    # it as ``summary`` rather than letting an empty string masquerade as the
+    # outcome.
+    semantic_outcome = _read_run_outcome(run_dir)
     manifest["result"] = {
         "iterations_used": iterations_used,
         "candidates_evaluated": candidates_evaluated,
         "tokens": tokens or {},
-        "outcome": outcome,
+        "outcome": semantic_outcome or outcome,
+        "summary": outcome,
         "report_path": report_path,
     }
     _write_manifest(run_dir, manifest)
