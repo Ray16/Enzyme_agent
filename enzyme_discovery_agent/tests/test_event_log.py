@@ -40,6 +40,17 @@ class TestEventLog(unittest.TestCase):
             self.assertEqual(seqs, sorted(seqs))
             self.assertEqual(len(set(seqs)), len(seqs))  # unique
 
+    def test_timestamp_is_timezone_aware(self):
+        # Event timestamps must carry an explicit UTC offset so they are
+        # unambiguous and correlatable with the other run log files.
+        from datetime import datetime
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            append_event(root, "run_start", query="q")
+            ts = read_events(root)[0]["ts"]
+            parsed = datetime.fromisoformat(ts)
+            self.assertIsNotNone(parsed.tzinfo)
+
     def test_malformed_line_is_skipped(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
