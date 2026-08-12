@@ -87,6 +87,40 @@ class TestManifestLifecycle(unittest.TestCase):
             self.assertIn("find enzymes", summary)
             self.assertIn("42", summary)
 
+    def test_semantic_outcome_from_finalization_status_wins(self):
+        # RUN_SUMMARY used to show the agent's (often empty) final_text as the
+        # outcome, contradicting finalization_status.json. The semantic verdict
+        # recorded there must win, and the free-text is kept as `summary`.
+        with tempfile.TemporaryDirectory() as tmp:
+            rd = self._run_dir(tmp)
+            provenance.write_manifest_start(
+                rd, query="find enzymes", model="m", config_module=config,
+            )
+            (rd / "finalization_status.json").write_text(
+                json.dumps({"run_outcome": {"outcome": "reports_delivered"}})
+            )
+            provenance.finalize_manifest(
+                rd, status="completed", iterations_used=1,
+                candidates_evaluated=3, tokens={"total_tokens": 5}, outcome="",
+            )
+            done = json.loads((rd / "manifest.json").read_text())
+            self.assertEqual(done["result"]["outcome"], "reports_delivered")
+            self.assertEqual(done["result"]["summary"], "")
+            summary_md = (rd / "RUN_SUMMARY.md").read_text()
+            self.assertIn("**Outcome:** reports_delivered", summary_md)
+
+    def test_outcome_falls_back_to_free_text_without_status_file(self):
+        # No finalization_status.json (e.g. a crash before finalize) -> the
+        # passed free-text outcome is still recorded, preserving old behavior.
+        with tempfile.TemporaryDirectory() as tmp:
+            rd = self._run_dir(tmp)
+            provenance.write_manifest_start(
+                rd, query="q", model="m", config_module=config,
+            )
+            provenance.finalize_manifest(rd, status="completed", outcome="all good")
+            done = json.loads((rd / "manifest.json").read_text())
+            self.assertEqual(done["result"]["outcome"], "all good")
+
     def test_finalize_without_start_does_not_raise(self):
         # A crash before the start manifest is written must not make finalize
         # fail; it should still record what it can.
