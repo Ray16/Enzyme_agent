@@ -313,6 +313,15 @@ class RunFinalizer:
         if handoff_path:
             self.log(f"  Structural-modeling handoff: {handoff_path}")
 
+        # Written LAST, after the report stages above have recorded their own LLM
+        # calls into ``token_usage``.  Writing it earlier undercounts the run: the
+        # confidence/explorative report generation is a substantial fraction of
+        # total tokens, and an early snapshot disagrees with the ``run_complete``
+        # event and ``manifest.json`` (both taken after finalize returns).
+        (self.run_dir / "token_usage.json").write_text(
+            json.dumps(token_usage.to_dict(), indent=2)
+        )
+
         # A run that evaluated nothing produced no deliverable, whatever the
         # per-stage bookkeeping says.  Record that verdict explicitly.
         stages = self._load_finalization_status().get("stages", {})
