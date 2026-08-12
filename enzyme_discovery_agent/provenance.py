@@ -127,7 +127,10 @@ def snapshot_config(config_module) -> dict[str, Any]:
 
 
 def _now_iso() -> str:
-    return datetime.now().isoformat()
+    # Timezone-aware local time: same wall clock as console_log.txt / warnings.log,
+    # but carrying an explicit offset so it is unambiguous and directly comparable
+    # with the finalization_status.json timestamps.
+    return datetime.now().astimezone().isoformat()
 
 
 def write_manifest_start(
