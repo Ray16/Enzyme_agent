@@ -119,8 +119,17 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
         return
 
     # Regroup by fold and spend the evaluation budget by grounded relevance.
+    # Candidates the reading step surfaced BY NAME (literature_name set) are
+    # protected: they must be evaluated on their own evidence even if their fold
+    # is later stopped, so a named hit is never deleted by a fold-level breadth
+    # verdict made from the fold's generic annotation.
     reps = [(acc, entry_by_acc[acc]) for acc in gene_reps if acc in entry_by_acc]
-    selected, landscape = build_relevance_and_allocate(run_dir, reps)
+    literature_named = {
+        acc for acc, info in candidates.items()
+        if str(info.get("metadata", {}).get("literature_name") or "").strip()
+    }
+    selected, landscape = build_relevance_and_allocate(
+        run_dir, reps, protected=literature_named)
     if not selected:
         # Degrade to the prior behaviour (screen every representative) rather
         # than screen nothing, if fold budgeting produced no selection.
