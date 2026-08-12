@@ -256,7 +256,6 @@ class RunFinalizer:
             (candidate_dir / "all_evaluations.json").write_text(
                 json.dumps(evaluations, indent=2, default=str)
             )
-        (self.run_dir / "token_usage.json").write_text(json.dumps(token_usage.to_dict(), indent=2))
 
         self._run_finalization_stage(
             "confidence_report",
