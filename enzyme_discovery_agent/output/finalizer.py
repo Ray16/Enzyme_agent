@@ -87,15 +87,25 @@ class RunFinalizer:
             annotated, results = verify_report_citations(report_path.read_text(), self.llm)
             report_path.write_text(annotated)
             flagged = [result for result in results if result.get("supported") is not True]
-            if flagged:
+            # Distinguish "nothing to check" from "checked N, all passed": a bare
+            # "0 claims verified OK" reads as a silent no-op and hides whether the
+            # verifier found no citations or genuinely cleared them all.
+            if not results:
+                self.log("  Citation verification: no verifiable citations found in report")
+            elif flagged:
                 self.log(f"  Citation verification: {len(flagged)}/{len(results)} claims flagged")
                 (self.run_dir / "citation_verification.json").write_text(
                     json.dumps(results, indent=2)
                 )
             else:
-                self.log(f"  Citation verification: {len(results)} claims verified OK")
+                self.log(f"  Citation verification: {len(results)}/{len(results)} claims verified OK")
+            self._emit_event(
+                "citation_verification",
+                claims_checked=len(results), claims_flagged=len(flagged),
+            )
         except (OSError, ValueError, TypeError) as exc:
-            self.log(f"  Citation verification failed: {exc}")
+            self._emit_event("citation_verification", error=str(exc))
+            self.log(f"  Citation verification failed: {exc}", level="warning")
 
     @property
     def _finalization_status_path(self) -> Path:
