@@ -357,7 +357,13 @@ def build_relevance_and_allocate(
                 a,
             ),
         )
-        f["selected"] = members[:targets[f["fold_id"]]]
+        chosen = members[:targets[f["fold_id"]]]
+        # A named candidate the reading step surfaced is evaluated on its own
+        # merits even when its fold was stopped: the stop pruned breadth, not
+        # this specific enzyme.  Force-add keeps the budget honest (the pure
+        # allocation is unchanged) while never deleting a literature-named hit.
+        forced = [a for a in members if a in protected and a not in chosen]
+        f["selected"] = chosen + forced
         selected.update(f["selected"])
 
     # 5. Persist the landscape, ordered by relevance (best first) for the report.
