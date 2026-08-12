@@ -656,6 +656,101 @@ def _register_named_enzymes_from_fulltext(
     return registered
 
 
+def seed_mechanism_literature(
+    run_dir, query: str, substrate_smiles: str = "", llm_client=None,
+    max_families: int = 4, terms_per_family: int = 2, per_source: int = 15,
+    log_fn=None,
+) -> int:
+    """Run the derived mechanism families' literature search phrases as REAL
+    searches and persist the hits into the run's literature pool.
+
+    Why: discovery otherwise depends on the model choosing mechanism-oriented
+    search terms.  When it anchors on the query's applied PRODUCT instead, the
+    literature pool fills with materials / application papers and the
+    characterised enzymes — named only in mechanism primary literature — are never
+    read, so the full-text harvest has nothing to mine.  Executing the families'
+    own search phrases guarantees the mechanism literature is present before the
+    harvest runs.  The families and their phrases are LLM-PROPOSED strategy (the
+    tools merely execute them); no answer is encoded here.  Returns the number of
+    papers added.  Never raises — a seeding failure must not block the harvest.
+    """
+    run = Path(run_dir)
+    try:
+        from enzyme_discovery_agent.tools.mechanism_families import (
+            derive_mechanism_families,
+        )
+        mf_path = run / "mechanism_families.json"
+        families: list[dict] = []
+        if mf_path.exists():
+            try:
+                families = json.loads(mf_path.read_text())
+            except (OSError, json.JSONDecodeError):
+                families = []
+        if not families and llm_client is not None:
+            families = derive_mechanism_families(query, substrate_smiles, llm_client)
+            if families:
+                try:
+                    mf_path.write_text(json.dumps(families, indent=2) + "\n")
+                except OSError:
+                    pass
+    except Exception as exc:  # noqa: BLE001 - never block the harvest
+        logger.warning("Mechanism-seed derivation failed: %s", exc)
+        return 0
+    if not families:
+        return 0
+
+    terms: list[str] = []
+    seen_terms: set[str] = set()
+    for fam in families[:max_families]:
+        for t in (fam.get("literature_terms") or fam.get("descriptors") or [])[:terms_per_family]:
+            t = (t or "").strip()
+            if t and t.lower() not in seen_terms:
+                seen_terms.add(t.lower())
+                terms.append(t)
+    if not terms:
+        return 0
+
+    from enzyme_discovery_agent.tools.literature import (
+        search_europepmc,
+        search_pubmed,
+        search_semantic_scholar,
+    )
+    sources = (search_pubmed, search_europepmc, search_semantic_scholar)
+
+    def _search_term(term: str) -> list[dict]:
+        hits: list[dict] = []
+        for fn in sources:
+            try:
+                r = fn(term, max_results=per_source)
+                if r.get("status") != "error":
+                    hits.extend(r.get("data") or [])
+            except Exception as exc:  # noqa: BLE001 - one source failing is fine
+                logger.debug("mechanism-seed search failed (%s): %s", term[:50], exc)
+        return hits
+
+    lit_dir = run / "artifacts" / "literature"
+    lit_dir.mkdir(parents=True, exist_ok=True)
+    added = 0
+    with ThreadPoolExecutor(max_workers=config.FULLTEXT_HARVEST_WORKERS) as pool:
+        results = list(pool.map(_search_term, terms))
+    for i, (term, hits) in enumerate(zip(terms, results)):
+        papers = [p for p in hits if isinstance(p, dict)]
+        if not papers:
+            continue
+        try:
+            (lit_dir / f"mechanism_seed_{i:02d}.json").write_text(
+                json.dumps({"tool": "mechanism_seed", "query": term,
+                            "result": {"data": papers}}, indent=2) + "\n"
+            )
+            added += len(papers)
+        except OSError:
+            pass
+    if log_fn and added:
+        log_fn(f"  Mechanism-seed searches: added {added} paper(s) from "
+               f"{len(terms)} mechanism search phrase(s) to the pool")
+    return added
+
+
 def mine_and_register_fulltext_accessions(
     run_dir, query: str, fetch_ceiling: int = 250, max_proteins: int = 400,
     log_fn=None, llm_client=None,
