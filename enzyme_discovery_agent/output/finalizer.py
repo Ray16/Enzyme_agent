@@ -363,6 +363,9 @@ class RunFinalizer:
             ),
         )
         if outcome != "reports_delivered":
+            self._emit_event(
+                "run_degraded", outcome=outcome, evaluations=len(evaluations),
+            )
             self.log(f"  Run outcome: {outcome} ({len(evaluations)} evaluations)", level="warning")
 
         return (confidence_path.read_text() if confidence_path.exists() else final_text, len(evaluations))
