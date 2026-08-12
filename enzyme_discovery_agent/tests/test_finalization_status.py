@@ -79,6 +79,62 @@ class TestFinalizationStageStatus(unittest.TestCase):
         self.assertEqual(self._status()["stages"]["exploration_summary"]["status"], "completed")
 
 
+class _RecordingTokenUsage:
+    """Token accumulator whose total grows as report stages record LLM calls."""
+
+    def __init__(self):
+        self.total_tokens = 100  # main-loop spend before finalization
+
+    def to_dict(self):
+        return {"total_tokens": self.total_tokens}
+
+    def record(self, *args, **kwargs):
+        self.total_tokens += 1000
+
+
+class TestTokenUsageWrittenAfterReports(unittest.TestCase):
+    """token_usage.json must include the report stages' own LLM spend.
+
+    Regression: the file used to be written before report generation, so it
+    undercounted the run and disagreed with the run_complete event / manifest.
+    """
+
+    def test_token_usage_json_reflects_report_stage_records(self):
+        import enzyme_discovery_agent.output.finalizer as fin
+
+        def _fake_report(run_dir, evals, query, llm, token_usage, log_fn):
+            token_usage.record("confidence_report", None)
+            (run_dir / "report_confidence.md").write_text("# report\n")
+
+        def _fake_explorative(run_dir, evals, query, llm, token_usage, log_fn):
+            token_usage.record("explorative_report", None)
+            (run_dir / "report_explorative.md").write_text("# report\n")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            (run_dir / "agent_state").mkdir(parents=True, exist_ok=True)
+            finalizer = RunFinalizer(run_dir, _NullLLM(), lambda msg, level="info": None)
+            token_usage = _RecordingTokenUsage()
+
+            orig_report = fin.generate_two_pass_report
+            orig_expl = fin.generate_two_pass_explorative
+            fin.generate_two_pass_report = _fake_report
+            fin.generate_two_pass_explorative = _fake_explorative
+            try:
+                finalizer.finalize(
+                    messages=[], token_usage=token_usage,
+                    query="find enzymes for a target reaction", final_text="",
+                )
+            finally:
+                fin.generate_two_pass_report = orig_report
+                fin.generate_two_pass_explorative = orig_expl
+
+            on_disk = json.loads((run_dir / "token_usage.json").read_text())
+            # 100 seed + 1000 (confidence) + 1000 (explorative) = 2100.
+            self.assertEqual(on_disk["total_tokens"], 2100)
+            self.assertEqual(on_disk["total_tokens"], token_usage.total_tokens)
+
+
 class TestEmptyRunOutcome(unittest.TestCase):
     """An end-to-end finalize() over a run that never produced a candidate."""
 
