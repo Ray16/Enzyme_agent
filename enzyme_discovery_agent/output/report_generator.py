@@ -1339,6 +1339,8 @@ def generate_two_pass_report(
     if is_error_text(report_text):
         if log_fn:
             log_fn("  Pass 2 returned an empty/invalid report; retrying with compact LLM prompt")
+        _emit_degradation(run_dir, "confidence", "compact_retry",
+                          "pass-2 report empty/invalid")
         report_text = _retry_compact_llm_report(llm_client, query, all_evals, pass1_ranking)
         if is_error_text(report_text):
             raise RuntimeError("LLM returned no substantive report after compact retry")
