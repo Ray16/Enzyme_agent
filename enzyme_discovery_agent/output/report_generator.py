@@ -1049,7 +1049,8 @@ def generate_two_pass_report(
     family_rank_by_acc = _family_rank_map(stopped_accs, ontarget_accs)
     if log_fn and (stopped_accs or ontarget_accs):
         log_fn(f"  Family binding: floated {len(ontarget_accs)} on-target-fold "
-               f"candidate(s), gated {len(stopped_accs)} stopped-fold candidate(s)")
+               f"candidate(s); {len(stopped_accs)} stopped-fold candidate(s) "
+               f"annotated but not penalised in ranking")
     baseline = _deterministic_mechanistic_ranking(
         rankable_evals, tier_score, family_rank_by_acc=family_rank_by_acc
     )
