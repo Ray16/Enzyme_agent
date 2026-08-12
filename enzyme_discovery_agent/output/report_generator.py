@@ -949,7 +949,10 @@ def _annotate_reasoned_tiers(
         acc = entry.get("accession", "")
         ev = acc_to_eval.get(acc)
         d = ev.get("data", ev) if ev else {}
-        gated = bool(d.get("critical_warnings")) or acc in stopped
+        # Only a per-candidate mechanistic contradiction gates the tier LABEL; a
+        # fold-STOP is annotation-only (surfaced in ``family_relevance`` below),
+        # never a Tier-3 demotion — consistent with the deterministic spine.
+        gated = bool(d.get("critical_warnings"))
         on_target = acc in ontarget
         lit = d.get("literature") or {}
         has_evidence = bool(d.get("is_swissprot")) and int(lit.get("characterization_papers") or 0) > 0
