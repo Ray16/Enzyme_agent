@@ -157,28 +157,33 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
 
 
 def derive_mechanism_families(
-    query: str, substrate_smiles: str, llm_client, max_families: int = 8,
-    min_families: int = 4, max_attempts: int = 4,
+    query: str, substrate_smiles: str, llm_client, max_families: int = 10,
+    min_families: int = 4, max_attempts: int = 6,
 ) -> list[dict]:
     """Derive the distinct mechanism families that can catalyse the reaction.
 
-    A single LLM call sometimes returns only ONE family (a truncated or
-    degenerate response), which collapses the whole downstream family navigation
-    (nothing to prune BETWEEN).  So sample up to ``max_attempts`` times and UNION
-    the families by name until at least ``min_families`` distinct ones are
-    gathered — cheap insurance against a degenerate single sample; usually one
-    call suffices.  Returns [] only if every attempt yields nothing.
+    A single LLM call sees only a slice of the fold space, so it silently drops
+    families — including, on some draws, the fold whose native chemistry is
+    CLOSEST to the target.  So don't stop at a low floor: sample repeatedly and
+    UNION the families by name, each attempt told what is already covered so it
+    returns ADDITIONAL distinct folds, and keep going until the model CONVERGES
+    (an attempt beyond the first adds nothing new) or the hard ``max_families`` /
+    ``max_attempts`` caps are hit.  Convergence — not a fixed count — is the
+    exhaustiveness signal: the loop broadens across several samples instead of
+    trusting one.  ``min_families`` only guards against declaring convergence on a
+    single thin first sample.  Returns [] only if every attempt yields nothing.
     """
     if llm_client is None:
         return []
 
     families: list[dict] = []
     seen: set[str] = set()
-    for _ in range(max_attempts):
+    for attempt in range(max_attempts):
         # After the first attempt, tell the model what it already produced so a
         # retry ADDS distinct folds rather than repeating a single umbrella
         # family (the observed collapse mode) that the name-dedup then discards.
         exclude = [f["name"] for f in families] or None
+        added = 0
         for fam in _derive_once(query, substrate_smiles, llm_client, max_families,
                                 exclude=exclude):
             key = fam["name"].casefold()
@@ -186,7 +191,17 @@ def derive_mechanism_families(
                 continue
             seen.add(key)
             families.append(fam)
-        if len(families) >= min_families or len(families) >= max_families:
+            added += 1
+        if len(families) >= max_families:
+            break
+        # Converged: a broadening attempt (at least the second sample) surfaced no
+        # new fold, so the model has no more distinct families to offer.  Stop —
+        # but only once past ``min_families``, so one thin first sample followed by
+        # a dry retry does not end derivation prematurely.
+        if added == 0 and attempt >= 1 and len(families) >= min_families:
+            break
+        # Give up rather than spin if the model stays dry well below the floor.
+        if added == 0 and attempt >= 2:
             break
     if not families:
         logger.warning("mechanism-family derivation returned no parseable families")
