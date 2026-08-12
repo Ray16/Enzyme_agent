@@ -1060,8 +1060,10 @@ def generate_two_pass_report(
         if len(shortlist) >= config.RANKING_FOCUS_SHORTLIST:
             break
         acc = entry.get("accession", "")
-        if acc in stopped_accs:
-            continue  # agent stopped this fold — never offer it as a top lead
+        # A fold-STOP no longer bars a candidate from the shortlist: the stop is a
+        # coarse breadth verdict, not a per-candidate disqualifier, and excluding
+        # stopped members hid correct answers whose fold was wrongly stopped.  Only
+        # a genuine mechanistic contradiction (checked just below) removes a lead.
         ev = acc_to_eval.get(acc)
         if not ev:
             continue
