@@ -103,7 +103,15 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
             key=lambda x: x[1].get("metadata", {}).get("seq_length", 0),
             reverse=True,
         )
-        gene_reps.append(members[0][0])
+        # The longest member represents the gene, PLUS any literature-named
+        # member of the group: a named hit must never be collapsed away behind a
+        # longer ortholog, or the downstream protection can't reach it.
+        reps_here = [members[0][0]] + [
+            acc for acc, _ in members[1:] if acc in literature_named
+        ]
+        for acc in reps_here:
+            if acc not in gene_reps:
+                gene_reps.append(acc)
 
     if not gene_reps:
         return
