@@ -63,6 +63,38 @@ warnings.filterwarnings("ignore", message=".*not removing hydrogen.*")
 
 logger = logging.getLogger("enzyme_agent")
 
+
+def _extract_reasoning(assistant_msg, text_content: str) -> str:
+    """Best rationale available for a turn, for the ``assistant_decision`` event.
+
+    On a tool-calling turn the ordinary ``content`` is usually empty -- the model
+    puts no prose alongside the calls -- which is why the reasoning field read as
+    blank in early runs.  Some providers surface the model's chain-of-thought in a
+    separate ``reasoning_content`` field (or as ``thinking``/``reasoning`` blocks
+    inside a structured content list); recover it so the "why" is captured when
+    the provider offers it.  Falls back to the plain text content, then "".
+    Purely defensive: any odd shape yields "".
+    """
+    text = (text_content or "").strip()
+    if text:
+        return text
+    for attr in ("reasoning_content", "reasoning"):
+        val = getattr(assistant_msg, attr, None)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    # Structured content list (e.g. [{"type": "thinking", "thinking": "..."}]).
+    content = getattr(assistant_msg, "content", None)
+    if isinstance(content, list):
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            for key in ("thinking", "reasoning", "text"):
+                val = block.get(key)
+                if isinstance(val, str) and val.strip():
+                    return val.strip()
+    return ""
+
+
 class EnzymeAgent:
     """LLM-driven enzyme discovery agent."""
 
