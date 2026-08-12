@@ -300,6 +300,13 @@ def _write_run_summary(run_dir: Path, manifest: dict[str, Any]) -> None:
         "",
         "## Result",
         f"- **Outcome:** {result.get('outcome', '?')}",
+    ]
+    # Free-text final message from the agent, shown only when it adds something
+    # beyond the headline outcome (it is often empty on a clean run).
+    summary = (result.get("summary") or "").strip()
+    if summary and summary != result.get("outcome"):
+        lines.append(f"- **Summary:** {summary}")
+    lines += [
         f"- **Iterations used:** {result.get('iterations_used', '?')}",
         f"- **Candidates evaluated:** {result.get('candidates_evaluated', '?')}",
         f"- **Total tokens:** {tokens.get('total_tokens', '?'):,}"
