@@ -1554,6 +1554,7 @@ def generate_report(
         if is_error_text(report_text):
             if log_fn:
                 log_fn(f"  {report_type.title()} report was empty; retrying with compact LLM prompt")
+            _emit_degradation(run_dir, report_type, "compact_retry", "report empty")
             report_text = _retry_compact_llm_report(llm_client, query, all_evals)
             if is_error_text(report_text):
                 raise RuntimeError(f"LLM returned no substantive {report_type} report after compact retry")
