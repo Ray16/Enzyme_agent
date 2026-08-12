@@ -140,10 +140,6 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
     # is later stopped, so a named hit is never deleted by a fold-level breadth
     # verdict made from the fold's generic annotation.
     reps = [(acc, entry_by_acc[acc]) for acc in gene_reps if acc in entry_by_acc]
-    literature_named = {
-        acc for acc, info in candidates.items()
-        if str(info.get("metadata", {}).get("literature_name") or "").strip()
-    }
     selected, landscape = build_relevance_and_allocate(
         run_dir, reps, protected=literature_named)
     if not selected:
