@@ -1466,6 +1466,8 @@ def generate_two_pass_explorative(
         for attempt in range(2):
             if log_fn:
                 log_fn(f"  Explorative report thin; compact retry {attempt + 1}/2")
+            _emit_degradation(run_dir, "explorative", "compact_retry",
+                              f"thin response, attempt {attempt + 1}/2")
             report_text = _retry_compact_llm_report(
                 llm_client, query, all_evals, ranking, suitability_first=True
             )
@@ -1476,6 +1478,8 @@ def generate_two_pass_explorative(
         # Never emit a stub: render the chemistry ranking deterministically.
         if log_fn:
             log_fn("  Explorative report still thin; writing deterministic ranking")
+        _emit_degradation(run_dir, "explorative", "deterministic_fallback",
+                          "LLM report abandoned; deterministic ranking written")
         _write_deterministic_report(
             run_dir, "report_explorative.md", query, all_evals, ranking=ranking,
             ranking_filename="explorative_ranking.json",
