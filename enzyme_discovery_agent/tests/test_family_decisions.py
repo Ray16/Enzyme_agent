@@ -41,6 +41,45 @@ class TestStopAwareAllocation(unittest.TestCase):
         self.assertEqual(t["A"], 0)
 
 
+class TestProtectedMembers(unittest.TestCase):
+    """A literature-named candidate is evaluated on its own merits even when its
+    fold is stopped — the stop pruned breadth, not that specific enzyme."""
+
+    def _run(self, reps, stopped, protected):
+        # build_relevance_and_allocate needs a run_dir for its side files and a
+        # fold resolver.  Exercise the pure selection instead by patching the
+        # network-touching helpers with a temp dir.
+        import tempfile
+        from unittest import mock
+
+        from enzyme_discovery_agent.gates import family_relevance as fr
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            # Each rep resolves to its own singleton fold named after its acc, and
+            # every fold is "same" direction with no fg survey (offline).
+            with mock.patch.object(fr, "_most_specific_fold",
+                                   side_effect=lambda ids, cache: ids[0]), \
+                 mock.patch.object(fr, "_candidate_direction", return_value="same"), \
+                 mock.patch.object(fr, "_fold_fg_max", return_value=None), \
+                 mock.patch("enzyme_discovery_agent.models.family_decisions."
+                            "stopped_folds", return_value=stopped):
+                sel, land = fr.build_relevance_and_allocate(
+                    root, reps, protected=protected)
+        return sel, land
+
+    def test_named_member_survives_a_stopped_singleton_fold(self):
+        # DdaG-shaped case: the sole member of a stopped fold, surfaced by name.
+        reps = [("E2JA32", {"interpro_ids": ["IPR053158"], "seq_length": 300})]
+        sel, _ = self._run(reps, stopped={"IPR053158"}, protected={"E2JA32"})
+        self.assertIn("E2JA32", sel)
+
+    def test_unprotected_member_of_a_stopped_fold_is_still_dropped(self):
+        reps = [("X99999", {"interpro_ids": ["IPR053158"], "seq_length": 300})]
+        sel, _ = self._run(reps, stopped={"IPR053158"}, protected=set())
+        self.assertNotIn("X99999", sel)
+
+
 class TestFamilyDecisions(unittest.TestCase):
     def test_record_load_and_stopped_set(self):
         with tempfile.TemporaryDirectory() as tmp:
