@@ -207,23 +207,25 @@ _PROMOTABLE_DIRECTIONS = frozenset({"same", "unknown"})
 def select_relevant_members(
     members: list[dict],
     *,
-    min_fit: float,
     max_select: int,
 ) -> list[dict]:
-    """Pick the members whose native substrate RESEMBLES the target — the relevant
-    enzymes in this family to promote to candidates.
+    """Pick the members whose native substrate most RESEMBLES the target — the
+    relevant enzymes in this family to promote to candidates.
 
     Grounded and answer-agnostic: it reads the per-member substrate-fit numbers the
     survey already computed (functional groups, MW, volume, main-chain length,
     polarity — the whole vector, equal-weighted via :func:`_holistic_fit`) and the
     member's direction vs the target.  It selects on RESEMBLANCE, not identity: a
     non-natural target is never anyone's exact native substrate (enzymes are
-    promiscuous), so the floor is a proximity floor, not a match requirement.
+    promiscuous), so there is no match requirement.
 
-    Excludes members whose reaction runs the OPPOSITE direction to the target or is
-    UNRELATED (a grounded dead end); keeps same/unknown direction.  Returns the top
-    ``max_select`` by holistic substrate fit, each with its accession, the fit, and
-    the direction — highest fit first.  Pure: no network, no side effects.
+    Selection is RELATIVE, not a tuned cutoff: it ranks the same/unknown-direction
+    members with a resolved substrate fit and returns the top ``max_select`` — the
+    best-fitting members in THIS family — letting the downstream evaluation budget
+    grade them rather than a magic fit threshold deciding relevance here.  Members
+    whose reaction runs OPPOSITE the target or is UNRELATED (grounded dead ends), or
+    whose substrate never resolved (nothing to compare), are excluded.  Highest fit
+    first.  Pure: no network, no side effects.
     """
     scored: list[dict] = []
     for m in members:
@@ -233,7 +235,7 @@ def select_relevant_members(
         if not acc:
             continue
         fit = _holistic_fit(m.get("substrate"))
-        if fit is None or fit < min_fit:
+        if fit is None:
             continue
         scored.append({
             "accession": acc,
