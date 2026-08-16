@@ -19,6 +19,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from enzyme_discovery_agent import config
 from enzyme_discovery_agent.chemistry_logic import (
     classify_reaction_chemistry,
     compare_substrate_properties,
