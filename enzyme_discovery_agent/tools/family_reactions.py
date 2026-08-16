@@ -197,6 +197,59 @@ def summarise_family_profile(members: list[dict]) -> dict:
     }
 
 
+# The directions a member may have relative to the target and still be a
+# plausible relevant enzyme: same reaction direction, or unknown (no EC/reaction
+# to classify — not evidence against it).  "opposite" is a grounded dead end and
+# "unrelated" makes a different bond, so neither is promotable.
+_PROMOTABLE_DIRECTIONS = frozenset({"same", "unknown"})
+
+
+def select_relevant_members(
+    members: list[dict],
+    *,
+    min_fit: float,
+    max_select: int,
+) -> list[dict]:
+    """Pick the members whose native substrate RESEMBLES the target — the relevant
+    enzymes in this family to promote to candidates.
+
+    Grounded and answer-agnostic: it reads the per-member substrate-fit numbers the
+    survey already computed (functional groups, MW, volume, main-chain length,
+    polarity — the whole vector, equal-weighted via :func:`_holistic_fit`) and the
+    member's direction vs the target.  It selects on RESEMBLANCE, not identity: a
+    non-natural target is never anyone's exact native substrate (enzymes are
+    promiscuous), so the floor is a proximity floor, not a match requirement.
+
+    Excludes members whose reaction runs the OPPOSITE direction to the target or is
+    UNRELATED (a grounded dead end); keeps same/unknown direction.  Returns the top
+    ``max_select`` by holistic substrate fit, each with its accession, the fit, and
+    the direction — highest fit first.  Pure: no network, no side effects.
+    """
+    scored: list[dict] = []
+    for m in members:
+        if m.get("direction_vs_target") not in _PROMOTABLE_DIRECTIONS:
+            continue
+        acc = m.get("accession")
+        if not acc:
+            continue
+        fit = _holistic_fit(m.get("substrate"))
+        if fit is None or fit < min_fit:
+            continue
+        scored.append({
+            "accession": acc,
+            "name": m.get("name", ""),
+            "ec": m.get("ec", []),
+            "reviewed": m.get("reviewed", True),
+            "direction_vs_target": m.get("direction_vs_target"),
+            "native_reaction": m.get("native_reaction", ""),
+            "substrate_fit": fit,
+        })
+    # Highest fit first; a reviewed member wins ties over an unreviewed one (curated
+    # annotation is more trustworthy), then a stable accession tiebreak.
+    scored.sort(key=lambda s: (-s["substrate_fit"], not s["reviewed"], s["accession"]))
+    return scored[:max_select]
+
+
 # --------------------------------------------------------------------------
 # Substrate resemblance (network: ChEBI -> SMILES -> property comparison)
 # --------------------------------------------------------------------------
