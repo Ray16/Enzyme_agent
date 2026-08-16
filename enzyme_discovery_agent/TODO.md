@@ -109,6 +109,12 @@ paper (E-64) that the strict family filter would exclude.
       adjacent (AsnA/AsnB-type) families to size the actual waste before fixing.
 
 ## 4. Performance / cost
+- [ ] **Substrate-fit survey engages late** (20260816_132034 run: survey couldn't
+      fire until iter ~26 / ~19 min because `candidate_count` counts screened+ only,
+      and screening didn't run until then — 102 discovered, 0 screened before that).
+      The narrowing engine is dormant for the whole early phase. Levers: screen
+      earlier / trigger the survey on DISCOVERED folds too (it already resolves
+      discovered candidates' folds), so substrate-fit narrowing starts sooner.
 - [ ] **Front-loaded literature exploration** (observed 20260816 run: at iter 5 /
       ~7 min, still 0 candidates — harvest pulled 160 papers from 8 mechanism
       phrases, then reads full text before any candidate exists). Substrate-fit
