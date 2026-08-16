@@ -275,7 +275,8 @@ class FamilySurveyGate:
                 {"role": "user", "content": guidance},
             ],
             log_message=f"Family survey: {len(self._all_folds)} fold(s) surveyed "
-                        f"(+{len(new_folds)} this pass) and landscape injected",
+                        f"(+{len(new_folds)} this pass); {n_promoted} substrate-fit "
+                        f"member(s) promoted; landscape injected",
             # Do NOT mark done on success: re-fire as the discovered pool grows so
             # late-appearing families get surveyed too (bounded by _MAX_ATTEMPTS).
             state_updates=give_up,
