@@ -488,20 +488,6 @@ def compare_substrate_properties(
     tpsa_t, tpsa_n = t_props.tpsa, n_props.tpsa
     tpsa_sim = min(tpsa_t, tpsa_n) / max(tpsa_t, tpsa_n) if max(tpsa_t, tpsa_n) > 0 else 1.0
 
-    _fg_keys = (
-        "num_carboxyl", "num_primary_amine", "num_secondary_amine",
-        "num_tertiary_amine", "num_amide", "num_hydroxyl", "num_thiol",
-        "num_ketone", "num_aldehyde", "num_ester", "num_ether",
-        "num_epoxide", "num_phosphate", "num_sulfonate", "num_nitro",
-        "num_nitrile", "num_imine", "num_guanidinium", "num_aromatic_ring",
-    )
-    fg_counts_t = {
-        k.removeprefix("num_"): getattr(t_props, k, 0) for k in _fg_keys
-    }
-    fg_counts_n = {
-        k.removeprefix("num_"): getattr(n_props, k, 0) for k in _fg_keys
-    }
-
     charge_t = t_props.net_charge_ph8
     charge_n = n_props.net_charge_ph8
 
