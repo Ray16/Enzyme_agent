@@ -839,6 +839,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             "target_bond_types": sorted(target_bonds),
             "family_reaction_profile": profile,
             "members": members,
+            "relevant_members": relevant_members,
         },
     }
 
