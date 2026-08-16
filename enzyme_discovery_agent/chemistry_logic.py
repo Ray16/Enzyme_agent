@@ -461,14 +461,15 @@ def compare_substrate_properties(
     fg_counts_n = {k.removeprefix("num_"): getattr(n_props, k, 0) for k in _fg_keys}
 
     # COUNT-aware functional-group similarity (Ruzicka / weighted Jaccard over the
-    # per-group counts), NOT a binary set-Jaccard.  A set-Jaccard saturates at ~0.5
-    # for almost every amide ligase — {carboxyl} vs {carboxyl, hydroxyl} and
-    # {primary_amine} vs {primary_amine, secondary_amine} both score 0.5 — and since
-    # the accommodation bottleneck takes the MIN across axes, that flat 0.5 capped
-    # every candidate and erased the discriminating chain/size signal.  Counts keep
-    # the discrimination: a diamine target vs a diamine native scores higher than vs
-    # a single-amine amino acid, which is exactly the amine-partner difference the
-    # ranking needs to separate a genuine diamine ligase from a small-substrate one.
+    # per-group counts), NOT a binary set-Jaccard.  A set-Jaccard saturates near 0.5
+    # whenever the native carries the target's reactive group plus one extra group
+    # (e.g. one shared group + one extra -> 1/2), so it pinned nearly every
+    # same-reaction candidate at ~0.5; since the accommodation bottleneck takes the
+    # MIN across axes, that flat 0.5 capped every candidate and erased the
+    # discriminating chain/size signal.  Counts keep the discrimination: a target
+    # bearing N of a reactive group vs a native bearing N scores higher than vs a
+    # native bearing only one, which is the partner-match difference the ranking
+    # needs to separate a true structural analogue from a mere same-reaction enzyme.
     _num = sum(min(fg_counts_t[k], fg_counts_n[k]) for k in fg_counts_t)
     _den = sum(max(fg_counts_t[k], fg_counts_n[k]) for k in fg_counts_t)
     fg_sim = (_num / _den) if _den else 1.0
