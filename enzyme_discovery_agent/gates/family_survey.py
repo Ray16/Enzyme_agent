@@ -75,6 +75,36 @@ class FamilySurveyGate:
         except (OSError, json.JSONDecodeError):
             return []
 
+    def _promote_relevant(self, run_dir, fold_id: str, relevant: list[dict]) -> int:
+        """Register a fold's relevant members (best substrate fit) as candidates.
+
+        Each becomes a ``discovered`` candidate tagged with the family it came from
+        and its substrate fit, so provenance shows WHY it was promoted.  Dedup is
+        across the whole run so a member surfacing in several folds is promoted once.
+        """
+        from enzyme_discovery_agent.models.candidate_registry import (
+            update_candidate_registry,
+        )
+
+        promoted = 0
+        for m in relevant:
+            acc = m.get("accession")
+            if not acc or acc in self._promoted:
+                continue
+            self._promoted.add(acc)
+            meta = {
+                "source_tool": f"family_substrate_fit:{fold_id}",
+                "substrate_fit": m.get("substrate_fit"),
+            }
+            if m.get("name"):
+                meta["literature_name"] = m["name"]
+            try:
+                update_candidate_registry(run_dir, acc, "discovered", metadata=meta)
+                promoted += 1
+            except Exception as exc:  # noqa: BLE001 - promotion must never crash a survey
+                logger.debug("promotion failed for %s: %s", acc, exc)
+        return promoted
+
     def execute(self, state: AgentState) -> GateResult:
         from enzyme_discovery_agent.gates.family_relevance import collect_survey_folds
 
