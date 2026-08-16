@@ -69,5 +69,55 @@ class TestPromotedCandidateScreened(unittest.TestCase):
         self.assertIn("screened", statuses)
 
 
+class TestGlobalFitProtection(unittest.TestCase):
+    """Budget-conscious protection: only the GLOBALLY best-fit promotions are
+    force-protected, so low-fit families do not force-consume eval budget."""
+
+    def setUp(self):
+        self.run_dir = Path(tempfile.mkdtemp())
+
+    def _promote(self, acc, fit, fold="IPR1"):
+        update_candidate_registry(
+            self.run_dir, acc, "discovered",
+            metadata={"source_tool": f"family_substrate_fit:{fold}",
+                      "substrate_fit": fit, "protein_name": acc.lower()})
+
+    def test_only_top_budget_by_fit_are_protected(self):
+        from enzyme_discovery_agent import config
+        from enzyme_discovery_agent.gates.ec_triage import auto_screen_candidates
+        n = config.FAMILY_PROTECT_BUDGET
+        high = [f"H{i}" for i in range(n)]        # top n by fit
+        low = [f"L{i}" for i in range(4)]         # clearly worse fit, below budget
+        for i, acc in enumerate(high):
+            self._promote(acc, 0.90 - i * 0.01)
+        for i, acc in enumerate(low):
+            self._promote(acc, 0.30 - i * 0.01)
+
+        captured = {}
+
+        def fake_allocate(run_dir, reps, protected=None, **kw):
+            captured["protected"] = set(protected or set())
+            return set(protected or set()), []
+
+        def fake_light(acc):
+            return {"protein_name": "x", "organism": "o", "ec_numbers": [],
+                    "catalytic_activities": [], "interpro_ids": ["IPR1"],
+                    "seq_length": 400}
+
+        with mock.patch(
+            "enzyme_discovery_agent.gates.family_relevance.build_relevance_and_allocate",
+            side_effect=fake_allocate,
+        ), mock.patch(
+            "enzyme_discovery_agent.tools.reasoning._fetch_uniprot_entry_light",
+            side_effect=fake_light,
+        ):
+            auto_screen_candidates(self.run_dir)
+
+        prot = captured["protected"]
+        self.assertTrue(set(high).issubset(prot), prot)          # all high-fit protected
+        self.assertEqual(set(low) & prot, set())                 # no low-fit protected
+        self.assertLessEqual(len(prot), n)
+
+
 if __name__ == "__main__":
     unittest.main()
