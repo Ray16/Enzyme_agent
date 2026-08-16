@@ -754,14 +754,14 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
              and _holistic_fit(x.get("substrate")) is not None),
             key=lambda x: -_holistic_fit(x.get("substrate")),
         ):
-            if len(anchors) >= MAX_REPRESENTATIVES_PER_FAMILY:
+            if len(anchors) >= config.MAX_REPRESENTATIVES_PER_FAMILY:
                 break
             for ec in m.get("ec", []):
                 # Only fully specified EC numbers anchor a precise reaction (a
                 # partial "6.3.2.-" would re-broaden the pull).
                 if ec and "-" not in ec and ec not in anchors:
                     anchors.append(ec)
-        for ec in anchors[:MAX_REPRESENTATIVES_PER_FAMILY]:
+        for ec in anchors[:config.MAX_REPRESENTATIVES_PER_FAMILY]:
             try:
                 extra = _unreviewed_members_by_ec(fold_id, ec, size=_MEMBER_CAP)
             except Exception as e:  # noqa: BLE001 - TrEMBL deepening must never crash the survey
@@ -794,6 +794,12 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
 
     members.sort(key=_order_key)
     profile = summarise_family_profile(members)
+
+    # The relevant enzymes in THIS family: the best-fitting same/unknown-direction
+    # members (reviewed + gated-TrEMBL), for the caller to promote to candidates so
+    # they enter evaluation rather than only being read by the model.
+    relevant_members = select_relevant_members(
+        members, max_select=config.MAX_REPRESENTATIVES_PER_FAMILY)
 
     dv = profile.get("direction_vs_target_counts", {})
     hf = profile.get("holistic_fit")
