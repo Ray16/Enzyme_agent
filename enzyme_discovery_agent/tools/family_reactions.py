@@ -453,12 +453,43 @@ def _reviewed_member_count(fold_id: str) -> int:
     return len([line for line in body.splitlines() if line.strip()])
 
 
+_MEMBER_FIELDS = "accession,protein_name,ec,cc_catalytic_activity"
+
+
 def _reviewed_members(fold_id: str, size: int) -> list[dict]:
     """Enumerate reviewed members of a fold with their native reactions in one query."""
     q = urllib.parse.quote(f"(xref:interpro-{fold_id}) AND (reviewed:true)")
     url = (
         f"https://rest.uniprot.org/uniprotkb/search?query={q}"
-        f"&fields=accession,protein_name,ec,cc_catalytic_activity"
+        f"&fields={_MEMBER_FIELDS}"
+        f"&format=json&size={size}"
+    )
+    return _fetch_json(url, timeout=45).get("results", [])
+
+
+def _trembl_members_query(fold_id: str, ec: str) -> str:
+    """UniProt query for a fold's UNREVIEWED members that natively catalyse a
+    specific EC reaction — the targeted deepening of one relevant reaction.
+
+    Anchoring on the EC (taken from a reviewed member whose native substrate
+    already resembles the target) is what keeps TrEMBL from being a noise dump:
+    the ~10^5 uncurated members of a fold collapse to the handful catalysing the
+    reaction the reviewed pass judged relevant.
+    """
+    return f"(xref:interpro-{fold_id}) AND (reviewed:false) AND (ec:{ec})"
+
+
+def _unreviewed_members_by_ec(fold_id: str, ec: str, size: int) -> list[dict]:
+    """Fetch a capped page of a fold's unreviewed members catalysing ``ec``.
+
+    Only members carrying a catalytic-activity annotation are returned (the EC
+    filter already implies enzymatic function), so each has native-reaction ChEBIs
+    to compare — the same substrate-fit path the reviewed members take.
+    """
+    q = urllib.parse.quote(_trembl_members_query(fold_id, ec))
+    url = (
+        f"https://rest.uniprot.org/uniprotkb/search?query={q}"
+        f"&fields={_MEMBER_FIELDS}"
         f"&format=json&size={size}"
     )
     return _fetch_json(url, timeout=45).get("results", [])
