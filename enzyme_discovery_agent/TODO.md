@@ -69,6 +69,13 @@ correspondence explicit, role-consistent evidence the LLM reasons over.
 - [ ] Keep it pure/offline-testable; no new tuned weights.
 
 ## 4. Performance / cost
+- [ ] **Front-loaded literature exploration** (observed 20260816 run: at iter 5 /
+      ~7 min, still 0 candidates — harvest pulled 160 papers from 8 mechanism
+      phrases, then reads full text before any candidate exists). Substrate-fit
+      machinery can't start until this clears. Ideas: cap/parallelize full-text
+      reads; interleave discovery with harvest so candidates form earlier; only
+      deep-read papers that pass a cheap relevance screen; time-box the initial
+      harvest.
 - [ ] RDKit 3D embedding is slow on CoA-ester natives (volume estimate). Cache/2D
       fallback; parallelize survey calls across folds.
 - [ ] Runs cost ~2.5M tokens — prune prompt re-sends, fewer finalization LLM passes,
