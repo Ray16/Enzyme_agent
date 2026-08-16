@@ -298,25 +298,33 @@ def _candidate_is_gated(data: dict) -> bool:
     return bool(data.get("critical_warnings"))
 
 
+_ACCOM_STERIC_AXES = ("mw_similarity", "chain_length_similarity", "volume_similarity")
+_ACCOM_CHEMICAL_AXES = ("functional_group_similarity", "tpsa_similarity", "logP_similarity")
+
+
 def _accommodation_score(data: dict) -> float | None:
     """Substrate-accommodation fit in [0,1], or None when not computed.
 
-    The enzyme must bind EVERY target substrate, and a pocket accommodates a
-    substrate only if it fits on ALL physical axes — so:
+    The enzyme must bind EVERY target substrate, so the overall score is the WORST
+    across the target substrates (a real physical constraint — it must host both).
 
-      * the fit of one (target-substrate → best-native) pair is the WORST of its
-        grounded similarities (functional groups, aliphatic chain length, size),
-        NOT just functional-group overlap; and
-      * the overall score is the WORST across the target substrates.
+    Within ONE (target → best-native) pair, the axes are NOT blindly min-ed
+    together: a raw ``min(fg, chain, mw)`` lets whichever axis is lowest — often a
+    coarse or saturating chemical metric — dominate and erase the rest.  Instead the
+    axes are split by their PHYSICS:
 
-    A native that is aromatic / cyclic where the target is aliphatic is further
-    capped, because a ring system the pocket evolved around will not admit a
-    linear aliphatic chain.  This bottleneck view (grounded facts, no tuned
-    weights) demotes an enzyme whose native merely shares a functional-group
-    TYPE with the target but is otherwise much larger, aromatic, or rigid — a
-    bulky native scored against a small flexible target, which functional-group
-    overlap alone wrongly rewarded.  Returns None when
-    substrate SMILES were unavailable, so callers treat it as neutral.
+      * STERIC/SHAPE fit is a genuine hard bottleneck — a substrate too large or the
+        wrong shape cannot bind, however similar its chemistry — so it is the WORST
+        of the size axes (MW, main-chain length, volume), further capped when the
+        native is aromatic/cyclic and the target is not.
+      * CHEMICAL compatibility (functional-group profile, polarity) is GRADED and
+        promiscuity-tolerant, so it is the AVERAGE of its axes — no single coarse
+        axis dominates.
+
+    Accommodation is the WORST of {steric, chemical}: a candidate must both fit the
+    pocket sterically AND be chemically plausible, but chemistry is a smooth signal,
+    not a blind gate.  Grounded facts, no tuned weights.  None when substrate SMILES
+    were unavailable, so callers treat it as neutral.
     """
     sim = data.get("substrate_similarity") or {}
     comps = sim.get("property_comparisons") or []
@@ -324,18 +332,20 @@ def _accommodation_score(data: dict) -> float | None:
         return None
     per_substrate = []
     for c in comps:
-        dims = [c.get(k) for k in (
-            "functional_group_similarity", "chain_length_similarity", "mw_similarity",
-        )]
-        dims = [d for d in dims if isinstance(d, (int, float))]
-        if not dims:
-            continue
-        fit = min(dims)
-        if c.get("aromaticity_match") is False:   # aromatic native, aliphatic target
-            fit = min(fit, 0.3)
-        if c.get("cyclicity_match") is False:     # ring native, acyclic target
-            fit = min(fit, 0.5)
-        per_substrate.append(fit)
+        steric = [c[k] for k in _ACCOM_STERIC_AXES if isinstance(c.get(k), (int, float))]
+        chem = [c[k] for k in _ACCOM_CHEMICAL_AXES if isinstance(c.get(k), (int, float))]
+        parts = []
+        if steric:
+            s = min(steric)
+            if c.get("aromaticity_match") is False:   # aromatic native, aliphatic target
+                s = min(s, 0.3)
+            if c.get("cyclicity_match") is False:     # ring native, acyclic target
+                s = min(s, 0.5)
+            parts.append(s)
+        if chem:
+            parts.append(sum(chem) / len(chem))
+        if parts:
+            per_substrate.append(min(parts))
     return min(per_substrate) if per_substrate else None
 
 
