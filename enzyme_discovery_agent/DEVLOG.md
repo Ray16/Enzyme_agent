@@ -38,11 +38,17 @@ actually enter evaluation.
 **Validated.** Full suite green (183). Live smoke on IPR000291: 120 reviewed + 120
 gated-TrEMBL, 2 promoted. Firewall grep clean.
 
-**Failure modes found.**
-- **SfaB (A0A2H4T912)** is TrEMBL with NO EC and NO catalytic-activity annotation →
-  no native substrate to compare → **unreachable by substrate-fit; literature-only.**
-- Exact substrate match is useless for non-natural targets: `chebi:adipate` → 0
-  UniProt enzymes. Recall must come from *similar* substrates (promiscuity).
+**Observations (specific, not generalizations).**
+- The **A0A2H4T912** UniProt record, *as annotated on 2026-08-16*, carries no EC and
+  no catalytic-activity comment → this specific record exposes no native substrate
+  for the survey to compare. So for THIS record via THIS path it is not reached by
+  substrate-fit today. (Not a claim that its class is inherently unreachable — a
+  future annotation, or a related member, could change this; literature remains a
+  route to it.)
+- For the specific query substrate adipate, `chebi:30832` returned 0 reviewed
+  UniProt enzymes on 2026-08-16 — i.e. adipate is (at present) no reviewed enzyme's
+  annotated native substrate. This motivated resemblance-based (not exact) matching
+  for this target. (A different target may have exact hits; do not assume 0.)
 
 ## 2026-08-16 — Ensure the agent USES it, Stage 2 (`substrate-fit-promotion-stage2`)
 
