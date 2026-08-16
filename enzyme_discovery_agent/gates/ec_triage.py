@@ -80,6 +80,17 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
         acc for acc, info in candidates.items()
         if str(info.get("metadata", {}).get("literature_name") or "").strip()
     }
+    # Candidates PROMOTED by native-substrate resemblance within their fold (the
+    # family survey selected them because their native substrate resembles the
+    # target — the strongest grounded relevance signal we have).  Protect them the
+    # same way: a promoted-then-budget-dropped candidate would defeat the whole
+    # substrate-fit selection, leaving it stuck at 'discovered', never evaluated.
+    substrate_fit_promoted = {
+        acc for acc, info in candidates.items()
+        if str(info.get("metadata", {}).get("source_tool") or "")
+        .startswith("family_substrate_fit")
+    }
+    protected_named = literature_named | substrate_fit_promoted
 
     # One representative per distinct gene (orthologs collapsed).  These are the
     # DISTINCT enzymes; fold-relevance budgeting decides which get evaluated.
