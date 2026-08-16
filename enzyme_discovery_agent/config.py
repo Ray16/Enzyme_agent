@@ -52,6 +52,15 @@ TOOL_THREAD_POOL_WORKERS = 4
 # extraction) in parallel rather than one at a time.  Bounded to stay polite to
 # publisher servers and the LLM endpoint.
 FULLTEXT_HARVEST_WORKERS = 6
+# Cap on how many papers enter the full-text harvest (the expensive part: one LLM
+# relevance-gate call per paper, then download + LLM extraction).  The mechanism-
+# seed searches inflate the pool to ~10^2 papers; relevance-gating all of them up
+# front spends the run's early effort READING rather than SEARCHING for candidates.
+# The pool is already relevance-RANKED, so harvesting only the top-N most relevant
+# keeps the mechanistic primary literature while bounding the cost — the family →
+# InterPro → survey → substrate-fit path is the primary candidate engine, not a
+# broad paper sweep.  Raise if a specific characterised enzyme is being missed.
+FULLTEXT_HARVEST_MAX_PAPERS = 40
 MAX_RESULT_CHARS = 20_000
 # Screening allocates a RELEVANCE BUDGET across fold families, it does not blindly
 # cap.  auto_screen collapses orthologs to one representative per distinct gene,
