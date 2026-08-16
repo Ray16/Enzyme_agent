@@ -106,6 +106,16 @@ EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
 # reviewed pass judged closest to the target, pulled one page (UNIPROT_MAX... capped
 # at the module member cap).  A feature toggle, not a threshold:
 FAMILY_INCLUDE_TREMBL = True
+# Budget-conscious protection.  Substrate-fit-promoted members are guaranteed
+# evaluation (protected from the fold budget), but protecting the top-2 of EVERY
+# surveyed fold force-evaluates low-fit families too (e.g. an ammonia-amine
+# synthetase whose native amine is nothing like the target) — spending compute on
+# families we would only rank low anyway.  So protect the GLOBALLY best-fit
+# promotions across ALL families, not per fold: a resource budget (like the
+# FAMILY_EVAL_* budgets), applied by RELATIVE fit rank — no relevance threshold.
+# Promotions beyond it are still registered and still eligible via the normal
+# relevance-budgeted screen; they just do not force-consume evaluation budget.
+FAMILY_PROTECT_BUDGET = 8
 # Structural (Foldseek) expansion seeds per run.  Kept bounded so Foldseek stays
 # a within-family expansion, not another broad search, but 2 was too tight once
 # the registry spans many evaluated families — it fanned out from only the top
