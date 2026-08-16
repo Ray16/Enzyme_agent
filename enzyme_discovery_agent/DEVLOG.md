@@ -4,6 +4,16 @@
 what was done, why, what it validated, and any failure modes found. Do not edit
 past entries — correct them by appending a new dated entry.
 
+**Scope & epistemics (read before adding entries):**
+- This file is a **human-facing evidence record only.** It is NOT read by the
+  agent and must NOT be fed into any run — it names answers, so doing so would
+  violate the data-leakage firewall (see `CLAUDE.md`).
+- Record findings as **specific, dated observations** (one record, one target, one
+  point in time), NOT as category-level laws. A specific failure does not
+  generalize: "this record has no annotated substrate today" ≠ "this class is
+  unreachable." External annotations change; a different target or member may
+  behave differently. Do not let a past negative bias how a new run is designed.
+
 ---
 
 ## 2026-08-16 — Substrate-fit family expansion, Stage 1 (`substrate-fit-promotion-stage1`)
