@@ -25,6 +25,12 @@ Guiding principles (from the design discussion):
   screened→evaluated→ranked, never dropped by fold budget/stop or ortholog collapse.
 - Validated by oracle test: surveying DdaG's (IPR053158) and PuuA's (IPR027303)
   folds retrieves + promotes both (the enzymes "mostly uncoverable via DB search").
+- **Stage 3**: mechanism-family derivation code-enforces the direction + free-substrate
+  constraints (drops inverse-direction / protein-bound families the LLM listed anyway);
+  precision-first prompt, no breadth quota. `family_passes_constraints()`.
+- **Stage 4**: initial full-text harvest capped to the top-40 relevance-ranked papers
+  (`FULLTEXT_HARVEST_MAX_PAPERS`) — early effort goes to candidate search, not reading
+  ~160 papers. Targeted per-candidate reading stays uncapped.
 
 ## 🔄 IN PROGRESS — End-to-end validation run
 - Full agent run on the amide/nylon benchmark, monitored live.
