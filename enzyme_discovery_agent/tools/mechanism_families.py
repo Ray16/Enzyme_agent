@@ -69,12 +69,25 @@ _SYSTEM = (
     "reaction inputs in the query (e.g. a fold paired with the target's "
     "substrate class). This steers the search to the family MEMBER whose "
     "substrate resembles the target, not just the family's textbook archetype; "
-    "include for each family at least one such fold-plus-target-substrate term.\n"
+    "include for each family at least one such fold-plus-target-substrate term;\n"
+    "  - native_reaction: the family's representative NATIVE reaction in its true "
+    "PHYSIOLOGICAL direction, written generically as 'reactants -> products' with "
+    "chemical CLASSES only (no enzyme/gene/product/organism name). Include the "
+    "cofactor/co-substrate the native reaction uses, and put H2O on the correct "
+    "side — a family that natively HYDROLYSES/cleaves consumes water as a "
+    "REACTANT (left of the arrow);\n"
+    "  - native_direction: exactly 'formation' or 'cleavage' — whether the "
+    "family's NATIVE physiological reaction MAKES or BREAKS the bond. Judge the "
+    "native role, NOT whether it could be run in reverse in vitro;\n"
+    "  - substrates_free: true ONLY if BOTH the native donor AND the native "
+    "acceptor are FREE small molecules of the target's substrate class; false if "
+    "either is carrier-bound, protein-tethered, or a fixed cofactor.\n"
     "STRICT: do NOT name any specific enzyme, gene, protein, natural product, or "
     "organism anywhere — only mechanism/fold classes, generic descriptors, and "
     "the target substrate's own chemical class from the query. "
     'Return ONLY JSON: {"families":[{"name":"..","descriptors":["..",".."],'
-    '"literature_terms":["..",".."]}]}'
+    '"literature_terms":["..",".."],"native_reaction":"reactants -> products",'
+    '"native_direction":"formation|cleavage","substrates_free":true}]}'
 )
 
 # Guard the firewall: drop any descriptor/term that looks like a specific
