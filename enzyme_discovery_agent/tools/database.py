@@ -162,21 +162,36 @@ def search_uniprot(
             "suggestions": ["Provide a query string or gene_name."],
         }
 
-    if function_filter:
-        query = f"({query}) AND ({function_filter})"
+    # UniProt free-text search implicitly ANDs the terms, so an over-specified
+    # query (name + full description + organism + a keyword) returns 0 the moment
+    # ONE term does not match — e.g. "DesD desferrioxamine synthetase Streptomyces
+    # coelicolor NIS" -> 0, while "desferrioxamine synthetase" -> 87.  So on an
+    # empty result, RELAX: retry progressively simpler variants (drop trailing
+    # qualifier terms) until hits appear, mirroring the InterPro simplifier.  Only
+    # a structured gene: query is left as-is (it is precise by construction).
+    fields = ("accession,protein_name,organism_name,sequence,ec,gene_names,"
+              "cc_function,cc_catalytic_activity")
+    variants = [query] if gene_name else _relax_uniprot_query(query)
 
-    params = {
-        "query": query,
-        "format": "json",
-        "size": str(min(max_results, config.UNIPROT_MAX_RESULTS_CAP)),
-        "fields": "accession,protein_name,organism_name,sequence,ec,gene_names,cc_function,cc_catalytic_activity",
-    }
-    url = f"{base_url}?{urllib.parse.urlencode(params)}"
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    def _fetch(q: str):
+        full = f"({q}) AND ({function_filter})" if function_filter else q
+        params = {"query": full, "format": "json",
+                  "size": str(min(max_results, config.UNIPROT_MAX_RESULTS_CAP)),
+                  "fields": fields}
+        url = f"{base_url}?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        return json.loads(request_with_retry(req, timeout=30).decode())
 
+    data = {}
+    used_query = query
+    relaxed = False
     try:
-        raw = request_with_retry(req, timeout=30)
-        data = json.loads(raw.decode())
+        for i, variant in enumerate(variants):
+            data = _fetch(variant)
+            if data.get("results"):
+                used_query = variant
+                relaxed = i > 0
+                break
     except Exception as e:
         return {
             "status": "error",
@@ -184,6 +199,9 @@ def search_uniprot(
             "data": [],
             "suggestions": ["Try a simpler query or different search terms."],
         }
+    if relaxed:
+        logger.info("UniProt search relaxed '%s' -> '%s' (%d hits)",
+                    query, used_query, len(data.get("results", [])))
 
     entries = []
     for entry in data.get("results", []):
