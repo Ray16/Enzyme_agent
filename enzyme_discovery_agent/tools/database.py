@@ -290,9 +290,14 @@ def search_uniprot(
             "catalytic_activities": catalytic_activities[:3],
         })
 
+    _relaxed_note = (
+        f" (relaxed from '{query[:50]}' — the full query had no hits)"
+        if relaxed else ""
+    )
     return {
         "status": "success" if entries else "partial",
-        "summary": f"Found {len(entries)} UniProt entries for query: {query[:60]}",
+        "summary": (f"Found {len(entries)} UniProt entries for query: "
+                    f"{used_query[:60]}{_relaxed_note}"),
         "data": entries,
         "count": len(entries),
         "suggestions": (
