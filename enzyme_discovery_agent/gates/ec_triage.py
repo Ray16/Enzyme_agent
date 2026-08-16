@@ -146,13 +146,13 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
         return
 
     # Regroup by fold and spend the evaluation budget by grounded relevance.
-    # Candidates the reading step surfaced BY NAME (literature_name set) are
-    # protected: they must be evaluated on their own evidence even if their fold
-    # is later stopped, so a named hit is never deleted by a fold-level breadth
-    # verdict made from the fold's generic annotation.
+    # Protected candidates — surfaced BY NAME in the literature, OR promoted by
+    # native-substrate resemblance within their fold — are evaluated on their own
+    # evidence even if their fold is later stopped, so a specific relevant enzyme is
+    # never deleted by a fold-level breadth verdict made from generic annotation.
     reps = [(acc, entry_by_acc[acc]) for acc in gene_reps if acc in entry_by_acc]
     selected, landscape = build_relevance_and_allocate(
-        run_dir, reps, protected=literature_named)
+        run_dir, reps, protected=protected_named)
     if not selected:
         # Degrade to the prior behaviour (screen every representative) rather
         # than screen nothing, if fold budgeting produced no selection.
