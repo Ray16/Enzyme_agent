@@ -829,24 +829,21 @@ def evaluate_candidate(
                             if s.strip()]
 
         if native_smiles_list and target_molecules:
-            # ROLE-AWARE correspondence.  Each substrate's "role" is the set of
-            # reactive functional groups it brings to the bond (carboxyl / amine /
-            # hydroxyl / thiol).  A target is matched only against natives that SHARE
-            # a reactive role, so the target's amine partner is compared to the
-            # member's amine partner and its acid partner to the member's acid
-            # partner — never both targets collapsed onto one native, and never an
-            # acid target scored against an amine native.  Falls back to all natives
-            # when a role match is unavailable (e.g. props unresolved), so recall is
-            # never lost.  Answer-agnostic: roles come from the target's OWN groups.
-            _REACTIVE = ("num_carboxyl", "num_primary_amine", "num_secondary_amine",
-                         "num_hydroxyl", "num_thiol")
-
+            # ROLE-AWARE correspondence.  A substrate's "role" is the set of reactive
+            # functional groups it carries — read GENERICALLY from the substrate
+            # analyser's own ``functional_groups`` output, not a hand-listed subset,
+            # so it works for any reaction/target.  A target is matched only against
+            # natives that SHARE a functional group, so the target's amine-bearing
+            # partner is compared to the member's amine-bearing partner and its
+            # carboxyl-bearing partner to the member's — never both targets collapsed
+            # onto one native, and never a mismatched pairing.  Falls back to all
+            # natives when a role match is unavailable (props unresolved), so recall
+            # is never lost.  Answer-agnostic: roles come from the target's OWN groups.
             def _roles(smi):
                 try:
-                    p = compute_substrate_properties(smi)
+                    return frozenset(compute_substrate_properties(smi).functional_groups)
                 except Exception:  # noqa: BLE001
                     return None
-                return frozenset(k for k in _REACTIVE if getattr(p, k, 0) > 0)
 
             native_roles = {n: _roles(n) for n in native_smiles_list}
 
