@@ -161,6 +161,22 @@ def _fetch_unpaywall(doi: str):
 # Orchestration
 # ---------------------------------------------------------------------------
 
+def _select_harvest_papers(ranked: list[dict], done: set, cap: int) -> list[dict]:
+    """Top-``cap`` not-yet-fetched papers, in relevance-ranked order (pure).
+
+    ``ranked`` is already ordered most-relevant-first, so this keeps the most
+    relevant unfetched papers and bounds how many enter the expensive harvest
+    (one LLM relevance call + download + extraction each)."""
+    todo: list[dict] = []
+    for paper in ranked:
+        if len(todo) >= cap:
+            break
+        key = _fulltext_key(paper)
+        if key is not None and key not in done:
+            todo.append(paper)
+    return todo
+
+
 def _fulltext_key(paper: dict) -> str | None:
     for k in ("doi", "pmcid", "arxiv_id", "pmid"):
         v = (str(paper.get(k) or "")).strip()
