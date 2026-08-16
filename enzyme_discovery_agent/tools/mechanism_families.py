@@ -287,6 +287,10 @@ def derive_mechanism_families(
             break
     if not families:
         logger.warning("mechanism-family derivation returned no parseable families")
+    elif dropped:
+        logger.info(
+            "mechanism-family derivation: kept %d families, dropped %d "
+            "(inverse-direction / non-free-substrate)", len(families), dropped)
     return families[:max_families]
 
 
