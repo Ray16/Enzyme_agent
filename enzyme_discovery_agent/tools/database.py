@@ -185,12 +185,11 @@ def search_uniprot(
         }
 
     # UniProt free-text search implicitly ANDs the terms, so an over-specified
-    # query (name + full description + organism + a keyword) returns 0 the moment
-    # ONE term does not match — e.g. "DesD desferrioxamine synthetase Streptomyces
-    # coelicolor NIS" -> 0, while "desferrioxamine synthetase" -> 87.  So on an
-    # empty result, RELAX: retry progressively simpler variants (drop trailing
-    # qualifier terms) until hits appear, mirroring the InterPro simplifier.  Only
-    # a structured gene: query is left as-is (it is precise by construction).
+    # query (gene name + full description + organism + a keyword tag) returns 0 the
+    # moment ONE term does not match, even when the core 2-3 terms have plenty of
+    # hits.  So on an empty result, RELAX: retry progressively simpler variants
+    # (drop trailing qualifier terms) until hits appear, mirroring the InterPro
+    # simplifier.  A structured gene: query is left as-is (precise by construction).
     fields = ("accession,protein_name,organism_name,sequence,ec,gene_names,"
               "cc_function,cc_catalytic_activity")
     variants = [query] if gene_name else _relax_uniprot_query(query)
