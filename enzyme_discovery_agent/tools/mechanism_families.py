@@ -210,7 +210,15 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
         lit_terms = _clean_terms(fam.get("literature_terms"))
         if not name or not descriptors:
             continue
-        out.append({"name": name, "descriptors": descriptors, "literature_terms": lit_terms})
+        out.append({
+            "name": name,
+            "descriptors": descriptors,
+            "literature_terms": lit_terms,
+            # Grounding the deterministic direction/substrate filter reasons over.
+            "native_reaction": str(fam.get("native_reaction") or "").strip(),
+            "native_direction": str(fam.get("native_direction") or "").strip(),
+            "substrates_free": fam.get("substrates_free"),
+        })
     return out
 
 
