@@ -692,16 +692,15 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     except (OSError, json.JSONDecodeError):
         target_smiles = []
 
-    members: list[dict] = []
     chebi_cache: dict[str, str | None] = {}
-    for entry in raw_members:
+
+    def _build_member(entry: dict, reviewed: bool) -> dict | None:
         acc = entry.get("primaryAccession", "")
         if not acc:
-            continue
+            return None
         ec = _member_ec(entry)
         native_reaction = _member_native_reaction(entry)
         facts = classify_member_reaction(ec, native_reaction, target_direction, target_bonds)
-
         # Substrate-resemblance FACTS for every non-opposite member (opposite
         # direction is already a grounded dead end, so skip its ChEBI lookups).
         substrate = None
@@ -716,18 +715,59 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
                 if chebi_cache[cid]:
                     smiles.append(chebi_cache[cid])
             substrate = _substrate_facts(smiles, target_smiles)
-
-        members.append({
+        return {
             "accession": acc,
             "name": _member_name(entry),
             "ec": ec,
+            "reviewed": reviewed,
             "native_reaction": native_reaction,
             "direction": facts["direction"],
             "direction_vs_target": facts["direction_vs_target"],
             "bond_types": facts["bond_types"],
             "shared_bond_type": facts["shared_bond_type"],
             "substrate": substrate,
-        })
+        }
+
+    members: list[dict] = []
+    for entry in raw_members:
+        m = _build_member(entry, reviewed=True)
+        if m is not None:
+            members.append(m)
+
+    # Gated TrEMBL deepening: once the reviewed pass shows which native reaction
+    # (EC) in this fold resembles the target, pull the fold's UNREVIEWED members of
+    # that SAME EC — extra scaffolds for the relevant chemistry, without paging the
+    # fold's ~10^5-strong uncurated bucket blindly.  Anchored on reviewed members
+    # only (curated EC), capped, and target-SMILES-gated (no target => no fit to
+    # anchor on).
+    if config.FAMILY_INCLUDE_TREMBL and target_smiles:
+        seen = {m["accession"] for m in members}
+        anchors: list[str] = []
+        for m in sorted(members, key=lambda x: -(_holistic_fit(x.get("substrate")) or -1.0)):
+            if len(anchors) >= config.FAMILY_TREMBL_MAX_ANCHORS:
+                break
+            if m.get("direction_vs_target") not in _PROMOTABLE_DIRECTIONS:
+                continue
+            if (_holistic_fit(m.get("substrate")) or 0.0) < config.FAMILY_TREMBL_ANCHOR_MIN_FIT:
+                break  # members are fit-sorted, so nothing below the floor remains
+            for ec in m.get("ec", []):
+                # Only fully specified EC numbers anchor a precise reaction (a
+                # partial "6.3.2.-" would re-broaden the pull).
+                if ec and "-" not in ec and ec not in anchors:
+                    anchors.append(ec)
+        for ec in anchors[:config.FAMILY_TREMBL_MAX_ANCHORS]:
+            try:
+                extra = _unreviewed_members_by_ec(fold_id, ec, size=config.FAMILY_TREMBL_MEMBER_CAP)
+            except Exception as e:  # noqa: BLE001 - TrEMBL deepening must never crash the survey
+                logger.debug("TrEMBL deepening failed for %s ec %s: %s", fold_id, ec, e)
+                continue
+            for entry in extra:
+                if entry.get("primaryAccession", "") in seen:
+                    continue
+                m = _build_member(entry, reviewed=False)
+                if m is not None:
+                    seen.add(m["accession"])
+                    members.append(m)
 
     # Presentation order over GROUNDED axes (not a verdict): same-direction first,
     # then higher functional-group overlap, then closer size.  No cutoff — the
