@@ -879,9 +879,8 @@ def evaluate_candidate(
 
             # The enzyme must accommodate EVERY target substrate, so the substrate
             # score is the WORST target match (the bottleneck), not a geometric
-            # mean.  A mean lets a candidate that fits ONE substrate well but the
-            # other poorly — e.g. an amino-acid ligase that matches the diacid but
-            # not the diamine (0.29 vs 0.09) — score deceptively high (0.16) and
+            # mean.  A mean lets a candidate that fits ONE target substrate well but
+            # the other poorly (e.g. 0.29 vs 0.09) score deceptively high (0.16) and
             # sneak above a balanced both-substrate fit.  The worst substrate is the
             # honest limit on whether the pocket can host the whole reaction.
             base_score = min(per_target_best)
