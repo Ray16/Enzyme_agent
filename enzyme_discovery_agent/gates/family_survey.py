@@ -55,6 +55,7 @@ class FamilySurveyGate:
         self._all_folds: dict[str, dict] = {}     # fold_id -> landscape entry
         self._count_cache: dict[str, int] = {}    # fold -> reviewed-member count
         self._fold_cache: dict[str, str | None] = {}  # accession -> most-specific fold
+        self._promoted: set[str] = set()          # accessions promoted to candidates
 
     def should_fire(self, state: AgentState) -> bool:
         # After families are derived and some candidates exist.  Re-fire as the
