@@ -58,16 +58,21 @@ class FamilySurveyGate:
         self._promoted: set[str] = set()          # accessions promoted to candidates
 
     def should_fire(self, state: AgentState) -> bool:
-        # After families are derived and some candidates exist.  Re-fire as the
-        # pool grows so folds discovered later get surveyed too; each firing only
-        # surveys folds NOT already done, so re-runs stay cheap.
-        return (
-            not state.family_survey_done
-            and state.mechanism_families_done
-            and state.candidate_count >= 3
-            and self._attempts < self._MAX_ATTEMPTS
-            and state.candidate_count > self._last_attempt_count
-        )
+        # Fire as soon as the mechanism families are DERIVED (i.e. the agent has
+        # deemed which families are relevant) — the derived families themselves seed
+        # the survey via search_interpro, so a reviewed enzyme whose fold matches the
+        # target on native substrate is registered IMMEDIATELY, not gated behind
+        # discovering + screening other candidates first (which pushed such hits to a
+        # late stage).  Then RE-FIRE as the discovered pool grows so later folds get
+        # surveyed too; each firing only surveys folds NOT already done, so re-runs
+        # stay cheap.
+        if state.family_survey_done or not state.mechanism_families_done:
+            return False
+        if self._attempts >= self._MAX_ATTEMPTS:
+            return False
+        if self._attempts == 0:
+            return True   # first pass: survey the derived families right away
+        return state.candidate_count > self._last_attempt_count
 
     def _derived_families(self, run_dir) -> list[dict]:
         try:
