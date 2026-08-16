@@ -220,17 +220,22 @@ def select_relevant_members(
     non-natural target is never anyone's exact native substrate (enzymes are
     promiscuous), so there is no match requirement.
 
-    Selection is RELATIVE, not a tuned cutoff: it ranks the same/unknown-direction
-    members with a resolved substrate fit and returns the top ``max_select`` — the
-    best-fitting members in THIS family — letting the downstream evaluation budget
-    grade them rather than a magic fit threshold deciding relevance here.  Members
-    whose reaction runs OPPOSITE the target or is UNRELATED (grounded dead ends), or
-    whose substrate never resolved (nothing to compare), are excluded.  Highest fit
-    first.  Pure: no network, no side effects.
+    Selection is RELATIVE, not a tuned cutoff: it ranks the SAME-direction members
+    with a resolved substrate fit and returns the top ``max_select`` — the best-
+    fitting members in THIS family — letting the downstream evaluation budget grade
+    them rather than a magic fit threshold deciding relevance here.  Promotion (which
+    spends evaluation budget) requires a GROUNDED same-direction native reaction, not
+    merely 'unknown': an unclassified member (no EC / unparseable reaction) is the
+    channel through which off-target folds — hydrolases, esterases, oxidoreductases
+    that happen to share a size/FG profile — leak into promotion and double the eval
+    cost (observed 20260816 run).  Every genuine on-target ligase carries a 6.3.x
+    (or equivalent) annotation, so it classifies as 'same'; requiring that keeps them
+    and drops the leak.  Members whose reaction is OPPOSITE/UNRELATED/UNKNOWN, or
+    whose substrate never resolved, are excluded.  Highest fit first.  Pure.
     """
     scored: list[dict] = []
     for m in members:
-        if m.get("direction_vs_target") not in _PROMOTABLE_DIRECTIONS:
+        if m.get("direction_vs_target") != "same":
             continue
         acc = m.get("accession")
         if not acc:
