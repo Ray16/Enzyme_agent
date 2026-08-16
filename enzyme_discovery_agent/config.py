@@ -76,6 +76,30 @@ FAMILY_EVAL_MAX_PER_FOLD = 6      # never spend more than this on any one fold
 # goal is efficient exploration of DIFFERENT families, not ortholog breadth.
 MAX_REPRESENTATIVES_PER_FAMILY = 2
 EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
+# Substrate-fit member promotion.  The family survey enumerates a fold's members
+# WITH their native substrates and scores each member's native-substrate
+# resemblance to the target across every physicochemical dimension (functional
+# groups, MW, volume, main-chain length, polarity).  Members whose native
+# substrate resembles the target — WITHOUT being identical, since enzymes are
+# promiscuous and a non-natural target is never anyone's exact native substrate —
+# are the relevant enzymes in that family and are PROMOTED to candidates so they
+# enter evaluation, instead of only being shown to the model.  The floor is
+# deliberately permissive (proximity, not identity); direction is still required
+# to be non-opposite.
+FAMILY_PROMOTE_MIN_FIT = 0.45      # holistic substrate-fit floor for promotion
+FAMILY_PROMOTE_MAX_PER_FOLD = 3    # strong members promoted per fold
+FAMILY_PROMOTE_MAX_PER_FIRING = 8  # global cap on promotions per survey firing
+# Gated TrEMBL deepening.  A fold's reviewed (Swiss-Prot) members are few, but the
+# uncurated (TrEMBL) bucket holds most sequence/taxonomic diversity — extra
+# scaffolds for the SAME target-resembling chemistry, which is what an engineering
+# campaign wants.  TrEMBL is enormous, so it is never paged blindly: only after
+# the reviewed pass identifies which native reaction (EC) in the fold resembles
+# the target are unreviewed members of that SAME EC pulled (capped).  This makes
+# TrEMBL a targeted deepening of the relevant reaction, not a noise dump.
+FAMILY_INCLUDE_TREMBL = True
+FAMILY_TREMBL_ANCHOR_MIN_FIT = 0.5  # reviewed member must fit this well to anchor
+FAMILY_TREMBL_MAX_ANCHORS = 2       # distinct EC anchors deepened per fold
+FAMILY_TREMBL_MEMBER_CAP = 25       # unreviewed members pulled per EC anchor
 # Structural (Foldseek) expansion seeds per run.  Kept bounded so Foldseek stays
 # a within-family expansion, not another broad search, but 2 was too tight once
 # the registry spans many evaluated families — it fanned out from only the top
