@@ -116,12 +116,19 @@ class FamilySurveyGate:
         with ThreadPoolExecutor(max_workers=_WORKERS) as pool:
             results = list(pool.map(_survey, new_folds))
 
+        n_promoted = 0
         for fid, r in zip(new_folds, results):
             self._surveyed_folds.add(fid)
             if not r or r.get("status") != "success":
                 continue
             d = r.get("data") or {}
             got = d.get("fold_id") or fid
+            # Promote the relevant enzymes in this family (best native-substrate fit,
+            # same/unknown direction — reviewed + gated TrEMBL) to candidates, so the
+            # substrate match actually feeds evaluation instead of only being read by
+            # the model.  Bounded intrinsically: the survey returns at most
+            # MAX_REPRESENTATIVES_PER_FAMILY relevant members per fold.
+            n_promoted += self._promote_relevant(run_dir, got, d.get("relevant_members") or [])
             if got in self._all_folds:
                 continue
             prof = d.get("family_reaction_profile", {})
