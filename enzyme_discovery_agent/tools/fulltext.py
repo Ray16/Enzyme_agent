@@ -796,14 +796,21 @@ def mine_and_register_fulltext_accessions(
     from enzyme_discovery_agent.tools.literature_extraction import is_paper_relevant
     workers = config.FULLTEXT_HARVEST_WORKERS
 
-    # Candidate papers not already fetched (bounded by fetch_ceiling).
+    # Candidate papers not already fetched, TOP-N by relevance rank.  The pool is
+    # already relevance-ordered, so capping here spends the harvest on the most
+    # relevant papers instead of LLM-relevance-gating the whole (~10^2) pool up
+    # front — keeping the run's early effort on candidate SEARCH, not paper reading.
+    harvest_cap = min(fetch_ceiling, config.FULLTEXT_HARVEST_MAX_PAPERS)
     todo = []
     for paper in ranked:
-        if len(todo) >= fetch_ceiling:
+        if len(todo) >= harvest_cap:
             break
         key = _fulltext_key(paper)
         if key is not None and key not in done:
             todo.append(paper)
+    if log_fn and len(ranked) > len(todo):
+        log_fn(f"  Full-text harvest: reading top {len(todo)} of {len(ranked)} "
+               f"pooled papers by relevance (cap {config.FULLTEXT_HARVEST_MAX_PAPERS})")
 
     # Relevance gate (LLM, per paper) IN PARALLEL — mechanism relevance on
     # title+abstract, so an off-topic paper is never downloaded.  The gate is
