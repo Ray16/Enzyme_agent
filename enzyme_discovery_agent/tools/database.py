@@ -102,6 +102,28 @@ def _parse_uniprot_json(data: dict) -> dict:
 # UniProt — search & fetch
 # ---------------------------------------------------------------------------
 
+def _relax_uniprot_query(query: str) -> list[str]:
+    """Progressively simpler variants of a free-text UniProt query.
+
+    UniProt ANDs free-text terms, so an over-specified query zeros out when one
+    term misses.  Qualifiers (organism, keyword tags) usually trail the core
+    identity, so drop terms from the END one at a time, down to the first two.
+    Returns the full query first, then the relaxations, de-duplicated.
+    """
+    terms = query.split()
+    variants = [query]
+    for k in range(len(terms) - 1, 1, -1):
+        variants.append(" ".join(terms[:k]))
+    seen: set[str] = set()
+    out: list[str] = []
+    for v in variants:
+        v = v.strip()
+        if v and v not in seen:
+            seen.add(v)
+            out.append(v)
+    return out
+
+
 @tool(
     description=(
         "Search UniProt for enzymes matching a query. Supports UniProt query syntax "
