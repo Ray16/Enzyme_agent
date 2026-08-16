@@ -829,14 +829,41 @@ def evaluate_candidate(
                             if s.strip()]
 
         if native_smiles_list and target_molecules:
+            # ROLE-AWARE correspondence.  Each substrate's "role" is the set of
+            # reactive functional groups it brings to the bond (carboxyl / amine /
+            # hydroxyl / thiol).  A target is matched only against natives that SHARE
+            # a reactive role, so the target's amine partner is compared to the
+            # member's amine partner and its acid partner to the member's acid
+            # partner — never both targets collapsed onto one native, and never an
+            # acid target scored against an amine native.  Falls back to all natives
+            # when a role match is unavailable (e.g. props unresolved), so recall is
+            # never lost.  Answer-agnostic: roles come from the target's OWN groups.
+            _REACTIVE = ("num_carboxyl", "num_primary_amine", "num_secondary_amine",
+                         "num_hydroxyl", "num_thiol")
+
+            def _roles(smi):
+                try:
+                    p = compute_substrate_properties(smi)
+                except Exception:  # noqa: BLE001
+                    return None
+                return frozenset(k for k in _REACTIVE if getattr(p, k, 0) > 0)
+
+            native_roles = {n: _roles(n) for n in native_smiles_list}
+
             per_target_best = []
             match_details = []
             property_comparisons = []
             for t_smi in target_molecules:
+                t_roles = _roles(t_smi)
+                # Natives that share a reactive role with this target substrate.
+                role_natives = [
+                    n for n in native_smiles_list
+                    if t_roles and native_roles.get(n) and (native_roles[n] & t_roles)
+                ] or native_smiles_list  # fallback: no role match -> all natives
                 best_sim = 0.0
                 best_native = ""
                 best_prop_sim = {}
-                for n_smi in native_smiles_list:
+                for n_smi in role_natives:
                     sim_result = compute_fingerprint_similarity(t_smi, n_smi)
                     sim = sim_result.get("data", {}).get("similarity", 0.0)
                     if sim > best_sim:
