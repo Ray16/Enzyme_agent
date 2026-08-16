@@ -19,7 +19,53 @@ import json
 import logging
 import re
 
+from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+
 logger = logging.getLogger("enzyme_agent")
+
+# Genuine opposites: a cleavage family cannot serve a formation target (or vice
+# versa).  A grounded chemical fact, not a tuned knob.
+_OPPOSITE_DIRECTIONS = {("formation", "cleavage"), ("cleavage", "formation")}
+_HYDROLYSIS_TERMS = re.compile(r"\bh2o\b|\bwater\b")
+_ARROW = re.compile(r"->|=>|→|<=>|=")
+
+
+def _family_native_direction(fam: dict) -> str | None:
+    """Best-effort native direction ('formation'|'cleavage'|None) for a family.
+
+    CODE-derived, not trusted to the model's prose: (1) a native reaction that
+    CONSUMES water (H2O left of the arrow) is a hydrolysis => cleavage, whatever
+    the model labelled it; (2) else the model's stated ``native_direction``; (3)
+    else a keyword parse of the reaction text.  None when nothing resolves."""
+    rxn = str(fam.get("native_reaction") or "")
+    left = _ARROW.split(rxn, maxsplit=1)[0].lower() if rxn else ""
+    if _HYDROLYSIS_TERMS.search(left):
+        return "cleavage"
+    stated = str(fam.get("native_direction") or "").strip().lower()
+    if stated in ("formation", "synthesis", "ligation", "condensation"):
+        return "formation"
+    if stated in ("cleavage", "hydrolysis", "degradation", "lysis"):
+        return "cleavage"
+    return extract_target_bond_type(rxn).get("direction")
+
+
+def family_passes_constraints(fam: dict, target_direction: str | None) -> tuple[bool, str]:
+    """Deterministic hard-constraint filter for a derived family: return
+    ``(ok, reason_if_dropped)``.
+
+    Enforces in CODE the two constraints the prompt states but the model does not
+    reliably self-apply: (a) native direction must not be the OPPOSITE of the
+    target's (drops native-cleavage families for a formation target — proteases,
+    hydrolases, esterases — however the model labelled them); (b) native donor and
+    acceptor must be FREE substrates (drops carrier-/protein-bound families).
+    ``target_direction`` None => the direction check is skipped (unknown target),
+    so an undetermined target never silently empties the list."""
+    if fam.get("substrates_free") is False:
+        return False, "native donor/acceptor is not a free small molecule"
+    fam_dir = _family_native_direction(fam)
+    if target_direction and fam_dir and (fam_dir, target_direction) in _OPPOSITE_DIRECTIONS:
+        return False, f"native direction '{fam_dir}' is opposite the target '{target_direction}'"
+    return True, ""
 
 _SYSTEM = (
     "You are an enzymology strategist. Given a target reaction, enumerate the "
