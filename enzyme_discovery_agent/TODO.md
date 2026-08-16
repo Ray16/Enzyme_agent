@@ -92,6 +92,22 @@ GS/ATP-grasp, NIS, ANL/peptide), but not guaranteed.
       (seed_mechanism_literature), then allocate the harvest budget ACROSS families
       (top-K per family) instead of a global top-N → explicit class coverage.
 
+## 3c. Budget-conscious family expansion — concentrate spend on relevant families (Stage 5)
+Don't just RANK irrelevant families low — avoid SPENDING compute expanding +
+evaluating them. Current leaks: (1) Stage-2 protection force-evaluates the top-2
+of EVERY surveyed fold, incl. low-fit families (AsnA/AsnB); (2) TrEMBL deepening
+runs for all surveyed folds; (3) harvest relevance gate read an off-target protease
+paper (E-64) that the strict family filter would exclude.
+- [ ] **Promote/protect by GLOBAL substrate-fit** across folds (pool all folds' best
+      members, rank, concentrate budget on the globally-best) instead of per-family
+      top-2 unconditional protection. Relative — no magic threshold. Preserves
+      Stage-2's goal (high-fit promotions reach ranking) while starving low-fit ones.
+- [ ] Gate the expensive TrEMBL deepening to competitive folds (relative top-K).
+- [ ] Align the fulltext harvest relevance gate with the family direction/chemistry
+      constraints (no protease/hydrolase papers).
+- [ ] MEASURE first: from the 20260816_132034 run, count evaluations that went to
+      adjacent (AsnA/AsnB-type) families to size the actual waste before fixing.
+
 ## 4. Performance / cost
 - [ ] **Front-loaded literature exploration** (observed 20260816 run: at iter 5 /
       ~7 min, still 0 candidates — harvest pulled 160 papers from 8 mechanism
