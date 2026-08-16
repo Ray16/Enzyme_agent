@@ -242,13 +242,20 @@ def derive_mechanism_families(
     if llm_client is None:
         return []
 
+    # Target reaction DIRECTION, derived once from the query, drives the
+    # deterministic drop of inverse-direction families.  Substrate helps only the
+    # bond keywords; direction comes from the reaction verb in the query.
+    target_direction = extract_target_bond_type(
+        f"{query} {substrate_smiles}".strip()).get("direction")
+
     families: list[dict] = []
-    seen: set[str] = set()
+    seen: set[str] = set()   # every NAME proposed (valid or dropped), so retries broaden
+    dropped = 0
     for attempt in range(max_attempts):
-        # After the first attempt, tell the model what it already produced so a
-        # retry ADDS distinct folds rather than repeating a single umbrella
-        # family (the observed collapse mode) that the name-dedup then discards.
-        exclude = [f["name"] for f in families] or None
+        # After the first attempt, tell the model what it already produced (valid
+        # OR dropped) so a retry ADDS distinct folds rather than repeating a single
+        # umbrella family, or re-proposing a family already ruled out.
+        exclude = sorted(seen) or None
         added = 0
         for fam in _derive_once(query, substrate_smiles, llm_client, max_families,
                                 exclude=exclude):
@@ -256,6 +263,15 @@ def derive_mechanism_families(
             if key in seen:
                 continue
             seen.add(key)
+            # Deterministic hard filter: drop inverse-direction / non-free-substrate
+            # families in CODE (the model states these constraints but does not
+            # reliably self-apply them), so the survey/coverage budget is never
+            # spent on a family whose own native reaction disqualifies it.
+            ok, reason = family_passes_constraints(fam, target_direction)
+            if not ok:
+                dropped += 1
+                logger.info("mechanism family dropped: %s (%s)", fam["name"], reason)
+                continue
             families.append(fam)
             added += 1
         if len(families) >= max_families:
