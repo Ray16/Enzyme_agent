@@ -70,9 +70,27 @@ or a discovered member's most-specific fold). Obscure answer-folds may never be 
 `_substrate_facts` picks, per target substrate, its best-overlapping native
 INDEPENDENTLY (can map two targets to one native, or acid↔amine). Make the
 correspondence explicit, role-consistent evidence the LLM reasons over.
-- [ ] Extract a one-to-one target↔native assignment (respect functional-group roles),
-      expose `substrate_correspondence` (per-pair dimensions) in the member evidence.
+- [ ] **Role-aware correspondence** (motivated by AsnA/AsnB): map amine↔amine,
+      acid↔acid explicitly, so the target amine is always compared against the
+      member's amine partner. Then e.g. "HMDA vs ammonia = poor" is guaranteed
+      regardless of cofactor-filtering. One-to-one target↔native assignment.
+- [ ] Expose `substrate_correspondence` (per-pair dimensions) in the member evidence.
+- [ ] **Cofactor-vs-substrate consistency**: `_COFACTOR_NAMES` (reasoning.py) filters
+      "ammonia"/"nh3" as a cofactor, but ammonia is a genuine N-source SUBSTRATE for
+      some amide synthetases (AsnA). The survey path (COFACTOR_CHEBI_IDS, 18 ids)
+      correctly keeps it; the per-candidate path drops it → hides the amine mismatch.
+      Make the two paths consistent (don't drop a species that IS the reaction's
+      nucleophile/amine partner).
 - [ ] Keep it pure/offline-testable; no new tuned weights.
+
+## 3b. Stratified literature harvest (guarantee class coverage) — Stage 5 candidate
+The Stage-4 cap takes the top-40 by GLOBAL relevance; on some queries that could
+collapse onto one enzyme class and starve the others (defeating the point of
+deriving N families). Observed OK emergently on the 20260816 run (read set spanned
+GS/ATP-grasp, NIS, ANL/peptide), but not guaranteed.
+- [ ] Tag each pooled paper with the family/search-term that surfaced it
+      (seed_mechanism_literature), then allocate the harvest budget ACROSS families
+      (top-K per family) instead of a global top-N → explicit class coverage.
 
 ## 4. Performance / cost
 - [ ] **Front-loaded literature exploration** (observed 20260816 run: at iter 5 /
