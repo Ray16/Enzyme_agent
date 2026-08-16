@@ -118,7 +118,7 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
         # member of the group: a named hit must never be collapsed away behind a
         # longer ortholog, or the downstream protection can't reach it.
         reps_here = [members[0][0]] + [
-            acc for acc, _ in members[1:] if acc in literature_named
+            acc for acc, _ in members[1:] if acc in protected_named
         ]
         for acc in reps_here:
             if acc not in gene_reps:
