@@ -13,8 +13,22 @@ import unittest
 from enzyme_discovery_agent.tools.family_reactions import (
     classify_member_reaction,
     summarise_family_profile,
+    select_relevant_members,
     _substrate_facts,
+    _trembl_members_query,
 )
+
+
+def _member(acc, direction, fg, mw=None, reviewed=True, ec=None):
+    """Build a survey-member dict with a resolved substrate fit for selection tests."""
+    dims = {"functional_group_similarity": fg}
+    if mw is not None:
+        dims["mw_similarity"] = mw
+    return {
+        "accession": acc, "direction_vs_target": direction, "reviewed": reviewed,
+        "ec": ec or [], "name": acc.lower(), "native_reaction": "A + B = C",
+        "substrate": {"dimensions": dims} if fg is not None else None,
+    }
 
 
 class TestMemberDirectionFacts(unittest.TestCase):
