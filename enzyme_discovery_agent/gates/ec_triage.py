@@ -82,14 +82,21 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
     }
     # Candidates PROMOTED by native-substrate resemblance within their fold (the
     # family survey selected them because their native substrate resembles the
-    # target — the strongest grounded relevance signal we have).  Protect them the
-    # same way: a promoted-then-budget-dropped candidate would defeat the whole
-    # substrate-fit selection, leaving it stuck at 'discovered', never evaluated.
-    substrate_fit_promoted = {
-        acc for acc, info in candidates.items()
+    # target — the strongest grounded relevance signal we have).  Protect them so a
+    # promoted-then-budget-dropped candidate does not defeat the substrate-fit
+    # selection — but budget-consciously: protect only the GLOBALLY best-fit
+    # promotions across ALL families (relative fit rank, capped at a resource
+    # budget), so a low-fit family's members do not force-consume evaluation budget
+    # just for being their own fold's best.  The rest stay registered and eligible
+    # via the normal relevance-budgeted screen; they simply are not force-evaluated.
+    _promoted = [
+        (acc, float(info.get("metadata", {}).get("substrate_fit") or 0.0))
+        for acc, info in candidates.items()
         if str(info.get("metadata", {}).get("source_tool") or "")
         .startswith("family_substrate_fit")
-    }
+    ]
+    _promoted.sort(key=lambda x: (-x[1], x[0]))   # best fit first, stable tiebreak
+    substrate_fit_promoted = {acc for acc, _ in _promoted[:config.FAMILY_PROTECT_BUDGET]}
     protected_named = literature_named | substrate_fit_promoted
 
     # One representative per distinct gene (orthologs collapsed).  These are the
