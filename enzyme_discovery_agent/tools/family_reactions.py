@@ -739,27 +739,30 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     # Gated TrEMBL deepening: once the reviewed pass shows which native reaction
     # (EC) in this fold resembles the target, pull the fold's UNREVIEWED members of
     # that SAME EC — extra scaffolds for the relevant chemistry, without paging the
-    # fold's ~10^5-strong uncurated bucket blindly.  Anchored on reviewed members
-    # only (curated EC), capped, and target-SMILES-gated (no target => no fit to
-    # anchor on).
+    # fold's ~10^5-strong uncurated bucket blindly.  The anchor EC is taken from the
+    # best-fitting REVIEWED members (relative, not an absolute-fit gate); how many
+    # reactions to deepen and the page size reuse existing bounds, so no new
+    # relevance/size knob is introduced.  Target-SMILES-gated (no target => nothing
+    # to rank a native reaction against).
     if config.FAMILY_INCLUDE_TREMBL and target_smiles:
         seen = {m["accession"] for m in members}
         anchors: list[str] = []
-        for m in sorted(members, key=lambda x: -(_holistic_fit(x.get("substrate")) or -1.0)):
-            if len(anchors) >= config.FAMILY_TREMBL_MAX_ANCHORS:
+        # Reviewed members, best substrate fit first; take the EC(s) of the top ones.
+        for m in sorted(
+            (x for x in members if x.get("direction_vs_target") in _PROMOTABLE_DIRECTIONS
+             and _holistic_fit(x.get("substrate")) is not None),
+            key=lambda x: -_holistic_fit(x.get("substrate")),
+        ):
+            if len(anchors) >= MAX_REPRESENTATIVES_PER_FAMILY:
                 break
-            if m.get("direction_vs_target") not in _PROMOTABLE_DIRECTIONS:
-                continue
-            if (_holistic_fit(m.get("substrate")) or 0.0) < config.FAMILY_TREMBL_ANCHOR_MIN_FIT:
-                break  # members are fit-sorted, so nothing below the floor remains
             for ec in m.get("ec", []):
                 # Only fully specified EC numbers anchor a precise reaction (a
                 # partial "6.3.2.-" would re-broaden the pull).
                 if ec and "-" not in ec and ec not in anchors:
                     anchors.append(ec)
-        for ec in anchors[:config.FAMILY_TREMBL_MAX_ANCHORS]:
+        for ec in anchors[:MAX_REPRESENTATIVES_PER_FAMILY]:
             try:
-                extra = _unreviewed_members_by_ec(fold_id, ec, size=config.FAMILY_TREMBL_MEMBER_CAP)
+                extra = _unreviewed_members_by_ec(fold_id, ec, size=_MEMBER_CAP)
             except Exception as e:  # noqa: BLE001 - TrEMBL deepening must never crash the survey
                 logger.debug("TrEMBL deepening failed for %s ec %s: %s", fold_id, ec, e)
                 continue
