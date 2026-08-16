@@ -136,11 +136,20 @@ class TestSelectRelevantMembers(unittest.TestCase):
         sel = select_relevant_members(members, max_select=5)
         self.assertEqual([s["accession"] for s in sel], ["C"])
 
-    def test_keeps_unknown_direction(self):
-        # Unknown direction (no EC/reaction to classify) is not evidence against —
-        # a plausible relevant member, kept.
+    def test_excludes_unknown_direction(self):
+        # Promotion (which spends eval budget) requires a GROUNDED same-direction
+        # reaction. 'unknown' (no EC/reaction) is the leak channel for off-target
+        # folds (hydrolases/esterases w/o clean EC), so it is NOT promoted.
         sel = select_relevant_members([_member("A", "unknown", 0.8, 0.8)], max_select=5)
-        self.assertEqual([s["accession"] for s in sel], ["A"])
+        self.assertEqual(sel, [])
+
+    def test_promotes_only_same_direction(self):
+        members = [
+            _member("SAME", "same", 0.5, 0.5),
+            _member("UNK", "unknown", 0.9, 0.9),   # higher fit but not grounded
+        ]
+        sel = select_relevant_members(members, max_select=5)
+        self.assertEqual([s["accession"] for s in sel], ["SAME"])
 
     def test_drops_members_without_resolved_fit(self):
         # No substrate resolved -> nothing to compare -> excluded (not promoted blind).
