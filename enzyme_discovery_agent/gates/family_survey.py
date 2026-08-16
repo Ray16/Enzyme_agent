@@ -96,8 +96,11 @@ class FamilySurveyGate:
                 "source_tool": f"family_substrate_fit:{fold_id}",
                 "substrate_fit": m.get("substrate_fit"),
             }
+            # Use protein_name (not literature_name) — these are found by fold +
+            # native-substrate resemblance, NOT named in a paper, so conflating them
+            # with the literature-named channel would corrupt provenance-by-name.
             if m.get("name"):
-                meta["literature_name"] = m["name"]
+                meta["protein_name"] = m["name"]
             try:
                 update_candidate_registry(run_dir, acc, "discovered", metadata=meta)
                 promoted += 1
