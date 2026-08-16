@@ -115,7 +115,13 @@ FAMILY_INCLUDE_TREMBL = True
 # FAMILY_EVAL_* budgets), applied by RELATIVE fit rank — no relevance threshold.
 # Promotions beyond it are still registered and still eligible via the normal
 # relevance-budgeted screen; they just do not force-consume evaluation budget.
-FAMILY_PROTECT_BUDGET = 8
+# The PRIMARY leak control is upstream: promotion now requires a GROUNDED same-
+# direction native reaction (select_relevant_members), which drops the off-target
+# (hydrolase/esterase/oxidoreductase) members that leaked in as 'unknown' direction
+# and doubled the eval cost on the 20260816 run.  With that gate doing the real
+# filtering, this cap is a generous BACKSTOP — set above where real answers rank by
+# fit (DdaG ranked ~#10) so protection never drops a genuine hit.
+FAMILY_PROTECT_BUDGET = 12
 # Structural (Foldseek) expansion seeds per run.  Kept bounded so Foldseek stays
 # a within-family expansion, not another broad search, but 2 was too tight once
 # the registry spans many evaluated families — it fanned out from only the top
