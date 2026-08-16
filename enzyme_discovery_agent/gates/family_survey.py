@@ -257,6 +257,13 @@ class FamilySurveyGate:
             "stop wasting evaluation on off-target families. Give a one-line reason "
             "per fold. You can revise later by calling it again."
         )
+        if n_promoted:
+            guidance += (
+                f"\n\nNOTE: {n_promoted} member(s) whose native substrate most "
+                "resembles the target were auto-promoted to candidates (tagged "
+                "family_substrate_fit:<fold>) so they enter evaluation — no action "
+                "needed; STOP their fold only if you judge the family off-target."
+            )
         return GateResult(
             intercept=True,
             new_messages=[
