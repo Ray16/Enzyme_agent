@@ -118,9 +118,9 @@ FAMILY_INCLUDE_TREMBL = True
 # The PRIMARY leak control is upstream: promotion now requires a GROUNDED same-
 # direction native reaction (select_relevant_members), which drops the off-target
 # (hydrolase/esterase/oxidoreductase) members that leaked in as 'unknown' direction
-# and doubled the eval cost on the 20260816 run.  With that gate doing the real
-# filtering, this cap is a generous BACKSTOP — set above where real answers rank by
-# fit (DdaG ranked ~#10) so protection never drops a genuine hit.
+# and doubled the eval cost on the leak-diagnosis run.  With that gate doing the
+# real filtering, this cap is a generous BACKSTOP — set comfortably above where
+# genuine on-target hits tend to rank by fit, so protection never drops a real hit.
 FAMILY_PROTECT_BUDGET = 12
 # Structural (Foldseek) expansion seeds per run.  Kept bounded so Foldseek stays
 # a within-family expansion, not another broad search, but 2 was too tight once
