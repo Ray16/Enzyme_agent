@@ -449,10 +449,29 @@ def compare_substrate_properties(
 
     fg_t = set(t_props.functional_groups)
     fg_n = set(n_props.functional_groups)
-    if fg_t or fg_n:
-        fg_sim = len(fg_t & fg_n) / len(fg_t | fg_n)
-    else:
-        fg_sim = 1.0
+
+    _fg_keys = (
+        "num_carboxyl", "num_primary_amine", "num_secondary_amine",
+        "num_tertiary_amine", "num_amide", "num_hydroxyl", "num_thiol",
+        "num_ketone", "num_aldehyde", "num_ester", "num_ether",
+        "num_epoxide", "num_phosphate", "num_sulfonate", "num_nitro",
+        "num_nitrile", "num_imine", "num_guanidinium", "num_aromatic_ring",
+    )
+    fg_counts_t = {k.removeprefix("num_"): getattr(t_props, k, 0) for k in _fg_keys}
+    fg_counts_n = {k.removeprefix("num_"): getattr(n_props, k, 0) for k in _fg_keys}
+
+    # COUNT-aware functional-group similarity (Ruzicka / weighted Jaccard over the
+    # per-group counts), NOT a binary set-Jaccard.  A set-Jaccard saturates at ~0.5
+    # for almost every amide ligase — {carboxyl} vs {carboxyl, hydroxyl} and
+    # {primary_amine} vs {primary_amine, secondary_amine} both score 0.5 — and since
+    # the accommodation bottleneck takes the MIN across axes, that flat 0.5 capped
+    # every candidate and erased the discriminating chain/size signal.  Counts keep
+    # the discrimination: a diamine target vs a diamine native scores higher than vs
+    # a single-amine amino acid, which is exactly the amine-partner difference the
+    # ranking needs to separate a genuine diamine ligase from a small-substrate one.
+    _num = sum(min(fg_counts_t[k], fg_counts_n[k]) for k in fg_counts_t)
+    _den = sum(max(fg_counts_t[k], fg_counts_n[k]) for k in fg_counts_t)
+    fg_sim = (_num / _den) if _den else 1.0
 
     logp_diff = abs(t_props.logP - n_props.logP)
     logp_sim = max(0.0, 1.0 - logp_diff / config.LOGP_PENALTY_DIVISOR)
