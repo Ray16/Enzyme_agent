@@ -113,5 +113,63 @@ class TestFamilyProfile(unittest.TestCase):
         self.assertEqual(p["distinct_reactions"], ["A = B", "C + H2O = D"])
 
 
+class TestSelectRelevantMembers(unittest.TestCase):
+    """The substrate-fit member selection that feeds promotion — pure, relative,
+    no tuned relevance cutoff."""
+
+    def test_ranks_by_fit_and_caps(self):
+        members = [
+            _member("A", "same", 0.5, 0.5),
+            _member("B", "same", 0.9, 0.9),
+            _member("C", "same", 0.7, 0.7),
+        ]
+        sel = select_relevant_members(members, max_select=2)
+        self.assertEqual([s["accession"] for s in sel], ["B", "C"])  # top-2 by fit
+        self.assertAlmostEqual(sel[0]["substrate_fit"], 0.9)
+
+    def test_excludes_opposite_and_unrelated(self):
+        members = [
+            _member("A", "opposite", 1.0, 1.0),   # perfect fit but wrong direction
+            _member("B", "unrelated", 1.0, 1.0),  # different bond
+            _member("C", "same", 0.3, 0.3),
+        ]
+        sel = select_relevant_members(members, max_select=5)
+        self.assertEqual([s["accession"] for s in sel], ["C"])
+
+    def test_keeps_unknown_direction(self):
+        # Unknown direction (no EC/reaction to classify) is not evidence against —
+        # a plausible relevant member, kept.
+        sel = select_relevant_members([_member("A", "unknown", 0.8, 0.8)], max_select=5)
+        self.assertEqual([s["accession"] for s in sel], ["A"])
+
+    def test_drops_members_without_resolved_fit(self):
+        # No substrate resolved -> nothing to compare -> excluded (not promoted blind).
+        sel = select_relevant_members([_member("A", "same", None)], max_select=5)
+        self.assertEqual(sel, [])
+
+    def test_no_absolute_floor_best_available_is_selected(self):
+        # Even a low-but-best fit is selected: selection is RELATIVE, not a cutoff.
+        sel = select_relevant_members([_member("A", "same", 0.1, 0.1)], max_select=5)
+        self.assertEqual([s["accession"] for s in sel], ["A"])
+
+    def test_reviewed_wins_tie_over_trembl(self):
+        members = [
+            _member("T", "same", 0.8, 0.8, reviewed=False),
+            _member("R", "same", 0.8, 0.8, reviewed=True),
+        ]
+        sel = select_relevant_members(members, max_select=2)
+        self.assertEqual([s["accession"] for s in sel], ["R", "T"])
+
+
+class TestTremblQuery(unittest.TestCase):
+    def test_trembl_query_targets_unreviewed_specific_ec(self):
+        q = _trembl_members_query("IPR000873", "6.3.2.1")
+        self.assertIn("xref:interpro-IPR000873", q)
+        self.assertIn("reviewed:false", q)
+        self.assertIn("ec:6.3.2.1", q)
+        # Never widens to the whole (reviewed) fold or a partial EC.
+        self.assertNotIn("reviewed:true", q)
+
+
 if __name__ == "__main__":
     unittest.main()
