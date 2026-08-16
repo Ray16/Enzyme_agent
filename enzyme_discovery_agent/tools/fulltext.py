@@ -801,13 +801,7 @@ def mine_and_register_fulltext_accessions(
     # relevant papers instead of LLM-relevance-gating the whole (~10^2) pool up
     # front — keeping the run's early effort on candidate SEARCH, not paper reading.
     harvest_cap = min(fetch_ceiling, config.FULLTEXT_HARVEST_MAX_PAPERS)
-    todo = []
-    for paper in ranked:
-        if len(todo) >= harvest_cap:
-            break
-        key = _fulltext_key(paper)
-        if key is not None and key not in done:
-            todo.append(paper)
+    todo = _select_harvest_papers(ranked, done, harvest_cap)
     if log_fn and len(ranked) > len(todo):
         log_fn(f"  Full-text harvest: reading top {len(todo)} of {len(ranked)} "
                f"pooled papers by relevance (cap {config.FULLTEXT_HARVEST_MAX_PAPERS})")
