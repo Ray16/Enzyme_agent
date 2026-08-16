@@ -324,10 +324,31 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
             "native_mw_range": [round(min(mws)), round(max(mws))],
         }
 
+    # ROLE-AWARE correspondence, generic and consistent with the evaluation path:
+    # a substrate's role is the set of reactive functional groups it carries (read
+    # from the analyser's own ``functional_groups`` output, not a hand-listed set),
+    # and a target is matched only against member substrates that SHARE a group with
+    # it.  This keeps the target's amine-bearing partner compared to the member's
+    # amine-bearing partner (and carboxyl to carboxyl), instead of both targets
+    # collapsing onto one native or crossing roles.  Falls back to all member
+    # substrates when no role match resolves, so recall is never lost.
+    def _roles(smi):
+        try:
+            return frozenset(compute_substrate_properties(smi).functional_groups)
+        except Exception:  # noqa: BLE001
+            return None
+
+    member_roles = {n: _roles(n) for n in member_smiles}
+
     per_target = []
     for t in target_smiles:
+        t_roles = _roles(t)
+        role_members = [
+            n for n in member_smiles
+            if t_roles and member_roles.get(n) and (member_roles[n] & t_roles)
+        ] or member_smiles
         best = None
-        for n in member_smiles:
+        for n in role_members:
             cmp = compare_substrate_properties(t, n, compute_substrate_properties)
             if not cmp:
                 continue
@@ -335,10 +356,8 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
             if fg is None:
                 continue
             cl = cmp.get("chain_length_similarity")
-            # Pick a member's own closest substrate by functional-group overlap,
-            # breaking ties by MAIN-CHAIN closeness — the FG axis saturates (a
-            # carboxyl/amine is near-universal here), so without the chain tiebreak
-            # this would pick an arbitrarily-sized substrate among FG ties.  Keep
+            # Among role-consistent natives, pick the member's closest substrate by
+            # functional-group overlap, breaking ties by MAIN-CHAIN closeness.  Keep
             # the FULL comparison so every grounded dimension is available.
             key = (fg, cl if cl is not None else -1.0)
             if best is None or key > best["_key"]:
