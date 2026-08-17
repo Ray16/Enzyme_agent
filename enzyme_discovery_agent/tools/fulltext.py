@@ -406,21 +406,6 @@ def fetch_full_text(query: str, run_dir: str | None = None,
     }
 
 
-# Sequence-accession patterns for full-text mining.  Deposited accessions live in
-# the Methods / Data-Availability sections, never abstracts, and are the ONLY
-# stable link to enzymes that carry no gene name and only a generic protein name
-# (annotated merely as a generic ligase/AMP-binding activity) — which neither
-# gene-name nor function-text search can reach.  Nucleotide accessions are
-# 1-2 letters + 6 digits (older GenBank/ENA) or the newer 4-letters + 8/10 digits
-# form; protein accessions are 3 letters + 5-7 digits.
-_NUCLEOTIDE_ACC_RE = re.compile(r"\b([A-Z]{1,2}\d{6}|[A-Z]{4}\d{8,10})\b")
-_PROTEIN_ACC_RE = re.compile(r"\b([A-Z]{3}\d{5,7})(?:\.\d+)?\b")
-_DEPOSIT_CUES = (
-    "accession", "deposited", "genbank", "ena ", "uniprot", "data availab",
-    "nucleotide sequence", "embl", "ncbi", "gene cluster",
-)
-
-
 def _resolve_embl_accession(acc: str, cap: int = 50) -> list[str]:
     """Deterministically map an EMBL/GenBank accession to UniProt accessions.
 
