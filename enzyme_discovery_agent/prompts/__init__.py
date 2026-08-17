@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from enzyme_discovery_agent.prompts.report_prompts import (
     EXPLORATIVE_RERANK_PROMPT,
-    build_confidence_report_prompt,
-    build_explorative_report_prompt,
 )
 from enzyme_discovery_agent.prompts.sections import (
     ANTI_PATTERNS,
