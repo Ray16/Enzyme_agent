@@ -127,6 +127,29 @@ class TestSelectRelevantMembers(unittest.TestCase):
         self.assertEqual([s["accession"] for s in sel], ["B", "C"])  # top-2 by fit
         self.assertAlmostEqual(sel[0]["substrate_fit"], 0.9)
 
+    def test_default_promotes_EVERY_relevant_member_no_cap(self):
+        # Discovery must not drop relevant members: with no max_select, ALL
+        # same-direction resolved-fit members are returned (best-fit first), not a
+        # top-N slice — so a large fold's long tail of genuine members is kept.
+        members = [_member(chr(65 + i), "same", 0.9 - i * 0.05, 0.9 - i * 0.05)
+                   for i in range(12)]
+        sel = select_relevant_members(members)          # default: uncapped
+        self.assertEqual(len(sel), 12)                  # every relevant member kept
+        self.assertEqual([s["accession"] for s in sel],
+                         [chr(65 + i) for i in range(12)])  # ordered best-fit first
+
+    def test_default_still_excludes_irrelevant(self):
+        # Uncapped does NOT mean unfiltered: the relevance gate (same-direction +
+        # resolved fit) still drops opposite/unknown/unresolved members.
+        members = [
+            _member("SAME", "same", 0.5, 0.5),
+            _member("OPP", "opposite", 1.0, 1.0),
+            _member("UNK", "unknown", 0.9, 0.9),
+            _member("NOFIT", "same", None),
+        ]
+        sel = select_relevant_members(members)
+        self.assertEqual([s["accession"] for s in sel], ["SAME"])
+
     def test_excludes_opposite_and_unrelated(self):
         members = [
             _member("A", "opposite", 1.0, 1.0),   # perfect fit but wrong direction
