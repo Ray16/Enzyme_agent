@@ -230,7 +230,7 @@ def update_candidate_registry(
     Pass ``status=None`` for a metadata-only update (e.g. attaching the paper's
     enzyme name to an already-registered candidate) without appending a status.
     """
-    now = datetime.now().isoformat()
+    now = datetime.now().astimezone().isoformat()
 
     with _registry_lock:
         run_dir.mkdir(parents=True, exist_ok=True)

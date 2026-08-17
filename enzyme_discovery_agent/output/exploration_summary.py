@@ -89,7 +89,7 @@ def write_exploration_summary(run_dir: Path, log_fn=None) -> None:
         "families": {k: len(v) for k, v in family_groups.items()},
         "evaluated_candidates": evaluated_list,
         "screened_candidates": screened_list,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now().astimezone().isoformat(),
     }
     try:
         with open(run_dir / "exploration_summary.json", "w") as f:

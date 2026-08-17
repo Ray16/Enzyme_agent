@@ -33,7 +33,7 @@ def record_trace_event(
             trace = {"events": []}
 
         trace["events"].append({
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now().astimezone().isoformat(),
             "stage": stage,
             "event_type": event_type,
             "data": data,

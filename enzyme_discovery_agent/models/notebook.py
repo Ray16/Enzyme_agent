@@ -34,7 +34,7 @@ def load_notebook(run_dir: Path) -> dict:
     if path.exists():
         with open(path) as f:
             return json.load(f)
-    now = datetime.now().isoformat()
+    now = datetime.now().astimezone().isoformat()
     return {
         "sections": {s: "" for s in NOTEBOOK_SECTIONS},
         "created_at": now,
@@ -132,7 +132,7 @@ def update_notebook(
         }
 
     notebook = load_notebook(run_dir)
-    now = datetime.now().isoformat()
+    now = datetime.now().astimezone().isoformat()
 
     if not append and notebook["sections"][section]:
         old_content = notebook["sections"][section]

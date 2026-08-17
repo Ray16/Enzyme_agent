@@ -118,3 +118,31 @@ class TestFetchFullTextTool(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestHarvestCap(unittest.TestCase):
+    """The initial full-text harvest reads the top-N most-relevant papers, not the
+    whole (~10^2) pool — enough to orient, bounded so the early stage searches for
+    candidates rather than reading exhaustively."""
+
+    def test_caps_to_top_n_in_rank_order(self):
+        ranked = [{"doi": f"10.1/{i}"} for i in range(100)]
+        sel = FT._select_harvest_papers(ranked, set(), cap=40)
+        self.assertEqual(len(sel), 40)
+        self.assertEqual(sel[0]["doi"], "10.1/0")   # most-relevant first
+        self.assertEqual(sel[-1]["doi"], "10.1/39")
+
+    def test_skips_already_fetched(self):
+        ranked = [{"doi": f"10.1/{i}"} for i in range(10)]
+        sel = FT._select_harvest_papers(ranked, {"10.1/0", "10.1/1"}, cap=40)
+        self.assertNotIn("10.1/0", [p["doi"] for p in sel])
+        self.assertEqual(len(sel), 8)
+
+    def test_skips_papers_without_a_key(self):
+        ranked = [{"title": "no id"}, {"doi": "10.1/9"}]
+        sel = FT._select_harvest_papers(ranked, set(), cap=40)
+        self.assertEqual([p.get("doi") for p in sel], ["10.1/9"])
+
+    def test_cap_below_pool_size_bounds_reads(self):
+        ranked = [{"pmid": str(i)} for i in range(200)]
+        self.assertEqual(len(FT._select_harvest_papers(ranked, set(), cap=40)), 40)

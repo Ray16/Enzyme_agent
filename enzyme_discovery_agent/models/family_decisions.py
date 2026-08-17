@@ -68,7 +68,7 @@ def record_family_decisions(
     """
     run_dir = Path(run_dir)
     reasons = reasons or {}
-    now = datetime.now().isoformat()
+    now = datetime.now().astimezone().isoformat()
     updates: list[tuple[str, str, str]] = []
     for key in (expand or []):
         updates.append((key, "expand", str(reasons.get(key, ""))))
