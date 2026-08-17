@@ -268,7 +268,7 @@ def select_relevant_members(
     # Highest fit first; a reviewed member wins ties over an unreviewed one (curated
     # annotation is more trustworthy), then a stable accession tiebreak.
     scored.sort(key=lambda s: (-s["substrate_fit"], not s["reviewed"], s["accession"]))
-    return scored[:max_select]
+    return scored if max_select is None else scored[:max_select]
 
 
 # --------------------------------------------------------------------------
