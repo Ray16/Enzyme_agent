@@ -1,0 +1,10 @@
+# LaTeX + preview build artifacts (regenerated from the .tex)
+*.aux
+*.log
+*.nav
+*.snm
+*.toc
+*.out
+build*.log
+review-*.png
+montage_all.png
