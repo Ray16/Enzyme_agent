@@ -192,18 +192,18 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
             })
             screened_count += 1
 
-    # Record what was deprioritised so a bounded budget never reads as "covered
-    # everything" — the folds held at their floor are visible in the landscape.
-    floored_folds = [f for f in landscape if f["n_representatives"] > f["n_selected_for_evaluation"]]
+    # Every distinct gene representative is screened + evaluated (no eval-budget
+    # cap); the landscape's relevance allocation now informs ranking DEPTH only.
+    lower_depth_folds = [f for f in landscape if f["n_representatives"] > f["n_selected_for_evaluation"]]
     append_exploration_log(
         run_dir,
         entry_type="SCREEN",
-        title=f"Auto-screened {screened_count} relevance-budgeted representatives",
+        title=f"Auto-screened {screened_count} gene representatives (all evaluated)",
         details={
             "Distinct genes": len(reps),
             "Fold families": len(landscape),
-            "Selected for evaluation": len(selected),
-            "Folds held at floor (deprioritised depth)": len(floored_folds),
+            "Screened for evaluation": len(selected),
+            "Folds given lower ranking depth by relevance": len(lower_depth_folds),
             "Already screened": len(already_screened),
             "Newly screened": screened_count,
         },
@@ -214,7 +214,7 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
         distinct_genes=len(reps),
         fold_families=len(landscape),
         selected_for_evaluation=len(selected),
-        folds_held_at_floor=len(floored_folds),
+        folds_held_at_floor=len(lower_depth_folds),
         already_screened=len(already_screened),
     )
     if log_fn:
