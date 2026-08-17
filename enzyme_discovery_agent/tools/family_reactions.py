@@ -832,13 +832,13 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     members.sort(key=_order_key)
     profile = summarise_family_profile(members)
 
-    # EVERY relevant enzyme in THIS family (grounded same-direction ligase with a
+    # EVERY relevant enzyme in THIS family (grounded same-direction reaction with a
     # resolved substrate fit) — reviewed + gated-TrEMBL — for the caller to promote
     # to candidates so they enter evaluation rather than only being read by the
-    # model.  NOT a top-N slice: dropping a relevant member defeats discovery (a
-    # 24-member NIS fold must not lose DesD/AsbB/AcsA to a top-2 cap).  The same-
-    # direction + resolved-substrate filter is the relevance gate; the evaluation
-    # budget grades them and ranking tiers them.
+    # model.  NOT a top-N slice: dropping a relevant member defeats discovery — a
+    # large fold must not lose its long tail of genuine members to a small cap.  The
+    # same-direction + resolved-substrate filter IS the relevance gate; the
+    # evaluation budget grades them and ranking tiers them.
     relevant_members = select_relevant_members(members)
 
     dv = profile.get("direction_vs_target_counts", {})
