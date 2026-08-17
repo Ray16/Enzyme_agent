@@ -712,7 +712,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
         fold_size = counts[fold_id]
         source = f"{seed_accession} fold {fold_id}"
     try:
-        raw_members = _reviewed_members(fold_id, size=_MEMBER_CAP)
+        raw_members = _reviewed_members(fold_id, size=_REVIEWED_MEMBER_CAP)
     except Exception as e:  # noqa: BLE001
         logger.warning("Member enumeration failed for %s: %s", fold_id, e)
         return {
