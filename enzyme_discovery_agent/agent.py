@@ -409,7 +409,6 @@ class EnzymeAgent:
         self._gate_state.lit_search_count = len(
             getattr(self, "_literature_search_iterations", set())
         )
-        self._gate_state.search_log = self._search_log
 
     def run(
         self,
