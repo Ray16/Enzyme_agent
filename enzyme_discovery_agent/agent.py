@@ -150,6 +150,17 @@ class EnzymeAgent:
             ECTriageGate(),
             HomologExpansionGate(),
         ])
+        # Gates that fire (in this order) on every discovery turn, before the
+        # pre-evaluation pipeline.  Each conforms to the Gate protocol, so they run
+        # through one shared intercept ritual (_apply_gate_result) instead of the
+        # copy-pasted pop/extend/iteration-=1 block that used to sit inline per gate.
+        self._early_gates = [
+            ("literature_harvest", self._literature_harvest_gate),
+            ("mechanism_family", self._mechanism_family_gate),
+            ("family_survey", self._family_survey_gate),
+            ("evidence_selection", self._evidence_selection_gate),
+            ("systematic_coverage", self._systematic_gate),
+        ]
 
         self._event_log_path = self.run_dir / "events.jsonl"
         self._setup_logging()
