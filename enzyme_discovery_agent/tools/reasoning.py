@@ -77,18 +77,10 @@ def _fetch_uniprot_entry_light(accession: str) -> dict | None:
 
 
 def _target_direction_for_run(run_dir: Path) -> str | None:
-    """Read the declared target direction without relying on LLM notebook text."""
-    try:
-        context = json.loads((run_dir / "target_context.json").read_text())
-        reaction = (context.get("target_profile") or {}).get("reaction") or {}
-        target_text = " ".join(filter(None, [
-            str(reaction.get("class", "")),
-            str(reaction.get("direction", "")),
-            str(context.get("query", "")),
-        ]))
-        return extract_target_bond_type(target_text).get("direction")
-    except (OSError, json.JSONDecodeError, AttributeError):
-        return None
+    """Read the declared target direction (delegates to the single target-profile
+    reader so the file/parse logic lives in one place)."""
+    from enzyme_discovery_agent.tools.family_reactions import _target_profile_for_run
+    return _target_profile_for_run(run_dir)[0]
 
 
 def _fetch_uniprot_entry(accession: str) -> dict | None:
