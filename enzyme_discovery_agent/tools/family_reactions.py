@@ -20,6 +20,7 @@ import urllib.request
 from pathlib import Path
 
 from enzyme_discovery_agent import config
+from enzyme_discovery_agent.substrate_fit import assign_one_to_one
 from enzyme_discovery_agent.chemistry_logic import (
     classify_reaction_chemistry,
     compare_substrate_properties,
