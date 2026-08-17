@@ -265,6 +265,12 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
                       {"role": "user", "content": user}],
             temperature=config.LLM_TEMPERATURE,
             timeout=max(config.LLM_TIMEOUT, 120),
+            # Reasoning models spend completion tokens THINKING before emitting the
+            # JSON; the provider's default ~4k cap left nothing for the output on the
+            # richer schema, returning an EMPTY response (0 families).  Lift the
+            # ceiling so reasoning + the family list both fit — discovery quality
+            # first; a few extra output tokens on one call is a cheap price.
+            max_tokens=8192,
         )
         content = response.choices[0].message.content or ""
     except Exception as exc:  # noqa: BLE001 - degrade gracefully
