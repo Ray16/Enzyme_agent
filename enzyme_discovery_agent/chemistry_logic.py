@@ -13,6 +13,7 @@ import urllib.parse
 import urllib.request
 
 from enzyme_discovery_agent import config
+from enzyme_discovery_agent.models.target_profile import OPPOSITE_DIRECTIONS
 from enzyme_discovery_agent.static.ec_bond_map import EC_BOND_TYPE_MAP
 from enzyme_discovery_agent.tools._http import request_with_retry
 
