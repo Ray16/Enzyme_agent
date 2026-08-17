@@ -408,11 +408,7 @@ def check_bond_type_mismatch(
         )
 
     if enzyme_dir and target_dir and enzyme_dir != target_dir:
-        hard_conflicts = {
-            ("formation", "cleavage"),
-            ("cleavage", "formation"),
-        }
-        if (enzyme_dir, target_dir) in hard_conflicts:
+        if (enzyme_dir, target_dir) in OPPOSITE_DIRECTIONS:
             warnings.append(
                 f"REACTION DIRECTION MISMATCH: enzyme classified as "
                 f"'{enzyme_dir}' but target requires '{target_dir}'"
