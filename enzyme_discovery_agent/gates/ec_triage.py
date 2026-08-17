@@ -44,14 +44,14 @@ def _evidence_tier(metadata: dict) -> int:
 
 
 def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
-    """Auto-screen a relevance-budgeted, fold-diverse set of representatives.
+    """Auto-screen EVERY distinct gene representative, fold-diverse.
 
     Collapses orthologs to one representative per gene (prefer longest sequence),
-    then regroups those representatives by FOLD family and screens a budgeted
-    subset: every fold keeps a floor of representatives (breadth is never dropped)
-    while extra evaluation depth flows to the folds whose members' native
-    reactions most resemble the target (same reaction direction, closer
-    substrate).  The grounded family landscape is persisted as a side effect.
+    then screens all of them: evaluation is deterministic (network only, no LLM),
+    so a relevant enzyme is never dropped by an eval-budget cap.  A grounded
+    fold-relevance landscape (direction + substrate resemblance per fold) is still
+    built and persisted as a side effect — it informs ranking DEPTH and the report,
+    not which candidates are evaluated.
     """
     import concurrent.futures
 
