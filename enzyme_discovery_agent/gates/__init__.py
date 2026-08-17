@@ -1,7 +1,11 @@
 """Pre-evaluation gate pipeline.
 
-Each gate has should_fire(state) and execute(state, messages) methods.
-The pipeline runs gates in order and returns the first that fires.
+Every gate implements the ``Gate`` protocol —
+``should_fire(state, has_eval_calls, messages)`` and ``execute(state, messages)`` —
+so the agent runs them all through one shared intercept ritual.  ``GatePipeline``
+runs its gates in order and returns the FIRST interception, but still accumulates
+and applies the ``state_updates`` of the non-intercepting gates that ran before it
+(a gate can report a state transition without intercepting).
 """
 
 from __future__ import annotations
