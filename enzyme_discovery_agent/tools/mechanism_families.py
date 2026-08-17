@@ -378,36 +378,14 @@ def derive_mechanism_families(
         if added == 0 and attempt >= 2:
             break
 
-    # SUBSTRATE-AWARE prioritisation: score each family's OWN native substrates
-    # against the target (grounded, whole-package), then REORDER expansion toward
-    # the closest analogues and DROP families that are a structural dead end — a
-    # native substrate with essentially no overlap with the target (e.g. a tiny
-    # single-molecule partner vs a bulky one).  This spends the survey/expansion
-    # budget on families that could plausibly host the target instead of demoting
-    # them only after expanding them.  Unresolved (broad-class) natives score None
-    # and are treated as neutral, so a broad family is never wrongly dropped.
-    target_smiles = [s.strip() for s in (substrate_smiles or "").split(".") if s.strip()]
-    if families and target_smiles:
-        dead_end = 0
-        for fam in families:
-            fam["grounded_substrate_fit"] = grounded_family_substrate_fit(
-                fam.get("archetypal_native_substrates"), target_smiles)
-        kept = [f for f in families
-                if not (isinstance(f.get("grounded_substrate_fit"), (int, float))
-                        and f["grounded_substrate_fit"] <= _FAMILY_DEAD_END_FIT)]
-        dead_end = len(families) - len(kept)
-        if kept:  # never let the drop empty the list
-            families = kept
-        # Highest grounded fit first; unresolved (None) sits at a neutral midpoint so
-        # a broad-class family is neither promoted nor buried on an absent score.
-        families.sort(
-            key=lambda f: -(f["grounded_substrate_fit"]
-                            if isinstance(f.get("grounded_substrate_fit"), (int, float))
-                            else 0.5))
-        if dead_end:
-            logger.info(
-                "mechanism-family derivation: dropped %d structural-dead-end "
-                "family(ies) (native substrate too far from the target)", dead_end)
+    # NOTE: a family's ARCHETYPAL native substrate (e.g. glutamine-synthetase's
+    # glutamate + ammonia) is the TEXTBOOK reaction, NOT the family's member range —
+    # the same GS fold also contains members acting on a diamine (putrescine).  So
+    # scoring/dropping a whole family by its archetype would wrongly discard a fold
+    # whose members ARE good analogues.  Substrate-aware selection therefore belongs
+    # at the MEMBER level (the family survey scores each member's real native
+    # substrate and promotes the good ones), NOT here.  The archetype is kept on each
+    # family as informational context only; it is not used to drop or reorder.
 
     if not families:
         logger.warning("mechanism-family derivation returned no parseable families")
