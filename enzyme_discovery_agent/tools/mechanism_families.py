@@ -67,6 +67,66 @@ def family_passes_constraints(fam: dict, target_direction: str | None) -> tuple[
         return False, f"native direction '{fam_dir}' is opposite the target '{target_direction}'"
     return True, ""
 
+
+# A family's grounded substrate fit at or below this is a STRUCTURAL dead end: the
+# worst target substrate has essentially no whole-package overlap with any of the
+# family's own native substrates (e.g. a single tiny molecule vs a bulky partner).
+# Not a tuned relevance cutoff — a near-zero boundary marking "cannot plausibly host
+# the target at all", used only to drop such a family from the expansion set.
+_FAMILY_DEAD_END_FIT = 0.1
+
+
+def grounded_family_substrate_fit(archetype_names: list[str],
+                                  target_smiles: list[str]) -> float | None:
+    """Grounded [0,1] resemblance of a family's OWN native substrates to the target,
+    or None when nothing resolves.
+
+    Resolves the family's archetypal substrate NAMES to structures, then scores the
+    role-aware, WHOLE-PACKAGE, worst-target match to the target — the same physics
+    the ranking accommodation uses, so derivation and ranking judge substrates
+    identically.  A family whose native substrate is a poor structural analog of the
+    target (e.g. a tiny single molecule against a bulky partner) scores near 0 and is
+    deprioritised/dropped from expansion; a name that does not resolve is skipped, so
+    a broad-class family is never wrongly penalised.  Answer-agnostic: the natives are
+    the FAMILY's own, compared to the user's target."""
+    from enzyme_discovery_agent.chemistry_logic import (
+        compare_substrate_properties,
+        resolve_substrate_names_to_smiles,
+        whole_package_pair_fit,
+    )
+    from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
+
+    if not target_smiles or not archetype_names:
+        return None
+    natives: list[str] = []
+    for nm in archetype_names:
+        smi = resolve_substrate_names_to_smiles(nm)
+        if smi:
+            natives.extend(s for s in smi.split(".") if s)
+    if not natives:
+        return None
+
+    def _roles(smi):
+        try:
+            return frozenset(compute_substrate_properties(smi).functional_groups)
+        except Exception:  # noqa: BLE001
+            return frozenset()
+
+    native_roles = {n: _roles(n) for n in natives}
+    per_target = []
+    for t in target_smiles:
+        t_roles = _roles(t)
+        cands = [n for n in natives if native_roles[n] & t_roles] or natives
+        best = None
+        for n in cands:
+            cmp = compare_substrate_properties(t, n, compute_substrate_properties)
+            fit = whole_package_pair_fit(cmp) if cmp else None
+            if fit is not None and (best is None or fit > best):
+                best = fit
+        if best is not None:
+            per_target.append(best)
+    return min(per_target) if per_target else None
+
 _SYSTEM = (
     "You are an enzymology strategist. Given a target reaction, enumerate the "
     "DISTINCT enzyme MECHANISM families / structural folds known to catalyse "
