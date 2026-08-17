@@ -146,3 +146,39 @@ class TestHarvestCap(unittest.TestCase):
     def test_cap_below_pool_size_bounds_reads(self):
         ranked = [{"pmid": str(i)} for i in range(200)]
         self.assertEqual(len(FT._select_harvest_papers(ranked, set(), cap=40)), 40)
+
+
+class TestHarvestDirectionFilter(unittest.TestCase):
+    """A deposit-cue regex mines every accession near a deposit phrase, blind to
+    what the enzyme DOES.  Before registering a mined accession as a discovery
+    seed, drop it only when its own EC proves the UNAMBIGUOUS opposite reaction
+    direction — a hydrolase for a formation target, a ligase for a cleavage one.
+    Missing/other-class/dual ECs are kept (recall-safe)."""
+
+    def test_hydrolase_dropped_for_formation_target(self):
+        # Papain (EC 3.4.22.2), a protease, must not seed a bond-FORMATION run.
+        self.assertTrue(FT._wrong_direction_ec(["3.4.22.2"], "formation"))
+
+    def test_ligase_kept_for_formation_target(self):
+        # D-Ala--D-Ala ligase (EC 6.3.2.4) is the right direction.
+        self.assertFalse(FT._wrong_direction_ec(["6.3.2.4"], "formation"))
+
+    def test_ligase_dropped_for_cleavage_target(self):
+        self.assertTrue(FT._wrong_direction_ec(["6.3.2.4"], "cleavage"))
+
+    def test_hydrolase_kept_for_cleavage_target(self):
+        self.assertFalse(FT._wrong_direction_ec(["3.4.22.2"], "cleavage"))
+
+    def test_missing_ec_is_kept(self):
+        self.assertFalse(FT._wrong_direction_ec([], "formation"))
+
+    def test_other_class_ec_is_kept(self):
+        # A transferase (EC 2) is not an unambiguous opposite of either direction.
+        self.assertFalse(FT._wrong_direction_ec(["2.3.1.1"], "formation"))
+
+    def test_dual_direction_annotation_is_kept(self):
+        # Carries both a ligase and a hydrolase EC -> ambiguous, keep.
+        self.assertFalse(FT._wrong_direction_ec(["6.3.2.4", "3.4.22.2"], "formation"))
+
+    def test_unknown_target_direction_disables_filter(self):
+        self.assertFalse(FT._wrong_direction_ec(["3.4.22.2"], None))
