@@ -387,3 +387,47 @@ as informational only. Suite green (204).
 
 **Lesson:** family-level archetype scoring conflates textbook substrate with member
 diversity; member-level scoring is the correct grain.
+
+## 2026-08-16 — Lean literature + promote-all-members + pipeline refactor (in progress)
+
+Three shipped changes plus a phased pipeline refactor, all suite-green (208) and
+firewall-clean. Driven by a 3-agent map of the whole pipeline (orchestration /
+discovery-tools / finalization).
+
+**Lean literature harvest.** `mine_and_register_fulltext_accessions` no longer (a)
+LLM-relevance-gates + downloads the top-40 pooled papers, nor (b) regex-mines
+deposit-context accessions (that scooped Papain — a protease — from an E-64
+inhibitor paper as a "seed"). It now reads only the top `FULLTEXT_HARVEST_MAX_PAPERS`
+(=6) DOWNLOADABLE papers (walks the pool, skips paywalls) and keeps ONLY the
+named/cited-enzyme LLM extraction — literature's unique channel (it delivered DdaG
+at #4 in run 20260816_195259, via papers_enzymes.json, which the InterPro engine did
+NOT reach). ~90% fewer harvest LLM calls; no OA-wall waste. Diagnosis: the missed
+canonical papers (e.g. Qian et al. bioRxiv oligoamide/copolyamide) are a search-
+VOCABULARY recall gap + an OA-download wall, NOT a ranking problem; PRF query
+reformulation surfaces them but unreliably — deferred.
+
+**Promote all relevant members.** `select_relevant_members` returns EVERY relevant
+member (grounded same-direction + resolved substrate fit), not the top-2
+(`MAX_REPRESENTATIVES_PER_FAMILY`). A 24-member NIS fold was promoting only its top-2
+by fit (citrate-diamine ligases), dropping DesD/AsbB/AcsA. Capping promotion defeats
+discovery.
+
+**Evaluate every representative.** `auto_screen_candidates` screens ALL distinct gene
+reps (was a `FAMILY_EVAL_BUDGET=40` / 6-per-fold subset → only ~70/119 evaluated).
+Evaluation is deterministic (network only, no LLM), so breadth is free; the fold-
+relevance allocation now informs ranking DEPTH + landscape only, not eval gating.
+Added `EVAL_POOL_WORKERS=8` for the (I/O-bound) light-fetch + eval pools so more evals
+don't slow finalization. NB: the run is LLM-latency-bound (98% of wall is inference on
+~60k-token prompts; tools are 2%) — the real speed lever is Phase 6 (finalization).
+
+**Refactor phases done:** (1) deleted ~730 lines dead code — dead AgentState fields
+(`ec_triage_done`, `search_log` sync) + the dead single-pass report path
+(`generate_report`), calibration-anchor scoring, and mechanistic-batch ranking
+prompts. (2) de-dup: one `OPPOSITE_DIRECTIONS` (was 5 copies) in
+`models/target_profile.py`; one target-direction reader (reasoning delegates to
+family_reactions). (4) eval coverage above. **Remaining:** Phase 3 unify substrate-fit
+(one `pair_fit` + one-to-one `assign_and_score` — promotion uses property-mean,
+evaluation uses Tanimoto-min, report a third formula; the "shared scorer" docstring on
+`whole_package_pair_fit` is false); Phase 5 gate pipeline (5-inline/4-pipeline split is
+signature drift); Phase 6 finalization perf/split (report_generator 1568→ split;
+parallelize the two sequential report passes); Phase 7 module boundaries.
