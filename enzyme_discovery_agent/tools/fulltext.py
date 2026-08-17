@@ -869,11 +869,12 @@ def mine_and_register_fulltext_accessions(
         update_candidate_registry(run, acc, "discovered", metadata=meta)
         registered.append(acc)
 
-    # 4. Literature-NAMED enzymes: a paper names target-reaction enzymes it
-    #    deposits no sequence for (cited analogues / prior art).  Resolve each by
-    #    name+organism and register — the only route to an enzyme mentioned by
-    #    NAME with no accession in the text.  LLM-gated; skipped when no
-    #    llm_client.
+    # 3. Literature-NAMED / CITED enzymes: a paper names + characterises target-
+    #    reaction enzymes (and cites related analogues) it may deposit no sequence
+    #    for.  Resolve each by name+organism and register — the only route to an
+    #    enzyme mentioned by NAME with no accession in the text, and the path that
+    #    reaches the answer's own biosynthetic neighbourhood.  LLM-gated over the few
+    #    downloaded papers' bodies; skipped when no llm_client.
     n_named = 0
     if llm_client is not None and len(registered) < max_proteins:
         try:
@@ -887,10 +888,9 @@ def mine_and_register_fulltext_accessions(
 
     if log_fn:
         log_fn(
-            f"  Full-text mining: {fetched} papers fetched, "
-            f"{len(genbank)} GenBank + {len(uniprot)} UniProt accessions "
-            f"+ {n_named} literature-named enzyme(s) "
-            f"-> {len(registered)} candidates registered"
+            f"  Full-text mining: {fetched} open-access paper(s) read "
+            f"-> {n_named} literature-named/cited enzyme(s) "
+            f"-> {len(registered)} candidate(s) registered"
         )
     return registered
 
