@@ -158,12 +158,16 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
     # evidence even if their fold is later stopped, so a specific relevant enzyme is
     # never deleted by a fold-level breadth verdict made from generic annotation.
     reps = [(acc, entry_by_acc[acc]) for acc in gene_reps if acc in entry_by_acc]
-    selected, landscape = build_relevance_and_allocate(
+    # The relevance allocation builds the grounded fold LANDSCAPE and informs
+    # ranking DEPTH — it no longer gates which candidates are evaluated.  Since
+    # evaluation is deterministic (network fetches only, no LLM), breadth has no
+    # meaningful cost, and dropping a relevant member to an eval-budget cap would
+    # defeat discovery.  So EVERY distinct gene representative is screened +
+    # evaluated; ranking (which hard-gates off-target folds to the bottom) decides
+    # what surfaces, not a pre-evaluation budget.
+    _relevance_alloc, landscape = build_relevance_and_allocate(
         run_dir, reps, protected=protected_named)
-    if not selected:
-        # Degrade to the prior behaviour (screen every representative) rather
-        # than screen nothing, if fold budgeting produced no selection.
-        selected = set(entry_by_acc)
+    selected = set(entry_by_acc)
 
     if log_fn:
         n_extra = sum(1 for f in landscape if f["n_selected_for_evaluation"] > 1)
