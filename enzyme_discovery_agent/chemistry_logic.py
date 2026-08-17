@@ -424,6 +424,37 @@ def check_bond_type_mismatch(
 # Property-based substrate comparison
 # --------------------------------------------------------------------------
 
+_STERIC_AXES = ("mw_similarity", "chain_length_similarity", "volume_similarity")
+_CHEMICAL_AXES = ("functional_group_similarity", "tpsa_similarity", "logP_similarity")
+
+
+def whole_package_pair_fit(c: dict) -> float | None:
+    """Physics-shaped fit in [0,1] for one (target → native) property comparison.
+
+    Not a blind min over mixed axes: STERIC/SHAPE fit is a genuine hard bottleneck
+    (a too-large or wrong-shape substrate cannot bind, however similar its
+    chemistry) so it is the WORST of the size axes, capped when the native is
+    aromatic/cyclic and the target is not; CHEMICAL compatibility is graded and
+    promiscuity-tolerant so it is the AVERAGE of its axes.  The pair fit is the
+    worst of {steric, chemical}.  Shared by the family-derivation grounded score
+    and the ranking accommodation so both judge substrates identically.  None when
+    no axis resolved.
+    """
+    steric = [c[k] for k in _STERIC_AXES if isinstance(c.get(k), (int, float))]
+    chem = [c[k] for k in _CHEMICAL_AXES if isinstance(c.get(k), (int, float))]
+    parts = []
+    if steric:
+        s = min(steric)
+        if c.get("aromaticity_match") is False:
+            s = min(s, 0.3)
+        if c.get("cyclicity_match") is False:
+            s = min(s, 0.5)
+        parts.append(s)
+    if chem:
+        parts.append(sum(chem) / len(chem))
+    return min(parts) if parts else None
+
+
 def compare_substrate_properties(
     target_smi: str,
     native_smi: str,
