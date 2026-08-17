@@ -170,11 +170,9 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
     selected = set(entry_by_acc)
 
     if log_fn:
-        n_extra = sum(1 for f in landscape if f["n_selected_for_evaluation"] > 1)
-        log_fn(f"  Auto-screening {len(selected)} of {len(reps)} representatives "
+        log_fn(f"  Auto-screening ALL {len(selected)} distinct gene representatives "
                f"across {len(landscape)} fold families "
-               f"({n_extra} given extra depth by relevance, "
-               f"{len(already_screened)} already screened)")
+               f"({len(already_screened)} already screened)")
 
     screened_count = 0
     for acc in selected:
