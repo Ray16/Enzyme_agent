@@ -60,12 +60,17 @@ def recover_tool_calls_from_text(text: str) -> list[dict]:
 
 @dataclass
 class TokenUsage:
-    """Accumulator for LLM token usage across a run."""
+    """Accumulator for LLM token usage across a run.
+
+    Thread-safe: finalization may record from concurrent LLM calls (e.g. the two
+    report prose passes run in parallel), so the accumulation is guarded by a lock.
+    """
     model: str = ""
     calls: list[dict] = field(default_factory=list)
     total_prompt_tokens: int = 0
     total_completion_tokens: int = 0
     total_tokens: int = 0
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
     def record(self, label: str | int, response) -> None:
         """Record token usage from an LLM response."""
@@ -74,15 +79,16 @@ class TokenUsage:
             return
         pt = getattr(usage, "prompt_tokens", 0) or 0
         ct = getattr(usage, "completion_tokens", 0) or 0
-        self.calls.append({
-            "iteration": label,
-            "prompt_tokens": pt,
-            "completion_tokens": ct,
-            "total_tokens": pt + ct,
-        })
-        self.total_prompt_tokens += pt
-        self.total_completion_tokens += ct
-        self.total_tokens += pt + ct
+        with self._lock:
+            self.calls.append({
+                "iteration": label,
+                "prompt_tokens": pt,
+                "completion_tokens": ct,
+                "total_tokens": pt + ct,
+            })
+            self.total_prompt_tokens += pt
+            self.total_completion_tokens += ct
+            self.total_tokens += pt + ct
 
     def to_dict(self) -> dict:
         return {
