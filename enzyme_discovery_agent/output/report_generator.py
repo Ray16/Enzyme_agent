@@ -13,12 +13,7 @@ from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.notebook import get_notebook_text_for_report
 from enzyme_discovery_agent.prompts.report_prompts import (
     EXPLORATIVE_REPORT_SYSTEM,
-    build_confidence_report_prompt,
-    build_explorative_report_prompt,
-    build_mechanistic_ranking_prompt,
     build_pass2_profile_prompt,
-    build_scoring_prompt,
-    _pass1_compact,
 )
 
 logger = logging.getLogger("enzyme_agent")
@@ -635,80 +630,6 @@ def _first_gene_label(candidate: dict) -> str:
     return str(genes[0]) if genes else "?"
 
 
-def _select_calibration_anchors(
-    all_compact: list[dict],
-    n_anchors: int = 5,
-) -> list[dict]:
-    """Select calibration anchor candidates spanning the quality range.
-
-    Selects programmatically based on data signals — no hardcoded names:
-    - 1 best: highest tanimoto AND no critical warnings AND has_pdb
-    - 1 worst: has critical warnings
-    - 1 high-tanimoto no-PDB: good substrate match, limited structural data
-    - 1 low-tanimoto swissprot: well-characterised but poor substrate match
-    - 1 middle: median tanimoto, some characterisation
-
-    Returns at most n_anchors unique candidates.
-    """
-    import statistics as _stats
-
-    def tanimoto(c):
-        return c.get("tanimoto") or 0.0
-
-    with_warnings = [c for c in all_compact if c.get("critical_warnings")]
-    without_warnings = [c for c in all_compact if not c.get("critical_warnings")]
-
-    anchors = []
-    used_accs = set()
-
-    def add(candidate):
-        if candidate and candidate["accession"] not in used_accs:
-            anchors.append(candidate)
-            used_accs.add(candidate["accession"])
-
-    # Anchor 1: best overall (high tanimoto, swissprot, has_pdb, no warnings)
-    best = sorted(
-        without_warnings,
-        key=lambda c: (
-            tanimoto(c),
-            c.get("is_swissprot", False),
-            c.get("pdb_count", 0),
-            c.get("char_papers", 0),
-        ),
-        reverse=True,
-    )
-    add(best[0] if best else None)
-
-    # Anchor 2: worst (critical warning — bottom tier)
-    if with_warnings:
-        add(with_warnings[0])
-
-    # Anchor 3: high tanimoto but no structural data (promising but uncharacterised)
-    no_struct = sorted(
-        [c for c in without_warnings if c.get("pdb_count", 0) == 0
-         and not c.get("has_alphafold")],
-        key=lambda c: tanimoto(c),
-        reverse=True,
-    )
-    add(no_struct[0] if no_struct else None)
-
-    # Anchor 4: swissprot, well-characterised, but low tanimoto (known but mismatch)
-    well_char = sorted(
-        [c for c in without_warnings if c.get("is_swissprot") and
-         c.get("char_papers", 0) >= 2],
-        key=lambda c: tanimoto(c),
-    )
-    add(well_char[0] if well_char else None)
-
-    # Anchor 5: middle tanimoto (median)
-    sorted_by_tan = sorted(without_warnings, key=tanimoto)
-    if sorted_by_tan:
-        mid_idx = len(sorted_by_tan) // 2
-        add(sorted_by_tan[mid_idx])
-
-    return anchors[:n_anchors]
-
-
 def _parse_scoring_response(text: str) -> list[dict] | None:
     """Parse a JSON array from an LLM scoring response.
 
@@ -763,31 +684,6 @@ def _parse_scoring_response(text: str) -> list[dict] | None:
                     break
                 obj_start = -1
     return recovered or None
-
-
-def _check_anchor_drift(
-    batch_scores: list[dict],
-    batch_index: int,
-    anchor_accs: set[str],
-    reference_scores: dict[str, float],
-    log_fn=None,
-    drift_threshold: float = 2.0,
-) -> None:
-    """Compare anchor scores in this batch against reference scores. Log if drift > threshold."""
-    for entry in batch_scores:
-        acc = entry.get("accession")
-        if acc not in anchor_accs:
-            continue
-        score = entry.get("score")
-        if score is None or acc not in reference_scores:
-            continue
-        drift = abs(score - reference_scores[acc])
-        if drift > drift_threshold and log_fn:
-            log_fn(
-                f"  WARNING: calibration drift batch {batch_index}: "
-                f"{acc} scored {score:.1f} vs reference {reference_scores[acc]:.1f} "
-                f"(drift={drift:.1f} > {drift_threshold})"
-            )
 
 
 # ---------------------------------------------------------------------------
@@ -1487,82 +1383,3 @@ def generate_two_pass_explorative(
         log_fn(f"  Explorative report: {len(report_text)} chars")
 
 
-def generate_report(
-    report_type: str,
-    run_dir: Path,
-    all_evals: list[dict],
-    query: str,
-    llm_client: LLMClient,
-    token_usage: TokenUsage,
-    log_fn=None,
-) -> None:
-    """Generate a report (confidence or explorative) via LLM call.
-
-    Args:
-        report_type: "confidence" or "explorative"
-        run_dir: Run output directory
-        all_evals: List of evaluation result dicts
-        query: Original user query
-        llm_client: LLM client instance
-        token_usage: Token usage accumulator
-        log_fn: Optional logging function (msg: str) -> None
-    """
-    # Drop failed evaluations (data is None): not candidates, and the prompt
-    # builders below assume dict data.
-    all_evals = [e for e in (all_evals or [])
-                 if isinstance(e, dict) and isinstance(e.get("data", e), dict)]
-
-    if not all_evals:
-        if log_fn:
-            log_fn(f"  Skipping {report_type} report -- no evaluations available")
-        return
-
-    if log_fn:
-        log_fn(f"  Generating {report_type} report...")
-
-    notebook_text = get_notebook_text_for_report(run_dir)
-
-    if report_type == "explorative":
-        messages = build_explorative_report_prompt(query, all_evals, notebook_context=notebook_text)
-        temperature = config.EXPLORATIVE_REPORT_TEMPERATURE
-        filename = "report_explorative.md"
-    else:
-        messages = build_confidence_report_prompt(query, all_evals, notebook_context=notebook_text)
-        temperature = config.LLM_TEMPERATURE
-        filename = "report_confidence.md"
-
-    try:
-        response = llm_client.call(
-            messages=messages,
-            temperature=temperature,
-            timeout=max(config.LLM_TIMEOUT, 300),
-        )
-        if response is None:
-            if log_fn:
-                log_fn(f"  {report_type.title()} report generation failed (no response)")
-            return
-
-        token_usage.record(f"{report_type}_report", response)
-
-        report_text = response.choices[0].message.content or ""
-        report_text = strip_preamble(report_text)
-
-        if is_error_text(report_text):
-            if log_fn:
-                log_fn(f"  {report_type.title()} report was empty; retrying with compact LLM prompt")
-            _emit_degradation(run_dir, report_type, "compact_retry", "report empty")
-            report_text = _retry_compact_llm_report(llm_client, query, all_evals)
-            if is_error_text(report_text):
-                raise RuntimeError(f"LLM returned no substantive {report_type} report after compact retry")
-
-
-        with open(run_dir / filename, "w") as f:
-            f.write(report_text)
-
-        if log_fn:
-            log_fn(f"  {report_type.title()} report: {len(report_text)} chars")
-
-    except Exception as e:
-        logger.warning("Failed to generate %s report: %s", report_type, e)
-        if log_fn:
-            log_fn(f"  {report_type.title()} report generation failed: {e}")
