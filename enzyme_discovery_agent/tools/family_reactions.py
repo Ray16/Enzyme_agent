@@ -37,6 +37,17 @@ logger = logging.getLogger("enzyme_agent")
 # is treated as a whole superfamily (not the most-specific fold we want), while a
 # short page is the fold's exact reviewed-member count.
 _LIST_PAGE_MAX = 500
+# Reviewed-member coverage: score the WHOLE fold, not an arbitrary prefix.  A
+# surveyable fold has < _LIST_PAGE_MAX reviewed members (superfamilies are excluded
+# upstream), which is UniProt's single-page max, so one query returns them all.
+# Fetching only a prefix in UniProt's default (non-substrate) order would miss a
+# strong substrate match sitting past the cut — the top matches must be found
+# deterministically, not by list ordering.  This is CODE/network cost only (ChEBI +
+# RDKit), not LLM cost; opposite-direction members are skipped before scoring, and
+# the expensive evaluation still runs on only the top promoted few.
+_REVIEWED_MEMBER_CAP = _LIST_PAGE_MAX
+# TrEMBL DEEPENING stays bounded: it is a targeted top-up of one relevant EC, not
+# comprehensive fold coverage, so a smaller page keeps its cost in check.
 _MEMBER_CAP = 120
 
 # Directions that are genuine opposites (a cleavage fold cannot be steered into a
