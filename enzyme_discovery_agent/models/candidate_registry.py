@@ -261,17 +261,9 @@ def update_candidate_registry(
             logger.warning("Failed to write candidate registry: %s", e)
 
 
-_OPPOSITE_DIRECTIONS = {("formation", "cleavage"), ("cleavage", "formation")}
-
-
-def _is_opposite_direction(native: str | None, target: str | None) -> bool:
-    """True only on a CONFIDENT opposite-direction call (formation vs cleavage).
-
-    Unknown / transfer / redox / None on either side returns False, so the guard
-    never drops a candidate it cannot confidently disqualify — those fall through
-    to be registered and screened as usual.
-    """
-    return bool(native) and bool(target) and (native, target) in _OPPOSITE_DIRECTIONS
+from enzyme_discovery_agent.models.target_profile import (  # noqa: E402
+    is_opposite_direction as _is_opposite_direction,
+)
 
 
 def _target_direction(run_dir: Path) -> str | None:
