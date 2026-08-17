@@ -57,7 +57,7 @@ class FamilySurveyGate:
         self._fold_cache: dict[str, str | None] = {}  # accession -> most-specific fold
         self._promoted: set[str] = set()          # accessions promoted to candidates
 
-    def should_fire(self, state: AgentState) -> bool:
+    def should_fire(self, state: AgentState, has_eval_calls: bool = False, messages: list[dict] | None = None) -> bool:
         # Fire as soon as the mechanism families are DERIVED (i.e. the agent has
         # deemed which families are relevant) — the derived families themselves seed
         # the survey via search_interpro, so a reviewed enzyme whose fold matches the
@@ -113,7 +113,7 @@ class FamilySurveyGate:
                 logger.debug("promotion failed for %s: %s", acc, exc)
         return promoted
 
-    def execute(self, state: AgentState) -> GateResult:
+    def execute(self, state: AgentState, messages: list[dict] | None = None) -> GateResult:
         from enzyme_discovery_agent.gates.family_relevance import collect_survey_folds
 
         run_dir = state.run_dir

@@ -30,14 +30,14 @@ class MechanismFamilyGate:
         self.llm = llm_client
         self.log = log_fn or (lambda *a, **k: None)
 
-    def should_fire(self, state: AgentState) -> bool:
+    def should_fire(self, state: AgentState, has_eval_calls: bool = False, messages: list[dict] | None = None) -> bool:
         return (
             not state.mechanism_families_done
             and self.llm is not None
             and state.lit_search_count >= config.MIN_LITERATURE_SEARCH_ROUNDS
         )
 
-    def execute(self, state: AgentState) -> GateResult:
+    def execute(self, state: AgentState, messages: list[dict] | None = None) -> GateResult:
         from enzyme_discovery_agent.tools.mechanism_families import (
             derive_mechanism_families,
             rank_families_by_substrate_resemblance,

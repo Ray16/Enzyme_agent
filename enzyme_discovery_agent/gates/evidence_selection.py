@@ -14,7 +14,7 @@ class EvidenceSelectionGate:
     This is generic: it does not assume a particular enzyme family or target.
     """
 
-    def should_fire(self, state: AgentState) -> bool:
+    def should_fire(self, state: AgentState, has_eval_calls: bool = False, messages: list[dict] | None = None) -> bool:
         return (
             not state.evidence_selection_prompted
             and state.candidate_count == 0
@@ -22,7 +22,7 @@ class EvidenceSelectionGate:
             and state.lit_search_count >= config.MIN_LITERATURE_SEARCH_ROUNDS
         )
 
-    def execute(self, state: AgentState) -> GateResult:
+    def execute(self, state: AgentState, messages: list[dict] | None = None) -> GateResult:
         return GateResult(
             intercept=True,
             new_messages=[

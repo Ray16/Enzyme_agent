@@ -34,7 +34,7 @@ class LiteratureHarvestGate:
         self.llm = llm_client
         self.log = log_fn or (lambda *a, **k: None)
 
-    def should_fire(self, state: AgentState) -> bool:
+    def should_fire(self, state: AgentState, has_eval_calls: bool = False, messages: list[dict] | None = None) -> bool:
         # Fire once, after enough literature is gathered, before candidate
         # registration/expansion.  Needs an LLM (full-text extraction).
         return (
@@ -44,7 +44,7 @@ class LiteratureHarvestGate:
             and state.lit_search_count >= config.MIN_LITERATURE_SEARCH_ROUNDS
         )
 
-    def execute(self, state: AgentState) -> GateResult:
+    def execute(self, state: AgentState, messages: list[dict] | None = None) -> GateResult:
         from enzyme_discovery_agent.tools.fulltext import (
             mine_and_register_fulltext_accessions,
             seed_mechanism_literature,
