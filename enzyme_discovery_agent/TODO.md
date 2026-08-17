@@ -1,133 +1,72 @@
 # Enzyme Discovery Agent — TODO / Roadmap
 
-_Last updated: 2026-08-16. Working branch: `feature/retrieval-expansion`._
+_Last updated: 2026-08-16 (end of session). Branch: `feature/retrieval-expansion`._
+_Full blow-by-blow with rationale + failure modes: see `DEVLOG.md`._
 
-Guiding principles (from the design discussion):
-- **Code extracts evidence, LLM only reasons.** Functional groups, size, weight,
-  substrate↔substrate correspondence, direction — all extracted deterministically;
-  the model reasons over the grounded facts.
-- **No tuned relevance thresholds / magic numbers.** Prefer relative ranking +
-  reuse of existing bounds over new empirical cutoffs.
-- **A tool existing ≠ the agent using it.** Wire capabilities into the deterministic
-  pipeline (gates), and make sure their output flows to the final answer.
-- **Data-leakage firewall** (see `CLAUDE.md`): never seed search with the answer.
-
----
-
-## ✅ DONE — Substrate-fit family expansion (tags `substrate-fit-promotion-stage1/2`)
-
-- **Stage 1**: family survey now selects the members whose native substrate most
-  RESEMBLES the target (multi-dimensional: FG, MW, volume, chain length, HBA/HBD,
-  polarity; relative ranking, no cutoff) and PROMOTES them to candidates. Gated
-  TrEMBL deepening: pull a fold's unreviewed members of the best-fit reviewed
-  member's EC (targeted, not blind paging).
-- **Stage 2**: promoted candidates are PROTECTED in `auto_screen` → always
-  screened→evaluated→ranked, never dropped by fold budget/stop or ortholog collapse.
-- Validated by oracle test: surveying DdaG's (IPR053158) and PuuA's (IPR027303)
-  folds retrieves + promotes both (the enzymes "mostly uncoverable via DB search").
-- **Stage 3**: mechanism-family derivation code-enforces the direction + free-substrate
-  constraints (drops inverse-direction / protein-bound families the LLM listed anyway);
-  precision-first prompt, no breadth quota. `family_passes_constraints()`.
-- **Stage 4**: initial full-text harvest capped to the top-40 relevance-ranked papers
-  (`FULLTEXT_HARVEST_MAX_PAPERS`) — early effort goes to candidate search, not reading
-  ~160 papers. Targeted per-candidate reading stays uncapped.
-
-## 🔄 IN PROGRESS — End-to-end validation run
-- Full agent run on the amide/nylon benchmark, monitored live.
-- **Success criteria**: survey→promote→protect→rank fires in a real loop; check
-  whether substrate-fit-promoted candidates (esp. DdaG/PuuA-like folds) reach the
-  final ranking; compare ranking vs. the 20260812 baseline (DdaG #6, SfaB demoted).
-- If good → start the literature axis below.
+## Guiding principles (from this session, keep enforcing)
+- **Quality of discovery FIRST, token cost second.** Never sacrifice recall/precision to save tokens.
+- **Code extracts evidence, LLM only reasons.** FG/size/correspondence/direction extracted deterministically.
+- **No hardcoded relevance thresholds / magic numbers.** Prefer relative ranking; resource *budgets* are OK.
+- **Substrate-awareness belongs at the MEMBER level, not the family archetype level** (a fold's archetype ≠ its member range).
+- **Data-leakage firewall** (`CLAUDE.md`): no answer enzymes/accessions/substrates or amide-specific examples in source/prompts. Audited clean this session.
+- **A tool existing ≠ the agent using it** — wire capabilities into deterministic gates; make their output reach the final answer.
 
 ---
 
-## 1. Literature axis (NEXT major — the other half of "both, substrate first")
-Goal: raise cold-start recall and recover **literature-only** candidates like
-**SfaB (A0A2H4T912)** — TrEMBL, no EC, no annotated substrate → unreachable by
-substrate-fit, only reachable via its paper.
-- [ ] **Resolver breadth** (`tools/fulltext.py::_resolve_named_enzyme`): extend
-      accession extraction beyond GenBank/EMBL — PDB IDs, RefSeq/`WP_`, and
-      `EC + organism` → UniProt.
-- [ ] **Confirm-by-reaction resolution**: let the resolver admit more name hits but
-      disambiguate using the substrate/reaction the paper already extracted (does the
-      resolved accession's catalytic activity match?) — trade a blind precision
-      filter for a grounded one.
-- [ ] **Citation second-hop**: a cited homolog resolved only by name triggers a
-      fetch of ITS primary paper to recover a deposited sequence.
-- [ ] **Cross-feed**: feed ChEBI/substrate-class names from the survey into the
-      literature harvest query terms.
-- [ ] Re-validate SfaB recovery likelihood.
+## ✅ DONE THIS SESSION (all tagged, tested, firewall-clean; suite 204 green)
 
-## 2. Strengthen fold-seeding (the survey's seed dependency)
-The survey only fires on a fold it has a seed into (derived-family keyword → interpro,
-or a discovered member's most-specific fold). Obscure answer-folds may never be seeded.
-- [ ] Audit `gates/family_relevance.py::collect_survey_folds` coverage on the benchmark.
-- [ ] Improve mechanism-family → `search_interpro` resolution so generic derived
-      families reach the specific relevant folds (or their surveyable parents).
-- [ ] Consider seeding folds from high-substrate-fit hits discovered by any channel.
+**Substrate-fit family expansion**
+- `substrate-fit-promotion-stage1` — family survey SELECTS members by multi-dim native-substrate resemblance and PROMOTES them to candidates (was advisory-only). Gated TrEMBL deepening (EC-anchored).
+- `substrate-fit-promotion-stage2` — promoted candidates PROTECTED in auto_screen → always reach evaluation/ranking.
+- `substrate-fit-promotion-stage5` / `-stage5a` — promotion gated to grounded **same-direction** (drops unknown-direction off-target leak that doubled eval cost); protection budget-capped by global fit.
+- `survey-fires-on-derivation` — survey fires as soon as families are DERIVED (not gated behind screened candidates), so top substrate-matched reviewed members register early, not by chance/timing.
+- `full-fold-reviewed-coverage` — score the WHOLE fold's reviewed members (cap 500 = surveyable ceiling), not the first 120 by UniProt default order.
 
-## 3. Substrate-correspondence evidence (code-extracts-evidence refinement)
-`_substrate_facts` picks, per target substrate, its best-overlapping native
-INDEPENDENTLY (can map two targets to one native, or acid↔amine). Make the
-correspondence explicit, role-consistent evidence the LLM reasons over.
-- [ ] **Role-aware correspondence** (motivated by AsnA/AsnB): map amine↔amine,
-      acid↔acid explicitly, so the target amine is always compared against the
-      member's amine partner. Then e.g. "HMDA vs ammonia = poor" is guaranteed
-      regardless of cofactor-filtering. One-to-one target↔native assignment.
-- [ ] Expose `substrate_correspondence` (per-pair dimensions) in the member evidence.
-- [ ] **Cofactor-vs-substrate consistency**: `_COFACTOR_NAMES` (reasoning.py) filters
-      "ammonia"/"nh3" as a cofactor, but ammonia is a genuine N-source SUBSTRATE for
-      some amide synthetases (AsnA). The survey path (COFACTOR_CHEBI_IDS, 18 ids)
-      correctly keeps it; the per-candidate path drops it → hides the amine mismatch.
-      Make the two paths consistent (don't drop a species that IS the reaction's
-      nucleophile/amine partner).
-- [ ] Keep it pure/offline-testable; no new tuned weights.
+**Family derivation precision**
+- `substrate-fit-promotion-stage3` — code-enforces DIRECTION + FREE-SUBSTRATE constraints (drops inverse-direction hydrolases/proteases the LLM listed anyway; H2O-reactant ⇒ cleavage signal). Precision-first prompt, no breadth quota.
+- `fix-derivation-empty-and-archetype-drop` — (a) `max_tokens=8192` on derivation call (richer prompt starved reasoning model → empty response bug); (b) REVERTED archetype-based family dropping (would drop good folds whose archetype ≠ member range, e.g. GS/PuuA).
 
-## 3b. Stratified literature harvest (guarantee class coverage) — Stage 5 candidate
-The Stage-4 cap takes the top-40 by GLOBAL relevance; on some queries that could
-collapse onto one enzyme class and starve the others (defeating the point of
-deriving N families). Observed OK emergently on the 20260816 run (read set spanned
-GS/ATP-grasp, NIS, ANL/peptide), but not guaranteed.
-- [ ] Tag each pooled paper with the family/search-term that surfaced it
-      (seed_mechanism_literature), then allocate the harvest budget ACROSS families
-      (top-K per family) instead of a global top-N → explicit class coverage.
+**Ranking / substrate scoring quality**
+- `substrate-score-min` — worst-substrate (min across the two target molecules), not geometric mean (one-sided fits sneak in).
+- `accommodation-fg-counts` — count-aware functional-group similarity (binary set-Jaccard saturated at 0.5 and, under min, erased size/aromaticity signal → CARNS1-type over-ranked).
+- `accommodation-physics-aggregation` — physics-shaped per-pair fit (steric bottleneck + graded chemical average), shared `chemistry_logic.whole_package_pair_fit`, not blind min over mixed axes.
+- `role-aware-correspondence` / `role-aware-promotion` — match target↔native by shared functional group (generic from `functional_groups`, non-gating fallback), in BOTH ranking and promotion paths.
 
-## 3c. Budget-conscious family expansion — concentrate spend on relevant families (Stage 5)
-Don't just RANK irrelevant families low — avoid SPENDING compute expanding +
-evaluating them. Current leaks: (1) Stage-2 protection force-evaluates the top-2
-of EVERY surveyed fold, incl. low-fit families (AsnA/AsnB); (2) TrEMBL deepening
-runs for all surveyed folds; (3) harvest relevance gate read an off-target protease
-paper (E-64) that the strict family filter would exclude.
-- [ ] **Promote/protect by GLOBAL substrate-fit** across folds (pool all folds' best
-      members, rank, concentrate budget on the globally-best) instead of per-family
-      top-2 unconditional protection. Relative — no magic threshold. Preserves
-      Stage-2's goal (high-fit promotions reach ranking) while starving low-fit ones.
-- [ ] Gate the expensive TrEMBL deepening to competitive folds (relative top-K).
-- [ ] Align the fulltext harvest relevance gate with the family direction/chemistry
-      constraints (no protease/hydrolase papers).
-- [ ] MEASURE first: from the 20260816_132034 run, count evaluations that went to
-      adjacent (AsnA/AsnB-type) families to size the actual waste before fixing.
+**Efficiency**
+- `substrate-fit-promotion-stage4` — cap initial full-text harvest to top-40 relevance-ranked papers (was ~250).
+- `uniprot-query-relax` — `search_uniprot` relaxes over-specified AND-ed queries on 0 results (recovered DesD/McbA/HolE, previously 0).
 
-## 4. Performance / cost
-- [ ] **Substrate-fit survey engages late** (20260816_132034 run: survey couldn't
-      fire until iter ~26 / ~19 min because `candidate_count` counts screened+ only,
-      and screening didn't run until then — 102 discovered, 0 screened before that).
-      The narrowing engine is dormant for the whole early phase. Levers: screen
-      earlier / trigger the survey on DISCOVERED folds too (it already resolves
-      discovered candidates' folds), so substrate-fit narrowing starts sooner.
-- [ ] **Front-loaded literature exploration** (observed 20260816 run: at iter 5 /
-      ~7 min, still 0 candidates — harvest pulled 160 papers from 8 mechanism
-      phrases, then reads full text before any candidate exists). Substrate-fit
-      machinery can't start until this clears. Ideas: cap/parallelize full-text
-      reads; interleave discovery with harvest so candidates form earlier; only
-      deep-read papers that pass a cheap relevance screen; time-box the initial
-      harvest.
-- [ ] RDKit 3D embedding is slow on CoA-ester natives (volume estimate). Cache/2D
-      fallback; parallelize survey calls across folds.
-- [ ] Runs cost ~2.5M tokens — prune prompt re-sends, fewer finalization LLM passes,
-      cheaper model for sub-steps (see `project_token_efficiency`).
+**Firewall / genericity**
+- `firewall-generic-examples` — genericized 5 pre-existing hardcoded examples (answer accessions P78061/A0A0F7RJ52, amide-specific EC/query examples) → pure format placeholders. Core logic already generic.
 
-## 5. Benchmark harness
-- [ ] Turn the oracle spot-check into a repeatable metric: for each answer enzyme,
-      does the pipeline retrieve + promote + rank it? Report recall@k + provenance.
-- [ ] Guard: keep `eval/benchmarks.py` the only place ground truth lives.
+**Plot**
+- `family-fit-plot-layout` — legend moved below panels (was overlapping title/axis labels), fuller names.
+
+---
+
+## 🔜 REMAINING (priority order)
+
+### 1. One-to-one substrate assignment in survey + ranking (HIGH — correctness)
+The grounded family scorer got this right, but `family_reactions._substrate_facts` (survey/promotion) and `reasoning.py substrate_similarity` (ranking) still use **independent best-native-per-target**, so they only weakly demote ammonia-type members (target amine matches the amino-acid *acid* donor, since ammonia has no FG). Apply the same one-to-one assignment (each native serves one target) there. This is what makes the member-level substrate-awareness actually demote ammonia.
+
+### 2. Literature axis (recall of literature-only candidates like SfaB)
+- Broaden `_resolve_named_enzyme` accession extraction (PDB/RefSeq/EC+organism).
+- Confirm-by-reaction resolution (disambiguate with the paper's extracted substrate/reaction).
+- Citation second-hop (fetch a cited homolog's own primary paper).
+- Cross-feed survey substrate-class terms into the harvest.
+- Make the harvest DECISION less random (user flagged peripheral downloads): the relevance gate should align with the family direction/chemistry; consider stratifying the top-40 harvest ACROSS derived families so class coverage is guaranteed, not emergent.
+
+### 3. Deterministic member coverage (finish the "not by chance" goal)
+Full-fold coverage is in, but promotion is still top-2/fold (`MAX_REPRESENTATIVES_PER_FAMILY`). Consider global-fit selection across folds so the strongest matches always register regardless of per-fold quota.
+
+### 4. Validation harness
+Turn the oracle spot-checks into a repeatable metric (recall@k for the answer enzymes + provenance). Ground truth stays ONLY in `eval/benchmarks.py`.
+
+### 5. Cost / efficiency (AFTER quality)
+- The substrate-fit survey scoring on large folds (500 members × ChEBI+RDKit) is latency; cache/parallelize, skip slow 3D for cofactor-like natives.
+- Fewer finalization LLM passes; cheaper model for sub-steps.
+
+---
+
+## ⚠️ Open validation gap
+**No clean end-to-end run completed with the FULL fix set.** Runs were repeatedly restarted as fixes landed; the last attempt (195127) was stopped for cost. **Next session: run ONE full validation** and check: family list clean (no inverse-direction), DdaG/PuuA/DesD recovered, CARNS1-type demoted below genuine analogues, token cost back toward ~2.5M (from the 5.7M pre-Stage-5 blowup). Baseline for comparison: run `20260816_132034` (complete, 5.7M tokens, DdaG #6).
