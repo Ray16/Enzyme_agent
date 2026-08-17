@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 from enzyme_discovery_agent import config
+from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
 from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.notebook import get_notebook_text_for_report
 from enzyme_discovery_agent.prompts.report_prompts import (
