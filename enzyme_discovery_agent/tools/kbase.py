@@ -61,9 +61,9 @@ def _solr_query(core: str, q: str, fl: str, rows: int = _MAX_ROWS) -> dict | Non
         "ec_class": {
             "type": "string",
             "description": (
-                "EC prefix to search, e.g. '6.3' for all ligases forming "
-                "C-N bonds, '6.3.2' for peptide-synthase-type ligases, or "
-                "'3.5.1' for linear amide hydrolases. Supports partial ECs."
+                "EC prefix to search, e.g. '2.7' for all phosphate-transferring "
+                "transferases, '2.7.1' for kinases, or '3.1.1' for "
+                "carboxylesterases. Supports partial ECs."
             ),
         },
         "keyword": {
