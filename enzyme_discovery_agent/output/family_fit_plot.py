@@ -121,7 +121,7 @@ def render_family_fit_plot(
             vals = [med.get(key) if isinstance(med.get(key), (int, float)) else 0.0
                     for key, _ in _AXES]
             vals += vals[:1]
-            label = _fold_label(f)
+            label = _fold_label(f, max_len=48)
             if f.get("members_spanning_aromatic_and_aliphatic"):
                 label += " ✦"  # broad pocket: spans aromatic + aliphatic natives
             ax_r.plot(angles, vals, color=color, linewidth=1.8, label=label)
