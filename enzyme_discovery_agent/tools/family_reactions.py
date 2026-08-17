@@ -232,9 +232,11 @@ def select_relevant_members(
     promiscuous), so there is no match requirement.
 
     Selection is RELATIVE, not a tuned cutoff: it ranks the SAME-direction members
-    with a resolved substrate fit and returns the top ``max_select`` — the best-
-    fitting members in THIS family — letting the downstream evaluation budget grade
-    them rather than a magic fit threshold deciding relevance here.  Promotion (which
+    with a resolved substrate fit and returns them ALL (``max_select=None``), best-
+    fitting first — every relevant member in THIS family, since DROPPING a relevant
+    member defeats discovery; the downstream evaluation budget grades them rather
+    than a magic fit threshold OR a top-N cap deciding relevance here.  (``max_select``
+    is kept only for callers that genuinely want a slice.)  Promotion (which
     spends evaluation budget) requires a GROUNDED same-direction native reaction, not
     merely 'unknown': an unclassified member (no EC / unparseable reaction) is the
     channel through which off-target folds — hydrolases, esterases, oxidoreductases
