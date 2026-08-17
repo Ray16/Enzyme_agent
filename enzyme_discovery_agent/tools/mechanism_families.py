@@ -96,6 +96,8 @@ def grounded_family_substrate_fit(archetype_names: list[str],
     )
     from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
 
+    import itertools
+
     if not target_smiles or not archetype_names:
         return None
     natives: list[str] = []
@@ -106,25 +108,38 @@ def grounded_family_substrate_fit(archetype_names: list[str],
     if not natives:
         return None
 
-    def _roles(smi):
-        try:
-            return frozenset(compute_substrate_properties(smi).functional_groups)
-        except Exception:  # noqa: BLE001
-            return frozenset()
-
-    native_roles = {n: _roles(n) for n in natives}
-    per_target = []
-    for t in target_smiles:
-        t_roles = _roles(t)
-        cands = [n for n in natives if native_roles[n] & t_roles] or natives
-        best = None
-        for n in cands:
+    # Pairwise whole-package fit for every (target, native).
+    pair = {}
+    for ti, t in enumerate(target_smiles):
+        for nj, n in enumerate(natives):
             cmp = compare_substrate_properties(t, n, compute_substrate_properties)
-            fit = whole_package_pair_fit(cmp) if cmp else None
-            if fit is not None and (best is None or fit > best):
-                best = fit
-        if best is not None:
-            per_target.append(best)
+            pair[(ti, nj)] = whole_package_pair_fit(cmp) if cmp else None
+
+    # ONE-TO-ONE assignment: each native serves at most ONE target, so a two-partner
+    # target cannot flatter itself by mapping BOTH partners to the family's single
+    # best native.  Critically, this forces the amine partner onto the family's amine
+    # partner even when that partner is a tiny molecule with no functional group
+    # (ammonia) — which independent best-match wrongly routed to the acid donor,
+    # hiding the mismatch.  The family gets its BEST assignment; its fit is that
+    # assignment's WORST pair (must host every target substrate).
+    n_t, n_n = len(target_smiles), len(natives)
+    if n_n >= n_t:
+        best_worst = None
+        for perm in itertools.permutations(range(n_n), n_t):
+            pairs = [pair[(ti, perm[ti])] for ti in range(n_t)]
+            if any(p is None for p in pairs):
+                continue
+            worst = min(pairs)
+            if best_worst is None or worst > best_worst:
+                best_worst = worst
+        return best_worst
+    # Fewer distinct natives than target substrates: reuse is unavoidable, so fall
+    # back to independent best-per-target (still a valid upper bound on the fit).
+    per_target = []
+    for ti in range(n_t):
+        vals = [pair[(ti, nj)] for nj in range(n_n) if pair[(ti, nj)] is not None]
+        if vals:
+            per_target.append(max(vals))
     return min(per_target) if per_target else None
 
 _SYSTEM = (
