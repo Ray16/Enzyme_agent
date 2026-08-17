@@ -29,6 +29,7 @@ from enzyme_discovery_agent.models.candidate_registry import (
     update_candidate_registry,
 )
 from enzyme_discovery_agent.models.exploration_log import append_exploration_log
+from enzyme_discovery_agent.models.target_profile import OPPOSITE_DIRECTIONS
 from enzyme_discovery_agent.static.cofactors import COFACTOR_CHEBI_IDS
 from enzyme_discovery_agent.tool_registry import tool
 from enzyme_discovery_agent.tools._http import request_with_retry
