@@ -820,56 +820,46 @@ def mine_and_register_fulltext_accessions(
     candidates = [p for p in _select_harvest_papers(ranked, done, len(ranked))
                   if not _is_non_article(p.get("title", ""))]
 
-    # Pre-assign title basenames sequentially (collision-safe), then DOWNLOAD the
-    # papers IN PARALLEL — downloads are I/O-bound, so a worker pool cuts the
-    # harvest wall-clock from sum-of-downloads to about the slowest download.
+    # Download in relevance order until `target_reads` open-access full texts are in
+    # hand, in parallel batches (downloads are I/O-bound).  Bound the attempts so a
+    # fully-paywalled pool cannot spin (open-access yield is typically ~1 in 4-8).
     taken: set = set()
-    plan = []
-    for p in relevant:
-        base = _paper_basename(p, _fulltext_key(p), dest, taken=taken)
-        taken.add(base)
-        plan.append((p, base))
     fetched = 0
-    if plan:
+    attempted = 0
+    attempt_ceiling = min(len(candidates), max(target_reads * 8, 24))
+    i = 0
+    while fetched < target_reads and i < attempt_ceiling:
+        batch = candidates[i:i + workers]
+        if not batch:
+            break
+        i += len(batch)
+        plan = []
+        for p in batch:
+            base = _paper_basename(p, _fulltext_key(p), dest, taken=taken)
+            taken.add(base)
+            plan.append((p, base))
+        attempted += len(plan)
         with ThreadPoolExecutor(max_workers=workers) as pool:
             recs = list(pool.map(lambda pb: fetch_one(pb[0], dest, basename=pb[1]), plan))
         for rec in recs:
-            if rec:
+            if rec and fetched < target_reads:
                 manifest.append(rec)
                 done.add(rec["key"])
                 fetched += 1
-    if log_fn and dropped:
-        log_fn(f"  Full-text relevance gate: dropped {dropped} off-topic paper(s) "
-               f"before download")
+    if log_fn:
+        log_fn(f"  Full-text harvest: read {fetched} open-access paper(s) "
+               f"(attempted {attempted} of {len(candidates)}) for named/cited-enzyme "
+               f"discovery")
     if manifest:
         try:
             manifest_path.write_text(json.dumps(manifest, indent=2))
         except OSError:
             pass
 
-    # 2. Mine deposit-context accessions from the stored full text (no LLM).
-    #    Read via the manifest's relative text paths so it is agnostic to the
-    #    on-disk layout (text lives under txt/ in the current layout).
-    genbank: set[str] = set()
-    uniprot: set[str] = set()
-    cue_re = re.compile("|".join(re.escape(c) for c in _DEPOSIT_CUES))
-    for m in manifest:
-        tf = m.get("text_file")
-        if not tf:
-            continue
-        try:
-            text = (dest / tf).read_text(errors="ignore")
-        except OSError:
-            continue
-        # Restrict matches to short windows around deposit cues: bounds the count
-        # and eliminates the false positives a bare accession regex would hit.
-        for m in cue_re.finditer(text.lower()):
-            window = text[max(0, m.start() - 60): m.start() + 200]
-            genbank.update(a.split(".")[0] for a in _NUCLEOTIDE_ACC_RE.findall(window))
-            genbank.update(_PROTEIN_ACC_RE.findall(window))
-            uniprot.update(UNIPROT_ACC_RE.findall(window))
-
-    # 3. Register UniProt directly; resolve GenBank -> UniProt (cluster-scale).
+    # 2. Literature-NAMED / CITED enzymes (below) are literature's grounded discovery
+    #    channel.  Deposit-context regex accession-mining is intentionally REMOVED: it
+    #    scooped wrong-direction / off-target accessions (e.g. an inhibitor paper's
+    #    target enzyme) into the candidate set for near-zero unique value.
     registered: list[str] = []
 
     def _register(acc: str, source: str, lit_name: str = ""):
@@ -878,18 +868,6 @@ def mine_and_register_fulltext_accessions(
             meta["literature_name"] = lit_name
         update_candidate_registry(run, acc, "discovered", metadata=meta)
         registered.append(acc)
-
-    for acc in sorted(uniprot):
-        if len(registered) >= max_proteins:
-            break
-        _register(acc, "fulltext_uniprot")
-    for gb in sorted(genbank):
-        if len(registered) >= max_proteins:
-            break
-        for acc in _resolve_embl_accession(gb):
-            if len(registered) >= max_proteins:
-                break
-            _register(acc, f"fulltext_genbank:{gb}")
 
     # 4. Literature-NAMED enzymes: a paper names target-reaction enzymes it
     #    deposits no sequence for (cited analogues / prior art).  Resolve each by
