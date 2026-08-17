@@ -370,10 +370,7 @@ def screen_candidates(run_dir: Path | str, accessions: list[str]) -> dict:
                 entry.get("ec_numbers", []), entry.get("catalytic_activities", [])
             )
             native_direction = chemistry.get("reaction_direction")
-            opposite_direction = {
-                ("formation", "cleavage"), ("cleavage", "formation"),
-            }
-            if (native_direction, target_direction) in opposite_direction:
+            if (native_direction, target_direction) in OPPOSITE_DIRECTIONS:
                 reason = (
                     f"Rejected at screening: native reaction direction is {native_direction}, "
                     f"but the declared target requires {target_direction}."
