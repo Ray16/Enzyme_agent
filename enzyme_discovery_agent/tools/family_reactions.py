@@ -338,46 +338,36 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
             "native_mw_range": [round(min(mws)), round(max(mws))],
         }
 
-    # ROLE-AWARE correspondence, generic and consistent with the evaluation path:
-    # a substrate's role is the set of reactive functional groups it carries (read
-    # from the analyser's own ``functional_groups`` output, not a hand-listed set),
-    # and a target is matched only against member substrates that SHARE a group with
-    # it.  This keeps the target's amine-bearing partner compared to the member's
-    # amine-bearing partner (and carboxyl to carboxyl), instead of both targets
-    # collapsing onto one native or crossing roles.  Falls back to all member
-    # substrates when no role match resolves, so recall is never lost.
-    def _roles(smi):
-        try:
-            return frozenset(compute_substrate_properties(smi).functional_groups)
-        except Exception:  # noqa: BLE001
-            return None
+    # ONE-TO-ONE correspondence, generic and consistent with the evaluation path:
+    # each native substrate serves AT MOST ONE target substrate, so a two-partner
+    # target can't flatter itself by matching both partners onto its single best
+    # native.  The pair score is functional-group overlap, which already carries the
+    # role signal (an amine target overlaps an amine native, carboxyl a carboxyl), so
+    # the assignment naturally pairs amine↔amine and carboxyl↔carboxyl — and forces
+    # a target's amine partner onto the family's amine partner even when that is a
+    # tiny FG-less donor (ammonia), which then scores as the poor fit it is.  The
+    # shared assign_one_to_one keeps this identical to the ranking path.
+    _cmp_cache: dict = {}
 
-    member_roles = {n: _roles(n) for n in member_smiles}
+    def _cmp(t, n):
+        key = (t, n)
+        if key not in _cmp_cache:
+            _cmp_cache[key] = compare_substrate_properties(
+                t, n, compute_substrate_properties)
+        return _cmp_cache[key]
+
+    def _fg_score(t, n):
+        cmp = _cmp(t, n)
+        fg = cmp.get("functional_group_similarity") if cmp else None
+        return fg if fg is not None else -1.0
 
     per_target = []
-    for t in target_smiles:
-        t_roles = _roles(t)
-        role_members = [
-            n for n in member_smiles
-            if t_roles and member_roles.get(n) and (member_roles[n] & t_roles)
-        ] or member_smiles
-        best = None
-        for n in role_members:
-            cmp = compare_substrate_properties(t, n, compute_substrate_properties)
-            if not cmp:
-                continue
-            fg = cmp.get("functional_group_similarity")
-            if fg is None:
-                continue
-            cl = cmp.get("chain_length_similarity")
-            # Among role-consistent natives, pick the member's closest substrate by
-            # functional-group overlap, breaking ties by MAIN-CHAIN closeness.  Keep
-            # the FULL comparison so every grounded dimension is available.
-            key = (fg, cl if cl is not None else -1.0)
-            if best is None or key > best["_key"]:
-                best = {"_key": key, "fg": fg, "cmp": cmp}
-        if best is not None:
-            per_target.append(best)
+    for t, n, sc in assign_one_to_one(target_smiles, member_smiles, _fg_score):
+        if n is None or sc < 0:
+            continue
+        cmp = _cmp(t, n)
+        if cmp and cmp.get("functional_group_similarity") is not None:
+            per_target.append({"fg": cmp["functional_group_similarity"], "cmp": cmp})
     if not per_target:
         return None
 
