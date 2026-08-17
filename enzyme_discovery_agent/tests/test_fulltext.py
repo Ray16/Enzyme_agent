@@ -146,3 +146,58 @@ class TestHarvestCap(unittest.TestCase):
     def test_cap_below_pool_size_bounds_reads(self):
         ranked = [{"pmid": str(i)} for i in range(200)]
         self.assertEqual(len(FT._select_harvest_papers(ranked, set(), cap=40)), 40)
+
+
+class TestLeanHarvest(unittest.TestCase):
+    """The rescoped harvest reads only a few DOWNLOADABLE papers (paywalls skipped)
+    and does NO regex deposit-mining — its sole channel is named/cited extraction."""
+
+    def _run(self, tmp, papers, fetch_map, target):
+        lit = Path(tmp) / "artifacts" / "literature"
+        lit.mkdir(parents=True)
+        (lit / "search_001.json").write_text(json.dumps({"result": {"data": papers}}))
+        from enzyme_discovery_agent import config
+        named_seen = {}
+
+        def fake_fetch_one(paper, dest, basename=None):
+            key = FT._fulltext_key(paper)
+            if not fetch_map.get(key):          # paywalled -> None (fast-fail)
+                return None
+            return {"key": key, "title": paper.get("title", ""), "source": "europepmc",
+                    "format": "xml", "text_file": None}
+
+        def fake_named(run, query, dest, manifest, llm, register_fn, already, remaining):
+            named_seen["n"] = len(manifest)    # how many papers reached extraction
+            return []
+
+        with mock.patch.object(config, "FULLTEXT_HARVEST_MAX_PAPERS", target), \
+             mock.patch.object(FT, "consolidate_pool",
+                               lambda q, ps, max_results=25: {"ranked": ps}), \
+             mock.patch.object(FT, "fetch_one", fake_fetch_one), \
+             mock.patch.object(FT, "_register_named_enzymes_from_fulltext", fake_named), \
+             mock.patch.object(FT, "update_candidate_registry") as reg:
+            out = FT.mine_and_register_fulltext_accessions(
+                tmp, "q", llm_client=object())
+        return out, named_seen, reg
+
+    def test_reads_until_target_and_skips_paywalls(self):
+        # 2 paywalled papers rank ABOVE 3 open-access ones; target=2 OA reads.
+        papers = [{"doi": f"10.1/{i}", "title": f"P{i}"} for i in range(5)]
+        fetch_map = {"10.1/0": False, "10.1/1": False,   # paywalled
+                     "10.1/2": True, "10.1/3": True, "10.1/4": True}  # OA
+        with tempfile.TemporaryDirectory() as tmp:
+            _, named_seen, _ = self._run(tmp, papers, fetch_map, target=2)
+            # reached extraction with exactly the 2 OA papers (paywalls skipped, not
+            # counted against the target)
+            self.assertEqual(named_seen["n"], 2)
+
+    def test_no_deposit_accession_mining(self):
+        # A downloaded paper never triggers a fulltext_uniprot/genbank registration
+        # (that channel is removed); only named/cited extraction can register.
+        papers = [{"doi": "10.1/9", "title": "P"}]
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, reg = self._run(tmp, papers, {"10.1/9": True}, target=6)
+            sources = [c.kwargs.get("metadata", {}).get("source_tool", "")
+                       for c in reg.call_args_list]
+            self.assertFalse(any("fulltext_uniprot" in s or "fulltext_genbank" in s
+                                 for s in sources))
