@@ -111,7 +111,7 @@ def render_family_fit_plot(
         angles = np.linspace(0, 2 * np.pi, n_ax, endpoint=False).tolist()
         angles += angles[:1]  # close the loop
 
-        fig = plt.figure(figsize=(13, 5.6))
+        fig = plt.figure(figsize=(14, 7.2))
         ax_r = fig.add_subplot(1, 2, 1, polar=True)
         cmap = plt.get_cmap("viridis")
         colors = [cmap(i / max(1, len(plottable) - 1)) for i in range(len(plottable))]
