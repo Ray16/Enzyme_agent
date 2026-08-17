@@ -487,7 +487,7 @@ Use these columns:
 | Rank | UniProt | Name | Gene | Organism | EC | Native Substrates | Native Reaction | Family/Fold | Swiss-Prot | PDB | AF | \
 Char. | Eng. | Tanimoto | Key PMID | Tier | Rationale |
 
-- **UniProt**: hyperlink each ID, e.g. [P78061](https://www.uniprot.org/uniprot/P78061)
+- **UniProt**: hyperlink each ID, e.g. [P12345](https://www.uniprot.org/uniprot/P12345)
 - **Native Substrates**: List native substrate/product names with their SMILES in \
 parentheses. Extract names from catalytic_activities text and SMILES from \
 native_substrates or property_comparisons. Format: "compound_name (`SMILES`)" \
