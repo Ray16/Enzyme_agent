@@ -127,13 +127,22 @@ _SYSTEM = (
     "native role, NOT whether it could be run in reverse in vitro;\n"
     "  - substrates_free: true ONLY if BOTH the native donor AND the native "
     "acceptor are FREE small molecules of the target's substrate class; false if "
-    "either is carrier-bound, protein-tethered, or a fixed cofactor.\n"
+    "either is carrier-bound, protein-tethered, or a fixed cofactor;\n"
+    "  - archetypal_native_substrates: the SPECIFIC representative compounds the "
+    "family's ARCHETYPE natively transforms — name the actual donor AND acceptor "
+    "as concrete, resolvable compound names (each naming ONE molecule with a "
+    "definite structure), NOT a generic class word. When a native partner is "
+    "genuinely a single small molecule, name that exact molecule. These are the "
+    "family's OWN native substrates, used only to judge how far the family's "
+    "chemistry sits from the target — do NOT substitute the target's molecules.\n"
     "STRICT: do NOT name any specific enzyme, gene, protein, natural product, or "
-    "organism anywhere — only mechanism/fold classes, generic descriptors, and "
-    "the target substrate's own chemical class from the query. "
+    "organism anywhere — only mechanism/fold classes, generic descriptors, the "
+    "family's own native substrate compounds, and the target substrate's own "
+    "chemical class from the query. "
     'Return ONLY JSON: {"families":[{"name":"..","descriptors":["..",".."],'
     '"literature_terms":["..",".."],"native_reaction":"reactants -> products",'
-    '"native_direction":"formation|cleavage","substrates_free":true}]}'
+    '"native_direction":"formation|cleavage","substrates_free":true,'
+    '"archetypal_native_substrates":["..",".."]}]}'
 )
 
 # Guard the firewall: drop any descriptor/term that looks like a specific
