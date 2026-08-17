@@ -143,7 +143,7 @@ def auto_screen_candidates(run_dir: Path, log_fn=None) -> None:
 
     entry_by_acc: dict[str, dict] = {}
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=config.TOOL_THREAD_POOL_WORKERS
+        max_workers=config.EVAL_POOL_WORKERS
     ) as pool:
         for acc, entry in pool.map(_light, gene_reps):
             if entry:
@@ -324,7 +324,7 @@ def _auto_evaluate_all(run_dir: Path, log_fn=None) -> int:
             return acc, None
 
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=config.TOOL_THREAD_POOL_WORKERS
+        max_workers=config.EVAL_POOL_WORKERS
     ) as pool:
         futures = [pool.submit(_eval_one, acc) for acc in to_evaluate]
         for future in concurrent.futures.as_completed(futures):
