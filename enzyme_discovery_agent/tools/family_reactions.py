@@ -51,10 +51,11 @@ _REVIEWED_MEMBER_CAP = _LIST_PAGE_MAX
 _MEMBER_CAP = 120
 
 # Directions that are genuine opposites (a cleavage fold cannot be steered into a
-# formation target and vice versa).  This is a grounded chemical fact, not a tuned
-# knob — the ONE hard call the survey makes; everything else is a reported number
-# the agent reasons over.
-_OPPOSITE_DIRECTIONS = {("formation", "cleavage"), ("cleavage", "formation")}
+# formation target and vice versa) — a grounded chemical fact, the ONE hard call
+# the survey makes; everything else is a reported number the agent reasons over.
+from enzyme_discovery_agent.models.target_profile import (  # noqa: E402
+    OPPOSITE_DIRECTIONS as _OPPOSITE_DIRECTIONS,
+)
 
 
 # --------------------------------------------------------------------------
