@@ -219,7 +219,7 @@ _PROMOTABLE_DIRECTIONS = frozenset({"same", "unknown"})
 def select_relevant_members(
     members: list[dict],
     *,
-    max_select: int,
+    max_select: int | None = None,
 ) -> list[dict]:
     """Pick the members whose native substrate most RESEMBLES the target — the
     relevant enzymes in this family to promote to candidates.
