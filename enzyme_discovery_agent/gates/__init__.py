@@ -29,7 +29,6 @@ class AgentState:
     discovery_coverage_incomplete: bool = False
     discovery_coverage_redirected: bool = False
     accumulated_papers: list[dict] = field(default_factory=list)
-    search_log: list[str] = field(default_factory=list)
 
 
 @dataclass
