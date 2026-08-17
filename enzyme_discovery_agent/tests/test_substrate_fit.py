@@ -7,16 +7,18 @@ from enzyme_discovery_agent.substrate_fit import assign_one_to_one
 
 class TestAssignOneToOne(unittest.TestCase):
     def test_each_native_serves_one_target(self):
-        # Two targets, two natives. Native "acid" fits target "A" best AND target
-        # "B" second-best; native "amine" fits "B" poorly. Independent-best would
-        # map BOTH targets onto "acid"; one-to-one must give each a DISTINCT native.
+        # Both targets would independently grab "acid" (A:0.9, B:0.6) and leave
+        # "amine" unused. One-to-one must give each a DISTINCT native, and MAXIMIN
+        # picks the arrangement whose worst pair is best: A->amine(0.1)/B->acid(0.6)
+        # (worst 0.1) beats A->acid(0.9)/B->amine(0.0) (worst 0.0).
         score = lambda t, n: {("A", "acid"): 0.9, ("A", "amine"): 0.1,
                               ("B", "acid"): 0.6, ("B", "amine"): 0.0}[(t, n)]
         res = assign_one_to_one(["A", "B"], ["acid", "amine"], score)
         natives = {t: n for t, n, _ in res}
         self.assertEqual(len(set(natives.values())), 2)          # distinct natives
-        self.assertEqual(natives["A"], "acid")                   # A keeps its best
-        self.assertEqual(natives["B"], "amine")                  # B forced onto amine
+        self.assertEqual(natives["A"], "amine")                  # maximin arrangement
+        self.assertEqual(natives["B"], "acid")
+        self.assertAlmostEqual(min(s for _, _, s in res), 0.1)   # honest bottleneck
 
     def test_ammonia_case_is_demoted(self):
         # Target = {diacid, diamine}; native = {aspartate-like, ammonia-like}.
