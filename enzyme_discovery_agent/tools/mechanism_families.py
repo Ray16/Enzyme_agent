@@ -227,6 +227,8 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
             "native_reaction": str(fam.get("native_reaction") or "").strip(),
             "native_direction": str(fam.get("native_direction") or "").strip(),
             "substrates_free": fam.get("substrates_free"),
+            "archetypal_native_substrates": _clean_terms(
+                fam.get("archetypal_native_substrates")),
         })
     return out
 
