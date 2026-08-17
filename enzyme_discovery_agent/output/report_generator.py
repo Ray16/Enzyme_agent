@@ -330,22 +330,7 @@ def _accommodation_score(data: dict) -> float | None:
     comps = sim.get("property_comparisons") or []
     if not comps:
         return None
-    per_substrate = []
-    for c in comps:
-        steric = [c[k] for k in _ACCOM_STERIC_AXES if isinstance(c.get(k), (int, float))]
-        chem = [c[k] for k in _ACCOM_CHEMICAL_AXES if isinstance(c.get(k), (int, float))]
-        parts = []
-        if steric:
-            s = min(steric)
-            if c.get("aromaticity_match") is False:   # aromatic native, aliphatic target
-                s = min(s, 0.3)
-            if c.get("cyclicity_match") is False:     # ring native, acyclic target
-                s = min(s, 0.5)
-            parts.append(s)
-        if chem:
-            parts.append(sum(chem) / len(chem))
-        if parts:
-            per_substrate.append(min(parts))
+    per_substrate = [f for f in (whole_package_pair_fit(c) for c in comps) if f is not None]
     return min(per_substrate) if per_substrate else None
 
 
