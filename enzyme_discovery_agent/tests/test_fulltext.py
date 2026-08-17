@@ -175,7 +175,8 @@ class TestLeanHarvest(unittest.TestCase):
                                lambda q, ps, max_results=25: {"ranked": ps}), \
              mock.patch.object(FT, "fetch_one", fake_fetch_one), \
              mock.patch.object(FT, "_register_named_enzymes_from_fulltext", fake_named), \
-             mock.patch.object(FT, "update_candidate_registry") as reg:
+             mock.patch("enzyme_discovery_agent.models.candidate_registry."
+                        "update_candidate_registry") as reg:
             out = FT.mine_and_register_fulltext_accessions(
                 tmp, "q", llm_client=object())
         return out, named_seen, reg
