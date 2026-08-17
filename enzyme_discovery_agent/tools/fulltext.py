@@ -944,17 +944,40 @@ def mine_and_register_fulltext_accessions(
         update_candidate_registry(run, acc, "discovered", metadata=meta)
         registered.append(acc)
 
-    for acc in sorted(uniprot):
-        if len(registered) >= max_proteins:
-            break
-        _register(acc, "fulltext_uniprot")
+    # Assemble the regex-mined accessions (UniProt direct + GenBank-resolved),
+    # then DROP any whose EC proves it runs the UNAMBIGUOUS OPPOSITE reaction
+    # direction BEFORE registering.  The deposit-cue regex is blind to what an
+    # enzyme DOES, so a paper on an inhibitor or a cited analogue can deposit a
+    # wrong-direction enzyme (e.g. a protease/hydrolase alongside a formation
+    # target).  Registering it as a discovery SEED would spend a homolog-
+    # expansion cycle on the wrong fold and pollute the seed set; the downstream
+    # direction gate would only demote it much later.  EC class + the query's own
+    # direction are both generic, so this stays firewall-safe.
+    mined: list[tuple[str, str]] = [(acc, "fulltext_uniprot") for acc in sorted(uniprot)]
     for gb in sorted(genbank):
+        for acc in _resolve_embl_accession(gb):
+            mined.append((acc, f"fulltext_genbank:{gb}"))
+
+    from enzyme_discovery_agent.tools.reasoning import _target_direction_for_run
+    target_direction = _target_direction_for_run(run)
+    ec_by_acc = _fetch_ecs_for([a for a, _ in mined]) if target_direction else {}
+    n_wrongdir = 0
+    seen_acc: set[str] = set()
+    for acc, source in mined:
         if len(registered) >= max_proteins:
             break
-        for acc in _resolve_embl_accession(gb):
-            if len(registered) >= max_proteins:
-                break
-            _register(acc, f"fulltext_genbank:{gb}")
+        if acc in seen_acc:
+            continue
+        seen_acc.add(acc)
+        if _wrong_direction_ec(ec_by_acc.get(acc, []), target_direction):
+            n_wrongdir += 1
+            logger.info("fulltext harvest dropped wrong-direction seed %s (EC %s "
+                        "vs target %s)", acc, ec_by_acc.get(acc), target_direction)
+            continue
+        _register(acc, source)
+    if log_fn and n_wrongdir:
+        log_fn(f"  Full-text harvest: dropped {n_wrongdir} wrong-direction "
+               f"deposited seed(s) (EC opposite the '{target_direction}' target)")
 
     # 4. Literature-NAMED enzymes: a paper names target-reaction enzymes it
     #    deposits no sequence for (cited analogues / prior art).  Resolve each by
