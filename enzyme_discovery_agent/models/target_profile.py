@@ -9,6 +9,20 @@ _STRUCTURAL_EVIDENCE_CHECKS = frozenset({
     "catalytic_center", "pocket_engagement", "cofold_confidence", "ligand_burial",
 })
 
+# The only genuine reaction-direction opposites: a cleavage family cannot serve a
+# formation target (or vice versa).  Shared by every direction guard so the concept
+# is defined once.
+OPPOSITE_DIRECTIONS = frozenset({("formation", "cleavage"), ("cleavage", "formation")})
+
+
+def is_opposite_direction(native: str | None, target: str | None) -> bool:
+    """True only on a CONFIDENT opposite-direction call (formation vs cleavage).
+
+    Unknown / transfer / redox / None on either side returns False, so a guard
+    built on this never drops a candidate it cannot confidently disqualify.
+    """
+    return bool(native) and bool(target) and (native, target) in OPPOSITE_DIRECTIONS
+
 
 def _normalize_discovery_coverage(value: object) -> dict:
     """Normalize a target-supplied discovery coverage contract.
