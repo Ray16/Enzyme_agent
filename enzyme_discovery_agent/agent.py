@@ -769,89 +769,35 @@ class EnzymeAgent:
             has_focus_call = any(_tc_name(tc) == "set_family_focus" for tc in tool_calls)
 
             self._sync_gate_state()
-            # Literature-first: harvest full-text-mined enzymes as discovery
-            # seeds BEFORE the agent registers/expands candidates, so tested
-            # enzymes lead and database search expands around them.
-            if not has_focus_call and self._literature_harvest_gate.should_fire(self._gate_state):
-                harvest_result = self._literature_harvest_gate.execute(self._gate_state)
-                self._log_gate("literature_harvest", harvest_result, iteration)
-                for k, v in harvest_result.state_updates.items():
-                    setattr(self._gate_state, k, v)
-                messages.pop()
-                messages.extend(harvest_result.new_messages)
-                iteration -= 1
-                self.log("  Gate transition: iteration credit restored")
-                continue
-            # Derive the reaction's distinct mechanism families and make each a
-            # coverage requirement, searched from literature before evaluation.
-            if not has_focus_call and self._mechanism_family_gate.should_fire(self._gate_state):
-                mf_result = self._mechanism_family_gate.execute(self._gate_state)
-                for k, v in mf_result.state_updates.items():
-                    setattr(self._gate_state, k, v)
-                if mf_result.intercept:
-                    self._log_gate("mechanism_family", mf_result, iteration)
-                    messages.pop()
-                    messages.extend(mf_result.new_messages)
-                    iteration -= 1
-                    self.log("  Gate transition: iteration credit restored")
+            # Deterministic pre-evaluation gates, all skipped on a focus-call turn
+            # (see has_focus_call above) so the agent's set_family_focus tool runs
+            # and its stop/expand decisions persist before the eval gates spend
+            # budget — they fire on the NEXT turn with the stops in place.  The early
+            # gates (literature-first harvest → mechanism-family derivation → family
+            # survey → evidence selection → systematic coverage) fire every discovery
+            # turn; the pre-evaluation pipeline fires only once there is something to
+            # evaluate.  Every gate runs through the one shared intercept ritual.
+            if not has_focus_call:
+                intercepted = False
+                for name, gate in self._early_gates:
+                    if not gate.should_fire(self._gate_state, has_eval_calls, messages):
+                        continue
+                    result = gate.execute(self._gate_state, messages)
+                    iteration, intercepted = self._apply_gate_result(
+                        name, result, iteration, messages)
+                    if intercepted:
+                        break
+                if intercepted:
                     continue
-            # Auto-run the family-reaction survey once families + seeds exist, and
-            # inject the grounded family landscape so the agent navigates by it.
-            if not has_focus_call and self._family_survey_gate.should_fire(self._gate_state):
-                fs_result = self._family_survey_gate.execute(self._gate_state)
-                for k, v in fs_result.state_updates.items():
-                    setattr(self._gate_state, k, v)
-                if fs_result.intercept:
-                    self._log_gate("family_survey", fs_result, iteration)
-                    messages.pop()
-                    messages.extend(fs_result.new_messages)
-                    iteration -= 1
-                    self.log("  Gate transition: iteration credit restored")
-                    continue
-            if not has_focus_call and self._evidence_selection_gate.should_fire(self._gate_state):
-                selection_result = self._evidence_selection_gate.execute(self._gate_state)
-                self._log_gate("evidence_selection", selection_result, iteration)
-                for k, v in selection_result.state_updates.items():
-                    setattr(self._gate_state, k, v)
-                messages.pop()
-                messages.extend(selection_result.new_messages)
-                iteration -= 1
-                self.log("  Gate transition: iteration credit restored")
-                continue
-            if not has_focus_call and self._systematic_gate.should_fire(self._gate_state, has_eval_calls, messages):
-                sys_result = self._systematic_gate.execute(self._gate_state, messages)
-                if sys_result and sys_result.intercept:
-                    self._log_gate("systematic_coverage", sys_result, iteration)
-                    for k, v in sys_result.state_updates.items():
-                        setattr(self._gate_state, k, v)
-                    messages.pop()
-                    messages.extend(sys_result.new_messages)
-                    iteration -= 1
-                    self.log("  Gate transition: iteration credit restored")
-                    continue
-
-            # Pre-evaluation gates.  Skipped on a focus-call turn so the agent's
-            # set_family_focus executes and its stop/expand decisions persist
-            # before auto-screen/eval spends the budget (they fire next turn).
-            if not has_focus_call and (
-                self._gate_state.candidate_count > 0
-                or has_eval_calls
-                or self._gate_state.critique_injected
-            ):
-                gate_result = self._gate_pipeline.check(
-                    self._gate_state, has_eval_calls, messages
-                )
-                if gate_result and gate_result.intercept:
-                    self._log_gate("pre_evaluation", gate_result, iteration)
-                    for k, v in gate_result.state_updates.items():
-                        setattr(self._gate_state, k, v)
-                    messages.pop()
-                    messages.extend(gate_result.new_messages)
-                    iteration -= 1
-                    self.log("  Gate transition: iteration credit restored")
-                    continue
-                for k, v in (gate_result.state_updates if gate_result else {}).items():
-                    setattr(self._gate_state, k, v)
+                if (self._gate_state.candidate_count > 0
+                        or has_eval_calls
+                        or self._gate_state.critique_injected):
+                    result = self._gate_pipeline.check(
+                        self._gate_state, has_eval_calls, messages)
+                    iteration, intercepted = self._apply_gate_result(
+                        "pre_evaluation", result, iteration, messages)
+                    if intercepted:
+                        continue
 
             # Parse and execute tool calls
             parsed = []
