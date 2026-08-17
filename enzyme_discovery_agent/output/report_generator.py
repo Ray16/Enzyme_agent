@@ -299,10 +299,6 @@ def _candidate_is_gated(data: dict) -> bool:
     return bool(data.get("critical_warnings"))
 
 
-_ACCOM_STERIC_AXES = ("mw_similarity", "chain_length_similarity", "volume_similarity")
-_ACCOM_CHEMICAL_AXES = ("functional_group_similarity", "tpsa_similarity", "logP_similarity")
-
-
 def _accommodation_score(data: dict) -> float | None:
     """Substrate-accommodation fit in [0,1], or None when not computed.
 
