@@ -138,13 +138,27 @@
 
 % ---------- Pipeline overview ----------
 \begin{frame}{How it works, end to end}
-  \vspace{0.3em}
+  \vspace{1.6em}
   \begin{center}
-    \includegraphics[width=0.99\textwidth]{pipeline_workflow.png}
+  \begin{tikzpicture}[node distance=0.62cm]
+    \node[card=st1] (n1)
+      {\stagecard{st1}{1}{Target setup}\\[4pt]{\scriptsize\color{muted} read the substrates, work out the reaction}};
+    \node[card=st2, right=of n1] (n2)
+      {\stagecard{st2}{2}{Discovery}\\[4pt]{\scriptsize\color{muted} literature + chemistry + family search}};
+    \node[card=st3, right=of n2] (n3)
+      {\stagecard{st3}{3}{Evaluate}\\[4pt]{\scriptsize\color{muted} check every candidate, in parallel}};
+    \node[card=st4, right=of n3] (n4)
+      {\stagecard{st4}{4}{Rank}\\[4pt]{\scriptsize\color{muted} by evidence, then a model re-rank}};
+    \node[card=st5, right=of n4] (n5)
+      {\stagecard{st5}{5}{Report}\\[4pt]{\scriptsize\color{muted} ranked enzymes, reports \& structures}};
+    \foreach \a/\b in {n1/n2,n2/n3,n3/n4,n4/n5} \draw[pipearr] (\a)--(\b);
+  \end{tikzpicture}
   \end{center}
-  \vspace{0.2em}
-  {\footnotesize\color{muted} Five stages. The gates make sure the important steps
-  actually happen, while the model still decides what to chase inside the loop.}
+  \vspace{1.4em}
+  \begin{center}
+  {\footnotesize\color{muted} The gates make sure the important steps actually happen,
+  while the model still decides what to chase inside the loop.}
+  \end{center}
 \end{frame}
 
 % ---------- Stage 2 discovery ----------
