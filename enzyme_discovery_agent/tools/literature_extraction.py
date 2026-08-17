@@ -276,7 +276,7 @@ def _is_non_article(title: str) -> bool:
 def mechanism_gate_query(run_dir, fallback_query: str) -> str:
     """A substrate-free, mechanism-only description of the target for the
     relevance gate: ``<bond> bond <direction>`` derived from the run's reaction
-    analysis (e.g. "amide bond formation (ligation / synthesis)").
+    analysis (e.g. "<bond-type> bond formation (ligation / synthesis)").
 
     The gate must judge a paper by REACTION TYPE, not by the specific substrates
     or applied product named in the query — but handing it the raw query lets the
