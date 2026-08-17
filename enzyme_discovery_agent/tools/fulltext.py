@@ -771,20 +771,20 @@ def mine_and_register_fulltext_accessions(
     run_dir, query: str, fetch_ceiling: int = 250, max_proteins: int = 400,
     log_fn=None, llm_client=None,
 ) -> list[str]:
-    """Fetch mechanism-relevant papers' full text and register the sequence
-    accessions deposited in them as discovered candidates.
+    """Lean literature discovery: read a few open-access full texts and register the
+    enzymes NAMED / CITED in them as discovered candidates.
 
-    Accession mining itself is deterministic (regex + UniProt REST, no full text
-    in the LLM context).  Which papers are mined is gated by a MECHANISM-relevance
-    check on each paper's title+abstract (``is_paper_relevant``) — a lexical/
-    semantic score cannot tell a synthesis paper from a degradation one, so it let
-    off-topic papers through; the mechanism gate does not.  The gate needs an LLM;
-    when ``llm_client`` is None it is skipped (all papers kept).  This is the only
-    route to characterized-but-metadata-invisible enzymes tied to their paper
-    solely through a deposited accession.
+    Two deliberate cost/quality choices (see the inline notes): (1) read only the
+    top ``FULLTEXT_HARVEST_MAX_PAPERS`` DOWNLOADABLE papers in relevance order —
+    paywalled papers fast-fail and are skipped — instead of LLM-relevance-gating and
+    hammering the whole (mostly paywalled) pool; (2) do NOT regex-mine deposit-context
+    accessions (that scooped wrong-direction / off-target enzymes for near-zero unique
+    value).  Literature's grounded, irreplaceable channel is the LLM extraction of the
+    enzymes a paper NAMES + CITES (``_register_named_enzymes_from_fulltext``), which
+    reaches characterised enzymes invisible to database/family search.  No-op when
+    ``llm_client`` is None (extraction needs it).
     """
     from enzyme_discovery_agent.models.candidate_registry import (
-        UNIPROT_ACC_RE,
         update_candidate_registry,
     )
 
