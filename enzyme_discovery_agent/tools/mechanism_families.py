@@ -68,79 +68,7 @@ def family_passes_constraints(fam: dict, target_direction: str | None) -> tuple[
     return True, ""
 
 
-# A family's grounded substrate fit at or below this is a STRUCTURAL dead end: the
-# worst target substrate has essentially no whole-package overlap with any of the
-# family's own native substrates (e.g. a single tiny molecule vs a bulky partner).
-# Not a tuned relevance cutoff — a near-zero boundary marking "cannot plausibly host
-# the target at all", used only to drop such a family from the expansion set.
-_FAMILY_DEAD_END_FIT = 0.1
 
-
-def grounded_family_substrate_fit(archetype_names: list[str],
-                                  target_smiles: list[str]) -> float | None:
-    """Grounded [0,1] resemblance of a family's OWN native substrates to the target,
-    or None when nothing resolves.
-
-    Resolves the family's archetypal substrate NAMES to structures, then scores the
-    role-aware, WHOLE-PACKAGE, worst-target match to the target — the same physics
-    the ranking accommodation uses, so derivation and ranking judge substrates
-    identically.  A family whose native substrate is a poor structural analog of the
-    target (e.g. a tiny single molecule against a bulky partner) scores near 0 and is
-    deprioritised/dropped from expansion; a name that does not resolve is skipped, so
-    a broad-class family is never wrongly penalised.  Answer-agnostic: the natives are
-    the FAMILY's own, compared to the user's target."""
-    from enzyme_discovery_agent.chemistry_logic import (
-        compare_substrate_properties,
-        resolve_substrate_names_to_smiles,
-        whole_package_pair_fit,
-    )
-    from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
-
-    import itertools
-
-    if not target_smiles or not archetype_names:
-        return None
-    natives: list[str] = []
-    for nm in archetype_names:
-        smi = resolve_substrate_names_to_smiles(nm)
-        if smi:
-            natives.extend(s for s in smi.split(".") if s)
-    if not natives:
-        return None
-
-    # Pairwise whole-package fit for every (target, native).
-    pair = {}
-    for ti, t in enumerate(target_smiles):
-        for nj, n in enumerate(natives):
-            cmp = compare_substrate_properties(t, n, compute_substrate_properties)
-            pair[(ti, nj)] = whole_package_pair_fit(cmp) if cmp else None
-
-    # ONE-TO-ONE assignment: each native serves at most ONE target, so a two-partner
-    # target cannot flatter itself by mapping BOTH partners to the family's single
-    # best native.  Critically, this forces the amine partner onto the family's amine
-    # partner even when that partner is a tiny molecule with no functional group
-    # (ammonia) — which independent best-match wrongly routed to the acid donor,
-    # hiding the mismatch.  The family gets its BEST assignment; its fit is that
-    # assignment's WORST pair (must host every target substrate).
-    n_t, n_n = len(target_smiles), len(natives)
-    if n_n >= n_t:
-        best_worst = None
-        for perm in itertools.permutations(range(n_n), n_t):
-            pairs = [pair[(ti, perm[ti])] for ti in range(n_t)]
-            if any(p is None for p in pairs):
-                continue
-            worst = min(pairs)
-            if best_worst is None or worst > best_worst:
-                best_worst = worst
-        return best_worst
-    # Fewer distinct natives than target substrates: reuse is unavoidable, so fall
-    # back to independent best-per-target (still a valid upper bound on the fit).
-    per_target = []
-    for ti in range(n_t):
-        vals = [pair[(ti, nj)] for nj in range(n_n) if pair[(ti, nj)] is not None]
-        if vals:
-            per_target.append(max(vals))
-    return min(per_target) if per_target else None
 
 _SYSTEM = (
     "You are an enzymology strategist. Given a target reaction, enumerate the "
@@ -378,14 +306,14 @@ def derive_mechanism_families(
         if added == 0 and attempt >= 2:
             break
 
-    # NOTE: a family's ARCHETYPAL native substrate (e.g. glutamine-synthetase's
-    # glutamate + ammonia) is the TEXTBOOK reaction, NOT the family's member range —
-    # the same GS fold also contains members acting on a diamine (putrescine).  So
-    # scoring/dropping a whole family by its archetype would wrongly discard a fold
-    # whose members ARE good analogues.  Substrate-aware selection therefore belongs
-    # at the MEMBER level (the family survey scores each member's real native
-    # substrate and promotes the good ones), NOT here.  The archetype is kept on each
-    # family as informational context only; it is not used to drop or reorder.
+    # NOTE: a family's ARCHETYPAL native substrate is the TEXTBOOK reaction, NOT the
+    # family's member RANGE — the same fold routinely contains members acting on
+    # substrates quite unlike the archetype, some of which are close analogues of the
+    # target.  So scoring or dropping a whole family by its archetype would wrongly
+    # discard a fold whose MEMBERS are good analogues.  Substrate-aware selection
+    # therefore belongs at the MEMBER level (the family survey scores each member's
+    # real native substrate and promotes the good ones), NOT here.  The archetype is
+    # kept on each family as informational context only; never used to drop/reorder.
 
     if not families:
         logger.warning("mechanism-family derivation returned no parseable families")
