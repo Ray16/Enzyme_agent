@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Render the enzyme_discovery_agent workflow pipeline as a clean, slide-ready
-figure: five stages, left → right, high resolution.
+figure: five balanced cards, left → right, high resolution.
 
 Generic and answer-agnostic (firewall-safe): it describes the pipeline's stages,
 never a specific target or answer enzyme.
@@ -14,47 +14,44 @@ from graphviz import Digraph
 
 OUT = Path(__file__).resolve().parent / "pipeline_workflow"
 
-# One card per stage: (id, number, title, one-line descriptor, accent colour)
+# One card per stage: (id, number, title, two short descriptor lines, accent)
 STAGES = [
-    ("setup",     "1", "Target setup",     "resolve substrate → SMILES;\nderive bond type &amp; direction",           "#2563eb"),
-    ("discovery", "2", "Discovery",         "literature + mechanism families →\nInterPro survey → promote candidates", "#7c3aed"),
-    ("evaluate",  "3", "Evaluate",          "one representative per gene;\nevaluate every one (parallel)",             "#0d9488"),
-    ("rank",      "4", "Rank",              "deterministic spine\n+ LLM focus-rank",                                   "#e11d48"),
-    ("report",    "5", "Report",            "confidence &amp; explorative reports,\nranked candidates, structures",     "#334155"),
+    ("setup",     "1", "Target setup", ["read the substrates,", "work out the reaction"],      "#2563eb"),
+    ("discovery", "2", "Discovery",     ["literature + chemistry", "+ family search"],          "#7c3aed"),
+    ("evaluate",  "3", "Evaluate",      ["check every candidate", "in parallel"],               "#0d9488"),
+    ("rank",      "4", "Rank",          ["by evidence,", "then a model re-rank"],                "#e11d48"),
+    ("report",    "5", "Report",        ["ranked enzymes,", "reports & structures"],             "#334155"),
 ]
 
 
-def _tint(hex_color: str) -> str:
-    """A very light tint of the accent for the card fill."""
+def _tint(hex_color: str, amount: float = 0.90) -> str:
     r = int(hex_color[1:3], 16); g = int(hex_color[3:5], 16); b = int(hex_color[5:7], 16)
-    mix = lambda c: int(c + (255 - c) * 0.88)
+    mix = lambda c: int(c + (255 - c) * amount)
     return f"#{mix(r):02x}{mix(g):02x}{mix(b):02x}"
 
 
 def build() -> Digraph:
     g = Digraph("enzyme_discovery_pipeline")
-    g.attr(rankdir="LR", bgcolor="white", dpi="220", ranksep="0.7",
-           fontname="Helvetica", label=(
-               "\nEnzyme Discovery Agent — workflow\n"
-               "LLM proposes strategy · deterministic gates + tools find the enzymes"),
-           labelloc="t", fontsize="20", fontcolor="#0f172a")
-    g.attr("node", fontname="Helvetica")
+    g.attr(rankdir="LR", bgcolor="transparent", dpi="220", ranksep="0.55",
+           fontname="Helvetica")
+    g.attr("node", fontname="Helvetica", shape="box", style="filled,rounded",
+           fixedsize="true", width="2.15", height="1.65", margin="0")
 
     for sid, num, title, desc, accent in STAGES:
-        fill = _tint(accent)
+        d0, d1 = desc
         label = (
-            f'<<table border="0" cellborder="0" cellspacing="0" cellpadding="4">'
-            f'<tr><td><font point-size="30" color="{accent}"><b>{num}</b></font>'
-            f'&nbsp;&nbsp;<font point-size="19" color="#0f172a"><b>{title}</b></font></td></tr>'
-            f'<tr><td><font point-size="13" color="#334155">'
-            f'{desc.replace(chr(10), "<br/>")}</font></td></tr>'
+            f'<<table border="0" cellborder="0" cellspacing="0" cellpadding="0">'
+            f'<tr><td height="6"></td></tr>'
+            f'<tr><td><font point-size="34" color="{accent}"><b>{num}</b></font></td></tr>'
+            f'<tr><td><font point-size="17" color="#0f172a"><b>{title}</b></font></td></tr>'
+            f'<tr><td height="6"></td></tr>'
+            f'<tr><td><font point-size="11.5" color="#475569">{d0}<br/>{d1}</font></td></tr>'
             f'</table>>'
         )
-        g.node(sid, label, shape="box", style="filled,rounded",
-               fillcolor=fill, color=accent, penwidth="2.4", margin="0.28,0.20")
+        g.node(sid, label, fillcolor=_tint(accent), color=accent, penwidth="2.4")
 
     for (a, *_), (b, *_) in zip(STAGES, STAGES[1:]):
-        g.edge(a, b, color="#94a3b8", penwidth="2.6", arrowsize="1.1")
+        g.edge(a, b, color="#94a3b8", penwidth="2.8", arrowsize="1.15")
 
     return g
 
