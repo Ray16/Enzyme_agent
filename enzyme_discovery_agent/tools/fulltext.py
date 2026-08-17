@@ -804,47 +804,21 @@ def mine_and_register_fulltext_accessions(
             manifest = []
     done = {m.get("key") for m in manifest}
 
-    # 1. Attempt full text for every MECHANISM-RELEVANT paper.  There is no count
-    # cap (non-OA papers fast-fail); relevance is gated per paper by an LLM check
-    # on the title+abstract, so an off-topic paper is not even downloaded and its
-    # accessions never enter the pool.  fetch_ceiling is only a runaway guard.
+    # 1. Read the full text of a SMALL number of the most-relevant DOWNLOADABLE
+    # papers — the lean "exploration" harvest.  We deliberately DO NOT LLM-relevance-
+    # gate the pool or attempt the whole (~10^2, mostly paywalled) list: that spent
+    # dozens of gate calls + paywall round-trips to read a handful of open-access
+    # papers.  Instead we walk the pool in relevance order and DOWNLOAD until
+    # FULLTEXT_HARVEST_MAX_PAPERS full texts are in hand (non-OA papers fast-fail and
+    # are skipped).  Reading an off-topic paper is cheap here: only the per-paper
+    # named/cited extraction (step 2) registers anything, and it judges relevance
+    # itself.  A bare-title non-article filter drops posters/proceedings up front.
+    from enzyme_discovery_agent.tools.literature_extraction import _is_non_article
     ranked = consolidate_pool(query, papers, max_results=len(papers))["ranked"]
-    from enzyme_discovery_agent.tools.literature_extraction import is_paper_relevant
     workers = config.FULLTEXT_HARVEST_WORKERS
-
-    # Candidate papers not already fetched, TOP-N by relevance rank.  The pool is
-    # already relevance-ordered, so capping here spends the harvest on the most
-    # relevant papers instead of LLM-relevance-gating the whole (~10^2) pool up
-    # front — keeping the run's early effort on candidate SEARCH, not paper reading.
-    harvest_cap = min(fetch_ceiling, config.FULLTEXT_HARVEST_MAX_PAPERS)
-    todo = _select_harvest_papers(ranked, done, harvest_cap)
-    if log_fn and len(ranked) > len(todo):
-        log_fn(f"  Full-text harvest: reading top {len(todo)} of {len(ranked)} "
-               f"pooled papers by relevance (cap {config.FULLTEXT_HARVEST_MAX_PAPERS})")
-
-    # Relevance gate (LLM, per paper) IN PARALLEL — mechanism relevance on
-    # title+abstract, so an off-topic paper is never downloaded.  The gate is
-    # judged against a MECHANISM-ONLY target (bond + direction), not the raw
-    # substrate-laden query: the literal product framing was dropping the
-    # mechanistic primary literature that names characterised enzymes but never
-    # mentions the query's specific product.
-    from enzyme_discovery_agent.tools.literature_extraction import mechanism_gate_query
-    gate_query = mechanism_gate_query(run, query)
-    dropped = 0
-    if llm_client is not None and todo:
-        def _relevant(paper):
-            ok, reason = is_paper_relevant(
-                paper.get("title", ""), paper.get("abstract", ""), gate_query, llm_client)
-            if not ok:
-                logger.info("fulltext relevance gate dropped %s: %s",
-                            (paper.get("title") or "")[:60], reason)
-            return ok
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            flags = list(pool.map(_relevant, todo))
-        relevant = [p for p, ok in zip(todo, flags) if ok]
-        dropped = sum(1 for ok in flags if not ok)
-    else:
-        relevant = todo
+    target_reads = min(fetch_ceiling, config.FULLTEXT_HARVEST_MAX_PAPERS)
+    candidates = [p for p in _select_harvest_papers(ranked, done, len(ranked))
+                  if not _is_non_article(p.get("title", ""))]
 
     # Pre-assign title basenames sequentially (collision-safe), then DOWNLOAD the
     # papers IN PARALLEL — downloads are I/O-bound, so a worker pool cuts the
