@@ -160,8 +160,19 @@ def render_family_fit_plot(
         ax_b.grid(axis="x", alpha=0.3)
 
         fig.suptitle("Family native-substrate fit — top candidates for the target",
-                     fontsize=12, y=1.02)
-        fig.tight_layout()
+                     fontsize=13, y=0.99)
+        # ONE figure-level legend BELOW both panels (was an in-axes box overlapping
+        # the radar title + axis labels).  Full family names, one legend for the run.
+        handles, leg_labels = ax_r.get_legend_handles_labels()
+        note = "✦ pocket spans aromatic + aliphatic natives"
+        ncol = 2 if len(handles) > 3 else 1
+        leg = fig.legend(handles, leg_labels, title=f"Fold family    ({note})",
+                         loc="lower center", bbox_to_anchor=(0.5, 0.0),
+                         ncol=ncol, fontsize=8, title_fontsize=9, frameon=True,
+                         borderaxespad=0.4)
+        leg._legend_box.align = "left"
+        # Leave room at the bottom for the legend; keep panels clear of it.
+        fig.tight_layout(rect=[0, 0.14 if ncol == 1 else 0.18, 1, 0.95])
         out = run_dir / "family_substrate_fit.png"
         fig.savefig(out, dpi=130, bbox_inches="tight")
         plt.close(fig)
