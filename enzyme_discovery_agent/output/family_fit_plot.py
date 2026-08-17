@@ -133,12 +133,7 @@ def render_family_fit_plot(
         ax_r.set_yticks([0.25, 0.5, 0.75, 1.0])
         ax_r.set_yticklabels(["0.25", "0.5", "0.75", "1.0"], fontsize=7)
         ax_r.set_title("Native-substrate fit vs target\n(median per axis, 1 = identical)",
-                       fontsize=10, pad=18)
-        ax_r.legend(loc="upper right", bbox_to_anchor=(1.28, 1.12), fontsize=7,
-                    title="Fold family", title_fontsize=8)
-        ax_r.annotate("✦ pocket spans aromatic + aliphatic natives",
-                      xy=(0.5, -0.12), xycoords="axes fraction",
-                      ha="center", fontsize=7, style="italic")
+                       fontsize=10, pad=22)
 
         # Right panel: native main-chain length RANGE per family (pocket size has
         # direction — favours larger vs smaller), with the target marked.
