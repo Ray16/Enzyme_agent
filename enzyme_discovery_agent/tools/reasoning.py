@@ -819,61 +819,45 @@ def evaluate_candidate(
                             if s.strip()]
 
         if native_smiles_list and target_molecules:
-            # ROLE-AWARE correspondence.  A substrate's "role" is the set of reactive
-            # functional groups it carries — read GENERICALLY from the substrate
-            # analyser's own ``functional_groups`` output, not a hand-listed subset,
-            # so it works for any reaction/target.  A target is matched only against
-            # natives that SHARE a functional group, so the target's amine-bearing
-            # partner is compared to the member's amine-bearing partner and its
-            # carboxyl-bearing partner to the member's — never both targets collapsed
-            # onto one native, and never a mismatched pairing.  Falls back to all
-            # natives when a role match is unavailable (props unresolved), so recall
-            # is never lost.  Answer-agnostic: roles come from the target's OWN groups.
-            def _roles(smi):
-                try:
-                    return frozenset(compute_substrate_properties(smi).functional_groups)
-                except Exception:  # noqa: BLE001
-                    return None
+            # ONE-TO-ONE correspondence (shared with the promotion path via
+            # assign_one_to_one): each native substrate serves AT MOST ONE target
+            # substrate, so a two-partner target cannot flatter itself by matching
+            # both partners onto its single best native.  Fingerprint similarity is
+            # the per-pair score; it already carries the role signal (an amine target
+            # is most similar to an amine native), so the assignment pairs amine↔amine
+            # and carboxyl↔carboxyl and forces the target's amine partner onto the
+            # family's amine partner even when that is a tiny FG-less donor (ammonia),
+            # which then scores as the poor fit it is.  Answer-agnostic throughout.
+            _fp_cache: dict = {}
 
-            native_roles = {n: _roles(n) for n in native_smiles_list}
+            def _fp(t_smi, n_smi):
+                key = (t_smi, n_smi)
+                if key not in _fp_cache:
+                    _fp_cache[key] = compute_fingerprint_similarity(
+                        t_smi, n_smi).get("data", {}).get("similarity", 0.0)
+                return _fp_cache[key]
 
             per_target_best = []
             match_details = []
             property_comparisons = []
-            for t_smi in target_molecules:
-                t_roles = _roles(t_smi)
-                # Natives that share a reactive role with this target substrate.
-                role_natives = [
-                    n for n in native_smiles_list
-                    if t_roles and native_roles.get(n) and (native_roles[n] & t_roles)
-                ] or native_smiles_list  # fallback: no role match -> all natives
-                best_sim = 0.0
-                best_native = ""
-                best_prop_sim = {}
-                for n_smi in role_natives:
-                    sim_result = compute_fingerprint_similarity(t_smi, n_smi)
-                    sim = sim_result.get("data", {}).get("similarity", 0.0)
-                    if sim > best_sim:
-                        best_sim = sim
-                        best_native = n_smi
-
-                if best_native:
-                    best_prop_sim = compare_substrate_properties(
-                        t_smi, best_native, compute_substrate_properties,
-                    )
-
-                per_target_best.append(best_sim)
-                match_details.append(f"{t_smi[:40]}->{best_native[:40]}: {best_sim:.3f}")
-                if best_prop_sim:
-                    property_comparisons.append(best_prop_sim)
+            for t_smi, n_smi, sim in assign_one_to_one(
+                    target_molecules, native_smiles_list, _fp):
+                per_target_best.append(sim)
+                match_details.append(
+                    f"{t_smi[:40]}->{(n_smi or 'none')[:40]}: {sim:.3f}")
+                if n_smi:
+                    prop = compare_substrate_properties(
+                        t_smi, n_smi, compute_substrate_properties)
+                    if prop:
+                        property_comparisons.append(prop)
 
             # The enzyme must accommodate EVERY target substrate, so the substrate
-            # score is the WORST target match (the bottleneck), not a geometric
+            # score is the WORST assigned pair (the bottleneck), not a geometric
             # mean.  A mean lets a candidate that fits ONE target substrate well but
             # the other poorly (e.g. 0.29 vs 0.09) score deceptively high (0.16) and
             # sneak above a balanced both-substrate fit.  The worst substrate is the
             # honest limit on whether the pocket can host the whole reaction.
-            base_score = min(per_target_best)
+            base_score = min(per_target_best) if per_target_best else 0.0
 
             substrate_similarity = {
                 "tanimoto_score": round(base_score, 3),
