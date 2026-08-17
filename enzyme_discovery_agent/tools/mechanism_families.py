@@ -25,7 +25,9 @@ logger = logging.getLogger("enzyme_agent")
 
 # Genuine opposites: a cleavage family cannot serve a formation target (or vice
 # versa).  A grounded chemical fact, not a tuned knob.
-_OPPOSITE_DIRECTIONS = {("formation", "cleavage"), ("cleavage", "formation")}
+from enzyme_discovery_agent.models.target_profile import (  # noqa: E402
+    OPPOSITE_DIRECTIONS as _OPPOSITE_DIRECTIONS,
+)
 _HYDROLYSIS_TERMS = re.compile(r"\bh2o\b|\bwater\b")
 _ARROW = re.compile(r"->|=>|→|<=>|=")
 
