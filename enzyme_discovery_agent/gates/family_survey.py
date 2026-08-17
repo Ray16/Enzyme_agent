@@ -161,11 +161,12 @@ class FamilySurveyGate:
                 continue
             d = r.get("data") or {}
             got = d.get("fold_id") or fid
-            # Promote the relevant enzymes in this family (best native-substrate fit,
-            # same/unknown direction — reviewed + gated TrEMBL) to candidates, so the
-            # substrate match actually feeds evaluation instead of only being read by
-            # the model.  Bounded intrinsically: the survey returns at most
-            # MAX_REPRESENTATIVES_PER_FAMILY relevant members per fold.
+            # Promote the relevant enzymes in this family (grounded same-direction
+            # native reaction + resolved substrate fit — reviewed + gated TrEMBL) to
+            # candidates, so the substrate match actually feeds evaluation instead of
+            # only being read by the model.  EVERY relevant member is promoted (no
+            # top-N cap): dropping relevant members defeats discovery.  The set is
+            # bounded by the relevance gate + the fold's surveyed-member ceiling.
             n_promoted += self._promote_relevant(run_dir, got, d.get("relevant_members") or [])
             if got in self._all_folds:
                 continue
