@@ -14,12 +14,12 @@
 \graphicspath{{../figures/}}
 
 % ---- palette ----
-\definecolor{ink}{HTML}{0F172A}      % near-black slate
-\definecolor{muted}{HTML}{475569}    % slate-600
-\definecolor{brand}{HTML}{4338CA}    % indigo-700
-\definecolor{brand2}{HTML}{0D9488}   % teal-600
-\definecolor{accent}{HTML}{E11D48}   % rose-600
-\definecolor{soft}{HTML}{EEF2FF}     % indigo-50
+\definecolor{ink}{HTML}{0F172A}
+\definecolor{muted}{HTML}{475569}
+\definecolor{brand}{HTML}{4338CA}
+\definecolor{brand2}{HTML}{0D9488}
+\definecolor{accent}{HTML}{E11D48}
+\definecolor{soft}{HTML}{EEF2FF}
 \definecolor{rule}{HTML}{CBD5E1}
 
 % ---- clean theme ----
@@ -48,9 +48,6 @@
 \newcommand{\chip}[2]{\tikz[baseline=(x.base)]{\node[fill=#1!12,draw=#1,rounded corners=3pt,inner sep=3pt,text=#1!75!black,font=\footnotesize\bfseries](x){#2};}}
 
 \title{Enzyme Discovery Agent}
-\subtitle{LLM-guided discovery of enzymes for a target reaction}
-\author{}
-\date{}
 
 \begin{document}
 
@@ -60,11 +57,11 @@
   \vspace*{1.2em}
   {\color{brand}\rule{\textwidth}{2pt}}\\[1.2em]
   {\Huge\bfseries\color{ink} Enzyme Discovery Agent}\\[0.6em]
-  {\LARGE\color{muted} Discovering enzymes for a target reaction —}\\
-  {\LARGE\color{muted} without being told the answer}\\[1.4em]
-  \chip{brand}{LLM proposes strategy}\quad
-  \chip{brand2}{tools + gates find the enzymes}\quad
-  \chip{accent}{data-leakage firewall}\\[1.2em]
+  {\LARGE\color{muted} Finding enzymes for a reaction —}\\
+  {\LARGE\color{muted} without ever telling the agent the answer}\\[1.4em]
+  \chip{brand}{the model picks the strategy}\quad
+  \chip{brand2}{the tools find the enzymes}\quad
+  \chip{accent}{the answer stays hidden}\\[1.2em]
   {\color{brand}\rule{\textwidth}{2pt}}
 \end{frame}}
 
@@ -72,24 +69,24 @@
 \begin{frame}{The problem}
   \begin{columns}[T]
     \begin{column}{0.56\textwidth}
-      \textbf{Given} a target reaction — substrate(s) $\rightarrow$ product —
-      \textbf{find the enzymes} that could catalyze it.\\[0.8em]
-      Hard because:
+      You give it a reaction — some substrates turning into a product — and it has
+      to find enzymes that could catalyze it.\\[0.8em]
+      That's hard because:
       \begin{itemize}
-        \item the reaction is often \hl{novel / non-natural} — no enzyme is annotated for it
-        \item the answer must be \hl{discovered}, not looked up
-        \item the space is huge: $>$200M UniProt sequences, thousands of folds
+        \item the reaction is often something \hl{nature doesn't do}, so no enzyme is labelled for it
+        \item there's nothing to look up — the answer has to be \hl{discovered}
+        \item the haystack is enormous: \hl{hundreds of millions} of proteins
       \end{itemize}
       \vspace{0.6em}
-      \textbf{The trap:} an agent that is \hla{told the answer family} isn't
-      discovering anything.
+      And the catch: if you hand the agent the answer's family up front, it isn't
+      really \hla{discovering} anything.
     \end{column}
     \begin{column}{0.44\textwidth}
       \centering
       \begin{tikzpicture}[node distance=6mm,every node/.style={font=\footnotesize}]
-        \node[draw=brand,rounded corners,fill=soft,text width=3.1cm,align=center,inner sep=5pt] (s) {target reaction\\ \textcolor{muted}{substrate A + substrate B}};
+        \node[draw=brand,rounded corners,fill=soft,text width=3.1cm,align=center,inner sep=5pt] (s) {a target reaction\\ \textcolor{muted}{substrate A + substrate B}};
         \node[below=of s,draw=muted,rounded corners,text width=3.1cm,align=center,inner sep=5pt] (q) {?};
-        \node[below=of q,draw=brand2,rounded corners,fill=brand2!8,text width=3.1cm,align=center,inner sep=5pt] (e) {enzyme(s) that\\ catalyze it};
+        \node[below=of q,draw=brand2,rounded corners,fill=brand2!8,text width=3.1cm,align=center,inner sep=5pt] (e) {enzymes that\\ can make it happen};
         \draw[-{Stealth[length=2mm]},brand,thick] (s)--(q);
         \draw[-{Stealth[length=2mm]},brand2,thick] (q)--(e);
       \end{tikzpicture}
@@ -98,102 +95,102 @@
 \end{frame}
 
 % ---------- Core principle ----------
-\begin{frame}{The core principle}
+\begin{frame}{The idea}
   \begin{center}
     \begin{tikzpicture}[every node/.style={font=\small},node distance=10mm]
       \node[draw=brand,fill=brand!8,rounded corners,text width=4.3cm,align=center,inner sep=7pt,font=\bfseries] (llm)
-        {LLM\\[2pt]\normalfont proposes \emph{strategy}\\ \normalfont\footnotesize reaction type · mechanism · search terms};
+        {The model\\[2pt]\normalfont decides \emph{how} to look\\ \normalfont\footnotesize reaction type, mechanism, search terms};
       \node[right=28mm of llm,draw=brand2,fill=brand2!8,rounded corners,text width=4.3cm,align=center,inner sep=7pt,font=\bfseries] (tools)
-        {Tools \& gates\\[2pt]\normalfont find the \emph{entities}\\ \normalfont\footnotesize databases · folds · specific enzymes};
+        {The tools\\[2pt]\normalfont find the \emph{enzymes}\\ \normalfont\footnotesize databases, folds, specific proteins};
       \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{what to look for} (tools);
-      \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=25] node[below,font=\footnotesize\bfseries,text=muted]{grounded evidence} (llm.south);
+      \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=25] node[below,font=\footnotesize\bfseries,text=muted]{what it found} (llm.south);
     \end{tikzpicture}
   \end{center}
   \vspace{0.4em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hla{Data-leakage firewall} (enforced):
+      \hla{We keep the answer out of the agent}:
       \begin{itemize}
-        \item no answer enzyme / substrate / family in \emph{any} prompt, tool, or comment
-        \item ground truth lives \hl{only} in a held-out test oracle the agent never sees
+        \item its enzymes, substrates, and family never appear in a prompt, a tool, or even a comment
+        \item the real answer lives \hl{only} in a test the agent never sees
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \hlt{Grounded \& deterministic}:
+      \hlt{We let the evidence do the deciding}:
       \begin{itemize}
-        \item code extracts evidence (direction, substrate fit, correspondence)
-        \item no hand-tuned relevance thresholds — relative ranking, not magic numbers
+        \item the code measures the facts — direction, how well a substrate fits — and the model reasons over them
+        \item no hand-tuned cutoffs; things are ranked against each other, not against magic numbers
       \end{itemize}
     \end{column}
   \end{columns}
 \end{frame}
 
 % ---------- Pipeline overview ----------
-\begin{frame}{The pipeline}
+\begin{frame}{How it works, end to end}
   \vspace{0.3em}
   \begin{center}
     \includegraphics[width=0.99\textwidth]{pipeline_workflow.png}
   \end{center}
   \vspace{0.2em}
-  {\footnotesize\color{muted} Five stages. A deterministic \textbf{gate} layer turns optional tools
-  into a reliable pipeline; the LLM still drives strategy inside the loop.}
+  {\footnotesize\color{muted} Five stages. The gates make sure the important steps
+  actually happen, while the model still decides what to chase inside the loop.}
 \end{frame}
 
 % ---------- Stage 2 discovery ----------
-\begin{frame}{Discovery: three complementary channels}
+\begin{frame}{Three ways it finds candidates}
   \begin{columns}[T]
     \begin{column}{0.33\textwidth}
-      \chip{brand}{Literature}\\[0.5em]
+      \chip{brand}{From the literature}\\[0.5em]
       \footnotesize
-      Read a few open-access papers; LLM-extract \hl{named / cited} enzymes.
-      The \emph{only} route to enzymes named only in a recent paper — reached the
-      answer's own biosynthetic cluster.
+      Read a few open papers and pull out the enzymes they name or cite. Often the
+      only way to reach something that lives in a recent paper — it's how we got
+      into the answer's \hl{own gene cluster}.
     \end{column}
     \begin{column}{0.33\textwidth}
-      \chip{brand}{Mechanism families}\\[0.5em]
+      \chip{brand}{From the chemistry}\\[0.5em]
       \footnotesize
-      LLM derives the distinct \hl{folds / activation chemistries} for the target
-      bond, filtered by \hlt{reaction direction} (a cleavage fold can't serve a
-      formation target).
+      The model lists the different \hl{folds and chemistries} that make this kind of
+      bond, and we drop any that run the \hlt{wrong way} — a bond-breaking fold can't
+      build one.
     \end{column}
     \begin{column}{0.33\textwidth}
-      \chip{brand}{InterPro survey}\\[0.5em]
+      \chip{brand}{From the fold}\\[0.5em]
       \footnotesize
-      Survey each fold's members; score \hl{native-substrate resemblance}; promote
-      the good ones to candidates — the primary discovery engine.
+      For each family, look at its members, see whose natural substrate looks most
+      \hl{like our target}, and add the good ones. This is the main engine.
     \end{column}
   \end{columns}
   \vspace{1.0em}
   \begin{center}
   \fbox{\parbox{0.92\textwidth}{\centering \small
-    \textbf{Design rule:} substrate-awareness lives at the \hl{member} level, not the
-    family archetype — a fold's textbook substrate $\neq$ its member range.}}
+    One thing we learned: judge substrate fit \hl{member by member}, not by the
+    family's textbook example — the two are rarely the same.}}
   \end{center}
 \end{frame}
 
 % ---------- One-to-one ----------
-\begin{frame}{Judging substrate fit: one-to-one assignment}
+\begin{frame}{Making the substrate match honest}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      A two-substrate target must not \hla{flatter itself}: without one-to-one
-      assignment, \emph{both} target substrates match the enzyme's single best
-      native, hiding a poor second partner.\\[0.6em]
-      \hlt{Fix (shared by promotion \& ranking):} each native serves \hl{at most one}
-      target substrate; the score is the \emph{worst} assigned pair (the bottleneck).\\[0.6em]
-      {\footnotesize\color{muted} So a target amine is forced onto the family's amine
-      partner — even a tiny functional-group-less donor scores as the poor fit it is.}
+      When the target has two substrates, we don't want it to \hla{cheat}. If each
+      one just grabs the enzyme's single best native, both can point at the \emph{same}
+      one — and a bad second partner slips by unnoticed.\\[0.6em]
+      So we match them \hlt{one to one}: each native can serve only one target
+      substrate, and we score the enzyme by its \hl{worst} pairing.\\[0.6em]
+      {\footnotesize\color{muted} Now the target's amine is forced onto the enzyme's
+      amine — and a tiny donor like ammonia finally scores as the poor match it is.}
     \end{column}
     \begin{column}{0.5\textwidth}
       \centering
       \begin{tikzpicture}[every node/.style={font=\footnotesize},yscale=0.9]
-        \node[text=accent,font=\footnotesize\bfseries] at (1.4,2.5) {independent-best (wrong)};
+        \node[text=accent,font=\footnotesize\bfseries] at (1.4,2.5) {each grabs the best (cheats)};
         \node[draw,rounded corners,fill=soft] (t1) at (0,2) {target A};
         \node[draw,rounded corners,fill=soft] (t2) at (0,1.2) {target B};
         \node[draw,rounded corners,fill=brand2!10] (n1) at (2.8,2) {native 1};
         \node[draw,rounded corners,fill=brand2!10] (n2) at (2.8,1.2) {native 2};
         \draw[accent,thick] (t1)--(n1);
         \draw[accent,thick] (t2)--(n1);
-        \node[text=brand2,font=\footnotesize\bfseries] at (1.4,0.2) {one-to-one (right)};
+        \node[text=brand2,font=\footnotesize\bfseries] at (1.4,0.2) {one to one (honest)};
         \node[draw,rounded corners,fill=soft] (u1) at (0,-0.3) {target A};
         \node[draw,rounded corners,fill=soft] (u2) at (0,-1.1) {target B};
         \node[draw,rounded corners,fill=brand2!10] (m1) at (2.8,-0.3) {native 1};
@@ -206,134 +203,133 @@
 \end{frame}
 
 % ---------- Don't drop ----------
-\begin{frame}{Discovery means: don't drop relevant enzymes}
+\begin{frame}{The whole point is not to miss anything}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hl{Promote every relevant member}\\
-      {\footnotesize The survey no longer keeps only a fold's top-2 by fit — every
-      same-direction, substrate-resolved member becomes a candidate. A 24-member
-      fold's long tail is kept, not thrown away.}\\[1.0em]
-      \hl{Evaluate every representative}\\
-      {\footnotesize Evaluation is deterministic (network only, no LLM), so breadth
-      is free. Every distinct gene is evaluated in parallel — no eval-budget cap
-      silently drops a relevant enzyme.}
+      \hl{Keep every member that fits}\\
+      {\footnotesize We used to keep only a family's best two. Now every member that
+      runs the right direction and has a real substrate to compare becomes a
+      candidate, so a big family's long tail doesn't get thrown away.}\\[1.0em]
+      \hl{And actually evaluate all of them}\\
+      {\footnotesize Evaluation is just database lookups, no model calls, so looking
+      at more of them is basically free. We check every distinct gene at once — so a
+      budget never quietly drops one that mattered.}
     \end{column}
     \begin{column}{0.5\textwidth}
       \centering
       \vspace{0.5em}
       \begin{tikzpicture}[font=\footnotesize]
         \fill[accent!8,rounded corners] (-0.2,-0.2) rectangle (3.4,1.5);
-        \node[text=accent,font=\bfseries] at (1.6,1.2) {before: cap = 2};
+        \node[text=accent,font=\bfseries] at (1.6,1.2) {before: keep 2};
         \foreach \i in {0,...,4}{\fill[muted!30] (\i*0.6,0.3) circle (3pt);}
         \fill[brand2] (0,0.3) circle (3pt); \fill[brand2] (0.6,0.3) circle (3pt);
-        \node at (1.5,-0.05) {\tiny only 2 promoted};
+        \node at (1.5,-0.05) {\tiny the rest thrown away};
         \fill[brand2!10,rounded corners] (-0.2,-2.1) rectangle (3.4,-0.4);
-        \node[text=brand2,font=\bfseries] at (1.6,-0.75) {after: all relevant};
+        \node[text=brand2,font=\bfseries] at (1.6,-0.75) {now: keep them all};
         \foreach \i in {0,...,4}{\fill[brand2] (\i*0.6,-1.6) circle (3pt);}
-        \node at (1.5,-1.95) {\tiny every relevant member};
+        \node at (1.5,-1.95) {\tiny every member that fits};
       \end{tikzpicture}
       \\[0.4em]
-      {\footnotesize\color{muted} Cost rises; discovery quality is the priority.}
+      {\footnotesize\color{muted} It costs a bit more, but finding everything matters more.}
     \end{column}
   \end{columns}
 \end{frame}
 
 % ---------- Ranking ----------
-\begin{frame}{Ranking: grounded first, LLM second}
+\begin{frame}{How the final list is ordered}
   \begin{itemize}
-    \item \hl{Deterministic mechanistic spine} orders by grounded evidence
-      (bond change, direction, substrate fit) — reproducible, no magic weights.
-    \item \hlt{Family-relevance binding}: members of a fold the agent \emph{stopped}
-      (off-target chemistry) are hard-gated to the bottom; on-target folds float up.
-    \item \hl{LLM focus-rank} reasons over only the top shortlist — a thin,
-      auditable layer on top of the deterministic order.
+    \item A \hl{fixed, reproducible core} sorts candidates by hard evidence — the bond
+      that changes, the direction, how well the substrate fits. No magic weights.
+    \item If the agent decided a family was \hlt{off-target}, its members sink to the
+      bottom; members of on-target families float up.
+    \item \hl{Only then} does the model re-rank the short list at the top — a thin,
+      checkable layer over an order we can already trust.
   \end{itemize}
   \vspace{0.6em}
   \begin{center}
     \tikz[baseline]{\node[draw=brand,rounded corners,fill=brand!6,inner sep=6pt,font=\footnotesize]{%
-      direction hard-gate\ \ $\rightarrow$\ \ substrate-fit bottleneck\ \ $\rightarrow$\ \ family binding\ \ $\rightarrow$\ \ LLM focus-rank};}
+      direction check\ \ $\rightarrow$\ \ worst-substrate fit\ \ $\rightarrow$\ \ family relevance\ \ $\rightarrow$\ \ model re-rank};}
   \end{center}
 \end{frame}
 
 % ---------- Results ----------
-\begin{frame}{Validation}
+\begin{frame}{Does it work?}
   \small
-  Benchmark (ground truth in the held-out oracle only): find amide synthetases that
-  ligate a C\textsubscript{6} diacid + a C\textsubscript{6} diamine — enzymatic
-  nylon-6,6 precursors.
+  Our test case: find enzymes that join a six-carbon diacid and a six-carbon
+  diamine — the building blocks of nylon-6,6. The correct answers sit in a separate
+  test the agent never sees; we only use them to grade the run afterwards.
   \vspace{0.4em}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
-      \textbf{What the run recovers}
+      \textbf{What comes back}
       \begin{itemize}\small
-        \item top ranks: NIS / ANL amide synthetases — genuine \hl{substrate analogues}
-          (citrate–diamine ligases)
-        \item \hlt{DdaG} (the strict answer) recovered at \#4 — via the \hl{literature}
-          channel, in the answer's own gene cluster
-        \item family list \hl{direction-clean} (no cleavage folds); CARNS1-type
-          over-ranking gone
+        \item the top hits are genuine \hl{look-alikes} — enzymes that join citrate to
+          a diamine, chemically close to what we want
+        \item the exact answer, \hlt{DdaG}, shows up at \#4 — found through the
+          literature, sitting in its own gene cluster
+        \item the family list is \hl{clean}: no bond-breaking folds, and the old habit
+          of over-ranking a poor match is gone
       \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
-      \textbf{Cost / behavior}
+      \textbf{And how it behaves}
       \begin{itemize}\small
-        \item wall-clock \hlt{53\,min $\rightarrow$ 32\,min} after the lean-literature change
-        \item run is \hla{98\% LLM-inference} bound; tools are $\sim$2\%
-        \item every screened candidate evaluated (no budget drop)
+        \item a run dropped from \hlt{53 to 32 minutes} once we trimmed the reading
+        \item almost all of that time is the \hla{model thinking}; the tools take about 2\%
+        \item every candidate we screen now actually gets evaluated
       \end{itemize}
-      \vspace{0.4em}
-      {\footnotesize\color{muted} Ground truth is used only to score \emph{after} the
-      run — never fed to the agent.}
     \end{column}
   \end{columns}
 \end{frame}
 
 % ---------- This work ----------
-\begin{frame}{Recent work: correctness + efficiency + cleanup}
+\begin{frame}{What changed recently}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hlt{Discovery quality}
+      \hlt{Finding better enzymes}
       \begin{itemize}\small
-        \item one-to-one substrate assignment (shared by promotion \& ranking)
-        \item promote \emph{every} relevant member; evaluate \emph{every} representative
-        \item direction-clean mechanism families
+        \item match substrates one to one, the same way everywhere
+        \item keep — and evaluate — every enzyme that fits
+        \item make the family list respect reaction direction
       \end{itemize}
       \vspace{0.5em}
-      \hl{Efficiency}
+      \hl{Making it lighter}
       \begin{itemize}\small
-        \item lean literature harvest: $\sim$90\% fewer harvest LLM calls, no open-access wall
-        \item parallel evaluation
+        \item much less literature reading, and it no longer stalls on paywalls
+        \item evaluate candidates in parallel
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \hla{Refactor} (behavior-preserving)
+      \hla{Cleaning up the code}
       \begin{itemize}\small
-        \item unified 9 gates into one pipeline ritual
-        \item de-duplicated scoring / direction logic
-        \item $\sim$730 lines of dead code removed
+        \item folded nine gates into one clean pipeline
+        \item removed duplicated scoring and direction logic
+        \item deleted about 730 lines that weren't doing anything
       \end{itemize}
       \vspace{0.5em}
       \begin{center}
-        \chip{brand2}{215 tests green}\quad\chip{brand}{firewall-clean}
+        \chip{brand2}{all tests pass}\quad\chip{brand}{answer still hidden}
       \end{center}
     \end{column}
   \end{columns}
 \end{frame}
 
 % ---------- Limitations ----------
-\begin{frame}{Limitations \& next steps}
+\begin{frame}{What's still rough}
   \begin{itemize}
-    \item \hl{Literature recall} — the field's best papers are missed on search
-      \emph{vocabulary} (and paywalls); query reformulation helps but is stochastic.
-    \item \hl{Speed} — the loop is LLM-inference bound (60k-token prompts); levers are
-      prompt pruning + parallel / fewer finalization passes.
-    \item \hl{Ranking quality} — unify the remaining scoring formulas; validate the
-      one-to-one change end-to-end on the benchmark.
-    \item \hl{Coverage} — make family-member enumeration substrate-aware and complete.
+    \item \hl{Literature.} We still miss some of the best papers because we search
+      with the wrong words — and a few are behind paywalls. Rewriting the queries
+      helps, but not reliably yet.
+    \item \hl{Speed.} Nearly all the time is the model reading long prompts. The wins
+      are shorter prompts and doing the final steps in parallel.
+    \item \hl{Ranking.} A couple of scoring formulas still don't quite agree, and we
+      want a full run to confirm the one-to-one change helps in practice.
+    \item \hl{Coverage.} Make sure we really look at every member of a family, not
+      just the ones we happen to reach.
   \end{itemize}
   \vspace{0.8em}
   \begin{center}\small\color{muted}
-    Every change: suite-green, firewall-clean, documented in an append-only devlog.
+    Everything ships with the tests passing, the answer still hidden, and a note in the log.
   \end{center}
 \end{frame}
 
@@ -342,12 +338,12 @@
 \begin{frame}[plain]
   \vspace*{2.0em}
   {\color{brand}\rule{\textwidth}{2pt}}\\[1.0em]
-  {\LARGE\bfseries\color{ink} Discover, don't look up.}\\[0.8em]
-  {\large\color{muted} LLM proposes the strategy · grounded gates and tools find the enzymes ·}\\
-  {\large\color{muted} a firewall keeps the answer out of the agent.}\\[1.4em]
-  \chip{brand}{one-to-one substrate fit}\quad
-  \chip{brand2}{promote \& evaluate everything relevant}\quad
-  \chip{accent}{no answer leakage}\\[1.0em]
+  {\LARGE\bfseries\color{ink} Discover it, don't look it up.}\\[0.8em]
+  {\large\color{muted} The model decides how to search, the tools find the enzymes,}\\
+  {\large\color{muted} and the answer never gets to peek at itself.}\\[1.4em]
+  \chip{brand}{honest substrate matching}\quad
+  \chip{brand2}{keep everything that fits}\quad
+  \chip{accent}{answer stays hidden}\\[1.0em]
   {\color{brand}\rule{\textwidth}{2pt}}
 \end{frame}}
 
