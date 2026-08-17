@@ -433,8 +433,9 @@ def whole_package_pair_fit(c: dict) -> float | None:
     chemistry) so it is the WORST of the size axes, capped when the native is
     aromatic/cyclic and the target is not; CHEMICAL compatibility is graded and
     promiscuity-tolerant so it is the AVERAGE of its axes.  The pair fit is the
-    worst of {steric, chemical}.  Shared by the family-derivation grounded score
-    and the ranking accommodation so both judge substrates identically.  None when
+    worst of {steric, chemical}.  Aggregates ONE (target → native) property
+    comparison; the one-to-one pairing that produces those comparisons is shared
+    across promotion and ranking via ``substrate_fit.assign_one_to_one``.  None when
     no axis resolved.
     """
     steric = [c[k] for k in _STERIC_AXES if isinstance(c.get(k), (int, float))]
