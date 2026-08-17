@@ -137,7 +137,7 @@ def _relax_uniprot_query(query: str) -> list[str]:
             "type": "string",
             "description": (
                 "Optional UniProt query string. Ignored when gene_name is provided. "
-                "Examples: 'ec:6.3.2 AND synthetase', 'amide bond ligase'."
+                "Examples: 'ec:2.7.1 AND kinase', 'reviewed:true AND transferase'."
             ),
             "default": "",
         },
