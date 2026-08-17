@@ -48,6 +48,11 @@ FINALIZATION_RESERVE_ITERATIONS = 8
 
 # --- Tool execution ---
 TOOL_THREAD_POOL_WORKERS = 4
+# The auto-screen light-annotation fetch and the auto-evaluation loop are pure
+# network I/O (no LLM), and every distinct gene representative is now evaluated,
+# so a higher concurrency keeps finalization fast without over-loading the public
+# APIs.  Kept modest to stay polite to UniProt / EBI.
+EVAL_POOL_WORKERS = 8
 # Concurrency for the full-text harvest: papers are downloaded and read (LLM
 # extraction) in parallel rather than one at a time.  Bounded to stay polite to
 # publisher servers and the LLM endpoint.
