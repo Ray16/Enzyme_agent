@@ -67,8 +67,7 @@ def _find_analysis_results(cofold_results_dir: str) -> str:
         "accession": {
             "type": "string",
             "description": (
-                "UniProt accession of the candidate enzyme (e.g. "
-                "'A0A0F7RJ52' for AsbA)."
+                "UniProt accession of the candidate enzyme (e.g. 'P12345')."
             ),
         },
         "cofold_results_dir": {
