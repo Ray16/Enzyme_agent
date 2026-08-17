@@ -21,6 +21,17 @@
 \definecolor{accent}{HTML}{E11D48}
 \definecolor{soft}{HTML}{EEF2FF}
 \definecolor{rule}{HTML}{CBD5E1}
+% per-stage colours for the pipeline
+\definecolor{st1}{HTML}{2563EB}
+\definecolor{st2}{HTML}{7C3AED}
+\definecolor{st3}{HTML}{0D9488}
+\definecolor{st4}{HTML}{E11D48}
+\definecolor{st5}{HTML}{334155}
+\tikzset{card/.style={rounded corners=6pt, draw=#1, line width=1.3pt, fill=#1!7,
+  minimum width=2.4cm, minimum height=2.75cm, text width=2.05cm, align=center, inner sep=3pt},
+  pipearr/.style={-{Stealth[length=3mm]}, line width=1.5pt, draw=muted!55}}
+\newcommand{\stagecard}[3]{{\fontsize{24}{26}\selectfont\color{#1}\bfseries #2}\\[3pt]%
+  {\color{ink}\bfseries #3}}
 
 % ---- clean theme ----
 \usecolortheme{default}
