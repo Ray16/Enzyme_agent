@@ -486,6 +486,45 @@ def _entry_ecs(entry: dict) -> list[str]:
     return [e.get("value") for e in rec.get("ecNumbers", []) or [] if e.get("value")]
 
 
+# EC top-level class -> the reaction DIRECTION it implies for the target bond.
+# Hydrolases (EC 3) CLEAVE; ligases (EC 6) FORM.  Every other class
+# (oxidoreductase, transferase, lyase, isomerase, translocase) is not an
+# unambiguous opposite of either target direction, so it never triggers a drop.
+_EC_CLASS_DIRECTION = {"3": "cleavage", "6": "formation"}
+_OPPOSITE_DIRECTION = {"formation": "cleavage", "cleavage": "formation"}
+
+
+def _wrong_direction_ec(ecs: list[str], target_direction: str | None) -> bool:
+    """True only on an UNAMBIGUOUS direction conflict: the enzyme carries a
+    wrong-direction EC class (a hydrolase for a formation target, or a ligase for
+    a cleavage target) and NO right-direction EC.  A missing EC, an other-class
+    EC, or a dual formation+cleavage annotation never conflicts, so a mined seed
+    is dropped only when its own EC proves it runs the opposite reaction (recall-
+    safe).  Generic (EC class + the query's own direction) -> firewall-safe."""
+    if not target_direction or not ecs:
+        return False
+    dirs = {_EC_CLASS_DIRECTION.get(str(ec).strip()[:1]) for ec in ecs}
+    dirs.discard(None)
+    opposite = _OPPOSITE_DIRECTION.get(target_direction)
+    return opposite in dirs and target_direction not in dirs
+
+
+def _fetch_ecs_for(accessions: list[str]) -> dict[str, list[str]]:
+    """Batch-resolve UniProt accessions -> their EC numbers (one search per
+    chunk of 20).  Best-effort: an unresolved accession simply maps to no ECs,
+    which the direction filter treats as unknown and keeps."""
+    out: dict[str, list[str]] = {}
+    uniq = [a for a in dict.fromkeys(accessions) if a]
+    for i in range(0, len(uniq), 20):
+        chunk = uniq[i:i + 20]
+        query = " OR ".join(f"accession:{a}" for a in chunk)
+        for entry in _uniprot_search(query, size=len(chunk), fields="accession,ec"):
+            acc = entry.get("primaryAccession")
+            if acc:
+                out[acc] = _entry_ecs(entry)
+    return out
+
+
 # Generic words that carry no functional signal, so they must not make two
 # unrelated proteins look coherent.
 _NAME_STOPWORDS = frozenset({
