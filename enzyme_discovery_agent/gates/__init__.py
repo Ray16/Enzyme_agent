@@ -23,7 +23,6 @@ class AgentState:
     family_survey_done: bool = False
     critique_injected: bool = False
     eval_gate_fired: bool = False
-    ec_triage_done: bool = False
     homolog_expansion_done: bool = False
     evidence_selection_prompted: bool = False
     discovery_coverage_done: bool = False
