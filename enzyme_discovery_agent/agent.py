@@ -213,6 +213,28 @@ class EnzymeAgent:
             "iteration": iteration,
         })
 
+    def _apply_gate_result(self, name, result, iteration, messages):
+        """Apply a gate/pipeline result and run the intercept ritual once.
+
+        Always applies ``state_updates`` (a non-intercepting gate can still report
+        a state transition).  If the result intercepts, it POPS the assistant turn,
+        injects the gate's messages, and refunds the iteration credit so the gate's
+        guidance is answered without consuming a discovery step.  Returns
+        ``(iteration, intercepted)``; the caller ``continue``s the loop when
+        ``intercepted`` is True.  ``result`` may be None (gate declined).
+        """
+        if result is None:
+            return iteration, False
+        for k, v in result.state_updates.items():
+            setattr(self._gate_state, k, v)
+        if not result.intercept:
+            return iteration, False
+        self._log_gate(name, result, iteration)
+        messages.pop()
+        messages.extend(result.new_messages)
+        self.log("  Gate transition: iteration credit restored")
+        return iteration - 1, True
+
     def _checkpoint_transcript(self, messages: list, iteration: int) -> None:
         """Persist the full conversation each iteration (crash-safe provenance).
 
