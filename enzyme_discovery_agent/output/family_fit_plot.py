@@ -122,10 +122,13 @@ def render_family_fit_plot(
         angles = np.linspace(0, 2 * np.pi, n_ax, endpoint=False).tolist()
         angles += angles[:1]  # close the loop
 
-        fig = plt.figure(figsize=(14, 7.2))
+        fig = plt.figure(figsize=(14, 7.6))
         ax_r = fig.add_subplot(1, 2, 1, polar=True)
-        cmap = plt.get_cmap("viridis")
-        colors = [cmap(i / max(1, len(plottable) - 1)) for i in range(len(plottable))]
+        # Categorical palette so distinct families read as distinct colours (a
+        # sequential map made adjacent families hard to tell apart, and its pale end
+        # was low-contrast on white).
+        cmap = plt.get_cmap("tab10")
+        colors = [cmap(i % 10) for i in range(len(plottable))]
 
         for f, color in zip(plottable, colors):
             med = f.get("axis_medians") or {}
@@ -135,16 +138,17 @@ def render_family_fit_plot(
             label = _fold_label(f, max_len=48)
             if f.get("members_spanning_aromatic_and_aliphatic"):
                 label += " ✦"  # broad pocket: spans aromatic + aliphatic natives
-            ax_r.plot(angles, vals, color=color, linewidth=1.8, label=label)
-            ax_r.fill(angles, vals, color=color, alpha=0.12)
+            ax_r.plot(angles, vals, color=color, linewidth=2.2, label=label)
+            ax_r.fill(angles, vals, color=color, alpha=0.13)
 
         ax_r.set_xticks(angles[:-1])
-        ax_r.set_xticklabels(labels, fontsize=8)
+        ax_r.set_xticklabels(labels, fontsize=10)
         ax_r.set_ylim(0, 1)
         ax_r.set_yticks([0.25, 0.5, 0.75, 1.0])
-        ax_r.set_yticklabels(["0.25", "0.5", "0.75", "1.0"], fontsize=7)
+        ax_r.set_yticklabels(["0.25", "0.5", "0.75", "1.0"], fontsize=8, color="#555555")
+        ax_r.tick_params(pad=6)
         ax_r.set_title("Native-substrate fit vs target\n(median per axis, 1 = identical)",
-                       fontsize=10, pad=22)
+                       fontsize=12, pad=26)
 
         # Right panel: native main-chain length RANGE per family (pocket size has
         # direction — favours larger vs smaller), with the target marked.
