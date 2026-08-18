@@ -159,23 +159,27 @@ def render_family_fit_plot(
             if not rng:
                 continue
             lo, hi = rng[0], rng[1]
-            ax_b.plot([lo, hi], [y, y], color=color, linewidth=6, solid_capstyle="round",
-                      alpha=0.7)
-            ax_b.plot([lo, hi], [y, y], "|", color=color, markersize=10)
+            ax_b.plot([lo, hi], [y, y], color=color, linewidth=7, solid_capstyle="round",
+                      alpha=0.8)
+            ax_b.plot([lo, hi], [y, y], "|", color=color, markersize=11)
         ax_b.set_yticks(ys)
-        ax_b.set_yticklabels([_fold_label(f, max_len=28) for f in plottable], fontsize=8)
+        ax_b.set_yticklabels([_fold_label(f, max_len=34) for f in plottable], fontsize=9)
         tcl = _target_chain_length(run_dir)
         if tcl is not None:
-            ax_b.axvline(tcl, color="crimson", linestyle="--", linewidth=1.4,
+            ax_b.axvline(tcl, color="crimson", linestyle="--", linewidth=1.6,
                          label=f"target main-chain ≈ {tcl}")
-            ax_b.legend(loc="lower right", fontsize=8)
-        ax_b.set_xlabel("Native substrate main-chain length (carbons)", fontsize=9)
-        ax_b.set_title("Pocket size range each family is built for", fontsize=10, pad=12)
+            ax_b.legend(loc="lower right", fontsize=9)
+        ax_b.set_xlabel("Native substrate main-chain length (carbons)", fontsize=11)
+        ax_b.tick_params(axis="x", labelsize=9)
+        ax_b.set_title("Pocket size range each family is built for", fontsize=12, pad=12)
         ax_b.margins(y=0.15)
         ax_b.grid(axis="x", alpha=0.3)
 
-        fig.suptitle("Family native-substrate fit — top candidates for the target",
-                     fontsize=13, y=0.99)
+        n_more = max(0, n_families - len(plottable))
+        supt = "Family native-substrate fit — top candidates for the target"
+        if n_more:
+            supt += f"   (showing {len(plottable)} of {n_families} families with a resolved fit)"
+        fig.suptitle(supt, fontsize=15, y=0.995)
         # ONE figure-level legend BELOW both panels (was an in-axes box overlapping
         # the radar title + axis labels).  Full family names, one legend for the run.
         handles, leg_labels = ax_r.get_legend_handles_labels()
