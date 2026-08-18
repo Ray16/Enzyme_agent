@@ -187,13 +187,13 @@ def render_family_fit_plot(
         ncol = 2 if len(handles) > 3 else 1
         leg = fig.legend(handles, leg_labels, title=f"Fold family    ({note})",
                          loc="lower center", bbox_to_anchor=(0.5, 0.0),
-                         ncol=ncol, fontsize=8, title_fontsize=9, frameon=True,
+                         ncol=ncol, fontsize=10, title_fontsize=11, frameon=True,
                          borderaxespad=0.4)
         leg._legend_box.align = "left"
         # Leave room at the bottom for the legend; keep panels clear of it.
-        fig.tight_layout(rect=[0, 0.14 if ncol == 1 else 0.18, 1, 0.95])
+        fig.tight_layout(rect=[0, 0.15 if ncol == 1 else 0.20, 1, 0.95])
         out = run_dir / "family_substrate_fit.png"
-        fig.savefig(out, dpi=130, bbox_inches="tight")
+        fig.savefig(out, dpi=300, bbox_inches="tight")
         plt.close(fig)
         if log_fn:
             log_fn(f"  Family-fit plot: rendered {len(plottable)} top families -> {out.name}")
