@@ -302,6 +302,54 @@
   \end{columns}
 \end{frame}
 
+% ---------- Substrate-fit method (technical) ----------
+\begin{frame}{Scoring substrate fit — the method}
+  \begin{columns}[T]
+    \begin{column}{0.56\textwidth}
+      Each candidate's native substrate is compared to the target on \hl{six grounded
+      physicochemical axes}, each normalised to $[0,1]$:
+      \begin{itemize}\small
+        \item functional groups \; · \; molecular weight \; · \; main-chain length
+        \item volume \; · \; polarity (TPSA) \; · \; hydrophobicity (logP)
+      \end{itemize}
+      \vspace{0.3em}
+      For a two-substrate target we assign natives \hlt{one-to-one} and score by the
+      \hl{worst pair} (the bottleneck):
+      \vspace{0.2em}
+      \[ \text{fit}\;=\;\max_{\pi\,\in\,\text{1-to-1}}\;\min_{i}\;
+         s\!\left(t_i,\,n_{\pi(i)}\right) \]
+      \vspace{0.0em}
+      \begin{itemize}\small
+        \item size/shape is a \hl{hard steric limit} (a too-large substrate can't bind);
+          chemistry is graded and promiscuity-tolerant
+        \item \hl{no tuned weights} — the \emph{same} scorer feeds promotion and ranking,
+          so they never disagree
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \vspace{0.6em}
+      \begin{tikzpicture}[scale=1.05]
+        \foreach \a in {90,150,210,270,330,30} \draw[muted!35] (0,0)--(\a:2);
+        \draw[muted!30] (0,0) circle (2);
+        \draw[muted!18] (0,0) circle (1.33);
+        \draw[muted!18] (0,0) circle (0.66);
+        \draw[fill=st2!16,draw=st2,line width=1.4pt]
+          (90:1.5) -- (150:1.85) -- (210:1.1) -- (270:1.75) -- (330:0.85) -- (30:1.25) -- cycle;
+        \node[font=\scriptsize\color{muted}] at (90:2.35) {chain};
+        \node[font=\scriptsize\color{muted}] at (150:2.3) {MW};
+        \node[font=\scriptsize\color{muted}] at (210:2.35) {FG};
+        \node[font=\scriptsize\color{muted}] at (270:2.35) {TPSA};
+        \node[font=\scriptsize\color{muted}] at (330:2.4) {logP};
+        \node[font=\scriptsize\color{muted}] at (30:2.35) {volume};
+        \node[font=\scriptsize\color{muted}] at (0.32,2.0) {1.0};
+      \end{tikzpicture}
+      \\[0.3em]
+      {\scriptsize\color{muted} one candidate's fit across the six axes\\ (1.0 = identical to target)}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ---------- Don't drop ----------
 \begin{frame}{The whole point is not to miss anything}
   \begin{columns}[T]
