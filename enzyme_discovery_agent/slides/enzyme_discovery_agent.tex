@@ -400,6 +400,43 @@
   \end{center}
 \end{frame}
 
+% ---------- Firewall (technical) ----------
+\begin{frame}{Keeping the answer out — how it's enforced}
+  The agent must not be \emph{told} the answer, or it isn't discovering. We enforce
+  that as an explicit contract, not a hope:
+  \vspace{0.4em}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \hla{What never appears in the agent}
+      \begin{itemize}\small
+        \item answer enzymes, their substrates, or their families — in \emph{any}
+          prompt, tool description, or code comment
+        \item answer-adjacent hints (naming the ``right'' fold or mechanism)
+      \end{itemize}
+      \vspace{0.3em}
+      \hlt{Where the truth lives}
+      \begin{itemize}\small
+        \item only in a held-out oracle used to \emph{grade} a run afterwards
+        \item the agent's code is written to work for \emph{any} target reaction
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \hl{How it stays true}
+      \begin{itemize}\small
+        \item the \emph{model proposes / tools find} split means strategy carries no
+          entity: the model says ``look for this kind of chemistry,'' the tools return
+          the specific proteins
+        \item a leakage \texttt{grep} over prompts + code runs on every change
+        \item the test suite pins it (215 tests), so a regression fails loudly
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.5em}
+  \begin{center}\small\color{muted}
+    Result: the benchmark answers are a \emph{score}, never an input.
+  \end{center}
+\end{frame}
+
 % ---------- Results ----------
 \begin{frame}{Does it work?}
   \small
