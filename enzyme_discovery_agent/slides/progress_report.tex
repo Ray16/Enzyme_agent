@@ -148,23 +148,24 @@
 
 % ---------- Validation ----------
 \begin{frame}{Did it work? — before vs after}
-  \vspace{0.4em}
+  \vspace{0.6em}
   \begin{center}
-  \renewcommand{\arraystretch}{1.35}
+  \renewcommand{\arraystretch}{1.4}
+  \resizebox{0.98\textwidth}{!}{%
   \begin{tabular}{lcc}
     \toprule
      & \textbf{Before} & \textbf{After} \\
     \midrule
-    Wrongly-ranked \#1 (aromatic conjugator) & \hla{\#1} & \gd{not ranked} \\
-    The \#1 candidate                         & aromatic conjugator & \gd{PuuA — a real diamine ligase} \\
-    DdaG (the exact answer)                   & \#4 & \gd{\#3} \\
-    Missing analogues (DesD / AsbA / AsbB / \dots) & mostly absent & \gd{all recovered} \\
-    Tokens per run                            & \textasciitilde 2.18M & \gd{\textasciitilde 1.43M} \\
-    Wall-clock                                & \textasciitilde 32 min & \textasciitilde 32 min \\
+    The wrongly-ranked \#1 (an aromatic conjugator) & \hla{\#1} & \gd{not ranked} \\
+    So the \#1 candidate is now\dots               & aromatic conjugator & \gd{PuuA (a real diamine ligase)} \\
+    DdaG, the exact answer                          & \#4 & \gd{\#3} \\
+    Missing analogues (DesD, AsbA, AsbB, \dots)     & mostly absent & \gd{all recovered} \\
+    Tokens per run                                  & \textasciitilde 2.18M & \gd{\textasciitilde 1.43M} \\
+    Wall-clock                                      & \textasciitilde 32 min & \textasciitilde 32 min \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
   \end{center}
-  \vspace{0.5em}
+  \vspace{0.7em}
   {\footnotesize\color{muted} Ground truth is used only to grade the run afterwards —
   never given to the agent.}
 \end{frame}
