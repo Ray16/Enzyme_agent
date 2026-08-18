@@ -65,7 +65,7 @@ def _fold_label(f: dict, max_len: int = 34) -> str:
 
 
 def render_family_fit_plot(
-    run_dir: str | Path, top_n: int = 5, log_fn=None,
+    run_dir: str | Path, top_n: int = 6, log_fn=None,
 ) -> Path | None:
     """Render the native-substrate-fit radar + size-range bar for the top-fitting
     families to ``family_substrate_fit.png``.  Returns the path, or None if it
