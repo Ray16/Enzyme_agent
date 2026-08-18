@@ -423,16 +423,15 @@
     \begin{column}{0.5\textwidth}
       \hl{How it stays true}
       \begin{itemize}\small
-        \item the \emph{model proposes / tools find} split means strategy carries no
-          entity: the model says ``look for this kind of chemistry,'' the tools return
-          the specific proteins
+        \item the \emph{model proposes / tools find} split: the model picks a \emph{kind}
+          of chemistry; the tools return the specific proteins
         \item a leakage \texttt{grep} over prompts + code runs on every change
         \item the test suite pins it (215 tests), so a regression fails loudly
       \end{itemize}
     \end{column}
   \end{columns}
-  \vspace{0.5em}
-  \begin{center}\small\color{muted}
+  \vspace{0.2em}
+  \begin{center}\footnotesize\color{muted}
     Result: the benchmark answers are a \emph{score}, never an input.
   \end{center}
 \end{frame}
