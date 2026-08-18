@@ -81,18 +81,29 @@ def render_family_fit_plot(
     if not isinstance(folds, list):
         return None
 
-    # Keep only folds that carry the multi-axis fit vector, ranked by their
+    # Keep only folds carrying the multi-axis fit vector.  Collapse near-duplicate
+    # InterPro entries of the SAME fold (a domain and its "N-terminal" /
+    # "conserved site" sub-entries share a base name before the first comma) into
+    # ONE representative — otherwise two entries of one family crowd out other
+    # distinct families — keeping the best-fitting representative.  Then rank by
     # even-weight holistic fit (max), best first.
-    plottable = [
-        f for f in folds
-        if isinstance(f, dict) and (f.get("axis_medians") or {})
-    ]
-
     def _holistic_max(f: dict) -> float:
         return ((f.get("holistic_fit") or {}).get("max")) or -1.0
 
-    plottable.sort(key=_holistic_max, reverse=True)
-    plottable = plottable[:top_n]
+    def _base_key(f: dict) -> str:
+        return _fold_label(f, max_len=10_000).split(",")[0].strip().lower()
+
+    best_by_base: dict[str, dict] = {}
+    n_total = 0
+    for f in folds:
+        if not (isinstance(f, dict) and (f.get("axis_medians") or {})):
+            continue
+        n_total += 1
+        k = _base_key(f)
+        if k not in best_by_base or _holistic_max(f) > _holistic_max(best_by_base[k]):
+            best_by_base[k] = f
+    n_families = len(best_by_base)
+    plottable = sorted(best_by_base.values(), key=_holistic_max, reverse=True)[:top_n]
     if not plottable:
         return None
 
