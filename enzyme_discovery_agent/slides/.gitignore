@@ -5,6 +5,9 @@
 *.snm
 *.toc
 *.out
-build*.log
+b*.log
+pb*.log
 review-*.png
+rev-*.png
+pr-*.png
 montage_all.png
