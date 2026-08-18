@@ -210,22 +210,24 @@
     every node/.style={font=\footnotesize},
     store/.style={draw=st3,fill=st3!14,cylinder,shape border rotate=90,aspect=0.3,
                   align=center,text width=1.7cm,minimum height=1.5cm,inner sep=1pt,font=\scriptsize\bfseries},
-    step/.style 2 args={draw=#1,fill=#1!9,rounded corners,line width=1.2pt,align=center,
-                text width=2.7cm,minimum height=2.1cm,inner sep=4pt,label={[font=\small\bfseries,text=#1]above:#2}},
+    step/.style={rounded corners,line width=1.2pt,align=center,
+                text width=2.75cm,minimum height=2.2cm,inner sep=5pt},
     flow/.style={-{Stealth[length=2.6mm]},line width=1.3pt,draw=muted!70}]
 
     \node[store] (reg) at (0,0) {Candidate\\ registry};
-    \node[step={st3}{Screen}, right=1.0cm of reg] (s)
-      {\scriptsize one representative\\ per gene\\[2pt]\textcolor{muted}{(collapse orthologs)}};
-    \node[step={brand2}{Evaluate}, right=0.9cm of s] (e)
-      {\scriptsize \emph{every} candidate,\\ in parallel\\[2pt]\textcolor{muted}{UniProt · PDB · substrate fit}};
-    \node[step={st4}{Rank}, right=0.9cm of e] (r)
-      {\scriptsize evidence spine +\\ family relevance\\[2pt]\textcolor{muted}{then LLM focus-rank}};
-    \node[step={st5}{Report}, right=0.9cm of r] (p)
-      {\scriptsize confidence +\\ explorative\\[2pt]\textcolor{muted}{ranked list · structures}};
+    \node[step,draw=st3,fill=st3!9, right=1.0cm of reg] (s)
+      {{\small\bfseries\color{st3}Screen}\\[3pt]\scriptsize one representative\\ per gene\\[2pt]\textcolor{muted}{collapse orthologs}};
+    \node[step,draw=brand2,fill=brand2!9, right=0.9cm of s] (e)
+      {{\small\bfseries\color{brand2}Evaluate}\\[3pt]\scriptsize \emph{every} candidate,\\ in parallel\\[2pt]\textcolor{muted}{UniProt·PDB·fit}};
+    \node[step,draw=st4,fill=st4!9, right=0.9cm of e] (r)
+      {{\small\bfseries\color{st4}Rank}\\[3pt]\scriptsize evidence spine +\\ family relevance\\[2pt]\textcolor{muted}{then LLM focus-rank}};
+    \node[step,draw=st5,fill=st5!9, right=0.9cm of r] (p)
+      {{\small\bfseries\color{st5}Report}\\[3pt]\scriptsize confidence +\\ explorative\\[2pt]\textcolor{muted}{ranked list·structures}};
 
     \draw[flow] (reg) -- (s);
-    \foreach \a/\b in {s/e,e/r,r/p} \draw[flow] (\a) -- (\b);
+    \draw[flow] (s) -- (e);
+    \draw[flow] (e) -- (r);
+    \draw[flow] (r) -- (p);
   \end{tikzpicture}
   \vspace{1.6em}
   \begin{center}{\footnotesize\color{muted} Evaluation uses no model calls — just database
