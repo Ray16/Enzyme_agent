@@ -78,7 +78,7 @@ def build() -> Digraph:
                 f'</table>>'
             )
             row.node(eid, label, fillcolor=_tint(accent, 0.94), color=accent,
-                     penwidth="2.0", width="3.5", height="1.05",
+                     penwidth="2.0", width="4.1", height="1.05",
                      style="filled,rounded,dashed")
 
     for eid, _name, _desc, accent, feeds in EXTRACTORS:
