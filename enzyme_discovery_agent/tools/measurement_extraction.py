@@ -637,13 +637,25 @@ def extract_experimental_measurements(identifier: str, context_hint: str = "",
     if any(not t.is_image for t in tables):
         jobs.append(lambda: extract_measurements_from_tables(tables, context, llm_client))
         tags.append(("text", "jats_table"))
+    _IMG_CAP = 3
+    dropped = []
     if try_images and pmcid:
-        for t in sorted(image_tables, key=lambda t: t.relevance(), reverse=True)[:3]:
+        for t in sorted(image_tables, key=lambda t: t.relevance(), reverse=True)[:_IMG_CAP]:
             jobs.append(lambda a=t: extract_measurements_from_image(pmcid, a, context, llm_client))
             tags.append(("image", t.label))
-        for f in sorted(relevant_figs, key=lambda f: f.relevance(), reverse=True)[:3]:
+        for f in sorted(relevant_figs, key=lambda f: f.relevance(), reverse=True)[:_IMG_CAP]:
             jobs.append(lambda a=f: extract_measurements_from_image(pmcid, a, context, llm_client))
             tags.append(("figure", f.label))
+        # Record (and log) anything the per-asset caps left unread, so a partial extraction is
+        # never mistaken for full coverage of the paper's tables/figures.
+        if len(image_tables) > _IMG_CAP:
+            dropped.append(f"{len(image_tables) - _IMG_CAP} image table(s)")
+        if len(relevant_figs) > _IMG_CAP:
+            dropped.append(f"{len(relevant_figs) - _IMG_CAP} data figure(s)")
+        if dropped:
+            logger.info("measurement extraction: %s exceed the per-asset cap of %d and were not "
+                        "read (their measurements are not extracted).", " and ".join(dropped),
+                        _IMG_CAP)
 
     results = _run_jobs(jobs)
 
