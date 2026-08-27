@@ -126,6 +126,18 @@ _FACT_DISCLAIMERS = (
     "does not provide", "not described", "no details", "limited to", "no structural",
     "no pdb", "unclear", "no information",
 )
+# Mechanism vocabulary used to CENTRE the paper excerpt on the sections that carry the
+# catalytic mechanism (Results/Discussion, active-site/structure) rather than the intro +
+# methods that fill a naive head-truncation. Class-BALANCED on purpose: it spans
+# substitution, redox, radical, metal and pericyclic chemistry so excerpt selection does not
+# bias toward one mechanism class (the same reason the retrieval query stays class-agnostic).
+_MECH_EXCERPT_CUES = (
+    "mechanism", "mechanistic", "catalytic", "catalysis", "active site", "catalytic residue",
+    "transition state", "nucleophil", "electrophil", "leaving group", "proton transfer",
+    "general base", "general acid", "oxyanion", "hydride", "electron transfer", "radical",
+    "cofactor", "metal ion", "coordinat", "stereochem", "inversion", "retention",
+    "intermediate", "covalent", "crystal structure", "substrate binding", "michaelis",
+)
 
 
 def _paper_text(paper: dict) -> str:
