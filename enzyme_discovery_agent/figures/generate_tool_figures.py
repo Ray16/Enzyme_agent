@@ -42,7 +42,7 @@ def _card(title: str, lines, accent: str, title_size: int = 15) -> str:
 
 def _base(name: str) -> Digraph:
     g = Digraph(name)
-    g.attr(rankdir="TB", bgcolor="transparent", dpi="220", ranksep="0.42",
+    g.attr(rankdir="TB", bgcolor="white", dpi="220", ranksep="0.42",
            nodesep="0.34", fontname="Helvetica")
     g.attr("node", fontname="Helvetica", shape="box", style="filled,rounded",
            margin="0.16,0.10", penwidth="2.0")
