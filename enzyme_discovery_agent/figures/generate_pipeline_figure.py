@@ -86,10 +86,14 @@ def build() -> Digraph:
     for (a, *_), (b, *_) in zip(STAGES, STAGES[1:]):
         g.edge(a, b, color=LINE, penwidth="2.8", arrowsize="1.15")
 
-    # Evidence-extractor tools, anchored under the stage they feed.
+    # Evidence-extractor tools: place each in the SAME rank (column, under LR) as
+    # its anchor stage, so it sits directly below that stage and the feed arrows
+    # stay short and non-crossing.
     for eid, name, desc, accent, anchor, _feeds in EXTRACTORS:
-        g.node(eid, _extractor_card(name, desc, accent))
-        g.edge(anchor, eid, style="invis")  # pin below its anchor stage
+        with g.subgraph() as s:
+            s.attr(rank="same")
+            s.node(anchor)                                   # reference existing stage
+            s.node(eid, _extractor_card(name, desc, accent))
 
     for eid, _name, _desc, accent, _anchor, feeds in EXTRACTORS:
         for stage in feeds:
