@@ -137,6 +137,9 @@ _MECH_EXCERPT_CUES = (
     "general base", "general acid", "oxyanion", "hydride", "electron transfer", "radical",
     "cofactor", "metal ion", "coordinat", "stereochem", "inversion", "retention",
     "intermediate", "covalent", "crystal structure", "substrate binding", "michaelis",
+    # PDB-accession context, so the Michaelis / reference-structure IDs (often in a
+    # data-availability line or figure caption) land in the excerpt.
+    "pdb", "protein data bank", "accession", "deposited", "data availability",
 )
 
 
