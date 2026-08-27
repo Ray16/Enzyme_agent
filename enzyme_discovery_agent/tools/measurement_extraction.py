@@ -609,6 +609,9 @@ def extract_experimental_measurements(identifier: str, context_hint: str = "",
         if not measurements and text:
             # No pages rendered (no PyMuPDF / no cue pages) or vision empty: flat-text fallback
             # over a wide window (not the old 4k cap, which missed tables deep in the paper).
+            if len(text) > 16000:
+                logger.info("measurement extraction: flat-text fallback truncated %d chars to "
+                            "16000; measurements beyond that point are not extracted.", len(text))
             measurements = extract_measurements_from_tables(
                 [Table(label="(full text)", caption=text[:16000])], context, llm_client)
         return {"status": "ok" if measurements else "partial",
