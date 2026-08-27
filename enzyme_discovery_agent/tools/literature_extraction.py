@@ -96,6 +96,7 @@ _DATA_CUES = (
 
 def select_relevant_sections(
     text: str, identifiers: list[str], max_chars: int = 12000, window: int = 700,
+    extra_cues: tuple = (),
 ) -> str:
     """Return a high-signal excerpt: the abstract head plus windows around section
     headings, quantitative/condition cues, and the enzyme's own identifiers.
@@ -104,12 +105,16 @@ def select_relevant_sections(
     needs (substrates, mechanism, catalytic residues, kinetics + conditions,
     cited enzymes).  Section-agnostic so it works on PDF-extracted flat text as
     well as XML-derived text.
+
+    ``extra_cues`` adds caller-specific anchor terms (e.g. mechanism vocabulary
+    for the mechanism extractor) so the excerpt centres on the sections that
+    caller needs, rather than the default substrate/kinetics-oriented cues.
     """
     if len(text) <= max_chars:
         return text
     low = text.lower()
     spans: list[tuple[int, int]] = [(0, 1500)]  # abstract / opening always kept
-    cues = list(_SECTION_HEADINGS) + list(_DATA_CUES) + [
+    cues = list(_SECTION_HEADINGS) + list(_DATA_CUES) + [c.lower() for c in extra_cues] + [
         i.lower() for i in identifiers if i and len(i) >= 3
     ]
     for cue in cues:
