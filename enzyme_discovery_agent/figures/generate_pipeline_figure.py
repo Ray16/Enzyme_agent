@@ -20,7 +20,7 @@ STAGES = [
     ("discovery", "2", "Discovery",     ["literature + chemistry", "+ family search"],          "#7c3aed"),
     ("evaluate",  "3", "Evaluate",      ["check every candidate", "in parallel"],               "#0d9488"),
     ("rank",      "4", "Rank",          ["by evidence,", "then a model re-rank"],                "#e11d48"),
-    ("report",    "5", "Report",        ["ranked enzymes,", "reports & structures"],             "#334155"),
+    ("report",    "5", "Report",        ["ranked enzymes,", "reports &amp; structures"],         "#334155"),
 ]
 
 
