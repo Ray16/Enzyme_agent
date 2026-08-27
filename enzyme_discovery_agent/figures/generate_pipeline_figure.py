@@ -48,15 +48,22 @@ def _tint(hex_color: str, amount: float = 0.90) -> str:
     return f"#{mix(r):02x}{mix(g):02x}{mix(b):02x}"
 
 
+def _wrap(inner, width) -> str:
+    """Fixed-width inner table so every card is uniform and its header band
+    spans the full card width."""
+    return (f'<table border="0" cellborder="0" cellspacing="0" cellpadding="0" '
+            f'width="{width}"><tr><td align="center">{inner}</td></tr></table>')
+
+
 def _stage_card(num, title, desc, accent) -> str:
     d0, d1 = desc
+    header = f'<font point-size="16" color="white"><b>{num}&#160;&#160;&#160;{title}</b></font>'
+    body = f'<font point-size="12" color="{MUTED}">{d0}<br/>{d1}</font>'
     return (
         f'<<table border="2" color="{accent}" cellborder="0" cellspacing="0" '
-        f'cellpadding="0" style="rounded" bgcolor="white" width="196">'
-        f'<tr><td bgcolor="{accent}" cellpadding="9" align="center">'
-        f'<font point-size="16" color="white"><b>{num}&#160;&#160;&#160;{title}</b></font></td></tr>'
-        f'<tr><td cellpadding="14" align="center">'
-        f'<font point-size="12" color="{MUTED}">{d0}<br/>{d1}</font></td></tr>'
+        f'cellpadding="0" style="rounded" bgcolor="white">'
+        f'<tr><td bgcolor="{accent}" cellpadding="9">{_wrap(header, 172)}</td></tr>'
+        f'<tr><td cellpadding="13">{_wrap(body, 172)}</td></tr>'
         f'</table>>'
     )
 
