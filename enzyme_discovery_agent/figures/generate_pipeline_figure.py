@@ -43,7 +43,7 @@ EXTRACTORS = [
 
 def build() -> Digraph:
     g = Digraph("enzyme_discovery_pipeline")
-    g.attr(rankdir="LR", bgcolor="transparent", dpi="220", ranksep="0.55",
+    g.attr(rankdir="LR", bgcolor="white", dpi="220", ranksep="0.55",
            fontname="Helvetica")
     g.attr("node", fontname="Helvetica", shape="box", style="filled,rounded",
            fixedsize="true", width="2.15", height="1.65", margin="0")
