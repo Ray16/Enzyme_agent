@@ -52,12 +52,11 @@ def _stage_card(num, title, desc, accent) -> str:
     d0, d1 = desc
     return (
         f'<<table border="2" color="{accent}" cellborder="0" cellspacing="0" '
-        f'cellpadding="0" style="rounded" bgcolor="white" width="200">'
-        f'<tr><td bgcolor="{accent}" cellpadding="7">'
-        f'<font point-size="15" color="white"><b>{num} &#160;&#160; {title}</b></font></td></tr>'
-        f'<tr><td cellpadding="6"><font point-size="30" color="{accent}"><b>{num}</b></font></td></tr>'
-        f'<tr><td cellpadding="0"><font point-size="11.5" color="{MUTED}">{d0}<br/>{d1}</font></td></tr>'
-        f'<tr><td height="8"></td></tr>'
+        f'cellpadding="0" style="rounded" bgcolor="white" width="196">'
+        f'<tr><td bgcolor="{accent}" cellpadding="9" align="center">'
+        f'<font point-size="16" color="white"><b>{num}&#160;&#160;&#160;{title}</b></font></td></tr>'
+        f'<tr><td cellpadding="14" align="center">'
+        f'<font point-size="12" color="{MUTED}">{d0}<br/>{d1}</font></td></tr>'
         f'</table>>'
     )
 
