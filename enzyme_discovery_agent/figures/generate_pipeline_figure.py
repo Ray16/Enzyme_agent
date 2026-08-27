@@ -84,7 +84,7 @@ def build() -> Digraph:
     for eid, _name, _desc, accent, feeds in EXTRACTORS:
         for stage in feeds:
             g.edge(eid, stage, color=accent, penwidth="2.0", arrowsize="0.9",
-                   style="dashed", constraint="false", dir="back")
+                   style="dashed", constraint="false")
 
     return g
 
