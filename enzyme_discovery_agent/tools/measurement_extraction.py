@@ -691,4 +691,5 @@ def extract_experimental_measurements(identifier: str, context_hint: str = "",
                          for t in image_tables],
         "data_figures": [{"label": f.label, "caption": f.caption} for f in relevant_figs],
         "vision": vision_notes,
+        "skipped_assets": dropped,  # tables/figures left unread by the per-asset cap (coverage)
     }
