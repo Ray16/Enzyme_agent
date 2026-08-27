@@ -30,6 +30,17 @@ def _tint(hex_color: str, amount: float = 0.90) -> str:
     return f"#{mix(r):02x}{mix(g):02x}{mix(b):02x}"
 
 
+# Literature evidence-extractor tools, shown as a band feeding the stages they
+# inform: mechanism facts drive the Evaluate/Rank feasibility judgement, and
+# measured kinetics/activity are gathered for the candidates being modelled.
+EXTRACTORS = [
+    ("mech", "extract_reaction_mechanism",
+     "grounded mechanism facts", "#7c3aed", ["evaluate", "rank"]),
+    ("meas", "extract_experimental_measurements",
+     "kinetics / activity rows", "#0d9488", ["report"]),
+]
+
+
 def build() -> Digraph:
     g = Digraph("enzyme_discovery_pipeline")
     g.attr(rankdir="LR", bgcolor="transparent", dpi="220", ranksep="0.55",
@@ -52,6 +63,28 @@ def build() -> Digraph:
 
     for (a, *_), (b, *_) in zip(STAGES, STAGES[1:]):
         g.edge(a, b, color="#94a3b8", penwidth="2.8", arrowsize="1.15")
+
+    # Evidence-extractor band: keep the extractor nodes on one rank below the
+    # main flow, then connect each up (constraint-free) to the stage it feeds.
+    with g.subgraph() as row:
+        row.attr(rank="same")
+        for eid, name, desc, accent, _feeds in EXTRACTORS:
+            label = (
+                f'<<table border="0" cellborder="0" cellspacing="0" cellpadding="0">'
+                f'<tr><td><font point-size="9.5" color="{accent}"><b>EVIDENCE TOOL</b></font></td></tr>'
+                f'<tr><td><font point-size="12.5" color="#0f172a"><b>{name}</b></font></td></tr>'
+                f'<tr><td height="3"></td></tr>'
+                f'<tr><td><font point-size="10.5" color="#475569">{desc}</font></td></tr>'
+                f'</table>>'
+            )
+            row.node(eid, label, fillcolor=_tint(accent, 0.94), color=accent,
+                     penwidth="2.0", width="2.6", height="0.95",
+                     style="filled,rounded,dashed")
+
+    for eid, _name, _desc, accent, feeds in EXTRACTORS:
+        for stage in feeds:
+            g.edge(eid, stage, color=accent, penwidth="2.0", arrowsize="0.9",
+                   style="dashed", constraint="false", dir="back")
 
     return g
 
