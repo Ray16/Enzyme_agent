@@ -185,8 +185,7 @@ def main():
         g = builder()
         out = HERE / stem
         g.render(str(out), format="png", cleanup=True)
-        g.render(str(out), format="svg", cleanup=True)
-        print(f"wrote {out}.png and {out}.svg")
+        print(f"wrote {out}.png")
 
 
 if __name__ == "__main__":
