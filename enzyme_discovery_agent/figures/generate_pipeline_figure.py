@@ -92,8 +92,7 @@ def build() -> Digraph:
 def main():
     g = build()
     g.render(str(OUT), format="png", cleanup=True)
-    g.render(str(OUT), format="svg", cleanup=True)
-    print(f"wrote {OUT}.png and {OUT}.svg")
+    print(f"wrote {OUT}.png")
 
 
 if __name__ == "__main__":
