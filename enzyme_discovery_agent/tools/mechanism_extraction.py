@@ -292,8 +292,14 @@ def _extract_from(ref: dict, enzyme: str, llm_client) -> dict | None:
     text = _paper_text(ref)
     if not text:
         return None
+    # Section-aware excerpt centred on the mechanism-bearing parts of the paper, anchored on
+    # the enzyme's own name tokens. A naive text[:14000] head-truncation keeps the intro +
+    # methods and often drops the Results/Discussion where the catalytic mechanism lives.
+    identifiers = [w for w in enzyme.replace("/", " ").replace("-", " ").split() if len(w) >= 3]
+    excerpt = select_relevant_sections(
+        text, identifiers=identifiers, max_chars=14000, extra_cues=_MECH_EXCERPT_CUES)
     user = [{"type": "text",
-             "text": f"Enzyme: {enzyme}\n\nPaper full text (excerpt):\n{text[:14000]}"}]
+             "text": f"Enzyme: {enzyme}\n\nPaper full text (excerpt):\n{excerpt}"}]
     facts = _llm_json(llm_client, _MECH_SYS, user)
     # Accept any structured mechanism record (class-agnostic): a substitution enzyme carries a
     # nucleophile, but a redox/lyase/isomerase carries participants / bonds / a mechanism_class
