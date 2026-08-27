@@ -499,6 +499,10 @@ def _pdf_cue_page_images(pdf_bytes: bytes, max_pages: int = 6,
         if cue > 0:
             scored.append((i, float(cue)))
     scored.sort(key=lambda x: x[1], reverse=True)
+    if len(scored) > max_pages:
+        logger.info("measurement extraction: %d cue-bearing PDF page(s) exceed the cap of %d; "
+                    "reading the top %d and skipping %d (measurements on skipped pages are "
+                    "not extracted).", len(scored), max_pages, max_pages, len(scored) - max_pages)
     out: list[tuple[int, str, float]] = []
     for i, score in scored[:max_pages]:
         pix = doc[i].get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
