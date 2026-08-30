@@ -920,6 +920,13 @@ def evaluate_candidate(
                 "match_details": match_details,
                 "property_comparisons": property_comparisons,
             }
+            # Role-aware accommodation over the REACTANT-side substrates: which
+            # target substrate (if any) has no genuine native partner.  Ranking
+            # uses this to DEMOTE a candidate that cannot host every target
+            # substrate, rather than scoring an unresolvable partner as neutral.
+            from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+            substrate_similarity["accommodation"] = accommodation_facts(
+                target_molecules, native_smiles_list)
             if len(property_comparisons) < len(target_molecules):
                 substrate_similarity["property_note"] = (
                     "Property comparison unavailable for some substrates "
