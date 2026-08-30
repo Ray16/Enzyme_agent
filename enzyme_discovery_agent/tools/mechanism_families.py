@@ -255,6 +255,15 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
             "substrates_free": fam.get("substrates_free"),
             "archetypal_native_substrates": _clean_terms(
                 fam.get("archetypal_native_substrates")),
+            # Falsifiable-hypothesis fields: the causal chain + what would rule
+            # the family out.  Tolerant (a reasoning model may omit some under a
+            # token cap); consumers normalize via models.family_hypothesis.
+            "required_catalytic_capability": str(
+                fam.get("required_catalytic_capability") or "").strip(),
+            "proposed_activation_strategy": str(
+                fam.get("proposed_activation_strategy") or "").strip(),
+            "disqualifying_observations": _clean_terms(
+                fam.get("disqualifying_observations")),
         })
     return out
 
