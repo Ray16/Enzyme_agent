@@ -340,6 +340,19 @@ def fetch_uniprot_sequence(accession: str) -> dict:
             "suggestions": ["Check that the accession ID is correct."],
         }
 
+    from enzyme_discovery_agent.models.claim_validation import validate_uniprot_claims
+    identity_validation = validate_uniprot_claims(
+        data, expected_accession=accession, require_native_reaction=False,
+    )
+    if identity_validation.get("promotion_eligible") is not True:
+        blocking = ", ".join(identity_validation.get("blocking_claims") or ["unknown"])
+        return {
+            "status": "error",
+            "summary": f"UniProt record {accession} failed identity validation: {blocking}",
+            "data": {"accession": accession, "claim_validation": identity_validation},
+            "suggestions": ["Resolve the identifier to an active UniProtKB accession."],
+        }
+
     # Shared field parsing
     parsed = _parse_uniprot_json(data)
     protein_name = parsed["protein_name"]
@@ -429,6 +442,7 @@ def fetch_uniprot_sequence(accession: str) -> dict:
             "kegg": xref_kegg[:5],
             "pfam": xref_pfam,
         },
+        "claim_validation": identity_validation,
     }
 
     parts = [f"{accession} ({protein_name or 'unnamed'})"]
@@ -624,15 +638,24 @@ def _simplify_interpro_query(query: str) -> list[str]:
     """Generate progressively simpler query variants for InterPro.
 
     InterPro's search returns 204 for multi-word hyphenated queries.
-    Strategy: try full query, then individual significant words.
+    Strategy: try the full query, then consecutive-word BIGRAMS, then individual
+    significant words.  The bigram step matters: a functional family name like
+    "glutamine synthetase" resolves to the correct catalytic family, whereas its
+    first word alone ("glutamine") drops to a coarser or adjacent entry — so a
+    two-word phrase must be tried before collapsing to single words.
     """
     variants = [query]
     # Split into individual words, keep only significant ones (>3 chars)
     words = [w for w in query.split() if len(w) > 3
              and w.lower() not in {"with", "from", "that", "this", "have", "been"}]
-    # Try each significant word individually
+    # Consecutive significant-word pairs — more specific than single words.
+    for i in range(len(words) - 1):
+        bigram = f"{words[i]} {words[i + 1]}"
+        if bigram != query and bigram not in variants:
+            variants.append(bigram)
+    # Then each significant word individually as a last resort.
     for word in words[:3]:
-        if word != query:
+        if word != query and word not in variants:
             variants.append(word)
     return variants
 
