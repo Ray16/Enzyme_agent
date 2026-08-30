@@ -223,7 +223,7 @@ class FamilySurveyGate:
                 "members_spanning_aromatic_and_aliphatic":
                     prof.get("members_spanning_aromatic_and_aliphatic"),
                 "family_claim_validation": {
-                    "verdict": family_verdict,
+                    "verdict": verdict,
                     "reviewed_members_checked": len(reviewed_validations),
                     "promotion_eligible_members": eligible,
                     "basis": "reviewed UniProt members of the exact InterPro family",
