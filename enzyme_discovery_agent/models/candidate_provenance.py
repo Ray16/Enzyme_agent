@@ -138,6 +138,7 @@ def build_candidate_provenance(
     literature_extraction: dict | None = None,
     accommodation_facts: list[dict] | None = None,
     claim_validation: dict | None = None,
+    accommodation: dict | None = None,
 ) -> dict:
     """Assemble the provenance record for one candidate from its evaluation data
     plus any literature extraction, tagging every substrate/mechanism with its
