@@ -226,6 +226,10 @@ def build_candidate_provenance(
         "homologs_or_related_enzymes": homologs,
         "paper": paper_ref,
         "substrate_accommodation_vs_target": accommodation_facts or [],
+        # How the candidate's record aligns with the target chemistry contract:
+        # which required claims are supported / unproven / contradicted, and the
+        # resulting retain/reject decision.  None when no claim validation exists.
+        "reasoning_alignment": _reasoning_alignment(claim_validation),
         "provenance_note": (
             "native substrate recovered from literature; not present in UniProt"
             if (literature_extraction and literature_extraction.get("native_substrates"))
