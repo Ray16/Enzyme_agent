@@ -462,34 +462,22 @@ def _target_topology_for_run(run_dir: Path) -> str | None:
 
     This does not infer enzyme capability.  It only normalizes the physical form
     of the target inputs supplied in the run context so it can be compared with a
-    retrieved native reaction.
+    retrieved native reaction.  Prefers the shared chemistry contract; falls back
+    to the run context for legacy runs written before the contract existed.
     """
+    from enzyme_discovery_agent.models.target_reasoning import (
+        infer_substrate_topology,
+        target_claims,
+    )
+    _, _, topology = target_claims(run_dir)
+    if topology is not None:
+        return topology
     try:
         context = json.loads((run_dir / "target_context.json").read_text())
     except (OSError, json.JSONDecodeError):
         return None
     substrate = (context.get("target_profile") or {}).get("substrate") or {}
-    explicit = str(substrate.get("topology") or substrate.get("class") or "").strip()
-    allowed = {
-        "free_small_molecule", "carrier_protein_tethered", "polymer",
-        "macromolecule", "mixed",
-    }
-    if explicit in allowed:
-        return explicit
-    description = " ".join(str(substrate.get(k) or "") for k in (
-        "physical_state", "access_constraint",
-    )).casefold()
-    if "carrier" in description and ("tether" in description or "bound" in description):
-        return "carrier_protein_tethered"
-    if "polymer" in description and "monomer" not in description:
-        return "polymer"
-    if "free" in description or "soluble monomer" in description:
-        return "free_small_molecule"
-    # Dot-separated resolved structures are discrete input molecules.  Treat
-    # them as free inputs unless the profile explicitly states another topology.
-    if context.get("substrate_smiles"):
-        return "free_small_molecule"
-    return None
+    return infer_substrate_topology(context.get("substrate_smiles"), substrate)
 
 
 def _fetch_json(url: str, timeout: int = 30) -> dict:
