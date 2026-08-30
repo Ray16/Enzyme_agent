@@ -232,6 +232,10 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
             continue
         out.append({
             "name": name,
+            # Everything in this object is model-derived until a retrieved
+            # family member independently supports the corresponding claim.
+            "validation_status": "hypothesis",
+            "evidence_basis": "model_reasoning_from_target_chemistry",
             "descriptors": descriptors,
             "literature_terms": lit_terms,
             # Grounding the deterministic direction/substrate filter reasons over.
@@ -247,6 +251,7 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
 def derive_mechanism_families(
     query: str, substrate_smiles: str, llm_client, max_families: int = 10,
     min_families: int = 4, max_attempts: int = 6,
+    target_direction: str | None = None,
 ) -> list[dict]:
     """Derive the distinct mechanism families that can catalyse the reaction.
 
