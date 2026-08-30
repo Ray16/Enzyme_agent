@@ -828,18 +828,26 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
         )
         # Substrate-resemblance FACTS for every non-opposite member (opposite
         # direction is already a grounded dead end, so skip its ChEBI lookups).
+        # Compare against the member's REACTANT-side substrates (what it consumes),
+        # not its products, so an amide product cannot spuriously stand in for an
+        # amine target and mask a cofactor-scale true partner (e.g. ammonia).
         substrate = None
+        accommodation = None
         if target_smiles and facts["direction_vs_target"] != "opposite":
-            smiles = []
-            for cid in _member_substrate_chebis(entry):
+            def _name_of(cid):
                 if cid not in chebi_cache:
                     try:
                         chebi_cache[cid] = resolve_chebi_smiles(cid)
                     except Exception:  # noqa: BLE001
                         chebi_cache[cid] = None
-                if chebi_cache[cid]:
+                return get_chebi_name(cid)
+            smiles = []
+            for cid in _reactant_side_chebi_ids(entry, _name_of):
+                if chebi_cache.get(cid):
                     smiles.append(chebi_cache[cid])
             substrate = _substrate_facts(smiles, target_smiles)
+            from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+            accommodation = accommodation_facts(target_smiles, smiles)
         return {
             "accession": acc,
             "name": _member_name(entry),
@@ -851,6 +859,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             "bond_types": facts["bond_types"],
             "shared_bond_type": facts["shared_bond_type"],
             "substrate": substrate,
+            "accommodation": accommodation,
             "claim_validation": validation,
         }
 
