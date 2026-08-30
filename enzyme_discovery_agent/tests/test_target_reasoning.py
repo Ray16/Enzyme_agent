@@ -20,7 +20,7 @@ from enzyme_discovery_agent.models.target_reasoning import (
 
 # A generic formation reaction between two small molecules.  No answer
 # substrates, products, or enzyme names appear anywhere in this file.
-_FORMATION_QUERY = "enzymes that form an ester bond between an alcohol and an acid"
+_FORMATION_QUERY = "enzymes that catalyze the formation of an ester bond from an alcohol and an acid"
 _TWO_INPUTS = "CCO.CC(=O)O"  # a generic alcohol + a generic acid
 
 
