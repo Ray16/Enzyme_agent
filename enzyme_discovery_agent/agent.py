@@ -568,7 +568,6 @@ class EnzymeAgent:
         )
         clear_search_history()
         self._ensure_artifacts_dir()
-        token_usage = TokenUsage(model=self.model_name)
 
         system_prompt = build_system_prompt(
             available_tools=list(get_tools_by_category().keys()),
