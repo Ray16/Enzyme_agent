@@ -223,10 +223,13 @@ def write_manifest_start(
         "model": model,
         "substrate": substrate or {},
         "args": args or {},
-        "code": capture_code_provenance(),
+        "code": capture_code_provenance(run_dir),
         "environment": capture_environment(),
         "capabilities": capabilities or {},
         "config": snapshot_config(config_module),
+        # The derived chemistry contract that steers this run (written just before
+        # this manifest); None on a legacy run or if derivation failed.
+        "target_reasoning": _target_reasoning_summary(run_dir),
         "timing": {"started_at": _now_iso(), "finished_at": None, "wall_clock_s": None},
         "result": None,
     }
