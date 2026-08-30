@@ -253,7 +253,7 @@ class EnzymeAgent:
                            iteration, exc)
 
     def _ensure_artifacts_dir(self) -> None:
-        for subdir in ("literature", "database", "candidates", "fulltext"):
+        for subdir in ("literature", "database", "candidates", "fulltext", "evidence"):
             (self.artifacts_dir / subdir).mkdir(parents=True, exist_ok=True)
 
     def _save_artifact(self, category: str, tool_name: str, result: dict,
@@ -492,6 +492,31 @@ class EnzymeAgent:
             "substrate_name": substrate_name,
             "target_profile": normalize_target_profile(target_profile),
         }
+        # Derive the shared chemistry contract ONCE, at run start, from the target
+        # only.  Every downstream stage reads its required-chemistry facts from
+        # this single contract instead of re-deriving them independently, so no
+        # stage can invent a different account of what chemistry is required.
+        try:
+            from enzyme_discovery_agent.models.target_reasoning import derive_target_reasoning
+            target_reasoning = derive_target_reasoning(
+                query=query,
+                substrate_smiles=substrate_smiles,
+                substrate_name=substrate_name,
+                llm_client=self.llm,
+                target_profile=self._target_context["target_profile"],
+            )
+            self._target_context["target_reasoning"] = target_reasoning
+            (self.run_dir / "target_reasoning.json").write_text(
+                json.dumps(target_reasoning, indent=2, default=str) + "\n"
+            )
+            self.log(
+                "  Target chemistry: "
+                f"direction={target_reasoning.get('reaction_direction')}, "
+                f"bonds={target_reasoning.get('bond_types')}, "
+                f"topology={target_reasoning.get('substrate_topology')}"
+            )
+        except Exception as exc:  # never block a run on contract derivation
+            logger.warning("Target-reasoning contract derivation failed: %s", exc)
         # Gates run independently of the live agent instance. Persist the
         # structured target once so automatic evaluation never has to infer it
         # from a truncated notebook paragraph.
