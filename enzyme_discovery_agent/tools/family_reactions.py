@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -25,6 +26,7 @@ from enzyme_discovery_agent.chemistry_logic import (
     classify_reaction_chemistry,
     compare_substrate_properties,
     extract_target_bond_type,
+    get_chebi_name,
     resolve_chebi_smiles,
 )
 from enzyme_discovery_agent.static.cofactors import COFACTOR_CHEBI_IDS
