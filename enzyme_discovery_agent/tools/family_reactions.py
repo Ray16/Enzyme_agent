@@ -301,6 +301,50 @@ def _member_substrate_chebis(entry: dict) -> list[str]:
     return ids
 
 
+def _norm_chem(text: str) -> str:
+    """Normalize a chemical name for side-matching: lowercase, drop charge/state
+    parentheticals like ``(1-)``/``(+)`` and ``zwitterion``, collapse spaces."""
+    text = text.lower()
+    text = re.sub(r"\([^)]*\)", "", text)
+    text = text.replace("zwitterion", "")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _reactant_side_chebi_ids(entry: dict, name_of) -> list[str]:
+    """Non-cofactor ChEBI ids on the REACTANT side of a member's reactions.
+
+    Substrate ACCOMMODATION must compare the target's inputs against what the
+    enzyme CONSUMES, not what it makes: an amide-forming enzyme's PRODUCT carries
+    an amine/amide that would spuriously "match" an amine target and hide that the
+    enzyme's actual amine partner is, say, ammonia.  A reaction name ``A + B = C +
+    D`` gives the sides; a participant is dropped only when its (resolved) ChEBI
+    name clearly matches the PRODUCT side and not the reactant side.  Everything
+    else is kept — including a participant whose side cannot be determined (no
+    ``=`` or an unresolvable name) — so a genuine reactant is never lost.
+    ``name_of(cid) -> str | None`` supplies the resolved ChEBI name.
+    """
+    ids: list[str] = []
+    for c in entry.get("comments", []):
+        if c.get("commentType") != "CATALYTIC ACTIVITY":
+            continue
+        name = str((c.get("reaction") or {}).get("name") or "")
+        left = right = None
+        if "=" in name:
+            lhs, rhs = name.split("=", 1)
+            left, right = _norm_chem(lhs), _norm_chem(rhs)
+        for x in c.get("reaction", {}).get("reactionCrossReferences", []):
+            if x.get("database") != "ChEBI":
+                continue
+            cid = x.get("id", "")
+            if not cid or cid in COFACTOR_CHEBI_IDS or cid in ids:
+                continue
+            cname = _norm_chem(name_of(cid) or "")
+            if right is not None and cname and cname in right and cname not in left:
+                continue  # a clear product — not an accepted substrate
+            ids.append(cid)
+    return ids
+
+
 def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict | None:
     """Report GROUNDED substrate-resemblance facts (no blended score, no weights).
 
