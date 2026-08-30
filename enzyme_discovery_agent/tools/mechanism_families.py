@@ -140,6 +140,15 @@ _SYSTEM = (
     "genuinely a single small molecule, name that exact molecule. These are the "
     "family's OWN native substrates, used only to judge how far the family's "
     "chemistry sits from the target — do NOT substitute the target's molecules.\n"
+    "  - required_catalytic_capability: the catalytic capability a genuine member "
+    "must have to make the target's bond (generic chemistry, no enzyme name);\n"
+    "  - proposed_activation_strategy: how this family activates/couples the "
+    "reaction to overcome the barrier (the generic activated intermediate or "
+    "coupled favorable process);\n"
+    "  - disqualifying_observations: concrete observations about a retrieved "
+    "member that would RULE OUT this family for the target (e.g. native reaction "
+    "runs the opposite direction, acts only on a carrier-bound donor, or makes a "
+    "different bond) — what would falsify the hypothesis;\n"
     "STRICT: do NOT name any specific enzyme, gene, protein, natural product, or "
     "organism anywhere — only mechanism/fold classes, generic descriptors, the "
     "family's own native substrate compounds, and the target substrate's own "
@@ -147,7 +156,9 @@ _SYSTEM = (
     'Return ONLY JSON: {"families":[{"name":"..","descriptors":["..",".."],'
     '"literature_terms":["..",".."],"native_reaction":"reactants -> products",'
     '"native_direction":"formation|cleavage","substrates_free":true,'
-    '"archetypal_native_substrates":["..",".."]}]}'
+    '"archetypal_native_substrates":["..",".."],'
+    '"required_catalytic_capability":"..","proposed_activation_strategy":"..",'
+    '"disqualifying_observations":["..",".."]}]}'
 )
 
 # Guard the firewall: drop any descriptor/term that looks like a specific
