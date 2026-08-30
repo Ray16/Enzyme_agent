@@ -51,7 +51,14 @@ class MechanismFamilyGate:
         query = ctx.get("query", "") or ""
         substrate = ctx.get("substrate_smiles") or ""
 
-        families = derive_mechanism_families(query, substrate, self.llm)
+        # Take the reaction direction from the shared chemistry contract so the
+        # inverse-direction family filter agrees with every other stage.
+        from enzyme_discovery_agent.models.target_reasoning import target_claims
+        target_direction, _, _ = target_claims(state.run_dir)
+
+        families = derive_mechanism_families(
+            query, substrate, self.llm, target_direction=target_direction
+        )
         if families:
             # Order families by how closely their native substrates resemble the
             # target substrates, so guidance can steer search DEPTH into the most
