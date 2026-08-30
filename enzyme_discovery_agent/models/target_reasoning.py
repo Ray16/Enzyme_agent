@@ -293,10 +293,16 @@ def derive_target_reasoning(
     substrate_name: str | None = None,
     llm_client=None,
     target_profile: dict | None = None,
+    on_response=None,
 ) -> dict:
-    """Derive the full chemistry contract for a run (deterministic + inferred)."""
+    """Derive the full chemistry contract for a run (deterministic + inferred).
+
+    ``on_response`` (optional) is called with the raw LLM response from the
+    inferential layer, letting a caller record the tokens this derivation spent.
+    """
     fields, det_claims = _deterministic_layer(query, substrate_smiles, target_profile)
-    extra, llm_claims = _llm_layer(query, substrate_smiles, fields, llm_client)
+    extra, llm_claims = _llm_layer(
+        query, substrate_smiles, fields, llm_client, on_response=on_response)
     contract = {
         "schema_version": SCHEMA_VERSION,
         "derived_at": datetime.now(timezone.utc).isoformat(),
