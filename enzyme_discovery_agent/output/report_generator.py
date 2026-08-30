@@ -319,6 +319,14 @@ def _accommodation_score(data: dict) -> float | None:
     were unavailable, so callers treat it as neutral.
     """
     sim = data.get("substrate_similarity") or {}
+    accom = sim.get("accommodation")
+    # A target substrate with no genuine native partner (its counterpart is
+    # cofactor-scale or absent) means the enzyme cannot host the WHOLE reaction:
+    # that is an accommodation FAILURE (score 0), not "unknown" (None).  Without
+    # this, an unresolvable partner (a one-atom donor) is scored as a neutral
+    # midpoint and can outrank a real, moderate both-substrate fit.
+    if accom and accom.get("unaccommodated_targets"):
+        return 0.0
     comps = sim.get("property_comparisons") or []
     if not comps:
         return None
