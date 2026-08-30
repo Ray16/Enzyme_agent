@@ -227,6 +227,15 @@ def build_candidate_provenance(
         "homologs_or_related_enzymes": homologs,
         "paper": paper_ref,
         "substrate_accommodation_vs_target": accommodation_facts or [],
+        # Role-aware accommodation verdict: whether the enzyme has a genuine native
+        # partner for EVERY target substrate, and which target(s) it cannot host
+        # (a cofactor-scale or absent partner) — the reason a candidate is a
+        # relevant lead or is demoted.
+        "accommodation": ({
+            "all_target_substrates_accommodated":
+                accommodation.get("all_target_substrates_accommodated"),
+            "unaccommodated_targets": accommodation.get("unaccommodated_targets") or [],
+        } if accommodation else None),
         # How the candidate's record aligns with the target chemistry contract:
         # which required claims are supported / unproven / contradicted, and the
         # resulting retain/reject decision.  None when no claim validation exists.
