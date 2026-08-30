@@ -56,6 +56,7 @@ class FamilySurveyGate:
         self._count_cache: dict[str, int] = {}    # fold -> reviewed-member count
         self._fold_cache: dict[str, str | None] = {}  # accession -> most-specific fold
         self._promoted: set[str] = set()          # accessions promoted to candidates
+        self._claim_validations: dict[str, dict] = {}  # accession -> latest validation
 
     def should_fire(self, state: AgentState, has_eval_calls: bool = False, messages: list[dict] | None = None) -> bool:
         # Fire as soon as the mechanism families are DERIVED (i.e. the agent has
@@ -96,11 +97,16 @@ class FamilySurveyGate:
             acc = m.get("accession")
             if not acc or acc in self._promoted:
                 continue
+            validation = m.get("claim_validation") or {}
+            if "claim_validation" in m and validation.get("promotion_eligible") is not True:
+                continue
             self._promoted.add(acc)
             meta = {
                 "source_tool": f"family_substrate_fit:{fold_id}",
                 "substrate_fit": m.get("substrate_fit"),
             }
+            if validation:
+                meta["claim_validation"] = validation
             # Use protein_name (not literature_name) — these are found by fold +
             # native-substrate resemblance, NOT named in a paper, so conflating them
             # with the literature-named channel would corrupt provenance-by-name.
@@ -117,6 +123,17 @@ class FamilySurveyGate:
         from enzyme_discovery_agent.gates.family_relevance import collect_survey_folds
 
         run_dir = state.run_dir
+        # Preserve the audit trail if a run resumes in a new process.  New
+        # validations replace older entries for the same accession below.
+        if not self._claim_validations:
+            try:
+                persisted = json.loads((run_dir / "claim_validation.json").read_text())
+                for validation in persisted.get("validations") or []:
+                    subject = validation.get("subject")
+                    if subject:
+                        self._claim_validations[subject] = validation
+            except (OSError, json.JSONDecodeError, AttributeError):
+                pass
         self._attempts += 1
         self._last_attempt_count = state.candidate_count
         # Only give up permanently once retries are exhausted; an empty early
@@ -129,7 +146,7 @@ class FamilySurveyGate:
             run_dir, self._derived_families(run_dir),
             self._count_cache, self._fold_cache,
         )
-        source_of = {t["fold_id"]: t["source"] for t in targets}
+        target_by_fold = {t["fold_id"]: t for t in targets}
         new_folds = [t["fold_id"] for t in targets
                      if t["fold_id"] not in self._surveyed_folds][:_MAX_NEW_FOLDS_PER_FIRING]
         if not new_folds and not self._all_folds:
@@ -167,15 +184,30 @@ class FamilySurveyGate:
             # only being read by the model.  EVERY relevant member is promoted (no
             # top-N cap): dropping relevant members defeats discovery.  The set is
             # bounded by the relevance gate + the fold's surveyed-member ceiling.
-            n_promoted += self._promote_relevant(run_dir, got, d.get("relevant_members") or [])
+            relevant = d.get("relevant_members") or []
+            n_promoted += self._promote_relevant(run_dir, got, relevant)
             if got in self._all_folds:
                 continue
             prof = d.get("family_reaction_profile", {})
             members = d.get("members") or []
+            reviewed_validations = [
+                m.get("claim_validation") for m in members
+                if m.get("reviewed") and m.get("claim_validation")
+            ]
+            for validation in reviewed_validations:
+                self._claim_validations[validation.get("subject", "")] = validation
+            eligible = sum(v.get("promotion_eligible") is True for v in reviewed_validations)
+            # Centralized falsifiable-hypothesis verdict: "no evidence" stays
+            # insufficient (an exploration lead), never silently "feasible".
+            from enzyme_discovery_agent.models.family_hypothesis import family_verdict
+            verdict = family_verdict(reviewed_validations)
+            fold_target = target_by_fold.get(fid, {})
+            hypothesis = fold_target.get("derived_family_hypothesis")
             self._all_folds[got] = {
                 "fold_id": got,
                 "fold_name": d.get("fold_name"),
-                "source": source_of.get(fid, "discovered"),
+                "source": fold_target.get("source", "discovered"),
+                "derived_family_hypothesis": hypothesis,
                 "n_members": prof.get("n_members"),
                 "direction_vs_target_counts": prof.get("direction_vs_target_counts"),
                 "functional_group_similarity": prof.get("functional_group_similarity"),
@@ -190,11 +222,19 @@ class FamilySurveyGate:
                 "native_mw_range": prof.get("native_mw_range"),
                 "members_spanning_aromatic_and_aliphatic":
                     prof.get("members_spanning_aromatic_and_aliphatic"),
+                "family_claim_validation": {
+                    "verdict": family_verdict,
+                    "reviewed_members_checked": len(reviewed_validations),
+                    "promotion_eligible_members": eligible,
+                    "basis": "reviewed UniProt members of the exact InterPro family",
+                    "hypothesis_tested": hypothesis.get("name") if hypothesis else None,
+                },
                 "top_members": [
                     {"accession": m.get("accession"),
                      "native_reaction": (m.get("native_reaction") or "")[:80],
                      "direction_vs_target": m.get("direction_vs_target"),
-                     "substrate": m.get("substrate")}
+                     "substrate": m.get("substrate"),
+                     "claim_validation": m.get("claim_validation")}
                     for m in members[:3]
                 ],
             }
@@ -218,6 +258,11 @@ class FamilySurveyGate:
             (run_dir / "family_landscape.json").write_text(
                 json.dumps(ordered, indent=2) + "\n"
             )
+            (run_dir / "claim_validation.json").write_text(json.dumps({
+                "schema_version": "1.0",
+                "scope": "family_survey_members",
+                "validations": list(self._claim_validations.values()),
+            }, indent=2) + "\n")
         except OSError:
             pass
 
