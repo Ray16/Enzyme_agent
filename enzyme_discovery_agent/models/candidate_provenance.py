@@ -410,7 +410,8 @@ def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, l
         acc = d.get("accession", "")
         if not acc:
             continue
-        accom = (d.get("substrate_similarity") or {}).get("property_comparisons", [])
+        substrate_sim = d.get("substrate_similarity") or {}
+        accom = substrate_sim.get("property_comparisons", [])
         # The claim validation recorded during screening/promotion lives in the
         # registry metadata; carry it into provenance as reasoning alignment.
         claim_validation = (reg.get(acc, {}).get("metadata", {}) or {}).get("claim_validation")
@@ -420,6 +421,7 @@ def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, l
                 literature_extraction=extraction_by_acc.get(acc),
                 accommodation_facts=accom,
                 claim_validation=claim_validation,
+                accommodation=substrate_sim.get("accommodation"),
             )
             write_candidate_provenance(run, prov)
             n_prov += 1
