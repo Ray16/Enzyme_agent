@@ -269,11 +269,12 @@ def derive_mechanism_families(
     if llm_client is None:
         return []
 
-    # Target reaction DIRECTION, derived once from the query, drives the
-    # deterministic drop of inverse-direction families.  Substrate helps only the
-    # bond keywords; direction comes from the reaction verb in the query.
-    target_direction = extract_target_bond_type(
-        f"{query} {substrate_smiles}".strip()).get("direction")
+    # Target reaction DIRECTION drives the deterministic drop of inverse-direction
+    # families.  Prefer the shared chemistry contract's direction (passed in by the
+    # gate); fall back to extracting it here so direct callers still work.
+    if target_direction is None:
+        target_direction = extract_target_bond_type(
+            f"{query} {substrate_smiles}".strip()).get("direction")
 
     families: list[dict] = []
     seen: set[str] = set()   # every NAME proposed (valid or dropped), so retries broaden
