@@ -123,10 +123,21 @@ def _interpro_ids(acc: str, meta: dict) -> list[str]:
         return []
 
 
-def _most_specific_fold(interpro_ids: list[str], count_cache: dict[str, int]) -> str | None:
-    """Pick the most specific surveyable fold: the fewest reviewed members but
-    more than one (a singleton says nothing) and below a full page (a whole
-    superfamily is too coarse).  Member counts are cached across candidates."""
+def _most_relevant_fold(interpro_ids: list[str], count_cache: dict[str, int]) -> str | None:
+    """Pick the most RELEVANT surveyable fold for a member: the entry with the
+    BROADEST reviewed coverage that is still surveyable.
+
+    A gene carries several InterPro entries at different granularities (a whole
+    catalytic family, a single accessory domain, a conserved site).  Choosing the
+    FEWEST-member entry — the old behaviour — collapses onto a narrow accessory
+    entry and misses the functionally-related members that share the catalytic
+    FAMILY (e.g. a family's substrate-diverse members are simply absent from a
+    3-member sub-domain).  Instead pick the entry with the LARGEST reviewed count
+    that is still below a full page: the coarse whole-superfamily entries saturate
+    at ``_LIST_PAGE_MAX`` (``_reviewed_member_count`` returns the sentinel) and are
+    excluded, so the winner is the broadest grouping that is still a coherent,
+    surveyable family — the one whose members actually cover the target's
+    substrate range.  Member counts are cached across candidates."""
     best: str | None = None
     best_count = None
     for fid in interpro_ids:
@@ -138,7 +149,7 @@ def _most_specific_fold(interpro_ids: list[str], count_cache: dict[str, int]) ->
                 logger.debug("Member count failed for %s: %s", fid, e)
                 c = 0
             count_cache[fid] = c
-        if 1 < c < _LIST_PAGE_MAX and (best_count is None or c < best_count):
+        if 1 < c < _LIST_PAGE_MAX and (best_count is None or c > best_count):
             best, best_count = fid, c
     return best
 
