@@ -492,6 +492,9 @@ class EnzymeAgent:
             "substrate_name": substrate_name,
             "target_profile": normalize_target_profile(target_profile),
         }
+        # Token accounting starts here so the contract-derivation LLM call below
+        # is counted like every other call (it is not part of the main loop).
+        token_usage = TokenUsage(model=self.model_name)
         # Derive the shared chemistry contract ONCE, at run start, from the target
         # only.  Every downstream stage reads its required-chemistry facts from
         # this single contract instead of re-deriving them independently, so no
@@ -504,6 +507,9 @@ class EnzymeAgent:
                 substrate_name=substrate_name,
                 llm_client=self.llm,
                 target_profile=self._target_context["target_profile"],
+                # Account for the derivation's tokens in the same ledger as the
+                # main loop, so cost is complete and auditable.
+                on_response=lambda resp: token_usage.record("contract", resp),
             )
             self._target_context["target_reasoning"] = target_reasoning
             (self.run_dir / "target_reasoning.json").write_text(
@@ -515,6 +521,31 @@ class EnzymeAgent:
                 f"bonds={target_reasoning.get('bond_types')}, "
                 f"topology={target_reasoning.get('substrate_topology')}"
             )
+            # Make the contract visible in the canonical event stream: a
+            # dedicated event for the derived facts, plus a standard llm_call
+            # event so existing cost tooling counts its tokens.
+            contract_call = (token_usage.calls[-1]
+                             if token_usage.calls and token_usage.calls[-1].get("iteration") == "contract"
+                             else {})
+            self._log_event("contract_derived", {
+                "reaction_direction": target_reasoning.get("reaction_direction"),
+                "bond_types": target_reasoning.get("bond_types"),
+                "substrate_topology": target_reasoning.get("substrate_topology"),
+                "reactive_groups": target_reasoning.get("reactive_groups"),
+                "n_claims": len(target_reasoning.get("claims") or []),
+                "n_inferred": sum(1 for c in target_reasoning.get("claims") or []
+                                  if c.get("status") == "inferred"),
+                **contract_call,
+            })
+            if contract_call:
+                self._log_event("llm_call", {
+                    "iteration": 0,
+                    "phase": "contract_derivation",
+                    "prompt_tokens": contract_call.get("prompt_tokens", 0),
+                    "completion_tokens": contract_call.get("completion_tokens", 0),
+                    "total_tokens": contract_call.get("total_tokens", 0),
+                    "cumulative_tokens": token_usage.total_tokens,
+                })
         except Exception as exc:  # never block a run on contract derivation
             logger.warning("Target-reasoning contract derivation failed: %s", exc)
         # Gates run independently of the live agent instance. Persist the
