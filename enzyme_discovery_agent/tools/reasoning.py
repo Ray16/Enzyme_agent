@@ -58,6 +58,10 @@ def _fetch_uniprot_entry_light(accession: str) -> dict | None:
         return None
 
     parsed = _parse_uniprot_json(data)
+    from enzyme_discovery_agent.models.claim_validation import validate_uniprot_claims
+    identity_validation = validate_uniprot_claims(
+        data, expected_accession=accession, require_native_reaction=False,
+    )
     # InterPro fold ids let the screening step group representatives by fold
     # family for relevance budgeting without a second lookup.
     interpro_ids = [
@@ -74,6 +78,7 @@ def _fetch_uniprot_entry_light(accession: str) -> dict | None:
         "gene_names": parsed["gene_names"],
         "interpro_ids": interpro_ids,
         "seq_length": data.get("sequence", {}).get("length", 0),
+        "claim_validation": identity_validation,
     }
 
 
@@ -82,6 +87,16 @@ def _target_direction_for_run(run_dir: Path) -> str | None:
     reader so the file/parse logic lives in one place)."""
     from enzyme_discovery_agent.tools.family_reactions import _target_profile_for_run
     return _target_profile_for_run(run_dir)[0]
+
+
+def _target_claims_for_run(run_dir: Path) -> tuple[str | None, set[str], str | None]:
+    """Return the normalized target claims used for authoritative validation."""
+    from enzyme_discovery_agent.tools.family_reactions import (
+        _target_profile_for_run,
+        _target_topology_for_run,
+    )
+    direction, bonds = _target_profile_for_run(run_dir)
+    return direction, bonds, _target_topology_for_run(run_dir)
 
 
 def _fetch_uniprot_entry(accession: str) -> dict | None:
@@ -360,6 +375,22 @@ def screen_candidates(run_dir: Path | str, accessions: list[str]) -> dict:
     for acc in accessions[:config.SCREENING_BATCH_SIZE]:
         entry = _fetch_uniprot_entry_light(acc)
         if entry:
+            identity_validation = entry.get("claim_validation") or {}
+            if identity_validation and identity_validation.get("promotion_eligible") is not True:
+                reason = (
+                    "Rejected at screening: authoritative record does not support "
+                    "the asserted active accession identity (blocking claims: "
+                    + ", ".join(identity_validation.get("blocking_claims") or ["unknown"])
+                    + ")."
+                )
+                entry["screening_decision"] = "rejected"
+                entry["screening_reason"] = reason
+                results.append(entry)
+                update_candidate_registry(run_dir, acc, "rejected", metadata={
+                    "claim_validation": identity_validation,
+                    "rejection_reason": reason,
+                })
+                continue
             chemistry = classify_reaction_chemistry(
                 entry.get("ec_numbers", []), entry.get("catalytic_activities", [])
             )
@@ -407,6 +438,7 @@ def screen_candidates(run_dir: Path | str, accessions: list[str]) -> dict:
                 # so the registry can group by fold before evaluation resolves the
                 # single catalytic family.
                 "interpro_ids": entry.get("interpro_ids", []),
+                "claim_validation": identity_validation,
             })
         else:
             results.append({
@@ -656,6 +688,23 @@ def evaluate_candidate(
             "suggestions": ["Check that the accession ID is correct."],
         }
 
+    from enzyme_discovery_agent.models.claim_validation import validate_uniprot_claims
+    identity_validation = validate_uniprot_claims(
+        entry, expected_accession=accession, require_native_reaction=False,
+    )
+    if identity_validation.get("promotion_eligible") is not True:
+        reason = ", ".join(identity_validation.get("blocking_claims") or ["unknown"])
+        update_candidate_registry(run_dir, accession, "rejected", metadata={
+            "claim_validation": identity_validation,
+            "rejection_reason": f"authoritative identity validation failed: {reason}",
+        })
+        return {
+            "status": "error",
+            "summary": f"Evaluation skipped for {accession}: authoritative identity validation failed ({reason})",
+            "data": None,
+            "suggestions": ["Resolve the candidate to an active authoritative accession."],
+        }
+
     # Extract basic info
     pd = entry.get("proteinDescription", {})
     rec = pd.get("recommendedName", {})
@@ -753,26 +802,29 @@ def evaluate_candidate(
     # Native substrate info
     native_substrates_info: list[dict] = []
     rhea_ids: list[str] = []
-    _seen_chebi = set()
     for comment in entry.get("comments", []):
         if comment.get("commentType") == "CATALYTIC ACTIVITY":
-            reaction = comment.get("reaction", {})
-            for xref in reaction.get("reactionCrossReferences", []):
-                db = xref.get("database", "")
-                xid = xref.get("id", "")
-                if db == "Rhea" and xid:
-                    if xid not in rhea_ids:
-                        rhea_ids.append(xid)
-                elif db == "ChEBI" and xid:
-                    if xid not in COFACTOR_CHEBI_IDS and xid not in _seen_chebi:
-                        _seen_chebi.add(xid)
-                        smi = resolve_chebi_smiles(xid)
-                        cname = get_chebi_name(xid)
-                        native_substrates_info.append({
-                            "chebi_id": xid,
-                            "name": cname,
-                            "smiles": smi,
-                        })
+            for xref in (comment.get("reaction", {})).get("reactionCrossReferences", []):
+                if xref.get("database") == "Rhea" and xref.get("id"):
+                    if xref["id"] not in rhea_ids:
+                        rhea_ids.append(xref["id"])
+    # Native SUBSTRATES from catalytic activity — REACTANT side only.  A product's
+    # reactive groups would spuriously match a target substrate and mask that the
+    # enzyme's true partner for it is cofactor-scale; ranking's substrate signal
+    # (_accommodation_score) must judge what the enzyme CONSUMES.  Shared with the
+    # family-survey resolution so promotion and ranking see the same substrates.
+    from enzyme_discovery_agent.tools.family_reactions import _reactant_side_chebi_ids
+
+    def _name_of(cid):
+        resolve_chebi_smiles(cid)  # populates the name cache
+        return get_chebi_name(cid)
+
+    for xid in _reactant_side_chebi_ids(entry, _name_of):
+        native_substrates_info.append({
+            "chebi_id": xid,
+            "name": get_chebi_name(xid),
+            "smiles": resolve_chebi_smiles(xid),
+        })
 
     # Substrate-source cascade — measured or reported ONLY, never inferred.
     # 1) UniProt catalyticActivity -> ChEBI -> SMILES (above; most reliable).
@@ -913,6 +965,20 @@ def evaluate_candidate(
         domain_architecture, ec_numbers, catalytic_activities
     )
 
+    # Identity validity is necessary but says nothing about function.  Build a
+    # second, target-specific bundle from the authoritative catalytic-activity
+    # fields and require every applicable functional claim to be supported.
+    target_direction, target_bonds, target_topology = _target_claims_for_run(run_dir)
+    function_validation = validate_uniprot_claims(
+        entry,
+        expected_accession=accession,
+        expected_fold_id=interpro_family_id or "",
+        target_direction=target_direction,
+        target_bond_types=target_bonds,
+        target_topology=target_topology,
+        require_native_reaction=True,
+    )
+
     # Build evaluation result
     eval_data = {
         "accession": accession,
@@ -940,6 +1006,8 @@ def evaluate_candidate(
             ns for ns in native_substrates_info if ns.get("smiles")
         ],
         "rhea_ids": rhea_ids,
+        "identity_validation": identity_validation,
+        "claim_validation": function_validation,
     }
 
     # Strengths and weaknesses
@@ -1112,7 +1180,12 @@ def evaluate_candidate(
     # A non-enzyme (no EC, no catalytic activity, no catalytic domain) is a
     # co-cluster contaminant, not a candidate: mark it rejected so it is excluded
     # from the family view and ranking rather than registered as a family.
-    eval_status = "evaluated" if is_enzyme else "rejected"
+    function_supported = function_validation.get("promotion_eligible") is True
+    if not function_supported:
+        blocked = ", ".join(function_validation.get("blocking_claims") or ["unknown"])
+        weaknesses.append(f"Authoritative function claims not supported: {blocked}")
+        eval_data["weaknesses"] = weaknesses
+    eval_status = "evaluated" if is_enzyme and function_supported else "rejected"
     update_candidate_registry(run_dir, accession, eval_status, metadata={
         "protein_name": protein_name,
         "gene_names": gene_names,
@@ -1132,6 +1205,13 @@ def evaluate_candidate(
         "weaknesses": weaknesses,
         "critical_warnings": critical_warnings,
         "is_swissprot": is_swissprot,
+        "identity_validation": identity_validation,
+        "claim_validation": function_validation,
+        "rejection_reason": (
+            None if eval_status == "evaluated" else
+            "authoritative function validation failed: "
+            + ", ".join(function_validation.get("blocking_claims") or ["not an enzyme"])
+        ),
     })
 
     crit_summary = f", {len(critical_warnings)} CRITICAL" if critical_warnings else ""
