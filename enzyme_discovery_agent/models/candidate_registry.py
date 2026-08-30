@@ -269,8 +269,13 @@ from enzyme_discovery_agent.models.target_profile import (  # noqa: E402
 def _target_direction(run_dir: Path) -> str | None:
     """Read the run's declared target bond direction (answer-agnostic).
 
-    Mirrors the screening-time source so registration and screening agree.
+    Prefers the shared chemistry contract so registration and screening agree;
+    falls back to re-extraction for legacy runs.
     """
+    from enzyme_discovery_agent.models.target_reasoning import target_claims
+    direction, _, _ = target_claims(run_dir)
+    if direction is not None:
+        return direction
     try:
         from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
         ctx = json.loads((run_dir / "target_context.json").read_text())
