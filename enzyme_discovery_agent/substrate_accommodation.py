@@ -5,8 +5,9 @@ substrates.  A single blended scalar (an equal-weight mean over ~15
 physicochemical axes) is the wrong instrument: it lets high size/shape
 similarity drown the ONE axis that actually gates the reaction — whether a
 native counterpart shares the target substrate's reactive functional groups.
-That is how an ammonia-dependent ligase (whose amine partner is a one-atom
-molecule) can score as high as a genuine free-diamine ligase.
+That is how an enzyme whose partner for one target substrate is only a
+single-atom molecule can score as high as one whose partner is a genuine
+multi-atom analogue of that target substrate.
 
 This module does NOT decide relevance and applies NO weights or thresholds to
 rank.  It EXTRACTS the grounded, role-aware facts — per target substrate, its
