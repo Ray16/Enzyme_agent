@@ -316,14 +316,14 @@ def _reactant_side_chebi_ids(entry: dict, name_of) -> list[str]:
     """Non-cofactor ChEBI ids on the REACTANT side of a member's reactions.
 
     Substrate ACCOMMODATION must compare the target's inputs against what the
-    enzyme CONSUMES, not what it makes: an amide-forming enzyme's PRODUCT carries
-    an amine/amide that would spuriously "match" an amine target and hide that the
-    enzyme's actual amine partner is, say, ammonia.  A reaction name ``A + B = C +
-    D`` gives the sides; a participant is dropped only when its (resolved) ChEBI
-    name clearly matches the PRODUCT side and not the reactant side.  Everything
-    else is kept — including a participant whose side cannot be determined (no
-    ``=`` or an unresolvable name) — so a genuine reactant is never lost.
-    ``name_of(cid) -> str | None`` supplies the resolved ChEBI name.
+    enzyme CONSUMES, not what it makes: a bond-forming enzyme's PRODUCT can carry
+    a reactive group that spuriously "matches" a target substrate and hide that
+    the enzyme's actual partner for that target is only a cofactor-scale molecule.
+    A reaction name ``A + B = C + D`` gives the sides; a participant is dropped
+    only when its (resolved) ChEBI name clearly matches the PRODUCT side and not
+    the reactant side.  Everything else is kept — including a participant whose
+    side cannot be determined (no ``=`` or an unresolvable name) — so a genuine
+    reactant is never lost.  ``name_of(cid) -> str | None`` supplies the ChEBI name.
     """
     ids: list[str] = []
     for c in entry.get("comments", []):
