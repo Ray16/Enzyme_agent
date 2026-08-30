@@ -166,6 +166,34 @@ def snapshot_config(config_module) -> dict[str, Any]:
     return snapshot
 
 
+def _target_reasoning_summary(run_dir: Path) -> dict[str, Any] | None:
+    """Summarize the run's chemistry contract for the manifest.
+
+    The contract (``target_reasoning.json``) is the single biggest determinant of
+    a run's behavior, so a run record that omits it is incomplete.  Records the
+    derived facts plus a content hash (so a run is tied to the exact reasoning it
+    used), not the full claim list (that lives in its own file).
+    """
+    path = run_dir / "target_reasoning.json"
+    try:
+        raw = path.read_text()
+        contract = json.loads(raw)
+    except (OSError, json.JSONDecodeError):
+        return None
+    claims = contract.get("claims") or []
+    return {
+        "reaction_direction": contract.get("reaction_direction"),
+        "bond_types": contract.get("bond_types"),
+        "substrate_topology": contract.get("substrate_topology"),
+        "reactive_groups": contract.get("reactive_groups"),
+        "activation_categories": contract.get("activation_categories"),
+        "n_claims": len(claims),
+        "n_inferred": sum(1 for c in claims if c.get("status") == "inferred"),
+        "sha256": hashlib.sha256(raw.encode()).hexdigest(),
+        "file": "target_reasoning.json",
+    }
+
+
 def _now_iso() -> str:
     # Timezone-aware local time: same wall clock as console_log.txt / warnings.log,
     # but carrying an explicit offset so it is unambiguous and directly comparable
