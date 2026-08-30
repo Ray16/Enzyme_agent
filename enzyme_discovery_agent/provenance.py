@@ -62,19 +62,56 @@ def _run_git(*args: str) -> str | None:
         return None
 
 
-def capture_code_provenance() -> dict[str, Any]:
+def _capture_package_diff(run_dir: Path | None) -> dict[str, Any]:
+    """Capture the exact uncommitted changes to the AGENT PACKAGE, not the repo.
+
+    ``dirty_files`` alone (paths) cannot reconstruct what ran.  A run used as
+    evidence needs the actual patch, so this writes a ``code_changes.patch``
+    (tracked diff + a listing of untracked package files) scoped to the package
+    directory — filtering out unrelated repo churn — and records its hash, size,
+    and changed-file list.  ``commit`` + this patch reconstructs the exact code.
+    Best-effort: returns ``{}`` when nothing is captured.
+    """
+    pkg = str(_PACKAGE_DIR)
+    diff = _run_git("diff", "HEAD", "--", pkg) or ""
+    changed = _run_git("diff", "HEAD", "--name-only", "--", pkg) or ""
+    untracked = _run_git("ls-files", "--others", "--exclude-standard", "--", pkg) or ""
+    changed_files = [f for f in changed.splitlines() if f]
+    untracked_files = [f for f in untracked.splitlines() if f]
+    if not diff and not untracked_files:
+        return {"package_dirty": False}
+    info: dict[str, Any] = {
+        "package_dirty": True,
+        "package_changed_files": changed_files[:100],
+        "package_untracked_files": untracked_files[:100],
+    }
+    if diff:
+        info["package_diff_sha256"] = hashlib.sha256(diff.encode()).hexdigest()
+        info["package_diff_bytes"] = len(diff.encode())
+        if run_dir is not None:
+            try:
+                (run_dir / "code_changes.patch").write_text(diff)
+                info["patch_file"] = "code_changes.patch"
+            except OSError as e:
+                logger.warning("Failed to write code_changes.patch: %s", e)
+    return info
+
+
+def capture_code_provenance(run_dir: Path | None = None) -> dict[str, Any]:
     """Capture the git revision and working-tree cleanliness of the code.
 
     ``dirty`` is True when uncommitted changes exist -- an essential caveat when
     a run is used as evidence, because the committed SHA alone would not describe
-    the code that actually executed.
+    the code that actually executed.  When ``run_dir`` is given, the exact
+    package-scoped patch is captured too (see :func:`_capture_package_diff`) so a
+    dirty run is genuinely reconstructible, not merely flagged.
     """
     commit = _run_git("rev-parse", "HEAD")
     if commit is None:
         return {"vcs": None, "note": "not a git repository or git unavailable"}
     status = _run_git("status", "--porcelain")
     branch = _run_git("rev-parse", "--abbrev-ref", "HEAD")
-    return {
+    code = {
         "vcs": "git",
         "commit": commit,
         "commit_short": commit[:12],
@@ -82,6 +119,8 @@ def capture_code_provenance() -> dict[str, Any]:
         "dirty": bool(status),
         "dirty_files": [line[3:] for line in (status or "").splitlines()][:50],
     }
+    code.update(_capture_package_diff(run_dir))
+    return code
 
 
 def _package_version(name: str) -> str | None:
