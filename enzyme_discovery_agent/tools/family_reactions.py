@@ -716,15 +716,19 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
                 "data": {"seed_accession": seed_accession, "fold_id": None, "members": []},
             }
 
-        # Pick the MOST SPECIFIC fold: the fewest reviewed members, but more than
-        # one (a singleton fold tells us nothing) and not an entire superfamily.
+        # Pick the MOST RELEVANT surveyable fold: the BROADEST reviewed coverage
+        # that is still below a full page.  The fewest-member entry collapses onto
+        # a narrow accessory sub-domain and misses the functionally-related members
+        # that share the catalytic family; the whole-superfamily entries saturate
+        # at a full page and are excluded.  Kept consistent with
+        # gates.family_relevance._most_relevant_fold.
         counts: dict[str, int] = {}
         for fid in fold_ids:
             try:
                 counts[fid] = _reviewed_member_count(fid)
             except Exception as e:  # noqa: BLE001
                 logger.debug("Member count failed for %s: %s", fid, e)
-        fold_id = min(
+        fold_id = max(
             (f for f, c in counts.items() if 1 < c < _LIST_PAGE_MAX),
             key=lambda f: counts[f],
             default=None,
