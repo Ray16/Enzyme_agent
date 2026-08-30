@@ -401,11 +401,15 @@ def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, l
         if not acc:
             continue
         accom = (d.get("substrate_similarity") or {}).get("property_comparisons", [])
+        # The claim validation recorded during screening/promotion lives in the
+        # registry metadata; carry it into provenance as reasoning alignment.
+        claim_validation = (reg.get(acc, {}).get("metadata", {}) or {}).get("claim_validation")
         try:
             prov = build_candidate_provenance(
                 d, source_tool=src_by_acc.get(acc, ""),
                 literature_extraction=extraction_by_acc.get(acc),
                 accommodation_facts=accom,
+                claim_validation=claim_validation,
             )
             write_candidate_provenance(run, prov)
             n_prov += 1
