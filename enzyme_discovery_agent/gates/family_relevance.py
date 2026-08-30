@@ -170,28 +170,26 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
     A single JOINED descriptor query lets a structural fold term (e.g. a
     beta-grasp fold) dominate the keyword match and resolve onto the wrong
     proteins (toxins, a whole superfamily) instead of the functional family whose
-    members carry the target chemistry.  So query each descriptor (and the family
-    name) SEPARATELY, pool the entries, drop coarse superfamilies and non-family
-    sub-features, and keep only surveyable (bounded, non-saturated) family/domain
-    entries.  Return the BROADEST such entries first — the widest coherent
-    grouping of functionally-related members, the one whose members actually span
-    the target's substrate range — and survey several, not one, so a single noisy
-    resolution can no longer lose the family.
+    members carry the target chemistry.  So resolve by the family NAME first — the
+    derivation's cleanest FUNCTIONAL label, which matches the on-topic InterPro
+    entries — and use the (often structural, noisy) descriptors only to SUPPLEMENT
+    when the name resolves too few.  Coarse superfamilies and non-family
+    sub-features are dropped; only surveyable (bounded, non-saturated) family/
+    domain entries are kept; broadest coverage first.  Several entries are
+    surveyed, not one, so a single noisy resolution can no longer lose the family.
     """
-    terms: list[str] = []
-    for t in [fam.get("name", "")] + list(fam.get("descriptors") or []):
-        t = str(t or "").strip()
-        if t and t not in terms:
-            terms.append(t)
-    counts: dict[str, int] = {}
-    for term in terms:
+    def _surveyable(term: str) -> list[tuple[str, int]]:
+        term = str(term or "").strip()
+        if not term:
+            return []
         try:
             res = search_interpro(term, max_results=8)
         except Exception:  # noqa: BLE001 - one bad term must not sink resolution
-            continue
+            return []
+        out: list[tuple[str, int]] = []
         for e in (res.get("data") if isinstance(res, dict) else res) or []:
             acc = str(e.get("accession") or e.get("id") or "")
-            if not acc.upper().startswith("IPR") or acc in counts:
+            if not acc.upper().startswith("IPR"):
                 continue
             if (e.get("type") or "").lower() not in _SURVEYABLE_ENTRY_TYPES:
                 continue
@@ -203,8 +201,20 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
                     c = 0
                 count_cache[acc] = c
             if 1 < c < _LIST_PAGE_MAX:
-                counts[acc] = c
-    return [acc for acc, _ in sorted(counts.items(), key=lambda kv: -kv[1])[:max_folds]]
+                out.append((acc, c))
+        return sorted(out, key=lambda kv: -kv[1])
+
+    picked: dict[str, int] = {}
+    # 1. The family name is authoritative — its on-topic entries come first.
+    for acc, c in _surveyable(fam.get("name", "")):
+        picked.setdefault(acc, c)
+    # 2. Supplement (breadth) from descriptors only for slots the name left open.
+    if len(picked) < max_folds:
+        for descriptor in fam.get("descriptors") or []:
+            for acc, c in _surveyable(descriptor):
+                picked.setdefault(acc, c)
+    # Name-derived entries first (by coverage), then descriptor supplements.
+    return list(picked)[:max_folds]
 
 
 def _fold_fg_max(run_dir: Path, fold_id: str, fg_cache: dict[str, float | None]) -> float | None:
