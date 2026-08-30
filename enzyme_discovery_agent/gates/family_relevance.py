@@ -303,27 +303,15 @@ def collect_survey_folds(
             _add(fid, "discovered")
 
     # (A, second) derived mechanism families -> InterPro folds, to cover a family
-    # with no discovered candidate yet.  At most 2 folds per family (prefer the
-    # most specific 'family'-type entry) so this fills gaps, not floods.
+    # with no discovered candidate yet.  Resolve each family to its BROADEST
+    # surveyable functional entries (per-descriptor, superfamily-filtered) and
+    # survey SEVERAL, so a single noisy fold-keyword resolution cannot lose the
+    # family whose members carry the target chemistry.
     try:
         from enzyme_discovery_agent.tools.database import search_interpro
         for fam in (derived_families or [])[:8]:
-            terms = fam.get("descriptors") or [fam.get("name", "")]
-            q = "; ".join(t for t in terms if t)[:120]
-            if not q.strip():
-                continue
-            try:
-                res = search_interpro(q, max_results=5)
-            except Exception:  # noqa: BLE001
-                continue
-            entries = res.get("data") if isinstance(res, dict) else res
-            fam_type = [e for e in (entries or []) if (e.get("type") or "").lower() == "family"]
-            for e in (fam_type or (entries or []))[:2]:
-                _add(
-                    e.get("accession") or e.get("id"),
-                    f"derived:{fam.get('name','')[:40]}",
-                    hypothesis=fam,
-                )
+            for fid in resolve_family_folds(fam, count_cache, search_interpro):
+                _add(fid, f"derived:{fam.get('name','')[:40]}", hypothesis=fam)
     except Exception as e:  # noqa: BLE001 - derived-family resolution is best-effort
         logger.debug("derived-family InterPro resolution failed: %s", e)
 
