@@ -154,6 +154,59 @@ def _most_relevant_fold(interpro_ids: list[str], count_cache: dict[str, int]) ->
     return best
 
 
+# InterPro entry types that name a coherent FUNCTIONAL grouping worth surveying.
+# A homologous_superfamily is a coarse structural bin (it pools unrelated
+# functions); conserved/active/binding sites, repeats and PTMs are sub-features,
+# not families.  Keeping only family/domain avoids resolving a mechanism family
+# onto a structural fold shared by unrelated proteins.
+_SURVEYABLE_ENTRY_TYPES = frozenset({"family", "domain"})
+
+
+def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro,
+                         max_folds: int = 3) -> list[str]:
+    """Resolve one derived family hypothesis to surveyable InterPro folds by
+    relevance, robustly.
+
+    A single JOINED descriptor query lets a structural fold term (e.g. a
+    beta-grasp fold) dominate the keyword match and resolve onto the wrong
+    proteins (toxins, a whole superfamily) instead of the functional family whose
+    members carry the target chemistry.  So query each descriptor (and the family
+    name) SEPARATELY, pool the entries, drop coarse superfamilies and non-family
+    sub-features, and keep only surveyable (bounded, non-saturated) family/domain
+    entries.  Return the BROADEST such entries first — the widest coherent
+    grouping of functionally-related members, the one whose members actually span
+    the target's substrate range — and survey several, not one, so a single noisy
+    resolution can no longer lose the family.
+    """
+    terms: list[str] = []
+    for t in [fam.get("name", "")] + list(fam.get("descriptors") or []):
+        t = str(t or "").strip()
+        if t and t not in terms:
+            terms.append(t)
+    counts: dict[str, int] = {}
+    for term in terms:
+        try:
+            res = search_interpro(term, max_results=8)
+        except Exception:  # noqa: BLE001 - one bad term must not sink resolution
+            continue
+        for e in (res.get("data") if isinstance(res, dict) else res) or []:
+            acc = str(e.get("accession") or e.get("id") or "")
+            if not acc.upper().startswith("IPR") or acc in counts:
+                continue
+            if (e.get("type") or "").lower() not in _SURVEYABLE_ENTRY_TYPES:
+                continue
+            c = count_cache.get(acc)
+            if c is None:
+                try:
+                    c = _reviewed_member_count(acc)
+                except Exception:  # noqa: BLE001
+                    c = 0
+                count_cache[acc] = c
+            if 1 < c < _LIST_PAGE_MAX:
+                counts[acc] = c
+    return [acc for acc, _ in sorted(counts.items(), key=lambda kv: -kv[1])[:max_folds]]
+
+
 def _fold_fg_max(run_dir: Path, fold_id: str, fg_cache: dict[str, float | None]) -> float | None:
     """Max functional-group resemblance of a fold's members to the target, via
     the family-reaction survey (cached per fold).  None when unavailable."""
@@ -241,7 +294,7 @@ def collect_survey_folds(
     def _fold_of(acc):
         if acc in fold_cache:
             return fold_cache[acc]
-        fold = _most_specific_fold(_interpro_ids(acc, {}), count_cache)
+        fold = _most_relevant_fold(_interpro_ids(acc, {}), count_cache)
         fold_cache[acc] = fold
         return fold
 
@@ -329,7 +382,7 @@ def build_relevance_and_allocate(
 
     def _resolve(acc_meta):
         acc, meta = acc_meta
-        fold = _most_specific_fold(_interpro_ids(acc, meta), count_cache)
+        fold = _most_relevant_fold(_interpro_ids(acc, meta), count_cache)
         return acc, fold or f"unresolved:{acc}"
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
