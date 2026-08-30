@@ -639,10 +639,11 @@ def _simplify_interpro_query(query: str) -> list[str]:
 
     InterPro's search returns 204 for multi-word hyphenated queries.
     Strategy: try the full query, then consecutive-word BIGRAMS, then individual
-    significant words.  The bigram step matters: a functional family name like
-    "glutamine synthetase" resolves to the correct catalytic family, whereas its
-    first word alone ("glutamine") drops to a coarser or adjacent entry — so a
-    two-word phrase must be tried before collapsing to single words.
+    significant words.  The bigram step matters: a two-word functional family name
+    resolves to the correct catalytic family, whereas either word alone drops to a
+    coarser or unrelated entry (the first word may be a generic prefix, the second
+    a structural-fold term) — so a two-word phrase must be tried before collapsing
+    to single words.
     """
     variants = [query]
     # Split into individual words, keep only significant ones (>3 chars)
