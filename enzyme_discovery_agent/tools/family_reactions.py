@@ -831,8 +831,8 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
         # Substrate-resemblance FACTS for every non-opposite member (opposite
         # direction is already a grounded dead end, so skip its ChEBI lookups).
         # Compare against the member's REACTANT-side substrates (what it consumes),
-        # not its products, so an amide product cannot spuriously stand in for an
-        # amine target and mask a cofactor-scale true partner (e.g. ammonia).
+        # not its products, so a product cannot spuriously stand in for a target
+        # substrate and mask a cofactor-scale true partner.
         substrate = None
         accommodation = None
         if target_smiles and facts["direction_vs_target"] != "opposite":
