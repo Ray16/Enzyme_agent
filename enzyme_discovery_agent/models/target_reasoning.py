@@ -190,11 +190,13 @@ def _deterministic_layer(query: str, substrate_smiles: str | None,
 
 
 def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
-               llm_client) -> tuple[dict, list[dict]]:
+               llm_client, on_response=None) -> tuple[dict, list[dict]]:
     """Reason the inferential claims from the deterministic facts.
 
     Degrades to empty (deterministic-only contract) when no client is available
-    or the call fails/does not parse.
+    or the call fails/does not parse.  ``on_response`` (if given) is invoked with
+    the raw LLM response as soon as it is available, so a caller can account for
+    the tokens this derivation spent even when parsing later fails.
     """
     empty = ({"activation_problem": "", "activation_categories": [],
               "cofactor_requirements": [], "disqualifiers": []}, [])
