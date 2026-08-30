@@ -250,6 +250,9 @@ def select_relevant_members(
     """
     scored: list[dict] = []
     for m in members:
+        validation = m.get("claim_validation") or {}
+        if "claim_validation" in m and validation.get("promotion_eligible") is not True:
+            continue
         if m.get("direction_vs_target") != "same":
             continue
         acc = m.get("accession")
@@ -266,6 +269,7 @@ def select_relevant_members(
             "direction_vs_target": m.get("direction_vs_target"),
             "native_reaction": m.get("native_reaction", ""),
             "substrate_fit": fit,
+            "claim_validation": validation,
         })
     # Highest fit first; a reviewed member wins ties over an unreviewed one (curated
     # annotation is more trustworthy), then a stable accession tiebreak.
@@ -429,11 +433,16 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
 # --------------------------------------------------------------------------
 
 def _target_profile_for_run(run_dir: Path) -> tuple[str | None, set[str]]:
-    """Read the run's declared target direction + bond types from its context.
+    """Read the run's declared target direction + bond types.
 
-    Mirrors tools/reasoning.py::_target_direction_for_run so the target is taken
-    from the run, never passed in as free text.
+    Prefers the shared chemistry contract (target_reasoning.json) so every stage
+    agrees on the required chemistry; falls back to re-extracting from the run
+    context only for legacy runs written before the contract existed.
     """
+    from enzyme_discovery_agent.models.target_reasoning import target_claims
+    direction, bonds, _ = target_claims(run_dir)
+    if direction is not None or bonds:
+        return direction, bonds
     try:
         context = json.loads((run_dir / "target_context.json").read_text())
         reaction = (context.get("target_profile") or {}).get("reaction") or {}
@@ -446,6 +455,41 @@ def _target_profile_for_run(run_dir: Path) -> tuple[str | None, set[str]]:
         return info.get("direction"), set(info.get("bond_types") or [])
     except (OSError, json.JSONDecodeError, AttributeError):
         return None, set()
+
+
+def _target_topology_for_run(run_dir: Path) -> str | None:
+    """Read an explicit target topology, or infer free inputs from resolved reagents.
+
+    This does not infer enzyme capability.  It only normalizes the physical form
+    of the target inputs supplied in the run context so it can be compared with a
+    retrieved native reaction.
+    """
+    try:
+        context = json.loads((run_dir / "target_context.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    substrate = (context.get("target_profile") or {}).get("substrate") or {}
+    explicit = str(substrate.get("topology") or substrate.get("class") or "").strip()
+    allowed = {
+        "free_small_molecule", "carrier_protein_tethered", "polymer",
+        "macromolecule", "mixed",
+    }
+    if explicit in allowed:
+        return explicit
+    description = " ".join(str(substrate.get(k) or "") for k in (
+        "physical_state", "access_constraint",
+    )).casefold()
+    if "carrier" in description and ("tether" in description or "bound" in description):
+        return "carrier_protein_tethered"
+    if "polymer" in description and "monomer" not in description:
+        return "polymer"
+    if "free" in description or "soluble monomer" in description:
+        return "free_small_molecule"
+    # Dot-separated resolved structures are discrete input molecules.  Treat
+    # them as free inputs unless the profile explicitly states another topology.
+    if context.get("substrate_smiles"):
+        return "free_small_molecule"
+    return None
 
 
 def _fetch_json(url: str, timeout: int = 30) -> dict:
@@ -485,7 +529,9 @@ def _reviewed_member_count(fold_id: str) -> int:
     return len([line for line in body.splitlines() if line.strip()])
 
 
-_MEMBER_FIELDS = "accession,protein_name,ec,cc_catalytic_activity"
+_MEMBER_FIELDS = (
+    "accession,id,reviewed,protein_name,ec,cc_catalytic_activity,xref_interpro"
+)
 
 
 def _reviewed_members(fold_id: str, size: int) -> list[dict]:
@@ -644,6 +690,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
         }
 
     target_direction, target_bonds = _target_profile_for_run(run_dir)
+    target_topology = _target_topology_for_run(run_dir)
 
     # Determine the fold to survey.  Direct InterPro id honours the caller's
     # choice; a seed accession resolves the candidate's most specific fold.
@@ -733,6 +780,16 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
         ec = _member_ec(entry)
         native_reaction = _member_native_reaction(entry)
         facts = classify_member_reaction(ec, native_reaction, target_direction, target_bonds)
+        from enzyme_discovery_agent.models.claim_validation import validate_uniprot_claims
+        validation = validate_uniprot_claims(
+            entry,
+            expected_accession=acc,
+            expected_fold_id=fold_id,
+            target_direction=target_direction,
+            target_bond_types=target_bonds,
+            target_topology=target_topology,
+            require_reviewed=reviewed,
+        )
         # Substrate-resemblance FACTS for every non-opposite member (opposite
         # direction is already a grounded dead end, so skip its ChEBI lookups).
         substrate = None
@@ -758,6 +815,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             "bond_types": facts["bond_types"],
             "shared_bond_type": facts["shared_bond_type"],
             "substrate": substrate,
+            "claim_validation": validation,
         }
 
     members: list[dict] = []
@@ -869,6 +927,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             "fold_size": fold_size,
             "target_direction": target_direction,
             "target_bond_types": sorted(target_bonds),
+            "target_topology": target_topology,
             "family_reaction_profile": profile,
             "members": members,
             "relevant_members": relevant_members,
