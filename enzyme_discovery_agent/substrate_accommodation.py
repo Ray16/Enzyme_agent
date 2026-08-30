@@ -95,9 +95,9 @@ def accommodation_facts(
         fg = cmp.get("functional_group_similarity")
         fg = fg if isinstance(fg, (int, float)) else None
         heavy = _heavy_atoms(n)
-        # A one- or two-heavy-atom native (ammonia, water, CO2) cannot be a
-        # structural analogue of a multi-atom target substrate — a structural
-        # FACT, not a tuned relevance threshold.
+        # A one- or two-heavy-atom native (e.g. water or a single-atom ion)
+        # cannot be a structural analogue of a multi-atom target substrate — a
+        # structural FACT, not a tuned relevance threshold.
         minimal = heavy is not None and heavy <= 2
         shares = bool(fg and fg > 0)
         entry = {
