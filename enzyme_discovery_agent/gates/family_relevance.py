@@ -167,10 +167,11 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
     """Resolve one derived family hypothesis to surveyable InterPro folds by
     relevance, robustly.
 
-    A single JOINED descriptor query lets a structural fold term (e.g. a
-    beta-grasp fold) dominate the keyword match and resolve onto the wrong
-    proteins (toxins, a whole superfamily) instead of the functional family whose
-    members carry the target chemistry.  So resolve by the family NAME first — the
+    A single JOINED descriptor query lets a generic structural-fold term dominate
+    the keyword match and resolve onto the wrong proteins (an unrelated protein
+    sharing that fold, or a whole superfamily) instead of the functional family
+    whose members carry the target chemistry.  So resolve by the family NAME
+    first — the
     derivation's cleanest FUNCTIONAL label, which matches the on-topic InterPro
     entries — and use the (often structural, noisy) descriptors only to SUPPLEMENT
     when the name resolves too few.  Coarse superfamilies and non-family
