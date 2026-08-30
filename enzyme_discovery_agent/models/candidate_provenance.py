@@ -82,11 +82,62 @@ def _discovery_from_source(source_tool: str) -> dict:
     return {"route": "sequence_search", "source_tool": st or "search_uniprot"}
 
 
+# Claim types that express a TARGET chemistry constraint (as opposed to
+# record-hygiene claims like identity/active/reviewed).  These are what the
+# candidate is aligned against for the reasoning-alignment summary.
+_TARGET_CONSTRAINT_CLAIMS = frozenset({
+    "reaction_direction", "bond_type", "substrate_topology",
+    "native_reaction", "family_membership",
+})
+
+
+def _reasoning_alignment(claim_validation: dict | None) -> dict | None:
+    """Project a candidate's claim validation into a decision-relevant summary.
+
+    Records which target constraints the record supports, which are unproven, and
+    which it contradicts — so a candidate's survival (or rejection) is auditable
+    against the shared chemistry contract, not against a similarity score.
+    """
+    if not claim_validation:
+        return None
+    supported: list[str] = []
+    unknown: list[str] = []
+    contradictions: list[str] = []
+    addressed: list[str] = []
+    for c in claim_validation.get("claims") or []:
+        ct = c.get("claim_type")
+        verdict = c.get("verdict")
+        if ct in _TARGET_CONSTRAINT_CLAIMS:
+            addressed.append(ct)
+        if verdict == "supported":
+            supported.append(ct)
+        elif verdict == "contradicted":
+            contradictions.append(ct)
+        else:
+            unknown.append(ct)
+    eligible = claim_validation.get("promotion_eligible")
+    if contradictions:
+        decision = "contradicted"
+    elif eligible:
+        decision = "retain_for_evaluation"
+    else:
+        decision = "insufficient_evidence"
+    return {
+        "target_constraints_addressed": addressed,
+        "supported_by_record": supported,
+        "unsupported_or_unknown": unknown,
+        "contradictions": contradictions,
+        "promotion_eligible": bool(eligible),
+        "decision": decision,
+    }
+
+
 def build_candidate_provenance(
     eval_data: dict,
     source_tool: str = "",
     literature_extraction: dict | None = None,
     accommodation_facts: list[dict] | None = None,
+    claim_validation: dict | None = None,
 ) -> dict:
     """Assemble the provenance record for one candidate from its evaluation data
     plus any literature extraction, tagging every substrate/mechanism with its
