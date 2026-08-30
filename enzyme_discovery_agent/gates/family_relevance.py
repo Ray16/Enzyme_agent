@@ -188,10 +188,22 @@ def collect_survey_folds(
     ordered: list[dict] = []
     seen: set[str] = set()
 
-    def _add(fid, source):
-        if fid and str(fid).upper().startswith("IPR") and fid not in seen:
+    from enzyme_discovery_agent.models.family_hypothesis import normalize_family_hypothesis
+
+    def _add(fid, source, hypothesis: dict | None = None):
+        if fid and str(fid).upper().startswith("IPR") and fid in seen:
+            if hypothesis:
+                existing = next((item for item in ordered if item["fold_id"] == fid), None)
+                if existing is not None:
+                    existing["derived_family_hypothesis"] = normalize_family_hypothesis(
+                        hypothesis)
+            return
+        if fid and str(fid).upper().startswith("IPR"):
             seen.add(fid)
-            ordered.append({"fold_id": fid, "source": source})
+            item = {"fold_id": fid, "source": source}
+            if hypothesis:
+                item["derived_family_hypothesis"] = normalize_family_hypothesis(hypothesis)
+            ordered.append(item)
 
     # (B, first) distinct discovered genes -> most-specific folds.  These are
     # GROUNDED in real candidates (so a discovered-but-unscreened family like a
@@ -243,7 +255,11 @@ def collect_survey_folds(
             entries = res.get("data") if isinstance(res, dict) else res
             fam_type = [e for e in (entries or []) if (e.get("type") or "").lower() == "family"]
             for e in (fam_type or (entries or []))[:2]:
-                _add(e.get("accession") or e.get("id"), f"derived:{fam.get('name','')[:40]}")
+                _add(
+                    e.get("accession") or e.get("id"),
+                    f"derived:{fam.get('name','')[:40]}",
+                    hypothesis=fam,
+                )
     except Exception as e:  # noqa: BLE001 - derived-family resolution is best-effort
         logger.debug("derived-family InterPro resolution failed: %s", e)
 
