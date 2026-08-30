@@ -221,6 +221,11 @@ def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
             timeout=max(config.LLM_TIMEOUT, 60),
             max_tokens=2048,
         )
+        if response is not None and on_response is not None:
+            try:
+                on_response(response)
+            except Exception:  # noqa: BLE001 - accounting must never break derivation
+                pass
         content = (response.choices[0].message.content or "") if response else ""
         obj = json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
     except Exception as exc:  # noqa: BLE001 - degrade to deterministic-only
