@@ -234,6 +234,10 @@ class FamilySurveyGate:
                      "native_reaction": (m.get("native_reaction") or "")[:80],
                      "direction_vs_target": m.get("direction_vs_target"),
                      "substrate": m.get("substrate"),
+                     # Role-aware accommodation vs the target substrates — the
+                     # decisive, non-diluted fact the agent reasons over (which
+                     # target substrate has no genuine native counterpart).
+                     "accommodation": m.get("accommodation"),
                      "claim_validation": m.get("claim_validation")}
                     for m in members[:3]
                 ],
