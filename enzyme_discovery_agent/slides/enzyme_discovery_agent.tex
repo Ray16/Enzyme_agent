@@ -492,19 +492,24 @@
 
 % ---------- Ranking ----------
 \begin{frame}{How the final list is ordered}
+  \hl{Relevance decides; evidence only breaks ties.}
   \begin{itemize}
-    \item A \hl{fixed, reproducible core} sorts candidates by hard evidence — the bond
-      that changes, the direction, how well the substrate fits. No magic weights.
-    \item If the agent decided a family was \hlt{off-target}, its members sink to the
-      bottom; members of on-target families float up.
-    \item \hl{Only then} does the model re-rank the short list at the top — a thin,
-      checkable layer over an order we can already trust.
+    \item First the reasoning: does it run the \hl{right direction}, and can it host
+      \hl{every} target substrate? A candidate with no real partner for one of them
+      \hla{sinks} — however famous it is.
+    \item A family the agent judged \hlt{off-target} takes its members down with it;
+      members of on-target families float up.
+    \item \hl{Only then} do curation and citations break ties — and the model gives
+      the short list at the top a final, checkable read.
   \end{itemize}
-  \vspace{0.6em}
+  \vspace{0.5em}
   \begin{center}
     \tikz[baseline]{\node[draw=brand,rounded corners,fill=brand!6,inner sep=6pt,font=\footnotesize]{%
-      direction check\ \ $\rightarrow$\ \ worst-substrate fit\ \ $\rightarrow$\ \ family relevance\ \ $\rightarrow$\ \ model re-rank};}
+      direction\ \ $\rightarrow$\ \ can it host both substrates?\ \ $\rightarrow$\ \ family relevance\ \ $\rightarrow$\ \ evidence, then model read};}
   \end{center}
+  \vspace{0.2em}
+  \begin{center}{\footnotesize\color{muted} The old order let a well-studied but
+    ill-fitting enzyme ride its citations to the top; now fit comes first.}\end{center}
 \end{frame}
 
 % ---------- Firewall (technical) ----------
