@@ -590,29 +590,37 @@
 \begin{frame}{What changed recently}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hlt{Finding better enzymes}
+      \hlt{Reasoning made explicit}
       \begin{itemize}\small
-        \item match substrates one to one, the same way everywhere
-        \item keep — and evaluate — every enzyme that fits
-        \item make the family list respect reaction direction
+        \item a shared \hl{reasoning contract} — the target's required chemistry,
+          derived once and read by every stage
+        \item families are now \hl{falsifiable hypotheses}, validated claim-by-claim
+          against reviewed catalytic-activity records
       \end{itemize}
-      \vspace{0.5em}
-      \hl{Making it lighter}
+      \vspace{0.4em}
+      \hl{Honest relevance signal}
       \begin{itemize}\small
-        \item much less literature reading, and it no longer stalls on paywalls
-        \item evaluate candidates in parallel
+        \item substrate correspondence over \hl{reactant-side} species only, role-aware
+        \item a candidate that cannot host every target substrate is \hla{demoted},
+          not scored as neutral
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \hla{Cleaning up the code}
+      \hla{Retrieval corrected}
       \begin{itemize}\small
-        \item folded nine gates into one clean pipeline
-        \item removed duplicated scoring and direction logic
-        \item deleted about 730 lines that weren't doing anything
+        \item mechanism families resolve to the \hl{functional catalytic family},
+          not a coarse structural superfamily
+        \item so the relevant members are actually reached, surveyed and evaluated
       \end{itemize}
-      \vspace{0.5em}
+      \vspace{0.4em}
+      \hl{Auditable provenance}
+      \begin{itemize}\small
+        \item every family and candidate carries \emph{why} — supported / contradicted
+          claims, unaccommodated substrates
+      \end{itemize}
+      \vspace{0.3em}
       \begin{center}
-        \chip{brand2}{all tests pass}\quad\chip{brand}{answer still hidden}
+        \chip{brand2}{304 tests green}\quad\chip{brand}{answer held out}
       \end{center}
     \end{column}
   \end{columns}
