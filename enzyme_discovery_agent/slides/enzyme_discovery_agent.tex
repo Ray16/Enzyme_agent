@@ -136,6 +136,75 @@
   \end{columns}
 \end{frame}
 
+% ---------- Shared reasoning contract ----------
+\begin{frame}{One shared account of the chemistry}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      Before it searches, the agent writes down \hl{what the reaction demands} —
+      the bond that changes, the direction it runs, the reactive groups on each
+      substrate, the kind of \hl{activation} it would need — as a single
+      \hlt{contract}.\\[0.6em]
+      Every stage afterwards reads the \emph{same} contract, so discovery,
+      screening and ranking can't quietly disagree about what we're looking for.\\[0.6em]
+      {\footnotesize\color{muted} The mechanical facts are \emph{measured} from the
+      structures; the harder inferences are the model's — each tagged with how
+      sure it is, so a fact and a guess never look alike.}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \centering
+      \vspace{0.4em}
+      \begin{tikzpicture}[every node/.style={font=\scriptsize},node distance=5mm]
+        \node[draw=brand,fill=brand!8,rounded corners,line width=1.2pt,
+              text width=3.0cm,align=center,inner sep=5pt,font=\footnotesize\bfseries]
+          (c) {the contract\\[1pt]\normalfont\scriptsize bond · direction ·\\ reactive groups · activation};
+        \node[draw=st2,rounded corners,fill=st2!8,above left=7mm and -4mm of c,inner sep=3pt] (d) {discovery};
+        \node[draw=brand2,rounded corners,fill=brand2!8,above right=7mm and -4mm of c,inner sep=3pt] (s) {screening};
+        \node[draw=st4,rounded corners,fill=st4!8,below=8mm of c,inner sep=3pt] (r) {ranking};
+        \draw[-{Stealth[length=2mm]},muted!70] (c) -- (d);
+        \draw[-{Stealth[length=2mm]},muted!70] (c) -- (s);
+        \draw[-{Stealth[length=2mm]},muted!70] (c) -- (r);
+      \end{tikzpicture}\\[0.3em]
+      {\scriptsize\color{muted} derived once, read everywhere}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ---------- Family as hypothesis ----------
+\begin{frame}{A family is a hypothesis, not an answer}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      When the model proposes a family, we don't just trust it. Each proposal
+      carries \hl{predictions}: what a real member's native reaction should look
+      like, and what would \hla{rule it out}.\\[0.6em]
+      We then pull that family's \hlt{reviewed reactions} from the databases and
+      test the predictions, giving each family a verdict:
+      \begin{itemize}\small
+        \item \hlt{supported} — a real member does what we predicted
+        \item \hla{contradicted} — the members do the opposite
+        \item \hl{not enough evidence} — a lead, but not a proven route
+      \end{itemize}
+      \vspace{0.3em}
+      {\footnotesize\color{muted} The rule that matters: \emph{no evidence} never
+      quietly becomes \emph{feasible}.}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \centering
+      \vspace{0.6em}
+      \begin{tikzpicture}[every node/.style={font=\scriptsize},yscale=0.95]
+        \node[draw=brand,rounded corners,fill=brand!8,text width=3.0cm,align=center,inner sep=4pt,font=\footnotesize\bfseries]
+          (h) at (0,2) {proposed family\\[1pt]\normalfont\scriptsize + predictions};
+        \node[draw=muted,rounded corners,fill=muted!7,text width=3.0cm,align=center,inner sep=4pt]
+          (t) at (0,0.6) {its reviewed\\ reactions};
+        \node[draw=brand2,rounded corners,fill=brand2!10,inner sep=3pt] (v1) at (-1.35,-0.95) {supported};
+        \node[draw=accent,rounded corners,fill=accent!8,inner sep=3pt]  (v2) at (1.1,-0.95) {ruled out};
+        \draw[-{Stealth[length=2mm]},muted!70] (h)--(t);
+        \draw[-{Stealth[length=2mm]},brand2] (t) to[out=-150,in=90] (v1);
+        \draw[-{Stealth[length=2mm]},accent] (t) to[out=-30,in=90] (v2);
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ---------- Pipeline overview ----------
 \begin{frame}{The pipeline at a glance}
   \vspace{1.8em}
