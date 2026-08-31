@@ -106,31 +106,38 @@
 \end{frame}
 
 % ---------- Core principle ----------
-\begin{frame}{The idea}
+\begin{frame}{The idea: reason it out, don't look it up}
   \begin{center}
     \begin{tikzpicture}[every node/.style={font=\small},node distance=10mm]
-      \node[draw=brand,fill=brand!8,rounded corners,text width=4.3cm,align=center,inner sep=7pt,font=\bfseries] (llm)
-        {The model\\[2pt]\normalfont decides \emph{how} to look\\ \normalfont\footnotesize reaction type, mechanism, search terms};
-      \node[right=28mm of llm,draw=brand2,fill=brand2!8,rounded corners,text width=4.3cm,align=center,inner sep=7pt,font=\bfseries] (tools)
-        {The tools\\[2pt]\normalfont find the \emph{enzymes}\\ \normalfont\footnotesize databases, folds, specific proteins};
-      \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{what to look for} (tools);
-      \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=25] node[below,font=\footnotesize\bfseries,text=muted]{what it found} (llm.south);
+      \node[draw=brand,fill=brand!8,rounded corners,text width=4.6cm,align=center,inner sep=7pt,font=\bfseries] (llm)
+        {The model \emph{reasons}\\[2pt]\normalfont\footnotesize what the reaction demands,\\ what chemistry could satisfy it};
+      \node[right=26mm of llm,draw=brand2,fill=brand2!8,rounded corners,text width=4.6cm,align=center,inner sep=7pt,font=\bfseries] (tools)
+        {The tools \emph{ground} it\\[2pt]\normalfont\footnotesize real proteins, real reactions,\\ measured facts};
+      \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{a hypothesis} (tools);
+      \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=25] node[below,font=\footnotesize\bfseries,text=muted]{evidence} (llm.south);
     \end{tikzpicture}
   \end{center}
-  \vspace{0.4em}
+  \vspace{0.3em}
+  \begin{center}\small
+    The agent \hl{works out what the reaction requires}, proposes what could do it,
+    and \hlt{tests each idea against real evidence} — a loop of hypothesis and check.
+  \end{center}
+  \vspace{0.3em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hla{We keep the answer out of the agent}:
-      \begin{itemize}
-        \item its enzymes, substrates, and family never appear in a prompt, a tool, or even a comment
-        \item the real answer lives \hl{only} in a test the agent never sees
+      \hlt{The reasoning is grounded, not guessed}:
+      \begin{itemize}\small
+        \item the code \emph{measures} the facts — direction, substrate fit — and the
+          model reasons over them
+        \item no hand-tuned cutoffs; ideas are weighed against evidence, not magic numbers
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \hlt{We let the evidence do the deciding}:
-      \begin{itemize}
-        \item the code measures the facts — direction, how well a substrate fits — and the model reasons over them
-        \item no hand-tuned cutoffs; things are ranked against each other, not against magic numbers
+      \hla{And it reasons blind}:
+      \begin{itemize}\small
+        \item the answer's enzymes, substrates and family never appear in a prompt,
+          a tool, or a comment
+        \item so a good answer is \emph{reasoned to}, never recalled
       \end{itemize}
     \end{column}
   \end{columns}
