@@ -205,6 +205,37 @@
   \end{columns}
 \end{frame}
 
+% ---------- Reasoning about relevance ----------
+\begin{frame}{Reasoning about relevance, all the way down}
+  The agent doesn't score everything and hope. It \hl{reasons} about relevance at
+  two cheap points, each grounded in the contract and in measured facts:
+  \vspace{0.3em}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \chip{brand}{Which families make sense?}\\[0.5em]
+      \footnotesize
+      Of the folds it proposed, which ones \emph{actually} make this bond, on free
+      substrates like ours? Off-target families are set aside \hl{before} we spend
+      effort on their hundreds of members.
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \chip{brand2}{Which candidates make sense?}\\[0.5em]
+      \footnotesize
+      Of the members that survive, which can host \emph{both} of the target's
+      substrates? Each is judged against the enzyme's \hl{real native chemistry},
+      not a headcount of papers.
+    \end{column}
+  \end{columns}
+  \vspace{0.9em}
+  \begin{center}
+    \tikz[baseline]{\node[draw=brand,rounded corners,fill=brand!6,inner sep=6pt,font=\footnotesize]{%
+      what the chemistry demands\ \ $\rightarrow$\ \ which families\ \ $\rightarrow$\ \ which candidates\ \ $\rightarrow$\ \ \emph{why}};}
+  \end{center}
+  \vspace{0.2em}
+  \begin{center}{\footnotesize\color{muted} A funnel, not a scan — so the reasoning
+    stays cheap and every survivor carries a reason we can read back.}\end{center}
+\end{frame}
+
 % ---------- Pipeline overview ----------
 \begin{frame}{The pipeline at a glance}
   \vspace{1.8em}
