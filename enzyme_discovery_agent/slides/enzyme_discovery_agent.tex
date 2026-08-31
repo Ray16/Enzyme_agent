@@ -106,38 +106,39 @@
 \end{frame}
 
 % ---------- Core principle ----------
-\begin{frame}{The idea: reason it out, don't look it up}
+\begin{frame}{The idea: hypothesis-and-test over grounded chemistry}
   \begin{center}
     \begin{tikzpicture}[every node/.style={font=\small},node distance=10mm]
-      \node[draw=brand,fill=brand!8,rounded corners,text width=4.6cm,align=center,inner sep=7pt,font=\bfseries] (llm)
-        {The model \emph{reasons}\\[2pt]\normalfont\footnotesize what the reaction demands,\\ what chemistry could satisfy it};
-      \node[right=26mm of llm,draw=brand2,fill=brand2!8,rounded corners,text width=4.6cm,align=center,inner sep=7pt,font=\bfseries] (tools)
-        {The tools \emph{ground} it\\[2pt]\normalfont\footnotesize real proteins, real reactions,\\ measured facts};
-      \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{a hypothesis} (tools);
-      \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=25] node[below,font=\footnotesize\bfseries,text=muted]{evidence} (llm.south);
+      \node[draw=brand,fill=brand!8,rounded corners,text width=4.9cm,align=center,inner sep=7pt,font=\bfseries] (llm)
+        {Model — \emph{inference}\\[2pt]\normalfont\footnotesize derives reaction constraints;\\ proposes catalytic folds / mechanisms};
+      \node[right=24mm of llm,draw=brand2,fill=brand2!8,rounded corners,text width=4.9cm,align=center,inner sep=7pt,font=\bfseries] (tools)
+        {Tools — \emph{retrieval}\\[2pt]\normalfont\footnotesize reviewed records, InterPro folds,\\ measured substrate correspondence};
+      \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{falsifiable hypothesis} (tools);
+      \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=25] node[below,font=\footnotesize\bfseries,text=muted]{evidence / verdict} (llm.south);
     \end{tikzpicture}
   \end{center}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \begin{center}\small
-    The agent \hl{works out what the reaction requires}, proposes what could do it,
-    and \hlt{tests each idea against real evidence} — a loop of hypothesis and check.
+    Each proposal is a \hl{falsifiable hypothesis} — a predicted native reaction and
+    substrate scope — \hlt{tested against retrieved reviewed records}, not accepted
+    because the model named it.
   \end{center}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hlt{The reasoning is grounded, not guessed}:
+      \hlt{Grounded, threshold-free reasoning}:
       \begin{itemize}\small
-        \item the code \emph{measures} the facts — direction, substrate fit — and the
-          model reasons over them
-        \item no hand-tuned cutoffs; ideas are weighed against evidence, not magic numbers
+        \item deterministic code \emph{extracts} the facts (direction, functional-group
+          correspondence, topology); the model reasons over them
+        \item candidates are ranked \emph{relative} to one another — no tuned cutoffs
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \hla{And it reasons blind}:
+      \hla{Inference under an answer firewall}:
       \begin{itemize}\small
-        \item the answer's enzymes, substrates and family never appear in a prompt,
-          a tool, or a comment
-        \item so a good answer is \emph{reasoned to}, never recalled
+        \item answer accessions, substrates and families are excluded from every
+          prompt, tool schema and comment
+        \item ground truth is a held-out oracle — a \emph{score}, never an input
       \end{itemize}
     \end{column}
   \end{columns}
