@@ -516,9 +516,9 @@
     \draw[flow] (r) -- (p);
   \end{tikzpicture}}
   \vspace{1.6em}
-  \begin{center}{\footnotesize\color{muted} Evaluation makes no model calls --- just
-  database lookups --- so we can afford to check \emph{everything} and let ranking
-  sort it out.}\end{center}
+  \begin{center}{\footnotesize\color{muted} Evaluation issues no model calls --- only
+  database lookups --- so we evaluate \emph{exhaustively} and defer discrimination to
+  ranking.}\end{center}
 \end{frame}
 
 % ---------- Ranking ----------
