@@ -334,25 +334,25 @@
 \end{frame}
 
 % ---------- One-to-one honest matching ----------
-\begin{frame}{Two substrates, one honest match}
+\begin{frame}{Two substrates: one-to-one assignment}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \footnotesize
-      Our target has \emph{two} substrates, so there's a way to cheat. If each one
-      just grabs the enzyme's single best native, they can both point at the
-      \hla{same} native --- and a lousy second partner sails through.\\[0.5em]
-      So we match them \hlt{one to one}: each native serves at most one target
-      substrate, and we score the enzyme by its \hl{worst} pair.
+      With \emph{two} target substrates an unconstrained match is exploitable: if each
+      target substrate independently takes the enzyme's best native, both can map to
+      the \hla{same} native, and a poor second partner goes undetected.\\[0.5em]
+      So we impose a \hlt{one-to-one assignment}: each native serves at most one target
+      substrate, and the enzyme is scored by its \hl{worst (bottleneck)} pair.
       \[ \text{fit}\;=\;\max_{\pi\,\in\,\text{1-to-1}}\;\min_{i}\;
          s\!\left(t_i,\,n_{\pi(i)}\right) \]
-      For PuuA: the diamine pairs with putrescine, the diacid is forced onto
-      glutamate, and the \hl{bottleneck is 0.67} --- not the flattering 1.0.\\[0.4em]
-      Two more honesty rules:
+      For PuuA the diamine maps to putrescine and the diacid is forced onto glutamate;
+      the \hl{bottleneck is 0.67}, not the flattering 1.0.\\[0.4em]
+      Two further constraints:
       \begin{itemize}\scriptsize
-        \item compare against what the enzyme \hl{consumes}, so a product can't
-          stand in for a target partner
-        \item no real partner for one target substrate $\Rightarrow$ \hla{demoted},
-          not quietly excused
+        \item compare against the enzyme's \hl{reactants} only, so a product cannot
+          substitute for a target partner
+        \item an \hla{unaccommodated} target substrate $\Rightarrow$ demoted, not
+          scored as neutral
       \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
