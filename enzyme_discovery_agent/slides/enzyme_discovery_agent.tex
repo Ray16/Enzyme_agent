@@ -582,34 +582,34 @@
 % ---------- Results (CONCRETE) ----------
 \begin{frame}{Does it work?}
   \small
-  Test case: find enzymes that join a six-carbon diacid and a six-carbon diamine ---
-  the building blocks of nylon-6,6. The correct answers live in a test the agent
-  never sees; we only use them to grade the run.
+  Test case: enzymes that ligate a six-carbon diacid and a six-carbon diamine (the
+  nylon-6,6 monomers). Ground truth lives in a held-out oracle the agent never sees,
+  used only to grade the run.
   \vspace{0.4em}
   \begin{columns}[T]
     \begin{column}{0.55\textwidth}
-      \textbf{What came back}
+      \textbf{Output}
       \begin{itemize}\small
-        \item the top three are genuine \hl{look-alikes} --- GS-fold enzymes
-          (\mono{PuuA}, \mono{GlnA2/3}) that glutamylate a diamine, exactly the move
-          we reasoned toward
-        \item the real answer, \hlt{DdaG} (\mono{E2JA32}), lands at \#4 --- pulled in
-          from the \emph{literature}, sitting in its own gene cluster
-        \item the family list is \hl{clean}: no redox folds, no tRNA machinery, no
-          famous-but-ill-fitting enzyme riding its citations up
+        \item the top three are genuine \hl{mechanistic analogs} --- GS-fold ligases
+          (\mono{PuuA}, \mono{GlnA2/3}) that ATP-glutamylate a diamine, exactly the
+          chemistry we reasoned toward
+        \item the true positive, \hlt{DdaG} (\mono{E2JA32}), ranks \#4 --- recovered
+          via the \emph{literature} channel, within its own biosynthetic gene cluster
+        \item the family set is \hl{clean}: no redox folds, no tRNA-dependent
+          machinery, no well-cited but ill-fitting enzyme surfacing on citations
       \end{itemize}
     \end{column}
     \begin{column}{0.45\textwidth}
-      \textbf{How the run behaved}
+      \textbf{Run profile}
       \begin{itemize}\small
         \item \hl{89} candidates evaluated, \hl{12} iterations
-        \item \hlt{$\sim$43 min}, $\sim$1.2M tokens --- and almost all the wall-clock
-          is the \hla{model thinking}; tools are about 2\%
-        \item every screened candidate actually gets evaluated
+        \item \hlt{$\sim$43 min}, $\sim$1.2M tokens; wall-clock is
+          \hla{inference-bound} (tools ${\approx}$ 2\%)
+        \item every screened candidate is evaluated
       \end{itemize}
       \vspace{0.5em}
       \begin{center}
-        \chip{brand2}{look-alikes on top}\;\chip{accent}{true answer at \#4}
+        \chip{brand2}{analogs on top}\;\chip{accent}{true positive \#4}
       \end{center}
     \end{column}
   \end{columns}
