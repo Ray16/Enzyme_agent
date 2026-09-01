@@ -332,21 +332,18 @@
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \footnotesize
-      With \emph{two} target substrates an unconstrained match is exploitable: if each
-      independently takes the enzyme's best native, both can map to the \hla{same}
-      native, and a poor second partner goes undetected.\\[0.5em]
-      So we impose a \hlt{one-to-one assignment}: each native serves at most one target
-      substrate, and the enzyme is scored by its \hl{worst (bottleneck)} pair.
+      With \emph{two} target substrates, an unconstrained match is exploitable: both can
+      grab the enzyme's \hla{same} best native, hiding a poor second partner.\\[0.6em]
+      So we impose a \hlt{one-to-one assignment} --- each native serves one target
+      substrate; the score is the \hl{worst (bottleneck)} pair.
       \[ \text{fit}\;=\;\max_{\pi\,\in\,\text{1-to-1}}\;\min_{i}\;
          s\!\left(t_i,\,n_{\pi(i)}\right) \]
-      For PuuA the diamine maps to putrescine and the diacid is forced onto glutamate;
-      the \hl{bottleneck is 0.67}, not the flattering 1.0.\\[0.4em]
+      PuuA: diamine\,$\to$\,putrescine, diacid forced onto glutamate; the
+      \hl{bottleneck is 0.67}, not the flattering 1.0.\\[0.5em]
       Two further constraints:
       \begin{itemize}\scriptsize
-        \item compare against the enzyme's \hl{reactants} only, so a product cannot
-          substitute for a target partner
-        \item an \hla{unaccommodated} target substrate $\Rightarrow$ demoted, not
-          scored as neutral
+        \item compare against the enzyme's \hl{reactants} only --- no product stand-ins
+        \item an \hla{unaccommodated} target substrate $\Rightarrow$ demoted, not neutral
       \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
