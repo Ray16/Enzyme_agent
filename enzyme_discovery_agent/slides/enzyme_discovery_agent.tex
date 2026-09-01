@@ -144,13 +144,13 @@
   \begin{center}
   \begin{tikzpicture}[node distance=0.62cm]
     \node[card=st1] (n1)
-      {\stagecard{st1}{1}{Set up}\\[4pt]{\scriptsize\color{muted} parse substrates, derive the reaction}};
+      {\stagecard{st1}{1}{Reaction analysis}\\[4pt]{\scriptsize\color{muted} parse substrates, derive the constraints}};
     \node[card=st2, right=of n1] (n2)
-      {\stagecard{st2}{2}{Discover}\\[4pt]{\scriptsize\color{muted} literature + chemistry + family search}};
+      {\stagecard{st2}{2}{Discovery}\\[4pt]{\scriptsize\color{muted} literature + chemistry + family search}};
     \node[card=st3, right=of n2] (n3)
-      {\stagecard{st3}{3}{Evaluate}\\[4pt]{\scriptsize\color{muted} every candidate, in parallel}};
+      {\stagecard{st3}{3}{Evaluation}\\[4pt]{\scriptsize\color{muted} every candidate, in parallel}};
     \node[card=st4, right=of n3] (n4)
-      {\stagecard{st4}{4}{Rank}\\[4pt]{\scriptsize\color{muted} fit-first; evidence breaks ties}};
+      {\stagecard{st4}{4}{Ranking}\\[4pt]{\scriptsize\color{muted} fit-first; evidence breaks ties}};
     \node[card=st5, right=of n4] (n5)
       {\stagecard{st5}{5}{Report}\\[4pt]{\scriptsize\color{muted} ranked list, write-ups, structures}};
     \foreach \a/\b in {n1/n2,n2/n3,n3/n4,n4/n5} \draw[pipearr] (\a)--(\b);
