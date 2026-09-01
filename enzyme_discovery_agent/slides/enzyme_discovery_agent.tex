@@ -532,6 +532,41 @@
     ill-fitting enzyme rise on citations alone; fit now dominates.}\end{center}
 \end{frame}
 
+% ---------- Downstream handoff ----------
+\begin{frame}{Downstream --- the structural-modeling handoff}
+  The agent stops at a \hl{reviewed shortlist} --- accessions, verified substrate
+  SMILES, reaction chemistry, structure sources. Structural modeling is the
+  deliberate next step, where \hl{geometry} (not just substrate fit) decides.
+  \vspace{0.7em}
+  \begin{center}
+  \resizebox{0.98\textwidth}{!}{%
+  \begin{tikzpicture}[every node/.style={font=\scriptsize},node distance=7mm,
+     box/.style={draw,rounded corners,align=center,inner sep=5pt,text width=2.7cm,minimum height=1.5cm},
+     fl/.style={-{Stealth[length=2.6mm]},line width=1.2pt,draw=muted!70}]
+    \node[box,draw=st5,fill=st5!8] (a) {shortlist\\ \textcolor{muted}{sequence + substrate SMILES}};
+    \node[box,draw=st1,fill=st1!8,right=of a] (b) {cofolded complex\\ \textcolor{muted}{enzyme + substrates}};
+    \node[box,draw=brand2,fill=brand2!10,right=of b] (c) {geometric proxy\\ \textcolor{muted}{near-attack geometry}};
+    \node[box,draw=accent,fill=accent!7,right=of c] (d) {correlate with\\ measured activity};
+    \draw[fl] (a)--(b); \draw[fl] (b)--(c); \draw[fl] (c)--(d);
+  \end{tikzpicture}}
+  \end{center}
+  \vspace{0.5em}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \chip{brand2}{Reaction-mechanism extraction}\\[4pt]
+      {\footnotesize The mechanism --- which atoms bond, what activation --- \hl{selects
+      the geometric proxy} to read off the cofolded pose (e.g. the near-attack
+      distance/angle a productive conformation must satisfy).}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \chip{accent}{Experimental-measurement extraction}\\[4pt]
+      {\footnotesize Activity values ($k_\text{cat}/K_\text{M}$, conversion) mined from
+      the literature supply the \hla{ground truth} the geometric proxy is
+      \hlt{correlated against}.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ---------- Firewall (technical) ----------
 \begin{frame}{The answer firewall --- and how it's enforced}
   If the agent is \emph{told} the answer, it isn't discovering. The firewall is an
