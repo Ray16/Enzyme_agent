@@ -571,21 +571,19 @@
 % ---------- Results (CONCRETE) ----------
 \begin{frame}{Does it work?}
   \small
-  Test case: enzymes that ligate a six-carbon diacid and a six-carbon diamine (the
-  nylon-6,6 monomers). Ground truth lives in a held-out oracle the agent never sees,
-  used only to grade the run.
-  \vspace{0.4em}
+  Test case: enzymes that ligate a six-carbon diacid + diamine (nylon-6,6 monomers).
+  Ground truth is a held-out oracle, used only to grade the run.
+  \vspace{0.5em}
   \begin{columns}[T]
     \begin{column}{0.55\textwidth}
       \textbf{Output}
       \begin{itemize}\small
-        \item the top three are genuine \hl{mechanistic analogs} --- GS-fold ligases
-          (\mono{PuuA}, \mono{GlnA2/3}) that ATP-glutamylate a diamine, exactly the
-          chemistry we reasoned toward
-        \item the true positive, \hlt{DdaG} (\mono{E2JA32}), ranks \#4 --- recovered
-          via the \emph{literature} channel, within its own biosynthetic gene cluster
-        \item the family set is \hl{clean}: no redox folds, no tRNA-dependent
-          machinery, no well-cited but ill-fitting enzyme surfacing on citations
+        \item top three are genuine \hl{mechanistic analogs} --- GS-fold ligases
+          (\mono{PuuA}, \mono{GlnA2/3}) that ATP-glutamylate a diamine
+        \item the true positive \hlt{DdaG} (\mono{E2JA32}) ranks \#4 --- recovered via
+          the \emph{literature} channel, in its own gene cluster
+        \item the family set is \hl{clean}: no redox folds, no tRNA machinery, no
+          well-cited misfit riding citations
       \end{itemize}
     \end{column}
     \begin{column}{0.45\textwidth}
