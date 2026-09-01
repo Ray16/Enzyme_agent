@@ -123,30 +123,24 @@
       \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=25] node[below,font=\footnotesize\bfseries,text=muted]{evidence / verdict} (llm.south);
     \end{tikzpicture}
   \end{center}
-  \vspace{0.2em}
-  \begin{center}\small
+  \begin{center}\footnotesize
     Every proposal is a \hl{guess we can break} --- a predicted native reaction and
-    substrate scope --- and it's \hlt{checked against retrieved records}, not
-    trusted because the model said it.
+    substrate scope --- \hlt{checked against retrieved records}, not trusted because
+    the model said it.
   \end{center}
-  \vspace{0.2em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       \hlt{Grounded, no magic thresholds}
-      \begin{itemize}\small
-        \item code \emph{measures} the facts --- direction, functional groups,
-          size; the model reasons over them
-        \item candidates are ranked \emph{against each other}, so there's no tuned
-          cutoff to babysit
+      \begin{itemize}\footnotesize
+        \item code \emph{measures} the facts; the model reasons over them
+        \item candidates are ranked \emph{against each other} --- no tuned cutoff
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
       \hla{The answer stays out}
-      \begin{itemize}\small
-        \item answer enzymes, substrates and families never touch a prompt, a tool
-          schema, or a comment
-        \item ground truth is a held-out oracle --- a \emph{score} at the end,
-          never an input
+      \begin{itemize}\footnotesize
+        \item answer enzymes and families never touch a prompt or a comment
+        \item ground truth is a held-out \emph{score}, never an input
       \end{itemize}
     \end{column}
   \end{columns}
