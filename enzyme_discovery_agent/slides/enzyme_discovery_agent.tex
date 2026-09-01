@@ -113,37 +113,30 @@
 
 % ---------- Core principle ----------
 \begin{frame}{The idea: guess, then try to break the guess}
+  \vspace{0.4em}
   \begin{center}
-    \begin{tikzpicture}[every node/.style={font=\small},node distance=10mm]
-      \node[draw=brand,fill=brand!8,rounded corners,text width=4.9cm,align=center,inner sep=7pt,font=\bfseries] (llm)
-        {Model --- \emph{reasoning}\\[2pt]\normalfont\footnotesize works out what the reaction demands;\\ names catalytic folds that might do it};
-      \node[right=24mm of llm,draw=brand2,fill=brand2!8,rounded corners,text width=4.9cm,align=center,inner sep=7pt,font=\bfseries] (tools)
-        {Tools --- \emph{retrieval}\\[2pt]\normalfont\footnotesize reviewed records, InterPro folds,\\ measured substrate correspondence};
+    \begin{tikzpicture}[every node/.style={font=\small},node distance=22mm]
+      \node[draw=brand,fill=brand!8,rounded corners,text width=4.7cm,align=center,inner sep=6pt,font=\bfseries] (llm)
+        {Model --- \emph{reasoning}\\[2pt]\normalfont\footnotesize works out what the reaction\\ needs; names folds that might do it};
+      \node[right=of llm,draw=brand2,fill=brand2!8,rounded corners,text width=4.7cm,align=center,inner sep=6pt,font=\bfseries] (tools)
+        {Tools --- \emph{retrieval}\\[2pt]\normalfont\footnotesize reviewed records, InterPro folds,\\ measured substrate fit};
       \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{a falsifiable guess} (tools);
-      \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=25] node[below,font=\footnotesize\bfseries,text=muted]{evidence / verdict} (llm.south);
+      \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=22] node[below,font=\footnotesize\bfseries,text=muted]{evidence / verdict} (llm.south);
     \end{tikzpicture}
   \end{center}
+  \vspace{0.3em}
   \begin{center}\footnotesize
     Every proposal is a \hl{guess we can break} --- a predicted native reaction and
     substrate scope --- \hlt{checked against retrieved records}, not trusted because
     the model said it.
   \end{center}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \hlt{Grounded, no magic thresholds}
-      \begin{itemize}\footnotesize
-        \item code \emph{measures} the facts; the model reasons over them
-        \item ranked \emph{relative} to each other --- no tuned cutoff
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \hla{The answer stays out}
-      \begin{itemize}\footnotesize
-        \item answer enzymes and families never touch a prompt
-        \item ground truth is a held-out \emph{score}, never an input
-      \end{itemize}
-    \end{column}
-  \end{columns}
+  \vspace{0.3em}
+  \begin{center}\footnotesize
+    \hlt{Grounded:} code measures the facts, the model reasons; candidates ranked
+    \emph{relative} to each other, no tuned cutoffs.\\[3pt]
+    \hla{Answer out:} answer enzymes and families never touch a prompt --- ground
+    truth is a held-out \emph{score}, never an input.
+  \end{center}
 \end{frame}
 
 % ---------- Pipeline overview ----------
