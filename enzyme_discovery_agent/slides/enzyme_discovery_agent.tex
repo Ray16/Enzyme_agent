@@ -652,21 +652,21 @@
 \end{frame}
 
 % ---------- Limitations ----------
-\begin{frame}{What's still rough}
+\begin{frame}{Limitations \& next steps}
   \begin{itemize}
-    \item \hl{Literature.} We still miss some of the best papers --- wrong search
-      words, and a few paywalls. Rewriting the queries helps, but not reliably yet.
-    \item \hl{Speed.} Nearly all the time is the model reading long prompts. The wins
-      are shorter prompts and running the final steps in parallel.
-    \item \hl{Ranking.} A couple of the scoring formulas still don't fully agree, and
-      we want a full run to confirm the one-to-one change helps in practice.
-    \item \hl{Reasoning spine.} Next up: hang a \hl{reasoning-alignment} record on
-      every candidate and let it drive the tiers, then feed the open questions into
-      structural modeling.
+    \item \hl{Literature recall.} Gaps remain --- search-vocabulary mismatch and OA
+      paywalls. Query reformulation helps but is not yet reliable.
+    \item \hl{Latency.} Wall-clock is dominated by inference over long prompts; the
+      levers are prompt pruning and parallelizing finalization.
+    \item \hl{Ranking.} A few scoring formulas are not yet unified; a full validation
+      run is needed to confirm the one-to-one assignment helps in practice.
+    \item \hl{Reasoning spine.} Next: attach a \hl{reasoning-alignment} record to every
+      candidate to drive the tiers, then propagate unresolved claims into structural
+      modeling.
   \end{itemize}
   \vspace{0.7em}
   \begin{center}\small\color{muted}
-    Everything ships with the tests passing, the answer still hidden, and a note in the log.
+    Every change ships with the suite green, the answer firewalled, and a DEVLOG entry.
   \end{center}
 \end{frame}
 
