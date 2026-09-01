@@ -455,17 +455,17 @@
 \end{frame}
 
 % ---------- Coverage: don't drop ----------
-\begin{frame}{The whole point is not to miss anything}
+\begin{frame}{Maximizing recall --- don't drop members}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
-      \hl{Keep every member that fits}\\
-      {\footnotesize We used to keep a family's best two and bin the rest. Now any
-      member that runs the right direction and has a real substrate to compare
-      becomes a candidate --- so a big family's long tail survives.}\\[0.9em]
-      \hl{And actually evaluate all of them}\\
-      {\footnotesize Evaluation is just database lookups --- no model calls --- so
-      checking more of them costs almost nothing. Every distinct gene gets
-      evaluated, so a budget can't silently drop one that mattered.}
+      \hl{Promote every member that fits}\\
+      {\footnotesize Previously we retained only a family's top two members. Now every
+      same-direction member with a resolvable native substrate is promoted, so a large
+      family's long tail is preserved.}\\[0.9em]
+      \hl{And evaluate all of them}\\
+      {\footnotesize Evaluation is deterministic database lookup --- no model calls ---
+      so breadth is nearly free. Every distinct gene is evaluated, so no budget
+      silently drops a relevant candidate.}
     \end{column}
     \begin{column}{0.48\textwidth}
       \centering
