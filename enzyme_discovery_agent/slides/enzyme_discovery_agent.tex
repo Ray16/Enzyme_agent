@@ -73,11 +73,11 @@
   \vspace*{1.2em}
   {\color{brand}\rule{\textwidth}{2pt}}\\[1.2em]
   {\Huge\bfseries\color{ink} Enzyme Discovery Agent}\\[0.6em]
-  {\LARGE\color{muted} Retrieving candidate enzymes for a target reaction}\\
-  {\LARGE\color{muted} by hypothesis-and-test, under an answer firewall}\\[1.4em]
-  \chip{brand}{model infers the chemistry}\quad
-  \chip{brand2}{tools retrieve the evidence}\quad
-  \chip{accent}{answer held out}\\[1.2em]
+  {\LARGE\color{muted} Finding enzymes for a target reaction by}\\
+  {\LARGE\color{muted} reasoning it out, then checking every claim}\\[1.4em]
+  \chip{brand}{the model works out the chemistry}\quad
+  \chip{brand2}{the tools go find the evidence}\quad
+  \chip{accent}{the answer is held out}\\[1.2em]
   {\color{brand}\rule{\textwidth}{2pt}}
 \end{frame}}
 
@@ -85,17 +85,18 @@
 \begin{frame}{The problem}
   \begin{columns}[T]
     \begin{column}{0.56\textwidth}
-      You give it a reaction — some substrates turning into a product — and it has
-      to find enzymes that could catalyze it.\\[0.5em]
-      That's hard because:
+      You hand it a reaction — some substrates, a product — and it has to come
+      back with enzymes that could run it.\\[0.5em]
+      That's hard, for three reasons:
       \begin{itemize}
-        \item the reaction is often something \hl{nature doesn't do}, so nothing is labelled for it
-        \item there's nothing to look up — the answer has to be \hl{discovered}
+        \item the reaction is often something \hl{nature doesn't do}, so nothing
+          is labelled for it
+        \item there's nothing to look up — the answer has to be \hl{worked out}
         \item and the haystack is \hl{hundreds of millions} of proteins
       \end{itemize}
       \vspace{0.4em}
-      The catch: hand the agent the answer's family up front, and it isn't really
-      \hla{discovering} anything.
+      Here's the catch. Hand the agent the answer's family up front and it isn't
+      \hla{discovering} anything — it's just reading back what you told it.
     \end{column}
     \begin{column}{0.44\textwidth}
       \centering
@@ -111,142 +112,44 @@
 \end{frame}
 
 % ---------- Core principle ----------
-\begin{frame}{The idea: hypothesis-and-test over grounded chemistry}
+\begin{frame}{The idea: guess, then try to break the guess}
   \begin{center}
     \begin{tikzpicture}[every node/.style={font=\small},node distance=10mm]
       \node[draw=brand,fill=brand!8,rounded corners,text width=4.9cm,align=center,inner sep=7pt,font=\bfseries] (llm)
-        {Model — \emph{inference}\\[2pt]\normalfont\footnotesize derives reaction constraints;\\ proposes catalytic folds / mechanisms};
+        {Model --- \emph{reasoning}\\[2pt]\normalfont\footnotesize works out what the reaction demands;\\ names catalytic folds that might do it};
       \node[right=24mm of llm,draw=brand2,fill=brand2!8,rounded corners,text width=4.9cm,align=center,inner sep=7pt,font=\bfseries] (tools)
-        {Tools — \emph{retrieval}\\[2pt]\normalfont\footnotesize reviewed records, InterPro folds,\\ measured substrate correspondence};
-      \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{falsifiable hypothesis} (tools);
+        {Tools --- \emph{retrieval}\\[2pt]\normalfont\footnotesize reviewed records, InterPro folds,\\ measured substrate correspondence};
+      \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{a falsifiable guess} (tools);
       \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=25] node[below,font=\footnotesize\bfseries,text=muted]{evidence / verdict} (llm.south);
     \end{tikzpicture}
   \end{center}
   \vspace{0.2em}
   \begin{center}\small
-    Each proposal is a \hl{falsifiable hypothesis} — a predicted native reaction and
-    substrate scope — \hlt{tested against retrieved reviewed records}, not accepted
-    because the model named it.
+    Every proposal is a \hl{guess we can break} --- a predicted native reaction and
+    substrate scope --- and it's \hlt{checked against retrieved records}, not
+    trusted because the model said it.
   \end{center}
   \vspace{0.2em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hlt{Grounded, threshold-free reasoning}:
+      \hlt{Grounded, no magic thresholds}
       \begin{itemize}\small
-        \item deterministic code \emph{extracts} the facts (direction, functional-group
-          correspondence, topology); the model reasons over them
-        \item candidates are ranked \emph{relative} to one another — no tuned cutoffs
+        \item code \emph{measures} the facts --- direction, functional groups,
+          size; the model reasons over them
+        \item candidates are ranked \emph{against each other}, so there's no tuned
+          cutoff to babysit
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \hla{Inference under an answer firewall}:
+      \hla{The answer stays out}
       \begin{itemize}\small
-        \item answer accessions, substrates and families are excluded from every
-          prompt, tool schema and comment
-        \item ground truth is a held-out oracle — a \emph{score}, never an input
+        \item answer enzymes, substrates and families never touch a prompt, a tool
+          schema, or a comment
+        \item ground truth is a held-out oracle --- a \emph{score} at the end,
+          never an input
       \end{itemize}
     \end{column}
   \end{columns}
-\end{frame}
-
-% ---------- Shared reasoning contract ----------
-\begin{frame}{One shared account of the chemistry}
-  \begin{columns}[T]
-    \begin{column}{0.54\textwidth}
-      Before it searches, the agent writes down \hl{what the reaction demands} —
-      the bond that changes, the direction it runs, the reactive groups on each
-      substrate, the kind of \hl{activation} it would need — as a single
-      \hlt{contract}.\\[0.6em]
-      Every stage afterwards reads the \emph{same} contract, so discovery,
-      screening and ranking can't quietly disagree about what we're looking for.\\[0.6em]
-      {\footnotesize\color{muted} The mechanical facts are \emph{measured} from the
-      structures; the harder inferences are the model's — each tagged with how
-      sure it is, so a fact and a guess never look alike.}
-    \end{column}
-    \begin{column}{0.46\textwidth}
-      \centering
-      \vspace{0.4em}
-      \begin{tikzpicture}[every node/.style={font=\scriptsize},node distance=5mm]
-        \node[draw=brand,fill=brand!8,rounded corners,line width=1.2pt,
-              text width=3.0cm,align=center,inner sep=5pt,font=\footnotesize\bfseries]
-          (c) {the contract\\[1pt]\normalfont\scriptsize bond · direction ·\\ reactive groups · activation};
-        \node[draw=st2,rounded corners,fill=st2!8,above left=7mm and -4mm of c,inner sep=3pt] (d) {discovery};
-        \node[draw=brand2,rounded corners,fill=brand2!8,above right=7mm and -4mm of c,inner sep=3pt] (s) {screening};
-        \node[draw=st4,rounded corners,fill=st4!8,below=8mm of c,inner sep=3pt] (r) {ranking};
-        \draw[-{Stealth[length=2mm]},muted!70] (c) -- (d);
-        \draw[-{Stealth[length=2mm]},muted!70] (c) -- (s);
-        \draw[-{Stealth[length=2mm]},muted!70] (c) -- (r);
-      \end{tikzpicture}\\[0.3em]
-      {\scriptsize\color{muted} derived once, read everywhere}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ---------- Family as hypothesis ----------
-\begin{frame}{A family is a hypothesis, not an answer}
-  \begin{columns}[T]
-    \begin{column}{0.55\textwidth}
-      A proposed family is not accepted because the model named it. Each carries
-      \hl{predictions} — the native reaction a genuine member must show, and the
-      observations that would \hla{falsify} it.\\[0.6em]
-      \hlt{Claim-level validation} tests those predictions against the family's
-      reviewed catalytic-activity records, yielding a per-family verdict:
-      \begin{itemize}\small
-        \item \hlt{supported} — a reviewed member realizes the predicted reaction
-        \item \hla{contradicted} — retrieved members violate a required prediction
-        \item \hl{insufficient evidence} — an exploration lead, not a validated route
-      \end{itemize}
-      \vspace{0.3em}
-      {\footnotesize\color{muted} Invariant: \emph{absence of evidence} is never
-      promoted to \emph{feasible}.}
-    \end{column}
-    \begin{column}{0.45\textwidth}
-      \centering
-      \vspace{0.6em}
-      \begin{tikzpicture}[every node/.style={font=\scriptsize},yscale=0.95]
-        \node[draw=brand,rounded corners,fill=brand!8,text width=3.0cm,align=center,inner sep=4pt,font=\footnotesize\bfseries]
-          (h) at (0,2) {proposed family\\[1pt]\normalfont\scriptsize + predictions};
-        \node[draw=muted,rounded corners,fill=muted!7,text width=3.0cm,align=center,inner sep=4pt]
-          (t) at (0,0.6) {its reviewed\\ reactions};
-        \node[draw=brand2,rounded corners,fill=brand2!10,inner sep=3pt] (v1) at (-1.35,-0.95) {supported};
-        \node[draw=accent,rounded corners,fill=accent!8,inner sep=3pt]  (v2) at (1.1,-0.95) {ruled out};
-        \draw[-{Stealth[length=2mm]},muted!70] (h)--(t);
-        \draw[-{Stealth[length=2mm]},brand2] (t) to[out=-150,in=90] (v1);
-        \draw[-{Stealth[length=2mm]},accent] (t) to[out=-30,in=90] (v2);
-      \end{tikzpicture}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ---------- Reasoning about relevance ----------
-\begin{frame}{Reasoning about relevance, all the way down}
-  The agent doesn't score everything and hope. It \hl{reasons} about relevance at
-  two cheap points, each grounded in the contract and in measured facts:
-  \vspace{0.3em}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \chip{brand}{Which families make sense?}\\[0.5em]
-      \footnotesize
-      Of the folds it proposed, which ones \emph{actually} make this bond, on free
-      substrates like ours? Off-target families are set aside \hl{before} we spend
-      effort on their hundreds of members.
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \chip{brand2}{Which candidates make sense?}\\[0.5em]
-      \footnotesize
-      Of the members that survive, which can host \emph{both} of the target's
-      substrates? Each is judged against the enzyme's \hl{real native chemistry},
-      not a headcount of papers.
-    \end{column}
-  \end{columns}
-  \vspace{0.9em}
-  \begin{center}
-    \tikz[baseline]{\node[draw=brand,rounded corners,fill=brand!6,inner sep=6pt,font=\footnotesize]{%
-      what the chemistry demands\ \ $\rightarrow$\ \ which families\ \ $\rightarrow$\ \ which candidates\ \ $\rightarrow$\ \ \emph{why}};}
-  \end{center}
-  \vspace{0.2em}
-  \begin{center}{\footnotesize\color{muted} A funnel, not a scan — so the reasoning
-    stays cheap and every survivor carries a reason we can read back.}\end{center}
 \end{frame}
 
 % ---------- Pipeline overview ----------
@@ -255,28 +158,65 @@
   \begin{center}
   \begin{tikzpicture}[node distance=0.62cm]
     \node[card=st1] (n1)
-      {\stagecard{st1}{1}{Target setup}\\[4pt]{\scriptsize\color{muted} read the substrates, work out the reaction}};
+      {\stagecard{st1}{1}{Set up}\\[4pt]{\scriptsize\color{muted} read the substrates, pin down the reaction}};
     \node[card=st2, right=of n1] (n2)
-      {\stagecard{st2}{2}{Discovery}\\[4pt]{\scriptsize\color{muted} literature + chemistry + family search}};
+      {\stagecard{st2}{2}{Discover}\\[4pt]{\scriptsize\color{muted} literature + chemistry + family search}};
     \node[card=st3, right=of n2] (n3)
       {\stagecard{st3}{3}{Evaluate}\\[4pt]{\scriptsize\color{muted} check every candidate, in parallel}};
     \node[card=st4, right=of n3] (n4)
-      {\stagecard{st4}{4}{Rank}\\[4pt]{\scriptsize\color{muted} by evidence, then a model re-rank}};
+      {\stagecard{st4}{4}{Rank}\\[4pt]{\scriptsize\color{muted} fit first, evidence breaks ties}};
     \node[card=st5, right=of n4] (n5)
-      {\stagecard{st5}{5}{Report}\\[4pt]{\scriptsize\color{muted} ranked enzymes, reports \& structures}};
+      {\stagecard{st5}{5}{Report}\\[4pt]{\scriptsize\color{muted} ranked list, write-ups, structures}};
     \foreach \a/\b in {n1/n2,n2/n3,n3/n4,n4/n5} \draw[pipearr] (\a)--(\b);
   \end{tikzpicture}
   \end{center}
   \vspace{1.6em}
   \begin{center}
-  {\footnotesize\color{muted} Deterministic \emph{gates} make the important steps
-  actually happen; the model still decides what to chase inside the loop.
-  The next two slides open up stages 2 and 3--5.}
+  {\footnotesize\color{muted} Deterministic \emph{gates} make sure the important steps
+  actually run; inside the loop the model still decides what to chase next.
+  The rest of the deck opens up stages 1--4 with real numbers from one run.}
   \end{center}
 \end{frame}
 
+% ---------- Shared reasoning contract (CONCRETE) ----------
+\begin{frame}{Stage 1: write down what the reaction demands}
+  \begin{columns}[T]
+    \begin{column}{0.44\textwidth}
+      Before it searches anything, the agent writes one \hlt{contract} for the
+      run: what bond changes, which way it runs, the reactive groups in play, and
+      the \hl{activation problem} a catalyst would have to solve.\\[0.5em]
+      Every later stage reads the \emph{same} contract. So discovery, screening and
+      ranking can't quietly disagree about what we're even looking for.\\[0.5em]
+      {\footnotesize\color{muted} The mechanical facts are \tagm{} straight off the
+      structures. The harder calls are \tagi{} by the model, each tagged with how
+      sure it is --- a fact and a hunch never get to look the same.}
+    \end{column}
+    \begin{column}{0.56\textwidth}
+      \footnotesize
+      \begin{tikzpicture}[every node/.style={font=\scriptsize},node distance=1.2mm]
+        \node[draw=brand,fill=brand!5,rounded corners,line width=1pt,text width=6.6cm,inner sep=5pt,align=left] (box) {
+          \textbf{target\_reasoning.json} \hfill \emph{one target: diacid + diamine}\\[3pt]
+          \tagm{}\ \ direction \hfill \hl{formation}\\[1pt]
+          \tagm{}\ \ bond \hfill \hl{amide}\\[1pt]
+          \tagm{}\ \ topology \hfill \hl{free small molecule}\\[1pt]
+          \tagm{}\ \ reactive groups \hfill \hl{carboxyl, primary amine}\\[4pt]
+          \tagi{}\ \ activation problem:\\
+          \textcolor{muted}{acid + amine condensation is uphill; the carboxyl carbon
+          has to be activated first}\\[3pt]
+          \tagi{}\ \ ways to solve it:\\
+          \textcolor{muted}{acyl-adenylate, acyl-phosphate, thioester --- energy
+          coupled in via ATP}\\[3pt]
+          \tagi{}\ \ what rules a candidate out:\\
+          \textcolor{muted}{no nucleotide-binding site; only works on
+          already-activated esters; can't reach both ends}
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ---------- Discovery detail ----------
-\begin{frame}{Inside stage 2 — the discovery loop}
+\begin{frame}{Inside stage 2 --- the discovery loop}
   \vspace{0.2em}
   \centering
   \begin{tikzpicture}[
@@ -291,11 +231,11 @@
     flow/.style={-{Stealth[length=2.4mm]},line width=1pt,draw=muted!75},
     loop/.style={-{Stealth[length=2.4mm]},line width=1.1pt,draw=st1,dashed}]
 
-    \node[io]  (tp)  at (2.3,5.15) {target profile\\ \textcolor{muted}{bond\,·\,direction}};
+    \node[io]  (tp)  at (2.3,5.15) {the contract\\ \textcolor{muted}{bond\,·\,direction}};
     \node[llm] (llm) at (2.3,2.75) {LLM\\[1pt]\normalfont\scriptsize proposes\\ \normalfont\scriptsize each step};
-    \node[gate] (g1) at (8.7,4.35) {\textbf{Literature} — read a few open papers,\\ keep the enzymes they \emph{name / cite}};
-    \node[gate] (g2) at (8.7,2.75) {\textbf{Mechanism families} — derive the folds,\\ drop the wrong-direction ones};
-    \node[gate] (g3) at (8.7,1.15) {\textbf{InterPro survey} — score members' substrate\\ fit, promote \emph{every} relevant one};
+    \node[gate] (g1) at (8.7,4.35) {\textbf{Literature} --- read a few open papers,\\ keep the enzymes they \emph{name or cite}};
+    \node[gate] (g2) at (8.7,2.75) {\textbf{Mechanism families} --- name the folds,\\ drop the ones running the wrong way};
+    \node[gate] (g3) at (8.7,1.15) {\textbf{InterPro survey} --- score members' fit,\\ promote \emph{every} relevant one};
     \node[store] (reg) at (13.4,2.75) {Candidate\\ registry};
 
     \draw[flow] (tp) -- (llm);
@@ -316,8 +256,248 @@
   \end{tikzpicture}
 \end{frame}
 
+% ---------- Worked example 1: survey a family (CONCRETE) ----------
+\begin{frame}{A concrete pass: survey one InterPro family}
+  The main engine is the family survey. Pick a fold the model proposed, pull
+  \hl{every member}, and look at what each one \emph{actually does}.
+  \vspace{0.4em}
+  \begin{columns}[T]
+    \begin{column}{0.45\textwidth}
+      \footnotesize
+      \begin{tikzpicture}[every node/.style={font=\scriptsize}]
+        \node[draw=st3,fill=st3!8,rounded corners,line width=1pt,text width=5.0cm,inner sep=5pt,align=left] {
+          \textbf{IPR008146} --- Glutamine synthetase,\\ catalytic domain (GS fold)\\[3pt]
+          \hl{428} members pulled\\
+          \hl{301} with a native substrate we can resolve\\
+          \hlt{299} run the same direction as the target\\[3pt]
+          \textcolor{muted}{We don't trust the textbook example --- we read each
+          member's own reviewed reaction.}
+        };
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.55\textwidth}
+      \footnotesize A few members and their \hl{native reactions}:\\[3pt]
+      \begin{tikzpicture}[every node/.style={font=\scriptsize,align=left}]
+        \node[draw=muted!40,fill=muted!5,rounded corners,text width=6.5cm,inner sep=4pt] {
+          \mono{P78061} \textbf{PuuA}\\
+          putrescine + L-glutamate + ATP $\rightarrow$\\ \phantom{xx}$\gamma$-glutamylputrescine + ADP + P$_i$\\[4pt]
+          \mono{Q9KZC7} \textbf{GlnA3}\\
+          spermine + L-glutamate + ATP $\rightarrow$ \ldots\\[4pt]
+          \mono{Q9RDS6} \textbf{GlnA2}\\
+          putrescine/cadaverine + L-glutamate + ATP $\rightarrow$ \ldots
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+  \vspace{0.4em}
+  \begin{center}\footnotesize\color{muted}
+    Notice the shape: a \emph{diamine} joined to a \emph{glutamate} using ATP. That's
+    the same move the target needs --- so this family is worth a hard look.
+  \end{center}
+\end{frame}
+
+% ---------- Worked example 2: reason over the molecule (CONCRETE) ----------
+\begin{frame}{Reason over the molecule: size, groups, shape}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \footnotesize
+      Take \mono{P78061} (PuuA). Line its native substrates up against ours and
+      \hl{measure} the match on six axes, each on $[0,1]$:\\[4pt]
+      \begin{tikzpicture}[every node/.style={font=\scriptsize,align=left}]
+        \node[draw=brand2!50,fill=brand2!7,rounded corners,text width=6.5cm,inner sep=5pt] {
+          \textbf{our diamine} \mono{NCCCCCCN} \; vs \; \textbf{putrescine} \mono{NCCCCN}\\[3pt]
+          functional groups \hfill \hlt{1.00} \; \textcolor{muted}{(both primary diamines)}\\
+          molecular weight \hfill \hlt{0.78} \; \textcolor{muted}{(116 vs 90 Da)}\\
+          main-chain length \hfill \hlt{0.75} \; \textcolor{muted}{(8 vs 6)}\\
+          polarity (TPSA) \hfill \hlt{0.94}\\[5pt]
+          \textbf{our diacid} \; vs \; \textbf{L-glutamate}\\[2pt]
+          functional groups \hfill \hla{0.67} \; \textcolor{muted}{(glutamate adds an amine)}
+        };
+      \end{tikzpicture}\\[4pt]
+      Size is a \hl{hard steric limit} --- too big to fit, and it's out. Chemistry is
+      graded, and it forgives a bit of promiscuity.
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \centering
+      \vspace{0.4em}
+      \begin{tikzpicture}[scale=0.98]
+        \foreach \a in {90,150,210,270,330,30} \draw[muted!35] (0,0)--(\a:2);
+        \draw[muted!30] (0,0) circle (2);
+        \draw[muted!18] (0,0) circle (1.33);
+        \draw[muted!18] (0,0) circle (0.66);
+        % diamine vs putrescine: FG 1.0, MW .78, chain .75, TPSA .94, volume .79, logP ~.7
+        \draw[fill=brand2!16,draw=brand2,line width=1.4pt]
+          (90:1.5) -- (150:1.56) -- (210:2.0) -- (270:1.88) -- (330:1.4) -- (30:1.58) -- cycle;
+        \node[font=\scriptsize\color{muted}] at (90:2.35) {chain};
+        \node[font=\scriptsize\color{muted}] at (150:2.3) {MW};
+        \node[font=\scriptsize\color{muted}] at (210:2.35) {FG};
+        \node[font=\scriptsize\color{muted}] at (270:2.4) {TPSA};
+        \node[font=\scriptsize\color{muted}] at (330:2.4) {logP};
+        \node[font=\scriptsize\color{muted}] at (30:2.35) {volume};
+        \node[font=\scriptsize\color{muted}] at (0.3,1.95) {1.0};
+      \end{tikzpicture}
+      \\[0.2em]
+      {\scriptsize\color{muted} PuuA's diamine pocket vs our diamine\\ (1.0 = identical to target)}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ---------- One-to-one honest matching ----------
+\begin{frame}{Two substrates, one honest match}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \footnotesize
+      Our target has \emph{two} substrates, so there's a way to cheat. If each one
+      just grabs the enzyme's single best native, they can both point at the
+      \hla{same} native --- and a lousy second partner sails through.\\[0.5em]
+      So we match them \hlt{one to one}: each native serves at most one target
+      substrate, and we score the enzyme by its \hl{worst} pair.
+      \[ \text{fit}\;=\;\max_{\pi\,\in\,\text{1-to-1}}\;\min_{i}\;
+         s\!\left(t_i,\,n_{\pi(i)}\right) \]
+      For PuuA: the diamine pairs with putrescine, the diacid is forced onto
+      glutamate, and the \hl{bottleneck is 0.67} --- not the flattering 1.0.\\[0.4em]
+      Two more honesty rules:
+      \begin{itemize}\scriptsize
+        \item compare against what the enzyme \hl{consumes}, so a product can't
+          stand in for a target partner
+        \item no real partner for one target substrate $\Rightarrow$ \hla{demoted},
+          not quietly excused
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering
+      \begin{tikzpicture}[every node/.style={font=\footnotesize},yscale=0.92]
+        \node[text=accent,font=\footnotesize\bfseries] at (1.4,2.55) {each grabs the best (cheats)};
+        \node[draw,rounded corners,fill=soft] (t1) at (0,2) {diamine};
+        \node[draw,rounded corners,fill=soft] (t2) at (0,1.2) {diacid};
+        \node[draw,rounded corners,fill=brand2!10] (n1) at (3.0,2) {putrescine};
+        \node[draw,rounded corners,fill=brand2!10] (n2) at (3.0,1.2) {glutamate};
+        \draw[accent,thick] (t1)--(n1);
+        \draw[accent,thick] (t2)--(n1);
+        \node[text=brand2,font=\footnotesize\bfseries] at (1.4,0.2) {one to one (honest)};
+        \node[draw,rounded corners,fill=soft] (u1) at (0,-0.3) {diamine};
+        \node[draw,rounded corners,fill=soft] (u2) at (0,-1.1) {diacid};
+        \node[draw,rounded corners,fill=brand2!10] (m1) at (3.0,-0.3) {putrescine};
+        \node[draw,rounded corners,fill=brand2!10] (m2) at (3.0,-1.1) {glutamate};
+        \draw[brand2,thick] (u1)--(m1);
+        \draw[brand2,thick] (u2)--(m2);
+      \end{tikzpicture}
+      \\[0.6em]
+      {\scriptsize\color{muted} The same scorer feeds promotion and ranking, so they
+      can't drift apart.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ---------- Expand / stop decisions (CONCRETE) ----------
+\begin{frame}{Which folds to chase, which to drop}
+  The model names a dozen folds. Before spending effort on their hundreds of
+  members, the agent reasons over each one --- \hl{direction, topology, chemistry}
+  --- and writes down why:
+  \vspace{0.5em}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \footnotesize\hlt{Expand}\\[2pt]
+      \begin{tikzpicture}[every node/.style={font=\scriptsize,align=left}]
+        \node[draw=brand2!45,fill=brand2!7,rounded corners,text width=6.0cm,inner sep=4pt] {
+          \textbf{IPR008146} GS-fold amide ligase\\
+          \textcolor{muted}{diamine + glutamate + ATP --- closest group match (0.67), top priority}\\[3pt]
+          \textbf{IPR000115} NIS synthetase (IucA/DesD)\\
+          \textcolor{muted}{ligates a diamine to a diacid via acyl-adenylate --- the closest natural analogy}
+        };
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \footnotesize\hla{Stop}\\[2pt]
+      \begin{tikzpicture}[every node/.style={font=\scriptsize,align=left}]
+        \node[draw=accent!40,fill=accent!6,rounded corners,text width=6.0cm,inner sep=4pt] {
+          \textbf{IPR011008} flavin monooxygenase\\
+          \textcolor{muted}{native chemistry is redox, not amide formation --- off target}\\[3pt]
+          \textbf{IPR020825} class II aaRS (PheRS)\\
+          \textcolor{muted}{substrate is tRNA-tethered --- wrong topology}\\[3pt]
+          \textbf{IPR050237} ACP-loading (EntE-like)\\
+          \textcolor{muted}{carrier-protein-tethered --- wrong topology}
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+  \vspace{0.5em}
+  \begin{center}\footnotesize\color{muted}
+    A bond-breaking fold can't build a bond; a fold that only handles tethered
+    substrates can't touch two free small molecules. Both go, with a reason on record.
+  \end{center}
+\end{frame}
+
+% ---------- Family as falsifiable hypothesis + verdict (CONCRETE) ----------
+\begin{frame}{``Expand'' is still just a hypothesis}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      Deciding to expand a family doesn't make it right. Each family carries
+      \hl{predictions} --- the native reaction a real member has to show --- and the
+      observations that would \hla{kill} it.\\[0.5em]
+      Then \hlt{claim-by-claim validation} tests those predictions against the
+      family's reviewed records, one member at a time, and rolls them into a verdict:
+      \begin{itemize}\small
+        \item \hlt{supported} --- a reviewed member really does the predicted reaction
+        \item \hla{contradicted} --- retrieved members break a required prediction
+        \item \hl{insufficient} --- a lead worth chasing, not a proven route
+      \end{itemize}
+      \vspace{0.3em}
+      {\footnotesize\color{muted} The rule that matters: \emph{no evidence} never gets
+      quietly upgraded to \emph{feasible}.}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \centering
+      \vspace{0.3em}
+      \begin{tikzpicture}[every node/.style={font=\scriptsize}]
+        \node[draw=brand,rounded corners,fill=brand!8,text width=3.4cm,align=center,inner sep=4pt,font=\footnotesize\bfseries]
+          (h) at (0,2.1) {IPR008146\\[1pt]\normalfont\scriptsize predicts: diamine + acid\\ ligation, ATP-driven};
+        \node[draw=muted,rounded corners,fill=muted!7,text width=3.4cm,align=center,inner sep=4pt]
+          (t) at (0,0.7) {188 reviewed members\\ checked};
+        \node[draw=brand2,rounded corners,fill=brand2!12,text width=3.6cm,align=center,inner sep=4pt,font=\footnotesize\bfseries]
+          (v) at (0,-0.9) {\color{brand2}supported\\[1pt]\normalfont\scriptsize 171 / 188 promotion-eligible};
+        \draw[-{Stealth[length=2mm]},muted!70] (h)--(t);
+        \draw[-{Stealth[length=2mm]},brand2] (t)--(v);
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ---------- Coverage: don't drop ----------
+\begin{frame}{The whole point is not to miss anything}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \hl{Keep every member that fits}\\
+      {\footnotesize We used to keep a family's best two and bin the rest. Now any
+      member that runs the right direction and has a real substrate to compare
+      becomes a candidate --- so a big family's long tail survives.}\\[0.9em]
+      \hl{And actually evaluate all of them}\\
+      {\footnotesize Evaluation is just database lookups --- no model calls --- so
+      checking more of them costs almost nothing. Every distinct gene gets
+      evaluated, so a budget can't silently drop one that mattered.}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering
+      \vspace{0.3em}
+      \begin{tikzpicture}[font=\footnotesize]
+        \fill[accent!8,rounded corners] (-0.2,-0.2) rectangle (3.4,1.5);
+        \node[text=accent,font=\bfseries] at (1.6,1.2) {before: keep 2};
+        \foreach \i in {0,...,4}{\fill[muted!30] (\i*0.6,0.3) circle (3pt);}
+        \fill[brand2] (0,0.3) circle (3pt); \fill[brand2] (0.6,0.3) circle (3pt);
+        \node at (1.5,-0.05) {\tiny the rest thrown away};
+        \fill[brand2!10,rounded corners] (-0.2,-2.1) rectangle (3.4,-0.4);
+        \node[text=brand2,font=\bfseries] at (1.6,-0.75) {now: keep them all};
+        \foreach \i in {0,...,4}{\fill[brand2] (\i*0.6,-1.6) circle (3pt);}
+        \node at (1.5,-1.95) {\tiny every member that fits};
+      \end{tikzpicture}
+      \\[0.5em]
+      {\footnotesize\color{muted} Costs a little more. Finding everything matters more.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ---------- Finalization detail ----------
-\begin{frame}{Inside stages 3--5 — candidates to a ranked report}
+\begin{frame}{Inside stages 3--5 --- candidates to a ranked report}
   \vspace{1.4em}
   \centering
   \resizebox{0.99\textwidth}{!}{%
@@ -335,9 +515,9 @@
     \node[fstep,draw=brand2,fill=brand2!9, right=0.9cm of s] (e)
       {{\small\bfseries\color{brand2}Evaluate}\\[3pt]\scriptsize \emph{every} candidate,\\ in parallel\\[2pt]\textcolor{muted}{UniProt·PDB·fit}};
     \node[fstep,draw=st4,fill=st4!9, right=0.9cm of e] (r)
-      {{\small\bfseries\color{st4}Rank}\\[3pt]\scriptsize evidence spine +\\ family relevance\\[2pt]\textcolor{muted}{then LLM focus-rank}};
+      {{\small\bfseries\color{st4}Rank}\\[3pt]\scriptsize fit + family verdict\\ set the tier\\[2pt]\textcolor{muted}{then an LLM read}};
     \node[fstep,draw=st5,fill=st5!9, right=0.9cm of r] (p)
-      {{\small\bfseries\color{st5}Report}\\[3pt]\scriptsize confidence +\\ explorative\\[2pt]\textcolor{muted}{ranked list·structures}};
+      {{\small\bfseries\color{st5}Report}\\[3pt]\scriptsize confident +\\ explorative\\[2pt]\textcolor{muted}{list·structures}};
 
     \draw[flow] (reg) -- (s);
     \draw[flow] (s) -- (e);
@@ -345,248 +525,101 @@
     \draw[flow] (r) -- (p);
   \end{tikzpicture}}
   \vspace{1.6em}
-  \begin{center}{\footnotesize\color{muted} Evaluation uses no model calls — just database
-  lookups — so we can afford to check \emph{everything} and let ranking decide.}\end{center}
-\end{frame}
-
-% ---------- Stage 2 discovery ----------
-\begin{frame}{Three ways it finds candidates}
-  \begin{columns}[T]
-    \begin{column}{0.33\textwidth}
-      \chip{brand}{From the literature}\\[0.5em]
-      \footnotesize
-      Read a few open papers and pull out the enzymes they name or cite. Often the
-      only way to reach something that lives in a recent paper — it's how we got
-      into the answer's \hl{own gene cluster}.
-    \end{column}
-    \begin{column}{0.33\textwidth}
-      \chip{brand}{From the chemistry}\\[0.5em]
-      \footnotesize
-      The model lists the different \hl{folds and chemistries} that make this kind of
-      bond, and we drop any that run the \hlt{wrong way} — a bond-breaking fold can't
-      build one.
-    \end{column}
-    \begin{column}{0.33\textwidth}
-      \chip{brand}{From the fold}\\[0.5em]
-      \footnotesize
-      For each family, look at its members, see whose natural substrate looks most
-      \hl{like our target}, and add the good ones. This is the main engine.
-    \end{column}
-  \end{columns}
-  \vspace{1.0em}
-  \begin{center}
-  \fbox{\parbox{0.92\textwidth}{\centering \small
-    One thing we learned: judge substrate fit \hl{member by member}, not by the
-    family's textbook example — the two are rarely the same.}}
-  \end{center}
-\end{frame}
-
-% ---------- One-to-one ----------
-\begin{frame}{Making the substrate match honest}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      When the target has two substrates, we don't want it to \hla{cheat}. If each
-      one just grabs the enzyme's single best native, both can point at the \emph{same}
-      one — and a bad second partner slips by unnoticed.\\[0.6em]
-      So we match them \hlt{one to one}: each native can serve only one target
-      substrate, and we score the enzyme by its \hl{worst} pairing.\\[0.5em]
-      Two more honesty checks:
-      \begin{itemize}\small
-        \item compare against what the enzyme \hl{consumes}, not what it makes —
-          so a reaction's product can't stand in for the target's partner
-        \item if it has \hla{no real partner} for one of the target substrates,
-          it's \emph{demoted}, not quietly excused
-      \end{itemize}
-      {\footnotesize\color{muted} Now the target's amine is forced onto the enzyme's
-      amine — and a tiny donor like ammonia finally scores as the poor match it is.}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \centering
-      \begin{tikzpicture}[every node/.style={font=\footnotesize},yscale=0.9]
-        \node[text=accent,font=\footnotesize\bfseries] at (1.4,2.5) {each grabs the best (cheats)};
-        \node[draw,rounded corners,fill=soft] (t1) at (0,2) {target A};
-        \node[draw,rounded corners,fill=soft] (t2) at (0,1.2) {target B};
-        \node[draw,rounded corners,fill=brand2!10] (n1) at (2.8,2) {native 1};
-        \node[draw,rounded corners,fill=brand2!10] (n2) at (2.8,1.2) {native 2};
-        \draw[accent,thick] (t1)--(n1);
-        \draw[accent,thick] (t2)--(n1);
-        \node[text=brand2,font=\footnotesize\bfseries] at (1.4,0.2) {one to one (honest)};
-        \node[draw,rounded corners,fill=soft] (u1) at (0,-0.3) {target A};
-        \node[draw,rounded corners,fill=soft] (u2) at (0,-1.1) {target B};
-        \node[draw,rounded corners,fill=brand2!10] (m1) at (2.8,-0.3) {native 1};
-        \node[draw,rounded corners,fill=brand2!10] (m2) at (2.8,-1.1) {native 2};
-        \draw[brand2,thick] (u1)--(m1);
-        \draw[brand2,thick] (u2)--(m2);
-      \end{tikzpicture}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ---------- Substrate-fit method (technical) ----------
-\begin{frame}{Scoring substrate fit — the method}
-  \begin{columns}[T]
-    \begin{column}{0.56\textwidth}
-      Each candidate's native substrate is compared to the target on \hl{six grounded
-      physicochemical axes}, each normalised to $[0,1]$:
-      \begin{itemize}\small
-        \item functional groups \; · \; molecular weight \; · \; main-chain length
-        \item volume \; · \; polarity (TPSA) \; · \; hydrophobicity (logP)
-      \end{itemize}
-      \vspace{0.3em}
-      For a two-substrate target we assign natives \hlt{one-to-one} and score by the
-      \hl{worst pair} (the bottleneck):
-      \vspace{0.2em}
-      \[ \text{fit}\;=\;\max_{\pi\,\in\,\text{1-to-1}}\;\min_{i}\;
-         s\!\left(t_i,\,n_{\pi(i)}\right) \]
-      \vspace{0.0em}
-      \begin{itemize}\small
-        \item size/shape is a \hl{hard steric limit} (a too-large substrate can't bind);
-          chemistry is graded and promiscuity-tolerant
-        \item \hl{no tuned weights} — the \emph{same} scorer feeds promotion and ranking,
-          so they never disagree
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.44\textwidth}
-      \centering
-      \vspace{0.6em}
-      \begin{tikzpicture}[scale=1.05]
-        \foreach \a in {90,150,210,270,330,30} \draw[muted!35] (0,0)--(\a:2);
-        \draw[muted!30] (0,0) circle (2);
-        \draw[muted!18] (0,0) circle (1.33);
-        \draw[muted!18] (0,0) circle (0.66);
-        \draw[fill=st2!16,draw=st2,line width=1.4pt]
-          (90:1.5) -- (150:1.85) -- (210:1.1) -- (270:1.75) -- (330:0.85) -- (30:1.25) -- cycle;
-        \node[font=\scriptsize\color{muted}] at (90:2.35) {chain};
-        \node[font=\scriptsize\color{muted}] at (150:2.3) {MW};
-        \node[font=\scriptsize\color{muted}] at (210:2.35) {FG};
-        \node[font=\scriptsize\color{muted}] at (270:2.35) {TPSA};
-        \node[font=\scriptsize\color{muted}] at (330:2.4) {logP};
-        \node[font=\scriptsize\color{muted}] at (30:2.35) {volume};
-        \node[font=\scriptsize\color{muted}] at (0.32,2.0) {1.0};
-      \end{tikzpicture}
-      \\[0.3em]
-      {\scriptsize\color{muted} one candidate's fit across the six axes\\ (1.0 = identical to target)}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ---------- Don't drop ----------
-\begin{frame}{The whole point is not to miss anything}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \hl{Keep every member that fits}\\
-      {\footnotesize We used to keep only a family's best two. Now every member that
-      runs the right direction and has a real substrate to compare becomes a
-      candidate, so a big family's long tail doesn't get thrown away.}\\[1.0em]
-      \hl{And actually evaluate all of them}\\
-      {\footnotesize Evaluation is just database lookups, no model calls, so looking
-      at more of them is basically free. We check every distinct gene at once — so a
-      budget never quietly drops one that mattered.}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \centering
-      \vspace{0.5em}
-      \begin{tikzpicture}[font=\footnotesize]
-        \fill[accent!8,rounded corners] (-0.2,-0.2) rectangle (3.4,1.5);
-        \node[text=accent,font=\bfseries] at (1.6,1.2) {before: keep 2};
-        \foreach \i in {0,...,4}{\fill[muted!30] (\i*0.6,0.3) circle (3pt);}
-        \fill[brand2] (0,0.3) circle (3pt); \fill[brand2] (0.6,0.3) circle (3pt);
-        \node at (1.5,-0.05) {\tiny the rest thrown away};
-        \fill[brand2!10,rounded corners] (-0.2,-2.1) rectangle (3.4,-0.4);
-        \node[text=brand2,font=\bfseries] at (1.6,-0.75) {now: keep them all};
-        \foreach \i in {0,...,4}{\fill[brand2] (\i*0.6,-1.6) circle (3pt);}
-        \node at (1.5,-1.95) {\tiny every member that fits};
-      \end{tikzpicture}
-      \\[0.4em]
-      {\footnotesize\color{muted} It costs a bit more, but finding everything matters more.}
-    \end{column}
-  \end{columns}
+  \begin{center}{\footnotesize\color{muted} Evaluation makes no model calls --- just
+  database lookups --- so we can afford to check \emph{everything} and let ranking
+  sort it out.}\end{center}
 \end{frame}
 
 % ---------- Ranking ----------
-\begin{frame}{How the final list is ordered}
-  \hl{Relevance decides; evidence only breaks ties.}
+\begin{frame}{How the final list gets ordered}
+  \hl{Fit decides. Evidence only breaks ties.}
   \begin{itemize}
     \item First the reasoning: does it run the \hl{right direction}, and can it host
-      \hl{every} target substrate? A candidate with no real partner for one of them
-      \hla{sinks} — however famous it is.
-    \item A family the agent judged \hlt{off-target} takes its members down with it;
-      members of on-target families float up.
-    \item \hl{Only then} do curation and citations break ties — and the model gives
-      the short list at the top a final, checkable read.
+      \hl{both} target substrates? No real partner for one of them and it
+      \hla{sinks} --- however famous it is.
+    \item A family the agent judged \hlt{off-target} drags its members down;
+      members of supported families float up.
+    \item \hl{Only then} do curation and citations break ties --- and the model gives
+      the short list at the top a last, checkable read.
   \end{itemize}
   \vspace{0.5em}
   \begin{center}
     \tikz[baseline]{\node[draw=brand,rounded corners,fill=brand!6,inner sep=6pt,font=\footnotesize]{%
-      direction\ \ $\rightarrow$\ \ can it host both substrates?\ \ $\rightarrow$\ \ family relevance\ \ $\rightarrow$\ \ evidence, then model read};}
+      direction\ \ $\rightarrow$\ \ can it host both?\ \ $\rightarrow$\ \ family verdict\ \ $\rightarrow$\ \ evidence, then a model read};}
   \end{center}
   \vspace{0.2em}
   \begin{center}{\footnotesize\color{muted} The old order let a well-studied but
-    ill-fitting enzyme ride its citations to the top; now fit comes first.}\end{center}
+    ill-fitting enzyme ride its citations to the top. Now fit comes first.}\end{center}
 \end{frame}
 
 % ---------- Firewall (technical) ----------
-\begin{frame}{Keeping the answer out — how it's enforced}
-  The agent must not be \emph{told} the answer, or it isn't discovering. We enforce
-  that as an explicit contract, not a hope:
+\begin{frame}{Keeping the answer out --- and how that's enforced}
+  If the agent gets \emph{told} the answer, it isn't discovering. So the firewall is
+  a contract, not a hope:
   \vspace{0.4em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hla{What never appears in the agent}
+      \hla{What never shows up in the agent}
       \begin{itemize}\small
-        \item answer enzymes, their substrates, or their families — in \emph{any}
+        \item answer enzymes, their substrates, or their families --- in \emph{any}
           prompt, tool description, or code comment
-        \item answer-adjacent hints (naming the ``right'' fold or mechanism)
+        \item answer-adjacent hints, like naming the ``right'' fold or mechanism
       \end{itemize}
       \vspace{0.3em}
-      \hlt{Where the truth lives}
+      \hlt{Where the truth actually lives}
       \begin{itemize}\small
-        \item only in a held-out oracle used to \emph{grade} a run afterwards
-        \item the agent's code is written to work for \emph{any} target reaction
+        \item only in a held-out oracle we use to \emph{grade} a run afterwards
+        \item the code is written to work for \emph{any} target reaction
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \hl{How it stays true}
+      \hl{How it stays honest}
       \begin{itemize}\small
-        \item the \emph{model proposes / tools find} split: the model picks a \emph{kind}
-          of chemistry; the tools return the specific proteins
-        \item a leakage \texttt{grep} over prompts + code runs on every change
-        \item the test suite pins it (304 tests), so a regression fails loudly
+        \item the \emph{model proposes / tools find} split: the model picks a
+          \emph{kind} of chemistry, the tools return the actual proteins
+        \item a leakage \texttt{grep} over prompts and code runs on every change
+        \item the suite pins it --- \hl{304 tests} --- so a slip fails loudly
       \end{itemize}
     \end{column}
   \end{columns}
   \vspace{0.2em}
   \begin{center}\footnotesize\color{muted}
-    Result: the benchmark answers are a \emph{score}, never an input.
+    Bottom line: the benchmark answers are a \emph{score}, never an input.
   \end{center}
 \end{frame}
 
-% ---------- Results ----------
+% ---------- Results (CONCRETE) ----------
 \begin{frame}{Does it work?}
   \small
-  Our test case: find enzymes that join a six-carbon diacid and a six-carbon
-  diamine — the building blocks of nylon-6,6. The correct answers sit in a separate
-  test the agent never sees; we only use them to grade the run afterwards.
+  Test case: find enzymes that join a six-carbon diacid and a six-carbon diamine ---
+  the building blocks of nylon-6,6. The correct answers live in a test the agent
+  never sees; we only use them to grade the run.
   \vspace{0.4em}
   \begin{columns}[T]
-    \begin{column}{0.52\textwidth}
-      \textbf{What comes back}
+    \begin{column}{0.55\textwidth}
+      \textbf{What came back}
       \begin{itemize}\small
-        \item the top hits are genuine \hl{look-alikes} — enzymes that join citrate to
-          a diamine, chemically close to what we want
-        \item the exact answer, \hlt{DdaG}, shows up at \#4 — found through the
-          literature, sitting in its own gene cluster
-        \item the family list is \hl{clean}: no bond-breaking folds, and the old habit
-          of over-ranking a poor match is gone
+        \item the top three are genuine \hl{look-alikes} --- GS-fold enzymes
+          (\mono{PuuA}, \mono{GlnA2/3}) that glutamylate a diamine, exactly the move
+          we reasoned toward
+        \item the real answer, \hlt{DdaG} (\mono{E2JA32}), lands at \#4 --- pulled in
+          from the \emph{literature}, sitting in its own gene cluster
+        \item the family list is \hl{clean}: no redox folds, no tRNA machinery, no
+          famous-but-ill-fitting enzyme riding its citations up
       \end{itemize}
     \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{And how it behaves}
+    \begin{column}{0.45\textwidth}
+      \textbf{How the run behaved}
       \begin{itemize}\small
-        \item a run dropped from \hlt{53 to 32 minutes} once we trimmed the reading
-        \item almost all of that time is the \hla{model thinking}; the tools take about 2\%
-        \item every candidate we screen now actually gets evaluated
+        \item \hl{89} candidates evaluated, \hl{12} iterations
+        \item \hlt{$\sim$43 min}, $\sim$1.2M tokens --- and almost all the wall-clock
+          is the \hla{model thinking}; tools are about 2\%
+        \item every screened candidate actually gets evaluated
       \end{itemize}
+      \vspace{0.5em}
+      \begin{center}
+        \chip{brand2}{look-alikes on top}\;\chip{accent}{true answer at \#4}
+      \end{center}
     \end{column}
   \end{columns}
 \end{frame}
@@ -595,35 +628,31 @@
 \begin{frame}{What changed recently}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hlt{Reasoning made explicit}
+      \hlt{Reasoning, written down}
       \begin{itemize}\small
-        \item a shared \hl{reasoning contract} — the target's required chemistry,
-          derived once and read by every stage
-        \item families are now \hl{falsifiable hypotheses}, validated claim-by-claim
-          against reviewed catalytic-activity records
-      \end{itemize}
-      \vspace{0.4em}
-      \hl{Honest relevance signal}
-      \begin{itemize}\small
-        \item substrate correspondence over \hl{reactant-side} species only, role-aware
-        \item a candidate that cannot host every target substrate is \hla{demoted},
-          not scored as neutral
+        \item one shared \hl{contract} --- the target's required chemistry, derived
+          once and read by every stage
+        \item families are now \hl{falsifiable hypotheses}, checked claim-by-claim
+          against reviewed records
+        \item counterfactual tests: change one bit of the chemistry, and the
+          verdicts have to change with it
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \hla{Retrieval corrected}
+      \hla{Honest signal}
       \begin{itemize}\small
-        \item mechanism families resolve to the \hl{functional catalytic family},
-          not a coarse structural superfamily
-        \item so the relevant members are actually reached, surveyed and evaluated
-      \end{itemize}
-      \vspace{0.4em}
-      \hl{Auditable provenance}
-      \begin{itemize}\small
-        \item every family and candidate carries \emph{why} — supported / contradicted
-          claims, unaccommodated substrates
+        \item substrate fit over \hl{reactant-side} species only, role-aware,
+          one-to-one
+        \item a candidate that can't host every target substrate is \hla{demoted},
+          not scored as neutral
       \end{itemize}
       \vspace{0.3em}
+      \hl{Auditable}
+      \begin{itemize}\small
+        \item every family and candidate carries a \emph{why} --- supported /
+          contradicted claims, unaccommodated substrates
+      \end{itemize}
+      \vspace{0.2em}
       \begin{center}
         \chip{brand2}{304 tests green}\quad\chip{brand}{answer held out}
       \end{center}
@@ -634,17 +663,17 @@
 % ---------- Limitations ----------
 \begin{frame}{What's still rough}
   \begin{itemize}
-    \item \hl{Literature.} We still miss some of the best papers because we search
-      with the wrong words — and a few are behind paywalls. Rewriting the queries
-      helps, but not reliably yet.
+    \item \hl{Literature.} We still miss some of the best papers --- wrong search
+      words, and a few paywalls. Rewriting the queries helps, but not reliably yet.
     \item \hl{Speed.} Nearly all the time is the model reading long prompts. The wins
-      are shorter prompts and doing the final steps in parallel.
-    \item \hl{Ranking.} A couple of scoring formulas still don't quite agree, and we
-      want a full run to confirm the one-to-one change helps in practice.
-    \item \hl{Coverage.} Make sure we really look at every member of a family, not
-      just the ones we happen to reach.
+      are shorter prompts and running the final steps in parallel.
+    \item \hl{Ranking.} A couple of the scoring formulas still don't fully agree, and
+      we want a full run to confirm the one-to-one change helps in practice.
+    \item \hl{Reasoning spine.} Next up: hang a \hl{reasoning-alignment} record on
+      every candidate and let it drive the tiers, then feed the open questions into
+      structural modeling.
   \end{itemize}
-  \vspace{0.8em}
+  \vspace{0.7em}
   \begin{center}\small\color{muted}
     Everything ships with the tests passing, the answer still hidden, and a note in the log.
   \end{center}
@@ -656,10 +685,10 @@
   \vspace*{2.0em}
   {\color{brand}\rule{\textwidth}{2pt}}\\[1.0em]
   {\LARGE\bfseries\color{ink} Reasoned retrieval, not recall.}\\[0.8em]
-  {\large\color{muted} The model infers the required chemistry and proposes mechanisms;}\\
-  {\large\color{muted} the tools retrieve and validate; ground truth is scored, never seen.}\\[1.4em]
-  \chip{brand}{role-aware substrate fit}\quad
-  \chip{brand2}{exhaustive family coverage}\quad
+  {\large\color{muted} The model works out the chemistry and names the mechanisms;}\\
+  {\large\color{muted} the tools retrieve and check; the answer is scored, never seen.}\\[1.4em]
+  \chip{brand}{one shared contract}\quad
+  \chip{brand2}{falsifiable families}\quad
   \chip{accent}{answer held out}\\[1.0em]
   {\color{brand}\rule{\textwidth}{2pt}}
 \end{frame}}
