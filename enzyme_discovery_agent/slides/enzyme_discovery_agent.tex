@@ -522,16 +522,16 @@
 \end{frame}
 
 % ---------- Ranking ----------
-\begin{frame}{How the final list gets ordered}
-  \hl{Fit decides. Evidence only breaks ties.}
+\begin{frame}{Ranking --- fit-first ordering}
+  \hl{Fit decides; evidence only breaks ties.}
   \begin{itemize}
-    \item First the reasoning: does it run the \hl{right direction}, and can it host
-      \hl{both} target substrates? No real partner for one of them and it
-      \hla{sinks} --- however famous it is.
-    \item A family the agent judged \hlt{off-target} drags its members down;
-      members of supported families float up.
-    \item \hl{Only then} do curation and citations break ties --- and the model gives
-      the short list at the top a last, checkable read.
+    \item First the reasoning: correct \hl{direction}, and can it accommodate
+      \hl{both} target substrates? An unaccommodated substrate \hla{sinks} the
+      candidate, regardless of how well-studied it is.
+    \item A family judged \hlt{off-target} demotes its members; members of supported
+      families are promoted.
+    \item \hl{Only then} do curation status and citation counts break ties --- and the
+      model gives the top shortlist a final, checkable pass.
   \end{itemize}
   \vspace{0.5em}
   \begin{center}
