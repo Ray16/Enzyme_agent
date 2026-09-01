@@ -113,30 +113,31 @@
 \end{frame}
 
 % ---------- Core principle ----------
-\begin{frame}{The idea: guess, then try to break the guess}
+\begin{frame}{The approach: hypothesis-and-test over grounded chemistry}
   \vspace{0.4em}
   \begin{center}
     \begin{tikzpicture}[every node/.style={font=\small},node distance=22mm]
       \node[draw=brand,fill=brand!8,rounded corners,text width=4.7cm,align=center,inner sep=6pt,font=\bfseries] (llm)
-        {Model --- \emph{reasoning}\\[2pt]\normalfont\footnotesize works out what the reaction\\ needs; names folds that might do it};
+        {Model --- \emph{inference}\\[2pt]\normalfont\footnotesize infers the reaction constraints;\\ proposes catalytic folds / mechanisms};
       \node[right=of llm,draw=brand2,fill=brand2!8,rounded corners,text width=4.7cm,align=center,inner sep=6pt,font=\bfseries] (tools)
-        {Tools --- \emph{retrieval}\\[2pt]\normalfont\footnotesize reviewed records, InterPro folds,\\ measured substrate fit};
-      \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{a falsifiable guess} (tools);
+        {Tools --- \emph{retrieval}\\[2pt]\normalfont\footnotesize reviewed records, InterPro folds,\\ measured substrate correspondence};
+      \draw[-{Stealth[length=3mm]},thick,brand] (llm) -- node[above,font=\footnotesize\bfseries,text=muted]{falsifiable hypothesis} (tools);
       \draw[-{Stealth[length=3mm]},thick,brand2] (tools.south) to[bend left=22] node[below,font=\footnotesize\bfseries,text=muted]{evidence / verdict} (llm.south);
     \end{tikzpicture}
   \end{center}
   \vspace{0.3em}
   \begin{center}\footnotesize
-    Every proposal is a \hl{guess we can break} --- a predicted native reaction and
-    substrate scope --- \hlt{checked against retrieved records}, not trusted because
-    the model said it.
+    Each proposal is a \hl{falsifiable hypothesis} --- a predicted native reaction and
+    substrate scope --- \hlt{validated against retrieved reviewed records}, not
+    accepted because the model named it.
   \end{center}
   \vspace{0.3em}
   \begin{center}\footnotesize
-    \hlt{Grounded:} code measures the facts, the model reasons; candidates ranked
-    \emph{relative} to each other, no tuned cutoffs.\\[3pt]
-    \hla{Answer out:} answer enzymes and families never touch a prompt --- ground
-    truth is a held-out \emph{score}, never an input.
+    \hlt{Grounded, threshold-free:} deterministic code extracts the physicochemical
+    facts; the model reasons over them. Candidates are ranked \emph{relative} to one
+    another --- no tuned cutoffs.\\[3pt]
+    \hla{Answer firewall:} answer accessions, substrates and families are excluded from
+    every prompt and tool schema; ground truth is a held-out \emph{score}, never an input.
   \end{center}
 \end{frame}
 
