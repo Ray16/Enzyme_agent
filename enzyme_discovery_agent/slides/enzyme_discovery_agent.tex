@@ -544,38 +544,38 @@
 \end{frame}
 
 % ---------- Firewall (technical) ----------
-\begin{frame}{Keeping the answer out --- and how that's enforced}
-  If the agent gets \emph{told} the answer, it isn't discovering. So the firewall is
-  a contract, not a hope:
+\begin{frame}{The answer firewall --- and how it's enforced}
+  If the agent is \emph{told} the answer, it is not discovering. The firewall is an
+  explicit contract, not an assumption:
   \vspace{0.4em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \hla{What never shows up in the agent}
+      \hla{Excluded from the agent}
       \begin{itemize}\small
         \item answer enzymes, their substrates, or their families --- in \emph{any}
           prompt, tool description, or code comment
-        \item answer-adjacent hints, like naming the ``right'' fold or mechanism
+        \item answer-adjacent hints, e.g. naming the ``correct'' fold or mechanism
       \end{itemize}
       \vspace{0.3em}
-      \hlt{Where the truth actually lives}
+      \hlt{Where ground truth lives}
       \begin{itemize}\small
-        \item only in a held-out oracle we use to \emph{grade} a run afterwards
-        \item the code is written to work for \emph{any} target reaction
+        \item only in a held-out oracle, used to \emph{grade} a run post hoc
+        \item the code is written to generalize to \emph{any} target reaction
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \hl{How it stays honest}
+      \hl{How it's enforced}
       \begin{itemize}\small
-        \item the \emph{model proposes / tools find} split: the model picks a
-          \emph{kind} of chemistry, the tools return the actual proteins
+        \item the \emph{model-proposes / tools-retrieve} split: the model selects a
+          chemistry \emph{class}; the tools return the specific proteins
         \item a leakage \texttt{grep} over prompts and code runs on every change
-        \item the suite pins it --- \hl{304 tests} --- so a slip fails loudly
+        \item the suite pins it --- \hl{304 tests} --- so a regression fails loudly
       \end{itemize}
     \end{column}
   \end{columns}
   \vspace{0.2em}
   \begin{center}\footnotesize\color{muted}
-    Bottom line: the benchmark answers are a \emph{score}, never an input.
+    Net: the benchmark answers are a \emph{score}, never an input.
   \end{center}
 \end{frame}
 
