@@ -104,7 +104,7 @@
       \begin{tikzpicture}[node distance=6mm,every node/.style={font=\footnotesize}]
         \node[draw=brand,rounded corners,fill=soft,text width=3.1cm,align=center,inner sep=5pt] (s) {a target reaction\\ \textcolor{muted}{substrate A + substrate B}};
         \node[below=of s,draw=muted,rounded corners,text width=3.1cm,align=center,inner sep=5pt] (q) {?};
-        \node[below=of q,draw=brand2,rounded corners,fill=brand2!8,text width=3.1cm,align=center,inner sep=5pt] (e) {enzymes that\\ can make it happen};
+        \node[below=of q,draw=brand2,rounded corners,fill=brand2!8,text width=3.1cm,align=center,inner sep=5pt] (e) {enzymes that\\ can catalyze it};
         \draw[-{Stealth[length=2mm]},brand,thick] (s)--(q);
         \draw[-{Stealth[length=2mm]},brand2,thick] (q)--(e);
       \end{tikzpicture}
