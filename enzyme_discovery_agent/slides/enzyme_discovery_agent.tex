@@ -168,17 +168,18 @@
 \end{frame}
 
 % ---------- Shared reasoning contract (CONCRETE) ----------
-\begin{frame}{Stage 1: write down what the reaction demands}
+\begin{frame}{Stage 1 --- derive the reaction's chemical constraints}
   \begin{columns}[T]
     \begin{column}{0.44\textwidth}
-      Before it searches anything, the agent writes one \hlt{contract} for the
-      run: what bond changes, which way it runs, the reactive groups in play, and
-      the \hl{activation problem} a catalyst has to solve.\\[0.4em]
-      Every later stage reads the \emph{same} contract, so discovery, screening and
-      ranking can't quietly disagree about what we're after.\\[0.4em]
-      {\footnotesize\color{muted} Mechanical facts come \tagm{} off the structures.
-      The harder calls are \tagi{}, each tagged with a confidence --- so a fact and
-      a hunch never look alike.}
+      Before any search, the agent derives one \hlt{contract} for the run: the bond
+      that changes, the reaction direction, the substrates' reactive groups, and the
+      \hl{activation problem} a catalyst must resolve.\\[0.4em]
+      Every downstream stage reads the \emph{same} contract, so discovery, screening
+      and ranking cannot diverge on the required chemistry.\\[0.4em]
+      {\footnotesize\color{muted} Mechanical facts are extracted \tagm{}
+      deterministically from the structures; the inferential calls are the model's
+      \tagi{}, each tagged with an uncertainty --- a measured fact and an inference
+      are never conflated.}
     \end{column}
     \begin{column}{0.56\textwidth}
       \footnotesize
