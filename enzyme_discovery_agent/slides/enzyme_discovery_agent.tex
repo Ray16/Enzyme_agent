@@ -85,18 +85,19 @@
 \begin{frame}{The problem}
   \begin{columns}[T]
     \begin{column}{0.56\textwidth}
-      You hand it a reaction — some substrates, a product — and it has to come
-      back with enzymes that could run it.\\[0.5em]
-      That's hard, for three reasons:
+      Given a target reaction — substrates and a product — return enzymes that
+      could catalyze it.\\[0.5em]
+      Three things make it hard:
       \begin{itemize}
-        \item the reaction is often something \hl{nature doesn't do}, so nothing
-          is labelled for it
-        \item there's nothing to look up — the answer has to be \hl{worked out}
-        \item and the haystack is \hl{hundreds of millions} of proteins
+        \item the reaction is often \hl{non-natural} --- no known biological
+          catalyst, so nothing is annotated for it
+        \item there is no lookup --- the catalyst must be \hl{inferred}, not
+          retrieved by name
+        \item the search space is \hl{$10^8$+ sequences} (UniProt-scale)
       \end{itemize}
       \vspace{0.4em}
-      Here's the catch. Hand the agent the answer's family up front and it isn't
-      \hla{discovering} anything — it's just reading back what you told it.
+      The constraint: seed the search with the answer's family and the task
+      collapses from \hla{discovery} into retrieval.
     \end{column}
     \begin{column}{0.44\textwidth}
       \centering
