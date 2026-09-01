@@ -534,14 +534,14 @@
 
 % ---------- Downstream handoff ----------
 \begin{frame}{Downstream --- the structural-modeling handoff}
-  The agent stops at a \hl{reviewed shortlist} --- accessions, verified substrate
-  SMILES, reaction chemistry, structure sources. Structural modeling is the
-  deliberate next step, where \hl{geometry} (not just substrate fit) decides.
-  \vspace{0.7em}
+  The agent stops at a \hl{reviewed shortlist} (accessions, verified SMILES, reaction
+  chemistry, structures). Structural modeling is the deliberate next step --- where
+  \hl{geometry}, not just fit, decides.
+  \vspace{0.5em}
   \begin{center}
   \resizebox{0.98\textwidth}{!}{%
-  \begin{tikzpicture}[every node/.style={font=\scriptsize},node distance=7mm,
-     box/.style={draw,rounded corners,align=center,inner sep=5pt,text width=2.7cm,minimum height=1.5cm},
+  \begin{tikzpicture}[every node/.style={font=\scriptsize},node distance=6mm,
+     box/.style={draw,rounded corners,align=center,inner sep=5pt,text width=2.7cm,minimum height=1.3cm},
      fl/.style={-{Stealth[length=2.6mm]},line width=1.2pt,draw=muted!70}]
     \node[box,draw=st5,fill=st5!8] (a) {shortlist\\ \textcolor{muted}{sequence + substrate SMILES}};
     \node[box,draw=st1,fill=st1!8,right=of a] (b) {cofolded complex\\ \textcolor{muted}{enzyme + substrates}};
