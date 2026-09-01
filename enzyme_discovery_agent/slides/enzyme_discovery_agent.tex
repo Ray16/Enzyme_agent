@@ -581,28 +581,28 @@
     \begin{column}{0.5\textwidth}
       \hla{Excluded from the agent}
       \begin{itemize}\small
-        \item answer enzymes, their substrates, or their families --- in \emph{any}
-          prompt, tool description, or code comment
+        \item answer enzymes, substrates, or families --- in \emph{any} prompt, tool
+          schema, or comment
         \item answer-adjacent hints, e.g. naming the ``correct'' fold or mechanism
       \end{itemize}
       \vspace{0.3em}
       \hlt{Where ground truth lives}
       \begin{itemize}\small
         \item only in a held-out oracle, used to \emph{grade} a run post hoc
-        \item the code is written to generalize to \emph{any} target reaction
+        \item the code generalizes to \emph{any} target reaction
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
       \hl{How it's enforced}
       \begin{itemize}\small
-        \item the \emph{model-proposes / tools-retrieve} split: the model selects a
-          chemistry \emph{class}; the tools return the specific proteins
+        \item the \emph{model-proposes / tools-retrieve} split: model picks a chemistry
+          \emph{class}, tools return the proteins
         \item a leakage \texttt{grep} over prompts and code runs on every change
-        \item the suite pins it --- \hl{304 tests} --- so a regression fails loudly
+        \item the suite pins it --- \hl{304 tests} --- a regression fails loudly
       \end{itemize}
     \end{column}
   \end{columns}
-  \vspace{0.2em}
+  \vspace{0.4em}
   \begin{center}\footnotesize\color{muted}
     Net: the benchmark answers are a \emph{score}, never an input.
   \end{center}
