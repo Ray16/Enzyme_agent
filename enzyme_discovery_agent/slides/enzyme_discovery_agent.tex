@@ -57,6 +57,11 @@
 \newcommand{\hlt}[1]{{\color{brand2}\textbf{#1}}}
 \newcommand{\hla}[1]{{\color{accent}\textbf{#1}}}
 \newcommand{\chip}[2]{\tikz[baseline=(x.base)]{\node[fill=#1!12,draw=#1,rounded corners=3pt,inner sep=3pt,text=#1!75!black,font=\footnotesize\bfseries](x){#2};}}
+% monospace data (SMILES, accessions) in a subtle tint
+\newcommand{\mono}[1]{{\ttfamily\small\color{ink}#1}}
+% provenance tags: measured vs inferred
+\newcommand{\tagm}{\chip{brand2}{measured}}
+\newcommand{\tagi}{\chip{accent}{inferred}}
 
 \title{Enzyme Discovery Agent}
 
