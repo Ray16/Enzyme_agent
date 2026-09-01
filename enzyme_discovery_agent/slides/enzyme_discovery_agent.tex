@@ -449,13 +449,12 @@
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       \hl{Promote every member that fits}\\
-      {\footnotesize Previously we retained only a family's top two members. Now every
-      same-direction member with a resolvable native substrate is promoted, so a large
-      family's long tail is preserved.}\\[0.9em]
+      {\footnotesize Old: keep a family's top two. Now: promote \emph{every}
+      same-direction member with a resolvable native substrate --- the long tail
+      survives.}\\[1.0em]
       \hl{And evaluate all of them}\\
-      {\footnotesize Evaluation is deterministic database lookup --- no model calls ---
-      so breadth is nearly free. Every distinct gene is evaluated, so no budget
-      silently drops a relevant candidate.}
+      {\footnotesize Evaluation is deterministic lookup (no model calls), so breadth is
+      nearly free. Every distinct gene is evaluated --- no budget drops a relevant hit.}
     \end{column}
     \begin{column}{0.48\textwidth}
       \centering
