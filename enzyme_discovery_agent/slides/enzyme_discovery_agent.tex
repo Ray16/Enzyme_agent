@@ -223,9 +223,9 @@
 
     \node[io]  (tp)  at (2.3,5.15) {the contract\\ \textcolor{muted}{bond\,·\,direction}};
     \node[llm] (llm) at (2.3,2.75) {LLM\\[1pt]\normalfont\scriptsize proposes\\ \normalfont\scriptsize each step};
-    \node[gate] (g1) at (8.7,4.35) {\textbf{Literature} --- read a few open papers,\\ keep the enzymes they \emph{name or cite}};
-    \node[gate] (g2) at (8.7,2.75) {\textbf{Mechanism families} --- name the folds,\\ drop the ones running the wrong way};
-    \node[gate] (g3) at (8.7,1.15) {\textbf{InterPro survey} --- score members' fit,\\ promote \emph{every} relevant one};
+    \node[gate] (g1) at (8.7,4.35) {\textbf{Literature} --- parse open-access papers,\\ retain \emph{named / cited} enzymes};
+    \node[gate] (g2) at (8.7,2.75) {\textbf{Mechanism families} --- enumerate folds,\\ drop the wrong-direction ones};
+    \node[gate] (g3) at (8.7,1.15) {\textbf{InterPro survey} --- score member fit,\\ promote \emph{every} relevant member};
     \node[store] (reg) at (13.4,2.75) {Candidate\\ registry};
 
     \draw[flow] (tp) -- (llm);
