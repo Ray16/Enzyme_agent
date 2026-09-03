@@ -21,6 +21,14 @@ sequence in InterPro"; plus **UniProt/UniParc** native functional annotation.
   fold). Native reaction is sparse: only NylC (Q79F77) has a curated EC (3.5.1.117); 95/96 have
   predicted names only. 73/96 Table S1 accessions are retired in UniProt but recovered via UniParc.
 
+## Figures (`figures/`)
+- `panel_discoverability_summary.png` / `.svg` — 3-panel summary: (1) where each panel lives
+  (live UniProtKB reviewed/TrEMBL vs retired→UniParc-only), (2) the agent discovery funnel for
+  hydrolases (96 in panel → 96 InterPro family → 28 live UniProtKB → 1 EC-promotable), (3)
+  annotation coverage of both panels incl. **native reaction (`cc_catalytic_activity`)**.
+- `figure_stats.json` — the exact counts behind the figure.
+- Native-reaction (`cc_catalytic_activity`) coverage: **synthetases 2/48, hydrolases 1/96** (NylC).
+
 ## Related (not in this folder)
 - `../amide_hydrolase_biorep_activity.csv` — primary activity data; now carries `uniprot_id` +
   `sequence` columns (from Table S1).
