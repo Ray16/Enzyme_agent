@@ -6,7 +6,7 @@ Replicates the DesD NAC definition (select_diad_nac_50models.py):
   electrophile = ATP alpha-phosphate PA (LIG chain B)
   leaving axis = O3A
   d = |O_nuc - PA| ;  angle = O_nuc - PA - O3A  (in-line, ideal 180)
-  NAC pass = d < 4.5 A AND angle > 140 deg
+  NAC pass = d < 4.0 A AND angle > 150 deg
 Carboxylate O found geometrically (C with >=2 O within 1.6 A), so naming-independent.
 
 Aggregates over the 50 diffusion samples per enzyme, writes a per-enzyme table,
