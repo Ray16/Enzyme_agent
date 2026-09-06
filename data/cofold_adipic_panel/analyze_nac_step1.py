@@ -110,31 +110,32 @@ def main():
             "activity_N66L1": act.get(name),
         })
 
-    rows.sort(key=lambda r: (-r["nac_frac"], r["min_d"]))
+    rows.sort(key=lambda r: (-r["nac_frac_150"], r["min_d"]))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(f"{OUT}.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
 
-    # Spearman: NAC fraction vs activity (over enzymes with measured activity)
     def spearman(x, y):
-        n = len(x)
-        rx = np.argsort(np.argsort(x)); ry = np.argsort(np.argsort(y))
-        rx = rx - rx.mean(); ry = ry - ry.mean()
+        rx = np.argsort(np.argsort(x)).astype(float); ry = np.argsort(np.argsort(y)).astype(float)
+        rx -= rx.mean(); ry -= ry.mean()
         return float((rx @ ry) / (np.sqrt((rx@rx) * (ry@ry)) + 1e-12))
-    pairs = [(r["nac_frac"], r["activity_N66L1"]) for r in rows if r["activity_N66L1"] is not None]
-    x = np.array([p[0] for p in pairs]); y = np.array([p[1] for p in pairs])
-    rho_frac = spearman(x, y)
-    xd = np.array([-r["min_d"] for r in rows if r["activity_N66L1"] is not None])
-    rho_d = spearman(xd, y)
+    m = [r for r in rows if r["activity_N66L1"] is not None]
+    y = np.array([r["activity_N66L1"] for r in m])
+    rho_150 = spearman(np.array([r["nac_frac_150"] for r in m]), y)
+    rho_140 = spearman(np.array([r["nac_frac_140"] for r in m]), y)
+    rho_d = spearman(np.array([-r["min_d"] for r in m]), y)
 
     print(f"Analyzed {len(rows)} enzymes ({sum(r['n_models'] for r in rows)} models).")
-    print(f"NAC pass = d<{D_CUT}A & angle>{A_CUT}deg\n")
-    print(f"{'id':6s} {'nac_frac':>8s} {'pass':>5s} {'min_d':>6s} {'ang@min':>7s} {'act_N66L1':>10s}")
+    print(f"NAC pass: d<{D_CUT}A AND angle>{A_CUT}deg (primary); 140deg shown for comparison\n")
+    print(f"{'id':6s} {'frac150':>7s} {'frac140':>7s} {'min_d':>6s} {'ang@min':>7s} {'maxang':>6s} {'act_N66L1':>10s}")
     for r in rows[:15]:
         a = "" if r["activity_N66L1"] is None else f"{r['activity_N66L1']:.3f}"
-        print(f"{r['id']:6s} {r['nac_frac']:>8.2f} {r['nac_pass']:>5d} {r['min_d']:>6.2f} {r['best_angle_at_min_d']:>7.1f} {a:>10s}")
-    print(f"\nSpearman rho (NAC fraction vs N66 L1 activity, n={len(pairs)}): {rho_frac:.3f}")
-    print(f"Spearman rho (-min_d      vs N66 L1 activity, n={len(pairs)}): {rho_d:.3f}")
+        print(f"{r['id']:6s} {r['nac_frac_150']:>7.2f} {r['nac_frac_140']:>7.2f} {r['min_d']:>6.2f} "
+              f"{r['best_angle_at_min_d']:>7.1f} {r['max_angle']:>6.1f} {a:>10s}")
+    print(f"\nSpearman rho vs N66 L1 activity (n={len(m)}):")
+    print(f"  NAC frac @150 : {rho_150:.3f}")
+    print(f"  NAC frac @140 : {rho_140:.3f}")
+    print(f"  -min_d        : {rho_d:.3f}")
     print(f"\nWrote {OUT}.csv")
 
 
