@@ -97,12 +97,10 @@ def main():
         if not ds:
             continue
         ds = np.array(ds); ang = np.array(ang)
-        p150 = int(np.sum((ds < D_CUT) & (ang > A_CUT)))
-        p140 = int(np.sum((ds < D_CUT) & (ang > A_CUT_LOOSE)))
+        npass = int(np.sum((ds < D_CUT) & (ang > A_CUT)))
         rows.append({
             "id": name, "n_models": len(ds),
-            "nac_pass_150": p150, "nac_frac_150": round(p150 / len(ds), 3),
-            "nac_frac_140": round(p140 / len(ds), 3),
+            "nac_pass": npass, "nac_frac": round(npass / len(ds), 3),
             "min_d": round(float(ds.min()), 2),
             "median_d": round(float(np.median(ds)), 2),
             "best_angle_at_min_d": round(float(ang[int(ds.argmin())]), 1),
