@@ -65,9 +65,11 @@ def nac_model(pdb):
             pa, o3a = nm["PA"], nm["O3A"]; break
     sub = None
     for (ch, rn), lst in atoms.items():
-        if any(n == "PA" for (n, e, x) in lst):
+        if rn != "LIG":            # ligand only -- NOT protein Asp/Glu carboxylates
             continue
-        if carboxylate_oxygens(lst):
+        if any(n == "PA" for (n, e, x) in lst):   # skip ATP (LIG chain B)
+            continue
+        if carboxylate_oxygens(lst):               # -> adipate (LIG chain E)
             sub = lst; break
     if pa is None or sub is None:
         return None
