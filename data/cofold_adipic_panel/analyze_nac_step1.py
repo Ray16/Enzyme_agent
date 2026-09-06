@@ -77,36 +77,43 @@ def nac_model(pdb):
     return d, a
 
 
+def process_config(cfgdir):
+    """Parse all 50 models of one enzyme -> aggregate NAC row (worker)."""
+    name = os.path.basename(cfgdir)[len("step1_"):]
+    pred = f"{cfgdir}/boltz_results_step1_{name}/predictions/step1_{name}"
+    ds, ang = [], []
+    for pdb in sorted(glob.glob(f"{pred}/step1_{name}_model_*.pdb")):
+        r = nac_model(pdb)
+        if r is None:
+            continue
+        d, a = r; ds.append(d); ang.append(a)
+    if not ds:
+        return None
+    ds = np.array(ds); ang = np.array(ang)
+    npass = int(np.sum((ds < D_CUT) & (ang > A_CUT)))
+    return {
+        "id": name, "n_models": len(ds),
+        "nac_pass": npass, "nac_frac": round(npass / len(ds), 3),
+        "min_d": round(float(ds.min()), 2),
+        "median_d": round(float(np.median(ds)), 2),
+        "best_angle_at_min_d": round(float(ang[int(ds.argmin())]), 1),
+        "max_angle": round(float(ang.max()), 1),
+        "activity_N66L1": None,   # filled in main from activity CSV
+    }
+
+
 def main():
-    # load activity
+    from multiprocessing import Pool
     act = {}
     for r in csv.DictReader(open(ACT)):
         v = r.get("activity_N66L1_ugml_avg", "")
         act[r["id"]] = float(v) if v not in ("", None) else None
 
-    rows = []
-    for cfgdir in sorted(glob.glob(f"{RES}/step1_*")):
-        name = os.path.basename(cfgdir)[len("step1_"):]
-        pred = f"{cfgdir}/boltz_results_step1_{name}/predictions/step1_{name}"
-        ds, ang = [], []
-        for pdb in sorted(glob.glob(f"{pred}/step1_{name}_model_*.pdb")):
-            r = nac_model(pdb)
-            if r is None:
-                continue
-            d, a = r; ds.append(d); ang.append(a)
-        if not ds:
-            continue
-        ds = np.array(ds); ang = np.array(ang)
-        npass = int(np.sum((ds < D_CUT) & (ang > A_CUT)))
-        rows.append({
-            "id": name, "n_models": len(ds),
-            "nac_pass": npass, "nac_frac": round(npass / len(ds), 3),
-            "min_d": round(float(ds.min()), 2),
-            "median_d": round(float(np.median(ds)), 2),
-            "best_angle_at_min_d": round(float(ang[int(ds.argmin())]), 1),
-            "max_angle": round(float(ang.max()), 1),
-            "activity_N66L1": act.get(name),
-        })
+    cfgdirs = sorted(glob.glob(f"{RES}/step1_*"))
+    with Pool(min(len(cfgdirs), 32)) as pool:
+        rows = [r for r in pool.map(process_config, cfgdirs) if r is not None]
+    for r in rows:
+        r["activity_N66L1"] = act.get(r["id"])
 
     rows.sort(key=lambda r: (-r["nac_frac"], r["min_d"]))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
