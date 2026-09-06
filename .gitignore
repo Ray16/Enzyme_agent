@@ -99,3 +99,10 @@ secrets.json
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+
+# Overleaf candidacy paper (separate git repo synced to Overleaf)
+overleaf-candidacy/
+
+# Boltz cofold results pulled from Aurora (large: archives + extracted trees)
+exp_data/*_results.tar.zst
+exp_data/*_results/
