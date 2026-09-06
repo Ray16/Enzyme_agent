@@ -19,7 +19,11 @@ ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
 RES = f"{ROOT}/exp_data/sfab_step1_results/output_configs"
 ACT = f"{ROOT}/exp_data/SfaB_diversity_panel.csv"
 OUT = f"{ROOT}/exp_data/sfab_step1_results/nac_step1"
-D_CUT, A_CUT = 4.5, 140.0
+# In-line nucleophilic attack: ideal angle 180 deg. Primary cutoff 150 deg
+# (within 30 deg of ideal); 140 kept as a looser sensitivity comparison.
+D_CUT = 4.5
+A_CUT = 150.0          # primary (was 140 in the DesD script)
+A_CUT_LOOSE = 140.0
 
 
 def parse_pdb(path):
