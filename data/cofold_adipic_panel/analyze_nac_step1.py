@@ -19,11 +19,11 @@ ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
 RES = f"{ROOT}/exp_data/sfab_step1_results/output_configs"
 ACT = f"{ROOT}/exp_data/SfaB_diversity_panel.csv"
 OUT = f"{ROOT}/exp_data/sfab_step1_results/nac_step1"
-# In-line nucleophilic attack: ideal angle 180 deg. Primary cutoff 150 deg
-# (within 30 deg of ideal); 140 kept as a looser sensitivity comparison.
-D_CUT = 4.5
-A_CUT = 150.0          # primary (was 140 in the DesD script)
-A_CUT_LOOSE = 140.0
+# NAC cutoffs matching the DesD analysis-dir scripts
+# (analysis/donor_preference/analyze_cofold_nac.py: D_CUT, A_CUT = 4.0, 150.0).
+# In-line nucleophilic attack on ATP Pa; ideal angle 180 deg.
+D_CUT = 4.0
+A_CUT = 150.0
 
 
 def parse_pdb(path):
