@@ -12,7 +12,6 @@ Pocket: read from exp_data/sfab_step1_results (model_0 of each enzyme).
 """
 import csv, glob, hashlib, os, urllib.request
 import numpy as np
-from Bio.PDB import PDBParser
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
 PANEL = f"{ROOT}/data/cofold_adipic_panel"
