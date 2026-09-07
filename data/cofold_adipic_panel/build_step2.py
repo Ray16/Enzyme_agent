@@ -50,10 +50,7 @@ def pocket_residues(name):
     if not lig or not prot:
         return None
     lig = np.array(lig)
-    dmin = {rn: min(np.linalg.norm(np.array(coords)[:, None, :] - lig[None, :, :], axis=2).min()
-                    for _ in [0])
-            for rn, coords in prot.items()}
-    # min heavy-atom distance from each residue to the complex
+    # min heavy-atom distance from each residue to the substrate+cofactor complex
     dmin = {rn: float(np.linalg.norm(np.array(coords)[:, None, :] - lig[None, :, :], axis=2).min())
             for rn, coords in prot.items()}
     nearest = sorted(dmin, key=lambda rn: dmin[rn])[:NEAREST_N]
