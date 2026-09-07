@@ -31,19 +31,25 @@ def pocket_residues(name):
     pdb = f"{S1}/step1_{name}/boltz_results_step1_{name}/predictions/step1_{name}/step1_{name}_model_0.pdb"
     if not os.path.exists(pdb):
         return None
-    m = PDBParser(QUIET=True).get_structure("s", pdb)[0]
-    lig = []
-    for ch in LIG_CHAINS:
-        if ch in m:
-            lig += [a.get_coord() for a in m[ch].get_atoms()]
-    lig = np.array(lig)
-    hits = []
-    for res in m["A"]:
-        if res.id[0] != " ":
+    prot = {}          # resnum -> list of heavy-atom xyz (chain A)
+    lig = []           # ligand/cofactor heavy-atom xyz (chains B..E)
+    for line in open(pdb):
+        if not line.startswith(("ATOM", "HETATM")):
             continue
-        rc = np.array([a.get_coord() for a in res if a.element != "H"])
-        if rc.size and np.linalg.norm(rc[:, None, :] - lig[None, :, :], axis=2).min() <= CUTOFF:
-            hits.append(res.id[1])
+        chain = line[21].strip()
+        elem = (line[76:78].strip() or line[12:16].strip()[0]).upper()
+        if elem == "H":
+            continue
+        xyz = [float(line[30:38]), float(line[38:46]), float(line[46:54])]
+        if chain == "A" and line.startswith("ATOM"):
+            prot.setdefault(int(line[22:26]), []).append(xyz)
+        elif chain in LIG_CHAINS:
+            lig.append(xyz)
+    if not lig or not prot:
+        return None
+    lig = np.array(lig)
+    hits = [rn for rn, coords in prot.items()
+            if np.linalg.norm(np.array(coords)[:, None, :] - lig[None, :, :], axis=2).min() <= CUTOFF]
     return sorted(hits)[:NRES]
 
 def yaml_for(seq, msa_path, contacts):
