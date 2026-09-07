@@ -21,36 +21,48 @@ OUT = f"{PANEL}/step2"; os.makedirs(OUT, exist_ok=True)
 
 ACYLAMP = "Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O"
 HMDA = "NCCCCCC[NH3+]"                       # one free -NH2 nucleophile, one -NH3+
-LIG_CHAINS = ["B", "C", "D", "E"]           # step-1: ATP, MG, MG, adipate
-CUTOFF, NRES = 5.0, 15
+POCKET_CUT = 8.0                            # DesD: heavy atom within 8 A of reactive-center midpoint
 
 def seqhash(s): return hashlib.sha1(s.encode()).hexdigest()[:16]
 
 def pocket_residues(name):
-    """First NRES protein residues within CUTOFF of any lig/cofactor atom (step-1 model_0)."""
+    """DesD recipe: protein residues with any heavy atom within 8 A of the
+    midpoint between the substrate's proximal carboxyl C and ATP Pa
+    (the adenylation reactive center) in the step-1 model_0. All such residues."""
     pdb = f"{S1}/step1_{name}/boltz_results_step1_{name}/predictions/step1_{name}/step1_{name}_model_0.pdb"
     if not os.path.exists(pdb):
         return None
-    prot = {}          # resnum -> list of heavy-atom xyz (chain A)
-    lig = []           # ligand/cofactor heavy-atom xyz (chains B..E)
+    prot = {}                 # resnum -> [heavy xyz]  (protein chain A)
+    B = []                    # (name, elem, xyz) for ATP chain B
+    E = []                    # (elem, xyz) for adipate chain E
     for line in open(pdb):
         if not line.startswith(("ATOM", "HETATM")):
             continue
-        chain = line[21].strip()
-        elem = (line[76:78].strip() or line[12:16].strip()[0]).upper()
+        ch = line[21].strip(); an = line[12:16].strip()
+        elem = (line[76:78].strip() or an[0]).upper()
         if elem == "H":
             continue
-        xyz = [float(line[30:38]), float(line[38:46]), float(line[46:54])]
-        if chain == "A" and line.startswith("ATOM"):
+        xyz = np.array([float(line[30:38]), float(line[38:46]), float(line[46:54])])
+        if ch == "A" and line.startswith("ATOM"):
             prot.setdefault(int(line[22:26]), []).append(xyz)
-        elif chain in LIG_CHAINS:
-            lig.append(xyz)
-    if not lig or not prot:
+        elif ch == "B":
+            B.append((an, elem, xyz))
+        elif ch == "E":
+            E.append((elem, xyz))
+    # ATP alpha-phosphate
+    PA = next((x for (a, e, x) in B if a == "PA"), None)
+    if PA is None or not E or not prot:
         return None
-    lig = np.array(lig)
+    # proximal carboxyl carbon of adipate = carboxyl C (>=2 O within 1.6 A) nearest PA
+    Os = [x for (e, x) in E if e == "O"]; Cs = [x for (e, x) in E if e == "C"]
+    carbox_C = [cx for cx in Cs if sum(np.linalg.norm(cx - ox) < 1.6 for ox in Os) >= 2]
+    if not carbox_C:
+        return None
+    prox_C = min(carbox_C, key=lambda cx: np.linalg.norm(cx - PA))
+    mid = (PA + prox_C) / 2.0
     hits = [rn for rn, coords in prot.items()
-            if np.linalg.norm(np.array(coords)[:, None, :] - lig[None, :, :], axis=2).min() <= CUTOFF]
-    return sorted(hits)[:NRES]
+            if min(np.linalg.norm(c - mid) for c in coords) <= POCKET_CUT]
+    return sorted(hits)
 
 def yaml_for(seq, msa_path, contacts):
     c = "\n".join(f"        - [A, {r}]" for r in contacts)
