@@ -21,20 +21,20 @@ OUT = f"{PANEL}/step2"; os.makedirs(OUT, exist_ok=True)
 
 ACYLAMP = "Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O"
 HMDA = "NCCCCCC[NH3+]"                       # one free -NH2 nucleophile, one -NH3+
-POCKET_CUT = 8.0                            # DesD: heavy atom within 8 A of reactive-center midpoint
+LIG_CHAINS = ["B", "C", "D", "E"]           # step-1: ATP, MG, MG, adipate (substrate+cofactor complex)
+NEAREST_N = 15                              # the 15 protein residues nearest the substrate+cofactor
 
 def seqhash(s): return hashlib.sha1(s.encode()).hexdigest()[:16]
 
 def pocket_residues(name):
-    """DesD recipe: protein residues with any heavy atom within 8 A of the
-    midpoint between the substrate's proximal carboxyl C and ATP Pa
-    (the adenylation reactive center) in the step-1 model_0. All such residues."""
+    """Option A: the NEAREST_N protein residues (min heavy-atom distance) to the
+    substrate+cofactor complex (adipate + ATP + 2Mg) in the step-1 model_0,
+    ranked by distance. Returns them sorted by residue number for readability."""
     pdb = f"{S1}/step1_{name}/boltz_results_step1_{name}/predictions/step1_{name}/step1_{name}_model_0.pdb"
     if not os.path.exists(pdb):
         return None
     prot = {}                 # resnum -> [heavy xyz]  (protein chain A)
-    B = []                    # (name, elem, xyz) for ATP chain B
-    E = []                    # (elem, xyz) for adipate chain E
+    lig = []                  # heavy-atom xyz of the ligand+cofactor complex (chains B..E)
     for line in open(pdb):
         if not line.startswith(("ATOM", "HETATM")):
             continue
@@ -45,24 +45,19 @@ def pocket_residues(name):
         xyz = np.array([float(line[30:38]), float(line[38:46]), float(line[46:54])])
         if ch == "A" and line.startswith("ATOM"):
             prot.setdefault(int(line[22:26]), []).append(xyz)
-        elif ch == "B":
-            B.append((an, elem, xyz))
-        elif ch == "E":
-            E.append((elem, xyz))
-    # ATP alpha-phosphate
-    PA = next((x for (a, e, x) in B if a == "PA"), None)
-    if PA is None or not E or not prot:
+        elif ch in LIG_CHAINS:
+            lig.append(xyz)
+    if not lig or not prot:
         return None
-    # proximal carboxyl carbon of adipate = carboxyl C (>=2 O within 1.6 A) nearest PA
-    Os = [x for (e, x) in E if e == "O"]; Cs = [x for (e, x) in E if e == "C"]
-    carbox_C = [cx for cx in Cs if sum(np.linalg.norm(cx - ox) < 1.6 for ox in Os) >= 2]
-    if not carbox_C:
-        return None
-    prox_C = min(carbox_C, key=lambda cx: np.linalg.norm(cx - PA))
-    mid = (PA + prox_C) / 2.0
-    hits = [rn for rn, coords in prot.items()
-            if min(np.linalg.norm(c - mid) for c in coords) <= POCKET_CUT]
-    return sorted(hits)
+    lig = np.array(lig)
+    dmin = {rn: min(np.linalg.norm(np.array(coords)[:, None, :] - lig[None, :, :], axis=2).min()
+                    for _ in [0])
+            for rn, coords in prot.items()}
+    # min heavy-atom distance from each residue to the complex
+    dmin = {rn: float(np.linalg.norm(np.array(coords)[:, None, :] - lig[None, :, :], axis=2).min())
+            for rn, coords in prot.items()}
+    nearest = sorted(dmin, key=lambda rn: dmin[rn])[:NEAREST_N]
+    return sorted(nearest)
 
 def yaml_for(seq, msa_path, contacts):
     c = "\n".join(f"        - [A, {r}]" for r in contacts)
