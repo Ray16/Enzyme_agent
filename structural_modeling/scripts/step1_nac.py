@@ -95,7 +95,7 @@ def process_config(args):
     cfgdir, mech = args
     name = os.path.basename(cfgdir)[len("step1_"):]
     pred = f"{cfgdir}/boltz_results_step1_{name}/predictions/step1_{name}"
-    rows = [g for pdb in sorted(glob.glob(f"{pred}/step1_{name}_model_*.pdb"))
+    rows = [g for pdb in sorted(glob.glob(f"{pred}/*model_*.pdb"))
             if (g := geom_model(pdb)) is not None]
     if not rows:
         return None
