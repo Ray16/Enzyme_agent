@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+"""Aminolysis attack geometry (step-2 NAC) for the SfaB panel.
+
+Reaction: HMDA free amine attacks the acyl-AMP carbonyl carbon (-> amide + AMP).
+  nucleophile  = HMDA neutral amine N (chain C)
+  electrophile = acyl-AMP carbonyl C (chain B): the C bearing a carbonyl =O whose
+                 OTHER oxygen neighbour is bonded to P (the mixed-anhydride linkage)
+  d     = |N - C|                 (attack distance)
+  angle = N - C = O               (Burgi-Dunitz, ideal ~107 deg)
+  NAC   = d < 3.5 A AND 90 <= angle <= 130
+
+Nucleophile choice: HMDA SMILES is 'NCCCCCC[NH3+]' -> the FIRST amine (neutral, N1
+in Boltz atom order) is the nucleophile; the [NH3+] end is protonated. We take the
+N that is NOT the protonated terminus. If atom names are ambiguous we fall back to
+the amine nearest the reactive carbonyl. (Confirm atom naming from a real PDB.)
+
+Aggregates over 50 models/enzyme, merges N66 L1 activity, tests discrimination.
+"""
+import csv, glob, os, sys
+import numpy as np
+from multiprocessing import Pool
+
+ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
+RES = f"{ROOT}/exp_data/sfab_step2_results/output_configs"
+ACT = f"{ROOT}/exp_data/SfaB_diversity_panel.csv"
+OUT = f"{ROOT}/exp_data/sfab_step2_results/nac_step2.csv"
+D_CUT, A_LO, A_HI = 3.5, 90.0, 130.0
+NUC_ATOM = os.environ.get("NUC_ATOM", "N1")   # override after confirming PDB naming
+
+
+def parse(path):
+    """Return (B_atoms, C_atoms) as lists of (name, elem, xyz)."""
+    B, C = [], []
+    for ln in open(path):
+        if not ln.startswith(("ATOM", "HETATM")):
+            continue
+        ch = ln[21]; an = ln[12:16].strip(); elem = (ln[76:78].strip() or an[0]).upper()
+        xyz = np.array([float(ln[30:38]), float(ln[38:46]), float(ln[46:54])])
+        if ch == "B":
+            B.append((an, elem, xyz))
+        elif ch == "C":
+            C.append((an, elem, xyz))
+    return B, C
+
+
+def acyl_carbonyl(B):
+    """Carbonyl C of the acyl-AMP linkage: C with a =O and an O neighbour bonded to P."""
+    Cs = [(n, x) for (n, e, x) in B if e == "C"]
+    Os = [x for (n, e, x) in B if e == "O"]
+    Ps = [x for (n, e, x) in B if e == "P"]
+    for cn, cx in Cs:
+        o_nb = [ox for ox in Os if np.linalg.norm(cx - ox) < 1.6]
+        if len(o_nb) < 2:
+            continue
+        # need one O double-bonded (carbonyl, no P near) and one O bonded to P (ester)
+        ester = [ox for ox in o_nb if any(np.linalg.norm(ox - px) < 1.8 for px in Ps)]
+        carbonyl = [ox for ox in o_nb if ox is not None and not any(np.linalg.norm(ox - px) < 1.8 for px in Ps)]
+        if ester and carbonyl:
+            return cx, carbonyl[0]      # (carbonyl C, carbonyl O)
+    return None
+
+
+def nucleophile_N(C, carbonyl_c):
+    Ns = [(n, x) for (n, e, x) in C if e == "N"]
+    if not Ns:
+        return None
+    named = [x for (n, x) in Ns if n == NUC_ATOM]
+    if named:
+        return named[0]
+    # fallback: amine nearest the carbonyl (the one poised to attack)
+    return min((x for _, x in Ns), key=lambda x: np.linalg.norm(x - carbonyl_c))
+
+
+def process(cfgdir):
+    name = os.path.basename(cfgdir)[len("step2_"):] if os.path.basename(cfgdir).startswith("step2_") else os.path.basename(cfgdir)
+    base = os.path.basename(cfgdir)
+    pred = f"{cfgdir}/boltz_results_{base}/predictions/{base}"
+    ds, angs = [], []
+    for pdb in sorted(glob.glob(f"{pred}/{base}_model_*.pdb")):
+        B, C = parse(pdb)
+        ac = acyl_carbonyl(B)
+        if ac is None or not C:
+            continue
+        cc, co = ac
+        nn = nucleophile_N(C, cc)
+        if nn is None:
+            continue
+        d = float(np.linalg.norm(nn - cc))
+        v1 = nn - cc; v2 = co - cc
+        ang = float(np.degrees(np.arccos(np.clip(np.dot(v1, v2) /
+                    (np.linalg.norm(v1) * np.linalg.norm(v2)), -1, 1))))
+        ds.append(d); angs.append(ang)
+    if not ds:
+        return None
+    ds = np.array(ds); angs = np.array(angs)
+    npass = int(np.sum((ds < D_CUT) & (angs >= A_LO) & (angs <= A_HI)))
+    return {"id": name, "n": len(ds), "nac_pass": npass, "nac_frac": round(npass/len(ds), 3),
+            "min_d": round(float(ds.min()), 2), "median_d": round(float(np.median(ds)), 2),
+            "bd_at_min_d": round(float(angs[int(ds.argmin())]), 1)}
+
+
+def spearman(x, y):
+    rx = np.argsort(np.argsort(x)).astype(float); ry = np.argsort(np.argsort(y)).astype(float)
+    rx -= rx.mean(); ry -= ry.mean()
+    return float((rx@ry)/(np.sqrt((rx@rx)*(ry@ry))+1e-12))
+
+
+def main():
+    act = {}
+    for r in csv.DictReader(open(ACT)):
+        v = r.get("activity_N66L1_ugml_avg", "")
+        act[r["id"]] = float(v) if v not in ("", None) else None
+    cfgdirs = sorted(glob.glob(f"{RES}/*"))
+    with Pool(min(len(cfgdirs), 32)) as p:
+        rows = [r for r in p.map(process, cfgdirs) if r]
+    for r in rows:
+        r["activity_N66L1"] = act.get(r["id"])
+    rows.sort(key=lambda r: (-r["nac_frac"], r["min_d"]))
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    with open(OUT, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
+
+    m = [r for r in rows if r["activity_N66L1"] is not None]
+    y = np.array([r["activity_N66L1"] for r in m])
+    print(f"Analyzed {len(rows)} enzymes ({sum(r['n'] for r in rows)} models); nucleophile atom={NUC_ATOM}")
+    print(f"NAC: d<{D_CUT}A & BD in [{A_LO},{A_HI}]  (HMDA amine -> acyl-AMP carbonyl)\n")
+    print(f"  Spearman NAC_frac vs N66 L1 activity: {spearman(np.array([r['nac_frac'] for r in m]), y):+.3f}")
+    print(f"  Spearman -min_d   vs N66 L1 activity: {spearman(np.array([-r['min_d'] for r in m]), y):+.3f}  (n={len(m)})")
+    active = [r for r in m if r["activity_N66L1"] >= 0.5]
+    inactive = [r for r in m if r["activity_N66L1"] < 0.5]
+    print(f"\nactive (>=0.5) n={len(active)}: NAC_frac mean {np.mean([r['nac_frac'] for r in active]):.3f}")
+    print(f"inactive n={len(inactive)}: NAC_frac mean {np.mean([r['nac_frac'] for r in inactive]):.3f}")
+    print(f"\nactive enzymes' standing:")
+    for r in sorted(active, key=lambda r: -r["activity_N66L1"]):
+        rank = [x["id"] for x in rows].index(r["id"]) + 1
+        print(f"  {r['id']:6s} act={r['activity_N66L1']:.2f} nac_frac={r['nac_frac']:.2f} rank {rank}/{len(rows)} min_d={r['min_d']} bd={r['bd_at_min_d']}")
+    print(f"\nTop 8 by NAC_frac:")
+    for r in rows[:8]:
+        a = "" if r["activity_N66L1"] is None else f"{r['activity_N66L1']:.3f}"
+        print(f"  {r['id']:6s} nac_frac={r['nac_frac']:.2f} min_d={r['min_d']} bd={r['bd_at_min_d']} act={a}")
+    print(f"\nWrote {OUT}")
+
+
+if __name__ == "__main__":
+    main()
