@@ -2,10 +2,16 @@
 """Apply the standard proxy-evaluation block (AUROC + CI + perm-p + precision@k)
 consistently to every geometric proxy we've computed, across both panels."""
 import csv, os, sys
+from multiprocessing import Pool
 sys.path.insert(0, os.path.dirname(__file__))
 from proxy_eval import evaluate, fmt
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
+
+
+def _eval(job):
+    scores, labels, name, hb = job
+    return evaluate(scores, labels, name, hb)
 
 
 def load(path):
