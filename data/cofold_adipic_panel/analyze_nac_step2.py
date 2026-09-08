@@ -112,29 +112,32 @@ def main():
         rows = [r for r in p.map(process, cfgdirs) if r]
     for r in rows:
         r["activity_N66L1"] = act.get(r["id"])
-    rows.sort(key=lambda r: (-r["nac_frac"], r["min_d"]))
+    rows.sort(key=lambda r: r["min_d"])     # best (shortest) attack distance first
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
 
     m = [r for r in rows if r["activity_N66L1"] is not None]
     y = np.array([r["activity_N66L1"] for r in m])
-    print(f"Analyzed {len(rows)} enzymes ({sum(r['n'] for r in rows)} models); nucleophile atom={NUC_ATOM}")
-    print(f"NAC: d<{D_CUT}A & BD in [{A_LO},{A_HI}]  (HMDA amine -> acyl-AMP carbonyl)\n")
-    print(f"  Spearman NAC_frac vs N66 L1 activity: {spearman(np.array([r['nac_frac'] for r in m]), y):+.3f}")
-    print(f"  Spearman -min_d   vs N66 L1 activity: {spearman(np.array([-r['min_d'] for r in m]), y):+.3f}  (n={len(m)})")
+    print(f"Analyzed {len(rows)} enzymes ({sum(r['n'] for r in rows)} models)")
+    print("STEP-2 ATTACK DISTANCE only (HMDA amine -> acyl-AMP carbonyl C), n={}\n".format(len(m)))
+    for key, lab in [("min_d","min attack dist"), ("median_d","median dist"),
+                     ("mean_d","mean dist"), ("frac_lt4","frac models <4A"), ("frac_lt5","frac models <5A")]:
+        # for distances, shorter = better -> correlate with -dist; for fracs, higher=better
+        x = np.array([-r[key] if key.endswith("_d") else r[key] for r in m])
+        print(f"  Spearman ({lab:16s}) vs activity: {spearman(x, y):+.3f}")
     active = [r for r in m if r["activity_N66L1"] >= 0.5]
     inactive = [r for r in m if r["activity_N66L1"] < 0.5]
-    print(f"\nactive (>=0.5) n={len(active)}: NAC_frac mean {np.mean([r['nac_frac'] for r in active]):.3f}")
-    print(f"inactive n={len(inactive)}: NAC_frac mean {np.mean([r['nac_frac'] for r in inactive]):.3f}")
-    print(f"\nactive enzymes' standing:")
+    print(f"\nactive (>=0.5) n={len(active)}: min_d mean {np.mean([r['min_d'] for r in active]):.2f}")
+    print(f"inactive     n={len(inactive)}: min_d mean {np.mean([r['min_d'] for r in inactive]):.2f}")
+    print(f"\nactive enzymes' standing (ranked by min attack distance, 1=closest):")
     for r in sorted(active, key=lambda r: -r["activity_N66L1"]):
         rank = [x["id"] for x in rows].index(r["id"]) + 1
-        print(f"  {r['id']:6s} act={r['activity_N66L1']:.2f} nac_frac={r['nac_frac']:.2f} rank {rank}/{len(rows)} min_d={r['min_d']} bd={r['bd_at_min_d']}")
-    print(f"\nTop 8 by NAC_frac:")
+        print(f"  {r['id']:6s} act={r['activity_N66L1']:.2f}  min_d={r['min_d']}  median_d={r['median_d']}  rank {rank}/{len(rows)}")
+    print(f"\nClosest 8 by min attack distance:")
     for r in rows[:8]:
         a = "" if r["activity_N66L1"] is None else f"{r['activity_N66L1']:.3f}"
-        print(f"  {r['id']:6s} nac_frac={r['nac_frac']:.2f} min_d={r['min_d']} bd={r['bd_at_min_d']} act={a}")
+        print(f"  {r['id']:6s} min_d={r['min_d']}  median_d={r['median_d']}  frac<4A={r['frac_lt4']}  act={a}")
     print(f"\nWrote {OUT}")
 
 
