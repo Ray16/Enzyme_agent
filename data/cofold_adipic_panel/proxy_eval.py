@@ -11,13 +11,16 @@ Higher proxy score should mean "more active"; pass higher_better=False for a
 distance-like proxy (shorter = better) and it is negated internally.
 """
 import numpy as np
+from scipy.stats import rankdata
 
 
 def auroc(s, y):
-    pos, neg = s[y == 1], s[y == 0]
-    if len(pos) == 0 or len(neg) == 0:
+    """Mann-Whitney AUROC via tie-averaged ranks (vectorised, O(n log n))."""
+    n1 = int(y.sum()); n0 = len(y) - n1
+    if n1 == 0 or n0 == 0:
         return float("nan")
-    return sum((p > n) + 0.5 * (p == n) for p in pos for n in neg) / (len(pos) * len(neg))
+    r = rankdata(s)                        # tie-averaged ranks
+    return (r[y == 1].sum() - n1 * (n1 + 1) / 2.0) / (n1 * n0)
 
 
 def evaluate(scores, labels, name="", higher_better=True,
