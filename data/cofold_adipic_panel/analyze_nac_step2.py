@@ -74,7 +74,7 @@ def process(cfgdir):
     name = os.path.basename(cfgdir)[len("step2_"):] if os.path.basename(cfgdir).startswith("step2_") else os.path.basename(cfgdir)
     base = os.path.basename(cfgdir)
     pred = f"{cfgdir}/boltz_results_{base}/predictions/{base}"
-    ds, angs = [], []
+    ds = []
     for pdb in sorted(glob.glob(f"{pred}/{base}_model_*.pdb")):
         B, C = parse(pdb)
         ac = acyl_carbonyl(B)
@@ -84,18 +84,16 @@ def process(cfgdir):
         nn = nucleophile_N(C, cc)
         if nn is None:
             continue
-        d = float(np.linalg.norm(nn - cc))
-        v1 = nn - cc; v2 = co - cc
-        ang = float(np.degrees(np.arccos(np.clip(np.dot(v1, v2) /
-                    (np.linalg.norm(v1) * np.linalg.norm(v2)), -1, 1))))
-        ds.append(d); angs.append(ang)
+        ds.append(float(np.linalg.norm(nn - cc)))     # ATTACK DISTANCE only
     if not ds:
         return None
-    ds = np.array(ds); angs = np.array(angs)
-    npass = int(np.sum((ds < D_CUT) & (angs >= A_LO) & (angs <= A_HI)))
-    return {"id": name, "n": len(ds), "nac_pass": npass, "nac_frac": round(npass/len(ds), 3),
-            "min_d": round(float(ds.min()), 2), "median_d": round(float(np.median(ds)), 2),
-            "bd_at_min_d": round(float(angs[int(ds.argmin())]), 1)}
+    ds = np.array(ds)
+    return {"id": name, "n": len(ds),
+            "min_d": round(float(ds.min()), 2),
+            "median_d": round(float(np.median(ds)), 2),
+            "mean_d": round(float(ds.mean()), 2),
+            "frac_lt4": round(float((ds < 4.0).mean()), 3),
+            "frac_lt5": round(float((ds < 5.0).mean()), 3)}
 
 
 def spearman(x, y):
