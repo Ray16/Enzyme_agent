@@ -37,9 +37,14 @@ def evaluate(scores, labels, name="", higher_better=True,
         if not np.isnan(a):
             boot.append(a)
     lo, hi = (np.percentile(boot, 2.5), np.percentile(boot, 97.5)) if boot else (np.nan, np.nan)
-    # permutation p (shuffle labels)
-    perm = np.array([auroc(s, rng.permutation(y)) for _ in range(nperm)])
-    pval = float((perm >= obs).mean())
+    # permutation p (shuffle labels) -- VECTORISED & EXACT: permutation only
+    # relabels, so ranks are fixed; AUROC under a permutation is fully determined
+    # by which n1 ranks get the "active" label. Draw all nperm label-sets at once.
+    n1 = int(y.sum()); n0 = len(y) - n1
+    r = rankdata(s)
+    picks = np.argsort(rng.random((nperm, len(r))), axis=1)[:, :n1]   # n1 random ranks/perm
+    perm_auroc = (r[picks].sum(axis=1) - n1 * (n1 + 1) / 2.0) / (n1 * n0)
+    pval = float((perm_auroc >= obs).mean())
     # precision@k (top-k by proxy score)
     order = np.argsort(-s, kind="mergesort")
     prec = {k: (int(y[order[:k]].sum()), k) for k in ks}
