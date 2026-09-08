@@ -41,12 +41,6 @@ def parse_pdb(path):
     return atoms
 
 
-def angle_deg(a, b, c):
-    v1, v2 = a - b, c - b
-    cos = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
-    return float(np.degrees(np.arccos(np.clip(cos, -1, 1))))
-
-
 def carboxylate_oxygens(lst):
     C = [(n, x) for (n, e, x) in lst if e == "C"]
     O = [(n, x) for (n, e, x) in lst if e == "O"]
