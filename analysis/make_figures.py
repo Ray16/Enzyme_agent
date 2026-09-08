@@ -78,29 +78,32 @@ def fig_summary():
     plt.tight_layout(rect=[0, 0, 1, 0.97]); plt.savefig(f"{FIG}/summary_geometry_vs_activity.png", dpi=130, bbox_inches="tight"); plt.close(fig)
 
 
+def _step1_per_model(cd):
+    """Per-model (attack distance, in-line angle) for one step-1 enzyme (module-level for Pool)."""
+    b = os.path.basename(cd); name = b[len("step1_"):]; pred = f"{cd}/boltz_results_{b}/predictions/{b}"
+    rows = []
+    for pdb in glob.glob(f"{pred}/{b}_model_*.pdb"):
+        at = {}
+        for ch, het, an, el, xyz in iter_atoms(pdb):
+            at.setdefault(het, []).append((an, el, xyz))
+        pa = o3a = None
+        for lst in at.values():
+            nm = {a: x for a, e, x in lst}
+            if "PA" in nm and "O3A" in nm: pa, o3a = nm["PA"], nm["O3A"]; break
+        het = at.get(True, [])
+        cb = carboxylate_oxygens([(e, x) for a, e, x in het])
+        if pa is None or not cb: continue
+        o = min(cb, key=lambda x: np.linalg.norm(x - pa))
+        rows.append((float(np.linalg.norm(o - pa)), angle_deg(o, pa, o3a)))
+    return name, np.array(rows) if rows else None
+
+
 def fig_step1_scatter():
     """NAC fraction vs activity + per-model geometry scatter (parses step-1 PDBs)."""
     from multiprocessing import Pool
     rc = {r["id"]: r for r in load(f"{EXP}/sfab_step1_results/nac_step1.csv")}
     RES = f"{EXP}/sfab_step1_results/output_configs"
-    def per_model(cd):
-        b = os.path.basename(cd); name = b[len("step1_"):]; pred = f"{cd}/boltz_results_{b}/predictions/{b}"
-        rows = []
-        for pdb in glob.glob(f"{pred}/{b}_model_*.pdb"):
-            at = {}
-            for ch, het, an, el, xyz in iter_atoms(pdb):
-                at.setdefault(het, []).append((an, el, xyz))
-            pa = o3a = None
-            for lst in at.values():
-                nm = {a: x for a, e, x in lst}
-                if "PA" in nm and "O3A" in nm: pa, o3a = nm["PA"], nm["O3A"]; break
-            het = at.get(True, [])
-            cb = carboxylate_oxygens([(e, x) for a, e, x in het])
-            if pa is None or not cb: continue
-            o = min(cb, key=lambda x: np.linalg.norm(x - pa))
-            rows.append((float(np.linalg.norm(o - pa)), angle_deg(o, pa, o3a)))
-        return name, np.array(rows) if rows else None
-    with Pool(32) as p: data = {n: a for n, a in p.map(per_model, sorted(glob.glob(f"{RES}/*"))) if a is not None}
+    with Pool(32) as p: data = {n: a for n, a in p.map(_step1_per_model, sorted(glob.glob(f"{RES}/*"))) if a is not None}
     fig, ax = plt.subplots(1, 2, figsize=(15, 6))
     fig.suptitle("Step-1 adenylation NAC (amide synthetase) — the signal-carrying proxy", fontsize=13, fontweight="bold")
     ids = list(data)
