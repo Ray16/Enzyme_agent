@@ -45,7 +45,11 @@ def y(name):
 
 n = 0; bad = []
 for name in seqs:
-    if f"{name}_a" not in msa or f"{name}_b" not in msa:
+    k = split.get(name)
+    if k is None:
+        bad.append(name); continue
+    s = seqs[name]; alpha, beta = s[:k-1], s[k-1:]
+    if not (os.path.exists(frag_msa(alpha)) and os.path.exists(frag_msa(beta))):
         bad.append(name); continue
     open(os.path.join(INP, f"{name}.yaml"), "w").write(y(name))
     n += 1
