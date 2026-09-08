@@ -61,14 +61,13 @@ def acyl_carbonyl(B):
 
 
 def nucleophile_N(C, carbonyl_c):
-    Ns = [(n, x) for (n, e, x) in C if e == "N"]
-    if not Ns:
-        return None
-    named = [x for (n, x) in Ns if n == NUC_ATOM]
-    if named:
-        return named[0]
-    # fallback: amine nearest the carbonyl (the one poised to attack)
-    return min((x for _, x in Ns), key=lambda x: np.linalg.norm(x - carbonyl_c))
+    # HMDA SMILES 'NCCCCCC[NH3+]': the FIRST N (in atom order) is the neutral
+    # -NH2 nucleophile; the last N is the protonated [NH3+]. Boltz preserves
+    # SMILES atom order, so the first N encountered in chain C is the nucleophile.
+    for (n, e, x) in C:
+        if e == "N":
+            return x
+    return None
 
 
 def process(cfgdir):
