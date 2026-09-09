@@ -88,12 +88,12 @@ def main():
             r.update(id=eid, phosphate=tag.upper())
             rows.append(r)
 
-    rows.sort(key=lambda r: (-(r["inline_frac_gated"] if r["docking_ok"] and r["inline_frac_gated"] is not None else -1)))
-    cols = ["id", "phosphate", "inline_frac_gated", "docking_ok", "n_gated", "mean_iptm", "best_angle", "inline_frac_all"]
-    print(f"{'id':10} {'P':3} {'inline_gated':>12} {'dock_ok':>8} {'n_gated':>8} {'iptm':>6}")
+    rows.sort(key=lambda r: (-(r["mean_inline_angle"] if r["docking_ok"] and r["mean_inline_angle"] is not None else -1)))
+    cols = ["id", "phosphate", "mean_inline_angle", "inline_frac_gated", "docking_ok", "n_gated", "mean_iptm", "best_angle"]
+    print(f"{'id':10} {'P':3} {'mean_angle':>10} {'inline_frac':>11} {'dock_ok':>8} {'n_gated':>8} {'iptm':>6}")
     for r in rows:
-        v = r["inline_frac_gated"] if r["docking_ok"] else "INCONCL"
-        print(f"{r['id']:10} {r['phosphate']:3} {str(v):>12} {str(r['docking_ok']):>8} {r['n_gated']:>8} {r['mean_iptm']:>6}")
+        v = r["mean_inline_angle"] if r["docking_ok"] else "INCONCL"
+        print(f"{r['id']:10} {r['phosphate']:3} {str(v):>10} {str(r['inline_frac_gated']):>11} {str(r['docking_ok']):>8} {r['n_gated']:>8} {r['mean_iptm']:>6}")
 
     if args.out:
         import csv
