@@ -48,12 +48,15 @@ def score_config(pred, tag, gate=IPTM_GATE):
     a = np.array([p[0] for p in per]); d = np.array([p[1] for p in per]); ip = np.array([p[2] for p in per])
     gm = ip > gate
     n_gated = int(gm.sum())
+    ag = a[gm] if n_gated else a
     return {
         "n_models": len(per),
         "n_gated": n_gated,
         "mean_iptm": round(float(np.nanmean(ip)), 3),
         "docking_ok": n_gated >= 5,                       # else inconclusive
-        "inline_frac_gated": round(float(np.mean(a[gm] > A_CUT)), 3) if n_gated else None,
+        # PRIMARY: continuous mean in-line angle among gated poses (de-saturated; rho~0.21 on panel)
+        "mean_inline_angle": round(float(ag.mean()), 1) if n_gated else None,
+        "inline_frac_gated": round(float(np.mean(ag > A_CUT)), 3) if n_gated else None,
         "inline_frac_all": round(float(np.mean(a > A_CUT)), 3),
         "best_angle": round(float(a.max()), 1),
     }
