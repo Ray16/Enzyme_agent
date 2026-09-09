@@ -25,6 +25,9 @@ import step1_nac as s
 
 A_CUT = 150.0
 IPTM_GATE = 0.6
+D_GATE = 8.0        # loose distance gate: substrate carboxylate in the catalytic subsite.
+                    # Validated best "docked?" criterion (rho 0.265 vs 0.214 for iptm gate);
+                    # distance as a GATE (not a score component) is what your intuition nailed.
 ADENYLATE_KEYS = ("iuca", "iucc", "aerobactin", "amp-binding", "anl")  # -> Pa
 
 
