@@ -25,9 +25,11 @@ import step1_nac as s
 
 A_CUT = 150.0
 IPTM_GATE = 0.6
-D_GATE = 8.0        # loose distance gate: substrate carboxylate in the catalytic subsite.
-                    # Validated best "docked?" criterion (rho 0.265 vs 0.214 for iptm gate);
-                    # distance as a GATE (not a score component) is what your intuition nailed.
+D_GATE = 4.0        # near-attack distance gate: keep only poses where the carboxylate O actually
+                    # reached attack distance of the phosphate, THEN score the mean in-line angle
+                    # among them. Physically principled (true near-attack ~3.5-4A) AND empirically
+                    # best on the panel (rho ~0.30 vs 0.27 at 8A, 0.09 for raw NAC). Distance is a
+                    # GATE (condition on near-attack), never a score component. <5 poses -> INCONCLUSIVE.
 ADENYLATE_KEYS = ("iuca", "iucc", "aerobactin", "amp-binding", "anl")  # -> Pa
 
 
