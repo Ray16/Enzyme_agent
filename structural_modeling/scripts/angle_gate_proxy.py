@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Angle-gate proxy — the validated static-cofold activity signal.
+
+Decision (validated on the 50-member SfaB panel with measured N66 activity):
+  * NAC (distance AND angle) fails: the hard distance gate is corrupted by docking
+    failures and cancels the angle signal (rho ~ 0.09).
+  * Pocket-restraining (force=true) makes it WORSE (inverts: dead>active).
+  * The signal lives in the IN-LINE ANGLE alone, on UNRESTRAINED cofolds, with a
+    confidence gate (drop docking-failed poses via ATP x ligand iptm).
+
+Proxy per enzyme = fraction of confidently-docked poses whose mechanism-appropriate
+attack angle exceeds 150 deg.  On the panel: rho ~ 0.21-0.28 vs activity, full recall
+of actives (incl. AS8 that NAC buried), dead-vs-active gap +0.52.
+
+Interpretation: in-line angle is NECESSARY but not SUFFICIENT -> use as a recall-oriented
+NEGATIVE/coarse filter (prune non-attack-competent candidates), NOT a fine ranker.
+
+Usage: angle_gate_proxy.py <results/output_configs> [--phosphate pa|pg|auto] [--reps reps.csv]
+"""
+import argparse, glob, json, os, sys
+import numpy as np
+sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "analysis", "common"))
+import step1_nac as s
+
+A_CUT = 150.0
+IPTM_GATE = 0.6
+ADENYLATE_KEYS = ("iuca", "iucc", "aerobactin", "amp-binding", "anl")  # -> Pa
+
+
+def mechanism_phosphate(family):
+    f = (family or "").lower()
+    return "pa" if any(k in f for k in ADENYLATE_KEYS) else "pg"
+
+
+def score_config(pred, tag, gate=IPTM_GATE):
+    per = []
+    for pdb in sorted(glob.glob(f"{pred}/*model_*.pdb")):
+        g = s.geom_model(pdb)
+        if not g:
+            continue
+        mn = pdb.split("model_")[-1].split(".pdb")[0]
+        cj = glob.glob(f"{pred}/confidence_*model_{mn}.json")
+        ip = json.load(open(cj[0]))["pair_chains_iptm"]["1"]["4"] if cj else np.nan
+        per.append((g[f"ang_{tag}"], g[f"d_{tag}"], ip))
+    if not per:
+        return None
+    a = np.array([p[0] for p in per]); d = np.array([p[1] for p in per]); ip = np.array([p[2] for p in per])
+    gm = ip > gate
+    n_gated = int(gm.sum())
+    return {
+        "n_models": len(per),
+        "n_gated": n_gated,
+        "mean_iptm": round(float(np.nanmean(ip)), 3),
+        "docking_ok": n_gated >= 5,                       # else inconclusive
+        "inline_frac_gated": round(float(np.mean(a[gm] > A_CUT)), 3) if n_gated else None,
+        "inline_frac_all": round(float(np.mean(a > A_CUT)), 3),
+        "best_angle": round(float(a.max()), 1),
+    }
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("results")
+    ap.add_argument("--phosphate", default="auto", choices=["pa", "pg", "auto"])
+    ap.add_argument("--reps", default=None, help="representatives.csv for auto mechanism (interpro_family)")
+    ap.add_argument("--prefix", default="step1_")
+    ap.add_argument("--out", default=None)
+    args = ap.parse_args()
+
+    fam = {}
+    if args.reps and os.path.exists(args.reps):
+        import csv
+        fam = {r["accession"]: r.get("interpro_family", "") for r in csv.DictReader(open(args.reps))}
+
+    rows = []
+    for cfg in sorted(glob.glob(f"{args.results}/{args.prefix}*")):
+        eid = os.path.basename(cfg)[len(args.prefix):]
+        pred = glob.glob(f"{cfg}/boltz_results_*/predictions/*")
+        if not pred:
+            continue
+        tag = args.phosphate if args.phosphate != "auto" else mechanism_phosphate(fam.get(eid, ""))
+        r = score_config(pred[0], tag)
+        if r:
+            r.update(id=eid, phosphate=tag.upper())
+            rows.append(r)
+
+    rows.sort(key=lambda r: (-(r["inline_frac_gated"] if r["docking_ok"] and r["inline_frac_gated"] is not None else -1)))
+    cols = ["id", "phosphate", "inline_frac_gated", "docking_ok", "n_gated", "mean_iptm", "best_angle", "inline_frac_all"]
+    print(f"{'id':10} {'P':3} {'inline_gated':>12} {'dock_ok':>8} {'n_gated':>8} {'iptm':>6}")
+    for r in rows:
+        v = r["inline_frac_gated"] if r["docking_ok"] else "INCONCL"
+        print(f"{r['id']:10} {r['phosphate']:3} {str(v):>12} {str(r['docking_ok']):>8} {r['n_gated']:>8} {r['mean_iptm']:>6}")
+
+    if args.out:
+        import csv
+        with open(args.out, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=cols); w.writeheader()
+            for r in rows:
+                w.writerow({k: r.get(k) for k in cols})
+        print(f"\nwrote {args.out}")
+
+
+if __name__ == "__main__":
+    main()
