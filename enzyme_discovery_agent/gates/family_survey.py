@@ -142,10 +142,26 @@ class FamilySurveyGate:
         # fall back to the active file only before the ledger exists.
         from enzyme_discovery_agent.models.family_ledger import load_family_ledger
         records = load_family_ledger(run_dir).get("families", {})
-        ledgered = [
-            rec["hypothesis"] for rec in records.values()
-            if isinstance(rec, dict) and rec.get("hypothesis")
-        ]
+        ledgered: list[dict] = []
+        for rec in records.values():
+            if not isinstance(rec, dict):
+                continue
+            hypothesis = rec.get("hypothesis")
+            if not hypothesis:
+                continue
+            if rec.get("search_priority") == "focus":
+                ledgered.append(hypothesis)
+                continue
+            # Survey an EXPLORATION route too, EXCEPT when it is grounded
+            # off-target for a free-substrate target: a carrier-protein-tethered
+            # substrate topology (substrates_free is False) or an engineering-only
+            # start has no free-substrate native members to promote, so surveying
+            # it only spends compute. A free-substrate route that was demoted for
+            # an incidental topology mention (e.g. "intramolecular") IS surveyed,
+            # so its relevant family is recovered rather than silently dropped.
+            if (hypothesis.get("substrates_free") is not False
+                    and hypothesis.get("route_type") != "engineering_start"):
+                ledgered.append(hypothesis)
         if ledgered:
             return ledgered
         try:
