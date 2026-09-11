@@ -82,21 +82,43 @@ def _reactions(cat_activity: str):
         yield lhs.strip(), rhs.strip(), chebis
 
 
+def _participants(side_text: str) -> list[str]:
+    """Normalized participant tokens of one reaction side (split on ' + ',
+    stripping stoichiometry prefixes like '2 ' or 'n ')."""
+    parts = []
+    for p in side_text.split(" + "):
+        p = re.sub(r"^\s*(\d+|n)\s+", "", p.strip())   # drop '2 '/'n ' coefficients
+        parts.append(_norm(p))
+    return [p for p in parts if p]
+
+
 def _assign_side(chebis, lhs_text, rhs_text):
-    """Map each ChEBI to substrate (LHS) / product (RHS) by name containment."""
-    ln, rn = _norm(lhs_text), _norm(rhs_text)
+    """Map each ChEBI to substrate (LHS) / product (RHS) by matching its name to a
+    single PARTICIPANT token on one side.  Token-level (not whole-side) matching so
+    an acylation product that embeds a substrate's name does not make that
+    substrate look present on both sides.  Exact normalized match wins; a unique
+    containment match is the fallback."""
+    lhs_p, rhs_p = _participants(lhs_text), _participants(rhs_text)
     subs, prods = [], []
     for c in chebis:
         nm = _norm((CHEBI.get(c) or {}).get("name") or "")
         if not nm:
             continue
-        in_l = nm in ln
-        in_r = nm in rn
+        exact_l = nm in lhs_p
+        exact_r = nm in rhs_p
+        if exact_l and not exact_r:
+            subs.append(c); continue
+        if exact_r and not exact_l:
+            prods.append(c); continue
+        if exact_l and exact_r:
+            continue  # genuinely on both sides (rare) -> ignore
+        # fallback: unique containment within a single participant token
+        in_l = sum(nm in p or p in nm for p in lhs_p)
+        in_r = sum(nm in p or p in nm for p in rhs_p)
         if in_l and not in_r:
             subs.append(c)
         elif in_r and not in_l:
             prods.append(c)
-        # ambiguous (both/neither) -> ignore for side logic
     return subs, prods
 
 
