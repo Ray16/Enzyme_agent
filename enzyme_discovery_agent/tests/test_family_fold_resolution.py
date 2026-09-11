@@ -641,5 +641,34 @@ class TestLiteratureSeedCoverage(unittest.TestCase):
             resolve.assert_not_called()
 
 
+class TestSurveyCoversExplorationFamilies(unittest.TestCase):
+    """The survey must examine every derived family, not just the focus subset.
+
+    focus/exploration is an evaluation-PRIORITY split; a relevant free-substrate
+    family can be demoted to exploration (e.g. for an incidental "intramolecular"
+    mention). Gating the survey on that split drops relevant families before any
+    member is examined, which is the coverage regression this guards against.
+    """
+
+    def test_derived_families_include_exploration_routes(self):
+        from enzyme_discovery_agent.gates.family_survey import FamilySurveyGate
+        from enzyme_discovery_agent.models.family_ledger import (
+            initialize_family_ledger,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            initialize_family_ledger(root, [
+                {"name": "focus ligase family", "search_priority": "focus"},
+                {"name": "exploration ligase family",
+                 "search_priority": "exploration"},
+            ])
+            names = {
+                f.get("name") for f in FamilySurveyGate()._derived_families(root)
+            }
+            self.assertEqual(
+                names, {"focus ligase family", "exploration ligase family"},
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
