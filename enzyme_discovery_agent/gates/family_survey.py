@@ -18,8 +18,11 @@ from __future__ import annotations
 
 import json
 import logging
-from concurrent.futures import ThreadPoolExecutor
+import time
+import uuid
+from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
 
+from enzyme_discovery_agent import config
 from enzyme_discovery_agent.gates import AgentState, GateResult
 from enzyme_discovery_agent.tool_registry import execute_tool
 
@@ -27,7 +30,29 @@ logger = logging.getLogger("enzyme_agent")
 
 _MAX_NEW_FOLDS_PER_FIRING = 16   # folds surveyed per firing (bounds compute)
 _MAX_FOLDS_SHOWN = 12            # folds presented back to the agent
-_WORKERS = 6
+
+
+def _select_evaluation_admissions(members: list[dict], cap: int) -> list[dict]:
+    """Bound evaluation while representing distinct native functions first."""
+    from enzyme_discovery_agent.tools.family_reactions import (
+        _member_function_key,
+        order_by_role_compatibility,
+    )
+
+    ordered = order_by_role_compatibility(members)
+    selected: list[dict] = []
+    deferred: list[dict] = []
+    seen_functions: set[tuple] = set()
+    for member in ordered:
+        function = _member_function_key(member)
+        if function in seen_functions:
+            deferred.append(member)
+            continue
+        seen_functions.add(function)
+        selected.append(member)
+        if len(selected) >= cap:
+            return selected
+    return [*selected, *deferred[:max(0, cap - len(selected))]]
 
 
 class FamilySurveyGate:
@@ -45,7 +70,8 @@ class FamilySurveyGate:
 
     # Cap on firings: the survey accumulates folds, so a few passes cover the pool
     # as it grows without re-surveying folds already done.
-    _MAX_ATTEMPTS = 6
+    _MAX_ATTEMPTS = 12
+    _MAX_ATTEMPTS_PER_FOLD = 2
 
     def __init__(self, log_fn=None):
         self.log = log_fn or (lambda *a, **k: None)
@@ -57,6 +83,9 @@ class FamilySurveyGate:
         self._fold_cache: dict[str, str | None] = {}  # accession -> most-specific fold
         self._promoted: set[str] = set()          # accessions promoted to candidates
         self._claim_validations: dict[str, dict] = {}  # accession -> latest validation
+        self._retry_pending = False
+        self._pending_targets = False
+        self._failed_attempts: dict[str, int] = {}
 
     def should_fire(self, state: AgentState, has_eval_calls: bool = False, messages: list[dict] | None = None) -> bool:
         # Fire as soon as the mechanism families are DERIVED (i.e. the agent has
@@ -69,11 +98,33 @@ class FamilySurveyGate:
         # stay cheap.
         if state.family_survey_done or not state.mechanism_families_done:
             return False
+        # Yield to candidate screening/evaluation whenever the survey has already
+        # promoted candidates that are still unscreened. Each promotion bumps
+        # discovery_revision, so without this the survey re-fires on its own
+        # output forever and starves the pre-evaluation pipeline — promoted
+        # members pile up as "discovered" and never reach evaluation. Once
+        # screening drains the pending set the gate re-opens for any folds still
+        # awaiting a survey, so interleaving survey and screening stays complete.
+        if state.pending_candidate_count > 0:
+            return False
         if self._attempts >= self._MAX_ATTEMPTS:
             return False
         if self._attempts == 0:
-            return True   # first pass: survey the derived families right away
-        return state.candidate_count > self._last_attempt_count
+            # Reconciliation has already grounded the inventory in retrieved
+            # literature. Resolve its folds here instead of waiting for the LLM
+            # to repeat gene/name searches whose wording may not match generated
+            # family labels in the ledger. Mapping validation and native-reaction
+            # checks below remain the hard boundary for candidate promotion.
+            from enzyme_discovery_agent.persistence import read_json
+            reconciliation = read_json(
+                state.run_dir / "family_inventory_reconciliation.json", {}
+            )
+            return (
+                isinstance(reconciliation, dict)
+                and reconciliation.get("status") == "completed"
+            )
+        return (self._retry_pending or self._pending_targets
+                or state.discovery_revision > self._last_attempt_count)
 
     def _derived_families(self, run_dir) -> list[dict]:
         try:
@@ -81,61 +132,152 @@ class FamilySurveyGate:
         except (OSError, json.JSONDecodeError):
             return []
 
-    def _promote_relevant(self, run_dir, fold_id: str, relevant: list[dict]) -> int:
-        """Register a fold's relevant members (best substrate fit) as candidates.
+    def _promote_relevant(
+        self, run_dir, fold_id: str, relevant: list[dict],
+        route_ids: list[str] | None = None,
+        family_hypotheses: list[dict] | None = None,
+    ) -> int:
+        """Register a fold's role-complete members as candidates.
 
         Each becomes a ``discovered`` candidate tagged with the family it came from
-        and its substrate fit, so provenance shows WHY it was promoted.  Dedup is
+        and its role-wise accommodation facts, so provenance shows WHY it was
+        promoted. Dedup is
         across the whole run so a member surfacing in several folds is promoted once.
         """
         from enzyme_discovery_agent.models.candidate_registry import (
-            update_candidate_registry,
+            add_discovered_candidates,
         )
+        from enzyme_discovery_agent.models.retrieval_leads import load_retrieval_leads
 
         promoted = 0
+        leads = load_retrieval_leads(run_dir).get("leads", {})
+        hypotheses = [item for item in (family_hypotheses or []) if item]
+        family_names = list(dict.fromkeys(
+            str(item.get("name")) for item in hypotheses if item.get("name")
+        ))
+        family_aliases = list(dict.fromkeys(
+            str(value)
+            for item in hypotheses
+            for value in (item.get("aliases") or []) + (item.get("search_descriptors") or [])
+            if value
+        ))
+        registrations = []
+        accepted_accessions = []
         for m in relevant:
             acc = m.get("accession")
             if not acc or acc in self._promoted:
                 continue
+            accommodation = m.get("accommodation") or {}
+            role_compatibility = m.get("role_compatibility") or {}
             validation = m.get("claim_validation") or {}
-            if "claim_validation" in m and validation.get("promotion_eligible") is not True:
+            lane = m.get("discovery_lane", "supported")
+            if lane == "supported":
+                if (m.get("direction_vs_target") != "same"
+                        or accommodation.get("all_target_substrates_accommodated") is not True
+                        or role_compatibility.get("all_target_substrates_accommodated") is not True
+                        or ("claim_validation" in m
+                            and validation.get("promotion_eligible") is not True)):
+                    continue
+            elif lane == "family_supported":
+                family_validation = m.get("family_support_validation") or {}
+                if (family_validation.get("promotion_eligible") is not True
+                        or not m.get("family_anchor_accessions")
+                        or m.get("evidence_level") != "validated_activity_annotation_match"):
+                    continue
+            elif lane == "same_direction_analogue":
+                claims = {
+                    item.get("claim_type"): item
+                    for item in validation.get("claims") or []
+                }
+                if (m.get("direction_vs_target") != "same"
+                        or any((claims.get(name) or {}).get("verdict") != "supported"
+                               for name in (
+                                   "accession_identity", "record_active",
+                                   "family_membership", "native_reaction",
+                                   "reaction_direction", "bond_type",
+                               ))):
+                    continue
+            else:
                 continue
-            self._promoted.add(acc)
-            meta = {
-                "source_tool": f"family_substrate_fit:{fold_id}",
-                "substrate_fit": m.get("substrate_fit"),
-            }
+            seed = leads.get(acc) or {}
+            meta = dict(seed.get("metadata") or {})
+            if seed.get("literature_evidence"):
+                meta["literature_evidence"] = seed["literature_evidence"]
+            meta.update({
+                "source_tool": (
+                    f"family_substrate_fit:{fold_id}" if lane == "supported"
+                    else f"family_native_analogue:{fold_id}"
+                    if lane == "same_direction_analogue"
+                    else f"family_supported:{fold_id}"
+                ),
+                "substrate_accommodation": m.get("accommodation"),
+                "role_compatibility": m.get("role_compatibility"),
+                "direction_compatible": (
+                    True if lane in {"supported", "same_direction_analogue"} else None
+                ),
+                "substrate_roles_compatible": True if lane == "supported" else None,
+                "target_substrate_plausible": True if lane == "supported" else None,
+                "screening_family_id": fold_id,
+                "route_ids": list(route_ids or []),
+                "mechanism_family_names": family_names,
+                "mechanism_family_aliases": family_aliases,
+                "discovery_lane": lane,
+                "evaluation_depth_priority": bool(
+                    m.get("evaluation_depth_priority")
+                ),
+                "evidence_level": m.get("evidence_level") or "direct_native_reaction",
+                "family_anchor_accessions": m.get("family_anchor_accessions") or [],
+                "reviewed": m.get("reviewed"),
+                "gene_names": m.get("gene_names") or [],
+                "ec_numbers": m.get("ec") or [],
+                "native_reaction": m.get("native_reaction") or "",
+                "catalytic_activities": (
+                    [m.get("native_reaction")] if m.get("native_reaction") else []
+                ),
+            })
+            if m.get("exploration_reason"):
+                meta["exploration_reason"] = m["exploration_reason"]
             if validation:
                 meta["claim_validation"] = validation
+            if m.get("family_support_validation"):
+                meta["family_support_validation"] = m["family_support_validation"]
             # Use protein_name (not literature_name) — these are found by fold +
             # native-substrate resemblance, NOT named in a paper, so conflating them
             # with the literature-named channel would corrupt provenance-by-name.
             if m.get("name"):
                 meta["protein_name"] = m["name"]
-            try:
-                update_candidate_registry(run_dir, acc, "discovered", metadata=meta)
-                promoted += 1
-            except Exception as exc:  # noqa: BLE001 - promotion must never crash a survey
-                logger.debug("promotion failed for %s: %s", acc, exc)
+            registrations.append((acc, meta))
+            accepted_accessions.append(acc)
+        try:
+            promoted = add_discovered_candidates(run_dir, registrations)
+            self._promoted.update(accepted_accessions)
+        except Exception as exc:  # noqa: BLE001 - promotion must never crash a survey
+            logger.debug("promotion batch failed for %s: %s", fold_id, exc)
         return promoted
 
     def execute(self, state: AgentState, messages: list[dict] | None = None) -> GateResult:
         from enzyme_discovery_agent.gates.family_relevance import collect_survey_folds
 
         run_dir = state.run_dir
+        # Reconstruct durable progress when a run resumes in a new process.
+        if not self._all_folds:
+            from enzyme_discovery_agent.discovery.family_survey import (
+                load_family_survey_state,
+            )
+            landscapes, validations = load_family_survey_state(run_dir)
+            self._all_folds.update(landscapes)
+            self._surveyed_folds.update(landscapes)
+            self._claim_validations.update(validations)
         # Preserve the audit trail if a run resumes in a new process.  New
         # validations replace older entries for the same accession below.
         if not self._claim_validations:
-            try:
-                persisted = json.loads((run_dir / "claim_validation.json").read_text())
-                for validation in persisted.get("validations") or []:
-                    subject = validation.get("subject")
-                    if subject:
-                        self._claim_validations[subject] = validation
-            except (OSError, json.JSONDecodeError, AttributeError):
-                pass
+            from enzyme_discovery_agent.discovery.family_survey import (
+                load_family_survey_state,
+            )
+            _, validations = load_family_survey_state(run_dir)
+            self._claim_validations.update(validations)
         self._attempts += 1
-        self._last_attempt_count = state.candidate_count
+        self._last_attempt_count = state.discovery_revision
         # Only give up permanently once retries are exhausted; an empty early
         # attempt should leave the gate open to retry with more seeds.
         give_up = {"family_survey_done": True} if self._attempts >= self._MAX_ATTEMPTS else {}
@@ -144,11 +286,20 @@ class FamilySurveyGate:
         # distinct discovered gene's fold.  Only survey folds not already done.
         targets = collect_survey_folds(
             run_dir, self._derived_families(run_dir),
-            self._count_cache, self._fold_cache,
+            self._count_cache, self._fold_cache, log_fn=self.log,
         )
         target_by_fold = {t["fold_id"]: t for t in targets}
-        new_folds = [t["fold_id"] for t in targets
-                     if t["fold_id"] not in self._surveyed_folds][:_MAX_NEW_FOLDS_PER_FIRING]
+        new_folds = [
+            t["fold_id"] for t in targets
+            if t["fold_id"] not in self._surveyed_folds
+            and self._failed_attempts.get(t["fold_id"], 0) < self._MAX_ATTEMPTS_PER_FOLD
+        ][:_MAX_NEW_FOLDS_PER_FIRING]
+        self._pending_targets = any(
+            t["fold_id"] not in self._surveyed_folds
+            and self._failed_attempts.get(t["fold_id"], 0) < self._MAX_ATTEMPTS_PER_FOLD
+            and t["fold_id"] not in new_folds
+            for t in targets
+        )
         if not new_folds and not self._all_folds:
             if give_up:
                 self.log("  Gate: family survey resolved no surveyable folds after "
@@ -160,22 +311,135 @@ class FamilySurveyGate:
 
         inj = {"run_dir": str(run_dir)}
 
+        from enzyme_discovery_agent.models.event_log import append_event
+
+        survey_operations = {fid: uuid.uuid4().hex for fid in new_folds}
+        survey_indexes = {
+            fid: index for index, fid in enumerate(new_folds, start=1)
+        }
+        workers = max(1, min(config.FAMILY_SURVEY_WORKERS, len(new_folds)))
+        self.log(
+            f"  Family survey: checking {len(new_folds)} InterPro families with "
+            f"{workers} worker(s)"
+        )
+
         def _survey(fid):
+            operation_id = survey_operations[fid]
+            index = survey_indexes[fid]
+            started = time.monotonic()
+            append_event(
+                run_dir, "family_survey_started",
+                operation_id=operation_id,
+                fold_id=fid,
+                family_index=index,
+                family_total=len(new_folds),
+            )
+            self.log(f"  Family survey {index}/{len(new_folds)} started: {fid}")
             try:
-                return execute_tool("survey_family_reactions",
-                                    {"interpro_id": fid}, injected_args=inj)
+                result = execute_tool(
+                    "survey_family_reactions",
+                    {"interpro_id": fid}, injected_args=inj,
+                )
             except Exception as exc:  # noqa: BLE001 - never let a survey crash the loop
                 logger.debug("family survey failed for %s: %s", fid, exc)
+                append_event(
+                    run_dir, "family_survey_failed",
+                    operation_id=operation_id,
+                    fold_id=fid,
+                    family_index=index,
+                    family_total=len(new_folds),
+                    error_type=type(exc).__name__,
+                    elapsed_s=round(time.monotonic() - started, 3),
+                )
+                self.log(
+                    f"  Family survey {index}/{len(new_folds)} failed after "
+                    f"{time.monotonic() - started:.1f}s: {fid}",
+                    level="warning",
+                )
                 return None
+            data = result.get("data") or {} if isinstance(result, dict) else {}
+            status = result.get("status") if isinstance(result, dict) else None
+            append_event(
+                run_dir,
+                "family_survey_completed" if status == "success" else "family_survey_failed",
+                operation_id=operation_id,
+                fold_id=fid,
+                family_index=index,
+                family_total=len(new_folds),
+                status=status,
+                total_reviewed_member_count=data.get("total_reviewed_member_count"),
+                native_annotated_reviewed_member_count=data.get(
+                    "native_annotated_reviewed_member_count"
+                ),
+                reviewed_member_count=len(data.get("members") or []),
+                direct_candidate_count=len(data.get("relevant_members") or []),
+                analogue_count=len(data.get("same_direction_analogues") or []),
+                family_supported_count=len(data.get("family_supported_members") or []),
+                elapsed_s=round(time.monotonic() - started, 3),
+            )
+            self.log(
+                f"  Family survey {index}/{len(new_folds)} {status or 'failed'} in "
+                f"{time.monotonic() - started:.1f}s: {fid}; "
+                f"reviewed={len(data.get('members') or [])}, "
+                f"direct={len(data.get('relevant_members') or [])}, "
+                f"analogues={len(data.get('same_direction_analogues') or [])}, "
+                f"annotation-matched={len(data.get('family_supported_members') or [])}"
+            )
+            return result
 
-        with ThreadPoolExecutor(max_workers=_WORKERS) as pool:
-            results = list(pool.map(_survey, new_folds))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [pool.submit(_survey, fold_id) for fold_id in new_folds]
+            pending = set(futures)
+            while pending:
+                _, pending = wait(
+                    pending,
+                    timeout=config.FAMILY_PROGRESS_INTERVAL_SECONDS,
+                    return_when=ALL_COMPLETED,
+                )
+                if pending:
+                    self.log(
+                        f"  Family survey progress: "
+                        f"{len(new_folds) - len(pending)}/{len(new_folds)} complete, "
+                        f"{len(pending)} pending"
+                    )
+            # Reduce in input order, independent of completion order.
+            results = [future.result() for future in futures]
 
         n_promoted = 0
+        self._retry_pending = False
+        from enzyme_discovery_agent.models.family_ledger import (
+            has_pending_family_survey,
+            record_survey_attempt,
+        )
         for fid, r in zip(new_folds, results):
-            self._surveyed_folds.add(fid)
+            fold_target = target_by_fold.get(fid, {})
+            hypotheses = fold_target.get("derived_family_hypotheses") or [
+                fold_target.get("derived_family_hypothesis")
+            ]
+            hypotheses = [hypothesis for hypothesis in hypotheses if hypothesis]
+            route_ids = list(dict.fromkeys(
+                str(hypothesis.get("route_id")) for hypothesis in hypotheses
+                if hypothesis.get("route_id")
+            ))
             if not r or r.get("status") != "success":
+                self._failed_attempts[fid] = self._failed_attempts.get(fid, 0) + 1
+                exhausted = self._failed_attempts[fid] >= self._MAX_ATTEMPTS_PER_FOLD
+                self._retry_pending = self._retry_pending or not exhausted
+                if hypotheses:
+                    for hypothesis in hypotheses:
+                        record_survey_attempt(
+                            run_dir, fid, success=False, family=hypothesis,
+                            error=(r or {}).get("summary") or "survey failed",
+                            exhausted=exhausted,
+                        )
+                else:
+                    record_survey_attempt(
+                        run_dir, fid, success=False,
+                        error=(r or {}).get("summary") or "survey failed",
+                        exhausted=exhausted,
+                    )
                 continue
+            self._surveyed_folds.add(fid)
             d = r.get("data") or {}
             got = d.get("fold_id") or fid
             # Promote the relevant enzymes in this family (grounded same-direction
@@ -185,7 +449,45 @@ class FamilySurveyGate:
             # top-N cap): dropping relevant members defeats discovery.  The set is
             # bounded by the relevance gate + the fold's surveyed-member ceiling.
             relevant = d.get("relevant_members") or []
-            n_promoted += self._promote_relevant(run_dir, got, relevant)
+            analogues = d.get("same_direction_analogues") or []
+            # Every reviewed same-direction reaction-backed member is a candidate.
+            # A function-diverse subset receives deep follow-up first, but that
+            # resource decision must not truncate the candidate inventory.
+            depth_priority = _select_evaluation_admissions(
+                [*relevant, *analogues],
+                config.FAMILY_REVIEWED_EVALUATION_CAP_PER_FOLD,
+            )
+            priority_accessions = {
+                member.get("accession") for member in depth_priority
+                if member.get("accession")
+            }
+            admitted = [*relevant, *analogues]
+            for member in admitted:
+                member["discovery_lane"] = (
+                    "supported" if member in relevant
+                    else "same_direction_analogue"
+                )
+                member["evaluation_depth_priority"] = (
+                    member.get("accession") in priority_accessions
+                )
+            n_promoted += self._promote_relevant(
+                run_dir, got, admitted, route_ids,
+                family_hypotheses=hypotheses,
+            )
+            family_supported = d.get("family_supported_members") or []
+            for member in family_supported:
+                member["discovery_lane"] = "family_supported"
+            n_promoted += self._promote_relevant(
+                run_dir, got, family_supported, route_ids,
+                family_hypotheses=hypotheses,
+            )
+            exploration = d.get("exploration_members") or []
+            for member in exploration:
+                member["discovery_lane"] = "exploration"
+            # Uncertain members remain visible in the durable family landscape,
+            # but they are not candidates. Unknown direction, unresolved native
+            # substrates, or incomplete target-role accommodation is precisely
+            # the evidence gap the candidate registry must not conceal.
             if got in self._all_folds:
                 continue
             prof = d.get("family_reaction_profile", {})
@@ -201,8 +503,37 @@ class FamilySurveyGate:
             # insufficient (an exploration lead), never silently "feasible".
             from enzyme_discovery_agent.models.family_hypothesis import family_verdict
             verdict = family_verdict(reviewed_validations)
-            fold_target = target_by_fold.get(fid, {})
+            role_complete_count = prof.get(
+                "fully_accommodating_same_direction_members", 0)
+            native_substrate_evidence = {
+                "direction_vs_target_counts":
+                    prof.get("direction_vs_target_counts") or {},
+                "role_complete_same_direction_members": role_complete_count,
+                "best_role_complete_members":
+                    prof.get("best_role_complete_members") or [],
+                "distinct_native_reactions": prof.get("distinct_reactions") or [],
+                "basis": (
+                    "native reactions and role-wise native substrates of "
+                    "surveyed family members"
+                ),
+            }
+            if (verdict == "supported_family_hypothesis"
+                    and role_complete_count == 0):
+                verdict = "insufficient_family_evidence"
             hypothesis = fold_target.get("derived_family_hypothesis")
+            if hypotheses:
+                for mapped_hypothesis in hypotheses:
+                    record_survey_attempt(
+                        run_dir, got, success=True, family=mapped_hypothesis,
+                        verdict=verdict, member_count=len(members),
+                        native_substrate_evidence=native_substrate_evidence,
+                    )
+            else:
+                record_survey_attempt(
+                    run_dir, got, success=True, verdict=verdict,
+                    member_count=len(members),
+                    native_substrate_evidence=native_substrate_evidence,
+                )
             self._all_folds[got] = {
                 "fold_id": got,
                 "fold_name": d.get("fold_name"),
@@ -212,11 +543,16 @@ class FamilySurveyGate:
                 "direction_vs_target_counts": prof.get("direction_vs_target_counts"),
                 "functional_group_similarity": prof.get("functional_group_similarity"),
                 "size_ratio": prof.get("size_ratio"),
-                # Comprehensive, even-handed native-substrate-fit picture (drives
-                # the fit radar/bar for experimentalists): equal-weight holistic
-                # fit, per-axis medians, native size range, and aromatic/aliphatic
-                # breadth (a permissive pocket that spans both).
-                "holistic_fit": prof.get("holistic_fit"),
+                # Per-axis context is retained for visualization, while selection
+                # uses the explicit worst-role vectors below.
+                "fully_accommodating_same_direction_members":
+                    role_complete_count,
+                "direct_candidate_count": len(relevant),
+                "same_direction_analogue_count": len(analogues),
+                "family_supported_candidate_count": len(family_supported),
+                "reviewed_reaction_inventory": d.get("reviewed_reaction_inventory"),
+                "comprehensive_inventory": d.get("comprehensive_inventory"),
+                "best_role_complete_members": prof.get("best_role_complete_members") or [],
                 "axis_medians": prof.get("axis_medians"),
                 "native_chain_length_range": prof.get("native_chain_length_range"),
                 "native_mw_range": prof.get("native_mw_range"),
@@ -243,42 +579,46 @@ class FamilySurveyGate:
                 ],
             }
 
+        # InterPro text searches can resolve ambiguously. A completed negative
+        # primary mapping unlocks one alternate for a subsequent gate pass;
+        # supported mappings stop that hypothesis from fanning out further.
+        self._retry_pending = (
+            self._retry_pending
+            or has_pending_family_survey(run_dir, focus_only=False)
+        )
+
         if not self._all_folds:
             if give_up:
                 self.log("  Gate: family survey resolved no surveyable folds after "
                          f"{self._attempts} attempts; proceeding without a landscape")
             return GateResult(intercept=False, state_updates=give_up)
 
-        # Order folds by how closely their members resemble the target (max
-        # functional-group similarity) — a presentation order over a grounded
-        # number, NOT a cutoff.
-        ordered = sorted(
-            self._all_folds.values(),
-            key=lambda f: -((f.get("functional_group_similarity") or {}).get("max") or -1.0),
-        )[:_MAX_FOLDS_SHOWN]
+        # Families with at least one complete one-to-one role mapping lead. Keep
+        # property tradeoffs explicit instead of collapsing them into a score.
+        from enzyme_discovery_agent.gates.family_relevance import order_folds_by_relevance
+        all_ordered = order_folds_by_relevance(list(self._all_folds.values()))
+        ordered = all_ordered[:_MAX_FOLDS_SHOWN]
 
-        # Persist the landscape (holistic family picture for the run + the report).
-        try:
-            (run_dir / "family_landscape.json").write_text(
-                json.dumps(ordered, indent=2) + "\n"
-            )
-            (run_dir / "claim_validation.json").write_text(json.dumps({
-                "schema_version": "1.0",
-                "scope": "family_survey_members",
-                "validations": list(self._claim_validations.values()),
-            }, indent=2) + "\n")
-        except OSError:
-            pass
+        # Persist the reducer state atomically for crash-safe resume.
+        from enzyme_discovery_agent.discovery.family_survey import (
+            persist_family_survey_state,
+        )
+        persist_family_survey_state(
+            run_dir, all_ordered, self._claim_validations,
+        )
 
         lines = []
         for f in ordered:
-            fg = f.get("functional_group_similarity") or {}
-            sz = f.get("size_ratio") or {}
+            best = (f.get("best_role_complete_members") or [{}])[0]
+            bottleneck = best.get("role_compatibility") or {}
             lines.append(
                 f"- fold {f['fold_id']} ({f.get('source', 'discovered')}, {f.get('n_members')} "
                 f"reviewed members): direction {f.get('direction_vs_target_counts')}; "
-                f"functional-group similarity max {fg.get('max')} / median {fg.get('median')}; "
-                f"size ratio max {sz.get('max')} / median {sz.get('median')}"
+                f"{f.get('fully_accommodating_same_direction_members', 0)} member(s) "
+                "accommodate every target substrate role; best complete member "
+                f"worst-role FG={bottleneck.get('weakest_functional_group_similarity')}, "
+                f"MW={bottleneck.get('weakest_mw_similarity')}, "
+                f"chain={bottleneck.get('weakest_chain_length_similarity')}"
             )
             for m in f.get("top_members", [])[:2]:
                 sub = m.get("substrate") or {}
@@ -295,30 +635,31 @@ class FamilySurveyGate:
             "your discovered candidates fall into — so no relevant family is "
             "missed). For each fold below are GROUNDED NUMBERS — how its reviewed members' "
             "native reactions compare to the target: direction vs target, and how "
-            "closely their native substrates resemble the target (functional-group "
-            "overlap, size ratio). No cutoff or label is applied — YOU reason over "
-            "the numbers. CONCENTRATE follow-up expansion and full-text reading on "
-            "the fold(s) whose members most resemble the target (higher functional-"
-            "group similarity, closer size, same reaction direction), and set aside "
+            "closely their native substrates resemble every target substrate role. "
+            "Correct bond direction is only an entry condition. CONCENTRATE follow-up "
+            "on folds with role-complete members. Compare each worst-role property "
+            "vector directly; do not average properties or let one well-matched "
+            "substrate compensate for a poorly matched substrate. Set aside "
             "folds whose native reactions run the opposite direction or whose "
             "substrates are far larger / decorated with extra groups. Prefer reading "
             "the resembling members' OWN characterizing papers over broad keyword "
             "search.\n"
             f"{landscape_block}\n\n"
-            "THEN ACT ON THIS: call set_family_focus(stop=[...], expand=[...], "
+            "THEN ACT ON THIS: call set_family_focus(stop=[...], hold=[...], expand=[...], "
             "reasons={fold_id: why}) using the InterPro fold ids listed above — "
-            "STOP the folds whose members' native substrates are unlike the target "
+            "STOP only folds with direct contradictory evidence; HOLD folds with "
+            "sparse or unresolved evidence; EXPAND folds with positive evidence. "
+            "A stop prevents extra depth but retains one representative for audit. "
+            "Contradictory folds may include those whose native substrates are unlike the target "
             "(peptide, amino acid, nucleotide, sugar, or cofactor) or run the "
             "opposite direction, and EXPAND the folds whose native reactions "
             "resemble the target. The evaluation budget HONOURS your decision: a "
-            "stopped fold is waived from the coverage floor, so this is how you "
-            "stop wasting evaluation on off-target families. Give a one-line reason "
+            "stopped fold receives no extra depth. Give a one-line reason "
             "per fold. You can revise later by calling it again."
         )
         if n_promoted:
             guidance += (
-                f"\n\nNOTE: {n_promoted} member(s) whose native substrate most "
-                "resembles the target were auto-promoted to candidates (tagged "
+                f"\n\nNOTE: {n_promoted} role-complete member(s) were auto-promoted to candidates (tagged "
                 "family_substrate_fit:<fold>) so they enter evaluation — no action "
                 "needed; STOP their fold only if you judge the family off-target."
             )
@@ -333,7 +674,7 @@ class FamilySurveyGate:
                 {"role": "user", "content": guidance},
             ],
             log_message=f"Family survey: {len(self._all_folds)} fold(s) surveyed "
-                        f"(+{len(new_folds)} this pass); {n_promoted} substrate-fit "
+                        f"(+{len(new_folds)} this pass); {n_promoted} role-complete "
                         f"member(s) promoted; landscape injected",
             # Do NOT mark done on success: re-fire as the discovered pool grows so
             # late-appearing families get surveyed too (bounded by _MAX_ATTEMPTS).
