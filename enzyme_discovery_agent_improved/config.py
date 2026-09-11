@@ -95,11 +95,21 @@ MAX_RESULT_CHARS = 20_000
 # purely additive to the ranked tail: ranking still orders by relevance, so the
 # top candidates are unchanged; we simply stop dropping lower-ranked but genuine
 # annotated members of the relevant families.
-FAMILY_EVAL_BUDGET = 300          # total representatives to evaluate across folds
+# These are SAFETY BOUNDS, not targets: they are set to (or above) the natural
+# enumeration ceiling so they never constrain a RELEVANT family below what the
+# survey can even enumerate.  A surveyable fold carries at most _LIST_PAGE_MAX
+# (500) reviewed members (bigger entries are excluded as superfamilies), so a
+# per-fold cap of 500 is provably non-constraining for any relevant fold — not an
+# arbitrary number.  The total budget is set to the same ceiling so several
+# relevant folds can each expand fully; breadth is still guaranteed by the floor
+# (every fold keeps >=1), and depth is still spent in relevance order, so an
+# off-target fold stays at its single audit representative while on-target folds
+# absorb the depth.  Evaluation is cheap here (UniProt + RDKit + AlphaFold lookup,
+# not de novo structure), so evaluating the full relevant set is affordable.
+FAMILY_EVAL_BUDGET = 500          # total representatives to evaluate across folds
 FAMILY_EVAL_FLOOR_PER_FOLD = 1    # always evaluate at least this many per fold
-FAMILY_EVAL_MAX_PER_FOLD = 100    # high ceiling: relevant families expand fully;
-                                  # off-target folds are held at the floor by the
-                                  # relevance-ordered budget, not by this cap
+FAMILY_EVAL_MAX_PER_FOLD = 500    # = enumeration ceiling: never caps a relevant
+                                  # fold below its enumerable member count
 # Ortholog fan-out cap at DISCOVERY.  A broad family search returns dozens of
 # orthologs of the SAME enzyme (one run registered 66 copies of a single gene),
 # which crowds out family diversity — the pool re-discovers one enzyme in many
