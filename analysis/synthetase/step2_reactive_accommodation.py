@@ -18,9 +18,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common"))
 from proxy_eval import evaluate, fmt
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
-RES = f"{ROOT}/exp_data/sfab_step2_reactive_results/output_configs"
-ACT = f"{ROOT}/exp_data/SfaB_diversity_panel.csv"
-OUT = f"{ROOT}/exp_data/sfab_step2_reactive_results/step2_reactive_accommodation.csv"
+RES = f"{ROOT}/exp_data/amide_synthetase/boltz2/step2/reactive/results/output_configs"
+ACT = f"{ROOT}/exp_data/amide_synthetase/assay_data/panel_activity.csv"
+OUT = f"{ROOT}/exp_data/amide_synthetase/boltz2/step2/reactive/results/reactive_geometry.csv"
 NUC, ACYLC = "N18", "C35"
 
 

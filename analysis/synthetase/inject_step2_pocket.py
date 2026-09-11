@@ -14,7 +14,7 @@ Step-1 chain layout: A=protein, B=ATP, C=MG, D=MG, E=adipate -> lig chains B,C,D
 
 Run after step-1 completes (point --s1_out at the predictions tree):
   python inject_pocket.py --s1_out /path/to/step1_out \
-      --skel data/cofold_adipic_panel/step2 [--cutoff 5.0] [--nres 15]
+      --skel data/amide_synthetase/step2 [--cutoff 5.0] [--nres 15]
 """
 import argparse, glob, os, numpy as np
 from Bio.PDB import PDBParser, MMCIFParser
@@ -43,7 +43,7 @@ def binding_residues(model, cutoff, nres):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--s1_out", required=True)
-    ap.add_argument("--skel", default="data/cofold_adipic_panel/step2")
+    ap.add_argument("--skel", default="data/amide_synthetase/step2")
     ap.add_argument("--pdb_glob",
                     default="{s1_out}/{job}/boltz_results_{job}/predictions/{job}/{job}_model_0.pdb")
     ap.add_argument("--cutoff", type=float, default=5.0)

@@ -21,9 +21,9 @@ import numpy as np
 from multiprocessing import Pool
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
-RES = f"{ROOT}/exp_data/sfab_step2_results/output_configs"
-ACT = f"{ROOT}/exp_data/SfaB_diversity_panel.csv"
-OUT = f"{ROOT}/exp_data/sfab_step2_results/nac_step2.csv"
+RES = f"{ROOT}/exp_data/amide_synthetase/boltz2/step2/standard/results/output_configs"
+ACT = f"{ROOT}/exp_data/amide_synthetase/assay_data/panel_activity.csv"
+OUT = f"{ROOT}/exp_data/amide_synthetase/boltz2/step2/standard/results/nucleophile_attack_distance.csv"
 D_CUT, A_LO, A_HI = 3.5, 90.0, 130.0
 NUC_ATOM = os.environ.get("NUC_ATOM", "N1")   # override after confirming PDB naming
 

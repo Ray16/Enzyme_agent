@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Does adenylation-NAC discriminate the ACTIVE synthetases from the inactive panel?
 
-Reads the per-enzyme NAC table (nac_step1.csv) + N66 L1 activity and asks:
+Reads the per-enzyme NAC table (near_attack_geometry.csv) + N66 L1 activity and asks:
   - where do the active enzymes rank by NAC fraction (and by min_d)?
   - is NAC fraction higher in the active group than the inactive group?
     (Mann-Whitney U, one-sided: active > inactive)
@@ -13,7 +13,7 @@ near-background <0.15 except AS9/AS17/AS23). ACT_CUT overridable via argv[1].
 import csv, sys
 import numpy as np
 
-NAC = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/sfab_step1_results/nac_step1.csv"
+NAC = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/boltz2/step1/results/near_attack_geometry.csv"
 ACT_CUT = float(sys.argv[1]) if len(sys.argv) > 1 else 0.5
 
 rows = list(csv.DictReader(open(NAC)))

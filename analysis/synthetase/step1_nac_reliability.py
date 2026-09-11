@@ -15,8 +15,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common"))
 from proxy_eval import auroc
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
-RES = f"{ROOT}/exp_data/sfab_step1_results/output_configs"
-ACT = f"{ROOT}/exp_data/sfab_step1_results/nac_step1.csv"
+RES = f"{ROOT}/exp_data/amide_synthetase/boltz2/step1/results/output_configs"
+ACT = f"{ROOT}/exp_data/amide_synthetase/boltz2/step1/results/near_attack_geometry.csv"
 
 
 def angle(a, b, c):

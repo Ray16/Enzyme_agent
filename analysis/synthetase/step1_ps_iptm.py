@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Protein-substrate pair ipTM (ps_iptm) for the SfaB step-1 cofolds.
 
-ps_iptm = pair_chains_iptm['0']['4']  (protein chain A vs adipate chain E),
+ps_iptm = pair_chains_iptm['0']['4']  (adipate evaluated in the enzyme-aligned frame; substrate-to-enzyme),
 following the DesD convention (analyze_binding_vs_catalysis_v2.py). Excludes
 ATP (chain 1) and Mg (2,3). Aggregates mean/max over the 50 models per enzyme,
 then tests whether ps_iptm separates active from inactive synthetases.
@@ -12,9 +12,9 @@ from multiprocessing import Pool
 from math import erf, sqrt
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
-RES = f"{ROOT}/exp_data/sfab_step1_results/output_configs"
-ACT = f"{ROOT}/exp_data/SfaB_diversity_panel.csv"
-OUT = f"{ROOT}/exp_data/sfab_step1_results/ps_iptm_step1.csv"
+RES = f"{ROOT}/exp_data/amide_synthetase/boltz2/step1/results/output_configs"
+ACT = f"{ROOT}/exp_data/amide_synthetase/assay_data/panel_activity.csv"
+OUT = f"{ROOT}/exp_data/amide_synthetase/boltz2/step1/results/protein_substrate_iptm.csv"
 ACT_CUT = float(sys.argv[1]) if len(sys.argv) > 1 else 0.5
 SUB_CHAIN = "4"   # adipate (E); protein is "0"
 

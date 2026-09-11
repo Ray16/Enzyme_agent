@@ -8,9 +8,9 @@ SfaB parent from UniProt. MSA matched by sha1(seq)[:16] to msa_cache/<hash>.csv.
 import csv, hashlib, os, urllib.request
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
-SEQS = f"{ROOT}/exp_data/SfaB_diversity_panel.csv"
-MSA = f"{ROOT}/data/cofold_adipic_panel/msa_cache"
-OUT = f"{ROOT}/data/cofold_adipic_panel/step1"; os.makedirs(OUT, exist_ok=True)
+SEQS = f"{ROOT}/exp_data/amide_synthetase/assay_data/panel_activity.csv"
+MSA = f"{ROOT}/data/amide_synthetase/msa_cache"
+OUT = f"{ROOT}/data/amide_synthetase/step1"; os.makedirs(OUT, exist_ok=True)
 ADIPATE = "[O-]C(=O)CCCCC(=O)[O-]"   # adipate dianion
 
 

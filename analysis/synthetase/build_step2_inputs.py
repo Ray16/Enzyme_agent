@@ -6,17 +6,17 @@ Pocket restraint (soft) on the diamine (binder C): the first 15 protein residues
 that contact the ligand+cofactor in the enzyme's STEP-1 cofold (ATP+2Mg+adipate),
 max_distance 10 A, force true  -- exactly the AS9 reference recipe.
 
-Sequences: AS1-48 from SfaB_diversity_panel.csv; SfaB parent from UniProt.
+Sequences: AS1-48 from panel_activity.csv; SfaB parent from UniProt.
 MSA: matched by sha1(seq)[:16] to msa_cache/<hash>.csv (reused from step-1).
-Pocket: read from exp_data/sfab_step1_results (model_0 of each enzyme).
+Pocket: read from exp_data/amide_synthetase/boltz2/step1/results (model_0 of each enzyme).
 """
 import csv, glob, hashlib, os, urllib.request
 import numpy as np
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
-PANEL = f"{ROOT}/data/cofold_adipic_panel"
+PANEL = f"{ROOT}/data/amide_synthetase"
 MSA = f"{PANEL}/msa_cache"
-S1 = f"{ROOT}/exp_data/sfab_step1_results/output_configs"
+S1 = f"{ROOT}/exp_data/amide_synthetase/boltz2/step1/results/output_configs"
 OUT = f"{PANEL}/step2"; os.makedirs(OUT, exist_ok=True)
 
 ACYLAMP = "Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O"
@@ -75,7 +75,7 @@ def yaml_for(seq, msa_path, contacts):
 
 def main():
     seqs = {}
-    for r in csv.DictReader(open(f"{ROOT}/exp_data/SfaB_diversity_panel.csv")):
+    for r in csv.DictReader(open(f"{ROOT}/exp_data/amide_synthetase/assay_data/panel_activity.csv")):
         if r["id"].startswith("AS") and r["sequence"]:
             seqs[r["id"]] = r["sequence"]
     # SfaB parent from UniProt
