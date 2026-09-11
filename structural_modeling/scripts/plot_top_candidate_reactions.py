@@ -9,12 +9,11 @@ column (one representative acceptor chosen per enzyme, noted in the caption).
 
 Output: figures/top_candidates_native_reactions.png
 """
-import csv, os
+import csv, os, textwrap
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.Draw import ReactionToImage
 import matplotlib.pyplot as plt
-from matplotlib import font_manager
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GATE = os.path.join(HERE, "results", "discovery_angle_gate.csv")
