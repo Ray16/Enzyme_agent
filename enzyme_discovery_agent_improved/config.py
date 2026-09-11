@@ -116,7 +116,7 @@ FAMILY_EVAL_MAX_PER_FOLD = 500    # = enumeration ceiling: never caps a relevant
 # bounded SEPARATELY per fold: enough to sample the uncurated-but-annotated
 # neighbours of the relevant chemistry, without one fold's thousands of TrEMBL
 # entries flooding the ranked report.
-FAMILY_TREMBL_EVAL_CAP_PER_FOLD = 25
+FAMILY_TREMBL_EVAL_CAP_PER_FOLD = 50
 # Ortholog fan-out cap at DISCOVERY.  A broad family search returns dozens of
 # orthologs of the SAME enzyme (one run registered 66 copies of a single gene),
 # which crowds out family diversity — the pool re-discovers one enzyme in many
