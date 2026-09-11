@@ -84,6 +84,7 @@ class SubstrateProperties:
             "is_aromatic": self.is_aromatic,
             "is_cyclic": self.is_cyclic,
             "functional_groups": self.functional_groups,
+            "functional_group_counts": self.functional_group_counts,
             "num_carboxyl": self.num_carboxyl,
             "num_primary_amine": self.num_primary_amine,
             "num_secondary_amine": self.num_secondary_amine,
