@@ -495,31 +495,42 @@ def collect_survey_folds(
                 )
             return resolved
 
-        jobs = [
-            (index, fam, operation_id)
-            for index, (fam, operation_id) in enumerate(
-                zip(families, operations), start=1
-            )
-        ]
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures = [pool.submit(_resolve_family, job) for job in jobs]
-            pending = set(futures)
-            while pending:
-                _, pending = wait(
-                    pending,
-                    timeout=config.FAMILY_PROGRESS_INTERVAL_SECONDS,
-                    return_when=ALL_COMPLETED,
+        # Placeholder-fill reused hypotheses from their stored candidates so the
+        # per-family loop below sees the same shape whether or not the network ran.
+        for index, stored in stored_by_index.items():
+            resolutions[index - 1] = stored
+
+        if pending_families:
+            jobs = [
+                (disp_index, fam, operation_id)
+                for disp_index, (_, fam, operation_id) in enumerate(
+                    pending_families, start=1
                 )
-                if pending and log_fn:
-                    log_fn(
-                        f"  Family mapping progress: {total - len(pending)}/{total} "
-                        f"complete, {len(pending)} pending"
+            ]
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futures = [pool.submit(_resolve_family, job) for job in jobs]
+                pending = set(futures)
+                while pending:
+                    _, pending = wait(
+                        pending,
+                        timeout=config.FAMILY_PROGRESS_INTERVAL_SECONDS,
+                        return_when=ALL_COMPLETED,
                     )
-            # Read futures in submission order so fold precedence is reproducible.
-            resolutions = [future.result() for future in futures]
+                    if pending and log_fn:
+                        log_fn(
+                            f"  Family mapping progress: {total - len(pending)}/{total} "
+                            f"complete, {len(pending)} pending"
+                        )
+                # Read futures in submission order so fold precedence is reproducible.
+                fresh = [future.result() for future in futures]
+            for (orig_index, fam, _), resolved in zip(pending_families, fresh):
+                resolutions[orig_index - 1] = resolved
+                # Persist a freshly resolved hypothesis's mappings once. Reused
+                # hypotheses are already recorded; re-recording them is skipped so
+                # the stored resolution stays a stable fixed point.
+                record_family_resolution(run_dir, fam, resolved)
 
     for fam, resolved in zip(families, resolutions):
-            record_family_resolution(run_dir, fam, resolved)
             selected_fold = next_family_survey_fold(run_dir, fam)
             for mapping in resolved:
                 if mapping.get("fold_id") != selected_fold:
