@@ -127,8 +127,30 @@ class FamilySurveyGate:
                 or state.discovery_revision > self._last_attempt_count)
 
     def _derived_families(self, run_dir) -> list[dict]:
+        # Survey EVERY derived mechanism family, not only the focus subset.
+        # focus vs exploration is an evaluation-PRIORITY split, not a relevance
+        # verdict: a free-substrate ligase is demoted to exploration for an
+        # incidental "intramolecular" mention in its route text, and a genuinely
+        # on-target family can miss the focus cut on a noisy model partition.
+        # Gating the SURVEY on that split silently drops relevant families before
+        # a single member is examined (observed: an acyl-adenylate amide-ligase
+        # route left unsurveyed). Surveying is now a converging fixed point and the
+        # survey's own direction/role-fit gate decides promotion, so covering the
+        # exploration routes broadens family coverage without admitting off-target
+        # members; the evaluation budget still prioritizes by grounded relevance.
+        # The ledger is the complete derived-family record (focus + exploration);
+        # fall back to the active file only before the ledger exists.
+        from enzyme_discovery_agent.models.family_ledger import load_family_ledger
+        records = load_family_ledger(run_dir).get("families", {})
+        ledgered = [
+            rec["hypothesis"] for rec in records.values()
+            if isinstance(rec, dict) and rec.get("hypothesis")
+        ]
+        if ledgered:
+            return ledgered
         try:
-            return json.loads((run_dir / "mechanism_families.json").read_text())
+            data = json.loads((run_dir / "mechanism_families.json").read_text())
+            return data if isinstance(data, list) else []
         except (OSError, json.JSONDecodeError):
             return []
 
