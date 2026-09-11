@@ -159,8 +159,9 @@ class FamilySurveyGate:
             # it only spends compute. A free-substrate route that was demoted for
             # an incidental topology mention (e.g. "intramolecular") IS surveyed,
             # so its relevant family is recovered rather than silently dropped.
+            route_type = rec.get("route_type") or hypothesis.get("route_type")
             if (hypothesis.get("substrates_free") is not False
-                    and hypothesis.get("route_type") != "engineering_start"):
+                    and route_type != "engineering_start"):
                 ledgered.append(hypothesis)
         if ledgered:
             return ledgered
