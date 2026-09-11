@@ -1284,8 +1284,30 @@ def generate_two_pass_report(
     # of collapsing everything into a single misleading number.  A single numeric
     # score is deliberately NOT used: sorting on it regresses (fame dominates when
     # substrate fit is uninformative) and overlaying it contradicts the rank.
+    # Retroactive stop-fold exclusion: a fold the agent STOPPED late (after its
+    # members were already evaluated) leaves those members in the pool, where they
+    # otherwise rank on their own facts.  Drop them below the reporting line — but
+    # NEVER a literature-named enzyme (a stop is a coarse fold-level breadth call
+    # and can be wrong; a named characterised hit is protected end to end).
+    literature_named = _literature_named_accs(run_dir)
+    sink_accs = {a for a in stopped_accs if a not in literature_named}
     _annotate_reasoned_tiers(pass1_ranking, acc_to_eval, ontarget_accs, stopped_accs,
-                             _fold_fit_map(run_dir))
+                             _fold_fit_map(run_dir), sink=sink_accs)
+
+    # Push the retroactively-excluded stopped-fold members to the bottom of the
+    # order (below every consistent candidate) and re-rank, so they never occupy a
+    # top-N profile slot; they persist in pass1_ranking.json flagged for provenance
+    # and the CSV decision list omits them.
+    if sink_accs:
+        n_sunk = sum(1 for e in pass1_ranking if e.get("excluded_stopped_fold"))
+        pass1_ranking.sort(key=lambda e: (
+            1 if e.get("excluded_stopped_fold") else 0, e.get("rank", 9999)))
+        for i, entry in enumerate(pass1_ranking, start=1):
+            entry["rank"] = i
+        if n_sunk and log_fn:
+            log_fn(f"  Retroactive stop-fold exclusion: {n_sunk} evaluated "
+                   f"candidate(s) from later-stopped folds sunk below the reporting "
+                   f"line (literature-named carve-out applied)")
 
     # Persist the durable ranking before asking the provider to write prose.
     # This also makes a report-generation retry/recovery independent of the
