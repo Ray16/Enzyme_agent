@@ -441,8 +441,17 @@ def build_relevance_and_allocate(
     targets = allocate_evaluation_budget(folds, budget, floor, cap, stopped=stopped)
     from enzyme_discovery_agent_improved.gates.ec_triage import _evidence_tier
 
+    trembl_cap = getattr(config, "FAMILY_TREMBL_EVAL_CAP_PER_FOLD", 25)
+
+    def _is_reviewed(acc: str) -> bool:
+        # Only an explicit reviewed==False (a TrEMBL member the survey deepened)
+        # counts as low-confidence; a missing flag (DB-search hit, legacy) defaults
+        # to reviewed so it is never silently capped.
+        return meta_by_acc.get(acc, {}).get("reviewed") is not False
+
     selected: set[str] = set()
     for f in folds:
+        fid = f["fold_id"]
         members = sorted(
             f["members"],
             key=lambda a: (
@@ -451,7 +460,17 @@ def build_relevance_and_allocate(
                 a,
             ),
         )
-        chosen = members[:targets[f["fold_id"]]]
+        # For a plausibly-relevant fold (not stopped, not opposite-direction),
+        # evaluate EVERY reviewed member — comprehensive annotated coverage of the
+        # relevant family is the goal — and a bounded slice of its unreviewed
+        # (TrEMBL) tail so low-confidence members cannot flood the report. An
+        # off-target or agent-stopped fold keeps only its budgeted audit floor.
+        if fid not in stopped and f["dir_rank"] < _OPPOSITE_RANK:
+            reviewed = [a for a in members if _is_reviewed(a)]
+            trembl = [a for a in members if not _is_reviewed(a)]
+            chosen = reviewed + trembl[:trembl_cap]
+        else:
+            chosen = members[:targets[fid]]
         # A named candidate the reading step surfaced is evaluated on its own
         # merits even when its fold was stopped: the stop pruned breadth, not
         # this specific enzyme.  Force-add keeps the budget honest (the pure
