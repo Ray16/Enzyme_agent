@@ -36,7 +36,23 @@ small, justified port to enable cheap screening.)
 - ranked candidates: ___ ; relevant families: ___
 - recall: DdaG(E2JA32)=___  PuuA=___  SfaB(A0A2H4T912)=___
 
-## Efficiency candidates (already partly optimized — measure headroom)
+## EFFICIENCY — parallelization findings (measured)
+The archive is ALREADY well-parallelized:
+- 28/31 tools are `parallel_safe=True`, so multi-tool-call turns run concurrently
+  (only `fetch_full_text`, `search_structural_homologs`, `set_family_focus` excluded).
+- Family SURVEYS run in a ThreadPool (`pool.map(_survey, new_folds)`, reduced in order).
+- Discovered-gene fold resolution already pooled; tools fan out internally (database,
+  literature, fulltext).
+- Tool calls are fast (~1.9s avg); the dominant wall-clock is the SERIAL LLM reasoning
+  loop (~12 turns, each waits on the model) — inherently not parallelizable.
+DONE: parallelized the one remaining serial network loop — derived-family InterPro
+resolution in `collect_survey_folds` (`pool.map`, order-preserving; result byte-identical
+to serial). Small wall-clock win; 314 tests green.
+CONCLUSION: parallelization headroom is small; the 4x efficiency win (5M->1.24M tokens)
+came from the pivot to the archive itself. Bigger efficiency would require fewer/cheaper
+LLM turns (quality risk) — defer unless the baseline shows otherwise.
+
+## Efficiency candidates (token-side, lower priority — measure headroom)
 Archive already prunes history (`_prune_tool_history`) and caps results. Knobs in config.py:
 - `HISTORY_KEEP_RECENT_TOOL_MSGS=16` -> try 8 (halves full tool-results in prompt)
 - `MAX_RESULT_CHARS=20_000` -> try 10_000 (halves largest tool dumps)
