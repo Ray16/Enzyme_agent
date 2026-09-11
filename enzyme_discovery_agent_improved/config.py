@@ -110,6 +110,13 @@ FAMILY_EVAL_BUDGET = 500          # total representatives to evaluate across fol
 FAMILY_EVAL_FLOOR_PER_FOLD = 1    # always evaluate at least this many per fold
 FAMILY_EVAL_MAX_PER_FOLD = 500    # = enumeration ceiling: never caps a relevant
                                   # fold below its enumerable member count
+# Reviewed (manually-curated, high-confidence) members of a relevant fold are
+# evaluated in FULL — that is the comprehensive annotated coverage we want.  The
+# unreviewed (TrEMBL) tail is lower-confidence and far more numerous, so it is
+# bounded SEPARATELY per fold: enough to sample the uncurated-but-annotated
+# neighbours of the relevant chemistry, without one fold's thousands of TrEMBL
+# entries flooding the ranked report.
+FAMILY_TREMBL_EVAL_CAP_PER_FOLD = 25
 # Ortholog fan-out cap at DISCOVERY.  A broad family search returns dozens of
 # orthologs of the SAME enzyme (one run registered 66 copies of a single gene),
 # which crowds out family diversity — the pool re-discovers one enzyme in many
