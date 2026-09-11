@@ -194,14 +194,78 @@ def _detect_functional_groups(mol: Chem.Mol) -> dict:
                     "secondary_amine", "protonated_secondary_amine"):
             continue
         canonical[name] = n
-    groups = sorted(name for name, n in canonical.items() if n)
+    groups = {name for name, n in canonical.items() if n}
+
+    # Broaden RECOGNITION with RDKit's curated ~85-group fragment catalogue so the
+    # presence list names as many functional groups as possible (heterocycles,
+    # sulfoxide/sulfone, phenol vs aliphatic OH, lactam/lactone/imide, oxime,
+    # hydrazide, isocyanate, ...) — anything the hand-written reactive-core SMARTS
+    # above do not already name. This feeds the report and the model's reasoning;
+    # the count-aware SIMILARITY stays on the clean, charge-consistent canonical
+    # core (``counts`` below) so redundant/overlapping fragment features never
+    # skew the Ruzicka. Adding a group to either source therefore widens what the
+    # agent can SEE without destabilising how it SCORES.
+    try:
+        groups |= _rdkit_fragment_groups(mol)
+    except Exception:  # noqa: BLE001 - recognition breadth must never crash analysis
+        pass
 
     # Back-compat: expose the historically-named num_* the dataclass/charge model
     # read, PLUS the full canonical count map that the similarity now consumes.
     out = {f"num_{name}": n for name, n in canonical.items()}
-    out["groups"] = groups
+    out["groups"] = sorted(groups)
     out["counts"] = {name: n for name, n in canonical.items() if n}
     return out
+
+
+# RDKit Fragments fr_* names -> clean, human-readable group names, used only to
+# BROADEN the recognized-group presence list (not the similarity counts). Names
+# the reactive-core SMARTS already cover are intentionally mapped to the same
+# canonical label so they de-duplicate in the set union.
+_FRAGMENT_NAME_MAP = {
+    "fr_Al_OH": "hydroxyl", "fr_Ar_OH": "phenol", "fr_phenol": "phenol",
+    "fr_Al_COO": "carboxyl", "fr_Ar_COO": "carboxyl", "fr_COO": "carboxyl",
+    "fr_COO2": "carboxyl", "fr_C_O": "carbonyl", "fr_ketone": "ketone",
+    "fr_aldehyde": "aldehyde", "fr_ester": "ester", "fr_ether": "ether",
+    "fr_amide": "amide", "fr_priamide": "primary_amide", "fr_lactam": "lactam",
+    "fr_lactone": "lactone", "fr_imide": "imide", "fr_urea": "urea",
+    "fr_alkyl_carbamate": "carbamate", "fr_NH2": "primary_amine",
+    "fr_NH1": "secondary_amine", "fr_NH0": "tertiary_amine",
+    "fr_aniline": "aniline", "fr_amidine": "amidine", "fr_guanido": "guanidinium",
+    "fr_quatN": "quaternary_amine", "fr_imine": "imine", "fr_Imine": "imine",
+    "fr_oxime": "oxime", "fr_nitrile": "nitrile", "fr_isocyan": "isocyanate",
+    "fr_isothiocyan": "isothiocyanate", "fr_thiocyan": "thiocyanate",
+    "fr_nitro": "nitro", "fr_nitroso": "nitroso", "fr_azide": "azide",
+    "fr_azo": "azo", "fr_diazo": "diazo", "fr_hdrzine": "hydrazine",
+    "fr_hdrzone": "hydrazone", "fr_N_O": "n_oxide", "fr_SH": "thiol",
+    "fr_sulfide": "sulfide", "fr_sulfone": "sulfone", "fr_sulfonamd": "sulfonamide",
+    "fr_prisulfonamd": "sulfonamide", "fr_C_S": "thiocarbonyl",
+    "fr_phos_acid": "phosphate", "fr_phos_ester": "phosphoester",
+    "fr_halogen": "organohalogen", "fr_alkyl_halide": "organohalogen",
+    "fr_epoxide": "epoxide", "fr_ether": "ether", "fr_methoxy": "methoxy",
+    "fr_term_acetylene": "alkyne", "fr_furan": "furan", "fr_thiophene": "thiophene",
+    "fr_imidazole": "imidazole", "fr_oxazole": "oxazole", "fr_thiazole": "thiazole",
+    "fr_pyridine": "pyridine", "fr_piperdine": "piperidine",
+    "fr_piperzine": "piperazine", "fr_morpholine": "morpholine",
+    "fr_tetrazole": "tetrazole", "fr_benzene": "benzene_ring",
+}
+
+
+def _rdkit_fragment_groups(mol: Chem.Mol) -> set[str]:
+    """Return the clean names of every RDKit-fragment group present in ``mol``."""
+    from rdkit.Chem import Fragments as _F
+
+    present: set[str] = set()
+    for fr_name, clean in _FRAGMENT_NAME_MAP.items():
+        fn = getattr(_F, fr_name, None)
+        if fn is None:
+            continue
+        try:
+            if fn(mol) > 0:
+                present.add(clean)
+        except Exception:  # noqa: BLE001 - a single detector must not sink the rest
+            continue
+    return present
 
 
 def _longest_chain(mol: Chem.Mol) -> int:
