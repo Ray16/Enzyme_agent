@@ -919,35 +919,47 @@ def _reaction_direction(d: dict) -> str:
 
 def _annotate_reasoned_tiers(
     ranking: list[dict], acc_to_eval: dict, ontarget: set[str], stopped: set[str],
-    fold_fit: dict[str, float],
+    fold_fit: dict[str, float], sink: set[str] | None = None,
 ) -> None:
     """Attach a tier LABEL (contiguous bands over the reasoned rank) and the
     grounded facts behind it to each ranking entry, in place.
 
     Bands, walking the rank order:
       * ``weak / gated`` - a mechanistic contradiction (direction / bond / size)
-        or an off-target (agent-stopped) family.
+        or a stopped-fold member retroactively excluded (``sink``).
       * ``strong lead`` - the LEADING contiguous run of on-target, evidence-backed
         candidates; the band closes at the first that fails either test.
       * ``worth testing`` - every other direction-correct candidate.
     No single collapsed score: the ``score`` field is dropped in favour of the
     grounded columns (substrate fit, evidence level, family relevance, direction).
+
+    ``sink`` — accessions whose fold ended the run STOPPED (minus the
+    literature-named carve-out): retroactive stop-fold exclusion.  A stop verdict
+    reached AFTER these members were already screened/evaluated leaves them in the
+    pool; here they are demoted to Tier 3 and flagged ``excluded_stopped_fold`` so
+    the CSV decision list drops them below the reporting line while they remain in
+    ``pass1_ranking.json`` for provenance.
     """
+    sink = sink or set()
     in_strong_band = True
     for entry in ranking:
         acc = entry.get("accession", "")
         ev = acc_to_eval.get(acc)
         d = ev.get("data", ev) if ev else {}
-        # Only a per-candidate mechanistic contradiction gates the tier LABEL; a
-        # fold-STOP is annotation-only (surfaced in ``family_relevance`` below),
-        # never a Tier-3 demotion — consistent with the deterministic spine.
+        # A per-candidate mechanistic contradiction OR a retroactive stop-fold
+        # exclusion gates the tier LABEL to 3.  (A plain fold-STOP that did NOT
+        # make the ``sink`` set stays annotation-only, surfaced in
+        # ``family_relevance`` below — consistent with the deterministic spine.)
         gated = bool(d.get("critical_warnings"))
+        sunk = acc in sink
         on_target = acc in ontarget
         lit = d.get("literature") or {}
         has_evidence = bool(d.get("is_swissprot")) and int(lit.get("characterization_papers") or 0) > 0
 
-        if gated:
+        if gated or sunk:
             tier = 3
+            if sunk:
+                entry["excluded_stopped_fold"] = True
         elif in_strong_band and on_target and has_evidence:
             tier = 1
         else:
