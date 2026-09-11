@@ -124,39 +124,37 @@ def _assign_side(chebis, lhs_text, rhs_text):
 
 def gate(cat_activity: str) -> dict:
     """Return {'pass': bool, 'reason': str} for the free-acid + free-amine amide
-    formation test, evaluated over all of the entry's reactions (any pass wins)."""
+    formation test, evaluated over all of the entry's reactions (any pass wins).
+
+    Side-AGNOSTIC over the reaction participants: ChEBI canonical labels are often
+    a synonym of the name used in the reaction text, so mapping a species to the
+    substrate/product side by name is unreliable (it silently drops the very
+    substrate we test for).  Every EC 6.3.- reaction is an ATP-dependent LIGATION
+    (formation), so instead of assigning sides we ask whether the reaction's
+    non-cofactor participants together carry a free carboxylic acid, a free
+    (non-ammonia) amine, and an amide product -- the amide-ligation signature."""
     best = {"pass": False, "reason": "no parseable reaction"}
     for lhs, rhs, chebis in _reactions(cat_activity):
-        subs, prods = _assign_side(chebis, lhs, rhs)
-        if not subs or not prods:
-            best["reason"] = "could not assign reaction sides"
-            continue
-        # amide must be FORMED: present in a product, absent from every substrate
-        prod_amide = any(_has(_mol(c), _AMIDE) for c in prods)
-        sub_amide = any(_has(_mol(c), _AMIDE) for c in subs)
-        if not (prod_amide and not sub_amide):
-            best["reason"] = "no newly formed amide bond"
-            continue
-        # among NON-cofactor substrates: a free acid and a free (non-ammonia) amine
-        acid = amine = False
-        for c in subs:
+        noncof = []
+        for c in chebis:
             nm = (CHEBI.get(c) or {}).get("name") or ""
             if _COFACTOR_NAMES.search(nm):
                 continue
-            mol = _mol(c)
-            if mol is None:
-                continue
-            if _has(mol, _ACID):
-                acid = True
-            is_ammonia = bool(_AMMONIA.search(nm))
-            if not is_ammonia and (_has(mol, _AMINE) or _has(mol, _AMMONIUM)):
-                amine = True
+            noncof.append((c, nm, _mol(c)))
+        acid = any(_has(m, _ACID) for _, _, m in noncof)
+        amine = any(
+            (not _AMMONIA.search(nm)) and (_has(m, _AMINE) or _has(m, _AMMONIUM))
+            for _, nm, m in noncof
+        )
+        amide = any(_has(m, _AMIDE) for _, _, m in noncof)
         # glutamine amidotransferase: amide N donated by L-glutamine (-> glutamate)
         amidotransferase = bool(_GLUTAMINE.search(lhs) and _GLUTAMATE.search(rhs))
-        if acid and amine and not amidotransferase:
+        if acid and amine and amide and not amidotransferase:
             return {"pass": True, "reason": "free acid + free amine -> amide"}
         if amidotransferase:
             best["reason"] = "glutamine amidotransferase (amide from Gln)"
+        elif not amide:
+            best["reason"] = "no amide among products"
         elif not amine:
             best["reason"] = "no free amine substrate (ammonia/cofactor only)"
         elif not acid:
