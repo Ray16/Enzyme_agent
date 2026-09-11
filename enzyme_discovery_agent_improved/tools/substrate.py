@@ -138,7 +138,7 @@ def _detect_functional_groups(mol: Chem.Mol) -> dict:
         # --- Carbonyl acids and their derivatives ---
         "carboxyl": "[CX3](=O)[OX2H1,OX1-]",             # -COOH / -COO-
         "amide": "[NX3;!$([NX4])][CX3]=O",               # -C(=O)-N< (incl. peptide)
-        "ester": "[#6][CX3](=O)[OX2][#6]",               # R-COO-R'
+        "ester": "[#6][CX3](=O)[OX2][#6;!$([CX3]=O)]",   # R-COO-R' (not anhydride)
         "thioester": "[#6][CX3](=O)[SX2][#6]",           # R-CO-S-R'  (CoA/acyl)
         "anhydride": "[CX3](=O)[OX2][CX3]=O",            # -CO-O-CO-
         "acyl_phosphate": "[CX3](=O)[OX2][PX4]=O",       # activated acyl-phosphate
