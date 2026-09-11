@@ -141,7 +141,7 @@ def _detect_functional_groups(mol: Chem.Mol) -> dict:
         "ester": "[#6][CX3](=O)[OX2][#6;!$([CX3]=O)]",   # R-COO-R' (not anhydride)
         "thioester": "[#6][CX3](=O)[SX2][#6]",           # R-CO-S-R'  (CoA/acyl)
         "anhydride": "[CX3](=O)[OX2][CX3]=O",            # -CO-O-CO-
-        "acyl_phosphate": "[CX3](=O)[OX2][PX4]=O",       # activated acyl-phosphate
+        "acyl_phosphate": "[CX3](=O)[OX2][PX4]=O",       # mixed acyl-P anhydride
         "carbamate": "[NX3][CX3](=O)[OX2][#6,H]",        # N-CO-O
         "urea": "[NX3][CX3](=O)[NX3]",                   # N-CO-N
         "hydroxamate": "[CX3](=O)[NX3][OX2H1,OX1-]",     # -CO-N-OH (siderophores)
