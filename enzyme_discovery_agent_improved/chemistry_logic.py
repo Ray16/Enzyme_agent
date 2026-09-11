@@ -499,9 +499,9 @@ def compare_substrate_properties(
     fg_counts_n = _fg_counts(n_props)
 
     # COUNT-aware functional-group similarity (Ruzicka / weighted Jaccard) over the
-    # UNION of every detected group, so any newly-added SMARTS group (thioester,
-    # anhydride, acyl-phosphate, halogen, hydroxamate, ...) is scored automatically
-    # without touching this function.  NOT a binary set-Jaccard: a set-Jaccard
+    # UNION of every detected group, so any newly-added SMARTS group (an activated
+    # acyl form, a halogen, a hydroxamate, ...) is scored automatically without
+    # touching this function.  NOT a binary set-Jaccard: a set-Jaccard
     # saturates near 0.5 whenever the native carries the target's reactive group
     # plus one extra, pinning nearly every same-reaction candidate at ~0.5; since
     # the accommodation bottleneck takes the MIN across axes, that flat 0.5 erased
