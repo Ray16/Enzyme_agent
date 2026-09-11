@@ -91,27 +91,28 @@ def rxn_img(donor, acceptor, product, size=(560, 200)):
 
 # --- compose ----------------------------------------------------------------
 plt.rcParams["font.family"] = "DejaVu Sans"
-fig = plt.figure(figsize=(15.5, 15.5))
-gs = fig.add_gridspec(4, 2, height_ratios=[0.85, 1, 1, 1], hspace=0.28, wspace=0.10,
-                      left=0.02, right=0.98, top=0.94, bottom=0.02)
+fig = plt.figure(figsize=(16, 19))
+# each candidate row is split into a header strip + image strip so text never
+# collides with the drawing; target banner on top.
+gs = fig.add_gridspec(7, 2, height_ratios=[1.15, 0.18, 1, 0.18, 1, 0.18, 1],
+                      hspace=0.05, wspace=0.09,
+                      left=0.015, right=0.985, top=0.93, bottom=0.015)
 
 fig.suptitle("Top discovery candidates by near-attack geometry (d<4Å gate) — native reactions",
-             fontsize=19, fontweight="bold", y=0.985)
-fig.text(0.5, 0.958,
+             fontsize=20, fontweight="bold", y=0.975)
+fig.text(0.5, 0.945,
          "each panel: enzyme (family · mechanism · agent rank · mean in-line angle) over its NATIVE reaction "
          "— acyl donor + amine acceptor → amide product",
-         ha="center", fontsize=11, color="#555")
+         ha="center", fontsize=11.5, color="#555")
 
 # target banner (spans both columns)
 axT = fig.add_subplot(gs[0, :])
-axT.imshow(rxn_img(TARGET["donor"], TARGET["acceptor"], TARGET["product"], size=(1050, 210)))
-axT.axis("off")
-axT.set_title(TARGET["title"], fontsize=15, fontweight="bold", color="#8a1c1c", pad=4)
-axT.text(0.5, -0.06, TARGET["sub"], transform=axT.transAxes, ha="center",
-         fontsize=11, color="#8a1c1c")
+axT.imshow(rxn_img(TARGET["donor"], TARGET["acceptor"], TARGET["product"], size=(1050, 230)))
+axT.set_xticks([]); axT.set_yticks([])
+axT.set_title(f"{TARGET['title']}\n{TARGET['sub']}", fontsize=14, fontweight="bold",
+              color="#8a1c1c", pad=8)
 for s in ("top", "bottom", "left", "right"):
-    axT.spines[s].set_visible(True); axT.spines[s].set_color("#8a1c1c"); axT.spines[s].set_linewidth(2)
-axT.set_frame_on(True)
+    axT.spines[s].set_visible(True); axT.spines[s].set_color("#8a1c1c"); axT.spines[s].set_linewidth(2.2)
 
 def tier(a):
     if a is None: return ("inconclusive", "#999")
@@ -119,23 +120,29 @@ def tier(a):
     if a >= 150: return ("compatible", "#1b7a5a")
     return ("weak <150°", "#b8860b")
 
-positions = [(1,0),(1,1),(2,0),(2,1),(3,0),(3,1)]
+# candidate rows: header strip at gs rows 1/3/5(-hdr) is not enough for 6 panels,
+# so lay 2 columns x 3 image-rows (gs rows 2,4,6) with header text drawn above each.
+img_rows = [2, 4, 6]
+positions = [(2,0),(2,1),(4,0),(4,1),(6,0),(6,1)]
 for c, (rr, cc) in zip(CANDS, positions):
     ax = fig.add_subplot(gs[rr, cc])
     ax.imshow(rxn_img(c["donor"], c["acceptor"], c["product"]))
-    ax.axis("off")
+    ax.set_xticks([]); ax.set_yticks([])
     a = ang(c["acc"]); n = npos(c["acc"]); tlab, tcol = tier(a)
     astr = f"{a:.0f}°" if a is not None else "—"
-    header = f"{c['gene']}  ({c['acc']})   ·   {c['fam']}"
-    ax.set_title(header, fontsize=12.5, fontweight="bold", pad=6, loc="left")
-    ax.text(0.0, 1.005,
+    # header (bold) above the image
+    ax.text(0.0, 1.20, f"{c['gene']}  ({c['acc']})   ·   {c['fam']}",
+            transform=ax.transAxes, ha="left", va="bottom", fontsize=13, fontweight="bold")
+    # stats line, colored by tier
+    ax.text(0.0, 1.09,
             f"{c['mech']}  ·  agent {c['agent']}  ·  in-line {astr} ({tlab}, n={n} poses)",
-            transform=ax.transAxes, ha="left", va="bottom", fontsize=9.5, color=tcol)
-    ax.text(0.0, -0.11, c["note"], transform=ax.transAxes, ha="left", va="top",
-            fontsize=8.8, color="#333", wrap=True)
+            transform=ax.transAxes, ha="left", va="bottom", fontsize=10, color=tcol)
+    # caption wrapped to the column width
+    note = textwrap.fill(c["note"], width=74)
+    ax.text(0.0, -0.06, note, transform=ax.transAxes, ha="left", va="top",
+            fontsize=9, color="#333")
     for s in ("top","bottom","left","right"):
-        ax.spines[s].set_visible(True); ax.spines[s].set_color("#ccc"); ax.spines[s].set_linewidth(1)
-    ax.set_frame_on(True)
+        ax.spines[s].set_visible(True); ax.spines[s].set_color("#ddd"); ax.spines[s].set_linewidth(1)
 
 fig.savefig(OUT, dpi=145, bbox_inches="tight", facecolor="white")
 print("wrote", OUT)
