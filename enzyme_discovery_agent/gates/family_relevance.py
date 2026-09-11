@@ -419,9 +419,13 @@ def collect_survey_folds(
         pending_families: list[tuple[int, dict, str]] = []
         for index, fam in enumerate(families, start=1):
             record = prior_records.get(family_hypothesis_id(fam), {})
-            stored = record.get("resolution_candidates") or []
-            if stored:
-                stored_by_index[index] = list(stored)
+            # ``proposed`` is the only pre-resolution state; every other state
+            # means a resolution attempt already ran (possibly to an empty set).
+            # Reuse that outcome verbatim rather than re-hitting InterPro, so an
+            # unstable text search cannot append new folds on later passes.
+            already_resolved = bool(record) and record.get("state", "proposed") != "proposed"
+            if already_resolved:
+                stored_by_index[index] = list(record.get("resolution_candidates") or [])
             else:
                 pending_families.append((index, fam, uuid.uuid4().hex))
 
