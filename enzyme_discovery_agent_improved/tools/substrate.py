@@ -144,7 +144,7 @@ def _detect_functional_groups(mol: Chem.Mol) -> dict:
         "acyl_phosphate": "[CX3](=O)[OX2][PX4]=O",       # mixed acyl-P anhydride
         "carbamate": "[NX3][CX3](=O)[OX2][#6,H]",        # N-CO-O
         "urea": "[NX3][CX3](=O)[NX3]",                   # N-CO-N
-        "hydroxamate": "[CX3](=O)[NX3][OX2H1,OX1-]",     # -CO-N-OH (siderophores)
+        "hydroxamate": "[CX3](=O)[NX3][OX2H1,OX1-]",     # -CO-N-OH
         "ketone": "[#6][CX3](=O)[#6]",                   # R-CO-R'
         "aldehyde": "[CX3H1]=O",                         # -CHO
         # --- Oxygen ---
