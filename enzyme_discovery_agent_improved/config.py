@@ -140,6 +140,15 @@ EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
 # reviewed pass judged closest to the target, pulled one page (UNIPROT_MAX... capped
 # at the module member cap).  A feature toggle, not a threshold:
 FAMILY_INCLUDE_TREMBL = True
+# How many DISTINCT on-target EC reactions of a family get unreviewed (TrEMBL)
+# deepening.  This was wrongly coupled to MAX_REPRESENTATIVES_PER_FAMILY (=2, an
+# ORTHOLOG cap), which capped a family to 2 reactions' worth of unreviewed members
+# even when its reviewed members span more distinct on-target reactions.  Each EC
+# is a DISTINCT reaction (function-diverse, not orthologs), so deepening more of
+# them widens annotated coverage without ortholog flooding; each pull is still
+# bounded by the per-EC page cap (_MEMBER_CAP).  Decoupled and set generously so a
+# coherent catalytic family's several on-target reactions are all deepened.
+FAMILY_TREMBL_EC_ANCHORS = 8
 # Budget-conscious protection.  Substrate-fit-promoted members are guaranteed
 # evaluation (protected from the fold budget), but protecting the top-2 of EVERY
 # surveyed fold force-evaluates low-fit families too (e.g. an ammonia-amine
