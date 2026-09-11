@@ -282,6 +282,7 @@ def compute_substrate_properties(smiles: str, name: str = "") -> SubstrateProper
         is_aromatic=any(atom.GetIsAromatic() for atom in mol.GetAtoms()),
         is_cyclic=mol.GetRingInfo().NumRings() > 0,
         functional_groups=fg["groups"],
+        functional_group_counts=fg["counts"],
         num_carboxyl=fg["num_carboxyl"],
         num_primary_amine=fg["num_primary_amine"],
         num_secondary_amine=fg["num_secondary_amine"],
