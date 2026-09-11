@@ -41,6 +41,9 @@ class SubstrateProperties:
     is_aromatic: bool = False
     is_cyclic: bool = False
     functional_groups: list[str] = field(default_factory=list)
+    # Canonical group -> count for EVERY detected functional group (the single
+    # source the count-aware similarity consumes; generalises to new groups).
+    functional_group_counts: dict = field(default_factory=dict)
     # Comprehensive functional group counts (each tracked separately)
     num_carboxyl: int = 0
     num_primary_amine: int = 0
