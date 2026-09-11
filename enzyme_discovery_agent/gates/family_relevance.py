@@ -220,14 +220,24 @@ def _qualified_literature_seed_folds(run_dir: Path) -> list[tuple[str, str]]:
     def resolve(accession: str) -> tuple[str, list[str]]:
         entry = _fetch_uniprot_entry_light(accession) or {}
         reactions = entry.get("catalytic_activities") or []
-        if not reactions:
-            return accession, []
-        facts = classify_member_reaction(
-            entry.get("ec_numbers") or [], reactions[0],
-            target_direction, target_bonds,
-        )
-        if facts.get("direction_vs_target") != "same" or not facts.get("shared_bond_type"):
-            return accession, []
+        if reactions:
+            facts = classify_member_reaction(
+                entry.get("ec_numbers") or [], reactions[0],
+                target_direction, target_bonds,
+            )
+            # Follow a literature-named seed's family UNLESS its own annotated
+            # native reaction AFFIRMATIVELY contradicts the target: it runs the
+            # opposite direction, or it forms/breaks a determinable bond that does
+            # not overlap the target bond. A seed whose entry carries no reaction
+            # line (common for TrEMBL) or an undeterminable bond is NOT a
+            # contradiction — its exact family is surveyed and the survey's own
+            # direction/role-fit gate decides promotion. This keeps an on-target
+            # enzyme that a paper named by function from being lost merely because
+            # its database record lacks a curated catalytic-activity annotation.
+            if facts.get("direction_vs_target") == "opposite":
+                return accession, []
+            if facts.get("bond_types") and not facts.get("shared_bond_type"):
+                return accession, []
         return accession, _specific_family_ids(accession)
 
     workers = max(1, min(config.FAMILY_MAPPING_WORKERS, len(accessions)))
