@@ -233,21 +233,11 @@ def resolve_family_fold_candidates(
                     member_count = 0
                 count_cache[accession] = member_count
 
-            # A family/domain entry whose reviewed membership saturates the cheap
-            # count probe pools a whole superfamily of unrelated functions; it is
-            # a broad structural bin, not the coherent catalytic family a
-            # hypothesis names. Treat such saturated entries like an explicit
-            # homologous_superfamily: usable only as a last-resort fallback when
-            # nothing narrower resolves, never the primary survey target. This is
-            # what keeps a specific hypothesis from mapping onto a generic fold
-            # that lexically shares an action word but pools off-target members.
-            is_saturated = member_count >= _LIST_PAGE_MAX
-            is_broad_fallback = entry_type in _FALLBACK_ENTRY_TYPES or is_saturated
-            # A coherent, bounded family/domain mapping remains auditable even
-            # when it has few reviewed proteins. Reviewed count controls evidence
-            # strength, not whether its complete exact membership may be
-            # inventoried; only the saturated/superfamily bins are held back.
-            if is_broad_fallback and not allow_broad:
+            is_broad_fallback = entry_type in _FALLBACK_ENTRY_TYPES
+            # A coherent family/domain mapping remains auditable even when it has
+            # no reviewed proteins. Reviewed count controls evidence strength,
+            # not whether its complete exact membership may be inventoried.
+            if not (not is_broad_fallback or allow_broad and is_broad_fallback):
                 continue
             entry_text = " ".join([
                 str(entry.get("name") or ""),
