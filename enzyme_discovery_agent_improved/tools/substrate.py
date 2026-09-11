@@ -124,9 +124,9 @@ def _detect_functional_groups(mol: Chem.Mol) -> dict:
     # union-based Ruzicka in chemistry_logic.compare_substrate_properties), so the
     # matcher generalises to any reaction's substrate chemistry, not only the
     # groups that happened to matter for one campaign.  Broad, reaction-agnostic
-    # coverage: carbonyl derivatives and their ACTIVATED forms (thioester,
-    # anhydride, acyl-phosphate) that drive ligase/synthetase chemistry, N/O/S/P
-    # groups, halogens, and common decorations.
+    # coverage: carbonyl acids and their derivatives (including activated acyl
+    # forms), N / O / S / P groups, halogens, unsaturation, and common
+    # decorations -- detected uniformly, with no group privileged over another.
     patterns = {
         # --- Amines (neutral + protonated variants folded together below) ---
         "primary_amine": "[NX3H2;!$(NC=O);!$([NH3+])]",  # free -NH2
