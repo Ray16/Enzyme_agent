@@ -1000,9 +1000,11 @@ def _annotate_reasoned_tiers(
             entry["weakest_fg_match"] = (
                 round(ax["weakest_fg_similarity"], 2)
                 if isinstance(ax["weakest_fg_similarity"], (int, float)) else None)
+            entry["shape_mismatches"] = ax.get("shape_mismatches", 0)
         else:
             entry["substrates_hosted"] = None
             entry["weakest_fg_match"] = None
+            entry["shape_mismatches"] = None
         entry["evidence_level"] = _evidence_level(d)
         entry["family_relevance"] = (
             "off-target(stopped)" if acc in stopped
