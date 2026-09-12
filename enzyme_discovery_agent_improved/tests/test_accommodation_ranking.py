@@ -77,6 +77,19 @@ class TestAccommodationSortKey(unittest.TestCase):
         weak = _accommodation_sort_key(_accom([{}, {}], [], 0.3))
         self.assertLess(strong, weak)
 
+    def test_shape_mismatch_ranks_below_shape_clean_despite_higher_fg(self):
+        # A native aromatic/cyclic substrate where the target is aliphatic is a
+        # steric bottleneck: a shape-clean candidate ranks ABOVE a shape-mismatched
+        # one even when the mismatched one has a higher functional-group overlap
+        # (shape is the axis before chemistry — the atdA1-aniline case).
+        clean_lowfg = _accommodation_sort_key(_accom([{}, {}], [], 0.3, shape_mismatch=0))
+        aromatic_highfg = _accommodation_sort_key(_accom([{}, {}], [], 0.9, shape_mismatch=1))
+        self.assertLess(clean_lowfg, aromatic_highfg)
+
+    def test_shape_axis_reported(self):
+        ax = _accommodation_axes(_accom([{}, {}], [], 0.5, shape_mismatch=1))
+        self.assertEqual(ax["shape_mismatches"], 1)
+
 
 class TestRankingUsesDecomposedAxes(unittest.TestCase):
     def test_accommodated_ranks_above_unaccommodated(self):
