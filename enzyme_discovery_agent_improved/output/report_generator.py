@@ -993,12 +993,20 @@ def _annotate_reasoned_tiers(
             in_strong_band = False
             tier = 2
 
-        fit = _accommodation_score(d)
-        if fit is None:
-            fit = fold_fit.get(acc)
+        ax = _accommodation_axes(d)
         entry["tier"] = tier
         entry["tier_label"] = _TIER_LABEL.get(tier, "")
-        entry["substrate_fit"] = round(fit, 2) if isinstance(fit, (int, float)) else None
+        # Decomposed substrate-fit facts (no single collapsed score): how many of the
+        # target's substrates the enzyme can host, and the weakest per-substrate
+        # functional-group overlap — the independent axes ranking reasons over.
+        if ax["present"]:
+            entry["substrates_hosted"] = f"{ax['n_accommodated']}/{ax['n_target_substrates']}"
+            entry["weakest_fg_match"] = (
+                round(ax["weakest_fg_similarity"], 2)
+                if isinstance(ax["weakest_fg_similarity"], (int, float)) else None)
+        else:
+            entry["substrates_hosted"] = None
+            entry["weakest_fg_match"] = None
         entry["evidence_level"] = _evidence_level(d)
         entry["family_relevance"] = (
             "off-target(stopped)" if acc in stopped
