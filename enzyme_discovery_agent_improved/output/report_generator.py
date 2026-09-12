@@ -898,27 +898,6 @@ def _family_rank_map(stopped_accs: set[str], ontarget_accs: set[str]) -> dict[st
     return {acc: 0 for acc in ontarget_accs}
 
 
-def _fold_fit_map(run_dir: Path) -> dict[str, float]:
-    """accession -> its fold's holistic substrate fit (0-1), from the survey
-    landscape.  Gives every candidate a grounded substrate signal even when the
-    per-candidate accommodation could not be computed.  Empty when the landscape
-    predates the multi-axis survey (older runs) or is absent."""
-    try:
-        folds = json.loads((run_dir / "family_landscape.json").read_text())
-    except (OSError, ValueError):
-        return {}
-    out: dict[str, float] = {}
-    for f in folds if isinstance(folds, list) else []:
-        hf = (f.get("holistic_fit") or {}).get("max")
-        if not isinstance(hf, (int, float)):
-            continue
-        for m in f.get("top_members") or []:
-            acc = m.get("accession")
-            if acc:
-                out.setdefault(acc, float(hf))
-    return out
-
-
 _TIER_LABEL = {1: "strong lead", 2: "worth testing", 3: "weak / gated"}
 
 
