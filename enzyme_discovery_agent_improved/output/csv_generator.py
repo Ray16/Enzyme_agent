@@ -131,6 +131,7 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
                     "tier": rank_info.get("tier", ""),
                     "tier_label": rank_info.get("tier_label", ""),
                     "substrates_hosted": rank_info.get("substrates_hosted", ""),
+                    "shape_mismatches": rank_info.get("shape_mismatches", ""),
                     "weakest_fg_match": rank_info.get("weakest_fg_match", ""),
                     "evidence_level": rank_info.get("evidence_level", ""),
                     "family_relevance": rank_info.get("family_relevance", ""),
