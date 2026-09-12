@@ -596,6 +596,8 @@ def _deterministic_mechanistic_ranking(
             bits.append("HARD-GATED: " + "; ".join(d.get("critical_warnings", []))[:120])
         if ax["present"]:
             bits.append(f"substrates {ax['n_accommodated']}/{ax['n_target_substrates']} hosted")
+            if ax.get("shape_mismatches"):
+                bits.append(f"{ax['shape_mismatches']} shape mismatch(es)")
             w = ax["weakest_fg_similarity"]
             if w is not None:
                 bits.append(f"weakest FG match {w:.2f}")
