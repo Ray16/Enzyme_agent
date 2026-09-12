@@ -1327,7 +1327,7 @@ def generate_two_pass_report(
     literature_named = _literature_named_accs(run_dir)
     sink_accs = {a for a in stopped_accs if a not in literature_named}
     _annotate_reasoned_tiers(pass1_ranking, acc_to_eval, ontarget_accs, stopped_accs,
-                             _fold_fit_map(run_dir), sink=sink_accs)
+                             sink=sink_accs)
 
     # Push the retroactively-excluded stopped-fold members to the bottom of the
     # order (below every consistent candidate) and re-rank, so they never occupy a
