@@ -20,13 +20,19 @@ from enzyme_discovery_agent_improved.output.report_generator import (
 )
 
 
-def _accom(per, unaccommodated, weak, n=2):
-    return {"substrate_similarity": {"accommodation": {
-        "per_target": per,
-        "n_target_substrates": n,
-        "unaccommodated_targets": unaccommodated,
-        "weakest_functional_group_similarity": weak,
-    }}}
+def _accom(per, unaccommodated, weak, n=2, shape_mismatch=0):
+    # shape_mismatch property comparisons carry an aromaticity/ring mismatch flag
+    comps = [{"aromaticity_match": False, "cyclicity_match": False}
+             for _ in range(shape_mismatch)]
+    return {"substrate_similarity": {
+        "accommodation": {
+            "per_target": per,
+            "n_target_substrates": n,
+            "unaccommodated_targets": unaccommodated,
+            "weakest_functional_group_similarity": weak,
+        },
+        "property_comparisons": comps,
+    }}
 
 
 class TestAccommodationAxes(unittest.TestCase):
