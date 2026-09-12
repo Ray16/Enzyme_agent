@@ -45,6 +45,7 @@ def _load_ranking(run_dir: Path) -> dict[str, dict]:
             # the target's substrates are hosted, and the weakest per-substrate
             # functional-group overlap.
             "substrates_hosted": entry.get("substrates_hosted", ""),
+            "shape_mismatches": entry.get("shape_mismatches", ""),
             "weakest_fg_match": entry.get("weakest_fg_match", ""),
             "evidence_level": entry.get("evidence_level", ""),
             "family_relevance": entry.get("family_relevance", ""),
