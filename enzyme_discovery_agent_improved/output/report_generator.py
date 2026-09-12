@@ -311,44 +311,62 @@ def _candidate_is_gated(data: dict) -> bool:
     return bool(data.get("critical_warnings"))
 
 
-def _accommodation_score(data: dict) -> float | None:
-    """Substrate-accommodation fit in [0,1], or None when not computed.
+def _accommodation_axes(data: dict) -> dict:
+    """DECOMPOSED substrate-accommodation axes — never blended into one number.
 
-    The enzyme must bind EVERY target substrate, so the overall score is the WORST
-    across the target substrates (a real physical constraint — it must host both).
+    Substrate fit is not a scalar: an enzyme's suitability for a substrate-defined
+    target is a set of INDEPENDENT physical facts, and ranking must reason over them
+    separately (a single collapsed score lets a coarse axis dominate and hides WHY a
+    candidate fits — the lesson behind the no-composites rule).  This returns the
+    grounded axes the rest of the pipeline reasons and orders over:
 
-    Within ONE (target → best-native) pair, the axes are NOT blindly min-ed
-    together: a raw ``min(fg, chain, mw)`` lets whichever axis is lowest — often a
-    coarse or saturating chemical metric — dominate and erase the rest.  Instead the
-    axes are split by their PHYSICS:
+      * ``n_target_substrates`` / ``n_accommodated`` — how many of the target's
+        substrates have a genuine native counterpart (shares functional groups, not
+        cofactor-scale).  Hosting EVERY target substrate is a hard physical
+        constraint, kept as a COUNT, not folded into a chemistry score.
+      * ``n_unaccommodated`` — the complementary count (0 == all hosted).
+      * ``weakest_fg_similarity`` — the WORST per-substrate functional-group overlap
+        across the matched targets (the chemistry axis, kept separate from the
+        accommodation count).
+      * ``per_target`` — the full per-substrate facts (target vs native FG counts,
+        chain length, MW, aromatic/ring mismatch) for the LLM to reason over.
 
-      * STERIC/SHAPE fit is a genuine hard bottleneck — a substrate too large or the
-        wrong shape cannot bind, however similar its chemistry — so it is the WORST
-        of the size axes (MW, main-chain length, volume), further capped when the
-        native is aromatic/cyclic and the target is not.
-      * CHEMICAL compatibility (functional-group profile, polarity) is GRADED and
-        promiscuity-tolerant, so it is the AVERAGE of its axes — no single coarse
-        axis dominates.
-
-    Accommodation is the WORST of {steric, chemical}: a candidate must both fit the
-    pocket sterically AND be chemically plausible, but chemistry is a smooth signal,
-    not a blind gate.  Grounded facts, no tuned weights.  None when substrate SMILES
-    were unavailable, so callers treat it as neutral.
+    ``present`` is False when no substrate comparison was computed (neutral — the
+    caller must not treat missing facts as either a pass or a fail).
     """
-    sim = data.get("substrate_similarity") or {}
-    accom = sim.get("accommodation")
-    # A target substrate with no genuine native partner (its counterpart is
-    # cofactor-scale or absent) means the enzyme cannot host the WHOLE reaction:
-    # that is an accommodation FAILURE (score 0), not "unknown" (None).  Without
-    # this, an unresolvable partner (a one-atom donor) is scored as a neutral
-    # midpoint and can outrank a real, moderate both-substrate fit.
-    if accom and accom.get("unaccommodated_targets"):
-        return 0.0
-    comps = sim.get("property_comparisons") or []
-    if not comps:
-        return None
-    per_substrate = [f for f in (whole_package_pair_fit(c) for c in comps) if f is not None]
-    return min(per_substrate) if per_substrate else None
+    accom = (data.get("substrate_similarity") or {}).get("accommodation") or {}
+    per = accom.get("per_target") or []
+    if not per:
+        return {"present": False}
+    n_tgt = accom.get("n_target_substrates") or len(per)
+    n_un = len(accom.get("unaccommodated_targets") or [])
+    weak = accom.get("weakest_functional_group_similarity")
+    return {
+        "present": True,
+        "n_target_substrates": n_tgt,
+        "n_accommodated": max(0, n_tgt - n_un),
+        "n_unaccommodated": n_un,
+        "all_accommodated": n_un == 0,
+        "weakest_fg_similarity": weak if isinstance(weak, (int, float)) else None,
+        "per_target": per,
+    }
+
+
+def _accommodation_sort_key(data: dict) -> tuple:
+    """Deterministic ORDER over the decomposed accommodation axes (fallback spine
+    only) — a lexicographic priority, NOT a blended composite:
+
+      1. host every target substrate first (fewer unaccommodated ranks higher);
+      2. then higher weakest-functional-group overlap.
+
+    A candidate with no computed comparison sorts NEUTRALLY between fully-hosted and
+    partially-unaccommodated candidates, so missing facts neither win nor lose.
+    """
+    ax = _accommodation_axes(data)
+    if not ax["present"]:
+        return (0.5, -0.5)                      # neutral midpoint on both axes
+    weak = ax["weakest_fg_similarity"]
+    return (float(ax["n_unaccommodated"]), -(weak if weak is not None else 0.5))
 
 
 def _accommodation_facts_payload(data: dict) -> list[dict]:
