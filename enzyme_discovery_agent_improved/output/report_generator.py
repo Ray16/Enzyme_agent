@@ -342,9 +342,9 @@ def _accommodation_axes(data: dict) -> dict:
     n_un = len(accom.get("unaccommodated_targets") or [])
     weak = accom.get("weakest_functional_group_similarity")
     # SHAPE axis, kept SEPARATE from the chemistry (FG) axis: a native substrate
-    # that is aromatic or cyclic where the target is not is a steric-pocket
-    # mismatch (an aliphatic diacid/diamine target cannot be stood in for by an
-    # aromatic-ring analogue), counted over the per-substrate comparisons.
+    # that is aromatic or cyclic where the target substrate is not is a steric-pocket
+    # mismatch (an acyclic target cannot be stood in for by a ring-bearing
+    # analogue), counted over the per-substrate comparisons.
     comps = sim.get("property_comparisons") or []
     shape_mm = sum(
         1 for c in comps
