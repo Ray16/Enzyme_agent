@@ -367,16 +367,22 @@ def _accommodation_sort_key(data: dict) -> tuple:
     only) — a lexicographic priority, NOT a blended composite:
 
       1. host every target substrate first (fewer unaccommodated ranks higher);
-      2. then higher weakest-functional-group overlap.
+      2. then fewer SHAPE mismatches (native aromatic/cyclic where the target is
+         not — a steric bottleneck, mirroring the old worst-of-{steric,chemical});
+      3. then higher weakest-functional-group overlap (the chemistry axis).
 
     A candidate with no computed comparison sorts NEUTRALLY between fully-hosted and
     partially-unaccommodated candidates, so missing facts neither win nor lose.
     """
     ax = _accommodation_axes(data)
     if not ax["present"]:
-        return (0.5, -0.5)                      # neutral midpoint on both axes
+        return (0.5, 0, -0.5)                   # neutral on all three axes
     weak = ax["weakest_fg_similarity"]
-    return (float(ax["n_unaccommodated"]), -(weak if weak is not None else 0.5))
+    return (
+        float(ax["n_unaccommodated"]),
+        ax.get("shape_mismatches", 0),
+        -(weak if weak is not None else 0.5),
+    )
 
 
 def _accommodation_facts_payload(data: dict) -> list[dict]:
