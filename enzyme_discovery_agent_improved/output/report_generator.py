@@ -573,12 +573,15 @@ def _deterministic_mechanistic_ranking(
         else:
             tier = 1 if clean_seen < t1 else (2 if clean_seen < t2 else 3)
             clean_seen += 1
-        fit = _accommodation_score(d)
+        ax = _accommodation_axes(d)
         bits = []
         if gated:
             bits.append("HARD-GATED: " + "; ".join(d.get("critical_warnings", []))[:120])
-        if fit is not None:
-            bits.append(f"accommodation={fit:.2f}")
+        if ax["present"]:
+            bits.append(f"substrates {ax['n_accommodated']}/{ax['n_target_substrates']} hosted")
+            w = ax["weakest_fg_similarity"]
+            if w is not None:
+                bits.append(f"weakest FG match {w:.2f}")
         if d.get("is_swissprot"):
             bits.append("Swiss-Prot")
         mechanism_level = _mechanism_evidence_level(d)
