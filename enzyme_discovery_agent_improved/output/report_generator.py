@@ -535,8 +535,9 @@ def _deterministic_mechanistic_ranking(
             continue
         gated = _candidate_is_gated(d)
         fam_rank = family_rank_by_acc.get(acc, 1)
-        fit = _accommodation_score(d)
-        fit_key = -(fit if fit is not None else 0.5)  # None → neutral midpoint
+        # Decomposed substrate axes (host-every-substrate count, then weakest FG
+        # overlap) — a lexicographic priority, not a blended fit scalar.
+        accom_key = _accommodation_sort_key(d)
         lit = d.get("literature") or {}
         struct = d.get("structural_data") or {}
         struct_rank = 0 if (struct.get("pdb_ids")) else (1 if struct.get("has_alphafold") else 2)
@@ -544,7 +545,7 @@ def _deterministic_mechanistic_ranking(
             key = (
                 1 if gated else 0,
                 fam_rank,
-                fit_key,
+                accom_key,
                 _mechanism_evidence_rank(d),
                 0 if d.get("is_swissprot") else 1,
                 -int(lit.get("characterization_papers") or 0),
@@ -555,7 +556,7 @@ def _deterministic_mechanistic_ranking(
         else:
             # Suitability-only: hard gate, family relevance, then substrate
             # chemistry, then a stable accession tiebreak.  No curation signal.
-            key = (1 if gated else 0, fam_rank, fit_key, acc)
+            key = (1 if gated else 0, fam_rank, accom_key, acc)
         scored.append((key, acc, d, gated))
     scored.sort(key=lambda x: x[0])
 
