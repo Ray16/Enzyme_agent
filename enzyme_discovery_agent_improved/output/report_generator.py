@@ -661,9 +661,15 @@ def _retry_compact_llm_report(
             fact["native_substrates"] = "; ".join(
                 s.get("name", "") for s in subs if s.get("name")
             )
-            fit = _accommodation_score(data)
-            if fit is not None:
-                fact["substrate_accommodation"] = round(fit, 2)
+            # Decomposed accommodation facts (not a scalar) so the model re-ranks by
+            # reasoning over the substrate dimensions, not a collapsed number.
+            ax = _accommodation_axes(data)
+            if ax["present"]:
+                fact["substrate_accommodation"] = {
+                    "substrates_hosted": f"{ax['n_accommodated']}/{ax['n_target_substrates']}",
+                    "weakest_fg_similarity": ax["weakest_fg_similarity"],
+                    "per_substrate": _accommodation_facts_payload(data),
+                }
         facts.append(fact)
     if suitability_first:
         instruction = (
