@@ -946,7 +946,7 @@ def _reaction_direction(d: dict) -> str:
 
 def _annotate_reasoned_tiers(
     ranking: list[dict], acc_to_eval: dict, ontarget: set[str], stopped: set[str],
-    fold_fit: dict[str, float], sink: set[str] | None = None,
+    sink: set[str] | None = None,
 ) -> None:
     """Attach a tier LABEL (contiguous bands over the reasoned rank) and the
     grounded facts behind it to each ranking entry, in place.
