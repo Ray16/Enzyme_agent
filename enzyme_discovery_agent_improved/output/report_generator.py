@@ -333,13 +333,23 @@ def _accommodation_axes(data: dict) -> dict:
     ``present`` is False when no substrate comparison was computed (neutral — the
     caller must not treat missing facts as either a pass or a fail).
     """
-    accom = (data.get("substrate_similarity") or {}).get("accommodation") or {}
+    sim = data.get("substrate_similarity") or {}
+    accom = sim.get("accommodation") or {}
     per = accom.get("per_target") or []
     if not per:
         return {"present": False}
     n_tgt = accom.get("n_target_substrates") or len(per)
     n_un = len(accom.get("unaccommodated_targets") or [])
     weak = accom.get("weakest_functional_group_similarity")
+    # SHAPE axis, kept SEPARATE from the chemistry (FG) axis: a native substrate
+    # that is aromatic or cyclic where the target is not is a steric-pocket
+    # mismatch (an aliphatic diacid/diamine target cannot be stood in for by an
+    # aromatic-ring analogue), counted over the per-substrate comparisons.
+    comps = sim.get("property_comparisons") or []
+    shape_mm = sum(
+        1 for c in comps
+        if c.get("aromaticity_match") is False or c.get("cyclicity_match") is False
+    )
     return {
         "present": True,
         "n_target_substrates": n_tgt,
@@ -347,6 +357,7 @@ def _accommodation_axes(data: dict) -> dict:
         "n_unaccommodated": n_un,
         "all_accommodated": n_un == 0,
         "weakest_fg_similarity": weak if isinstance(weak, (int, float)) else None,
+        "shape_mismatches": shape_mm,
         "per_target": per,
     }
 
