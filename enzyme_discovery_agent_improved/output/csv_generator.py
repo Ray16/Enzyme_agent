@@ -41,7 +41,11 @@ def _load_ranking(run_dir: Path) -> dict[str, dict]:
             "rank": entry.get("rank"),
             "tier": entry.get("tier", ""),
             "tier_label": entry.get("tier_label", ""),
-            "substrate_fit": entry.get("substrate_fit", ""),
+            # Decomposed substrate-fit axes (no single collapsed score): how many of
+            # the target's substrates are hosted, and the weakest per-substrate
+            # functional-group overlap.
+            "substrates_hosted": entry.get("substrates_hosted", ""),
+            "weakest_fg_match": entry.get("weakest_fg_match", ""),
             "evidence_level": entry.get("evidence_level", ""),
             "family_relevance": entry.get("family_relevance", ""),
             "direction": entry.get("direction", ""),
