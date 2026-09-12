@@ -34,8 +34,7 @@ def _eval(acc, *, swissprot=True, char_papers=1):
 
 class TestAnnotateSink(unittest.TestCase):
     def _annotate(self, ranking, acc_to_eval, ontarget, stopped, sink):
-        _annotate_reasoned_tiers(ranking, acc_to_eval, ontarget, stopped,
-                                 fold_fit={}, sink=sink)
+        _annotate_reasoned_tiers(ranking, acc_to_eval, ontarget, stopped, sink=sink)
 
     def test_sunk_member_is_tier3_and_flagged(self):
         ranking = [{"accession": "ON1", "rank": 1},
