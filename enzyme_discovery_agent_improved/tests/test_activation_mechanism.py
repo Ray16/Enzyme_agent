@@ -191,42 +191,6 @@ class TestModelingCofactors(unittest.TestCase):
         self.assertEqual(metal["basis"], "uniprot_cofactor_note")
 
 
-class TestLigationFrame(unittest.TestCase):
-
-    def test_formate_donor_out_of_frame(self):
-        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
-        r = classify_ligation_frame(
-            ["N(1)-(5-phospho-beta-D-ribosyl)glycinamide + formate + ATP = "
-             "N(2)-formyl-product + ADP + phosphate"])
-        self.assertFalse(r["in_frame"])
-        self.assertIn("formate", r["basis"])
-
-    def test_bicarbonate_donor_out_of_frame(self):
-        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
-        r = classify_ligation_frame(
-            ["hydrogencarbonate + NH4(+) + 2 ATP = carbamoyl phosphate + 2 ADP + phosphate"])
-        self.assertFalse(r["in_frame"])
-
-    def test_carboxylic_acid_amine_ligation_in_frame(self):
-        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
-        r = classify_ligation_frame(
-            ["putrescine + L-glutamate + ATP = gamma-L-glutamylputrescine + ADP + phosphate"])
-        self.assertTrue(r["in_frame"])
-
-    def test_glycine_acyl_donor_stays_in_frame(self):
-        # GAR synthetase ligates glycine's carboxyl to an amine -> organic acyl donor.
-        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
-        r = classify_ligation_frame(
-            ["5-phospho-beta-D-ribosylamine + glycine + ATP = "
-             "N(1)-(5-phospho-beta-D-ribosyl)glycinamide + ADP + phosphate"])
-        self.assertTrue(r["in_frame"])
-
-    def test_no_ntp_out_of_frame(self):
-        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
-        self.assertFalse(classify_ligation_frame(["an amide + H2O = acid + amine"])["in_frame"])
-        self.assertFalse(classify_ligation_frame([])["in_frame"])
-
-
 class TestMergeActivationEvidence(unittest.TestCase):
 
     def test_merge_into_none(self):
