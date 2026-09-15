@@ -106,9 +106,12 @@ def load_master2acc():
 
 
 def matched_accessions(acceptor="amine", bond="amide"):
-    smiles = load_rhea_smiles()
+    cache = CACHE / "matched_rhea_ids.txt"
+    if cache.exists():
+        hit_rhea = set(cache.read_text().split())
+    else:
+        hit_rhea = set(match_reactions(acceptor, bond))
     master2acc = load_master2acc()
-    hit_rhea = {rid for rid, smi in smiles.items() if forms_bond(smi, acceptor, bond)}
     accs = set()
     for rid in hit_rhea:
         try:
