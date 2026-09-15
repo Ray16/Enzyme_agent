@@ -312,7 +312,7 @@ def main() -> None:
     out = Path(args.out) if args.out else Path(
         args.runs[0]) / ("candidate_comparison.html" if len(runs) > 1
                          else "candidate_native_report.html")
-    out.write_text(build_html(runs))
+    out.write_text(build_html(runs, fragment=args.artifact))
     total = sum(r["n"] for r in runs)
     print(f"wrote {out}  ({len(runs)} run(s), {total} candidate rows)")
 
