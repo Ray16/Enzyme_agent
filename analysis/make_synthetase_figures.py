@@ -204,9 +204,9 @@ def fig_screening(df):
                  fontsize=12)
     ax.set_xlim(0, 1); ax.set_ylim(0, 1.03)
     ax.legend(loc="lower right", frameon=False)
-    ax.text(0.02, 0.02, f"note: {int((~df.concl).sum())} enzymes were INCONCLUSIVE (docking failure, "
-            "incl. SfaB) and are set aside, not scored", transform=ax.transAxes,
-            fontsize=8.5, color="#a05000", style="italic")
+    ax.text(0.035, 0.90, f"note: {int((~df.concl).sum())} enzymes were INCONCLUSIVE\n"
+            "(docking failure, incl. SfaB) —\nset aside, not scored", transform=ax.transAxes,
+            fontsize=8.5, color="#a05000", style="italic", va="top")
     plt.tight_layout()
     p = f"{FIG}/synthetase_screening_operating_curve.png"
     plt.savefig(p, bbox_inches="tight"); plt.close(fig)
