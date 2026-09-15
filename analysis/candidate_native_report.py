@@ -295,6 +295,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("runs", nargs="+", help="one or more run directories")
     ap.add_argument("--out", default=None, help="output HTML path")
+    ap.add_argument("--artifact", action="store_true",
+                    help="emit a skeleton-free fragment for publishing as an artifact")
     args = ap.parse_args()
 
     runs = []
