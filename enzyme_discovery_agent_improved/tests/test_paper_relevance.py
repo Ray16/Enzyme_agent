@@ -12,6 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from enzyme_discovery_agent_improved.tools.paper_relevance import (
     build_enzymology_profile,
+    looks_like_review,
+    mine_deposited_accessions,
     rank_papers_by_enzymology,
     score_paper,
 )
