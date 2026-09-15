@@ -619,7 +619,32 @@ def fig_schema():
     save(fig,"agent_handoff_schema.png")
 
 
+def combine_pdf():
+    """Merge the individual figure PDFs into one presentable multi-page deck, in
+    presentation order. Falls back gracefully if pypdf is unavailable."""
+    order=["agent_00_graphical_abstract","agent_pipeline_architecture","agent_handoff_schema",
+           "agent_mechanism_bridge","agent_ranking_decomposition","agent_candidate_landscape",
+           "agent_discovery_completeness","agent_geometry_proxy_benchmark","agent_structural_geometry",
+           "agent_hydrolase_second_target","agent_run_comparison"]
+    pdfs=[OUT/f"{n}.pdf" for n in order if (OUT/f"{n}.pdf").exists()]
+    try:
+        from pypdf import PdfWriter
+    except Exception:
+        try:
+            from PyPDF2 import PdfMerger as PdfWriter  # type: ignore
+        except Exception:
+            print("(pypdf not available — skipping combined deck; individual PDFs are complete)")
+            return
+    w=PdfWriter()
+    for p in pdfs:
+        w.append(str(p))
+    out=OUT/"agent_DECK_combined.pdf"
+    with open(out,"wb") as fh: w.write(fh)
+    print("wrote",out.relative_to(ROOT),f"({len(pdfs)} pages)")
+
+
 if __name__=="__main__":
+    fig_abstract()
     fig_pipeline()
     fig_ranking()
     fig_landscape()
