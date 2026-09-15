@@ -45,7 +45,8 @@ plt.rcParams.update({
 
 def load():
     act = pd.read_csv(f"{AS}/assay_data/panel_activity.csv")
-    act = act[["id", "activity_N66L1_ugml_avg"]].rename(columns={"activity_N66L1_ugml_avg": "act"})
+    act = act[["id", "activity_N66L1_ugml_avg", "activity_N66L1_ugml_std"]].rename(
+        columns={"activity_N66L1_ugml_avg": "act", "activity_N66L1_ugml_std": "act_std"})
     prox = pd.read_csv(PROXY_CSV)
     df = act.merge(prox, on="id", how="inner")
     df["is_active"] = (df["act"] > ACT_THR).astype(int)
