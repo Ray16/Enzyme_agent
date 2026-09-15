@@ -114,7 +114,7 @@ def fig_pipeline():
         for j,line in enumerate(textwrap.wrap(d,34)):
             ax.text(rx+1.8,yy-5.6-j*2.4,line,fontsize=8.7,color=SUB)
         yy-=hh+2.2
-    save(fig,"agent_pipeline_architecture.png")
+    save(fig,"01_pipeline_architecture.png")
 
 
 # ============================================================ 2. RANKING DECOMPOSITION
@@ -159,7 +159,7 @@ def fig_ranking():
 
     for ax in axes: ax.tick_params(length=0); [ax.spines[s].set_visible(False) for s in ("top","right")]
     fig.subplots_adjust(top=0.88,bottom=0.09,left=0.09,right=0.98)
-    save(fig,"agent_ranking_decomposition.png")
+    save(fig,"04_ranking_decomposition.png")
 
 
 # ============================================================ 3. CANDIDATE LANDSCAPE
@@ -199,7 +199,7 @@ def fig_landscape():
                     markersize=12,markeredgewidth=1.6,label="strong lead (bold ring)")]
     ax.legend(handles=leg,loc="lower right",fontsize=9.5,frameon=True,framealpha=0.95)
     fig.subplots_adjust(top=0.90,left=0.24,right=0.98,bottom=0.07)
-    save(fig,"agent_candidate_landscape.png")
+    save(fig,"05_candidate_landscape.png")
 
 
 # ============================================================ 4. MECHANISM BRIDGE
@@ -243,7 +243,7 @@ def fig_bridge():
     ax.text(6,27,"InterPro family  “Fumarate–diaminopropanoate ligase”  carries no adenylation hint.",fontsize=10.3,color=INK)
     ax.text(6,23.5,"Its reaction ( … = … + AMP + diphosphate ) unambiguously → Pα. The old keyword map scored it on Pγ",fontsize=10.3,color=INK)
     ax.text(6,20.2,"(0 productive poses → 'inconclusive'); the reaction-derived call fixes it. Now emitted with full provenance.",fontsize=10.3,color=INK)
-    save(fig,"agent_mechanism_bridge.png")
+    save(fig,"03_mechanism_bridge.png")
 
 
 # ============================================================ 5. RUN COMPARISON
@@ -282,7 +282,7 @@ def fig_runcompare():
     ax.set_ylabel("million tokens",fontsize=10); ax.set_ylim(0,7.5)
     [ax.spines[s].set_visible(False) for s in ("top","right")]; ax.tick_params(length=0)
     fig.tight_layout(rect=[0,0,1,0.95])
-    save(fig,"agent_run_comparison.png")
+    save(fig,"10_run_comparison.png")
 
 
 # ============================================================ 6. STRUCTURAL GEOMETRY
@@ -319,7 +319,7 @@ def fig_structural():
          Patch(fc="#d9736a",label="<150° weak")]
     fig.legend(handles=leg,loc="lower center",ncol=3,fontsize=9.5,frameon=False,bbox_to_anchor=(0.5,-0.02))
     fig.tight_layout(rect=[0,0.03,1,0.88])
-    save(fig,"agent_structural_geometry.png")
+    save(fig,"08_structural_geometry.png")
 
 
 # ============================================================ 8. GEOMETRY-PROXY BENCHMARK
@@ -376,7 +376,7 @@ def fig_proxy():
     axB.text(0.98,0.03,"necessary, not sufficient → coarse negative filter",transform=axB.transAxes,
              fontsize=8.2,color=SUB,ha="right",style="italic")
     fig.subplots_adjust(top=0.88,bottom=0.11,left=0.20,right=0.98)
-    save(fig,"agent_geometry_proxy_benchmark.png")
+    save(fig,"07_geometry_proxy_benchmark.png")
 
 
 # ============================================================ 9. EXHAUSTIVE RECALL SWEEP
@@ -423,7 +423,7 @@ def fig_sweep():
     ax.text(6,11.6,"The agent covers the reviewed universe — but the amide-synthetase ground truth SfaB (A0A2H4T912) is",fontsize=9.6,color=INK)
     ax.text(6,8.4,"UNREVIEWED (TrEMBL, no EC), so it lies OUTSIDE this entire sweep. No reviewed-DB method recovers it; "
             "reaching it needs the literature/unannotated channel.",fontsize=9.6,color=INK)
-    save(fig,"agent_discovery_completeness.png")
+    save(fig,"06_discovery_completeness.png")
 
 
 # ============================================================ 0. GRAPHICAL ABSTRACT
@@ -490,7 +490,7 @@ def fig_abstract():
           "Geometry (angle/NAC) is a coarse negative filter, not a quantitative activity predictor."]
     for j,l in enumerate(lims):
         ax.text(50,18-j*3.4,"•  "+l,fontsize=9.2,color=INK,ha="center")
-    save(fig,"agent_00_graphical_abstract.png")
+    save(fig,"00_overview.png")
 
 
 # ============================================================ 10. SECOND TARGET: HYDROLASE PANEL
@@ -542,7 +542,7 @@ def fig_hydrolase():
     axB.set_title("NAC discriminates (AUROC 0.61, p=0.03)",fontsize=11.5,color=INK,pad=8)
     axB.tick_params(length=0); [axB.spines[s].set_visible(False) for s in ("top","right")]
     fig.subplots_adjust(top=0.87,bottom=0.16,left=0.08,right=0.98)
-    save(fig,"agent_hydrolase_second_target.png")
+    save(fig,"09_hydrolase_second_target.png")
 
 
 # ============================================================ 7. HANDOFF SCHEMA
@@ -615,31 +615,7 @@ def fig_schema():
     _round(ax,RX,ly-3.2,RW,3.0,"#fbfcfd","#cbd2d9",lw=1)
     _round(ax,RX+1.4,ly-2.6,2,1.9,C_EXIST,C_EXIST_ED,r=0.4); ax.text(RX+4.2,ly-1.65,"existing field",fontsize=8.5,color=INK,va="center")
     _round(ax,RX+18,ly-2.6,2,1.9,C_NEW,C_NEW_ED,r=0.4); ax.text(RX+20.8,ly-1.65,"agent-derived (deterministic)",fontsize=8.5,color=INK,va="center")
-    save(fig,"agent_handoff_schema.png")
-
-
-def combine_pdf():
-    """Merge the individual figure PDFs into one presentable multi-page deck, in
-    presentation order. Falls back gracefully if pypdf is unavailable."""
-    order=["agent_00_graphical_abstract","agent_pipeline_architecture","agent_handoff_schema",
-           "agent_mechanism_bridge","agent_ranking_decomposition","agent_candidate_landscape",
-           "agent_discovery_completeness","agent_geometry_proxy_benchmark","agent_structural_geometry",
-           "agent_hydrolase_second_target","agent_run_comparison"]
-    pdfs=[OUT/f"{n}.pdf" for n in order if (OUT/f"{n}.pdf").exists()]
-    try:
-        from pypdf import PdfWriter
-    except Exception:
-        try:
-            from PyPDF2 import PdfMerger as PdfWriter  # type: ignore
-        except Exception:
-            print("(pypdf not available — skipping combined deck; individual PDFs are complete)")
-            return
-    w=PdfWriter()
-    for p in pdfs:
-        w.append(str(p))
-    out=OUT/"agent_DECK_combined.pdf"
-    with open(out,"wb") as fh: w.write(fh)
-    print("wrote",out.relative_to(ROOT),f"({len(pdfs)} pages)")
+    save(fig,"02_handoff_schema.png")
 
 
 if __name__=="__main__":
