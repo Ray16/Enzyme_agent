@@ -486,6 +486,7 @@ def derive_modeling_cofactors(
         "count": count,
         "role": "catalytic_metal",
         "basis": count_basis,
+        "count_confidence": count_conf,
         "identity_basis": identity_basis,
     }
     if alternatives:
