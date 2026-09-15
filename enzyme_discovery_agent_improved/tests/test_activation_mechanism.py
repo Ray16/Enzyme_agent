@@ -159,14 +159,72 @@ class TestModelingCofactors(unittest.TestCase):
 
     def test_diphosphate_note_not_miscounted(self):
         # "diphosphate" in a note must not be read as a metal count of any kind;
-        # with no real count stated, the default applies.
+        # with no real count stated, the mechanism-aware default applies.
         r = derive_modeling_cofactors(
             ["acid + ATP + amine = amide + AMP + diphosphate"],
             cofactor_names=["Mg(2+)"], cofactor_notes=["Releases diphosphate."],
         )
         metal = [c for c in r["cofactors"] if c["role"] == "catalytic_metal"][0]
         self.assertEqual(metal["count"], 2)
-        self.assertTrue(metal["basis"].startswith("mechanistic_default"))
+        self.assertEqual(metal["count_confidence"], "low")  # adenylate default
+
+    def test_phosphate_default_is_two_metal_medium(self):
+        # acyl-phosphate (ADP + phosphate): two-metal-ion default, medium confidence.
+        r = derive_modeling_cofactors(
+            ["putrescine + L-glutamate + ATP = product + ADP + phosphate"],
+            cofactor_names=[], cofactor_notes=[],
+        )
+        metal = [c for c in r["cofactors"] if c["role"] == "catalytic_metal"][0]
+        self.assertEqual(metal["count"], 2)
+        self.assertEqual(metal["count_confidence"], "medium")
+        self.assertIn("phosphoryl transfer", metal["basis"])
+
+    def test_stated_note_overrides_and_is_high_confidence(self):
+        r = derive_modeling_cofactors(
+            ["acid + ATP + amine = amide + AMP + diphosphate"],
+            cofactor_names=["Mg(2+)"],
+            cofactor_notes=["Binds 1 magnesium or manganese ion per subunit."],
+        )
+        metal = [c for c in r["cofactors"] if c["role"] == "catalytic_metal"][0]
+        self.assertEqual(metal["count"], 1)
+        self.assertEqual(metal["count_confidence"], "high")
+        self.assertEqual(metal["basis"], "uniprot_cofactor_note")
+
+
+class TestLigationFrame(unittest.TestCase):
+
+    def test_formate_donor_out_of_frame(self):
+        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
+        r = classify_ligation_frame(
+            ["N(1)-(5-phospho-beta-D-ribosyl)glycinamide + formate + ATP = "
+             "N(2)-formyl-product + ADP + phosphate"])
+        self.assertFalse(r["in_frame"])
+        self.assertIn("formate", r["basis"])
+
+    def test_bicarbonate_donor_out_of_frame(self):
+        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
+        r = classify_ligation_frame(
+            ["hydrogencarbonate + NH4(+) + 2 ATP = carbamoyl phosphate + 2 ADP + phosphate"])
+        self.assertFalse(r["in_frame"])
+
+    def test_carboxylic_acid_amine_ligation_in_frame(self):
+        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
+        r = classify_ligation_frame(
+            ["putrescine + L-glutamate + ATP = gamma-L-glutamylputrescine + ADP + phosphate"])
+        self.assertTrue(r["in_frame"])
+
+    def test_glycine_acyl_donor_stays_in_frame(self):
+        # GAR synthetase ligates glycine's carboxyl to an amine -> organic acyl donor.
+        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
+        r = classify_ligation_frame(
+            ["5-phospho-beta-D-ribosylamine + glycine + ATP = "
+             "N(1)-(5-phospho-beta-D-ribosyl)glycinamide + ADP + phosphate"])
+        self.assertTrue(r["in_frame"])
+
+    def test_no_ntp_out_of_frame(self):
+        from enzyme_discovery_agent_improved.chemistry_logic import classify_ligation_frame
+        self.assertFalse(classify_ligation_frame(["an amide + H2O = acid + amine"])["in_frame"])
+        self.assertFalse(classify_ligation_frame([])["in_frame"])
 
 
 class TestMergeActivationEvidence(unittest.TestCase):
