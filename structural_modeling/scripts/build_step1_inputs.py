@@ -98,18 +98,12 @@ def main():
 
     if not args.dry_run:
         os.makedirs(args.out, exist_ok=True)
-    n, miss, fell_back, nondefault, out_of_frame = 0, [], [], [], []
+    n, miss, fell_back, nondefault = 0, [], [], []
     for acc, seq in seqs.items():
         mp = msa.get(acc)
         if not mp or not os.path.exists(mp):
             miss.append(acc); continue
         mi = handoff.get(acc)
-        # Skip enzymes whose native reaction is NOT a carboxylic-acid + amine
-        # ligation (formate/bicarbonate/carbamoyl donors): the adipate near-attack
-        # frame does not apply, so cofolding them for adipate measures nothing.
-        frame = (mi or {}).get("ligation_frame") or {}
-        if frame.get("in_frame") is False:
-            out_of_frame.append(f"{acc}({frame.get('basis','')[:40]})"); continue
         cofactors = (mi or {}).get("cofactors")
         if not cofactors:
             cofactors = DEFAULT_COFACTORS; fell_back.append(acc)
@@ -124,8 +118,6 @@ def main():
     verb = "would write" if args.dry_run else "wrote"
     print(f"{verb} {n} step-1 YAMLs to {args.out}")
     print(f"  from-handoff: {n - len(fell_back)}  fell-back-to-default(ATP+2MG): {len(fell_back)}")
-    if out_of_frame:
-        print(f"  SKIPPED out-of-frame (not carboxylic-acid+amine ligation): {out_of_frame}")
     if nondefault:
         print(f"  NON-(2 Mg) metal specs: {nondefault}")
     else:
