@@ -112,9 +112,10 @@ def fig_classifier(df):
     axA.text(0.97, 0.72, callout, transform=axA.transAxes, ha="right", va="top",
              fontsize=9.5, color=RED, fontweight="bold",
              bbox=dict(boxstyle="round", fc="#fff0f0", ec=RED, alpha=0.9))
+    n_top_inactive = min(ranks.values()) - 1  # inactive members ranked above the best active
     axA.set_xlabel("rank by step-1 NAC fraction (best → worst)")
     axA.set_ylabel("step-1 NAC fraction")
-    axA.set_title("A. The 5 highest-NAC members are all inactive (P@3 = 0/3)")
+    axA.set_title(f"A. The {n_top_inactive} highest-NAC members are all inactive (P@3 = 0/3)")
     axA.set_ylim(0, 1.08)
     axA.legend(handles=[Patch(color=RED, label="active"), Patch(color="#cfe0f5", label="inactive")],
                loc="upper right", frameon=False)
