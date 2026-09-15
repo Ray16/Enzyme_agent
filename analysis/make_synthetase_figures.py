@@ -141,11 +141,7 @@ def fig_proxy_ranking(df):
     axA.set_ylabel("mean in-line attack angle (°)")
     axA.set_ylim(min(d.mean_inline_angle) - 4, 182)
     axA.set_xlim(-1, len(d))
-    # summary stats (ROC panel dropped: only 3 actives make the curve uninformative)
-    axA.text(0.985, 0.60, f"AUROC = {a:.2f}  (95% CI [{aci[0]:.2f}, {aci[1]:.2f}])\n"
-             f"Spearman = {rho:+.2f}  (p = {pval:.2f})\n3 actives / {len(d)} enzymes",
-             transform=axA.transAxes, ha="right", va="top", fontsize=FS - 4, color="#222",
-             bbox=dict(boxstyle="round,pad=0.5", fc="#eafaef", ec=GREEN, lw=1.5))
+    # ROC/AUROC dropped: only 3 actives make discrimination metrics uninformative
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     p = f"{FIG}/synthetase_angle_proxy_ranking.png"
     plt.savefig(p, bbox_inches="tight"); plt.close(fig)
