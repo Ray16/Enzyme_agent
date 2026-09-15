@@ -80,7 +80,8 @@ def fig_landscape(df):
             ax.text(i, r.act * 1.35, r.id, ha="center", fontsize=9, color=RED, fontweight="bold")
     ax.set_xlabel("panel member (sorted by activity)")
     ax.set_ylabel("N66-L1 activity (µg/ml, log)")
-    ax.set_title("A. The panel is 3 hits over a flat tail — only 3/49 actives, median 0.009 µg/ml")
+    ax.set_title("The panel is 3 hits over a flat tail — 3/49 actives, median 0.009 µg/ml\n"
+                 "(a useful screen must ENRICH for these, not rank them)")
     ax.set_xlim(-1, len(d))
     ax.legend(handles=[Patch(color=RED, label="active (>0.2)"),
                        Patch(color="#c8cdd4", label="inactive")], loc="upper right", frameon=False)
