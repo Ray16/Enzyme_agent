@@ -35,8 +35,14 @@ INK="#1f2933"; SUB="#52606d"; BG="#ffffff"
 PG="#3b7dd8"      # acyl-phosphate / P-gamma
 PA="#e0803a"      # acyl-adenylate / P-alpha
 GREEN="#2f9e6f"; GREY="#e4e7eb"; GREY_ED="#9aa5b1"
-plt.rcParams.update({"font.family":"DejaVu Sans","axes.edgecolor":"#c3cad2",
-                     "axes.linewidth":0.9,"figure.facecolor":BG,"savefig.facecolor":BG})
+# Publication-quality defaults: crisp text, vector-friendly fonts (editable in
+# Illustrator/Inkscape), high raster fallback.
+plt.rcParams.update({
+    "font.family":"DejaVu Sans","axes.edgecolor":"#c3cad2","axes.linewidth":0.9,
+    "figure.facecolor":BG,"savefig.facecolor":BG,"savefig.dpi":300,"figure.dpi":150,
+    "pdf.fonttype":42,"ps.fonttype":42,"svg.fonttype":"none",
+    "axes.titlesize":13,"axes.labelsize":11,"xtick.labelsize":9,"ytick.labelsize":9,
+})
 
 def _round(ax,x,y,w,h,fc,ec,r=0.02,lw=1.3):
     ax.add_patch(FancyBboxPatch((x,y),w,h,boxstyle=f"round,pad=0.01,rounding_size={r}",
