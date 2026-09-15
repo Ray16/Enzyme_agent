@@ -90,8 +90,12 @@ class TestEnzymologyProfileRanking(unittest.TestCase):
             pool = [_OFFTOPIC, _MATERIALS, _HYDROLASE, _ON_POINT]
             ranked = rank_papers_by_enzymology(str(rd), pool, fallback=lambda: pool)
             self.assertEqual(ranked[0], _ON_POINT)
-            # off-topic (no enzyme signal) sinks to the end, but is retained.
-            self.assertEqual(ranked[-1], _OFFTOPIC)
+            # Both no-enzyme-signal papers sink to the bottom, but are retained.
+            self.assertEqual({id(p) for p in ranked[-2:]},
+                             {id(_OFFTOPIC), id(_MATERIALS)})
+            # Wrong-direction hydrolase has enzyme signal but ranks below on-point.
+            self.assertLess(ranked.index(_HYDROLASE), ranked.index(_MATERIALS))
+            self.assertGreater(ranked.index(_HYDROLASE), ranked.index(_ON_POINT))
             self.assertEqual(len(ranked), len(pool))
 
     def test_empty_pool(self):
