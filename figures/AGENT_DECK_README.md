@@ -26,7 +26,8 @@ out-of-tree `Interpro_exhaustive/` sweep (recall audit).
 | 6 | `discovery_completeness` | Exhaustive EC 6.3.- sweep: 12,456 → 270 → agent coverage | Recall is complete over the reviewed universe — with the SfaB ceiling stated |
 | 7 | `geometry_proxy_benchmark` | AUROC of co-fold proxies vs assay + angle–activity scatter | Which structural signal actually predicts activity |
 | 8 | `structural_geometry` | Mechanism-aware step-1 in-line angle, within family | Modeling read-out, scored vs the correct phosphorus |
-| 9 | `run_comparison` | Old vs improved run: candidates, leads, token cost | Cleaner ranking, same leads — plus the cost regression to fix |
+| 9 | `hydrolase_second_target` | 96-enzyme nylon-hydrolase panel: activity + NAC | Same framework transfers to the opposite reaction (cleavage) |
+| 10 | `run_comparison` | Old vs improved run: candidates, leads, token cost | Cleaner ranking, same leads — plus the cost regression to fix |
 
 ## Honesty notes for the talk
 - Figure 9 deliberately shows the **72% idle token regression** in the improved run — present it as a known issue to fix, not a win.
