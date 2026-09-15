@@ -173,15 +173,31 @@ class RunFinalizer:
         status file self-healing. A stage whose expected artifact is already on
         disk is credited as ``completed`` instead.
         """
+        # Stages whose completion is provable from an artifact on disk: a
+        # process killed after the artifact landed but before "completed" was
+        # written did finish the work, so credit it rather than cry interrupted.
+        stage_artifacts = {
+            "confidence_report": "report_confidence.md",
+            "explorative_report": "report_explorative.md",
+            "exploration_summary": "exploration_summary.json",
+            "family_fit_plot": "family_substrate_fit.png",
+            "candidates_csv": "ranked_candidates.csv",
+            "structural_modeling_handoff": "structural_modeling_handoff.json",
+        }
         payload = self._load_finalization_status()
         stages = payload.get("stages", {})
         changed = False
         for name, info in stages.items():
             if info.get("status") != "running":
                 continue
-            info["status"] = reason
+            artifact = stage_artifacts.get(name)
+            if artifact and (self.run_dir / artifact).exists():
+                info["status"] = "completed"
+                info["detail"] = "credited from artifact after an interrupted pass"
+            else:
+                info["status"] = reason
+                info["detail"] = "process ended before stage recorded its result"
             info["updated_at"] = datetime.now().astimezone().isoformat()
-            info["detail"] = "process ended before stage recorded its result"
             changed = True
         if changed:
             self._finalization_status_path.write_text(json.dumps(payload, indent=2) + "\n")
