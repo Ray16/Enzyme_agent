@@ -228,8 +228,8 @@ def fig_screening(df):
                  fontsize=12)
     ax.set_xlim(0, 1); ax.set_ylim(0, 1.03)
     ax.legend(loc="lower right", frameon=False)
-    ax.text(0.02, 0.97, "up-and-to-the-left = better triage", transform=ax.transAxes,
-            fontsize=9, va="top", color="#555", style="italic")
+    ax.text(0.60, 0.12, "up-and-to-the-left = better triage", transform=ax.transAxes,
+            fontsize=9, va="top", color="#777", style="italic")
     plt.tight_layout()
     p = f"{FIG}/synthetase_screening_operating_curve.png"
     plt.savefig(p, bbox_inches="tight"); plt.close(fig)
