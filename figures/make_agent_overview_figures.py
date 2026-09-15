@@ -630,5 +630,4 @@ if __name__=="__main__":
     fig_sweep()
     fig_hydrolase()
     fig_schema()
-    combine_pdf()
-    print("\nDeck complete — PDF (vector) + 300-dpi PNG for each.")
+    print("\nDeck complete — 300-dpi PNG for each.")
