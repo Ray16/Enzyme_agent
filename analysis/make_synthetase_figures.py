@@ -197,7 +197,7 @@ def fig_screening(df):
     H = int(df.is_active.sum())
 
     def recall_curve(score, higher=True):
-        d = df.sort_values("score" if False else score, ascending=not higher).reset_index(drop=True)
+        d = df.sort_values(score, ascending=not higher).reset_index(drop=True)
         rec = np.cumsum(d.is_active.values) / H
         budget = (np.arange(N) + 1) / N
         return np.concatenate([[0], budget]), np.concatenate([[0], rec])
