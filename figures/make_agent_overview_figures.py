@@ -314,12 +314,12 @@ def fig_structural():
         ax.set_yticks(list(yy)); ax.set_yticklabels(genes,fontsize=8)
         ax.set_xlim(90,180); ax.set_xlabel("mean in-line angle (°)",fontsize=9.5)
         phos="Pα" if data[0][2]=="PA" else "Pγ"
-        ax.set_title(f"{f}\nreactive {phos}",fontsize=11,color=INK)
+        ax.set_title(f"{f}\nreactive {phos}",fontsize=11,color=INK,pad=10)
         ax.tick_params(length=0); [ax.spines[s].set_visible(False) for s in ("top","right")]
     leg=[Patch(fc="#2f9e6f",label="≥165° strong"),Patch(fc="#e0a53a",label="150–165° compatible"),
          Patch(fc="#d9736a",label="<150° weak")]
     fig.legend(handles=leg,loc="lower center",ncol=3,fontsize=9.5,frameon=False,bbox_to_anchor=(0.5,-0.02))
-    fig.tight_layout(rect=[0,0.03,1,0.92])
+    fig.tight_layout(rect=[0,0.03,1,0.88])
     save(fig,"agent_structural_geometry.png")
 
 
