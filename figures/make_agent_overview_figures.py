@@ -696,6 +696,7 @@ if __name__=="__main__":
     fig_bridge()          # 03
     fig_landscape()       # 05
     fig_sweep()           # 06
+    fig_recall()          # 07b
     fig_hydrolase()       # 09
     fig_runcompare()      # 10
     # RETIRED (user feedback: figures must show a decision, not dump scores/homologs):
