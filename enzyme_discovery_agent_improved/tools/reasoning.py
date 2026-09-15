@@ -1017,6 +1017,18 @@ def evaluate_candidate(
     activation = derive_activation_mechanism(catalytic_activities)
     mechanism_evidence = _merge_activation_evidence(existing_mech, activation)
 
+    # Deterministic co-fold input spec: which nucleotide + metal(s) to include,
+    # derived from the candidate's own reaction + cofactor annotation, plus the
+    # activation phosphorus for scoring. None for a non-NTP reaction.
+    cofactor_spec = derive_modeling_cofactors(
+        catalytic_activities, required_cofactors, cofactor_notes)
+    modeling_input = None
+    if cofactor_spec:
+        modeling_input = dict(cofactor_spec)
+        if activation:
+            modeling_input["reactive_phosphate"] = activation["reactive_phosphate"]
+            modeling_input["activation_mode"] = activation["activation_mode"]
+
     # Build evaluation result
     eval_data = {
         "accession": accession,
