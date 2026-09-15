@@ -74,6 +74,36 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
             if ev.get("data", ev).get("accession", "") in ranking
         ]
 
+    # One row per accession. The same protein can be evaluated more than once
+    # across a run (re-discovered via a different path, or re-enriched on a
+    # later iteration), leaving several evaluate_candidate_*.json artifacts for
+    # it. These are NOT orthologs (orthologs stay nested under their
+    # representative in pass1_ranking.json and are omitted above) — they are
+    # duplicates of one accession, and emitting all of them repeats rows in the
+    # decision list. Keep the most complete record per accession: most native
+    # substrates, then strongest literature/mutation evidence, then most
+    # strengths; ties fall to the first seen for determinism.
+    def _richness(ev) -> tuple:
+        d = ev.get("data", ev)
+        lit = d.get("literature", {}) or {}
+        mut = d.get("mutagenesis", {}) or {}
+        return (
+            len(d.get("native_substrates", []) or []),
+            (lit.get("characterization_papers", 0) or 0)
+            + (lit.get("engineering_papers", 0) or 0),
+            mut.get("n_mutations", 0) or 0,
+            len(d.get("strengths", []) or []),
+        )
+
+    best_by_acc: dict[str, dict] = {}
+    for ev in all_evals:
+        acc = ev.get("data", ev).get("accession", "")
+        if not acc:
+            continue
+        if acc not in best_by_acc or _richness(ev) > _richness(best_by_acc[acc]):
+            best_by_acc[acc] = ev
+    all_evals = list(best_by_acc.values())
+
     def sort_key(ev):
         acc = ev.get("data", ev).get("accession", "")
         info = ranking.get(acc)
