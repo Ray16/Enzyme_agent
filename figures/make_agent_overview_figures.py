@@ -57,8 +57,12 @@ def mech_of(row):
     return r["reactive_phosphate"] if r else None
 
 def save(fig,name):
-    p=OUT/name; fig.savefig(p,dpi=150,bbox_inches="tight",facecolor=BG); plt.close(fig)
-    print("wrote",p.relative_to(ROOT))
+    """Write both a vector PDF (publication) and a 300-dpi PNG (slides)."""
+    stem=(OUT/name).with_suffix("")
+    fig.savefig(stem.with_suffix(".pdf"),bbox_inches="tight",facecolor=BG)
+    fig.savefig(stem.with_suffix(".png"),dpi=300,bbox_inches="tight",facecolor=BG)
+    plt.close(fig)
+    print("wrote",stem.with_suffix(".pdf").relative_to(ROOT),"+ .png")
 
 
 # ============================================================ 1. PIPELINE
