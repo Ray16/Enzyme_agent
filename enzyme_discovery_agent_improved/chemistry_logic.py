@@ -360,6 +360,123 @@ def derive_activation_mechanism(catalytic_activities: list[str]) -> dict | None:
     }
 
 
+# Divalent (and a few monovalent) metal names -> PDB/CCD ligand code, for
+# building a cofold input. Keys are matched case-insensitively against the
+# UniProt cofactor name (e.g. "Mg(2+)", "Magnesium").
+_METAL_CCD = {
+    "mg": "MG", "magnesium": "MG", "mn": "MN", "manganese": "MN",
+    "zn": "ZN", "zinc": "ZN", "co": "CO", "cobalt": "CO", "ni": "NI",
+    "nickel": "NI", "fe": "FE", "iron": "FE", "ca": "CA", "calcium": "CA",
+    "cu": "CU", "copper": "CU", "k": "K", "potassium": "K", "na": "NA",
+    "sodium": "NA",
+}
+_WORD_NUM = {"one": 1, "two": 2, "three": 3, "four": 4}
+# A count stated in a cofactor note, e.g. "Binds 2 Mg(2+) ions per subunit" or
+# "two magnesium ions"; the number must immediately precede a metal/ion word.
+_METAL_COUNT_RE = re.compile(
+    r"\b(\d+|one|two|three|four)\s+(?:[a-z()+\-]+\s+){0,2}?"
+    r"(?:mg|mn|zn|magnesium|manganese|zinc|metal|divalent|cation|ion)",
+    re.IGNORECASE,
+)
+
+
+def _metal_ccd(name: str) -> str | None:
+    """Map a UniProt cofactor name to its PDB/CCD ligand code (or None)."""
+    low = name.lower()
+    for token, ccd in _METAL_CCD.items():
+        if re.search(r"\b" + re.escape(token) + r"\b", low):
+            return ccd
+    return None
+
+
+def derive_modeling_cofactors(
+    catalytic_activities: list[str],
+    cofactor_names: list[str] | None = None,
+    cofactor_notes: list[str] | None = None,
+) -> dict | None:
+    """Specify the cofactors/metals to co-fold for an NTP-dependent condensation.
+
+    Deterministic and provenance-carrying. It combines two of the candidate's own
+    annotations:
+
+      * the native reaction equation -> the nucleotide substrate (which NTP), and
+      * the UniProt cofactor comment -> the metal identity, and its count when the
+        note states it (e.g. "Binds 2 Mg(2+) ions per subunit").
+
+    What the annotation does not state is filled from the standard two-metal-ion
+    requirement of NTP phosphoryl/nucleotidyl transfer and marked as such, so a
+    reader can tell an annotated value from a mechanistic default rather than a
+    silent guess. Returns ``None`` when the reaction shows no NTP (the spec does
+    not apply); otherwise:
+
+        {"cofactors": [ {name, ccd, count, role, basis}, ... ],
+         "source": "catalytic_activity + uniprot_cofactor"}
+    """
+    ntp_token = None
+    ntp_equation = None
+    for activity in catalytic_activities or []:
+        match = _NTP_RE.search(str(activity))
+        if match:
+            ntp_token = match.group(0).upper()
+            ntp_equation = str(activity)
+            break
+    if not ntp_token:
+        return None  # not an NTP-dependent reaction -> no cofactor spec
+
+    cofactors = [{
+        "name": ntp_token,
+        "ccd": ntp_token,            # ATP/GTP/CTP/UTP/ITP are valid CCD codes
+        "count": 1,                  # one nucleotide per catalytic site
+        "role": "nucleotide_substrate",
+        "basis": f"reactant in native reaction: {ntp_equation}",
+    }]
+
+    # Metal identity: from the cofactor annotation when present, else the metal
+    # that NTP phosphoryl/nucleotidyl transfer near-universally requires.
+    ccds: list[str] = []
+    for name in cofactor_names or []:
+        ccd = _metal_ccd(name)
+        if ccd and ccd not in ccds:
+            ccds.append(ccd)
+    divalent = [c for c in ccds if c in {"MG", "MN", "ZN", "CO", "NI", "FE", "CA", "CU"}]
+    if divalent:
+        primary = "MG" if "MG" in divalent else divalent[0]
+        identity_basis = "uniprot_cofactor"
+        alternatives = [c for c in divalent if c != primary]
+    else:
+        primary = "MG"
+        identity_basis = "mechanistic_default: NTP transfer requires a divalent metal"
+        alternatives = []
+
+    # Metal count: parse the cofactor note when it states one, else default to 2
+    # (the two-metal-ion mechanism) and say so.
+    count, count_basis, matched_note = 2, "mechanistic_default: two-metal-ion NTP transfer", None
+    for note in cofactor_notes or []:
+        m = _METAL_COUNT_RE.search(note)
+        if m:
+            token = m.group(1).lower()
+            count = _WORD_NUM.get(token, None) or int(token)
+            count_basis = "uniprot_cofactor_note"
+            matched_note = note
+            break
+
+    metal = {
+        "name": primary,
+        "ccd": primary,
+        "count": count,
+        "role": "catalytic_metal",
+        "basis": count_basis,
+        "identity_basis": identity_basis,
+    }
+    if alternatives:
+        metal["alternatives"] = alternatives
+    if matched_note:
+        metal["note"] = matched_note
+    cofactors.append(metal)
+
+    return {"cofactors": cofactors, "source": "catalytic_activity + uniprot_cofactor"}
+
+
 def extract_target_bond_type(target_reaction_type: str) -> dict:
     """Parse the target_reaction_type string for bond type and direction keywords."""
     target_lower = target_reaction_type.lower()
