@@ -45,6 +45,12 @@ REFLECTION_INTERVAL = 5  # reflect every N iterations
 # Reserve the final portion of every campaign for deterministic evaluation and
 # LLM report generation.  Discovery is valuable only if it reaches deliverables.
 FINALIZATION_RESERVE_ITERATIONS = 8
+# No-progress early-stop: the model signals it is finished by making no tool call.
+# Give it one recovery nudge in case it paused mid-phase, but once it already has
+# results and STILL makes no tool call on the next turn, respect that decision
+# instead of re-inviting it every iteration until the mid-run boundary (which
+# otherwise spends the bulk of a run's tokens on empty turns).
+MAX_NO_PROGRESS_TURNS = 2
 
 # --- Tool execution ---
 TOOL_THREAD_POOL_WORKERS = 4
