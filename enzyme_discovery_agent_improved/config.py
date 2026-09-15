@@ -69,6 +69,13 @@ FULLTEXT_HARVEST_WORKERS = 6
 # broad paper sweep or a full-text-download-gated bottleneck.  Raise if a specific
 # characterised enzyme is being missed.
 FULLTEXT_HARVEST_MAX_PAPERS = 6
+# Full-text mining channels.  The regex DEPOSITED-accession miner (primary papers)
+# is always on and near-free — it carries literature's irreplaceable value
+# (characterised-but-poorly-databased enzymes that DB/family search miss).  The
+# LLM NAMED/CITED-enzyme extraction is expensive and low-precision (most cited
+# names resolve to nothing or off-target), so it is OFF by default; enable only
+# when name-level recall is worth the token cost.
+FULLTEXT_LLM_NAMED_EXTRACTION = False
 MAX_RESULT_CHARS = 20_000
 # Screening allocates a RELEVANCE BUDGET across fold families, it does not blindly
 # cap.  auto_screen collapses orthologs to one representative per distinct gene,
