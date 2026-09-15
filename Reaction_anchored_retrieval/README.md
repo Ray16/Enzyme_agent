@@ -23,24 +23,33 @@ EC 6.3.- / InterPro sweep misses — from an answer-agnostic query?
 - Of those 355: ~201 are off-target cofactor/protein/tRNA amide chemistry;
   **36 rows / 18 enzyme types** are on-target small-molecule amide ligases.
 
-## Verdict: **CONCEPT VALIDATED (as a retrieval channel, not a ranker)**
+## Verdict: **WEAK / INCONCLUSIVE on reviewed annotated space**
 
-Genuinely on-target annotated candidates the pipeline MISSED, e.g.:
-- **bibC (B6EP94)** — bisucaberin synthetase: ligates *succinyl (C4 diacid) +
-  cadaverine (C5 diamine)* → macrocyclic amide. Closest native analog to
-  nylon-6,6 chemistry found to date. Family IPR037455 (IucA/IucC NIS) was
-  ALREADY surveyed by the pipeline — so reaction-anchoring also fixes
-  **member selection within surveyed families**, not just family coverage.
-- **cocJ / uncG (6.2.1.-)** — "amide-bond synthetase", ANL family (IPR000873),
-  the same mechanistic family as ground-truth SfaB/DdaG/McbA.
-- **ankE** — NIS siderophore synthetase (citrate+ATP amide), on-target family.
+IMPORTANT CORRECTION (an earlier draft overstated this). "On-target" must be
+judged on the SUBSTRATE axis (does the native chemistry resemble a C6 diacid +
+C6 diamine), not on mechanism/family. Re-scored strictly on substrate:
 
-It reaches enzymes across EC boundaries the 6.3.- sweep cannot (no-EC, 6.2.1.-,
-6.-.-.-), which is exactly the annotated-recall gap.
+- Of 355 new reviewed members, only 9 mention any aliphatic diamine/diacid, and
+  8 are keyword coincidence or right-mechanism/wrong-substrate (dethiobiotin
+  ureido-ring, PAICS/ADE1 purine biosynthesis w/ L-aspartate, UDP-sugar+2-oxoglutarate).
+- **Exactly ONE genuine substrate-matched find: bibC (B6EP94)** — bisucaberin
+  synthetase, succinyl (C4 diacid) + cadaverine (C5 diamine) → macrocyclic
+  amide. Closest native nylon-6,6 analog found. Missed by the pipeline DESPITE
+  its family IPR037455 (IucA/IucC NIS) already being surveyed → a
+  **member-selection** gap, not a coverage gap.
+- **cocJ/uncG (ANL) and ankE (NIS) are NOT on-target** — right mechanism/family,
+  but bulky peptidic/aromatic substrates. Engineering scaffolds at best (the
+  Tier-2 weak-fit bucket the pipeline already fills). Earlier labelling them
+  on-target conflated the mechanism and substrate axes.
 
-**Caveat / integration shape:** high recall, low precision (~95% of the 355 are
-off-target amide chemistry). This is a *discovery channel* that must feed the
-existing substrate-fit / family-relevance gate — never the shortlist directly.
+The substrate-matched leads the target actually wants (PuuA, GlnA2, AsbA/B,
+SbnE polyamine/diamine ligases) were ALREADY found by the existing pipeline.
+So reaction-anchoring did NOT beat it on annotated substrate-matched recall.
 
-**Status:** validated out-of-tree. NOT wired into the agent pending decision on
-integration shape.
+What holds up: (1) bibC is a real missed member worth diagnosing; (2) the
+channel crosses EC boundaries (no-EC, 6.2.1.-, 6.-) the 6.3.- sweep cannot;
+(3) untested upside is the 20,812 UNREVIEWED members, which annotation
+inspection cannot judge (needs substrate-fit/structure eval — a different test).
+
+**Status:** validated out-of-tree; verdict is NOT a clean win. Points toward a
+**member-selection** investigation over a new retrieval subsystem. NOT wired in.
