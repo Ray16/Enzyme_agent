@@ -162,43 +162,53 @@ def fig_ranking():
     save(fig,"04_ranking_decomposition.png")
 
 
-# ============================================================ 3. CANDIDATE LANDSCAPE
+# ============================================================ 5. CANDIDATE LANDSCAPE (family-aggregated)
 def fig_landscape():
-    rows=load_ranked(NEW)
+    """Discovery result aggregated to the mechanism-family level (ortholog/homolog
+    members collapsed), ordered by best rank, so it shows the DECISION — which
+    families to pursue and which mechanism they use — not a per-homolog dump."""
     from collections import defaultdict
+    rows=load_ranked(NEW)
     fam=defaultdict(list)
-    for r in rows:
-        fam[r["interpro_family"] or "(unclassified)"].append(r)
-    # order families by size
-    order=sorted(fam,key=lambda k:-len(fam[k]))
-    fig,ax=plt.subplots(figsize=(14.5,8.6))
-    fig.suptitle("Ranked candidate landscape — by InterPro family, colored by activation mechanism",
+    for i,r in enumerate(rows):
+        r["_rank"]=int(r["rank"]); fam[r["interpro_family"] or "(unclassified)"].append(r)
+    # one entry per family; order by the family's best (lowest) rank
+    fams=sorted(fam, key=lambda k: min(r["_rank"] for r in fam[k]))
+    def mech_family(members):
+        ms={mech_of(r) for r in members}; ms.discard(None)
+        return "Palpha" if ms=={"Palpha"} else ("Pgamma" if ms=={"Pgamma"} else "mixed")
+
+    fig,ax=plt.subplots(figsize=(14.5,8.4))
+    fig.suptitle("Discovery candidate landscape — by mechanism family (homologs collapsed)",
                  fontsize=16,fontweight="bold",color=INK,y=0.975,x=0.5)
-    fig.text(0.5,0.93,"Improved run: %d ranked candidates across %d families. Mechanism (reactive phosphate) "
-             "derived deterministically from each enzyme's reaction." % (len(rows),len(order)),
-             ha="center",fontsize=10.5,color=SUB)
-    yb=0; yticks=[]; ylabels=[]
-    for f in order:
-        members=fam[f]
-        for j,r in enumerate(members):
-            m=mech_of(r)
-            col=PA if m=="Palpha" else (PG if m=="Pgamma" else "#b0b8c1")
-            strong = r["tier_label"]=="strong lead"
-            ax.scatter(j,yb,s=190 if strong else 110,c=col,edgecolors="#26303a" if strong else "white",
-                       linewidths=1.6 if strong else 0.8,zorder=3)
-            lab=(r["gene"] or r["accession"])
-            ax.text(j,yb+0.32,lab[:8],fontsize=6.6,ha="center",color=SUB)
-        yticks.append(yb); ylabels.append(f"{f[:34]}  (n={len(members)})"); yb-=1.25
-    ax.set_yticks(yticks); ax.set_yticklabels(ylabels,fontsize=9)
-    ax.set_xlabel("members within family (rank order)",fontsize=10)
-    ax.set_xlim(-0.6,max(len(fam[f]) for f in order)-0.3); ax.set_ylim(yb+0.6,1.1)
+    fig.text(0.5,0.935,"%d candidates → %d families. Bars = members per family; ordered by the family's "
+             "best rank. Top families are the strong leads + the recovered ddaG benchmark."
+             % (len(rows),len(fams)),ha="center",fontsize=10.5,color=SUB)
+
+    y=list(range(len(fams)))[::-1]
+    for yi,f in zip(y,fams):
+        members=fam[f]; n=len(members)
+        m=mech_family(members)
+        col={"Palpha":PA,"Pgamma":PG}.get(m,"#b0b8c1")
+        top=min(members,key=lambda r:r["_rank"])
+        strong=any(r["tier_label"]=="strong lead" for r in members)
+        ax.barh(yi,n,color=col,edgecolor="#26303a" if strong else "white",lw=1.6 if strong else 0.6,zorder=2)
+        lead=(top["gene"] or top["accession"])
+        star=" ★" if strong else ""
+        note=""
+        if top["accession"]=="E2JA32": note="  (benchmark ✓)"
+        ax.text(n+0.15,yi,f"{lead} #{top['rank']}{star}{note}",va="center",fontsize=8.8,
+                color=INK,fontweight="bold" if strong else "normal")
+    ax.set_yticks(y); ax.set_yticklabels([f[:40] for f in fams],fontsize=9)
+    ax.set_xlabel("candidates in family",fontsize=10.5)
+    ax.set_xlim(0,14.5); ax.set_ylim(-0.7,len(fams)-0.3)
     ax.tick_params(length=0); [ax.spines[s].set_visible(False) for s in ("top","right","left")]
-    leg=[Patch(fc=PG,ec="none",label="acyl-phosphate  → attack Pγ"),
-         Patch(fc=PA,ec="none",label="acyl-adenylate  → attack Pα"),
-         plt.Line2D([0],[0],marker="o",color="w",markerfacecolor="#b8c0c9",markeredgecolor="#26303a",
-                    markersize=12,markeredgewidth=1.6,label="strong lead (bold ring)")]
-    ax.legend(handles=leg,loc="lower right",fontsize=9.5,frameon=True,framealpha=0.95)
-    fig.subplots_adjust(top=0.90,left=0.24,right=0.98,bottom=0.07)
+    leg=[Patch(fc=PG,label="acyl-phosphate → Pγ"),Patch(fc=PA,label="acyl-adenylate → Pα"),
+         Patch(fc="#b0b8c1",label="mixed"),
+         plt.Line2D([0],[0],marker="s",color="w",markerfacecolor="#eee",markeredgecolor="#26303a",
+                    markersize=11,markeredgewidth=1.6,label="contains a strong lead (★)")]
+    ax.legend(handles=leg,loc="lower right",fontsize=9,frameon=True,framealpha=0.95)
+    fig.subplots_adjust(top=0.89,left=0.30,right=0.98,bottom=0.08)
     save(fig,"05_candidate_landscape.png")
 
 
