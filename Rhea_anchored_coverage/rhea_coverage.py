@@ -68,12 +68,30 @@ def forms_bond(rxn_smiles: str, acceptor="amine", bond="amide") -> bool:
     return _nm(P, bp) > _nm(R, bp) and _nm(R, ACID) >= 1 and _nm(R, ap) >= 1
 
 
-def load_rhea_smiles():
-    rows = {}
-    for line in open(CACHE / "rhea-reaction-smiles.tsv"):
-        rid, smi = line.rstrip("\n").split("\t")
-        rows[rid] = smi
-    return rows
+def iter_rhea_smiles():
+    """Stream (rid, smiles) to keep memory flat over 36k reactions."""
+    with open(CACHE / "rhea-reaction-smiles.tsv") as f:
+        for line in f:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) == 2:
+                yield parts[0], parts[1]
+
+
+def match_reactions(acceptor="amine", bond="amide", cache_file="matched_rhea_ids.txt"):
+    """Stream all Rhea reactions, write matched ids incrementally (resumable)."""
+    out = CACHE / cache_file
+    hits = []
+    n = 0
+    with open(out, "w") as fh:
+        for rid, smi in iter_rhea_smiles():
+            n += 1
+            try:
+                if forms_bond(smi, acceptor, bond):
+                    hits.append(rid); fh.write(rid + "\n"); fh.flush()
+            except Exception:
+                continue
+    print(f"scanned {n} reactions -> {len(hits)} matches (cached in {out.name})")
+    return hits
 
 
 def load_master2acc():
