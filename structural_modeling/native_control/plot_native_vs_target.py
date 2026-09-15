@@ -143,8 +143,9 @@ def main():
 
     fig.suptitle("Native vs target substrate — cofold reproduces neither enzyme's diacid activity\n"
                  "SfaB: only the native substrate reaches Pα (diacids float ~10 Å)  ·  "
-                 "DdaG: all substrates in-site but Mg-trapped, never in-line",
-                 fontsize=13, fontweight="bold")
+                 "DdaG: every substrate sits at Pα but none reach in-line (incl. 80%-yield succinate); "
+                 "Mg-chelation worsens with chain length",
+                 fontsize=12, fontweight="bold")
     plt.tight_layout(rect=[0, 0, 1, 0.94])
     out = os.path.join(FIGDIR, "native_vs_target_SfaB_DdaG.png")
     os.makedirs(FIGDIR, exist_ok=True)
