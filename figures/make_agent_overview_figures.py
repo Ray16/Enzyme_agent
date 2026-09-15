@@ -225,17 +225,17 @@ def fig_bridge():
     ax.text(54,68.8,"→  attack ATP Pγ  (O3B leaving axis)",fontsize=11,color=INK)
 
     # validation stats (real): 53 with reaction data classified; 52 match prior manual map; ddaG corrected; 9 no-data->None
-    _round(ax,4,40,92,20,"#f7f9fb","#c3cad2",lw=1.2)
-    ax.text(6,56,"Validation against the structural pipeline's prior (family-keyword) assignment",fontsize=12,fontweight="bold",color=INK)
+    _round(ax,4,37,92,23,"#f7f9fb","#c3cad2",lw=1.2)
+    ax.text(6,57,"Validation against the structural pipeline's prior (family-keyword) assignment",fontsize=12,fontweight="bold",color=INK)
     stats=[("52 / 53","agree where reaction data exists",GREEN),
            ("1","corrected  (ddaG: family said none; reaction → Pα)",PA),
            ("9","no reaction annotation → honest 'unresolved' (was silently defaulted)","#7b8794")]
     xx=8
     for big,lab,c in stats:
-        ax.text(xx,50,big,fontsize=22,fontweight="bold",color=c)
+        ax.text(xx,51,big,fontsize=22,fontweight="bold",color=c)
         import textwrap
         for j,l in enumerate(textwrap.wrap(lab,26)):
-            ax.text(xx,45-j*2.4,l,fontsize=9.2,color=SUB)
+            ax.text(xx,46-j*2.4,l,fontsize=9.2,color=SUB)
         xx+=30
 
     # callout
