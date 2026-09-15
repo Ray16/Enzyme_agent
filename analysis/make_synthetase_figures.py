@@ -122,9 +122,6 @@ def fig_proxy_ranking(df):
     x = np.arange(len(d))
     colors = [RED if i in strong else ORANGE if i in near else "#cfe0f5" for i in d.id]
     axA.bar(x, d.mean_inline_angle, color=colors, edgecolor="k", linewidth=0.3, zorder=2)
-    axA.axhline(A_CUT, color=GREY, ls=":", lw=1.5, zorder=1)
-    axA.text(len(d) - 0.5, A_CUT - 1.2, f"{A_CUT:.0f}° in-line cut", color="#666",
-             ha="right", va="top", fontsize=FS - 4)
     lines = ["top 6 by activity  →  angle rank"]
     for i, e in enumerate(top6, 1):
         rk = f"#{ang_rank[e]}" if e in ang_rank else "INCONCLUSIVE"
