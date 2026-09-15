@@ -27,7 +27,7 @@ nylon-6,6) + its regenerated `structural_modeling_handoff.json`; the older run
 | 01 | `01_pipeline_architecture.png` | 7-stage retrieval-expansion pipeline + cross-cutting design | How the framework works end to end |
 | 02 | `02_handoff_schema.png` | Per-candidate handoff record; 3 agent-derived blocks | The discovery → structural-modeling contract |
 | 03 | `03_mechanism_bridge.png` | Deterministic activation classifier (ADP+Pi→Pγ / AMP+PPi→Pα) + validation | Mechanism from the reaction, not the family name (ddaG fix) |
-| 05 | `05_candidate_landscape.png` | Ranked candidates by InterPro family, colored by mechanism | The discovery result at a glance |
+| 05 | `05_candidate_landscape.png` | Candidates aggregated to mechanism family (homologs collapsed), ordered by best rank | Which families to pursue + mechanism; ddaG benchmark recovered |
 | 06 | `06_discovery_completeness.png` | Exhaustive EC 6.3.- sweep: 12,456 → 270 → agent coverage | Recall complete over the reviewed universe — SfaB ceiling stated |
 | 07 | `synthetase_angle_proxy_ranking.png` | **Validated proxy**: distance<4 Å gate → rank by in-line angle | AUROC 0.95; hits AS9/AS17/AS23 rank #1/#4/#7 |
 | — | `synthetase_activity_landscape.png` | The assay: 3 hits over a flat tail (3/49) | Why the panel is a hard, imbalanced target |
