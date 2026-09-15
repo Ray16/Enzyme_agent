@@ -39,8 +39,8 @@ def read_fasta(path):
     return seqs
 
 
-def load_handoff_cofactors(path):
-    """accession -> list of cofactor dicts (ccd, count, role, basis) from the handoff."""
+def load_handoff_modeling(path):
+    """accession -> modeling_input dict (cofactors, ligation_frame, ...) from the handoff."""
     spec = {}
     if not path or not os.path.exists(path):
         return spec
@@ -48,9 +48,8 @@ def load_handoff_cofactors(path):
     for c in d.get("candidates", []):
         acc = c.get("accession")
         mi = c.get("modeling_input") or {}
-        cofs = mi.get("cofactors")
-        if acc and cofs:
-            spec[acc] = cofs
+        if acc and mi.get("cofactors"):
+            spec[acc] = mi
     return spec
 
 
