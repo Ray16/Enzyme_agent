@@ -289,14 +289,34 @@ def extract_target_bond_type(target_reaction_type: str) -> dict:
         # Check explicit cleavage terms first.  Target descriptions commonly
         # say e.g. "hydrolysis (NOT synthesis)"; letting "synthesis" win
         # creates a false direction-mismatch warning for every hydrolase.
-        "hydrolysis": "cleavage", "cleavage": "cleavage",
-        "degradation": "cleavage", "hydrolase": "cleavage",
+        # Cover the noun, enzyme-class, AND verb/participle forms (a query says
+        # "hydrolyzes"/"hydrolases", not the dictionary form "hydrolysis") — the
+        # match is whole-word, so each surface form must be listed explicitly.
+        "hydrolysis": "cleavage", "hydrolyse": "cleavage", "hydrolyze": "cleavage",
+        "hydrolyses": "cleavage", "hydrolyzes": "cleavage",
+        "hydrolysing": "cleavage", "hydrolyzing": "cleavage",
+        "hydrolysed": "cleavage", "hydrolyzed": "cleavage",
+        "hydrolase": "cleavage", "hydrolases": "cleavage",
+        "cleavage": "cleavage", "cleave": "cleavage", "cleaves": "cleavage",
+        "cleaving": "cleavage", "cleaved": "cleavage",
+        "degradation": "cleavage", "degrade": "cleavage", "degrades": "cleavage",
+        "degrading": "cleavage",
+        "depolymerization": "cleavage", "depolymerisation": "cleavage",
+        "depolymerize": "cleavage", "depolymerise": "cleavage",
+        "breakdown": "cleavage",
         "lysis": "cleavage", "decarboxylation": "cleavage",
         "deamination": "cleavage", "desulfurization": "cleavage",
         "dephosphorylation": "cleavage",
         "formation": "formation", "synthesis": "formation",
-        "ligation": "formation", "condensation": "formation",
-        "ligase": "formation",
+        "synthesize": "formation", "synthesizes": "formation",
+        "synthesise": "formation", "synthesises": "formation",
+        "synthesizing": "formation", "synthesising": "formation",
+        "synthetase": "formation", "synthetases": "formation",
+        "synthase": "formation", "synthases": "formation",
+        "ligation": "formation", "ligate": "formation", "ligates": "formation",
+        "ligating": "formation", "condensation": "formation",
+        "condense": "formation", "condenses": "formation",
+        "ligase": "formation", "ligases": "formation",
         "transfer": "transfer", "transferase": "transfer",
         "phosphorylation": "transfer", "glycosylation": "transfer",
         "acylation": "transfer", "methylation": "transfer",
