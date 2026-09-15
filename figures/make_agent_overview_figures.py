@@ -436,6 +436,67 @@ def fig_sweep():
     save(fig,"06_discovery_completeness.png")
 
 
+# ============================================================ 11. RECALL DIAGNOSIS
+def fig_recall():
+    """Where known amide synthetases fall out of the pipeline, and why. Grounded
+    in this run's candidate_registry; a diagnosis (two annotation-dependent
+    bottlenecks), not a score dump."""
+    reg=json.load(open(NEW/"candidate_registry.json"))["candidates"]
+    vals=list(reg.values()) if isinstance(reg,dict) else reg
+    by_acc={c.get("accession"):c for c in vals}
+    # known amide synthetases (name, accession) — ground truth + notable cases
+    known=[("PuuA","P78061"),("DdaG","E2JA32"),("DesD","A0ABN2MH27"),
+           ("SfaB","A0A2H4T912"),("McbA",None)]
+    stages=["retrieved","screened","function\ngate","evaluated","ranked /\nhandoff"]
+    # map each enzyme to how far it got + reason
+    def fate(acc):
+        c=by_acc.get(acc) if acc else None
+        st=[s.get("status") for s in c.get("statuses",[])] if c else []
+        md=(c or {}).get("metadata",{})
+        if not c: return 0, "never retrieved (literature-only; not in candidate pool)", "absent"
+        if "evaluated" in st: return 4, "reviewed + annotated → recovered", "ok"
+        if "rejected" in st:
+            return 2, "TrEMBL, no reaction annotation → function gate rejected", "gate"
+        if "screened" in st: return 1, "screened", "mid"
+        return 0, "discovered only", "mid"
+
+    fig,ax=plt.subplots(figsize=(14.5,7));
+    fig.suptitle("Recall diagnosis — where known amide synthetases exit the pipeline",
+                 fontsize=16,fontweight="bold",color=INK,y=0.98,x=0.5)
+    fig.text(0.5,0.925,"Grounded in run 20260914_220431. Two bottlenecks, both annotation-dependent: "
+             "retrieval misses literature-only enzymes; the function gate drops un-annotated real enzymes.",
+             ha="center",fontsize=10.5,color=SUB)
+    # stage x positions
+    xs=list(range(len(stages)))
+    for x in xs: ax.axvline(x,color="#eef1f4",lw=8,zorder=0)
+    y=list(range(len(known)))[::-1]
+    colmap={"ok":GREEN,"gate":"#d9736a","absent":"#b0b8c1","mid":"#e0a53a"}
+    for yi,(name,acc) in zip(y,known):
+        stop,reason,kind=fate(acc)
+        col=colmap[kind]
+        # track up to stop
+        ax.plot([0,stop],[yi,yi],color=col,lw=3,zorder=2,solid_capstyle="round")
+        ax.scatter(range(stop+1),[yi]*(stop+1),s=60,c=col,edgecolors="white",lw=1,zorder=3)
+        # marker at stop: check if reached end, X if dropped
+        if kind=="ok":
+            ax.scatter([4],[yi],marker="*",s=360,c=GREEN,edgecolors="#1f7a55",lw=1.2,zorder=4)
+        else:
+            ax.scatter([stop],[yi],marker="X",s=170,c=col,edgecolors="#3a424b",lw=1.2,zorder=4)
+        lab=f"{name}" + (f"  ({acc})" if acc else "")
+        ax.text(-0.15,yi,lab,ha="right",va="center",fontsize=10.5,fontweight="bold",color=INK)
+        ax.text(4.35,yi,reason,ha="left",va="center",fontsize=8.8,color=SUB)
+    ax.set_xticks(xs); ax.set_xticklabels(stages,fontsize=9.5)
+    ax.set_xlim(-2.4,7.6); ax.set_ylim(-0.7,len(known)-0.3)
+    ax.set_yticks([]); [ax.spines[s].set_visible(False) for s in ("top","right","left")]
+    ax.tick_params(length=0)
+    leg=[plt.Line2D([0],[0],marker="*",color="w",markerfacecolor=GREEN,markersize=17,label="recovered (evaluated/ranked)"),
+         plt.Line2D([0],[0],marker="X",color="w",markerfacecolor="#d9736a",markersize=12,label="function gate rejected (blank TrEMBL)"),
+         plt.Line2D([0],[0],marker="X",color="w",markerfacecolor="#b0b8c1",markersize=12,label="never retrieved (literature-only)")]
+    ax.legend(handles=leg,loc="lower center",ncol=3,fontsize=9,frameon=False,bbox_to_anchor=(0.42,-0.14))
+    fig.subplots_adjust(top=0.87,bottom=0.14,left=0.02,right=0.98)
+    save(fig,"07b_recall_diagnosis.png")
+
+
 # ============================================================ 0. GRAPHICAL ABSTRACT
 def fig_abstract():
     import textwrap
