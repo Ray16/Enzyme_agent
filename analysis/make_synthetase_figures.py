@@ -129,9 +129,9 @@ def fig_proxy_ranking(df):
     axA.text(0.985, 0.985, "\n".join(lines), transform=axA.transAxes, ha="right", va="top",
              fontsize=FS - 4, color="#222", fontweight="bold",
              bbox=dict(boxstyle="round,pad=0.5", fc="#fbfbfb", ec="#888", lw=1.2))
-    axA.legend(handles=[Patch(color=RED, label="hit  (>0.2 µg/ml)"),
+    axA.legend(handles=[Patch(color=RED, label="active  (>0.2 µg/ml)"),
                         Patch(color=ORANGE, label="marginal  (#4–6 by activity)"),
-                        Patch(color="#cfe0f5", label="rest")],
+                        Patch(color="#c8cdd4", label="other")],
                loc="upper left", bbox_to_anchor=(0.01, 1.0), ncol=1,
                frameon=True, framealpha=0.95, edgecolor="#ccc")
     axA.set_xlabel(f"rank by mean in-line angle  ({len(d)} conclusive enzymes)")
