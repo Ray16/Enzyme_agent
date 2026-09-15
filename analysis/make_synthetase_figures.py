@@ -69,6 +69,38 @@ def boot_auc_ci(y, s, n=3000, seed=0):
     return grid, np.percentile(C, 2.5, 0), np.percentile(C, 97.5, 0), np.percentile(aucs, [2.5, 97.5])
 
 
+def fig_landscape(df):
+    """Activity landscape, every panel member labelled on the x-axis (actives in red)."""
+    d = df.sort_values("act", ascending=False).reset_index(drop=True)
+    fig, ax = plt.subplots(figsize=(22, 8))
+    x = np.arange(len(d))
+    colors = [RED if a else "#c8cdd4" for a in d.is_active]
+    floor = 4e-4
+    ax.bar(x, d.act.clip(lower=floor), color=colors, edgecolor="k", linewidth=0.3, width=0.82, zorder=2)
+    ax.errorbar(x, d.act.clip(lower=floor), yerr=[np.zeros(len(d)), d.act_std.fillna(0)],
+                fmt="none", ecolor="#555", elinewidth=0.7, capsize=2, alpha=0.6, zorder=3)
+    ax.set_yscale("log")
+    ax.axhline(ACT_THR, color=GREEN, ls="--", lw=1.8, zorder=1)
+    ax.text(len(d) - 0.5, ACT_THR * 1.25, f"active threshold  {ACT_THR} µg/ml",
+            color=GREEN, ha="right", va="bottom", fontsize=FS - 3)
+    ax.set_xticks(x)
+    ax.set_xticklabels(d.id, rotation=90, fontsize=FS - 6)
+    for lab, act in zip(ax.get_xticklabels(), d.is_active):
+        if act:
+            lab.set_color(RED); lab.set_fontweight("bold")
+    ax.set_xlabel("panel member (sorted by activity)", labelpad=8)
+    ax.set_ylabel("N66-L1 activity (µg/ml, log)")
+    ax.set_title("The panel is 3 hits over a flat tail — 3/49 actives, median 0.009 µg/ml")
+    ax.set_xlim(-1, len(d))
+    ax.legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
+                       Patch(color="#c8cdd4", label="inactive")],
+              loc="upper right", frameon=True, framealpha=0.95, edgecolor="#ccc")
+    plt.tight_layout()
+    p = f"{FIG}/synthetase_activity_landscape.png"
+    plt.savefig(p, bbox_inches="tight"); plt.close(fig)
+    return p
+
+
 def fig_proxy_ranking(df):
     """Validated proxy: ranked bar of mean in-line angle + ROC (conclusive enzymes)."""
     c = df[df.concl].copy()
