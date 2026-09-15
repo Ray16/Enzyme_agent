@@ -126,8 +126,8 @@ def fig_classifier(df):
     axB.set_title(f"B. AUROC={a:.2f} but CI [{aci[0]:.2f}, {aci[1]:.2f}] (only 3 positives)")
     axB.set_xlim(0, 1); axB.set_ylim(0, 1.02)
     axB.legend(loc="lower right", frameon=False)
-    axB.text(0.5, 0.07, f"Spearman(NAC, log-act) = {rho:+.2f}  (p = {pval:.2f}, n.s.)",
-             ha="center", fontsize=9, color="#333",
+    axB.text(0.97, 0.40, f"Spearman(NAC, log-act)\n= {rho:+.2f}  (p = {pval:.2f}, n.s.)",
+             transform=axB.transAxes, ha="right", va="top", fontsize=9, color="#333",
              bbox=dict(boxstyle="round", fc="#fff6e6", ec="#e0a000"))
     plt.tight_layout(rect=[0, 0, 1, 0.94])
     p = f"{FIG}/synthetase_step1_nac_refined.png"
