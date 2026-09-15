@@ -61,7 +61,7 @@ def forms_bond(rxn_smiles: str, acceptor="amine", bond="amide") -> bool:
     if ">>" not in rxn_smiles:
         return False
     lhs, rhs = rxn_smiles.split(">>", 1)
-    R = Chem.MolFromSmiles(lhs); P = Chem.MolFromSmiles(rhs)
+    R = _neutralize(Chem.MolFromSmiles(lhs)); P = _neutralize(Chem.MolFromSmiles(rhs))
     if not R or not P:
         return False
     bp, ap = BOND_PATT[bond], ACCEPT_PATT[acceptor]
