@@ -135,7 +135,9 @@ class TestModelingCofactors(unittest.TestCase):
         self.assertTrue(metal["basis"].startswith("mechanistic_default"))
 
     def test_no_cofactor_annotation_defaults_flagged(self):
-        # ddaG/iucA-style: NTP in reaction but no cofactor comment at all.
+        # ddaG/iucA-style: NTP in reaction but no cofactor comment at all. The
+        # reaction is acyl-adenylate (AMP + diphosphate) -> the count default is
+        # LOW-confidence/unverified (two-metal-ion is a phosphoryl-transfer rule).
         r = derive_modeling_cofactors(
             ["acid + ATP + amine = amide + AMP + diphosphate"],
             cofactor_names=[], cofactor_notes=[],
@@ -143,7 +145,8 @@ class TestModelingCofactors(unittest.TestCase):
         metal = [c for c in r["cofactors"] if c["role"] == "catalytic_metal"][0]
         self.assertEqual(metal["ccd"], "MG")
         self.assertTrue(metal["identity_basis"].startswith("mechanistic_default"))
-        self.assertTrue(metal["basis"].startswith("mechanistic_default"))
+        self.assertEqual(metal["count_confidence"], "low")
+        self.assertIn("adenylation", metal["basis"])
 
     def test_gtp_detected(self):
         r = derive_modeling_cofactors(["x + GTP = y + GMP + diphosphate"])
