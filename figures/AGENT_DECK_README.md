@@ -14,6 +14,10 @@ nylon-6,6) + its regenerated `structural_modeling_handoff.json`; the older run
 and `exp_data/…/panel_activity.csv` (geometry proxies vs assay); and the
 out-of-tree `Interpro_exhaustive/` sweep (recall audit).
 
+**One-file deck:** `agent_DECK_combined.pdf` merges every figure in presentation
+order (graphical abstract first) — open this to present the whole story.
+`agent_00_graphical_abstract` is the opening summary slide.
+
 ## Suggested presentation order
 
 | # | File (`agent_*`) | What it shows | Key message |
