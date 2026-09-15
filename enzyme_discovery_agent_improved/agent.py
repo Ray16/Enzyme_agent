@@ -849,7 +849,24 @@ class EnzymeAgent:
             # No tool calls: check if done
             if not tool_calls:
                 self._consecutive_no_tool_turns += 1
-                if self._should_continue(iteration):
+                # No-progress guard (let the agent's own decision stand): making no
+                # tool call is how the model says it is finished.  Allow ONE recovery
+                # nudge in case it paused mid-phase, but once it already has results
+                # and still makes no tool call, stop forcing continuation — otherwise
+                # `_should_continue` keeps returning True (candidate count below its
+                # exploration threshold) and the loop re-invites an idle model every
+                # iteration until the mid-run boundary, burning most of a run's
+                # tokens.  The bounded coverage checkpoint below still runs.
+                stalled = (self._consecutive_no_tool_turns >= config.MAX_NO_PROGRESS_TURNS
+                           and self._candidate_count > 0)
+                if stalled:
+                    self.log(
+                        f"  No-progress: model made {self._consecutive_no_tool_turns} "
+                        f"consecutive turns with no tool call and "
+                        f"{self._candidate_count} candidates found; proceeding to "
+                        "coverage check / finalization."
+                    )
+                if self._should_continue(iteration) and not stalled:
                     if self._candidate_count == 0:
                         recovery_instruction = (
                             "You have not begun evidence-backed discovery. Take a concrete tool action now: "
