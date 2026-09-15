@@ -52,8 +52,35 @@ def _amide_bonds(mols) -> int:
     return sum(len(m.GetSubstructMatches(_AMIDE)) for m in mols)
 
 
+def _carboxyl_groups(mols) -> int:
+    return sum(len(m.GetSubstructMatches(_CARBOXYL)) for m in mols)
+
+
+# CO2 / bicarbonate: when it is the carbonyl donor the product amide is a
+# carbamate/urea, not a carboxylate+amine condensation. Rhea writes it as
+# "O=C=O", "OC(=O)[O-]", etc. Match a lone one-carbon oxo-acid/anhydride carbon.
+_CO2 = Chem.MolFromSmarts("[CX2](=O)=O")            # O=C=O
+_BICARB = Chem.MolFromSmarts("[CX3](=O)([OX1,OX2])[OX1,OX2]")  # H/–O-C(=O)-O (no C-C)
+
+
+def _is_c1_carbon_oxoacid(m) -> bool:
+    """True for CO2 / carbonic acid / bicarbonate (single carbon, no C–C)."""
+    carbons = [a for a in m.GetAtoms() if a.GetSymbol() == "C"]
+    if len(carbons) != 1:
+        return False
+    return m.HasSubstructMatch(_CO2) or m.HasSubstructMatch(_BICARB)
+
+
 def classify_reaction(rxn_smiles: str) -> tuple[bool, dict]:
-    """Return (is_atp_amide_ligation, evidence_flags)."""
+    """Return (is_atp_amide_ligation, evidence_flags).
+
+    A genuine ATP-dependent amide LIGATION condenses a free carboxylic acid with
+    a free amine (COOH + H2N -> CO-NH), activated via ATP. We therefore require
+    not just that an amide appears, but that a free carboxyl is CONSUMED (count
+    decreases) and that the carbonyl donor is not CO2/bicarbonate (which would
+    make a carbamate/urea, e.g. dethiobiotin synthetase — a false positive of
+    the naive "an amide appeared" test).
+    """
     if ">>" not in rxn_smiles:
         return False, {"error": "no reaction arrow"}
     left, right = rxn_smiles.split(">>", 1)
@@ -61,20 +88,25 @@ def classify_reaction(rxn_smiles: str) -> tuple[bool, dict]:
     if not lm or not rm:
         return False, {"error": "unparsable side"}
 
+    cooh_left, cooh_right = _carboxyl_groups(lm), _carboxyl_groups(rm)
     flags = {
         "atp_substrate": any(_adenosine_with_n_phosphates(m, 3) for m in lm),
         "amp_product": any(_adenosine_with_n_phosphates(m, 1) for m in rm),
         "adp_product": any(_adenosine_with_n_phosphates(m, 2) for m in rm),
         "new_amide_bond": _amide_bonds(rm) > _amide_bonds(lm),
-        "carboxyl_substrate": any(m.HasSubstructMatch(_CARBOXYL) for m in lm),
+        # A free carboxylic acid is consumed into the new bond.
+        "carboxyl_consumed": cooh_right < cooh_left,
         "amine_substrate": any(m.HasSubstructMatch(_AMINE) for m in lm),
+        # The carbonyl donor is a real carboxylate, not CO2/bicarbonate.
+        "co2_carbonyl_donor": any(_is_c1_carbon_oxoacid(m) for m in lm),
     }
     is_hit = (
         flags["atp_substrate"]
         and (flags["amp_product"] or flags["adp_product"])
         and flags["new_amide_bond"]
-        and flags["carboxyl_substrate"]
+        and flags["carboxyl_consumed"]
         and flags["amine_substrate"]
+        and not flags["co2_carbonyl_donor"]
     )
     return is_hit, flags
 
