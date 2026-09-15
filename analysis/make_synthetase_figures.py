@@ -110,28 +110,36 @@ def fig_proxy_ranking(df):
     rho, pval = spearmanr(c.mean_inline_angle, np.log10(c.act + 1e-3))
     fpr, tpr, _ = roc_curve(y, s); a = auc(fpr, tpr)
     grid, lo, hi, aci = boot_auc_ci(y, s)
-    ranks = {r.id: i + 1 for i, r in d.iterrows() if r.is_active}
+    # top-6 panel members by measured activity: 3 strong hits (>0.2) + 3 marginal (0.14-0.2)
+    top6 = df.sort_values("act", ascending=False).head(6).id.tolist()
+    strong, near = top6[:3], top6[3:]
+    ang_rank = {r.id: i + 1 for i, r in d.iterrows()}   # only conclusive enzymes have a rank
 
     fig, (axA, axB) = plt.subplots(1, 2, figsize=(20, 8.5))
     fig.suptitle("Mean in-line attack angle (distance-gated cofold poses) ranks the active enzymes to the top",
                  fontweight="bold")
     # A. ranked bar
     x = np.arange(len(d))
-    colors = [RED if a_ else "#cfe0f5" for a_ in d.is_active]
+    colors = [RED if i in strong else ORANGE if i in near else "#cfe0f5" for i in d.id]
     axA.bar(x, d.mean_inline_angle, color=colors, edgecolor="k", linewidth=0.3, zorder=2)
     axA.axhline(A_CUT, color=GREY, ls=":", lw=1.5, zorder=1)
     axA.text(len(d) - 0.5, A_CUT - 1.2, f"{A_CUT:.0f}° in-line cut", color="#666",
              ha="right", va="top", fontsize=FS - 4)
-    callout = "actives by angle rank\n" + "\n".join(f"{k}  →  #{ranks[k]}" for k in ACTIVES)
-    axA.text(0.985, 0.97, callout, transform=axA.transAxes, ha="right", va="top",
-             fontsize=FS - 2, color=RED, fontweight="bold",
-             bbox=dict(boxstyle="round,pad=0.5", fc="#fff0f0", ec=RED, lw=1.5))
-    axA.legend(handles=[Patch(color=RED, label="active"), Patch(color="#cfe0f5", label="inactive")],
-               loc="upper center", bbox_to_anchor=(0.42, 1.0), ncol=2,
+    lines = ["top 6 by activity  →  angle rank"]
+    for i, e in enumerate(top6, 1):
+        rk = f"#{ang_rank[e]}" if e in ang_rank else "INCONCLUSIVE"
+        lines.append(f"{i}. {e}  →  {rk}")
+    axA.text(0.985, 0.985, "\n".join(lines), transform=axA.transAxes, ha="right", va="top",
+             fontsize=FS - 4, color="#222", fontweight="bold",
+             bbox=dict(boxstyle="round,pad=0.5", fc="#fbfbfb", ec="#888", lw=1.2))
+    axA.legend(handles=[Patch(color=RED, label="hit  (>0.2 µg/ml)"),
+                        Patch(color=ORANGE, label="marginal  (#4–6 by activity)"),
+                        Patch(color="#cfe0f5", label="rest")],
+               loc="upper center", bbox_to_anchor=(0.40, 1.0), ncol=1,
                frameon=True, framealpha=0.95, edgecolor="#ccc")
     axA.set_xlabel(f"rank by mean in-line angle  ({len(d)} conclusive enzymes)")
     axA.set_ylabel("mean in-line attack angle (°)")
-    axA.set_title("A. All 3 hits rank in the top 7")
+    axA.set_title("A. Strong hits top-ranked; marginal tier scattered")
     axA.set_ylim(min(d.mean_inline_angle) - 4, 182)
     axA.set_xlim(-1, len(d))
     # B. ROC + CI
