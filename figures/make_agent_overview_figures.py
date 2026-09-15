@@ -199,7 +199,7 @@ def fig_landscape():
          plt.Line2D([0],[0],marker="o",color="w",markerfacecolor="#b8c0c9",markeredgecolor="#26303a",
                     markersize=12,markeredgewidth=1.6,label="strong lead (bold ring)")]
     ax.legend(handles=leg,loc="lower right",fontsize=9.5,frameon=True,framealpha=0.95)
-    fig.tight_layout()
+    fig.subplots_adjust(top=0.90,left=0.24,right=0.98,bottom=0.07)
     save(fig,"agent_candidate_landscape.png")
 
 
