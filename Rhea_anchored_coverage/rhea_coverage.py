@@ -97,9 +97,13 @@ def matched_accessions(acceptor="amine", bond="amide"):
             d = int(rid)
         except ValueError:
             continue
-        # a directional id maps back to its master at d, d-1, d-2 or d-3
+        # a directional id maps back to its master at d, d-1, d-2 or d-3;
+        # take the NEAREST master only (blocks are master,+1,+2,+3) to avoid
+        # spilling into an adjacent reaction block.
         for cand in (d, d - 1, d - 2, d - 3):
-            accs |= master2acc.get(str(cand), set())
+            if str(cand) in master2acc:
+                accs |= master2acc[str(cand)]
+                break
     return hit_rhea, accs
 
 
