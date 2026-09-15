@@ -31,6 +31,7 @@ nylon-6,6) + its regenerated `structural_modeling_handoff.json`; the older run
 | 06 | `06_discovery_completeness.png` | Exhaustive EC 6.3.- sweep: 12,456 → 270 → agent coverage | Recall complete over the reviewed universe — SfaB ceiling stated |
 | 07 | `synthetase_angle_proxy_ranking.png` | **Validated proxy**: distance<4 Å gate → rank by in-line angle | AUROC 0.95; hits AS9/AS17/AS23 rank #1/#4/#7 |
 | — | `synthetase_activity_landscape.png` | The assay: 3 hits over a flat tail (3/49) | Why the panel is a hard, imbalanced target |
+| 07b | `07b_recall_diagnosis.png` | Where known amide synthetases exit the pipeline (PuuA/DdaG recovered; DesD gate-rejected; SfaB/McbA never retrieved) | Two annotation-dependent recall bottlenecks: retrieval + the function gate |
 | 09 | `09_hydrolase_second_target.png` | 96-enzyme nylon-hydrolase panel: activity + NAC | Same framework transfers to the cleavage direction |
 | 10 | `10_run_comparison.png` | Old vs improved run: candidates, leads, token cost | Cleaner ranking, same leads — plus the cost regression to fix |
 
