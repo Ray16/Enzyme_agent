@@ -186,12 +186,63 @@ def fig_gate(df):
     return p, sorted(kept.id.tolist())
 
 
+def fig_screening(df):
+    """Fig 4 - THE screening story: hit recovery vs experimental budget.
+
+    Frames the proxy for its actual use (triage candidates for the wet lab):
+    if you rank/gate by the proxy and only test the top slice, what fraction of
+    the true hits do you still catch, and how many experiments do you save?
+    """
+    N = len(df)
+    H = int(df.is_active.sum())
+
+    def recall_curve(score, higher=True):
+        d = df.sort_values("score" if False else score, ascending=not higher).reset_index(drop=True)
+        rec = np.cumsum(d.is_active.values) / H
+        budget = (np.arange(N) + 1) / N
+        return np.concatenate([[0], budget]), np.concatenate([[0], rec])
+
+    # combined step-1 gate as an operating point
+    t_nac = df.set_index("id").loc[ACTIVES, "nac_frac"].min()
+    t_ang = df.set_index("id").loc[ACTIVES, "s1_ang"].min()
+    kept = df[(df.nac_frac >= t_nac) & (df.s1_ang >= t_ang)]
+    g_budget, g_recall = len(kept) / N, kept.is_active.mean() * len(kept) / H
+
+    fig, ax = plt.subplots(figsize=(8, 6.2))
+    xr, yr = np.linspace(0, 1, 100), np.linspace(0, 1, 100)
+    ax.plot(xr, yr, ls="--", color="grey", lw=1.2, label="random triage")
+    for key, lab, col in [("nac_frac", "rank by NAC fraction", BLUE),
+                          ("s1_ang", "rank by in-line angle", "#8e44ad")]:
+        b, r = recall_curve(key)
+        ax.step(b, r, where="post", lw=2, color=col, label=lab, alpha=0.9)
+    ax.scatter([g_budget], [g_recall], s=220, marker="*", color=GREEN, edgecolors="k",
+               zorder=6, label="combined step-1 gate")
+    ax.annotate(f"test {len(kept)}/{N} candidates ({g_budget*100:.0f}%)\n"
+                f"catch {int(g_recall*H)}/{H} hits  →  {(1-g_budget)*100:.0f}% fewer experiments",
+                (g_budget, g_recall), xytext=(g_budget + 0.06, g_recall - 0.22),
+                fontsize=10, color="#155724", fontweight="bold",
+                arrowprops=dict(arrowstyle="->", color=GREEN, lw=1.5))
+    ax.set_xlabel("fraction of candidates sent to the wet lab (experimental budget)")
+    ax.set_ylabel("fraction of true hits recovered (recall)")
+    ax.set_title("Screening utility: recover every strong hit while testing ~1/6 of candidates",
+                 fontsize=12)
+    ax.set_xlim(0, 1); ax.set_ylim(0, 1.03)
+    ax.legend(loc="lower right", frameon=False)
+    ax.text(0.02, 0.97, "up-and-to-the-left = better triage", transform=ax.transAxes,
+            fontsize=9, va="top", color="#555", style="italic")
+    plt.tight_layout()
+    p = f"{FIG}/synthetase_screening_operating_curve.png"
+    plt.savefig(p, bbox_inches="tight"); plt.close(fig)
+    return p
+
+
 def main():
     df = load()
     assert set(ACTIVES) <= set(df.id), "actives missing from merged data"
     outs = [fig_landscape(df), fig_classifier(df)]
     gp, kept = fig_gate(df)
     outs.append(gp)
+    outs.append(fig_screening(df))
     print(f"n={len(df)} members, {df.is_active.sum()} actives ({ACTIVES})")
     print(f"gated set ({len(kept)}): {kept}")
     print("wrote:")
