@@ -1260,6 +1260,7 @@ def evaluate_candidate(
         "identity_validation": identity_validation,
         "claim_validation": function_validation,
         "mechanism_evidence": mechanism_evidence,
+        "modeling_input": modeling_input,
         "rejection_reason": (
             None if eval_status == "evaluated" else
             "authoritative function validation failed: "
