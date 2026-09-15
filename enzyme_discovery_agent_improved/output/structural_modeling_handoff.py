@@ -52,6 +52,10 @@ def write_structural_modeling_handoff(
             "organism": data.get("organism") or metadata.get("organism", ""),
             "gene_names": data.get("gene_names") or metadata.get("gene_names", []),
             "ec_numbers": data.get("ec_numbers") or metadata.get("ec_numbers", []),
+            "interpro_family": data.get("interpro_family") or metadata.get("interpro_family"),
+            "interpro_family_id": (
+                data.get("interpro_family_id") or metadata.get("interpro_family_id")
+            ),
             "structure_sources": data.get("structural_data", {}),
             "native_substrate_evidence": data.get("native_substrates", []),
             "reaction_chemistry": data.get("reaction_chemistry", {}),
