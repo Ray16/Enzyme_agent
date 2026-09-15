@@ -561,5 +561,6 @@ if __name__=="__main__":
     fig_structural()
     fig_proxy()
     fig_sweep()
+    fig_hydrolase()
     fig_schema()
     print("\nDeck complete — PDF (vector) + 300-dpi PNG for each.")
