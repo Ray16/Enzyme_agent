@@ -857,8 +857,7 @@ class EnzymeAgent:
                 # exploration threshold) and the loop re-invites an idle model every
                 # iteration until the mid-run boundary, burning most of a run's
                 # tokens.  The bounded coverage checkpoint below still runs.
-                stalled = (self._consecutive_no_tool_turns >= config.MAX_NO_PROGRESS_TURNS
-                           and self._candidate_count > 0)
+                stalled = self._no_progress_stop()
                 if stalled:
                     self.log(
                         f"  No-progress: model made {self._consecutive_no_tool_turns} "
