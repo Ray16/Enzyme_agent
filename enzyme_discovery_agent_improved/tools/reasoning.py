@@ -989,6 +989,14 @@ def evaluate_candidate(
         require_native_reaction=True,
     )
 
+    # Deterministic activation-chemistry annotation from the candidate's own
+    # native reaction products. Nested under mechanism_evidence["activation"] so
+    # it coexists with any literature-extracted mechanism facts (which live under
+    # "facts"/"paper") without either clobbering the other.
+    existing_mech = existing.get("metadata", {}).get("mechanism_evidence")
+    activation = derive_activation_mechanism(catalytic_activities)
+    mechanism_evidence = _merge_activation_evidence(existing_mech, activation)
+
     # Build evaluation result
     eval_data = {
         "accession": accession,
