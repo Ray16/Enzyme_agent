@@ -32,7 +32,7 @@ os.makedirs(FIG, exist_ok=True)
 ACTIVES = ["AS9", "AS17", "AS23"]          # the three clear hits (>0.2 ug/ml)
 ACT_THR = 0.2
 A_CUT = 150.0                              # in-line angle cut used by the proxy (deg)
-RED, BLUE, GREEN, GREY = "#d62728", "#3060c0", "#2e8b57", "#9aa0a6"
+RED, ORANGE, BLUE, GREEN, GREY = "#d62728", "#f39c12", "#3060c0", "#2e8b57", "#9aa0a6"
 FS = 18
 plt.rcParams.update({
     "font.size": FS, "axes.titlesize": FS, "axes.titleweight": "bold",
