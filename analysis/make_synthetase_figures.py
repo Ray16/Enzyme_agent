@@ -79,38 +79,41 @@ def fig_proxy_ranking(df):
     grid, lo, hi, aci = boot_auc_ci(y, s)
     ranks = {r.id: i + 1 for i, r in d.iterrows() if r.is_active}
 
-    fig, (axA, axB) = plt.subplots(1, 2, figsize=(13, 5))
-    fig.suptitle("Validated proxy — mean in-line attack angle (distance-gated poses): "
-                 "ranks the hits to the top", fontsize=13, fontweight="bold")
+    fig, (axA, axB) = plt.subplots(1, 2, figsize=(20, 8.5))
+    fig.suptitle("Mean in-line attack angle (distance-gated cofold poses) ranks the active enzymes to the top",
+                 fontweight="bold")
     # A. ranked bar
     x = np.arange(len(d))
     colors = [RED if a_ else "#cfe0f5" for a_ in d.is_active]
-    axA.bar(x, d.mean_inline_angle, color=colors, edgecolor="k", linewidth=0.3)
-    axA.axhline(A_CUT, color=GREY, ls=":", lw=1)
-    axA.text(len(d) - 0.5, A_CUT - 1.5, f"{A_CUT:.0f}° in-line cut", color="#666",
-             ha="right", va="top", fontsize=8)
-    callout = "actives by angle rank:\n" + "\n".join(f"  {k}  →  #{ranks[k]}" for k in ACTIVES)
-    axA.text(0.97, 0.96, callout, transform=axA.transAxes, ha="right", va="top",
-             fontsize=9.5, color=RED, fontweight="bold",
-             bbox=dict(boxstyle="round", fc="#fff0f0", ec=RED, alpha=0.9))
-    axA.set_xlabel(f"rank by mean in-line angle ({len(d)} conclusive enzymes)")
-    axA.set_ylabel("mean in-line attack angle (°)")
-    axA.set_title("A. All 3 hits in the top 7 (AS9 = #1)")
-    axA.set_ylim(min(d.mean_inline_angle) - 4, 180)
+    axA.bar(x, d.mean_inline_angle, color=colors, edgecolor="k", linewidth=0.3, zorder=2)
+    axA.axhline(A_CUT, color=GREY, ls=":", lw=1.5, zorder=1)
+    axA.text(len(d) - 0.5, A_CUT - 1.2, f"{A_CUT:.0f}° in-line cut", color="#666",
+             ha="right", va="top", fontsize=FS - 4)
+    callout = "actives by angle rank\n" + "\n".join(f"{k}  →  #{ranks[k]}" for k in ACTIVES)
+    axA.text(0.985, 0.97, callout, transform=axA.transAxes, ha="right", va="top",
+             fontsize=FS - 2, color=RED, fontweight="bold",
+             bbox=dict(boxstyle="round,pad=0.5", fc="#fff0f0", ec=RED, lw=1.5))
     axA.legend(handles=[Patch(color=RED, label="active"), Patch(color="#cfe0f5", label="inactive")],
-               loc="lower left", frameon=False)
+               loc="upper center", bbox_to_anchor=(0.42, 1.0), ncol=2,
+               frameon=True, framealpha=0.95, edgecolor="#ccc")
+    axA.set_xlabel(f"rank by mean in-line angle  ({len(d)} conclusive enzymes)")
+    axA.set_ylabel("mean in-line attack angle (°)")
+    axA.set_title("A. All 3 hits rank in the top 7")
+    axA.set_ylim(min(d.mean_inline_angle) - 4, 182)
+    axA.set_xlim(-1, len(d))
     # B. ROC + CI
     axB.fill_between(grid, lo, hi, color=BLUE, alpha=0.15, label="95% CI (bootstrap)")
-    axB.plot(fpr, tpr, color=BLUE, lw=2.2, label=f"ROC  AUROC={a:.2f}")
-    axB.plot([0, 1], [0, 1], ls="--", color="grey", lw=1, label="random")
+    axB.plot(fpr, tpr, color=BLUE, lw=3, label=f"ROC  (AUROC = {a:.2f})")
+    axB.plot([0, 1], [0, 1], ls="--", color="grey", lw=1.5, label="random")
     axB.set_xlabel("false positive rate"); axB.set_ylabel("true positive rate")
-    axB.set_title(f"B. AUROC={a:.2f}  (95% CI [{aci[0]:.2f}, {aci[1]:.2f}], 3 positives)")
+    axB.set_title("B. Discrimination: AUROC = 0.95")
     axB.set_xlim(0, 1); axB.set_ylim(0, 1.02)
-    axB.legend(loc="lower right", frameon=False)
-    axB.text(0.97, 0.42, f"Spearman(angle, log-act)\n= {rho:+.2f}  (p = {pval:.2f})",
-             transform=axB.transAxes, ha="right", va="top", fontsize=9, color="#333",
-             bbox=dict(boxstyle="round", fc="#eafaef", ec=GREEN))
-    plt.tight_layout(rect=[0, 0, 1, 0.94])
+    axB.legend(loc="lower right", frameon=True, framealpha=0.95, edgecolor="#ccc")
+    axB.text(0.96, 0.50, f"AUROC 95% CI [{aci[0]:.2f}, {aci[1]:.2f}]\n"
+             f"Spearman = {rho:+.2f}  (p = {pval:.2f})\n3 actives / {len(d)} enzymes",
+             transform=axB.transAxes, ha="right", va="top", fontsize=FS - 3, color="#222",
+             bbox=dict(boxstyle="round,pad=0.5", fc="#eafaef", ec=GREEN, lw=1.5))
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     p = f"{FIG}/synthetase_angle_proxy_ranking.png"
     plt.savefig(p, bbox_inches="tight"); plt.close(fig)
     return p
