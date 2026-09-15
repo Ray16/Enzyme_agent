@@ -96,13 +96,15 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
         )
 
     best_by_acc: dict[str, dict] = {}
+    no_accession: list[dict] = []
     for ev in all_evals:
         acc = ev.get("data", ev).get("accession", "")
         if not acc:
+            no_accession.append(ev)  # cannot dedupe; keep rather than drop
             continue
         if acc not in best_by_acc or _richness(ev) > _richness(best_by_acc[acc]):
             best_by_acc[acc] = ev
-    all_evals = list(best_by_acc.values())
+    all_evals = list(best_by_acc.values()) + no_accession
 
     def sort_key(ev):
         acc = ev.get("data", ev).get("accession", "")
