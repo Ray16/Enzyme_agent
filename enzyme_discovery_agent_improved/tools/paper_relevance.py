@@ -165,6 +165,62 @@ def score_paper(paper: dict, profile: dict) -> float:
     return s
 
 
+# --- Deposited-accession mining (leakage-safe by construction) --------------- #
+# Generic sequence-accession formats ONLY — no target/answer-specific tokens, so
+# the leakage firewall (which scans this runtime file) covers this code.  Mining
+# extracts whatever accessions a paper DEPOSITS; it never compares them to, or
+# filters them by, any known answer — the ordinary answer-agnostic screening
+# decides relevance downstream.
+_REFSEQ_RE = re.compile(r"\b(?:WP|NP|XP|YP|AP)_\d{6,}(?:\.\d+)?\b")
+_UNIPROT_RE = re.compile(
+    r"\b[OPQ][0-9][A-Z0-9]{3}[0-9]\b|\b[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2}\b")
+# GenBank protein (3 letters + 5 digits, optional version).  Ambiguous, so drop
+# tokens whose prefix is a common non-accession abbreviation (PMC/DOI/…).
+_GENBANK_RE = re.compile(r"\b([A-Z]{3}\d{5}(?:\.\d+)?)\b")
+_GENBANK_STOP = {"PMC", "DOI", "PMID", "ISB", "NIH", "USA", "DNA", "RNA", "ATP", "NAD"}
+_REVIEW_MARKERS = (
+    "review", "perspective", "mini-review", "minireview", "annual review",
+    "trends in", "a survey", "overview", "current opinion", "chapter",
+)
+
+
+def looks_like_review(paper: dict) -> bool:
+    """Heuristic: is this a review/secondary article rather than a primary study?
+
+    Reviews cite many off-target sequences, so deposited-accession mining is
+    high-precision only on PRIMARY papers.  Generic markers, no answer terms."""
+    t = (paper.get("title") or "").lower()
+    ptype = " ".join(str(x).lower() for x in (paper.get("publication_types") or []))
+    hay = t + " " + ptype
+    return any(m in hay for m in _REVIEW_MARKERS)
+
+
+def mine_deposited_accessions(text: str, cap: int = 30) -> list[str]:
+    """Extract sequence accessions deposited/cited in a paper's full text.
+
+    Returns de-duplicated accessions in first-seen order (bounded by ``cap``).
+    Pure regex, no LLM, no answer knowledge."""
+    if not text:
+        return []
+    found: list[str] = []
+    seen: set[str] = set()
+
+    def _add(acc: str):
+        acc = acc.strip()
+        if acc and acc not in seen:
+            seen.add(acc)
+            found.append(acc)
+
+    for m in _REFSEQ_RE.findall(text):
+        _add(m)
+    for m in _UNIPROT_RE.findall(text):
+        _add(m)
+    for m in _GENBANK_RE.findall(text):
+        if m[:3] not in _GENBANK_STOP:
+            _add(m)
+    return found[:cap]
+
+
 def _load_json(path: Path):
     try:
         return json.loads(path.read_text())
