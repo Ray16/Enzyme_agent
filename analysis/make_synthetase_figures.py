@@ -107,13 +107,14 @@ def fig_classifier(df):
     x = np.arange(len(d))
     colors = [RED if a_ else "#cfe0f5" for a_ in d.is_active]
     axA.bar(x, d.nac_frac, color=colors, edgecolor="k", linewidth=0.3)
-    for i, r in d.iterrows():
-        if r.is_active:
-            axA.text(i, r.nac_frac + 0.02, f"{r.id}\n#{i+1}", ha="center", va="bottom",
-                     fontsize=8, color=RED, fontweight="bold")
+    ranks = {r.id: i + 1 for i, r in d.iterrows() if r.is_active}
+    callout = "actives by NAC rank:\n" + "\n".join(f"  {k}  →  #{ranks[k]}" for k in ACTIVES)
+    axA.text(0.97, 0.72, callout, transform=axA.transAxes, ha="right", va="top",
+             fontsize=9.5, color=RED, fontweight="bold",
+             bbox=dict(boxstyle="round", fc="#fff0f0", ec=RED, alpha=0.9))
     axA.set_xlabel("rank by step-1 NAC fraction (best → worst)")
     axA.set_ylabel("step-1 NAC fraction")
-    axA.set_title("A. Top-5 by NAC are all inactive (P@3 = 0/3)")
+    axA.set_title("A. The 5 highest-NAC members are all inactive (P@3 = 0/3)")
     axA.set_ylim(0, 1.08)
     axA.legend(handles=[Patch(color=RED, label="active"), Patch(color="#cfe0f5", label="inactive")],
                loc="upper right", frameon=False)
