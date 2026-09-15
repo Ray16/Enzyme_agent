@@ -158,7 +158,9 @@ def main():
     assert df[df.is_active == 1].concl.all(), "an active is inconclusive — check phosphate/gate"
     print(f"n={len(df)}  conclusive={int(df.concl.sum())}  inconclusive={int((~df.concl).sum())} "
           f"({df[~df.concl].id.tolist()})")
-    print("wrote:", fig_proxy_ranking(df))
+    print("wrote:")
+    for o in (fig_proxy_ranking(df), fig_landscape(df)):
+        print("  ", o)
 
 
 if __name__ == "__main__":
