@@ -163,8 +163,8 @@ def fig_gate(df):
                          xytext=(4, 4), textcoords="offset points",
                          color=RED if r.is_active else "#444")
     axA.axvline(t_nac, color=GREEN, ls="--", lw=1); axA.axhline(t_ang, color=GREEN, ls="--", lw=1)
-    axA.text(t_nac + 0.01, t_ang + 1, f"gate: NAC≥{t_nac:.2f} & angle≥{t_ang:.0f}°",
-             color=GREEN, fontsize=9, va="bottom")
+    axA.text(0.02, t_ang - 1.5, f"gate: NAC ≥ {t_nac:.2f}  &  angle ≥ {t_ang:.0f}°",
+             color=GREEN, fontsize=9, va="top", ha="left")
     axA.set_xlabel("step-1 NAC fraction"); axA.set_ylabel("step-1 in-line angle (°)")
     axA.set_title("A. Gate keeps all 3 hits + 5 others (8/49)")
     axA.set_xlim(-0.02, 1.02)
