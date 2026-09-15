@@ -621,13 +621,16 @@ def fig_schema():
 if __name__=="__main__":
     fig_abstract()
     fig_pipeline()
-    fig_ranking()
-    fig_landscape()
-    fig_bridge()
-    fig_runcompare()
-    fig_structural()
-    fig_proxy()
-    fig_sweep()
-    fig_hydrolase()
-    fig_schema()
+    fig_schema()          # 02
+    fig_bridge()          # 03
+    fig_landscape()       # 05
+    fig_sweep()           # 06
+    fig_structural()      # 08
+    fig_hydrolase()       # 09
+    fig_runcompare()      # 10
+    # RETIRED:
+    #  fig_ranking() (04) - not meaningful (score dump: substrates_hosted flat at 2/2).
+    #  fig_proxy()   (07) - superseded: leads with raw NAC; the VALIDATED proxy is
+    #    distance<4A gate -> rank by mean in-line angle (AUROC 0.95), produced by
+    #    analysis/make_synthetase_figures.py -> figures/synthetase_angle_proxy_ranking.png.
     print("\nDeck complete — 300-dpi PNG for each.")
