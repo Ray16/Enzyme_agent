@@ -95,6 +95,77 @@ class TestActivationDerivation(unittest.TestCase):
         self.assertIn("reaction products", r["basis"])
 
 
+class TestModelingCofactors(unittest.TestCase):
+
+    def test_atp_and_metal_count_from_note(self):
+        # glnA2-style: reaction gives ATP; note states the Mg count.
+        r = derive_modeling_cofactors(
+            ["putrescine + L-glutamate + ATP = product + ADP + phosphate"],
+            cofactor_names=["Mg(2+)"],
+            cofactor_notes=["Binds 2 Mg(2+) ions per subunit."],
+        )
+        cof = {c["role"]: c for c in r["cofactors"]}
+        self.assertEqual(cof["nucleotide_substrate"]["ccd"], "ATP")
+        self.assertEqual(cof["nucleotide_substrate"]["count"], 1)
+        self.assertEqual(cof["catalytic_metal"]["ccd"], "MG")
+        self.assertEqual(cof["catalytic_metal"]["count"], 2)
+        self.assertEqual(cof["catalytic_metal"]["basis"], "uniprot_cofactor_note")
+
+    def test_metal_count_word_form(self):
+        r = derive_modeling_cofactors(
+            ["acid + ATP + amine = amide + AMP + diphosphate"],
+            cofactor_names=["Magnesium"],
+            cofactor_notes=["Requires two magnesium ions."],
+        )
+        metal = [c for c in r["cofactors"] if c["role"] == "catalytic_metal"][0]
+        self.assertEqual(metal["count"], 2)
+        self.assertEqual(metal["ccd"], "MG")
+
+    def test_metal_alternative_recorded(self):
+        # puuA-style: Mg with Mn alternative, no explicit count -> default 2.
+        r = derive_modeling_cofactors(
+            ["putrescine + L-glutamate + ATP = product + ADP + phosphate"],
+            cofactor_names=["Mg(2+)", "Mn(2+)"],
+            cofactor_notes=["Requires Mg(2+), that can be substituted by Mn(2+)."],
+        )
+        metal = [c for c in r["cofactors"] if c["role"] == "catalytic_metal"][0]
+        self.assertEqual(metal["ccd"], "MG")
+        self.assertEqual(metal["alternatives"], ["MN"])
+        self.assertEqual(metal["count"], 2)
+        self.assertTrue(metal["basis"].startswith("mechanistic_default"))
+
+    def test_no_cofactor_annotation_defaults_flagged(self):
+        # ddaG/iucA-style: NTP in reaction but no cofactor comment at all.
+        r = derive_modeling_cofactors(
+            ["acid + ATP + amine = amide + AMP + diphosphate"],
+            cofactor_names=[], cofactor_notes=[],
+        )
+        metal = [c for c in r["cofactors"] if c["role"] == "catalytic_metal"][0]
+        self.assertEqual(metal["ccd"], "MG")
+        self.assertTrue(metal["identity_basis"].startswith("mechanistic_default"))
+        self.assertTrue(metal["basis"].startswith("mechanistic_default"))
+
+    def test_gtp_detected(self):
+        r = derive_modeling_cofactors(["x + GTP = y + GMP + diphosphate"])
+        ntp = [c for c in r["cofactors"] if c["role"] == "nucleotide_substrate"][0]
+        self.assertEqual(ntp["ccd"], "GTP")
+
+    def test_non_ntp_returns_none(self):
+        self.assertIsNone(derive_modeling_cofactors(["an amide + H2O = acid + amine"]))
+        self.assertIsNone(derive_modeling_cofactors([]))
+
+    def test_diphosphate_note_not_miscounted(self):
+        # "diphosphate" in a note must not be read as a metal count of any kind;
+        # with no real count stated, the default applies.
+        r = derive_modeling_cofactors(
+            ["acid + ATP + amine = amide + AMP + diphosphate"],
+            cofactor_names=["Mg(2+)"], cofactor_notes=["Releases diphosphate."],
+        )
+        metal = [c for c in r["cofactors"] if c["role"] == "catalytic_metal"][0]
+        self.assertEqual(metal["count"], 2)
+        self.assertTrue(metal["basis"].startswith("mechanistic_default"))
+
+
 class TestMergeActivationEvidence(unittest.TestCase):
 
     def test_merge_into_none(self):
