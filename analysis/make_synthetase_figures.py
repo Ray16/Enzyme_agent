@@ -120,7 +120,7 @@ def fig_proxy_ranking(df):
                  fontweight="bold")
     # ranked bar
     x = np.arange(len(d))
-    colors = [RED if i in strong else ORANGE if i in near else "#cfe0f5" for i in d.id]
+    colors = [RED if i in strong else ORANGE if i in near else "#c8cdd4" for i in d.id]
     axA.bar(x, d.mean_inline_angle, color=colors, edgecolor="k", linewidth=0.3, zorder=2)
     lines = ["top 6 by activity  →  angle rank"]
     for i, e in enumerate(top6, 1):
