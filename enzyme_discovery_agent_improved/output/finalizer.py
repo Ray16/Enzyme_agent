@@ -278,6 +278,13 @@ class RunFinalizer:
 
         cleanup_rerank_model()
         self.log("\n  FINALIZING RUN")
+        # Self-heal a status file left mid-flight by a prior interrupted pass:
+        # this process now owns finalization, so any stage still marked
+        # "running" belongs to a dead process and is demoted to "interrupted"
+        # (its stage below will re-run and overwrite this). Also arm an exit
+        # guard so an interruption of THIS pass does not leave the same lie.
+        self._reconcile_stale_running()
+        self._install_interrupt_guard()
         try:
             (self.run_dir / "agent_state" / "messages.json").write_text(
                 json.dumps(messages, indent=2, default=str)
