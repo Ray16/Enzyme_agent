@@ -448,15 +448,35 @@ def derive_modeling_cofactors(
         identity_basis = "mechanistic_default: NTP transfer requires a divalent metal"
         alternatives = []
 
-    # Metal count: parse the cofactor note when it states one, else default to 2
-    # (the two-metal-ion mechanism) and say so.
-    count, count_basis, matched_note = 2, "mechanistic_default: two-metal-ion NTP transfer", None
+    # Metal count: prefer the cofactor note when it states one; otherwise fall
+    # back to a MECHANISM-AWARE default and flag its confidence. The two-metal-ion
+    # rule is specific to phosphoryl transfer (acyl-phosphate, Pgamma) and does NOT
+    # automatically apply to nucleotidyl transfer (acyl-adenylate, Palpha), whose
+    # metal count (1-2, often a single Mg.NTP) is genuinely uncertain when the
+    # annotation is silent -- so an adenylating default is marked LOW confidence
+    # rather than asserted, and a reader (or the sensitivity test) can revise it.
+    activation = derive_activation_mechanism(catalytic_activities)
+    mode = (activation or {}).get("activation_mode")
+    if mode == "acyl_phosphate":
+        count = 2
+        count_basis = "mechanistic_default: two-metal-ion phosphoryl transfer (acyl-phosphate)"
+        count_conf = "medium"
+    elif mode == "acyl_adenylate":
+        count = 2
+        count_basis = "assumed: adenylation metal count not annotated (1-2 typical, often single Mg.NTP); UNVERIFIED"
+        count_conf = "low"
+    else:
+        count = 2
+        count_basis = "mechanistic_default: two-metal-ion NTP transfer"
+        count_conf = "low"
+    matched_note = None
     for note in cofactor_notes or []:
         m = _METAL_COUNT_RE.search(note)
         if m:
             token = m.group(1).lower()
             count = _WORD_NUM.get(token, None) or int(token)
             count_basis = "uniprot_cofactor_note"
+            count_conf = "high"
             matched_note = note
             break
 
