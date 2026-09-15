@@ -260,6 +260,106 @@ def classify_reaction_chemistry(
     }
 
 
+# --------------------------------------------------------------------------
+# Nucleotide-driven activation chemistry (deterministic, from reaction products)
+# --------------------------------------------------------------------------
+
+# A nucleoside tri-, mono-, and di-phosphate token (A/G/C/U/I bases), matched on
+# word boundaries so it does not fire inside longer words. The base letter is
+# captured only to keep the three tokens consistent; the classification uses the
+# phosphorylation state (T/M/D), not the base.
+_NTP_RE = re.compile(r"\b[AGCUI]TP\b", re.IGNORECASE)
+_NMP_RE = re.compile(r"\b[AGCUI]MP\b", re.IGNORECASE)
+_NDP_RE = re.compile(r"\b[AGCUI]DP\b", re.IGNORECASE)
+# Corroborating inorganic leaving groups. "diphosphate"/"pyrophosphate" accompany
+# the mono-phosphate route; a standalone "phosphate" accompanies the di-phosphate
+# route. Checked as whole words so "diphosphate" never satisfies the "phosphate"
+# corroboration test.
+_PPI_RE = re.compile(r"\b(?:diphosphate|pyrophosphate|ppi)\b", re.IGNORECASE)
+_PI_RE = re.compile(r"(?<!di)(?<!pyro)\bphosphate\b", re.IGNORECASE)
+
+
+def derive_activation_mechanism(catalytic_activities: list[str]) -> dict | None:
+    """Classify how an NTP-dependent condensation activates its acyl substrate.
+
+    Deterministic and family-agnostic: it reads only the *products* of the
+    enzyme's own native reaction equation(s). An NTP-dependent condensation
+    releases exactly one of two nucleotide leaving groups, which fixes which
+    phosphorus of the NTP the substrate is joined at:
+
+      * a nucleoside MONO-phosphate (with di-/pyro-phosphate) is released
+        -> the acyl group is activated at the NTP's alpha phosphorus
+      * a nucleoside DI-phosphate (with inorganic phosphate) is released
+        -> the acyl group is activated at the NTP's gamma phosphorus
+
+    This is a general property of any NTP-utilising condensation; it presumes no
+    particular product bond, substrate, or enzyme family, and the same rule
+    labels every NTP-dependent candidate the tools surface. It is a post-hoc
+    annotation of an already-retrieved candidate (like ``classify_reaction_
+    chemistry``), not a discovery input.
+
+    Returns a provenance-carrying record (or ``None`` when no activity shows an
+    interpretable NTP-condensation signature, so an un-annotatable candidate is
+    left unassigned rather than guessed):
+
+        {"activation_mode", "reactive_phosphate", "nucleophile", "basis",
+         "confidence", "source", "derived_from"}
+    """
+    adenylate_hits: list[str] = []
+    phosphate_hits: list[str] = []
+    for activity in catalytic_activities or []:
+        text = str(activity)
+        if not _NTP_RE.search(text):
+            continue  # not an NTP-dependent reaction -> no activation call
+        has_nmp = bool(_NMP_RE.search(text))
+        has_ndp = bool(_NDP_RE.search(text))
+        if has_nmp and not has_ndp:
+            adenylate_hits.append(text)
+        elif has_ndp and not has_nmp:
+            phosphate_hits.append(text)
+        # both / neither -> ambiguous for this equation; contributes no vote
+
+    if not adenylate_hits and not phosphate_hits:
+        return None
+
+    if adenylate_hits and not phosphate_hits:
+        mode, phosphorus, hits = "acyl_adenylate", "Palpha", adenylate_hits
+        corroborated = any(_PPI_RE.search(h) for h in hits)
+        leaving = "nucleoside monophosphate + diphosphate"
+    elif phosphate_hits and not adenylate_hits:
+        mode, phosphorus, hits = "acyl_phosphate", "Pgamma", phosphate_hits
+        corroborated = any(_PI_RE.search(h) for h in hits)
+        leaving = "nucleoside diphosphate + phosphate"
+    else:
+        # Both routes appear across the listed activities: report the majority
+        # but flag the conflict with low confidence rather than pick silently.
+        if len(adenylate_hits) >= len(phosphate_hits):
+            mode, phosphorus, hits = "acyl_adenylate", "Palpha", adenylate_hits
+            leaving = "nucleoside monophosphate + diphosphate"
+        else:
+            mode, phosphorus, hits = "acyl_phosphate", "Pgamma", phosphate_hits
+            leaving = "nucleoside diphosphate + phosphate"
+        return {
+            "activation_mode": mode,
+            "reactive_phosphate": phosphorus,
+            "nucleophile": "substrate carboxylate oxygen",
+            "basis": f"reaction products ({leaving}); conflicting signatures across listed activities",
+            "confidence": "low",
+            "source": "catalytic_activity_reaction_products",
+            "derived_from": hits[0],
+        }
+
+    return {
+        "activation_mode": mode,
+        "reactive_phosphate": phosphorus,
+        "nucleophile": "substrate carboxylate oxygen",
+        "basis": f"reaction products ({leaving})",
+        "confidence": "high" if corroborated else "medium",
+        "source": "catalytic_activity_reaction_products",
+        "derived_from": hits[0],
+    }
+
+
 def extract_target_bond_type(target_reaction_type: str) -> dict:
     """Parse the target_reaction_type string for bond type and direction keywords."""
     target_lower = target_reaction_type.lower()
