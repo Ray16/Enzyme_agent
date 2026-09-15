@@ -158,11 +158,13 @@ def fig_gate_mechanism(df):
     ca = con[con.is_active == 1]
     ax.scatter(ca.n_gated, ca.mean_inline_angle, s=150, c=RED, edgecolors="k",
                linewidths=0.6, label="active (scored)", zorder=5)
+    off = {"AS9": (6, 4), "AS17": (6, -12), "AS23": (-8, 6), "SfaB": (8, 6), "AS8": (8, -10)}
     for _, r in df.iterrows():
         if r.is_active or (not r.concl and r.id in ("SfaB", "AS8")):
             yv = r.mean_inline_angle if not np.isnan(r.mean_inline_angle) else 120
-            ax.annotate(r.id, (r.n_gated, yv), fontsize=9, xytext=(5, 4),
-                        textcoords="offset points",
+            dx, dy = off.get(r.id, (5, 4))
+            ax.annotate(r.id, (r.n_gated, yv), fontsize=9, xytext=(dx, dy),
+                        textcoords="offset points", ha="right" if dx < 0 else "left",
                         color=RED if r.is_active else "#555",
                         fontweight="bold" if r.is_active else "normal")
     ax.axvline(5, color="#c99700", ls="--", lw=1.2)
