@@ -440,6 +440,29 @@ _MAX_NAMED_ENZYMES = 40
 _MAX_NAMED_PAPERS = 15
 
 
+# A well-formed UniProt accession (used to route mined accessions).
+_UNIPROT_ACC_RE = re.compile(
+    r"^[OPQ][0-9][A-Z0-9]{3}[0-9]$|^[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2}$")
+
+
+def _resolve_mined_accession(acc: str) -> list[str]:
+    """Map one mined accession (UniProt / RefSeq / GenBank) to UniProt accessions.
+
+    Deterministic REST only (no LLM).  UniProt IDs are verified and returned;
+    RefSeq (WP_/NP_/…) resolve via the RefSeq xref; GenBank via the EMBL xref.
+    Returns [] when nothing resolves.
+    """
+    a = (acc or "").split(".")[0].strip()  # drop version suffix
+    if not a:
+        return []
+    if _UNIPROT_ACC_RE.match(a):
+        return [a] if _uniprot_search(f"accession:{a}", size=1) else []
+    if re.match(r"^(?:WP|NP|XP|YP|AP)_", a):
+        hits = _uniprot_search(f"xref:{a}", size=5)
+        return [h.get("primaryAccession") for h in hits if h.get("primaryAccession")]
+    return _resolve_embl_accession(a)
+
+
 def _uniprot_search(query: str, size: int = 5, fields: str = "accession") -> list[dict]:
     params = {"query": query, "format": "json", "size": str(size), "fields": fields}
     url = "https://rest.uniprot.org/uniprotkb/search?" + urllib.parse.urlencode(params)
