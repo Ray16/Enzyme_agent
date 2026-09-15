@@ -14,7 +14,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from enzyme_discovery_agent_improved.chemistry_logic import derive_activation_mechanism
+from enzyme_discovery_agent_improved.chemistry_logic import (
+    derive_activation_mechanism,
+    derive_modeling_cofactors,
+)
 
 
 class TestActivationDerivation(unittest.TestCase):
