@@ -145,7 +145,7 @@ def fig_gate(df):
     gate_rate = kept.is_active.mean()
 
     fig, (axA, axB) = plt.subplots(1, 2, figsize=(13, 5.2), gridspec_kw={"width_ratios": [1.5, 1]})
-    fig.suptitle("A combined step-1 gate works as a negative filter (not a ranker)",
+    fig.suptitle("The screening rule: a combined step-1 geometric gate (necessary-condition filter)",
                  fontsize=13, fontweight="bold")
     # A. 2D scatter with gate box
     axA.add_patch(Rectangle((t_nac, t_ang), 1.05 - t_nac, 185 - t_ang,
