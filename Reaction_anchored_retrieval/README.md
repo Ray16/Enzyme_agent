@@ -62,5 +62,27 @@ channel crosses EC boundaries (no-EC, 6.2.1.-, 6.-) the 6.3.- sweep cannot;
 (3) untested upside is the 20,812 UNREVIEWED members, which annotation
 inspection cannot judge (needs substrate-fit/structure eval — a different test).
 
-**Status:** validated out-of-tree; verdict is NOT a clean win. Points toward a
-**member-selection** investigation over a new retrieval subsystem. NOT wired in.
+## FINAL VERDICT: DO NOT INTEGRATE
+
+Even bibC — the sole substrate-matched survivor — is a poor practical lead:
+**819 aa, multidomain/multifunctional, siderophore-pathway-embedded** (needs the
+N-hydroxycadaverine precursor made upstream). Worse on size/expressibility than
+the pipeline's existing picks (PuuA 472, GlnA2 453, DdaG 396 aa; single-domain,
+E. coli-expressible). The channel produced ZERO actionable new leads that beat
+the current pipeline.
+
+**Insight (what the exercise bought):** enzymes that NATIVELY ligate a simple
+diacid + diamine are overwhelmingly siderophore-NIS / NRPS machinery — large,
+multidomain, pathway-embedded. There is no hidden pool of small, standalone,
+expressible diacid+diamine ligases in annotated databases. So (1) the pipeline's
+expressibility-weighted ranking (small GS-fold PuuA #1 despite imperfect fit) is
+the correct practical tradeoff, and (2) a better NATURAL starting point, if any,
+lives in unannotated/metagenomic space (structure/embedding homology) or
+literature — NOT annotated DB search.
+
+**Process lesson:** two precision failures caught in review — conflating the
+mechanism and substrate axes (cocJ/ankE), and a detector false positive on
+CO2/carbamylation (BIO3). Score on the SUBSTRATE axis AND a practical/
+expressibility axis (size, domains, pathway), never mechanism/family alone.
+
+**Status:** archived out-of-tree with this negative verdict. NOT wired in.
