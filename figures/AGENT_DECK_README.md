@@ -42,4 +42,5 @@ nylon-6,6) + its regenerated `structural_modeling_handoff.json`; the older run
 ## Retired (in `figures/archive/`)
 - `04_ranking_decomposition` — not meaningful (a score dump: `substrates_hosted` is flat at 2/2 across the top set, so it shows no discrimination).
 - `07_geometry_proxy_benchmark` — superseded: led with raw NAC fraction; replaced by the validated angle-gate figure above.
+- `08_structural_geometry` — homolog dump: ~30 glutamine-synthetase orthologs (3× GLN2, 2× iucA, blank labels), raw angle with no activity ground truth. The angle story is carried by the validated proxy figure (07) against the assay panel.
 - Earlier drafts and the vector PDFs (deck is PNG-only now).
