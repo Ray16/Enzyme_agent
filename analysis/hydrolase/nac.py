@@ -20,9 +20,9 @@ import numpy as np
 from multiprocessing import Pool
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
-RES = f"{ROOT}/exp_data/nylon_hydrolase_results/output_configs"
-ACT = f"{ROOT}/exp_data/amide_hydrolase_biorep_activity.csv"
-OUT = f"{ROOT}/exp_data/nylon_hydrolase_results/hydrolase_nac.csv"
+RES = f"{ROOT}/exp_data/nylon_hydrolase/results/output_configs"
+ACT = f"{ROOT}/exp_data/nylon_hydrolase/amide_hydrolase_biorep_activity.csv"
+OUT = f"{ROOT}/exp_data/nylon_hydrolase/results/hydrolase_nac.csv"
 D_CUT, A_LO, A_HI = 3.5, 90.0, 130.0
 
 

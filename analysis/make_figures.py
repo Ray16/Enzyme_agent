@@ -54,8 +54,8 @@ def rank_roc(rows, score_key, label_fn, title, fname, score_label, higher_better
 
 
 def fig_summary():
-    s1 = load(f"{EXP}/sfab_step1_results/nac_step1.csv")
-    s2 = load(f"{EXP}/sfab_step2_results/nac_step2.csv")
+    s1 = load(f"{EXP}/boltz2_amide_synthetase_step1_results/nac_step1.csv")
+    s2 = load(f"{EXP}/boltz2_amide_synthetase_step2_results/nac_step2.csv")
     hy = load(f"{EXP}/nylon_hydrolase_results/hydrolase_nac.csv")
     fig, ax = plt.subplots(2, 2, figsize=(12, 10))
     fig.suptitle("Cofold geometry proxies vs experimental activity", fontsize=15, fontweight="bold")
@@ -101,8 +101,8 @@ def _step1_per_model(cd):
 def fig_step1_scatter():
     """NAC fraction vs activity + per-model geometry scatter (parses step-1 PDBs)."""
     from multiprocessing import Pool
-    rc = {r["id"]: r for r in load(f"{EXP}/sfab_step1_results/nac_step1.csv")}
-    RES = f"{EXP}/sfab_step1_results/output_configs"
+    rc = {r["id"]: r for r in load(f"{EXP}/boltz2_amide_synthetase_step1_results/nac_step1.csv")}
+    RES = f"{EXP}/boltz2_amide_synthetase_step1_results/output_configs"
     with Pool(32) as p: data = {n: a for n, a in p.map(_step1_per_model, sorted(glob.glob(f"{RES}/*"))) if a is not None}
     fig, ax = plt.subplots(1, 2, figsize=(15, 6))
     fig.suptitle("Step-1 adenylation NAC (amide synthetase) — the signal-carrying proxy", fontsize=13, fontweight="bold")
@@ -125,11 +125,11 @@ def fig_step1_scatter():
 
 
 def main():
-    a1 = rank_roc(load(f"{EXP}/sfab_step1_results/nac_step1.csv"), "nac_frac",
+    a1 = rank_roc(load(f"{EXP}/boltz2_amide_synthetase_step1_results/nac_step1.csv"), "nac_frac",
                   lambda r: 1 if (fnum(r["activity_N66L1"]) or 0) >= 0.5 else 0,
                   "Step-1 NAC as an activity classifier (amide synthetase)",
                   "synthetase_step1_nac_rank_roc.png", "step-1 NAC fraction", True, annotate_active=True)
-    a2 = rank_roc(load(f"{EXP}/sfab_step2_results/nac_step2.csv"), "frac_lt5",
+    a2 = rank_roc(load(f"{EXP}/boltz2_amide_synthetase_step2_results/nac_step2.csv"), "frac_lt5",
                   lambda r: 1 if (fnum(r["activity_N66L1"]) or 0) >= 0.5 else 0,
                   "Step-2 attack proximity as a classifier (loose run)",
                   "synthetase_step2_attack_rank_roc.png", "step-2 near-attack fraction (<5Å)", True, annotate_active=True)

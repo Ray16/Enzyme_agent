@@ -14,8 +14,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "analysis
 import step1_nac as s
 
 RES = os.path.join(os.path.dirname(__file__), "results", "output_configs")
-PANEL = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/SfaB_diversity_panel.csv"
-UNRESTR = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/sfab_step1_results/nac_step1.csv"
+PANEL = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/assay_data/panel_activity.csv"
+UNRESTR = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/boltz2/step1/results/near_attack_geometry.csv"
 D_CUT, A_CUT = 4.0, 150.0
 
 

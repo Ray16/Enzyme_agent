@@ -7,8 +7,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "analysis", "common"))
 import step1_nac as s
 
-ACT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/SfaB_diversity_panel.csv"
-UNR = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/sfab_step1_results/output_configs"
+ACT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/assay_data/panel_activity.csv"
+UNR = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/boltz2/step1/results/output_configs"
 RES = os.path.join(os.path.dirname(__file__), "results", "output_configs")
 
 

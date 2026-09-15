@@ -13,8 +13,8 @@ import csv, os, glob, hashlib, yaml
 
 EROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
 ROOT = f"{EROOT}/data/cofold_hydrolase_panel"
-SEQS = f"{EROOT}/exp_data/annotation/amide_hydrolase_panel_sequences.csv"
-SPLIT = f"{EROOT}/exp_data/cofold_hydrolase_panel/split_sites.csv"
+SEQS = f"{EROOT}/exp_data/nylon_hydrolase/annotation/amide_hydrolase_panel_sequences.csv"
+SPLIT = f"{EROOT}/exp_data/nylon_hydrolase/cofold_hydrolase_panel/split_sites.csv"
 MSA_DIR = os.path.join(ROOT, "frag_msa")   # per-fragment MSAs, named sha1(seq)[:16].csv
 INP = os.path.join(ROOT, "inputs"); os.makedirs(INP, exist_ok=True)
 

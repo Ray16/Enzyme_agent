@@ -106,17 +106,13 @@ overleaf-candidacy/
 # Boltz cofold results pulled from Aurora (large: archives + extracted trees)
 exp_data/*_results.tar.zst
 exp_data/*_results/
-exp_data/sfab_step2_bundle/
-exp_data/sfab_step2_results.tar.zst
-exp_data/sfab_step2_results/
-exp_data/sfab_step2_reactive_bundle/
-exp_data/sfab_step2_reactive_results.tar.zst
-exp_data/sfab_step2_reactive_results/
-data/cofold_adipic_panel/msa_cache/
+data/amide_synthetase/msa_cache/
 data/cofold_hydrolase_panel/frag_msa/
 exp_data/nylon_frag_msa.tar.zst
-exp_data/sfab_msa_cache.tar.zst
-data/cofold_adipic_panel/step1/
-data/cofold_adipic_panel/step2/
-data/cofold_adipic_panel/step2_reactive/
+data/amide_synthetase/step1/
+data/amide_synthetase/step2/
+data/amide_synthetase/step2_reactive/
 data/cofold_hydrolase_panel/inputs/
+exp_data/amide_synthetase/archives/
+exp_data/amide_synthetase/boltz2/**/results/
+exp_data/amide_synthetase/decaf/step1/results/
