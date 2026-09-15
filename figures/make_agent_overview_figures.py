@@ -323,6 +323,110 @@ def fig_structural():
     save(fig,"agent_structural_geometry.png")
 
 
+# ============================================================ 8. GEOMETRY-PROXY BENCHMARK
+def fig_proxy():
+    prox=list(csv.DictReader(open(ROOT/"exp_data/proxy_evaluation_summary.csv")))
+    # merge synthetase panel measured activity with in-line angle
+    act={r["id"]:float(r["activity_N66L1_ugml_avg"]) for r in
+         csv.DictReader(open(ROOT/"exp_data/amide_synthetase/assay_data/panel_activity.csv"))}
+    ang={r["id"]:float(r["mean_inline_angle"]) for r in
+         csv.DictReader(open(ROOT/"structural_modeling/panel_pocket/angle_gate_panel.csv")) if r["mean_inline_angle"]}
+    ids=sorted(set(act)&set(ang))
+
+    fig,(axA,axB)=plt.subplots(1,2,figsize=(15,7),gridspec_kw={"width_ratios":[1.25,1],"wspace":0.28})
+    fig.suptitle("Geometry proxies vs measured activity — which co-fold signal discriminates actives",
+                 fontsize=15.5,fontweight="bold",y=1.0,color=INK)
+    fig.text(0.5,0.94,"Benchmarked on assayed panels (synthetase n=49, 3 active · hydrolase n=96, 38 active). "
+             "AUROC with bootstrap 95% CI; ★ = permutation p<0.05.",fontsize=10,color=SUB,ha="center")
+
+    # Panel A: AUROC bars with CI
+    labels=[p["proxy"].replace("synth ","S: ").replace("hydrolase ","H: ") for p in prox]
+    au=[float(p["auroc"]) for p in prox]; lo=[float(p["ci_lo"]) for p in prox]; hi=[float(p["ci_hi"]) for p in prox]
+    sig=[float(p["perm_p"])<0.05 for p in prox]
+    y=list(range(len(prox)))[::-1]
+    cols=[GREEN if s else "#c1c8d0" for s in sig]
+    axA.barh(y,au,color=cols,edgecolor="#5a636c",lw=0.8,zorder=2)
+    axA.errorbar(au,y,xerr=[[a-l for a,l in zip(au,lo)],[h-a for a,h in zip(au,hi)]],
+                 fmt="none",ecolor="#3a424b",elinewidth=1.3,capsize=4,zorder=3)
+    for yi,(a,s) in zip(y,zip(au,sig)):
+        axA.text(a+0.02 if a<0.85 else a-0.02,yi,f"{a:.2f}"+(" ★" if s else ""),
+                 va="center",ha="left" if a<0.85 else "right",fontsize=9,fontweight="bold" if s else "normal",
+                 color=INK)
+    axA.axvline(0.5,color="#7b8794",ls="--",lw=1.2); axA.text(0.5,len(prox)-0.4,"chance",fontsize=8,color="#7b8794",ha="center")
+    axA.set_yticks(y); axA.set_yticklabels(labels,fontsize=9); axA.set_xlim(0,1.02)
+    axA.set_xlabel("AUROC (active vs inactive)",fontsize=10.5)
+    axA.set_title("proxy benchmark",fontsize=11.5,color=INK,pad=8)
+    axA.tick_params(length=0); [axA.spines[s].set_visible(False) for s in ("top","right")]
+
+    # Panel B: in-line angle vs measured activity (synthetase panel)
+    xa=[ang[i] for i in ids]; ya=[max(act[i],1e-3) for i in ids]
+    active=[act[i]>0.1 for i in ids]
+    axB.scatter([x for x,a in zip(xa,active) if not a],[y for y,a in zip(ya,active) if not a],
+                s=55,c="#c1c8d0",edgecolors="white",lw=0.6,label="inactive",zorder=2)
+    axB.scatter([x for x,a in zip(xa,active) if a],[y for y,a in zip(ya,active) if a],
+                s=110,c=PA,edgecolors="#26303a",lw=1.2,label="active (>0.1 µg/mL)",zorder=3)
+    for i in ids:
+        if act[i]>0.5:
+            axB.annotate(i,(ang[i],act[i]),fontsize=8,color=INK,xytext=(4,3),textcoords="offset points")
+    axB.set_yscale("log"); axB.set_xlabel("mean in-line attack angle (°)",fontsize=10.5)
+    axB.set_ylabel("N66 amide activity (µg/mL, log)",fontsize=10.5)
+    axB.axvline(150,color="#7b8794",ls=":",lw=1)
+    axB.set_title("best geometric signal is the angle",fontsize=11.5,color=INK,pad=8)
+    axB.legend(fontsize=8.5,loc="upper left",frameon=True); axB.tick_params(length=0)
+    [axB.spines[s].set_visible(False) for s in ("top","right")]
+    axB.text(0.98,0.03,"necessary, not sufficient → coarse negative filter",transform=axB.transAxes,
+             fontsize=8.2,color=SUB,ha="right",style="italic")
+    fig.subplots_adjust(top=0.88,bottom=0.11,left=0.20,right=0.98)
+    save(fig,"agent_geometry_proxy_benchmark.png")
+
+
+# ============================================================ 9. EXHAUSTIVE RECALL SWEEP
+def fig_sweep():
+    import collections
+    rows=list(csv.DictReader(open(ROOT/"Interpro_exhaustive/passed_candidates.tsv"),delimiter="\t"))
+    ec=collections.Counter((r.get("EC number") or "?").split(";")[0].strip() for r in rows)
+    fig=plt.figure(figsize=(15,7.6)); ax=fig.add_axes([0,0,1,1]); ax.set_xlim(0,100); ax.set_ylim(0,100); ax.axis("off")
+    ax.text(3,96,"Discovery completeness — exhaustive InterPro / EC 6.3.- sweep",fontsize=17,fontweight="bold",color=INK)
+    ax.text(3,91.8,"Out-of-tree audit: every reviewed ATP-dependent ligase, filtered by target chemistry, "
+            "vs what the agent surfaced.",fontsize=11,color=SUB)
+
+    # funnel (left)
+    steps=[("12,456","reviewed EC 6.3.- ligases (Swiss-Prot universe)","#e4e7eb","#9aa5b1"),
+           ("270","pass reaction-anchored chemistry filter (free diacid + amine ligation)","#dbeafe","#5b8def"),
+           ("51 / 1,858","families surveyed / candidates discovered by the agent","#e9f7f0",GREEN),
+           ("38 → 20","ranked → handed to structural modeling","#e9f7f0",GREEN)]
+    x=4; w=52; y=84; h=11
+    widths=[52,42,33,24]
+    for (big,lab,fc,ec),ww in zip(steps,widths):
+        cx=x+(w-ww)/2
+        _round(ax,cx,y-h,ww,h,fc,ec,lw=1.6)
+        ax.text(x+w/2,y-3.6,big,fontsize=15,fontweight="bold",color=INK,ha="center")
+        import textwrap
+        for j,l in enumerate(textwrap.wrap(lab,44)):
+            ax.text(x+w/2,y-6.8-j*2.3,l,fontsize=8.6,color=SUB,ha="center")
+        if (big,lab,fc,ec)!=steps[-1]:
+            ax.add_patch(FancyArrowPatch((x+w/2,y-h),(x+w/2,y-h-2.0),arrowstyle="-|>",mutation_scale=14,lw=2,color="#8a97a3"))
+        y-=h+2.0
+
+    # EC breakdown of the 270 (right)
+    rx=62; ax.text(rx,84,"270 reaction-relevant candidates, by EC",fontsize=11.5,fontweight="bold",color=INK)
+    top=ec.most_common(8); maxv=top[0][1]
+    yy=78
+    for k,v in top:
+        _round(ax,rx,yy-2.2, (v/maxv)*30,2.0,"#5b8def","#3060c0",r=0.3,lw=0)
+        ax.text(rx+ (v/maxv)*30 +0.8,yy-1.2,f"{v}",fontsize=8.6,color=INK,va="center")
+        ax.text(rx-0.8,yy-1.2,f"EC {k}",fontsize=8.6,color=SUB,va="center",ha="right")
+        yy-=3.0
+
+    # honest caveat box
+    _round(ax,4,6,92,13,"#fdeeee","#d9736a",lw=1.4)
+    ax.text(6,15.5,"Recall ceiling (stated honestly)",fontsize=11.5,fontweight="bold",color="#a83f36")
+    ax.text(6,11.6,"The agent covers the reviewed universe — but the amide-synthetase ground truth SfaB (A0A2H4T912) is",fontsize=9.6,color=INK)
+    ax.text(6,8.4,"UNREVIEWED (TrEMBL, no EC), so it lies OUTSIDE this entire sweep. No reviewed-DB method recovers it; "
+            "reaching it needs the literature/unannotated channel.",fontsize=9.6,color=INK)
+    save(fig,"agent_discovery_completeness.png")
+
+
 # ============================================================ 7. HANDOFF SCHEMA
 def fig_schema():
     import textwrap
