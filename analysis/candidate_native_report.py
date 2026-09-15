@@ -274,11 +274,17 @@ table.cmp{max-width:1200px;margin:0 auto;border-collapse:collapse;width:100%}
 """
 
 
-def build_html(runs: list[dict]) -> str:
-    title = "Candidate native chemistry" + (" — comparison" if len(runs) > 1 else "")
+def build_html(runs: list[dict], fragment: bool = False) -> str:
+    # Stable, gallery-friendly name (no "name — explainer"); the specifics live
+    # in the run header and the publish description.
+    title = "Candidate Chemistry"
     inner = render_comparison(runs) if len(runs) > 1 else render_single(runs[0])
     rdkit_note = "" if _RDKIT else ('<p class="sub" style="color:#b00">RDKit not '
                                     "available — structures not drawn.</p>")
+    if fragment:
+        # For publishing as an artifact: the host wraps the file in its own
+        # doctype/head/body skeleton, so emit only title + style + content.
+        return f"<title>{title}</title>\n<style>{_CSS}</style>\n{rdkit_note}{inner}"
     return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title><style>{_CSS}</style></head>
