@@ -498,6 +498,20 @@ class EnzymeAgent:
             return iteration < self.max_iterations - 1
         return False
 
+    def _no_progress_stop(self) -> bool:
+        """Respect the model's own decision that it is finished.
+
+        Making no tool call is how the model signals it is done.  After one
+        recovery nudge, if it still makes no tool call while it already has
+        results, stop forcing continuation — otherwise ``_should_continue`` keeps
+        returning True (candidate count below its exploration threshold) and the
+        idle model is re-invited every iteration until the mid-run boundary,
+        which dominates a run's token cost.  Only applies once there ARE results,
+        so a run that has not started is still nudged to begin.
+        """
+        return (self._consecutive_no_tool_turns >= config.MAX_NO_PROGRESS_TURNS
+                and self._candidate_count > 0)
+
     def _sync_gate_state(self):
         """Sync mutable agent state into the gate state dataclass."""
         # Candidates are registered by database and structural-homolog tools,
