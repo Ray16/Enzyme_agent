@@ -785,12 +785,17 @@ def evaluate_candidate(
                 function_comments.append(t.get("value", ""))
 
     required_cofactors = []
+    cofactor_notes = []
     for comment in entry.get("comments", []):
         if comment.get("commentType") == "COFACTOR":
             for cof in comment.get("cofactors", []):
                 name = cof.get("name", "")
                 if name:
                     required_cofactors.append(name)
+            for text in (comment.get("note", {}) or {}).get("texts", []):
+                value = text.get("value", "")
+                if value:
+                    cofactor_notes.append(value)
 
     # Concurrent data gathering
     from enzyme_discovery_agent_improved.tools.database import get_protein_domains
