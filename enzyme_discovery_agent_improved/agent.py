@@ -1048,8 +1048,9 @@ class EnzymeAgent:
             is lossless.
 
         Recent turns of each kind stay full so the model reasons over fresh
-        context.  In place; the durable transcript checkpoint keeps the complete
-        history for audit/resume.  Idempotent (recomputed each turn).
+        context.  In place and idempotent (recomputed each turn); the complete,
+        un-stubbed data for every tool call remains on disk under artifacts/ for
+        audit, so nothing is truly lost.
         """
         def _stub_old(positions: list[int], stub: str, keep: int) -> None:
             if len(positions) <= keep:
