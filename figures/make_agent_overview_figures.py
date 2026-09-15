@@ -397,14 +397,14 @@ def fig_sweep():
            ("38 → 20","ranked → handed to structural modeling","#e9f7f0",GREEN)]
     x=4; w=52; y=84; h=11
     widths=[52,42,33,24]
-    for (big,lab,fc,ec),ww in zip(steps,widths):
+    import textwrap
+    for k,((big,lab,fc,ecol),ww) in enumerate(zip(steps,widths)):
         cx=x+(w-ww)/2
-        _round(ax,cx,y-h,ww,h,fc,ec,lw=1.6)
+        _round(ax,cx,y-h,ww,h,fc,ecol,lw=1.6)
         ax.text(x+w/2,y-3.6,big,fontsize=15,fontweight="bold",color=INK,ha="center")
-        import textwrap
         for j,l in enumerate(textwrap.wrap(lab,44)):
             ax.text(x+w/2,y-6.8-j*2.3,l,fontsize=8.6,color=SUB,ha="center")
-        if (big,lab,fc,ec)!=steps[-1]:
+        if k<len(steps)-1:
             ax.add_patch(FancyArrowPatch((x+w/2,y-h),(x+w/2,y-h-2.0),arrowstyle="-|>",mutation_scale=14,lw=2,color="#8a97a3"))
         y-=h+2.0
 
