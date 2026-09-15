@@ -60,4 +60,3 @@ class; it contains no target-specific rules and produces no composite score. See
 - Keep shared checkpoints, databases, caches, and run outputs at the workspace root until their consumers have configurable paths.
 - Add new experiments as a standalone harness folder (see above) or beneath `archive/experiments/` until they become an active, documented workflow.
 - Keep READMEs and this layout current when the structure changes.
-```
