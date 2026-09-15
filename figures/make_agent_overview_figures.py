@@ -427,6 +427,58 @@ def fig_sweep():
     save(fig,"agent_discovery_completeness.png")
 
 
+# ============================================================ 10. SECOND TARGET: HYDROLASE PANEL
+def fig_hydrolase():
+    import random
+    rows=list(csv.DictReader(open(ROOT/"exp_data/nylon_hydrolase/results/hydrolase_nac.csv")))
+    def f(x):
+        try: return float(x)
+        except: return None
+    def active(r): return str(r.get("L1sig","")).strip() in ("1","True","TRUE") or \
+                          str(r.get("L2sig","")).strip() in ("1","True","TRUE")
+    for r in rows:
+        r["_tot"]=(f(r["L1"]) or 0)+(f(r["L2"]) or 0); r["_nac"]=f(r["nac_frac"]); r["_act"]=active(r)
+    rows=[r for r in rows if r["_nac"] is not None]
+    n_act=sum(r["_act"] for r in rows)
+
+    fig,(axA,axB)=plt.subplots(1,2,figsize=(15,6.6),gridspec_kw={"width_ratios":[1.5,1],"wspace":0.26})
+    fig.suptitle("Same framework, second target — nylon-6,6 amide HYDROLYSIS (cleavage direction)",
+                 fontsize=15.5,fontweight="bold",y=1.0,color=INK)
+    fig.text(0.5,0.94,"96-enzyme nylon-hydrolase panel (Drufva 2025), assayed for N66 monomer release. "
+             "The agent's direction gate and geometry proxy transfer to the opposite reaction.",
+             fontsize=10,color=SUB,ha="center")
+
+    # Panel A: sorted activity, actives highlighted
+    srt=sorted(rows,key=lambda r:-r["_tot"])
+    x=range(len(srt)); cols=[PG if r["_act"] else "#d3d8de" for r in srt]
+    axA.bar(list(x),[r["_tot"] for r in srt],color=cols,edgecolor="none",width=1.0)
+    axA.set_xlabel("nylon-hydrolase panel enzymes (sorted by activity)",fontsize=10.5)
+    axA.set_ylabel("N66 monomer release (µg/mL, L1+L2)",fontsize=10.5)
+    axA.set_title(f"{n_act} of {len(rows)} enzymes active",fontsize=11.5,color=INK,pad=8)
+    axA.tick_params(length=0); [axA.spines[s].set_visible(False) for s in ("top","right")]
+    axA.legend(handles=[Patch(fc=PG,label="active"),Patch(fc="#d3d8de",label="inactive")],
+               fontsize=9,loc="upper right",frameon=True)
+
+    # Panel B: NAC fraction, active vs inactive (strip + mean)
+    random.seed(3)
+    groups={"inactive":[r["_nac"] for r in rows if not r["_act"]],
+            "active":[r["_nac"] for r in rows if r["_act"]]}
+    for i,(g,vals) in enumerate(groups.items()):
+        col=PG if g=="active" else "#a7b0ba"
+        xs=[i+random.uniform(-0.12,0.12) for _ in vals]
+        axB.scatter(xs,vals,s=42,c=col,edgecolors="white",lw=0.5,alpha=0.85,zorder=2)
+        m=sum(vals)/len(vals)
+        axB.plot([i-0.28,i+0.28],[m,m],color="#26303a",lw=2.4,zorder=3)
+        axB.text(i,-0.055,f"n={len(vals)}\nmean {m:.2f}",ha="center",fontsize=8.7,color=SUB)
+    axB.set_xticks([0,1]); axB.set_xticklabels(["inactive","active"],fontsize=10.5)
+    axB.set_xlim(-0.6,1.6); axB.set_ylim(-0.1,0.48)
+    axB.set_ylabel("step-1 NAC fraction (co-fold)",fontsize=10.5)
+    axB.set_title("NAC discriminates (AUROC 0.61, p=0.03)",fontsize=11.5,color=INK,pad=8)
+    axB.tick_params(length=0); [axB.spines[s].set_visible(False) for s in ("top","right")]
+    fig.subplots_adjust(top=0.87,bottom=0.16,left=0.08,right=0.98)
+    save(fig,"agent_hydrolase_second_target.png")
+
+
 # ============================================================ 7. HANDOFF SCHEMA
 def fig_schema():
     import textwrap
