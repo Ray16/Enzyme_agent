@@ -15,13 +15,24 @@ EC 6.3.- / InterPro sweep misses — from an answer-agnostic query?
    on-target subset (small-molecule carboxylate+amine, excluding protein/tRNA/
    cofactor acceptors).
 
+## Detector precision fix (v2)
+
+The naive detector ("ATP in, AMP/ADP out, an amide appeared, a carboxyl and an
+amine exist somewhere") had false positives where the new amide's carbonyl comes
+from CO2/bicarbonate, not a carboxylate — a carbamate/urea, e.g. dethiobiotin
+synthetase BIO3 (RHEA:15806). Fixed by requiring a free carboxyl to be CONSUMED
+(count decreases) and excluding CO2/bicarbonate as carbonyl donor. This removed
+7 reactions and ~7,300 members. v1 caches archived under cache/archive_v1_naive_detector/.
+
 ## Result (target: adipate + HMDA → nylon-6,6 amide; prior run = 20260911_121301)
 
-- 36,552 Rhea reactions → **175** ATP-amide-ligation reactions.
-- → **21,444** UniProt members (632 reviewed, 20,812 unreviewed).
-- **355 reviewed (Swiss-Prot) members are NEW** (absent from the prior run's 1290).
-- Of those 355: ~201 are off-target cofactor/protein/tRNA amide chemistry;
-  **36 rows / 18 enzyme types** are on-target small-molecule amide ligases.
+- 36,552 Rhea reactions → **168** ATP-amide-ligation reactions (v1: 175).
+- → **14,154** UniProt members (624 reviewed, 13,530 unreviewed) (v1: 21,444).
+- **348 reviewed (Swiss-Prot) members are NEW** (absent from the prior run's 1290).
+- Strict SUBSTRATE-axis filter (simple aliphatic diamine/diacid, excluding
+  amino-acid/peptide/protein/sugar/cofactor partners): of the 348, only 8 even
+  mention such a substrate and **exactly 1 is genuine (bibC)**; the rest are
+  bulky-partner off-targets (PAICS/ADE1 + L-aspartate, pyl + UDP-sugar).
 
 ## Verdict: **WEAK / INCONCLUSIVE on reviewed annotated space**
 
