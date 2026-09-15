@@ -1029,6 +1029,11 @@ def evaluate_candidate(
         if activation:
             modeling_input["reactive_phosphate"] = activation["reactive_phosphate"]
             modeling_input["activation_mode"] = activation["activation_mode"]
+        # Whether the adipate near-attack frame even applies to this enzyme's
+        # native reaction (a carboxylic-acid + amine ligation) or not (formate/
+        # bicarbonate/carbamoyl donors) -- so downstream cofolding/scoring can skip
+        # out-of-frame enzymes instead of measuring a meaningless attack angle.
+        modeling_input["ligation_frame"] = classify_ligation_frame(catalytic_activities)
 
     # Build evaluation result
     eval_data = {
