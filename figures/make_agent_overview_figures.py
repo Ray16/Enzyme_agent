@@ -427,6 +427,73 @@ def fig_sweep():
     save(fig,"agent_discovery_completeness.png")
 
 
+# ============================================================ 0. GRAPHICAL ABSTRACT
+def fig_abstract():
+    import textwrap
+    fig=plt.figure(figsize=(15,8.6)); ax=fig.add_axes([0,0,1,1]); ax.set_xlim(0,100); ax.set_ylim(0,100); ax.axis("off")
+    ax.text(50,96,"An enzyme-discovery agent for de novo biocatalyst search",
+            fontsize=21,fontweight="bold",color=INK,ha="center")
+    ax.text(50,91.5,"Target chemistry in → ranked, mechanism-annotated candidates out → structure-ready handoff",
+            fontsize=12.5,color=SUB,ha="center")
+
+    # --- problem (left) ---
+    _round(ax,3,64,29,20,"#eef6ff","#5b8def",lw=1.5)
+    ax.text(17.5,81,"THE PROBLEM",fontsize=10.5,fontweight="bold",color="#3060c0",ha="center")
+    ax.text(17.5,76.5,"Find enzymes for nylon-6,6",fontsize=11.5,fontweight="bold",color=INK,ha="center")
+    ax.text(17.5,72.5,"• synthesis:  adipate + HMDA → amide",fontsize=9.6,color=INK,ha="center")
+    ax.text(17.5,69,"• hydrolysis:  break the N66 amide",fontsize=9.6,color=INK,ha="center")
+    ax.text(17.5,66,"no known natural catalyst — must search",fontsize=8.8,color=SUB,ha="center",style="italic")
+
+    # --- framework (middle) ---
+    _round(ax,35,64,30,20,"#f7f9fb","#c3cad2",lw=1.4)
+    ax.text(50,81,"THE FRAMEWORK",fontsize=10.5,fontweight="bold",color=INK,ha="center")
+    chain=["target reaction contract","literature + family expansion","decomposed ranking",
+           "mechanism + cofactor handoff","structural modeling"]
+    yy=77
+    for i,c in enumerate(chain):
+        ax.text(50,yy,c,fontsize=9.3,color=INK,ha="center",
+                fontweight="bold" if i in (2,3) else "normal")
+        if i<len(chain)-1: ax.text(50,yy-1.4,"▼",fontsize=6,color="#8a97a3",ha="center")
+        yy-=2.9
+
+    # --- what's new (right) ---
+    _round(ax,68,64,29,20,"#e9f7f0",GREEN,lw=1.5)
+    ax.text(82.5,81,"WHAT'S NEW",fontsize=10.5,fontweight="bold",color=GREEN,ha="center")
+    for j,l in enumerate([
+        "Deterministic mechanism bridge:",
+        "activation mode + reactive P + cofactors",
+        "derived from the reaction, provenanced",
+        "— no LLM, fixes family-keyword errors"]):
+        ax.text(82.5,77-j*3,l,fontsize=9.2,color=INK,ha="center",
+                fontweight="bold" if j==0 else "normal")
+
+    # --- headline results (bottom row of stat cards) ---
+    ax.text(50,57,"KEY RESULTS  (run 20260914_220431, assayed panels, exhaustive audit)",
+            fontsize=11,fontweight="bold",color=INK,ha="center")
+    cards=[("1,858","candidates discovered\nacross 51 families",PG),
+           ("38 → 20","ranked → structure\nhandoff, provenanced",GREEN),
+           ("52 / 53","mechanism calls agree;\nddaG mis-call fixed",PA),
+           ("AUROC 0.81","step-1 NAC vs assay\n(p = 0.036)","#8156c7"),
+           ("2 targets","synthesis + hydrolysis\nsame framework","#3060c0")]
+    n=len(cards); cw=17; gap=1.5; total=n*cw+(n-1)*gap; x0=(100-total)/2
+    for i,(big,lab,col) in enumerate(cards):
+        cx=x0+i*(cw+gap)
+        _round(ax,cx,32,cw,20,"#ffffff",col,lw=1.8)
+        ax.text(cx+cw/2,45,big,fontsize=19,fontweight="bold",color=col,ha="center")
+        for k,l in enumerate(lab.split("\n")):
+            ax.text(cx+cw/2,40-k*3,l,fontsize=8.8,color=INK,ha="center")
+
+    # --- honest limitations strip ---
+    _round(ax,3,6,94,20,"#fdf3e8","#d9a441",lw=1.3)
+    ax.text(50,22.5,"OPEN / HONEST LIMITATIONS",fontsize=10.5,fontweight="bold",color="#9a6a1a",ha="center")
+    lims=["Ground-truth SfaB is unreviewed (no EC) → outside any reviewed-DB sweep; needs the literature/unannotated channel.",
+          "Improved run spent 72% of tokens idle (a convergence/stop regression to fix).",
+          "Geometry (angle/NAC) is a coarse negative filter, not a quantitative activity predictor."]
+    for j,l in enumerate(lims):
+        ax.text(50,18-j*3.4,"•  "+l,fontsize=9.2,color=INK,ha="center")
+    save(fig,"agent_00_graphical_abstract.png")
+
+
 # ============================================================ 10. SECOND TARGET: HYDROLASE PANEL
 def fig_hydrolase():
     import random
