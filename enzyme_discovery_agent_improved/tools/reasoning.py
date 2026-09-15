@@ -18,7 +18,6 @@ from pathlib import Path
 from enzyme_discovery_agent_improved import config
 from enzyme_discovery_agent_improved.chemistry_logic import (
     check_bond_type_mismatch,
-    classify_ligation_frame,
     classify_reaction_chemistry,
     compare_substrate_properties,
     derive_activation_mechanism,
