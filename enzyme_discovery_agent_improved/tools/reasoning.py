@@ -21,6 +21,7 @@ from enzyme_discovery_agent_improved.chemistry_logic import (
     classify_reaction_chemistry,
     compare_substrate_properties,
     derive_activation_mechanism,
+    derive_modeling_cofactors,
     extract_target_bond_type,
     get_chebi_name,
     resolve_chebi_smiles,
