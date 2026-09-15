@@ -172,12 +172,12 @@ def fig_landscape():
         fam[r["interpro_family"] or "(unclassified)"].append(r)
     # order families by size
     order=sorted(fam,key=lambda k:-len(fam[k]))
-    fig,ax=plt.subplots(figsize=(14.5,8.2))
-    ax.set_title("Ranked candidate landscape — by InterPro family, colored by activation mechanism",
-                 fontsize=16,fontweight="bold",color=INK,pad=16)
-    ax.text(0,1.03,"Improved run: 38 ranked candidates across %d families. Mechanism (reactive phosphate) "
-            "derived deterministically from each enzyme's reaction." % len(order),
-            transform=ax.transAxes,fontsize=10.5,color=SUB)
+    fig,ax=plt.subplots(figsize=(14.5,8.6))
+    fig.suptitle("Ranked candidate landscape — by InterPro family, colored by activation mechanism",
+                 fontsize=16,fontweight="bold",color=INK,y=0.975,x=0.5)
+    fig.text(0.5,0.93,"Improved run: %d ranked candidates across %d families. Mechanism (reactive phosphate) "
+             "derived deterministically from each enzyme's reaction." % (len(rows),len(order)),
+             ha="center",fontsize=10.5,color=SUB)
     yb=0; yticks=[]; ylabels=[]
     for f in order:
         members=fam[f]
