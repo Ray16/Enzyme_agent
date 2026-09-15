@@ -865,14 +865,48 @@ def mine_and_register_fulltext_accessions(
         update_candidate_registry(run, acc, "discovered", metadata=meta)
         registered.append(acc)
 
-    # 3. Literature-NAMED / CITED enzymes: a paper names + characterises target-
-    #    reaction enzymes (and cites related analogues) it may deposit no sequence
-    #    for.  Resolve each by name+organism and register — the only route to an
-    #    enzyme mentioned by NAME with no accession in the text, and the path that
-    #    reaches the answer's own biosynthetic neighbourhood.  LLM-gated over the few
-    #    downloaded papers' bodies; skipped when no llm_client.
+    # 2.5 DEPOSITED-ACCESSION MINING (regex, no LLM): from the PRIMARY papers read
+    #     (reviews cite many off-target sequences, so they are skipped), extract the
+    #     sequence accessions the authors DEPOSITED and register them.  This is the
+    #     literature channel's irreplaceable, high-precision value: it reaches
+    #     enzymes CHARACTERISED in a paper but poorly databased (unreviewed / no
+    #     clean UniProt-by-name entry / obscure organism) that DB & family search
+    #     structurally miss.  Leakage-safe: generic accession regex only, register-
+    #     ALL, and relevance is decided by the ordinary answer-agnostic screening
+    #     downstream — never by comparison to any known answer here.
+    from enzyme_discovery_agent_improved.tools.paper_relevance import (
+        looks_like_review, mine_deposited_accessions,
+    )
+    n_deposited = 0
+    for meta in manifest:
+        if len(registered) >= max_proteins:
+            break
+        if looks_like_review(meta):
+            continue
+        tf = meta.get("text_file")
+        if not tf:
+            continue
+        try:
+            text = (dest / tf).read_text(errors="ignore")
+        except OSError:
+            continue
+        for raw_acc in mine_deposited_accessions(text):
+            if len(registered) >= max_proteins:
+                break
+            for uacc in _resolve_mined_accession(raw_acc):
+                if uacc not in registered:
+                    _register(uacc, "fulltext_deposited_accession",
+                              lit_name=meta.get("title", ""))
+                    n_deposited += 1
+
+    # 3. Literature-NAMED / CITED enzymes (LLM extraction over full text).  This is
+    #    the expensive, low-precision channel (most cited names resolve to nothing
+    #    or off-target), so it is OFF by default; the regex deposited-accession
+    #    channel above carries the value at near-zero cost.  Enable via config only
+    #    when name-level recall is worth the token cost.
     n_named = 0
-    if llm_client is not None and len(registered) < max_proteins:
+    if (config.FULLTEXT_LLM_NAMED_EXTRACTION and llm_client is not None
+            and len(registered) < max_proteins):
         try:
             named = _register_named_enzymes_from_fulltext(
                 run, query, dest, manifest, llm_client, _register,
@@ -885,7 +919,7 @@ def mine_and_register_fulltext_accessions(
     if log_fn:
         log_fn(
             f"  Full-text mining: {fetched} open-access paper(s) read "
-            f"-> {n_named} literature-named/cited enzyme(s) "
+            f"-> {n_deposited} deposited-accession + {n_named} named/cited enzyme(s) "
             f"-> {len(registered)} candidate(s) registered"
         )
     return registered
