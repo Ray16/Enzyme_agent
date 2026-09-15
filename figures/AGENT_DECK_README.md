@@ -1,41 +1,46 @@
 # Enzyme-discovery agent — group-meeting figure deck
 
-Publication-quality figures (vector **PDF** + 300-dpi **PNG**) covering the agent's
-architecture and results. All are generated from **real run artifacts** by one
-script — edit it and re-run to refresh:
+300-dpi PNG figures covering the agent's architecture and results, generated from
+**real run artifacts**. Most come from one script (edit and re-run to refresh):
 
 ```bash
 python figures/make_agent_overview_figures.py
 ```
 
+The proxy-predictivity slides come from the **validated** analysis:
+
+```bash
+python analysis/make_synthetase_figures.py   # angle-gate proxy, AUROC 0.95
+```
+
 Primary data sources: improved-agent run `20260914_220431` (amide synthetase /
 nylon-6,6) + its regenerated `structural_modeling_handoff.json`; the older run
-`20260830_125748` (cost/quality comparison); `structural_modeling/results/*.csv`
-and `exp_data/…/panel_activity.csv` (geometry proxies vs assay); and the
-out-of-tree `Interpro_exhaustive/` sweep (recall audit).
+`20260830_125748` (cost/quality comparison); `structural_modeling/results/*.csv`;
+`exp_data/amide_synthetase/…` (panel assay + angle-gate proxy) and
+`exp_data/nylon_hydrolase/…`; and the out-of-tree `Interpro_exhaustive/` sweep.
 
-**One-file deck:** `agent_DECK_combined.pdf` merges every figure in presentation
-order (graphical abstract first) — open this to present the whole story.
-`agent_00_graphical_abstract` is the opening summary slide.
+## Presentation order
 
-## Suggested presentation order
-
-| # | File (`agent_*`) | What it shows | Key message |
+| # | File | What it shows | Key message |
 |---|---|---|---|
-| 1 | `pipeline_architecture` | 7-stage retrieval-expansion pipeline with real funnel numbers + cross-cutting design | How the framework works end to end |
-| 2 | `handoff_schema` | Per-candidate handoff record; 3 agent-derived blocks (family, mechanism, cofactors) | The discovery → structural-modeling contract |
-| 3 | `mechanism_bridge` | Deterministic activation classifier (ADP+Pi→Pγ vs AMP+PPi→Pα) + validation | Mechanism from the reaction, not the family name (ddaG fix) |
-| 4 | `ranking_decomposition` | Old collapsed score vs 3 interpretable axes | Why decomposed ranking beats one fused score |
-| 5 | `candidate_landscape` | 38 ranked candidates by InterPro family, colored by mechanism | The discovery result at a glance |
-| 6 | `discovery_completeness` | Exhaustive EC 6.3.- sweep: 12,456 → 270 → agent coverage | Recall is complete over the reviewed universe — with the SfaB ceiling stated |
-| 7 | `geometry_proxy_benchmark` | AUROC of co-fold proxies vs assay + angle–activity scatter | Which structural signal actually predicts activity |
-| 8 | `structural_geometry` | Mechanism-aware step-1 in-line angle, within family | Modeling read-out, scored vs the correct phosphorus |
-| 9 | `hydrolase_second_target` | 96-enzyme nylon-hydrolase panel: activity + NAC | Same framework transfers to the opposite reaction (cleavage) |
-| 10 | `run_comparison` | Old vs improved run: candidates, leads, token cost | Cleaner ranking, same leads — plus the cost regression to fix |
+| 00 | `00_overview.png` | Problem / framework / key results / limitations | Opening summary slide |
+| 01 | `01_pipeline_architecture.png` | 7-stage retrieval-expansion pipeline + cross-cutting design | How the framework works end to end |
+| 02 | `02_handoff_schema.png` | Per-candidate handoff record; 3 agent-derived blocks | The discovery → structural-modeling contract |
+| 03 | `03_mechanism_bridge.png` | Deterministic activation classifier (ADP+Pi→Pγ / AMP+PPi→Pα) + validation | Mechanism from the reaction, not the family name (ddaG fix) |
+| 05 | `05_candidate_landscape.png` | Ranked candidates by InterPro family, colored by mechanism | The discovery result at a glance |
+| 06 | `06_discovery_completeness.png` | Exhaustive EC 6.3.- sweep: 12,456 → 270 → agent coverage | Recall complete over the reviewed universe — SfaB ceiling stated |
+| 07 | `synthetase_angle_proxy_ranking.png` | **Validated proxy**: distance<4 Å gate → rank by in-line angle | AUROC 0.95; hits AS9/AS17/AS23 rank #1/#4/#7 |
+| — | `synthetase_activity_landscape.png` | The assay: 3 hits over a flat tail (3/49) | Why the panel is a hard, imbalanced target |
+| 08 | `08_structural_geometry.png` | Mechanism-aware step-1 in-line angle, within family | Modeling read-out, scored vs the correct phosphorus |
+| 09 | `09_hydrolase_second_target.png` | 96-enzyme nylon-hydrolase panel: activity + NAC | Same framework transfers to the cleavage direction |
+| 10 | `10_run_comparison.png` | Old vs improved run: candidates, leads, token cost | Cleaner ranking, same leads — plus the cost regression to fix |
 
 ## Honesty notes for the talk
-- Figure 9 deliberately shows the **72% idle token regression** in the improved run — present it as a known issue to fix, not a win.
-- Figure 6 states the **recall ceiling**: the ground-truth SfaB is unreviewed/no-EC, outside any reviewed-DB sweep; reaching it needs the literature/unannotated channel.
-- Figure 7's angle signal is **necessary-not-sufficient** (a coarse negative filter), not a quantitative activity predictor.
+- **The validated activity proxy is the distance-gated in-line angle** (`scripts/angle_gate_proxy.py`): keep only poses with nucleophile–reactive-P distance < 4 Å, then rank by the mean in-line attack angle. AUROC 0.95, Spearman +0.30 — a coarse ranker / negative filter, **not** a quantitative predictor (only 3 actives). Raw NAC fraction is **not** the proxy.
+- Fig 10 shows the **72% idle token regression** — a known issue to fix, not a win.
+- Fig 06 states the **recall ceiling**: SfaB is unreviewed/no-EC, outside any reviewed-DB sweep.
 
-Superseded drafts live in `figures/archive/`.
+## Retired (in `figures/archive/`)
+- `04_ranking_decomposition` — not meaningful (a score dump: `substrates_hosted` is flat at 2/2 across the top set, so it shows no discrimination).
+- `07_geometry_proxy_benchmark` — superseded: led with raw NAC fraction; replaced by the validated angle-gate figure above.
+- Earlier drafts and the vector PDFs (deck is PNG-only now).
