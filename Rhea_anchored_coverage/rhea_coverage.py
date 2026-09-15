@@ -17,7 +17,21 @@ from __future__ import annotations
 import sys, csv, collections
 from pathlib import Path
 from rdkit import Chem, RDLogger
+from rdkit.Chem.MolStandardize import rdMolStandardize
 RDLogger.DisableLog("rdApp.*")
+
+_UNCHARGER = rdMolStandardize.Uncharger()
+
+
+def _neutralize(mol):
+    """Normalize protonation so charge state never affects matching (COO-/COOH,
+    NH3+/NH2, etc. all collapse to a canonical neutral form)."""
+    if mol is None:
+        return None
+    try:
+        return _UNCHARGER.uncharge(mol)
+    except Exception:
+        return mol
 
 HERE = Path(__file__).resolve().parent
 CACHE = HERE / "cache"
