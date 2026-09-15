@@ -625,12 +625,14 @@ if __name__=="__main__":
     fig_bridge()          # 03
     fig_landscape()       # 05
     fig_sweep()           # 06
-    fig_structural()      # 08
     fig_hydrolase()       # 09
     fig_runcompare()      # 10
-    # RETIRED:
-    #  fig_ranking() (04) - not meaningful (score dump: substrates_hosted flat at 2/2).
-    #  fig_proxy()   (07) - superseded: leads with raw NAC; the VALIDATED proxy is
-    #    distance<4A gate -> rank by mean in-line angle (AUROC 0.95), produced by
-    #    analysis/make_synthetase_figures.py -> figures/synthetase_angle_proxy_ranking.png.
+    # RETIRED (user feedback: figures must show a decision, not dump scores/homologs):
+    #  fig_ranking()    (04) - score dump: substrates_hosted flat at 2/2, no discrimination.
+    #  fig_proxy()      (07) - superseded: led with raw NAC. VALIDATED proxy = distance<4A
+    #    gate -> rank by mean in-line angle (AUROC 0.95), from analysis/make_synthetase_figures.py
+    #    -> figures/synthetase_angle_proxy_ranking.png.
+    #  fig_structural() (08) - homolog dump: ~30 glutamine-synthetase orthologs (3x GLN2, 2x
+    #    iucA, blank labels), raw angle with no activity ground truth. The angle story is
+    #    carried properly by the validated proxy figure with the assay panel.
     print("\nDeck complete — 300-dpi PNG for each.")
