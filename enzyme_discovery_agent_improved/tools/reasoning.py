@@ -43,6 +43,20 @@ logger = logging.getLogger("enzyme_agent")
 # Helpers
 # --------------------------------------------------------------------------
 
+
+def _merge_activation_evidence(existing: dict | None, activation: dict | None) -> dict | None:
+    """Attach a deterministic activation record under mechanism_evidence["activation"].
+
+    Preserves any other keys already present (e.g. literature-extracted
+    "facts"/"paper") so the two provenance sources coexist. Returns ``existing``
+    unchanged when there is no activation record to add.
+    """
+    if not activation:
+        return existing
+    merged = dict(existing) if isinstance(existing, dict) else {}
+    merged["activation"] = activation
+    return merged
+
 def _fetch_uniprot_entry_light(accession: str) -> dict | None:
     """Fetch minimal UniProt data for screening (single API call)."""
     from enzyme_discovery_agent_improved.tools.database import _parse_uniprot_json
@@ -1026,7 +1040,7 @@ def evaluate_candidate(
         "rhea_ids": rhea_ids,
         "identity_validation": identity_validation,
         "claim_validation": function_validation,
-        "mechanism_evidence": existing.get("metadata", {}).get("mechanism_evidence"),
+        "mechanism_evidence": mechanism_evidence,
     }
 
     # Strengths and weaknesses
@@ -1226,7 +1240,7 @@ def evaluate_candidate(
         "is_swissprot": is_swissprot,
         "identity_validation": identity_validation,
         "claim_validation": function_validation,
-        "mechanism_evidence": existing.get("metadata", {}).get("mechanism_evidence"),
+        "mechanism_evidence": mechanism_evidence,
         "rejection_reason": (
             None if eval_status == "evaluated" else
             "authoritative function validation failed: "
