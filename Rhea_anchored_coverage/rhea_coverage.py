@@ -76,24 +76,30 @@ def load_rhea_smiles():
     return rows
 
 
-def load_rhea2uniprot():
-    m = collections.defaultdict(set)          # master rhea id -> set(reviewed accessions)
+def load_master2acc():
+    """MASTER Rhea id -> reviewed accessions. Rhea numbers a reaction as a master
+    (lowest id) plus 3 consecutive directional variants (master+1..+3); the
+    smiles file holds the directional ids, rhea2uniprot maps the master."""
+    m = collections.defaultdict(set)
     with open(CACHE / "rhea2uniprot_sprot.tsv") as f:
-        r = csv.DictReader(f, delimiter="\t")
-        for row in r:
+        for row in csv.DictReader(f, delimiter="\t"):
             m[row["MASTER_ID"]].add(row["ID"])
-            m[row["RHEA_ID"]].add(row["ID"])
     return m
 
 
 def matched_accessions(acceptor="amine", bond="amide"):
     smiles = load_rhea_smiles()
-    r2u = load_rhea2uniprot()
+    master2acc = load_master2acc()
     hit_rhea = {rid for rid, smi in smiles.items() if forms_bond(smi, acceptor, bond)}
     accs = set()
     for rid in hit_rhea:
-        accs |= r2u.get(rid, set())
-        accs |= r2u.get(rid.lstrip("0"), set())
+        try:
+            d = int(rid)
+        except ValueError:
+            continue
+        # a directional id maps back to its master at d, d-1, d-2 or d-3
+        for cand in (d, d - 1, d - 2, d - 3):
+            accs |= master2acc.get(str(cand), set())
     return hit_rhea, accs
 
 
