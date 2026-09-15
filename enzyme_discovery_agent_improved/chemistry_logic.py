@@ -360,43 +360,6 @@ def derive_activation_mechanism(catalytic_activities: list[str]) -> dict | None:
     }
 
 
-# One-carbon / inorganic acyl-equivalent donors that are NOT a carboxylic-acid +
-# amine amide ligation, so the adipate near-attack frame ("substrate carboxylate
-# attacks the NTP phosphorus") does not apply: formate ligation (PurT),
-# bicarbonate/CO2 carboxylation (PurK), carbamoyl-phosphate synthesis (CPS).
-_OUT_OF_FRAME_DONOR = re.compile(
-    r"\b(?:formate|hydrogencarbonate|bicarbonate|carbon dioxide|CO2)\b",
-    re.IGNORECASE,
-)
-
-
-def classify_ligation_frame(catalytic_activities: list[str]) -> dict:
-    """Is the native reaction a carboxylic-acid + amine amide LIGATION -- the frame
-    the adipate near-attack proxy assumes -- or something else?
-
-    Deterministic, from the reaction reactants. Out-of-frame when the acyl-equivalent
-    donor is a one-carbon/inorganic species (formate, bicarbonate/CO2); those enzymes
-    (PurT, PurK, CPS) do not ligate a dicarboxylic acid, so an adipate-carboxylate ->
-    phosphorus angle for them measures nothing and should not be scored/ranked as a
-    diacid ligase. Returns {"in_frame": bool, "basis": str, "source": str}.
-    """
-    acts = [str(a) for a in (catalytic_activities or []) if _NTP_RE.search(str(a))]
-    for text in acts:
-        reactants = text.split("=")[0] if "=" in text else text
-        m = _OUT_OF_FRAME_DONOR.search(reactants)
-        if m:
-            return {"in_frame": False,
-                    "basis": f"one-carbon/inorganic donor ('{m.group(0)}'): not a carboxylic-acid + amine ligation",
-                    "source": "catalytic_activity_reactants"}
-    if acts:
-        return {"in_frame": True,
-                "basis": "NTP-dependent ligation with an organic acyl donor",
-                "source": "catalytic_activity_reactants"}
-    return {"in_frame": False,
-            "basis": "no NTP-dependent reaction annotated",
-            "source": "catalytic_activity_reactants"}
-
-
 # Divalent (and a few monovalent) metal names -> PDB/CCD ligand code, for
 # building a cofold input. Keys are matched case-insensitively against the
 # UniProt cofactor name (e.g. "Mg(2+)", "Magnesium").
