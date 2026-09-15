@@ -228,9 +228,8 @@ def render_comparison(runs: list[dict]) -> str:
 
 
 _CSS = """
-:root{--bg:#fafafa;--fg:#1a1a1a;--muted:#666;--card:#fff;--line:#e3e3e3;
+:root{--bg:#f6f6f4;--fg:#1a1a1a;--muted:#5b6167;--card:#ffffff;--line:#e3e3e3;
  --t1:#1a7f37;--t2:#9a6700;--t3:#8250df;--accent:#0969da;}
-:root:not([data-theme=light]) @media (prefers-color-scheme:dark){}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
  --bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--card:#161b22;--line:#30363d;
  --t1:#3fb950;--t2:#d29922;--t3:#a371f7;--accent:#4493f8;}}
