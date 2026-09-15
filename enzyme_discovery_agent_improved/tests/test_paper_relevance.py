@@ -104,5 +104,44 @@ class TestEnzymologyProfileRanking(unittest.TestCase):
         self.assertEqual(rank_papers_by_enzymology("/x", [], fallback=lambda: []), [])
 
 
+class TestDepositedAccessionMining(unittest.TestCase):
+    def test_extracts_refseq_and_uniprot(self):
+        text = ("The gene was deposited as WP_073481158.1 and its ortholog "
+                "WP_051713392. The UniProt entry A0A1M5ABR5 was annotated. "
+                "See also GenBank AAB12345.")
+        accs = mine_deposited_accessions(text)
+        self.assertIn("WP_073481158.1", accs)
+        self.assertIn("WP_051713392", accs)
+        self.assertIn("A0A1M5ABR5", accs)
+        self.assertIn("AAB12345", accs)
+
+    def test_pmc_and_common_abbrevs_are_not_mistaken_for_accessions(self):
+        text = "Available in PMC89847; funded by NIH12345. ATP was the cofactor."
+        accs = mine_deposited_accessions(text)
+        self.assertFalse(any(a.startswith(("PMC", "NIH", "ATP")) for a in accs))
+
+    def test_mining_is_deduped_and_bounded(self):
+        text = " ".join(["WP_000000001"] * 50) + " WP_000000002"
+        accs = mine_deposited_accessions(text, cap=5)
+        self.assertEqual(accs.count("WP_000000001"), 1)
+        self.assertLessEqual(len(accs), 5)
+
+    def test_empty_text(self):
+        self.assertEqual(mine_deposited_accessions(""), [])
+
+    def test_review_vs_primary_detection(self):
+        self.assertTrue(looks_like_review({"title": "Amide bond formation: a review"}))
+        self.assertTrue(looks_like_review(
+            {"title": "X", "publication_types": ["Review"]}))
+        self.assertFalse(looks_like_review(
+            {"title": "Broad-spectrum amide bond synthetase from a bacterium"}))
+
+    def test_mining_uses_no_answer_knowledge(self):
+        # Leakage-safety intent: the miner is a pure regex over the given text and
+        # does not read benchmarks / filter by any answer. A string containing no
+        # accessions yields nothing, regardless of enzyme names present.
+        self.assertEqual(mine_deposited_accessions("SfaB DdaG McbA amide ligase"), [])
+
+
 if __name__ == "__main__":
     unittest.main()
