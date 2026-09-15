@@ -780,7 +780,7 @@ class EnzymeAgent:
             # artifacts), so stub the CONTENT of tool results older than the most
             # recent few turns.  Messages are kept (never removed) so tool_call /
             # tool-result pairing stays intact.
-            self._prune_tool_history(messages)
+            self._prune_history(messages)
             response = self.llm.call(
                 messages=messages, tools=available_tools,
                 timeout=self.llm_timeout,
