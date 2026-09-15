@@ -301,7 +301,7 @@ def fig_structural():
     if len(fams)==1: axes=[axes]
     fig.suptitle("Mechanism-aware step-1 geometry — in-line attack angle, scored vs the correct ATP phosphorus",
                  fontsize=15,fontweight="bold",y=1.0,color=INK)
-    fig.text(0.5,0.935,"50 unrestrained Boltz-2 co-folds per enzyme; angle compared only within a mechanistic family. "
+    fig.text(0.5,0.955,"50 unrestrained Boltz-2 co-folds per enzyme; angle compared only within a mechanistic family. "
              "≥165° strong · 150–165° compatible · <150° weak.",fontsize=10,color=SUB,ha="center")
     for ax,f in zip(axes,fams):
         data=sorted(byfam[f],key=lambda t:t[1])
