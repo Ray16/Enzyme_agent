@@ -323,6 +323,79 @@ def fig_structural():
     save(fig,"agent_structural_geometry.png")
 
 
+# ============================================================ 7. HANDOFF SCHEMA
+def fig_schema():
+    import textwrap
+    C_PROV="#fff4d6"; C_PROV_ED="#d9a441"; C_NEW="#d8f3e3"; C_NEW_ED=GREEN
+    C_EXIST="#e4e7eb"; C_EXIST_ED="#9aa5b1"
+    fig=plt.figure(figsize=(15,9.6)); ax=fig.add_axes([0,0,1,1]); ax.set_xlim(0,100); ax.set_ylim(0,100); ax.axis("off")
+    ax.text(3,96.5,"Discovery-agent → structural-modeling handoff",fontsize=20,fontweight="bold",color=INK)
+    ax.text(3,92.8,"Per-candidate record in structural_modeling_handoff.json  —  three blocks are "
+            "deterministically derived by the agent (green)",fontsize=11.5,color=SUB)
+    LX=3; LW=45
+    ax.text(LX+LW/2,89.4,"candidate record",fontsize=12.5,fontweight="bold",ha="center",color=INK)
+    def grp(x,y,w,title,fields,new=False,tag=None):
+        fc=C_NEW if new else C_EXIST; ec=C_NEW_ED if new else C_EXIST_ED
+        rowh=2.75; head=3.4; h=head+rowh*len(fields)+1.0
+        _round(ax,x,y-h,w,h,fc,ec,lw=1.6 if new else 1.2)
+        ax.text(x+1.8,y-2.0,title,fontsize=10.5,fontweight="bold",color=(GREEN if new else INK))
+        if tag:
+            ax.add_patch(FancyBboxPatch((x+w-9.2,y-2.9),7.4,1.9,boxstyle="round,pad=0.02,rounding_size=0.9",
+                         fc=GREEN,ec="none")); ax.text(x+w-5.5,y-1.95,tag,fontsize=7.6,fontweight="bold",color="#fff",ha="center")
+        yy=y-head-0.9
+        for k,v in fields:
+            ax.text(x+2.4,yy,k,fontsize=8.8,color=INK,family="DejaVu Sans Mono")
+            if v: ax.text(x+w-1.8,yy,v,fontsize=8.1,color=SUB,ha="right",style="italic")
+            yy-=rowh
+        return h
+    y=87.5
+    for args in [
+        ("identity",[("accession","E2JA32"),("protein_name","… diaminopropanoate ligase"),("organism, gene_names, ec_numbers","")],False,None),
+        ("family",[("interpro_family","Dapdiamide ligase"),("interpro_family_id","IPR048223")],True,"NEW"),
+        ("evidence (existing)",[("structure_sources",""),("native_substrate_evidence",""),("reaction_chemistry",""),("structural_homology / orthologs","")],False,None),
+        ("mechanism_evidence.activation",[("activation_mode","acyl_adenylate"),("reactive_phosphate","Palpha"),("nucleophile","carboxylate O"),("confidence","high"),("source / derived_from","reaction products")],True,"NEW"),
+        ("modeling_input",[("cofactors[]  {name,ccd,count,role,basis}","ATP×1 + MG×2"),("reactive_phosphate","Palpha"),("activation_mode","acyl_adenylate")],True,"NEW"),
+    ]:
+        h=grp(LX,y,LW,*args); y-=h+1.5
+    RX=54; RW=43
+    ax.text(RX+RW/2,89.4,"how the green blocks are derived  (worked example: ddaG)",fontsize=12.5,fontweight="bold",ha="center",color=INK)
+    def flow(x,y,w,h,title,lines,fc,ec):
+        _round(ax,x,y-h,w,h,fc,ec,lw=1.5)
+        ax.text(x+1.8,y-2.4,title,fontsize=10,fontweight="bold",color=INK)
+        yy=y-5.0
+        for ln,c,st in lines:
+            ax.text(x+2.2,yy,ln,fontsize=9.6,color=c,style=st,family="DejaVu Sans Mono"); yy-=2.6
+    y=87.5; hb=12.5
+    flow(RX,y,RW,hb,"1 · candidate's own annotations (UniProt)",
+         [("native reaction:",SUB,"normal"),("  ...+ ATP = ...+ AMP + diphosphate",INK,"italic"),
+          ("cofactor comment:  (none for ddaG)",SUB,"normal")],C_PROV,C_PROV_ED)
+    ay=y-hb
+    def arr(y0,y1,label):
+        ax.add_patch(FancyArrowPatch((RX+RW/2,y0),(RX+RW/2,y1),arrowstyle="-|>",mutation_scale=16,lw=2,color=GREEN))
+        if label: ax.text(RX+RW/2+1.5,(y0+y1)/2,label,fontsize=8,color=GREEN,fontweight="bold")
+    arr(ay,ay-3.0,"deterministic  (no LLM)"); y=ay-3.0; hb=14.5
+    flow(RX,y,RW,hb,"2 · chemistry_logic derivations",
+         [("derive_activation_mechanism()",GREEN,"normal"),("  AMP + diphosphate → α-phosphorus",INK,"italic"),
+          ("derive_modeling_cofactors()",GREEN,"normal"),("  ATP×1; metal MG×2 (mech. default)",INK,"italic")],C_NEW,C_NEW_ED)
+    ay=y-hb; arr(ay,ay-3.0,""); y=ay-3.0; hb=16.5
+    flow(RX,y,RW,hb,"3 · written to handoff (with provenance)",
+         [("reactive_phosphate: Palpha",INK,"normal"),("activation_mode: acyl_adenylate",INK,"normal"),
+          ("cofactors: ATP×1, MG×2",INK,"normal"),("basis: reaction products / uniprot",SUB,"italic"),
+          ("confidence: high",SUB,"italic")],C_NEW,C_NEW_ED)
+    cy=y-hb-2.0
+    _round(ax,RX,cy-8.2,RW,7.8,"#eef6ff","#5b8def",lw=1.3)
+    ax.text(RX+1.8,cy-2.0,"Why it matters",fontsize=9.6,fontweight="bold",color="#3060c0")
+    for j,l in enumerate(["Family name 'Dapdiamide ligase' gives no hint of",
+                          "adenylation. The reaction pins it to Pα — fixing the",
+                          "old family-keyword mis-call that scored ddaG on Pγ."]):
+        ax.text(RX+1.8,cy-4.2-j*1.7,l,fontsize=8.5,color=INK)
+    ly=cy-11.0
+    _round(ax,RX,ly-3.2,RW,3.0,"#fbfcfd","#cbd2d9",lw=1)
+    _round(ax,RX+1.4,ly-2.6,2,1.9,C_EXIST,C_EXIST_ED,r=0.4); ax.text(RX+4.2,ly-1.65,"existing field",fontsize=8.5,color=INK,va="center")
+    _round(ax,RX+18,ly-2.6,2,1.9,C_NEW,C_NEW_ED,r=0.4); ax.text(RX+20.8,ly-1.65,"agent-derived (deterministic)",fontsize=8.5,color=INK,va="center")
+    save(fig,"agent_handoff_schema.png")
+
+
 if __name__=="__main__":
     fig_pipeline()
     fig_ranking()
@@ -330,4 +403,5 @@ if __name__=="__main__":
     fig_bridge()
     fig_runcompare()
     fig_structural()
-    print("\nDeck complete.")
+    fig_schema()
+    print("\nDeck complete — PDF (vector) + 300-dpi PNG for each.")
