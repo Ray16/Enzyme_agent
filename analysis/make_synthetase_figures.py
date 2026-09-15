@@ -115,10 +115,10 @@ def fig_proxy_ranking(df):
     strong, near = top6[:3], top6[3:]
     ang_rank = {r.id: i + 1 for i, r in d.iterrows()}   # only conclusive enzymes have a rank
 
-    fig, (axA, axB) = plt.subplots(1, 2, figsize=(20, 8.5))
+    fig, axA = plt.subplots(1, 1, figsize=(11, 8.5))
     fig.suptitle("Mean in-line attack angle (distance-gated cofold poses) ranks the active enzymes to the top",
                  fontweight="bold")
-    # A. ranked bar
+    # ranked bar
     x = np.arange(len(d))
     colors = [RED if i in strong else ORANGE if i in near else "#cfe0f5" for i in d.id]
     axA.bar(x, d.mean_inline_angle, color=colors, edgecolor="k", linewidth=0.3, zorder=2)
@@ -139,20 +139,12 @@ def fig_proxy_ranking(df):
                frameon=True, framealpha=0.95, edgecolor="#ccc")
     axA.set_xlabel(f"rank by mean in-line angle  ({len(d)} conclusive enzymes)")
     axA.set_ylabel("mean in-line attack angle (°)")
-    axA.set_title("A. Strong hits top-ranked; marginal tier scattered")
     axA.set_ylim(min(d.mean_inline_angle) - 4, 182)
     axA.set_xlim(-1, len(d))
-    # B. ROC + CI
-    axB.fill_between(grid, lo, hi, color=BLUE, alpha=0.15, label="95% CI (bootstrap)")
-    axB.plot(fpr, tpr, color=BLUE, lw=3, label=f"ROC  (AUROC = {a:.2f})")
-    axB.plot([0, 1], [0, 1], ls="--", color="grey", lw=1.5, label="random")
-    axB.set_xlabel("false positive rate"); axB.set_ylabel("true positive rate")
-    axB.set_title("B. Discrimination: AUROC = 0.95")
-    axB.set_xlim(0, 1); axB.set_ylim(0, 1.02)
-    axB.legend(loc="lower right", frameon=True, framealpha=0.95, edgecolor="#ccc")
-    axB.text(0.96, 0.50, f"AUROC 95% CI [{aci[0]:.2f}, {aci[1]:.2f}]\n"
+    # summary stats (ROC panel dropped: only 3 actives make the curve uninformative)
+    axA.text(0.985, 0.60, f"AUROC = {a:.2f}  (95% CI [{aci[0]:.2f}, {aci[1]:.2f}])\n"
              f"Spearman = {rho:+.2f}  (p = {pval:.2f})\n3 actives / {len(d)} enzymes",
-             transform=axB.transAxes, ha="right", va="top", fontsize=FS - 3, color="#222",
+             transform=axA.transAxes, ha="right", va="top", fontsize=FS - 4, color="#222",
              bbox=dict(boxstyle="round,pad=0.5", fc="#eafaef", ec=GREEN, lw=1.5))
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     p = f"{FIG}/synthetase_angle_proxy_ranking.png"
