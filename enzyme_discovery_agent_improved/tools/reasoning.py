@@ -1059,6 +1059,7 @@ def evaluate_candidate(
         "identity_validation": identity_validation,
         "claim_validation": function_validation,
         "mechanism_evidence": mechanism_evidence,
+        "modeling_input": modeling_input,
     }
 
     # Strengths and weaknesses
