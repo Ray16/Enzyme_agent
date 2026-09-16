@@ -478,7 +478,9 @@ $('spd').onclick=e=>{const b=e.target.closest('button'); if(!b)return;
 
 // reaction mini
 $('rxnmini').innerHTML=reactionSVG(false);
-// boot
-curRunId=Object.keys(RUNS)[0];
+// boot (optional deep-link: #run=aug30&b=40)
+const hp=new URLSearchParams(location.hash.slice(1));
+curRunId = (hp.get('run') && RUNS[hp.get('run')]) ? hp.get('run') : Object.keys(RUNS)[0];
 selectRun(curRunId);
+if(hp.get('b')){ cur=Math.max(0,Math.min(curRun.beats.length-1,+hp.get('b'))); render(); }
 </script>
