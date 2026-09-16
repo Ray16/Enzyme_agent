@@ -798,36 +798,44 @@ def mine_and_register_fulltext_accessions(
     # are skipped).  Reading an off-topic paper is cheap here: only the per-paper
     # named/cited extraction (step 2) registers anything, and it judges relevance
     # itself.  A bare-title non-article filter drops posters/proceedings up front.
-    from enzyme_discovery_agent.tools.literature_extraction import _is_non_article
+    from enzyme_discovery_agent.tools.literature_extraction import (
+        _is_non_article,
+        select_papers_to_read,
+    )
     from enzyme_discovery_agent.tools.paper_relevance import (
         assess_primary_evidence,
         rank_papers_by_enzymology,
     )
-    # Order the pool by the target-derived enzymology profile (mechanism / reaction
-    # direction / reactive-group signal read from the run's derived contract),
-    # falling back to the lexical+semantic consolidate order whenever no contract is
-    # available or it yields no usable signal — so this can only match or improve on
-    # the prior selection, never do worse.
-    ranked = rank_papers_by_enzymology(
-        run, papers,
-        fallback=lambda: consolidate_pool(query, papers, max_results=len(papers))["ranked"],
-    )
     workers = config.FULLTEXT_HARVEST_WORKERS
     target_reads = min(fetch_ceiling, config.FULLTEXT_HARVEST_MAX_PAPERS)
+    # Let the AGENT REASON over titles+abstracts to pick which papers are most worth
+    # reading IN FULL for the DERIVED target reaction: it recognises on-topic primary
+    # biology and rejects chemical-synthesis / materials / review / off-topic papers
+    # that merely share surface vocabulary — a judgement a keyword scorer cannot make.
+    # Falls back to the cheap enzymology ranker (then the lexical+semantic consolidate
+    # order) when no LLM is available or the call fails, so it never does worse.
+    ranked = select_papers_to_read(
+        run, papers, target_reads, llm_client, query,
+        fallback=lambda: rank_papers_by_enzymology(
+            run, papers,
+            fallback=lambda: consolidate_pool(query, papers, max_results=len(papers))["ranked"],
+        ),
+    )
     candidates = [p for p in _select_harvest_papers(ranked, done, len(ranked))
                   if not _is_non_article(p.get("title", ""))]
-    # Prefer primary studies that can establish family / mechanism scope over
-    # secondary or non-catalytic (e.g. inhibitor-only) papers, which waste the tiny
-    # read budget without grounding a discovery.  Applied as a SOFT filter: drop
-    # those papers only while enough primary studies remain to fill the budget, so a
-    # metadata-sparse pool can never be starved of reads.
-    primary = []
-    for _p in candidates:
-        _ev = assess_primary_evidence(_p)
-        if not _ev["review"] and not _ev["inhibitor_only"]:
-            primary.append(_p)
-    if len(primary) >= target_reads:
-        candidates = primary
+    # Only when NO LLM did the reasoned selection above do we fall back to a cheap
+    # SOFT filter: drop reviews / inhibitor-only papers while enough primary studies
+    # remain to fill the budget (never starving a metadata-sparse pool).  With LLM
+    # selection this is skipped — the model already excluded those, and its reasoned
+    # picks must not be overridden by a keyword heuristic.
+    if llm_client is None:
+        primary = []
+        for _p in candidates:
+            _ev = assess_primary_evidence(_p)
+            if not _ev["review"] and not _ev["inhibitor_only"]:
+                primary.append(_p)
+        if len(primary) >= target_reads:
+            candidates = primary
 
     # Download in relevance order until `target_reads` open-access full texts are in
     # hand, in parallel batches (downloads are I/O-bound).  Bound the attempts so a
