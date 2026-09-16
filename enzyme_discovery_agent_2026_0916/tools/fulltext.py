@@ -696,7 +696,7 @@ def _register_named_enzymes_from_fulltext(
                     if nm:
                         update_candidate_registry(run, acc, None, {"literature_name": nm})
             elif nm:
-                acc = _resolve_named_enzyme(nm, org)
+                acc = _resolve_named_enzyme(nm, org, direction=_direction)
                 if acc:
                     accs = [acc]
                     if acc not in already and len(registered) < remaining:
