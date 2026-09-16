@@ -572,9 +572,9 @@ def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None
     organism = (organism or "").strip()
     if not raw:
         return None
-    # A paper names an enzyme as e.g. "McbA (amide bond synthetase, wild-type)": use
-    # the leading gene-symbol-like token for DB queries and keep the full descriptor
-    # (a direction hint) for the consistency gate.
+    # A paper names an enzyme with a descriptive suffix, e.g. "GeneA (characterised
+    # wild-type synthetase)": use the leading gene-symbol-like token for DB queries
+    # and keep the full descriptor (a direction hint) for the consistency gate.
     descriptor = raw
     m = re.match(r"[A-Za-z][A-Za-z0-9_-]{1,14}", raw)
     symbol = m.group(0) if m else raw
