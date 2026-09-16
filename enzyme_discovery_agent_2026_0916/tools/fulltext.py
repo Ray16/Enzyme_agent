@@ -630,6 +630,14 @@ def _register_named_enzymes_from_fulltext(
     from enzyme_discovery_agent.tools.literature_extraction import extract_from_paper
     from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
 
+    # Target reaction direction disambiguates a named-enzyme resolution past a stale
+    # DB label (see _resolve_named_enzyme's direction-gated fallback).  Best-effort.
+    try:
+        from enzyme_discovery_agent.tools.family_reactions import _target_profile_for_run
+        _direction, _ = _target_profile_for_run(run)
+    except Exception:  # noqa: BLE001 - resolution must not crash on target parsing
+        _direction = None
+
     # Read each paper (one LLM extraction call) IN PARALLEL — the slow part —
     # then resolve + register SEQUENTIALLY so the remaining/dedup budget stays
     # correct.
