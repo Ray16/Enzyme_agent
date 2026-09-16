@@ -280,9 +280,12 @@ def main():
           "| sep16 beats:", len(runs["sep16"]["beats"]))
     print("aug30 meta:", runs["aug30"]["meta"])
     print("sep16 meta:", runs["sep16"]["meta"])
-    with open(os.path.join(RUNS_DIR, "_trace_payload.json"), "w") as f:
-        f.write(payload)
-    print("wrote _trace_payload.json", len(payload), "bytes")
+    tmpl = open(os.path.join(RUNS_DIR, "_trace_template.html")).read()
+    out = tmpl.replace("/*__PAYLOAD__*/", payload)
+    dest = os.path.join(RUNS_DIR, "reasoning_trace.html")
+    with open(dest, "w") as f:
+        f.write(out)
+    print("wrote", dest, len(out), "bytes")
 
 if __name__ == "__main__":
     main()
