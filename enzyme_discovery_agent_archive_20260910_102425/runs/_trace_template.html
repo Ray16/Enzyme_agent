@@ -331,11 +331,8 @@ function verdictFor(run){
   const m=run.meta;
   if(m.running) return {kind:'run',t:'Run in progress',d:m.blurb,badge:'live'};
   const c=m.candidates;
-  if(c===0||c==null&&!m.running) {}
-  if(m.verdict_kind==='good') return {kind:'good',t:m.verdict||'Converged',d:m.blurb,
-     badge:(c!=null?c+' candidates':'done')};
-  if(c===0) return {kind:'bad',t:'0 candidates — regressed',d:m.blurb,badge:'0 candidates'};
-  return {kind:'warn',t:(c!=null?c+' candidates':'completed'),d:m.blurb,
+  const kind=m.verdict_kind||'warn';
+  return {kind, t:m.verdict||(c!=null?c+' candidates':'completed'), d:m.blurb,
      badge:(c!=null?c+' candidates':'done')};
 }
 
