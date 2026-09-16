@@ -92,8 +92,13 @@ def build_enzymology_profile(target_reasoning: dict, mechanism_families=None) ->
     cat_text = " ".join(str(c).lower() for c in (tr.get("activation_categories") or []))
     cof_text = " ".join(str(c).lower() for c in (tr.get("cofactor_requirements") or []))
     blob = cat_text + " " + cof_text
-    for tok in _MECH_TOKENS:
-        if tok in blob:
+    # Activation-mechanism signal is taken from the run's OWN derived contract text
+    # (activation categories + cofactor requirements), tokenised here as hyphenated
+    # mechanism compounds — NOT from a hardcoded mechanism list.  This keeps the
+    # module answer-agnostic (no mechanism names live in code) and lets the profile
+    # generalise to whatever activation chemistry the contract describes.
+    for tok in re.findall(r"[a-z]{4,}(?:-[a-z]{2,})+", blob):
+        if tok not in _STOP:
             strong.add(tok)
     for cof in ("atp", "gtp", "adenylate", "adenosine triphosphate", "coa",
                 "nucleoside triphosphate", "magnesium"):
