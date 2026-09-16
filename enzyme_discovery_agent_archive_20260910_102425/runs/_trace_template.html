@@ -401,8 +401,9 @@ function rankingHTML(){
       ${r.fit!=null?`<span class="acc">· fit ${r.fit}</span>`:''}
       <div class="rat">${esc(r.rationale||'')}</div></div>
     <span class="tier ${/strong/i.test(r.tier||'')?'strong':''}">${esc(r.tier||'')}</span></div>`).join('');
+  const src=curRun.ranking_source?` · ${esc(curRun.ranking_source)}`:'';
   return `<div class="rankwrap"><h3 style="font-family:var(--sans);font-size:12px;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--faint);margin:6px 0 2px">Final ranking (top ${curRun.ranking.length})</h3>${rows}</div>`;
+    text-transform:uppercase;color:var(--faint);margin:6px 0 2px">Final ranking (top ${curRun.ranking.length})<span style="text-transform:none;letter-spacing:0;font-weight:400">${src}</span></h3>${rows}</div>`;
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 
