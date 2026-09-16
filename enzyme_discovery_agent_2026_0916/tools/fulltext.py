@@ -532,7 +532,7 @@ def _direction_consistent(entry: dict, direction: str | None, descriptor: str = 
     direction hint the stale DB label may lack.
     """
     ecs = _entry_ecs(entry)
-    blob = _json.dumps(entry.get("proteinDescription") or {}).lower() + " " + descriptor.lower()
+    blob = json.dumps(entry.get("proteinDescription") or {}).lower() + " " + descriptor.lower()
     is_enzyme = bool(ecs) or any(w in blob for w in _ENZYME_CLASS_WORDS)
     if not is_enzyme:
         return False
