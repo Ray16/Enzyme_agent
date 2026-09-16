@@ -50,11 +50,6 @@ _TETHERED_CONTEXT = (
     "carrier protein", "acyl carrier", "peptidyl carrier", "coenzyme a",
     "acyl-coa", "acyl coa", "coa thioester", "coa synthetase",
 )
-# Mechanism tokens worth recognizing inside free-text activation descriptions.
-_MECH_TOKENS = (
-    "acyl-adenylate", "acyl adenylate", "acyl-amp", "acyl-phosphate",
-    "adenylate", "adenylation", "thioester", "anhydride", "phosphoryl", "acyl-coa",
-)
 _STOP = {"fold", "type", "like", "amine", "amide", "bond", "acid", "free",
          "small", "molecule", "the", "and", "with", "via", "for"}
 
