@@ -261,6 +261,7 @@ def build_run(run_dir, label, blurb, verdict, verdict_kind):
     # meta from run_complete
     rc = next((e for e in ev if e.get("type") == "run_complete"), {})
     running = rc == {}
+    ddaG_recovered = any(r.get("accession") == "E2JA32" for r in top)
     meta = {
         "label": label, "blurb": blurb,
         "verdict": verdict, "verdict_kind": verdict_kind,
@@ -271,9 +272,11 @@ def build_run(run_dir, label, blurb, verdict, verdict_kind):
         "tokens": rc.get("total_tokens"),
         "running": running,
         "n_families": len(fam_cards),
+        "ddaG_recovered": ddaG_recovered,
+        "ranking_source": rank_source,
     }
     return {"meta": meta, "contract": contract, "families": fam_cards,
-            "beats": beats, "ranking": top}
+            "beats": beats, "ranking": top, "ranking_source": rank_source}
 
 
 def main():
