@@ -508,47 +508,102 @@ def _functionally_coherent(entries: list[dict]) -> bool:
     return bool(tok_sets) and bool(set.intersection(*tok_sets))
 
 
-def _resolve_named_enzyme(name: str, organism: str) -> str | None:
-    """Resolve an enzyme NAMED in a paper's body to a UniProt accession, using
-    the stated organism as a disambiguator.
+# Generic enzyme-class vocabulary (no answer family), used to check whether a DB
+# entry is an enzyme and whether its class matches the target reaction DIRECTION.
+_FORMATION_WORDS = ("ligase", "synthetase", "synthase", "synthesis", "forming",
+                    "formation", "ligation", "condensation", "amidation", "carboxylase")
+_CLEAVAGE_WORDS = ("hydrolase", "hydrolysis", "hydrolyz", "peptidase", "protease",
+                   "esterase", "amidase", "depolymer", "deacetylase", "glycosidase")
+_ENZYME_CLASS_WORDS = _FORMATION_WORDS + _CLEAVAGE_WORDS + (
+    "transferase", "oxidoreductase", "isomerase", "lyase", "kinase", "reductase",
+    "oxidase", "dehydrogenase", "mutase", "aminotransferase")
 
-    A paper commonly names target-reaction enzymes for which it deposits no
-    sequence of its own (cited analogues / prior art).  The deposited-accession
-    miner is blind to these (no accession in the text); this recovers them by
-    name.
 
-    A gene symbol can be reused for functionally unrelated proteins across taxa,
-    so the policy is precision-first:
-      * organism stated  -> organism-anchored query (precise; admits unreviewed);
-      * organism absent   -> accept the reviewed (Swiss-Prot) entries carrying
-        that symbol ONLY when they are functionally coherent (one enzyme, which
-        may legitimately span several organisms); an incoherent symbol is left
-        for the organism-anchored path.
-    Returns a representative accession, or None when nothing resolves confidently.
+def _direction_consistent(entry: dict, direction: str | None, descriptor: str = "") -> bool:
+    """Whether a candidate UniProt entry is an ENZYME whose class matches the target
+    reaction DIRECTION.
+
+    Guards the free-text name+organism fallback below: a paper's characterisation is
+    trusted over a stale/generic DB label, but only if the entry actually looks like
+    an enzyme of the right direction (EC class 6 = formation, 3 = cleavage; else the
+    protein-name / paper-descriptor wording).  An unknown target direction is
+    permissive (only require that it looks like an enzyme).  ``descriptor`` is the
+    paper's own wording for the enzyme (e.g. "amide bond synthetase"), a strong
+    direction hint the stale DB label may lack.
     """
-    name = (name or "").strip()
+    ecs = _entry_ecs(entry)
+    blob = _json.dumps(entry.get("proteinDescription") or {}).lower() + " " + descriptor.lower()
+    is_enzyme = bool(ecs) or any(w in blob for w in _ENZYME_CLASS_WORDS)
+    if not is_enzyme:
+        return False
+    if not direction:
+        return True
+    ec1 = ecs[0].split(".")[0] if ecs else ""
+    good = _FORMATION_WORDS if direction == "formation" else _CLEAVAGE_WORDS
+    bad = _CLEAVAGE_WORDS if direction == "formation" else _FORMATION_WORDS
+    if ec1 == ("6" if direction == "formation" else "3"):
+        return True
+    if ec1 == ("3" if direction == "formation" else "6"):
+        return False
+    return any(w in blob for w in good) and not any(w in blob for w in bad)
+
+
+def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None) -> str | None:
+    """Resolve an enzyme NAMED in a paper's body to a UniProt accession, using the
+    stated organism as a disambiguator.
+
+    A paper commonly names target-reaction enzymes for which it deposits no sequence
+    of its own (cited analogues / prior art), or whose only DB record is unreviewed
+    and generically / mis-annotated.  The deposited-accession miner is blind to these
+    (no accession in the text); this recovers them by name.
+
+    Policy, precision-first, most precise first:
+      * organism stated -> organism-anchored FIELDED query (gene/protein-name);
+      * still nothing -> organism-anchored FREE-TEXT query, admitting a hit past a
+        stale DB label ONLY when it is an enzyme consistent with the target reaction
+        DIRECTION (``_direction_consistent``) — this is what recovers a characterised
+        enzyme annotated generically (e.g. a synthetase recorded as a generic ligase);
+      * organism absent -> reviewed entries carrying the symbol, only when
+        functionally coherent (one enzyme spanning taxa), else left for the above.
+    The paper's characterisation is trusted over the DB label, but the direction gate
+    keeps a same-symbol unrelated protein out.  Returns an accession or None.
+    """
+    raw = (name or "").strip()
     organism = (organism or "").strip()
-    if not name:
+    if not raw:
         return None
-    is_gene = bool(_GENE_TOKEN_RE.match(name))
-    esc = name.replace('"', " ")
-    name_clause = f'(gene:{name} OR protein_name:"{esc}")' if is_gene else f'protein_name:"{esc}"'
+    # A paper names an enzyme as e.g. "McbA (amide bond synthetase, wild-type)": use
+    # the leading gene-symbol-like token for DB queries and keep the full descriptor
+    # (a direction hint) for the consistency gate.
+    descriptor = raw
+    m = re.match(r"[A-Za-z][A-Za-z0-9_-]{1,14}", raw)
+    symbol = m.group(0) if m else raw
+    is_gene = bool(_GENE_TOKEN_RE.match(symbol))
+    esc = symbol.replace('"', " ")
+    name_clause = f'(gene:{symbol} OR protein_name:"{esc}")' if is_gene else f'protein_name:"{esc}"'
+    _flds = "accession,protein_name,ec,gene_names,entryType"
 
     if organism:
         org = organism.replace('"', " ").strip()
-        hits = _uniprot_search(f'{name_clause} AND organism_name:"{org}"', size=5)
+        hits = _uniprot_search(f'{name_clause} AND organism_name:"{org}"', size=5, fields=_flds)
         if hits:
             hits.sort(key=lambda e: 0 if "reviewed" in str(e.get("entryType", "")).lower() else 1)
             return hits[0].get("primaryAccession")
+        # Free-text organism-anchored fallback (direction-gated): recovers a named
+        # enzyme whose only record is unreviewed / mis-annotated and so misses the
+        # fielded query above.
+        for e in _uniprot_search(f'{symbol} AND organism_name:"{org}"', size=5, fields=_flds):
+            if _direction_consistent(e, direction, descriptor):
+                return e.get("primaryAccession")
 
     if is_gene:
         reviewed = _uniprot_search(
-            f"gene:{name} AND reviewed:true", size=10,
+            f"gene:{symbol} AND reviewed:true", size=10,
             fields="accession,gene_names,protein_name,ec",
         )
         exact = [
             r for r in reviewed
-            if any(gn.lower() == name.lower() for gn in _entry_gene_names(r))
+            if any(gn.lower() == symbol.lower() for gn in _entry_gene_names(r))
         ]
         if exact and _functionally_coherent(exact):
             return exact[0].get("primaryAccession")
