@@ -237,11 +237,18 @@ def build_run(run_dir, label, blurb, verdict, verdict_kind):
     # survey gate updates promoted/surveyed — parse from gate messages already added; also set final
     # (kept simple: the state already shows cands/tokens which is the main storyline)
 
-    # --- ranking payoff ---
+    # --- ranking payoff (dedupe by accession, keep first appearance) ---
     top = []
-    for r in (rank if isinstance(rank, list) else [])[:8]:
+    seen_acc = set()
+    for r in (rank if isinstance(rank, list) else []):
         if not isinstance(r, dict):
             continue
+        acc = r.get("accession")
+        if acc in seen_acc:
+            continue
+        seen_acc.add(acc)
+        if len(top) >= 8:
+            break
         top.append({
             "rank": r.get("rank"),
             "gene": r.get("gene", ""),
