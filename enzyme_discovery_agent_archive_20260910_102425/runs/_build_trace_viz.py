@@ -48,7 +48,12 @@ def build_run(run_dir, label, blurb, verdict, verdict_kind):
     ev = read_events(os.path.join(run_dir, "events.jsonl"))
     tr = load_json(os.path.join(run_dir, "target_reasoning.json"), {})
     fams = load_json(os.path.join(run_dir, "mechanism_families.json"), []) or []
-    rank = load_json(os.path.join(run_dir, "explorative_ranking.json"), []) or []
+    # prefer the finalized explorative ranking; fall back to pass-1 if the report degraded
+    rank = load_json(os.path.join(run_dir, "explorative_ranking.json"), None)
+    rank_source = "explorative report"
+    if not rank:
+        rank = load_json(os.path.join(run_dir, "pass1_ranking.json"), []) or []
+        rank_source = "pass-1 (explorative report unavailable)"
 
     t0 = None
     for e in ev:
