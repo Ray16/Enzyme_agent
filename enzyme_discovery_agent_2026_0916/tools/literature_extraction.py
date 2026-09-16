@@ -398,11 +398,18 @@ def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
         abstract = (p.get("abstract") or "").strip()[:300]
         listing.append(f"[{i}] {title}\n{abstract}")
     want = min(len(pre), max(k * 2, k))
+    # Hand the model BOTH the transformation (primary) and the application context
+    # from the user's own request (secondary) — the raw query is task input, so this
+    # carries no hardcoded answer hint, and it lets the model prefer papers that match
+    # both the reaction and the intended use (which pure mechanism framing misses).
     user = (
-        f"Target reaction: {target}\n\n"
+        f"Target reaction (what the enzyme must catalyse): {target}\n"
+        f"Application context (from the request; SECONDARY signal): {query}\n\n"
         "Candidate papers:\n" + "\n\n".join(listing) +
-        f"\n\nSelect up to {want} papers (fewer if few are relevant), most relevant "
-        "first, as their indices."
+        f"\n\nSelect up to {want} papers most useful for discovering enzymes for the "
+        "target reaction; among strong matches, give additional weight to papers "
+        "relevant to the application context. Fewer if few are relevant; most "
+        "relevant first, as their indices."
     )
     from enzyme_discovery_agent import config
     try:
