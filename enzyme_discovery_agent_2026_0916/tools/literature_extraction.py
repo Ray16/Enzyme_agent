@@ -363,7 +363,7 @@ _SELECT_SYSTEM = (
 
 
 def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
-                          prefilter=40):
+                          prefilter=120):
     """LLM-reasoned selection of which candidate papers to read in full.
 
     The agent (not a keyword scorer) decides which retrieved papers are most
