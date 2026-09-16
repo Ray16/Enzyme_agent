@@ -284,12 +284,21 @@ def main():
     R2 = os.path.join(RUNS_DIR, "20260916_004628_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl")
     runs = {
         "aug30": build_run(R1, "Run A · Aug 30",
-                           "The frozen, best-retrieving core.",
-                           "PuuA #2 · DdaG #4 · converged", "good"),
+                           "Frozen best-retrieving core — 12 iters, 1.24M tokens.",
+                           "glnA2 #1 · PuuA #2 · DdaG recovered #4", "good"),
         "sep16": build_run(R2, "Run B · Sep 16",
-                           "Gate-ladder refactor under test.",
+                           "Gate-ladder refactor — leaner (140K tokens) but 51 iters.",
                            "", ""),
     }
+    # set Sep-16 verdict honestly from its real outcome
+    m2 = runs["sep16"]["meta"]
+    if not m2["running"]:
+        if m2["ddaG_recovered"]:
+            m2["verdict"], m2["verdict_kind"] = "glnA2 #1 · PuuA #2 · DdaG recovered", "good"
+        elif m2["candidates"]:
+            m2["verdict"], m2["verdict_kind"] = "glnA2 #1 · PuuA #2 · DdaG dropped from ranking", "bad"
+        else:
+            m2["verdict"], m2["verdict_kind"] = "0 candidates", "bad"
     payload = json.dumps(runs, ensure_ascii=False)
     print("aug30 beats:", len(runs["aug30"]["beats"]),
           "| sep16 beats:", len(runs["sep16"]["beats"]))
