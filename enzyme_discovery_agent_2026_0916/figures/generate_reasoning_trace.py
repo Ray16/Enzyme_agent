@@ -30,7 +30,14 @@ from PIL import Image
 
 from rdkit import Chem, RDLogger
 from rdkit.Chem import Draw
+from rdkit.Chem.Draw import rdMolDraw2D
 RDLogger.DisableLog("rdApp.*")
+
+# Resolution controls.  The layout was tuned at BASE_DPI with SS=1; rendering the
+# molecule bitmaps at SS× and the whole figure at DPI, while shrinking each image's
+# zoom by SS*(BASE_DPI/DPI), keeps the physical layout pixel-identical (so no new
+# overlaps) but gives the 2D structures much higher native resolution.
+BASE_DPI, DPI, SS = 200, 320, 4
 
 FIG_DIR = Path(__file__).resolve().parent
 DEFAULT_RUN = (
