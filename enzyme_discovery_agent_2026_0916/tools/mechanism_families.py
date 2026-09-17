@@ -202,10 +202,12 @@ _SCHEMA_TAIL = (
     '"disqualifying_observations":["..",".."]}]}'
 )
 
-# Enumeration = broad first pass; completeness audit = "what did the first pass
-# miss?".  Both share the identical constraints + schema tail.
-_SYSTEM = _ENUM_INTRO + _SHARED_TAIL
-_COMPLETENESS_SYSTEM = _AUDIT_INTRO + _SHARED_TAIL
+# Enumeration = broad first pass (intro + direction/chemistry constraints + schema).
+# Completeness audit = "what did the first pass miss?" — agnostic intro + schema
+# ONLY; it drops the constraint block so code (family_passes_constraints) is the
+# single place direction/substrate are enforced.
+_SYSTEM = _ENUM_INTRO + _CONSTRAINTS + _SCHEMA_TAIL
+_COMPLETENESS_SYSTEM = _AUDIT_INTRO + _SCHEMA_TAIL
 
 # Guard the firewall: drop any descriptor/term that looks like a specific
 # gene/enzyme token (a short mixed-case symbol) rather than a mechanism word.
