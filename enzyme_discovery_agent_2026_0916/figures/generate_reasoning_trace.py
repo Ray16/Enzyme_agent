@@ -60,7 +60,7 @@ PURSUED = [
     ("DdaG-type amide ligase", ["fumarate", "diaminopropanoate"],
      "amino-l-alanine", "3-amino-L-alanine", "fumarate", "fumarate",
      "✓ free amine + carboxylate"),
-    ("Glutamine-synthetase fold (PuuA)", ["glutamylputrescine", "glutamine synthetase"],
+    ("Glutamine-synthetase fold", ["glutamylputrescine", "glutamine synthetase"],
      "butanediammonium", "putrescine", "l-glutamate", "L-glutamate",
      "✓ free amine + carboxylate"),
     ("ATP-grasp ligase (PylC)", ["pylc", "pyrrolysine"],
