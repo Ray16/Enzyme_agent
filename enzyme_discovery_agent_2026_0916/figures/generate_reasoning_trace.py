@@ -205,12 +205,12 @@ def build(run: Path):
     arrow(0.658, 0.632)
 
     # ---- 4. TRIAGE ----
-    card(0.02, 0.135, 0.96, 0.470, "white", INK, lw=1.2)
-    tag(0.035, 0.592, f"TRIAGE FAMILIES  →  expand vs stop   "
+    card(0.02, 0.150, 0.96, 0.478, "white", INK, lw=1.2)
+    tag(0.035, 0.615, f"TRIAGE FAMILIES  →  expand vs stop   "
         f"(key decision:  {n_expand} expand · {n_stop} stop)", INK)
 
     cw2, ch2, gx, gy = 0.222, 0.150, 0.013, 0.013
-    gtop = 0.535
+    gtop = 0.556
     ranked = list(rows.values())  # already in rank order (CSV is rank-sorted)
 
     def fam_card(cx, cy, title, rep_tag, rep_color, mol_arr, caption, accent):
