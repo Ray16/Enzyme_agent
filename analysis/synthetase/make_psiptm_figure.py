@@ -15,7 +15,7 @@ FIG = f"{ROOT}/figures"
 SCORE = "se_mean"     # pair_chains_iptm[diacid][enzyme] mean = repo's enzyme->substrate
                       # direction; the best-behaving of all ps_iptm variants tested
 LABEL = "mean enzyme–diacid ps_iptm  (best variant; ATP/Mg excluded)"
-RED, ORANGE, GREY = "#d62728", "#f39c12", "#c8cdd4"
+RED, ORANGE, GREY, BROWN = "#d62728", "#f39c12", "#c8cdd4", "#8b5a2b"
 FS = 18
 plt.rcParams.update({"font.size": FS, "axes.titlesize": FS, "axes.titleweight": "bold",
     "axes.labelsize": FS, "xtick.labelsize": FS-3, "ytick.labelsize": FS-3,
