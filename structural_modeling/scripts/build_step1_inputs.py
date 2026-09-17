@@ -129,12 +129,13 @@ def main():
             open(f"{args.out}/step1_{acc}.yaml", "w").write(yaml_for(seq, os.path.abspath(mp), cofactors))
         n += 1
     verb = "would write" if args.dry_run else "wrote"
+    derived_mode = "blanket ATP+2 Mg default" if args.no_derive_metals else "per-enzyme UniProt-derived metal"
     print(f"{verb} {n} step-1 YAMLs to {args.out}")
-    print(f"  from-handoff: {n - len(fell_back)}  fell-back-to-default(ATP+2MG): {len(fell_back)}")
+    print(f"  from-handoff: {n - len(fell_back)}  no-handoff-spec ({derived_mode}): {len(fell_back)}")
     if nondefault:
         print(f"  NON-(2 Mg) metal specs: {nondefault}")
     else:
-        print("  all written enzymes resolved to 2 Mg (handoff + default agree for this set)")
+        print("  all written enzymes resolved to 2 Mg")
     if miss:
         print(f"  missing MSA (skipped): {miss}")
 
