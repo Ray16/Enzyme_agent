@@ -301,7 +301,7 @@ def build(run: Path):
     tag(0.115, 0.122, "SEARCH · SCREEN · EVALUATE", TEAL)
     ax.text(0.5, 0.100, f"pursued families → resolve members + orthologs across {n_folds} folds  "
             f"→  {n_final} candidates evaluated, deduplicated to distinct enzymes",
-            ha="center", va="center", fontsize=10.5, fontweight="bold", color=INK)
+            ha="center", va="center", fontsize=13, fontweight="bold", color=INK)
     arrow(0.082, 0.066)
 
     # ---- 6. RANK -> top leads (real, from CSV) ----
