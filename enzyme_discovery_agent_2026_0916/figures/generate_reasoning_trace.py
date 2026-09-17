@@ -275,9 +275,12 @@ def build(run: Path):
     for i, (fold, la, sa, lb, sb, why) in enumerate(STOPPED):
         cx = rx + (i % 2) * (cw2 + gx)
         cy = gtop - ch2 - (i // 2) * (ch2 + gy)
-        arr = pair_img(sa, sb, la, lb)
-        fam_card(cx, cy, fold, "✗ off-target", RED, arr,
-                 f"{la} + {lb}", RED, subcaption=why)
+        if sb is None:  # second substrate is a carrier protein, not a small molecule
+            fam_card(cx, cy, fold, "✗ off-target", RED, mol_img(sa, (200, 150)),
+                     f"{la} + {lb}", RED, subcaption=why, glyph_label="LysW\ncarrier\nprotein")
+        else:
+            fam_card(cx, cy, fold, "✗ off-target", RED, pair_img(sa, sb, la, lb),
+                     f"{la} + {lb}", RED, subcaption=why)
 
     # full-width decision-rule strip -------------------------------------------
     card(0.035, 0.162, 2 * (2 * cw2 + gx) + 0.036, 0.048, _tint(INK, 0.96), INK, lw=1.2)
