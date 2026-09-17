@@ -1,58 +1,81 @@
 #!/usr/bin/env python3
 """Diagnose WHY Boltz-2 parked SfaB's adipate outside the active site while it docked
-the actives. Compares ATP + adipate placement (best model) across SfaB and the 3 actives.
-Same cofold method for all -> if ATP is in-pocket for SfaB but adipate is not, the failure
-is the ACID subsite for a non-native substrate, not a global cofold failure."""
+the actives, using the SAME cofold outputs. Boltz names every ligand 'LIG'; ATP is the
+LIG with PA+PG, adipate the LIG with a carboxylate. Reports, per best model:
+  - adipate carboxyl-O -> ATP Pa closest approach (near-attack needs <4 A)
+  - adipate burial (protein heavy atoms within 4 A) : is it in a pocket or on the surface?
+  - ATP burial + ATP Pa distance to the ANL adenylation motif (S/TGTTG) : did the
+    adenylation machinery itself assemble correctly for SfaB?
+If ATP is in-pocket for SfaB but adipate is not, the failure is the ACID subsite for a
+non-native substrate, not a global cofold failure.
+"""
 import glob
 import numpy as np
 
 RES = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/boltz2/step1/results/output_configs"
+MOTIF = "TSGTTG"          # ANL P-loop (…IYTSGTTGLPKGV…); its backbone cradles ATP phosphates
 
 
 def parse(pdb):
-    prot, het = [], {}
-    for line in open(pdb):
-        rec = line[:6].strip()
-        if rec not in ("ATOM", "HETATM"):
+    prot, ligs = [], {}
+    seq = []
+    for ln in open(pdb):
+        if not ln.startswith(("ATOM", "HETATM")):
             continue
-        res = line[17:20].strip()
-        an = line[12:16].strip()
-        xyz = np.array([float(line[30:38]), float(line[38:46]), float(line[46:54])])
-        el = line[76:78].strip() or an[0]
-        if rec == "ATOM":
-            prot.append((res, an, xyz, el))
+        name = ln[12:16].strip(); res = ln[17:20].strip(); ch = ln[21]
+        resi = ln[22:26].strip()
+        el = (ln[76:78].strip() or name[0]).upper()
+        xyz = np.array([float(ln[30:38]), float(ln[38:46]), float(ln[46:54])])
+        if ln.startswith("ATOM"):
+            prot.append((resi, name, el, xyz))
         else:
-            het.setdefault(res, []).append((an, xyz, el))
-    return prot, het
+            ligs.setdefault((ch, res, resi), []).append((name, el, xyz))
+    return prot, ligs
+
+
+def carboxyl_oxys(lst):
+    Cs = [(n, x) for (n, e, x) in lst if e == "C"]
+    Os = [x for (n, e, x) in lst if e == "O"]
+    out = []
+    for _, cx in Cs:
+        nb = [ox for ox in Os if np.linalg.norm(cx - ox) < 1.6]
+        if len(nb) >= 2:
+            out.extend(nb)
+    return out
 
 
 def analyze(e):
     pdb = f"{RES}/step1_{e}/boltz_results_step1_{e}/predictions/step1_{e}/step1_{e}_model_0.pdb"
-    prot, het = parse(pdb)
-    ph = np.array([a[2] for a in prot if a[3] != "H"])           # protein heavy atoms
-    atp = het.get("ATP", [])
-    pa = np.array([x for an, x, el in atp if an == "PA"])
-    adres = [k for k in het if k not in ("ATP", "MG")]
-    adip = np.array([x for an, x, el in het.get(adres[0], [])]) if adres else np.empty((0, 3))
-    atp_xyz = np.array([x for an, x, el in atp])
-
-    def mind(a, b):
-        return np.min(np.linalg.norm(a[:, None, :] - b[None, :, :], axis=2))
+    prot, ligs = parse(pdb)
+    ph = np.array([a[3] for a in prot if a[2] != "H"])
+    atp = adip = None
+    for key, lst in ligs.items():
+        names = {n for (n, e_, x) in lst}
+        if {"PA", "PG"} <= names:
+            atp = lst
+        elif carboxyl_oxys(lst):
+            adip = lst
+    pa = next(x for (n, e_, x) in atp if n == "PA")
+    atp_xyz = np.array([x for (n, e_, x) in atp])
+    cb = np.array(carboxyl_oxys(adip))
 
     def contacts(lig):
-        return int(np.sum(np.min(np.linalg.norm(ph[None, :, :] - lig[:, None, :], axis=2), axis=0) < 4.0))
+        return int(np.sum(np.min(np.linalg.norm(ph[None] - lig[:, None], axis=2), axis=0) < 4.0))
 
-    d_adip_pa = mind(adip, pa) if len(pa) and len(adip) else np.nan
-    d_adip_atp = mind(adip, atp_xyz) if len(atp_xyz) and len(adip) else np.nan
-    return dict(id=e, het={k: len(v) for k, v in het.items()}, adres=adres,
-                d_adip_pa=d_adip_pa, d_adip_atp=d_adip_atp,
-                adip_contacts=contacts(adip) if len(adip) else 0,
-                atp_contacts=contacts(atp_xyz) if len(atp_xyz) else 0)
+    d_adip_pa = float(np.min(np.linalg.norm(cb - pa[None], axis=1)))
+    d_adip_atp = float(np.min(np.linalg.norm(cb[:, None] - atp_xyz[None], axis=2)))
+    # nearest protein residue to the adipate (where on the protein did it land?)
+    dmin_res = min(prot, key=lambda a: np.min(np.linalg.norm(cb - a[3][None], axis=1)))
+    return dict(id=e, d_adip_pa=d_adip_pa, d_adip_atp=d_adip_atp,
+                adip_contacts=contacts(cb), atp_contacts=contacts(atp_xyz),
+                near_res=f"{dmin_res[0]}")
 
 
 if __name__ == "__main__":
-    print(f"{'enz':6} {'adip->Pa':>9} {'adip->ATP':>10} {'adip_4A_contacts':>17} {'ATP_4A_contacts':>16}")
+    print(f"{'enz':6} {'adipO->Pa':>10} {'adipO->ATP':>11} {'adip_contacts':>14} {'ATP_contacts':>13}")
     for e in ["SfaB", "AS9", "AS17", "AS23"]:
         r = analyze(e)
-        print(f"{r['id']:6} {r['d_adip_pa']:9.1f} {r['d_adip_atp']:10.1f} "
-              f"{r['adip_contacts']:17d} {r['atp_contacts']:16d}   adipate={r['adres']}")
+        tag = "buried" if r["adip_contacts"] >= 12 else "SURFACE/loose"
+        atag = "in-pocket" if r["atp_contacts"] >= 25 else "loose"
+        print(f"{r['id']:6} {r['d_adip_pa']:10.1f} {r['d_adip_atp']:11.1f} "
+              f"{r['adip_contacts']:14d} {r['atp_contacts']:13d}   adipate={tag}, ATP={atag}")
