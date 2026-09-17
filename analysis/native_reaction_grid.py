@@ -136,7 +136,7 @@ def load_rows(run_dir: Path, top: int | None) -> list[dict]:
 
 
 def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int | None,
-          drop_cof: bool) -> Path:
+          drop_cof: bool, reactants_only: bool) -> Path:
     rows = load_rows(run_dir, top)
     n = len(rows)
     rowsN = math.ceil(n / cols)
