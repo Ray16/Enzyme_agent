@@ -109,7 +109,17 @@ def main():
         mi = handoff.get(acc)
         cofactors = (mi or {}).get("cofactors")
         if not cofactors:
-            cofactors = DEFAULT_COFACTORS; fell_back.append(acc)
+            if args.no_derive_metals:
+                cofactors = DEFAULT_COFACTORS
+            else:
+                # per-enzyme metal COUNT from UniProt annotation (candidate, else its
+                # reviewed InterPro relatives) instead of a blanket two-metal default.
+                metal = derive_metal_cofactor(acc)
+                cofactors = [
+                    {"ccd": "ATP", "count": 1, "role": "nucleotide_substrate", "basis": "reaction"},
+                    metal,
+                ]
+            fell_back.append(acc)
         summ = metal_summary(cofactors); basis = basis_of(cofactors)
         if summ != "MGx2":
             nondefault.append(f"{acc}:{summ}")
