@@ -95,34 +95,36 @@ _ENUM_INTRO = (
     "it out.\n"
 )
 
-# Completeness AUDIT framing: a first enumeration is biased toward the textbook,
-# central-metabolism folds for the chemistry and routinely misses QUALIFYING folds
-# that live in other corners of biology.  This pass deliberately hunts those.  It
-# names no specific family (that would seed the answer); it only WIDENS the region
-# of fold space the model reasons over — generic guidance valid for ANY reaction.
+# Completeness AUDIT framing.  DELIBERATELY AGNOSTIC to the target's direction and
+# substrate: it does not restate the direction / same-bond / free-substrate
+# constraints (those are enforced deterministically in CODE by
+# ``family_passes_constraints`` AFTER this pass — one source of truth), so the audit
+# casts the WIDEST net and never re-imposes the same first-pass narrowing that made
+# the overlooked fold get missed.  It names no specific family, substrate, product,
+# or direction — it only WIDENS the region of fold space the model reasons over,
+# which is generic guidance equally valid for ANY reaction.
 _AUDIT_INTRO = (
     "You are an enzymology strategist performing a COMPLETENESS AUDIT of a "
-    "partial list of enzyme MECHANISM families for a target BOND-FORMING "
-    "reaction. You are given the target reaction and the families ALREADY "
-    "listed. Your job: find the DISTINCT qualifying folds that are MISSING — the "
-    "ones a first pass overlooks.\n"
+    "partial list of enzyme MECHANISM families for a target reaction. You are "
+    "given the target reaction and the families ALREADY listed. Your job: find "
+    "the DISTINCT catalytic folds / mechanism families that are MISSING from that "
+    "list — the ones a first pass overlooks.\n"
     "A first enumeration leans on the TEXTBOOK, central-/primary-metabolism folds "
-    "for the chemistry and routinely OMITS folds that catalyse the SAME bond-"
-    "forming chemistry on the SAME kind of FREE substrates but sit in OTHER "
-    "regions of biology — e.g. dedicated secondary-metabolite / natural-product "
-    "biosynthetic enzymes, standalone (non-modular) biosynthetic synthetases, and "
-    "other specialised-pathway catalysts. Deliberately reason across ALL domains "
-    "of metabolism, not just the central-metabolism folds, and surface any such "
-    "qualifying fold NOT already listed.\n"
-    "Reason ONLY from the reaction TYPE (bond formed, reacting groups, cofactor) "
-    "and the target's free-substrate class — never from a specific target "
-    "molecule, product, or organism. List ONLY genuinely DISTINCT folds NOT "
-    "already present, each of which — on its OWN native reaction — satisfies "
-    "EVERY constraint below. If the list is already complete, return an EMPTY "
-    "list; never pad it with a marginal or wrong-direction family.\n"
+    "for the chemistry and routinely OMITS folds that perform the SAME kind of "
+    "transformation but sit in OTHER regions of biology — e.g. dedicated "
+    "secondary-metabolite / natural-product biosynthetic enzymes, standalone "
+    "(non-modular) biosynthetic synthetases, and other specialised-pathway "
+    "catalysts. Deliberately reason across ALL domains of metabolism, not just "
+    "the central-metabolism folds, and surface any such fold NOT already listed.\n"
+    "Reason ONLY from the reaction TYPE and its general chemistry — never from a "
+    "specific target molecule, product, or organism. List ONLY genuinely DISTINCT "
+    "folds NOT already present; if the list is already complete, return an EMPTY "
+    "list and never pad it.\n"
 )
 
-_SHARED_TAIL = (
+# The direction + chemistry-match constraints narrow the ENUMERATION pass only.
+# The audit deliberately omits them (see above): code, not this prompt, filters.
+_CONSTRAINTS = (
     "DIRECTION CONSTRAINT (strict): include ONLY families whose NATIVE reaction "
     "proceeds in the SAME direction as the target reaction (the direction named "
     "or implied by the query). EXCLUDE any family whose native reaction runs the "
