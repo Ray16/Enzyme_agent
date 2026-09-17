@@ -111,7 +111,7 @@ def fig_landscape(df):
     ax.set_title("Activity landscape — hits (>0.2), enzymes beating SfaB, and the tail")
     ax.set_ylim(n - 0.5, -0.5)
     ax.legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
-                       Patch(color=ORANGE, label="beats SfaB (<0.2)"),
+                       Patch(color=ORANGE, label="marginal (> SfaB, < 0.2)"),
                        Patch(color=BROWN, label="SfaB (baseline)"),
                        Patch(color="#c8cdd4", label="≤ SfaB")],
               loc="lower right", frameon=True, framealpha=0.95, edgecolor="#ccc")
