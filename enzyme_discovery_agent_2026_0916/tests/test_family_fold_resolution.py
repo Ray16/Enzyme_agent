@@ -78,5 +78,79 @@ class TestResolveFamilyFolds(unittest.TestCase):
         self.assertEqual(folds, [])
 
 
+class TestDistinctiveFamilyQueries(unittest.TestCase):
+    """The query miner must surface the discriminating tokens (gene names,
+    enzyme-name bigrams) and drop generic-modifier phrases that carry no signal.
+    All abstract/placeholder vocabulary — the miner must name no real enzyme."""
+
+    def test_gene_name_tokens_and_slash_pairs(self):
+        fam = {
+            "name": "Nax (widget) synthetase fold amide ligase",
+            "descriptors": ["Nax synthetase domain (AbcD/AbcE-like)"],
+            "literature_terms": ["AbcD/AbcE ligase acting on a dicarboxylate"],
+        }
+        qs = {q.lower() for q in _distinctive_family_queries(fam)}
+        # CamelCase gene tokens and the parts of the slash-joined pair.
+        self.assertIn("abcd", qs)
+        self.assertIn("abce", qs)
+
+    def test_enzyme_bigram_kept_generic_modifier_dropped(self):
+        fam = {
+            "name": "Widgetase (WG) fold ATP-dependent amide ligase",
+            "descriptors": ["catalytic widget synthetase domain"],
+            "literature_terms": [],
+        }
+        qs = {q.lower() for q in _distinctive_family_queries(fam)}
+        # A distinctive modifier + enzyme head is kept ...
+        self.assertIn("widget synthetase", qs)
+        # ... but "<generic> <head>" carries no discriminating signal and is dropped.
+        self.assertNotIn("amide ligase", qs)
+
+
+class TestScoredResolution(unittest.TestCase):
+    """The scored path must pick the functionally-relevant fold even when an
+    incidental-keyword-match fold has a far higher member count, so a
+    non-deterministic verbose family label can no longer lose the on-target fold.
+    """
+
+    def setUp(self):
+        # On-target entry shares several distinctive tokens with the family;
+        # the noise entry shares only a generic word ("synthetase") and has a
+        # much higher member count.
+        self.db = {
+            "AbcD": [_entry("IPR_ON", "domain", "Widget biosynthesis AbcD/AbcE-like")],
+            "AbcE": [_entry("IPR_ON", "domain", "Widget biosynthesis AbcD/AbcE-like")],
+            "widget synthetase": [
+                _entry("IPR_ON", "domain", "Widget biosynthesis AbcD/AbcE-like"),
+                _entry("IPR_NOISE", "family", "Polyprenyl synthetase-like"),
+            ],
+            "Nax synthetase": [_entry("IPR_NOISE", "family", "Polyprenyl synthetase-like")],
+        }
+        self.count_cache = {"IPR_ON": 20, "IPR_NOISE": 400}
+
+    def _search(self, term, max_results=8):
+        return {"data": self.db.get(term, [])}
+
+    def test_relevance_beats_member_count(self):
+        fam = {
+            "name": "Nax (widget) synthetase fold amide ligase",
+            "descriptors": ["Nax synthetase domain (AbcD/AbcE-like)"],
+            "literature_terms": ["AbcD/AbcE ligase acting on a dicarboxylate"],
+        }
+        folds = resolve_family_folds(fam, self.count_cache, self._search, max_folds=4)
+        self.assertIn("IPR_ON", folds)          # on-target recovered ...
+        self.assertNotIn("IPR_NOISE", folds)    # ... noise (score 0) dropped
+        self.assertEqual(folds[0], "IPR_ON")
+
+    def test_falls_back_when_no_distinctive_token_overlap(self):
+        # Abstract names with no token overlap -> scored path empty -> the
+        # original name-first behaviour resolves it (regression guard).
+        db = {"functional family": [_entry("IPR_FAM", "family", "unlabelled entry")]}
+        cache = {"IPR_FAM": 100}
+        fam = {"name": "functional family", "descriptors": []}
+        folds = resolve_family_folds(fam, cache, lambda t, max_results=8: {"data": db.get(t, [])})
+        self.assertEqual(folds, ["IPR_FAM"])
+
+
 if __name__ == "__main__":
     unittest.main()
