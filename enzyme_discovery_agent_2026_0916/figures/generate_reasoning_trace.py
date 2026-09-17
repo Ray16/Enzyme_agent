@@ -287,7 +287,9 @@ def build(run: Path):
     for i, r in enumerate(leads):
         cx = 0.07 + i * cwl
         tier = r.get("tier_label", "") or f"tier {r.get('tier','')}"
-        fam = (r.get("interpro_family") or "").split(",")[0][:26]
+        fam = (r.get("interpro_family") or "").split(",")[0]
+        if len(fam) > 26:
+            fam = fam[:25].rsplit(" ", 1)[0] + "…"
         ax.text(cx + cwl / 2, 0.041, f"{i+1}. {r.get('gene','?')}", ha="center", va="center",
                 fontsize=10.5, fontweight="bold", color=INK)
         ax.text(cx + cwl / 2, 0.025, fam, ha="center", va="center", fontsize=7.4, color=MUTED)
