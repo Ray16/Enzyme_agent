@@ -97,9 +97,7 @@ def fig_landscape(df):
     ax.set_xscale("log")
     ax.invert_yaxis()                                     # most active on top
     tr = ax.get_xaxis_transform()
-    ax.axvline(ACT_THR, color=GREEN, ls="--", lw=1.6, zorder=1)
     ax.axvline(SF, color=BROWN, ls=":", lw=1.8, zorder=1)
-    ax.text(ACT_THR, 1.004, "0.2 µg/ml", transform=tr, color=GREEN, ha="center", va="bottom", fontsize=FS - 5)
     ax.text(SF, 1.004, f"SfaB {SF:.3g}", transform=tr, color=BROWN, ha="center", va="bottom", fontsize=FS - 5)
     ax.set_yticks(y)
     ax.set_yticklabels(d.id, fontsize=FS - 7)
