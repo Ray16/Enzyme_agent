@@ -52,30 +52,49 @@ _COFACTORS = {
 _TIER_COLOR = {"1": "#0f8a4f", "2": "#b06a00", "3": "#7a4fd0"}
 
 
+# Names in ``native_substrates`` are protonation-state forms ("...ium(1+)",
+# "... zwitterion") while the equation uses neutral names, so a plain string
+# compare fails.  Normalisation strips charge tags + state words and maps the few
+# genuine synonyms the equations use; matching then survives the naming drift.
+_SYN = {"ammonium": "nh4", "azanium": "nh4"}
+
+
 def _norm(s: str) -> str:
-    """Normalise a species name for fuzzy matching: drop charge tags, keep alnum."""
     s = re.sub(r"\(\d*[+-]\)", "", s.lower())
-    return re.sub(r"[^a-z0-9]", "", s)
+    s = re.sub(r"\b(zwitterion|cation|anion|dication|trication|tetraanion|ion|residue)\b", "", s)
+    s = re.sub(r"[^a-z0-9]", "", s)
+    return _SYN.get(s, s)
 
 
-def _rxn_sides(cat: str) -> tuple[list[str], list[str]]:
-    """Normalised reactant / product name tokens from the FIRST catalytic reaction."""
-    first = (cat or "").split(" | ")[0]
-    if " = " not in first:
-        return [], []
-    lhs, rhs = first.split(" = ", 1)
-    return [_norm(x) for x in lhs.split(" + ")], [_norm(x) for x in rhs.split(" + ")]
+def _rxn_sides(cat: str) -> tuple[set[str], set[str]]:
+    """Normalised reactant / product name tokens, unioned over ALL reactions of the
+    entry (a multi-reaction enzyme's substrate of reaction 2 must not read as a
+    product of reaction 1)."""
+    lhs: set[str] = set()
+    rhs: set[str] = set()
+    for rxn in (cat or "").split(" | "):
+        if " = " not in rxn:
+            continue
+        left, right = rxn.split(" = ", 1)
+        lhs |= {_norm(x) for x in left.split(" + ")}
+        rhs |= {_norm(x) for x in right.split(" + ")}
+    return lhs, rhs
 
 
-def _is_product(name: str, lhs: list[str], rhs: list[str]) -> bool:
+def _ratio(n: str, toks: set[str]) -> float:
+    # also try dropping a trailing "ium" so tyraminium ~ tyramine
+    variants = (n, n[:-3]) if n.endswith("ium") else (n,)
+    return max((SequenceMatcher(None, v, t).ratio() for v in variants for t in toks),
+               default=0.0)
+
+
+def _is_product(name: str, lhs: set[str], rhs: set[str]) -> bool:
     """A participant is a product when it matches the equation's RHS more closely
-    than its LHS (fuzzy, to survive protonation-state naming like ...inium(1+)).
-    Species matching neither side (e.g. an amine substrate of a *different*
-    reaction in the same entry) default to reactant, so no substrate is lost."""
+    than its LHS.  Species matching neither side (a differently-named substrate,
+    e.g. 2,3-diaminopropanoate vs '3-amino-L-alanine') default to reactant, so no
+    substrate is lost."""
     n = _norm(name)
-    rl = max((SequenceMatcher(None, n, t).ratio() for t in lhs), default=0.0)
-    rr = max((SequenceMatcher(None, n, t).ratio() for t in rhs), default=0.0)
-    return rr > 0.85 and rr > rl
+    return _ratio(n, rhs) > 0.85 and _ratio(n, rhs) > _ratio(n, lhs)
 
 
 def _participants(names: list[str], smis: list[str], drop_cof: bool,
