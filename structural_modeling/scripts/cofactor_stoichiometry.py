@@ -91,6 +91,12 @@ def metal_count_from_uniprot_json(data: dict) -> tuple[int | None, str, str | No
     return None, "no_metal_annotation", None
 
 
+def interpro_ids_from_json(data: dict) -> list[str]:
+    """Candidate's own InterPro accessions (used to find annotated reviewed relatives)."""
+    return [x.get("id") for x in data.get("uniProtKBCrossReferences", [])
+            if x.get("database") == "InterPro" and x.get("id")]
+
+
 def _reviewed_family_members(family_query: str, limit: int = 25) -> list[str]:
     """Accessions of reviewed entries matching a family/EC query."""
     params = urllib.parse.urlencode({
