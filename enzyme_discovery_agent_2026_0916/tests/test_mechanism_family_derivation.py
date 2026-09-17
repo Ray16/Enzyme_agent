@@ -114,7 +114,8 @@ class TestCompletenessAudit(unittest.TestCase):
                "native_direction": "cleavage", "substrates_free": True}
         llm = _AuditLLM([["A", "B", "C"], []], [bad])
         fams = derive_mechanism_families("form an amide bond", "", llm,
-                                         min_families=2, max_families=10, max_attempts=6)
+                                         min_families=2, max_families=10, max_attempts=6,
+                                         target_direction="formation")
         self.assertNotIn("Hydrolase", {f["name"] for f in fams})
 
     def test_reflect_can_be_disabled(self):
