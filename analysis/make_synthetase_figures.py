@@ -32,6 +32,8 @@ os.makedirs(FIG, exist_ok=True)
 ACTIVES = ["AS9", "AS17", "AS23"]          # the three clear hits (>0.2 ug/ml)
 ACT_THR = 0.2
 A_CUT = 150.0                              # in-line angle cut used by the proxy (deg)
+D_GATE = 4.0                               # distance gate (A) the PROXY_CSV was built with
+                                           # (angle_gate_proxy.py D_GATE default; validated)
 RED, ORANGE, BLUE, GREEN, GREY = "#d62728", "#f39c12", "#3060c0", "#2e8b57", "#9aa0a6"
 BROWN = "#8b5a2b"                          # SfaB (the baseline / starting enzyme)
 FS = 18
