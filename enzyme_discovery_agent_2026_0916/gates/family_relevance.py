@@ -167,24 +167,120 @@ def _most_relevant_fold(interpro_ids: list[str], count_cache: dict[str, int]) ->
 _SURVEYABLE_ENTRY_TYPES = frozenset({"family", "domain"})
 
 
-def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro,
-                         max_folds: int = 3) -> list[str]:
-    """Resolve one derived family hypothesis to surveyable InterPro folds by
-    relevance, robustly.
+# Enzyme-class head nouns: the last word of a functional enzyme name.  A clean
+# "<distinctive-modifier> <head>" bigram (e.g. "glutamine synthetase") is the
+# query that InterPro's keyword search resolves precisely; the verbose full label
+# ("Glutamine-synthetase (GS) fold ATP-dependent carboxylate-amine ligase") does
+# not.  Generic reaction/structure vocabulary only, no enzyme or answer name.
+_ENZYME_HEAD_NOUNS = frozenset({
+    "synthetase", "synthase", "ligase", "amidase", "carboxylase", "transferase",
+    "dehydratase", "decarboxylase", "reductase", "kinase", "hydrolase", "lyase",
+    "oxidase", "isomerase", "mutase", "epimerase", "aminotransferase",
+    "acyltransferase", "cyclase", "hydratase", "aldolase", "peptidase",
+})
 
-    A single JOINED descriptor query lets a generic structural-fold term dominate
-    the keyword match and resolve onto the wrong proteins (an unrelated protein
-    sharing that fold, or a whole superfamily) instead of the functional family
-    whose members carry the target chemistry.  So resolve by the family NAME
-    first — the
-    derivation's cleanest FUNCTIONAL label, which matches the on-topic InterPro
-    entries — and use the (often structural, noisy) descriptors only to SUPPLEMENT
-    when the name resolves too few.  Coarse superfamilies and non-family
-    sub-features are dropped; only surveyable (bounded, non-saturated) family/
-    domain entries are kept; broadest coverage first.  Several entries are
-    surveyed, not one, so a single noisy resolution can no longer lose the family.
+# Words that must not stand as the distinctive modifier of an enzyme-name phrase
+# (they are generic reaction/structure/chemistry vocabulary shared by every
+# family, so "<generic> <head>" — e.g. "amide ligase" — carries no discriminating
+# signal).  Union of the shared generic-family stopwords with a few more.
+_PHRASE_STOP_TOKENS = _GENERIC_FAMILY_TOKENS | frozenset({
+    "independent", "biosynthesis", "protein", "forming", "adenylate",
+    "adenylating", "carrier", "phosphate", "acyl", "ammonia", "peptide",
+    "trna", "aminoacyl", "non", "atp2", "mg2",
+})
+
+
+def _distinctive_family_queries(fam: dict) -> list[str]:
+    """Clean, discriminating InterPro query strings mined from a family's OWN
+    model-written label, descriptors and literature terms.
+
+    The verbose family label the model writes ("NIS (siderophore) synthetase fold
+    amide ligase") resolves, under InterPro's keyword search, onto whatever shares
+    its generic words ("synthetase", "fold", "ligase") — polyprenyl synthetase,
+    GAR synthetase, ATP synthase — and misses the functional family it names.  The
+    discriminating signal is already present in the record, just diluted; this
+    extracts it as short, specific queries:
+
+      * gene-name tokens — CamelCase (``IucA``, ``RimK``, ``PylC``) and the parts
+        of slash-joined gene pairs (``IucA/IucC``) — which name a specific family
+        directly, and
+      * enzyme-name bigrams — a distinctive modifier immediately followed by an
+        enzyme-class head noun (``glutamine synthetase``, ``asparagine
+        synthetase``, ``Mur ligase``), skipping labels whose modifier is generic
+        (``amide ligase``).
+
+    Answer-agnostic by construction: it names NO enzyme; every query is derived at
+    runtime from the run's own LLM-written ``mechanism_families.json`` (itself
+    derived from the target chemistry, never from the answer set) using the same
+    generic reaction/structure stopword vocabulary the module already relies on.
     """
-    def _surveyable(term: str) -> list[tuple[str, int]]:
+    texts: list[str] = [str(fam.get("name", ""))]
+    texts.extend(str(d) for d in (fam.get("descriptors") or []))
+    texts.extend(str(t) for t in (fam.get("literature_terms") or []))
+
+    queries: list[str] = []
+    seen: set[str] = set()
+
+    def _add(q: str) -> None:
+        q = " ".join(q.replace("-", " ").split()).strip()
+        low = q.lower()
+        if q and low not in seen and len(q) >= 3:
+            seen.add(low)
+            queries.append(q)
+
+    for text in texts:
+        if not text:
+            continue
+        # (a) gene-name tokens: CamelCase and slash-joined gene pairs.
+        for tok in re.findall(r"\b[A-Z][a-z]+[A-Z][A-Za-z0-9]*\b", text):
+            _add(tok)
+        for pair in re.findall(r"\b[A-Za-z]{2,}[0-9]?/[A-Za-z]{2,}[0-9]?\b", text):
+            for part in pair.split("/"):
+                # keep only parts that carry a gene-like internal capital.
+                if re.search(r"[A-Z]", part[1:] or ""):
+                    _add(part)
+        # (b) enzyme-name bigram: a distinctive modifier + enzyme head noun.
+        words = re.findall(r"[A-Za-z][A-Za-z0-9]*", text.replace("-", " "))
+        low = [w.lower() for w in words]
+        for i, w in enumerate(low):
+            if w in _ENZYME_HEAD_NOUNS and i > 0:
+                modifier = low[i - 1]
+                if modifier in _PHRASE_STOP_TOKENS or modifier in _ENZYME_HEAD_NOUNS:
+                    continue
+                _add(f"{words[i - 1]} {w}")
+    return queries
+
+
+def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro,
+                         max_folds: int = 4) -> list[str]:
+    """Resolve one derived family hypothesis to surveyable InterPro folds by
+    relevance, robustly and reproducibly across LLM phrasing.
+
+    The model's family LABEL is non-deterministic: one run writes "Asparagine
+    synthetase B-like ..." (which resolves cleanly onto the AsnB family), the next
+    writes "Class II aminoacyl-tRNA-synthetase-like ligase (AsnA-type)" (which
+    resolves onto Fructose-1,6-bisphosphatase and GPCRs).  Resolving off the whole
+    verbose label lets that phrasing luck decide whether the right fold is ever
+    surveyed at all — the failure that loses PuuA/GlnA2 (GS fold) and the
+    IucA/IucC NIS ligases.
+
+    So resolve by MEANING, not by luck: pool the surveyable InterPro entries that
+    the family's DISTINCTIVE queries return (gene-name tokens + enzyme-name
+    bigrams from name/descriptors/literature terms — see
+    :func:`_distinctive_family_queries`), then SCORE each pooled entry by how many
+    of the family's own distinctive tokens appear in the entry's InterPro name.
+    The on-target family scores high (``IPR022770`` "Aerobactin ... IucA/IucC"
+    shares siderophore/iuca/iucc); incidental keyword-search noise (ATP synthase,
+    GPCRs, polyprenyl synthetase) scores zero and is dropped.  Highest score wins,
+    ties break to broadest reviewed coverage.
+
+    Falls back to the original name-first / descriptor-supplement resolution when
+    nothing scores — so a family whose label carries no distinctive token still
+    resolves, and the behaviour is unchanged for those cases.  Coarse
+    superfamilies and non-family sub-features are always dropped; only surveyable
+    (bounded, non-saturated) family/domain entries are kept.
+    """
+    def _surveyable(term: str) -> list[tuple[str, int, str]]:
         term = str(term or "").strip()
         if not term:
             return []
@@ -192,7 +288,7 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
             res = search_interpro(term, max_results=8)
         except Exception:  # noqa: BLE001 - one bad term must not sink resolution
             return []
-        out: list[tuple[str, int]] = []
+        out: list[tuple[str, int, str]] = []
         for e in (res.get("data") if isinstance(res, dict) else res) or []:
             acc = str(e.get("accession") or e.get("id") or "")
             if not acc.upper().startswith("IPR"):
@@ -207,19 +303,34 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
                     c = 0
                 count_cache[acc] = c
             if 1 < c < _LIST_PAGE_MAX:
-                out.append((acc, c))
-        return sorted(out, key=lambda kv: -kv[1])
+                out.append((acc, c, str(e.get("name") or e.get("short_name") or "")))
+        return out
 
+    # --- Primary: distinctive-query pool, ranked by functional-token relevance.
+    family_tokens = _family_search_tokens(fam)
+    pool: dict[str, tuple[int, str]] = {}  # acc -> (reviewed_count, interpro_name)
+    for query in _distinctive_family_queries(fam):
+        for acc, c, name in _surveyable(query):
+            pool.setdefault(acc, (c, name))
+    scored: list[tuple[int, int, str]] = []  # (relevance, count, acc)
+    for acc, (c, name) in pool.items():
+        name_tokens = set(re.findall(r"[a-z][a-z0-9]{2,}", name.lower()))
+        relevance = len(family_tokens & name_tokens)
+        if relevance >= 1:
+            scored.append((relevance, c, acc))
+    if scored:
+        # Highest relevance first, then broadest surveyable coverage.
+        scored.sort(key=lambda t: (-t[0], -t[1]))
+        return [acc for _, _, acc in scored][:max_folds]
+
+    # --- Fallback: original name-first, descriptor-supplement resolution.
     picked: dict[str, int] = {}
-    # 1. The family name is authoritative — its on-topic entries come first.
-    for acc, c in _surveyable(fam.get("name", "")):
+    for acc, c, _ in sorted(_surveyable(fam.get("name", "")), key=lambda kv: -kv[1]):
         picked.setdefault(acc, c)
-    # 2. Supplement (breadth) from descriptors only for slots the name left open.
     if len(picked) < max_folds:
         for descriptor in fam.get("descriptors") or []:
-            for acc, c in _surveyable(descriptor):
+            for acc, c, _ in sorted(_surveyable(descriptor), key=lambda kv: -kv[1]):
                 picked.setdefault(acc, c)
-    # Name-derived entries first (by coverage), then descriptor supplements.
     return list(picked)[:max_folds]
 
 
