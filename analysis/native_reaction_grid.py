@@ -50,14 +50,16 @@ _COFACTORS = {
 _TIER_COLOR = {"1": "#0f8a4f", "2": "#b06a00", "3": "#7a4fd0"}
 
 
-def _organic(names: list[str], smis: list[str]) -> list[tuple[str, str]]:
+def _participants(names: list[str], smis: list[str], drop_cof: bool) -> list[tuple[str, str]]:
+    """All annotated native-reaction participants, in order.  With drop_cof, the
+    phosphoryl-transfer cofactors / inorganic ions in _COFACTORS are removed."""
     out = []
     for n, s in zip(names, smis):
-        base = n.lower().strip()
-        # strip a trailing charge tag like "(2-)" for the cofactor test
-        stripped = base.split("(")[0].strip()
-        if base in _COFACTORS or stripped in _COFACTORS:
-            continue
+        if drop_cof:
+            base = n.lower().strip()
+            stripped = base.split("(")[0].strip()  # strip a charge tag like "(2-)"
+            if base in _COFACTORS or stripped in _COFACTORS:
+                continue
         out.append((n, s))
     return out
 
