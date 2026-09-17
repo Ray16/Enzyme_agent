@@ -42,13 +42,19 @@ INK, MUTED, LINE = "#0f172a", "#475569", "#94a3b8"
 BLUE, PURPLE, TEAL = "#2563eb", "#7c3aed", "#0d9488"
 GREEN, RED = "#15803d", "#b91c1c"
 
-# Distinct pursued mechanism families (the 8 expanded InterPro entries collapse
-# into these): (family, rep gene, rep accession, amine-substrate, acid-substrate).
+# Distinct pursued mechanism families.  The representative enzyme is NOT hardcoded:
+# it is resolved at draw time to the TOP-RANKED member of that family in
+# ranked_candidates.csv.  Each entry: (family label, InterPro-match substrings,
+# amine substrate to draw, acid substrate to draw).
 PURSUED = [
-    ("NIS / IucA-IucC synthetase", "AsbA", "A0A0F7RJ52", "spermidine", "citrate"),
-    ("Glutamine-synthetase fold", "PuuA", "P78061", "1,4-butanediammonium", "L-glutamate"),
-    ("ATP-grasp ligase (PylC)", "PylC", "Q8PWY3", "3-methyl-D-ornithine", "L-lysin"),
-    ("Asparagine synthetase B", "AsnB", "O24338", "L-glutamine", "L-aspartate"),
+    ("Glutamine-synthetase fold", ["glutamine synthetase", "glutamylputrescine"],
+     "cadaverine", "L-glutamate"),
+    ("ATP-grasp ligase (PylC)", ["atp-grasp", "pylc"],
+     "ornithine", "lysin"),
+    ("NIS / IucA-IucC synthetase", ["iuca", "aerobactin", "siderophore"],
+     "spermidine", "citrate"),
+    ("Asparagine synthetase B", ["asparagine"],
+     "L-glutamine", "L-aspartate"),
 ]
 # Rejected folds -> their off-target native chemistry (fold : reason).
 REJECTED = [
