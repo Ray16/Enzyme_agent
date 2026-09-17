@@ -15,7 +15,7 @@ assert hasattr(s, "geom_model")
 RES = f"{ROOT}/exp_data/amide_synthetase/boltz2/step1/results/output_configs"
 FIG = f"{ROOT}/figures/synthetase_gate_robustness_ranking.png"
 CUTS = [3.5, 4.0, 4.5, 5.0, 6.0]
-RED, ORANGE, GREY = "#d62728", "#f39c12", "#c8cdd4"
+RED, ORANGE, GREY, BROWN = "#d62728", "#f39c12", "#c8cdd4", "#8b5a2b"
 plt.rcParams.update({"font.size": 14, "axes.titlesize": 15, "axes.titleweight": "bold",
     "axes.spines.top": False, "axes.spines.right": False, "savefig.dpi": 300, "figure.dpi": 300})
 
