@@ -1,29 +1,33 @@
 #!/usr/bin/env python3
-"""Visualise one run's REASONING TRACE in a single figure.
+"""Reasoning trace attached ALONG the pipeline for one run.
 
-Reads a run's ``events.jsonl`` + ``family_decisions.json`` + ``family_landscape.json``
-and renders two stacked panels:
+Reads a run's events + family decisions + ranked candidates and draws a single
+top-to-bottom flow where each pipeline stage is annotated with what the agent
+actually did: parse the reaction -> enumerate mechanisms -> the key expand/stop
+family decision (with example native substrates of the pursued folds) ->
+candidates -> top leads.
 
-  (top)    Decision timeline  -- phase bands, distinct-candidate growth, and the
-           milestone decisions the agent made, across its iterations.
-  (bottom) Mechanism-family triage -- the core reasoning step: which candidate
-           folds the agent chose to PURSUE (expand) vs REJECT (stop), and why.
-
-This is a run-specific artifact (it shows the real target and the folds the agent
-reasoned about), not a generic pipeline diagram.
+Run-specific results figure (shows the real target and folds), not a generic
+pipeline diagram.
 
 Usage:  python figures/generate_reasoning_trace.py [RUN_DIR]
 Outputs: figures/reasoning_trace.png
 """
+import csv
 import json
 import sys
-import textwrap
 from pathlib import Path
 
+import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+
+from rdkit import Chem, RDLogger
+from rdkit.Chem.Draw import rdMolDraw2D
+RDLogger.DisableLog("rdApp.*")
 
 FIG_DIR = Path(__file__).resolve().parent
 DEFAULT_RUN = (
@@ -31,20 +35,25 @@ DEFAULT_RUN = (
     / "20260916_120414_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl"
 )
 
-INK, MUTED = "#0f172a", "#475569"
+INK, MUTED, LINE = "#0f172a", "#475569", "#94a3b8"
 BLUE, PURPLE, TEAL = "#2563eb", "#7c3aed", "#0d9488"
-GREEN, RED = "#15803d", "#dc2626"
-PHASE_COLOR = {"reaction_analysis": BLUE, "discovery": PURPLE, "ranking_and_report": TEAL}
-PHASE_NAME = {
-    "reaction_analysis": "Phase 1 · Reaction analysis",
-    "discovery": "Phase 2 · Enzyme discovery",
-    "ranking_and_report": "Phase 3 · Evaluation & ranking",
-}
+GREEN, RED = "#15803d", "#b91c1c"
 
-plt.rcParams.update({
-    "font.family": "DejaVu Sans", "font.size": 11,
-    "axes.edgecolor": "#cbd5e1", "svg.fonttype": "none",
-})
+# Distinct pursued mechanism families (the 8 expanded InterPro entries collapse
+# into these): (family label, representative gene, representative accession,
+# native-substrate name to illustrate, partner clause).
+PURSUED = [
+    ("NIS / IucA-IucC synthetase", "AsbA", "A0A0F7RJ52", "spermidine", "+ citrate"),
+    ("Glutamine-synthetase fold", "PuuA", "P78061", "1,4-butanediammonium", "+ L-glutamate"),
+    ("ATP-grasp ligase (PylC)", "PylC", "Q8PWY3", "(3R)-3-methyl-D-ornithine", "+ L-lysine"),
+    ("Asparagine synthetase B", "AsnB", "O24338", "L-aspartate", "+ L-glutamine"),
+]
+# Rejected: same folds, off-target native chemistry (grouped).
+REJECTED = [
+    "Purine / nucleotide biosynthesis (PurK/PurT, PRGA synthetase)",
+    "Prenyltransferases (NIS-fold, isoprenoid — not amide)",
+    "LysW-carrier-tethered glutamate ligase (RimK / ATP-grasp)",
+]
 
 
 def _tint(hex_color: str, amount: float) -> str:
@@ -53,146 +62,174 @@ def _tint(hex_color: str, amount: float) -> str:
     return f"#{mix(r):02x}{mix(g):02x}{mix(b):02x}"
 
 
+def mol_img(smiles: str, size=(240, 150)):
+    mol = Chem.MolFromSmiles(smiles)
+    d = rdMolDraw2D.MolDraw2DCairo(*size)
+    opts = d.drawOptions()
+    opts.clearBackground = False
+    opts.bondLineWidth = 2
+    rdMolDraw2D.PrepareAndDrawMolecule(d, mol)
+    d.FinishDrawing()
+    import io
+    from PIL import Image
+    return np.asarray(Image.open(io.BytesIO(d.GetDrawingText())))
+
+
 def load(run: Path):
     evs = [json.loads(l) for l in (run / "events.jsonl").read_text().splitlines() if l.strip()]
-    land = json.loads((run / "family_landscape.json").read_text())
-    names = {x["fold_id"]: x.get("fold_name", "") for x in land}
+    contract = next((e for e in evs if e["type"] == "contract_derived"), {})
+    complete = next((e for e in evs if e["type"] == "run_complete"), {})
     dec = json.loads((run / "family_decisions.json").read_text())["decisions"]
-    return evs, names, dec
+    n_expand = sum(1 for v in dec.values() if v["decision"] == "expand")
+    n_stop = sum(1 for v in dec.values() if v["decision"] == "stop")
+    mech = json.loads((run / "mechanism_families.json").read_text())
+    mech_names = [m["name"].split(" (")[0].split(" fold")[0] for m in mech]
+    rows = {}
+    with open(run / "ranked_candidates.csv") as f:
+        for r in csv.DictReader(f):
+            rows.setdefault(r["accession"], r)
+    return contract, complete, n_expand, n_stop, mech_names, rows
 
 
-def _why(reason: str) -> str:
-    """A short 'why' clause from a decision reason (text after the em dash)."""
-    r = reason.replace("—", "-")
-    tail = r.split("-", 1)[1] if "-" in r else r
-    tail = tail.split("(")[0].split(";")[0].strip().rstrip(".,")
-    return tail[0].upper() + tail[1:] if tail else ""
+def sub_smiles(rows, acc, name):
+    r = rows.get(acc, {})
+    names = [n.strip() for n in (r.get("native_substrates") or "").split(";")]
+    smis = [s.strip() for s in (r.get("native_substrate_smiles") or "").split(";")]
+    for n, s in zip(names, smis):
+        if name.lower() in n.lower():
+            return s
+    return smis[0] if smis else ""
 
 
 def build(run: Path):
-    evs, names, dec = load(run)
-    by = lambda t: [e for e in evs if e["type"] == t]
+    contract, complete, n_expand, n_stop, mech_names, rows = load(run)
 
-    # ---- timeline series: max distinct-candidate count seen per iteration ----
-    per_iter, phase_of = {}, {}
-    for e in by("iteration_start"):
-        it = e["iteration"]
-        per_iter[it] = max(per_iter.get(it, 0), e.get("candidate_count", 0))
-        phase_of.setdefault(it, e.get("phase", ""))
-    iters = sorted(per_iter)
-    counts = [per_iter[i] for i in iters]
-    final = by("run_complete")[0] if by("run_complete") else {}
-    contract = by("contract_derived")[0] if by("contract_derived") else {}
-    n_eval = final.get("candidates", 0)
+    fig = plt.figure(figsize=(13.5, 15.0))
+    ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
 
-    # phase spans (contiguous ranges of the same phase label)
-    spans = []
-    for i in iters:
-        p = phase_of[i]
-        if spans and spans[-1][0] == p:
-            spans[-1][2] = i
-        else:
-            spans.append([p, i, i])
+    def card(x, y, w, h, fc, ec, lw=1.6):
+        ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.006",
+                     fc=fc, ec=ec, lw=lw, zorder=2))
 
-    # ---- triage: expanded vs stopped families ----
-    expand, stop = [], []
-    seen = set()
-    for ipr, info in dec.items():
-        if ipr in seen:
-            continue
-        seen.add(ipr)
-        label = names.get(ipr) or ipr
-        row = (label, _why(info.get("reason", "")))
-        (expand if info["decision"] == "expand" else stop).append(row)
+    def arrow(y0, y1, x=0.5):
+        ax.add_patch(FancyArrowPatch((x, y0), (x, y1), arrowstyle="-|>",
+                     mutation_scale=18, color=LINE, lw=2.2, zorder=1))
 
-    # =========================== figure ===========================
-    fig = plt.figure(figsize=(15.5, 11.5))
-    gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 2.15], hspace=0.28,
-                          left=0.065, right=0.975, top=0.9, bottom=0.04)
+    def stage_tag(x, y, text, color):
+        ax.text(x, y, text, ha="left", va="center", fontsize=10.5,
+                fontweight="bold", color="white",
+                bbox=dict(boxstyle="round,pad=0.35", fc=color, ec="none"), zorder=4)
 
-    # ---------- top: decision timeline ----------
-    ax = fig.add_subplot(gs[0])
-    for p, lo, hi in spans:
-        ax.axvspan(lo - 0.5, hi + 0.5, color=_tint(PHASE_COLOR.get(p, "#94a3b8"), 0.86), zorder=0)
-        ax.text((lo + hi) / 2, 1.04, PHASE_NAME.get(p, p), transform=ax.get_xaxis_transform(),
-                ha="center", va="bottom", fontsize=11, fontweight="bold",
-                color=PHASE_COLOR.get(p, MUTED))
-    ax.fill_between(iters, counts, step="post", color=_tint(TEAL, 0.55), zorder=1)
-    ax.step(iters, counts, where="post", color=TEAL, lw=2.4, zorder=2)
+    def molecule(smiles, x, y, zoom=0.62):
+        try:
+            im = OffsetImage(mol_img(smiles), zoom=zoom)
+            ax.add_artist(AnnotationBbox(im, (x, y), frameon=False, zorder=5))
+        except Exception:
+            pass
 
-    # milestone annotations (iteration, text, y-offset in candidate units)
-    def firstiter(t, default):
-        xs = [e.get("iteration") for e in by(t) if isinstance(e.get("iteration"), int)]
-        return min(xs) if xs else default
-    milestones = [
-        (firstiter("gate", 6) if any(e["gate"] == "literature_harvest" for e in by("gate")) else 6,
-         "Read literature", 6),
-        (next((e["iteration"] for e in by("gate") if e["gate"] == "mechanism_family"), 6),
-         "Enumerate mechanisms", 15),
-        (7, f"Triage families\n{len(expand)} pursue · {len(stop)} reject", 22),
-        (9, "Register\ncandidates", 9),
-        (next((e["iteration"] for e in by("coverage_checkpoint")), 10), "Coverage check", 15),
-        (max(iters), f"Evaluate {n_eval}\n→ rank → report", 20),
-    ]
-    for x, txt, y in milestones:
-        ax.annotate(txt, xy=(x, min(y, max(counts) + 1)), xytext=(x, y + 3.5),
-                    ha="center", va="bottom", fontsize=9.2, color=INK, fontweight="bold",
-                    arrowprops=dict(arrowstyle="-", color="#94a3b8", lw=1.1),
-                    bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#cbd5e1", lw=0.8))
-    ax.set_xlim(0.5, max(iters) + 0.5)
-    ax.set_ylim(0, max(counts) + 12)
-    ax.set_xlabel("agent iteration", fontsize=10.5, color=MUTED)
-    ax.set_ylabel("distinct candidates", fontsize=10.5, color=MUTED)
-    ax.set_yticks([0, 10, 20])
-    for s in ("top", "right"):
-        ax.spines[s].set_visible(False)
-    ax.tick_params(colors=MUTED, labelsize=9)
+    # title
+    ax.text(0.5, 0.982, "Enzyme Discovery Agent — reasoning trace along the pipeline",
+            ha="center", va="top", fontsize=17, fontweight="bold", color=INK)
+    ax.text(0.5, 0.958, "one run · target: adipic acid + hexamethylenediamine (nylon-6,6 amide ligation)",
+            ha="center", va="top", fontsize=10.5, color=MUTED, style="italic")
 
-    # contract subtitle
+    # ---------- 1. INPUT ----------
+    y = 0.945
+    card(0.14, 0.855, 0.72, 0.088, "white", BLUE)
+    stage_tag(0.155, 0.930, "INPUT  ·  target reaction", BLUE)
+    ax.text(0.30, 0.900, "diacid", ha="center", fontsize=9.5, color=MUTED)
+    ax.text(0.70, 0.900, "diamine", ha="center", fontsize=9.5, color=MUTED)
+    molecule("O=C(O)CCCCC(=O)O", 0.30, 0.878, zoom=0.55)
+    molecule("NCCCCCCN", 0.70, 0.878, zoom=0.55)
+    ax.text(0.5, 0.878, "+", ha="center", va="center", fontsize=20, color=INK)
+
+    arrow(0.855, 0.828)
+
+    # ---------- 2. PARSE ----------
+    card(0.10, 0.762, 0.80, 0.064, _tint(BLUE, 0.93), BLUE)
+    stage_tag(0.115, 0.814, "PARSE REACTION  →  contract", BLUE)
     bt = ", ".join(contract.get("bond_types", []) or [])
     rd = contract.get("reaction_direction", "")
     rg = " + ".join(contract.get("reactive_groups", []) or [])
-    sub = f"derived reaction contract:  bond = {bt}   ·   direction = {rd}   ·   groups = {rg}"
-    ax.set_title(sub, fontsize=10, color=MUTED, loc="left", pad=26)
+    ax.text(0.5, 0.783, f"bond = {bt}      direction = {rd}      groups = {rg}      "
+            f"substrates = free small molecules",
+            ha="center", va="center", fontsize=11.5, fontweight="bold", color=INK)
 
-    # ---------- bottom: mechanism-family triage ----------
-    axb = fig.add_subplot(gs[1]); axb.axis("off")
-    axb.set_xlim(0, 1); axb.set_ylim(0, 1)
-    axb.text(0.5, 1.0, "Mechanism-family triage  —  which folds the agent pursued vs rejected",
-             ha="center", va="top", fontsize=13.5, fontweight="bold", color=INK)
+    arrow(0.762, 0.735)
 
-    def column(x0, x1, header, rows, accent):
-        axb.add_patch(FancyBboxPatch((x0, 0.905), x1 - x0, 0.05,
-                      boxstyle="round,pad=0.006", fc=accent, ec="none",
-                      transform=axb.transAxes, zorder=2))
-        axb.text((x0 + x1) / 2, 0.93, header, ha="center", va="center",
-                 fontsize=11.5, fontweight="bold", color="white", zorder=3)
-        n = max(len(rows), 1)
-        top, bot, gap = 0.87, 0.02, 0.018
-        rh = (top - bot - gap * (n - 1)) / n
-        rh = min(rh, 0.115)
-        for i, (name, why) in enumerate(rows):
-            y = top - i * (rh + gap) - rh
-            axb.add_patch(FancyBboxPatch((x0, y), x1 - x0, rh,
-                          boxstyle="round,pad=0.004", fc=_tint(accent, 0.9),
-                          ec=accent, lw=1.4, transform=axb.transAxes, zorder=1))
-            axb.text(x0 + 0.012, y + rh * 0.64, textwrap.shorten(name, 52, placeholder="…"),
-                     ha="left", va="center", fontsize=10.3, fontweight="bold", color=INK, zorder=2)
-            if why:
-                axb.text(x0 + 0.012, y + rh * 0.24,
-                         textwrap.shorten(why, 60, placeholder="…"),
-                         ha="left", va="center", fontsize=8.8, color=MUTED, zorder=2)
+    # ---------- 3. ENUMERATE ----------
+    card(0.10, 0.655, 0.80, 0.078, _tint(PURPLE, 0.94), PURPLE)
+    stage_tag(0.115, 0.722, f"ENUMERATE MECHANISMS  ·  {len(mech_names)} candidate folds", PURPLE)
+    ax.text(0.5, 0.688, "  ·  ".join(mech_names[:4]), ha="center", va="center",
+            fontsize=10, color=INK)
+    ax.text(0.5, 0.668, "  ·  ".join(mech_names[4:]), ha="center", va="center",
+            fontsize=10, color=INK)
 
-    column(0.0, 0.485, f"PURSUED  ·  expanded ({len(expand)})", expand, GREEN)
-    column(0.515, 1.0, f"REJECTED  ·  stopped ({len(stop)})", stop, RED)
+    arrow(0.655, 0.628)
 
-    # header
-    q = final.get("query") or ""
-    fig.suptitle("Enzyme Discovery Agent — reasoning trace of one run",
-                 x=0.065, ha="left", fontsize=17, fontweight="bold", color=INK, y=0.975)
+    # ---------- 4. TRIAGE (key decision) ----------
+    card(0.04, 0.243, 0.92, 0.382, "white", INK, lw=1.2)
+    stage_tag(0.055, 0.612, f"TRIAGE FAMILIES  →  expand vs stop   (key decision:  "
+              f"{n_expand} expand · {n_stop} stop)", INK)
+
+    # pursued (left)
+    lx = 0.065
+    ax.add_patch(FancyBboxPatch((lx, 0.545), 0.55, 0.038, boxstyle="round,pad=0.004",
+                 fc=GREEN, ec="none", zorder=3))
+    ax.text(lx + 0.275, 0.564, "PURSUED  —  fold condenses a free amine onto a carboxylate",
+            ha="center", va="center", fontsize=10.5, fontweight="bold", color="white", zorder=4)
+    # 2x2 grid of pursued example cards
+    cw, ch, gx, gy = 0.267, 0.128, 0.016, 0.014
+    x0, y0 = lx, 0.398
+    for i, (fam, gene, acc, subname, partner) in enumerate(PURSUED):
+        cx = x0 + (i % 2) * (cw + gx)
+        cy = y0 - (i // 2) * (ch + gy)
+        card(cx, cy, cw, ch, _tint(GREEN, 0.93), GREEN, lw=1.4)
+        ax.text(cx + 0.012, cy + ch - 0.020, fam, ha="left", va="center",
+                fontsize=9.6, fontweight="bold", color=INK)
+        ax.text(cx + 0.012, cy + ch - 0.040, f"e.g. {gene}", ha="left", va="center",
+                fontsize=8.6, color=GREEN, fontweight="bold")
+        molecule(sub_smiles(rows, acc, subname), cx + cw * 0.5, cy + ch * 0.40, zoom=0.5)
+        ax.text(cx + cw * 0.5, cy + 0.010, f"{subname.split('(')[0].strip()} {partner}",
+                ha="center", va="center", fontsize=8.2, color=MUTED)
+
+    # rejected (right)
+    rx = 0.645
+    ax.add_patch(FancyBboxPatch((rx, 0.545), 0.30, 0.038, boxstyle="round,pad=0.004",
+                 fc=RED, ec="none", zorder=3))
+    ax.text(rx + 0.15, 0.564, "STOPPED  —  off-target native chemistry",
+            ha="center", va="center", fontsize=10.5, fontweight="bold", color="white", zorder=4)
+    for i, txt in enumerate(REJECTED):
+        cy = 0.500 - i * 0.058
+        card(rx, cy, 0.30, 0.046, _tint(RED, 0.94), RED, lw=1.3)
+        ax.text(rx + 0.012, cy + 0.023, txt, ha="left", va="center", fontsize=8.7,
+                color=INK, wrap=True)
+    ax.text(rx + 0.15, 0.300, "same folds — rejected because their\nmembers act on the wrong substrates",
+            ha="center", va="center", fontsize=8.6, color=MUTED, style="italic")
+
+    arrow(0.243, 0.216)
+
+    # ---------- 5. SEARCH & SCREEN ----------
+    n_final = complete.get("candidates", 0)
+    card(0.10, 0.150, 0.80, 0.062, _tint(TEAL, 0.93), TEAL)
+    stage_tag(0.115, 0.200, "SEARCH · SCREEN · EVALUATE", TEAL)
+    ax.text(0.5, 0.170, f"pursued families → resolve members + orthologs  "
+            f"→  {n_final} candidates evaluated (deduplicated to distinct enzymes)",
+            ha="center", va="center", fontsize=11, fontweight="bold", color=INK)
+
+    arrow(0.150, 0.123)
+
+    # ---------- 6. RANK -> LEADS ----------
+    card(0.10, 0.038, 0.80, 0.078, _tint(TEAL, 0.86), TEAL, lw=1.8)
+    stage_tag(0.115, 0.105, "RANK  →  top leads (Tier 1)", TEAL)
+    ax.text(0.5, 0.074, "GlnA2 · PuuA  (γ-glutamyl-polyamine synthetases, GS-fold)",
+            ha="center", va="center", fontsize=11, fontweight="bold", color=INK)
+    ax.text(0.5, 0.052, "AsbA · IucA  (NIS siderophore synthetases)  —  ranked by the "
+            "deterministic priority spine",
+            ha="center", va="center", fontsize=9.5, color=MUTED)
 
     out = FIG_DIR / "reasoning_trace.png"
-    fig.savefig(out, dpi=200, facecolor="white", bbox_inches="tight")
+    fig.savefig(out, dpi=200, facecolor="white")
     print(f"wrote {out}")
 
 
