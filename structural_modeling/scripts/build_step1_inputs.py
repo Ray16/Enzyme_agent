@@ -85,6 +85,8 @@ def main():
     ap.add_argument("--handoff", default=None, help="structural_modeling_handoff.json (per-enzyme modeling_input.cofactors)")
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--dry-run", action="store_true", help="report per-enzyme cofactor spec; do not write YAMLs")
+    ap.add_argument("--no-derive-metals", action="store_true",
+                    help="disable data-driven metal derivation; use the blanket ATP+2 Mg default")
     args = ap.parse_args()
 
     seqs = read_fasta(FASTA)
