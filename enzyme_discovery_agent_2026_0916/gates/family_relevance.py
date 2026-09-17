@@ -371,7 +371,7 @@ def collect_survey_folds(
     count_cache: dict[str, int],
     fold_cache: dict[str, str | None] | None = None,
     max_genes: int = 150,
-    max_folds: int = 40,
+    max_folds: int = 80,
 ) -> list[dict]:
     """Return the InterPro folds worth surveying, from BOTH sources.
 
