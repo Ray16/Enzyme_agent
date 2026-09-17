@@ -173,11 +173,14 @@ def main() -> None:
     ap.add_argument("--out", default=None)
     ap.add_argument("--top", type=int, default=None, help="limit to top-N ranked")
     ap.add_argument("--cols", type=int, default=4)
-    ap.add_argument("--cap", type=int, default=4, help="max structures drawn per panel")
+    ap.add_argument("--cap", type=int, default=None,
+                    help="max structures drawn per panel (default: no cap — draw all)")
+    ap.add_argument("--drop-cofactors", action="store_true",
+                    help="omit phosphoryl-transfer cofactors/ions (ammonium is kept — it is a substrate)")
     a = ap.parse_args()
     run_dir = Path(a.run_dir)
     out = Path(a.out) if a.out else run_dir / "native_reaction_grid.png"
-    p = build(run_dir, out, a.cols, a.top, a.cap)
+    p = build(run_dir, out, a.cols, a.top, a.cap, a.drop_cofactors)
     print(f"wrote {p}")
 
 
