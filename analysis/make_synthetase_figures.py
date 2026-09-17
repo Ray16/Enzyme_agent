@@ -141,7 +141,7 @@ def fig_proxy_ranking(df):
         if a > SF:
             axA.text(d.mean_inline_angle[i] + 0.4, i, iid, va="center", ha="left",
                      fontsize=FS - 7, fontweight="bold", color=_tier(iid, a, SF))
-    lines = ["beats SfaB (by activity)  →  angle rank"]
+    lines = ["above SfaB baseline  →  angle rank"]
     for k, (_, r) in enumerate(beat.iterrows(), 1):
         rk = f"#{ang_rank[r.id]}" if r.id in ang_rank else "INCONCLUSIVE"
         lines.append(f"{k}. {r.id}  →  {rk}")
@@ -149,7 +149,7 @@ def fig_proxy_ranking(df):
              fontsize=FS - 5, color="#222", fontweight="bold",
              bbox=dict(boxstyle="round,pad=0.5", fc="#fbfbfb", ec="#888", lw=1.2))
     axA.legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
-                        Patch(color=ORANGE, label="beats SfaB (<0.2)"),
+                        Patch(color=ORANGE, label="marginal (> SfaB, < 0.2)"),
                         Patch(color="#c8cdd4", label="≤ SfaB")],
                loc="lower right", bbox_to_anchor=(0.985, 0.30),
                frameon=True, framealpha=0.95, edgecolor="#ccc")
