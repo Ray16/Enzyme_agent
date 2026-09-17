@@ -258,7 +258,7 @@ def build(run: Path):
     ax.add_patch(FancyBboxPatch((lx, 0.570), 2 * cw2 + gx, 0.032, boxstyle="round,pad=0.004",
                  fc=GREEN, ec="none", zorder=3))
     ax.text(lx + cw2 + gx / 2, 0.586, "PURSUED  —  forms the target amide bond from small substrates",
-            ha="center", va="center", fontsize=9.6, fontweight="bold", color="white", zorder=4)
+            ha="center", va="center", fontsize=12, fontweight="bold", color="white", zorder=4)
     for i, (fam, substrs, amine_h, amine_l, acid_h, acid_l, subc) in enumerate(PURSUED):
         rep = next((r for r in ranked
                     if any(s in (r.get("interpro_family") or "").lower() for s in substrs)), None)
