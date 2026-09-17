@@ -52,16 +52,46 @@ _COFACTORS = {
 _TIER_COLOR = {"1": "#0f8a4f", "2": "#b06a00", "3": "#7a4fd0"}
 
 
-def _participants(names: list[str], smis: list[str], drop_cof: bool) -> list[tuple[str, str]]:
-    """All annotated native-reaction participants, in order.  With drop_cof, the
-    phosphoryl-transfer cofactors / inorganic ions in _COFACTORS are removed."""
+def _norm(s: str) -> str:
+    """Normalise a species name for fuzzy matching: drop charge tags, keep alnum."""
+    s = re.sub(r"\(\d*[+-]\)", "", s.lower())
+    return re.sub(r"[^a-z0-9]", "", s)
+
+
+def _rxn_sides(cat: str) -> tuple[list[str], list[str]]:
+    """Normalised reactant / product name tokens from the FIRST catalytic reaction."""
+    first = (cat or "").split(" | ")[0]
+    if " = " not in first:
+        return [], []
+    lhs, rhs = first.split(" = ", 1)
+    return [_norm(x) for x in lhs.split(" + ")], [_norm(x) for x in rhs.split(" + ")]
+
+
+def _is_product(name: str, lhs: list[str], rhs: list[str]) -> bool:
+    """A participant is a product when it matches the equation's RHS more closely
+    than its LHS (fuzzy, to survive protonation-state naming like ...inium(1+)).
+    Species matching neither side (e.g. an amine substrate of a *different*
+    reaction in the same entry) default to reactant, so no substrate is lost."""
+    n = _norm(name)
+    rl = max((SequenceMatcher(None, n, t).ratio() for t in lhs), default=0.0)
+    rr = max((SequenceMatcher(None, n, t).ratio() for t in rhs), default=0.0)
+    return rr > 0.85 and rr > rl
+
+
+def _participants(names: list[str], smis: list[str], drop_cof: bool,
+                  cat: str, reactants_only: bool) -> list[tuple[str, str]]:
+    """Annotated native-reaction participants, in order.  ``drop_cof`` removes the
+    phosphoryl-transfer cofactors / inorganic ions in _COFACTORS; ``reactants_only``
+    additionally drops species identified as reaction products."""
+    lhs, rhs = _rxn_sides(cat) if reactants_only else ([], [])
     out = []
     for n, s in zip(names, smis):
         if drop_cof:
             base = n.lower().strip()
-            stripped = base.split("(")[0].strip()  # strip a charge tag like "(2-)"
-            if base in _COFACTORS or stripped in _COFACTORS:
+            if base in _COFACTORS or base.split("(")[0].strip() in _COFACTORS:
                 continue
+        if reactants_only and _is_product(n, lhs, rhs):
+            continue
         out.append((n, s))
     return out
 
