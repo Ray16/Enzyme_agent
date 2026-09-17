@@ -7,6 +7,11 @@ import json
 import logging
 from pathlib import Path
 
+from enzyme_discovery_agent.tools.mechanism_family_assignment import (
+    assign_mechanism_family,
+    load_mechanism_families,
+)
+
 logger = logging.getLogger("enzyme_agent")
 
 
