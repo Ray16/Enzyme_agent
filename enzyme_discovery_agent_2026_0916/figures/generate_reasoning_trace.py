@@ -184,7 +184,10 @@ def build(run: Path):
                 color="white", bbox=dict(boxstyle="round,pad=0.34", fc=color, ec="none"), zorder=4)
 
     def img_at(arr, x, y, zoom):
-        ax.add_artist(AnnotationBbox(OffsetImage(arr, zoom=zoom), (x, y), frameon=False, zorder=5))
+        # arr is rendered at SS× native px and the figure at DPI; shrink the zoom so
+        # the on-page size matches the SS=1/BASE_DPI layout exactly (no new overlaps).
+        z = zoom / SS * (BASE_DPI / DPI)
+        ax.add_artist(AnnotationBbox(OffsetImage(arr, zoom=z), (x, y), frameon=False, zorder=5))
 
     # ---- title ----
     ax.text(0.5, 0.988, "Enzyme Discovery Agent — reasoning trace along the pipeline",
