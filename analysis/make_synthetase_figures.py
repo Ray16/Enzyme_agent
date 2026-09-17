@@ -70,36 +70,52 @@ def boot_auc_ci(y, s, n=3000, seed=0):
     return grid, np.percentile(C, 2.5, 0), np.percentile(C, 97.5, 0), np.percentile(aucs, [2.5, 97.5])
 
 
+def _tier(iid, a, SF):
+    """Color by activity tier: SfaB=brown, >0.2=red, >SfaB&<0.2=orange, else grey."""
+    if iid == "SfaB":
+        return BROWN
+    if a > ACT_THR:
+        return RED
+    if a > SF:
+        return ORANGE
+    return "#c8cdd4"
+
+
 def fig_landscape(df):
-    """Activity landscape, every panel member labelled on the x-axis (actives in red)."""
+    """Activity landscape as a vertical ranking (horizontal bars, most active on top)."""
     d = df.sort_values("act", ascending=False).reset_index(drop=True)
-    fig, ax = plt.subplots(figsize=(22, 8))
-    x = np.arange(len(d))
-    colors = [BROWN if i == "SfaB" else RED if a else "#c8cdd4"
-              for i, a in zip(d.id, d.is_active)]
+    SF = float(d.loc[d.id == "SfaB", "act"].iloc[0]) if (d.id == "SfaB").any() else 0.0489
+    n = len(d)
+    fig, ax = plt.subplots(figsize=(11, max(9, 0.30 * n)))
+    y = np.arange(n)
     floor = 4e-4
-    ax.bar(x, d.act.clip(lower=floor), color=colors, edgecolor="k", linewidth=0.3, width=0.82, zorder=2)
-    ax.errorbar(x, d.act.clip(lower=floor), yerr=[np.zeros(len(d)), d.act_std.fillna(0)],
-                fmt="none", ecolor="#555", elinewidth=0.7, capsize=2, alpha=0.6, zorder=3)
-    ax.set_yscale("log")
-    ax.axhline(ACT_THR, color=GREEN, ls="--", lw=1.8, zorder=1)
-    ax.text(len(d) - 0.5, ACT_THR * 1.25, f"active threshold  {ACT_THR} µg/ml",
-            color=GREEN, ha="right", va="bottom", fontsize=FS - 3)
-    ax.set_xticks(x)
-    ax.set_xticklabels(d.id, rotation=90, fontsize=FS - 6)
-    for lab, iid, act in zip(ax.get_xticklabels(), d.id, d.is_active):
-        if iid == "SfaB":
-            lab.set_color(BROWN); lab.set_fontweight("bold")
-        elif act:
-            lab.set_color(RED); lab.set_fontweight("bold")
-    ax.set_xlabel("panel member (sorted by activity)", labelpad=8)
-    ax.set_ylabel("N66-L1 activity (µg/ml, log)")
-    ax.set_title("The panel is 3 hits over a flat tail — 3/49 actives, median 0.009 µg/ml")
-    ax.set_xlim(-1, len(d))
+    colors = [_tier(i, a, SF) for i, a in zip(d.id, d.act)]
+    vals = d.act.clip(lower=floor)
+    ax.barh(y, vals, color=colors, edgecolor="k", linewidth=0.3, height=0.82, zorder=2)
+    ax.errorbar(vals, y, xerr=[np.zeros(n), d.act_std.fillna(0)], fmt="none",
+                ecolor="#555", elinewidth=0.7, capsize=2, alpha=0.6, zorder=3)
+    ax.set_xscale("log")
+    ax.invert_yaxis()                                     # most active on top
+    tr = ax.get_xaxis_transform()
+    ax.axvline(ACT_THR, color=GREEN, ls="--", lw=1.6, zorder=1)
+    ax.axvline(SF, color=BROWN, ls=":", lw=1.8, zorder=1)
+    ax.text(ACT_THR, 1.004, "0.2 µg/ml", transform=tr, color=GREEN, ha="center", va="bottom", fontsize=FS - 5)
+    ax.text(SF, 1.004, f"SfaB {SF:.3g}", transform=tr, color=BROWN, ha="center", va="bottom", fontsize=FS - 5)
+    ax.set_yticks(y)
+    ax.set_yticklabels(d.id, fontsize=FS - 7)
+    for lab, iid, a in zip(ax.get_yticklabels(), d.id, d.act):
+        col = _tier(iid, a, SF)
+        if col != "#c8cdd4":
+            lab.set_color(BROWN if iid == "SfaB" else col); lab.set_fontweight("bold")
+    ax.set_ylabel("panel member (ranked by activity)")
+    ax.set_xlabel("N66-L1 activity (µg/ml, log)")
+    ax.set_title("Activity landscape — hits (>0.2), enzymes beating SfaB, and the tail")
+    ax.set_ylim(n - 0.5, -0.5)
     ax.legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
+                       Patch(color=ORANGE, label="beats SfaB (<0.2)"),
                        Patch(color=BROWN, label="SfaB (baseline)"),
-                       Patch(color="#c8cdd4", label="inactive")],
-              loc="upper right", frameon=True, framealpha=0.95, edgecolor="#ccc")
+                       Patch(color="#c8cdd4", label="≤ SfaB")],
+              loc="lower right", frameon=True, framealpha=0.95, edgecolor="#ccc")
     plt.tight_layout()
     p = f"{FIG}/synthetase_activity_landscape.png"
     plt.savefig(p, bbox_inches="tight"); plt.close(fig)
