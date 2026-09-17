@@ -72,7 +72,7 @@ STOPPED = [
      "C(C1C(C(C(O1)N)O)O)OP(=O)(O)O", "glycine", "C(C(=O)O)N",
      "glycinamide-ribonucleotide biosynthesis"),
     ("ATP-grasp (RimK-type)", "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
-     "L-glutamate (chain)", "C(CC(=O)O)C(C(=O)O)N", "polymerised poly-glutamate"),
+     "carrier protein", None, "substrate tethered to LysW carrier — not free"),
 ]
 
 
