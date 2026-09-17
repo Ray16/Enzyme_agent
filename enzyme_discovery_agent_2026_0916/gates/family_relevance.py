@@ -175,6 +175,17 @@ def _is_enzyme_head(word: str) -> bool:
     return len(word) >= 5 and word.lower().endswith("ase")
 
 
+def _is_gene_token(word: str) -> bool:
+    """Whether a word looks like a specific gene/protein symbol worth querying
+    directly: mixed-case with an internal capital after the first letter (the
+    usual gene-symbol shape).  Excludes all-caps tokens and roman numerals
+    (structural-rank markers such as ``II``/``III``), which are not gene names and
+    otherwise resolve onto unrelated entries.  A shape rule, target-agnostic."""
+    if len(word) < 3 or word.isupper():
+        return False
+    return bool(re.search(r"[a-z]", word) and re.search(r"[A-Z]", word[1:]))
+
+
 def _distinctive_family_queries(fam: dict) -> list[str]:
     """Clean, discriminating InterPro query strings mined from a family's OWN
     model-written label, descriptors and literature terms.
