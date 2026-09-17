@@ -61,6 +61,7 @@ ax.text(0.985, 0.985, "\n".join(lines), transform=ax.transAxes, ha="right", va="
         bbox=dict(boxstyle="round,pad=0.5", fc="#fbfbfb", ec="#888", lw=1.2))
 ax.legend(handles=[Patch(color=RED, label="active  (>0.2 µg/ml)"),
                    Patch(color=ORANGE, label="marginal  (> SfaB, < 0.2)"),
+                   Patch(color=BROWN, label="SfaB  (parent baseline)"),
                    Patch(color=GREY, label="≤ SfaB")],
           loc="upper left", bbox_to_anchor=(0.01, 1.0),
           frameon=True, framealpha=0.95, edgecolor="#ccc")
