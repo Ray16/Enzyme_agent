@@ -217,7 +217,8 @@ def build(run: Path):
     gtop = 0.556
     ranked = list(rows.values())  # already in rank order (CSV is rank-sorted)
 
-    def fam_card(cx, cy, title, badge, badge_color, mol_arr, caption, accent, subcaption=""):
+    def fam_card(cx, cy, title, badge, badge_color, mol_arr, caption, accent,
+                 subcaption="", glyph_label=None):
         card(cx, cy, cw2, ch2, "white", accent, lw=1.4)
         # header band inside the card
         ax.add_patch(FancyBboxPatch((cx + 0.006, cy + ch2 - 0.030), cw2 - 0.012, 0.026,
@@ -227,7 +228,18 @@ def build(run: Path):
         if badge:
             ax.text(cx + cw2 - 0.016, cy + ch2 - 0.017, badge, ha="right", va="center",
                     fontsize=8.0, color=badge_color, fontweight="bold", zorder=4)
-        img_at(mol_arr, cx + cw2 / 2, cy + ch2 * 0.50, 0.42)
+        if glyph_label:  # one substrate is a macromolecule: mol + protein glyph
+            img_at(mol_arr, cx + cw2 * 0.30, cy + ch2 * 0.52, 0.34)
+            ax.text(cx + cw2 * 0.545, cy + ch2 * 0.52, "+", ha="center", va="center",
+                    fontsize=13, color=INK)
+            bw, bh = cw2 * 0.30, ch2 * 0.36
+            bx, by = cx + cw2 * 0.63, cy + ch2 * 0.52 - bh / 2
+            ax.add_patch(FancyBboxPatch((bx, by), bw, bh, boxstyle="round,pad=0.006",
+                         fc="#e5e7eb", ec=MUTED, lw=1.2, zorder=5))
+            ax.text(bx + bw / 2, by + bh / 2, glyph_label, ha="center", va="center",
+                    fontsize=7.0, color=MUTED, zorder=6, linespacing=1.1)
+        else:
+            img_at(mol_arr, cx + cw2 / 2, cy + ch2 * 0.50, 0.42)
         ax.text(cx + cw2 / 2, cy + 0.024, caption, ha="center", va="center",
                 fontsize=8.2, color=INK)
         if subcaption:
