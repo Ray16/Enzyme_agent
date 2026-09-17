@@ -186,6 +186,7 @@ def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int | None,
         except (OSError, ValueError):
             pass
 
+    bad_smiles: list[tuple] = []  # (rank, gene, name, smiles) — extraction errors
     fig, axes = plt.subplots(
         rowsN, cols, figsize=(cols * 4.7, rowsN * 3.0), dpi=150,
         squeeze=False, facecolor="white")
