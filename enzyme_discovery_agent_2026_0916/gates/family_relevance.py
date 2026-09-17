@@ -255,29 +255,31 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
     """Resolve one derived family hypothesis to surveyable InterPro folds by
     relevance, robustly and reproducibly across LLM phrasing.
 
-    The model's family LABEL is non-deterministic: one run writes "Asparagine
-    synthetase B-like ..." (which resolves cleanly onto the AsnB family), the next
-    writes "Class II aminoacyl-tRNA-synthetase-like ligase (AsnA-type)" (which
-    resolves onto Fructose-1,6-bisphosphatase and GPCRs).  Resolving off the whole
-    verbose label lets that phrasing luck decide whether the right fold is ever
-    surveyed at all — the failure that loses PuuA/GlnA2 (GS fold) and the
-    IucA/IucC NIS ligases.
+    The model's family LABEL is non-deterministic: one run writes a clean
+    functional label that resolves onto the right catalytic family, the next
+    writes a broad structural/analogy label that resolves onto unrelated proteins
+    sharing a generic word.  Resolving off the whole verbose label lets that
+    phrasing luck decide whether the on-target fold is ever surveyed at all.
 
     So resolve by MEANING, not by luck: pool the surveyable InterPro entries that
     the family's DISTINCTIVE queries return (gene-name tokens + enzyme-name
     bigrams from name/descriptors/literature terms — see
     :func:`_distinctive_family_queries`), then SCORE each pooled entry by how many
     of the family's own distinctive tokens appear in the entry's InterPro name.
-    The on-target family scores high (``IPR022770`` "Aerobactin ... IucA/IucC"
-    shares siderophore/iuca/iucc); incidental keyword-search noise (ATP synthase,
-    GPCRs, polyprenyl synthetase) scores zero and is dropped.  Highest score wins,
-    ties break to broadest reviewed coverage.
+    An on-target family shares several distinctive tokens with its InterPro entry
+    name and scores high; incidental keyword-search noise (an unrelated protein
+    that merely shares a generic word) scores zero and is dropped.  Highest score
+    wins, ties break to broadest reviewed coverage.
 
     Falls back to the original name-first / descriptor-supplement resolution when
     nothing scores — so a family whose label carries no distinctive token still
     resolves, and the behaviour is unchanged for those cases.  Coarse
     superfamilies and non-family sub-features are always dropped; only surveyable
     (bounded, non-saturated) family/domain entries are kept.
+
+    Answer-agnostic by construction: names NO specific enzyme, family or
+    accession; operates only on the run's own target-derived family record and the
+    module's generic stopword vocabulary.
     """
     def _surveyable(term: str) -> list[tuple[str, int, str]]:
         term = str(term or "").strip()
