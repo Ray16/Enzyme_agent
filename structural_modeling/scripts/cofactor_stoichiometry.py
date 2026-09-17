@@ -128,10 +128,17 @@ def derive_metal_cofactor(
             return {"ccd": metal or "MG", "count": count, "role": "catalytic_metal",
                     "basis": basis, "metal": metal or "MG"}
 
-    if family_query:
+    # candidate itself is unannotated (e.g. TrEMBL): poll its reviewed relatives. Use an
+    # explicit family_query if given, else the candidate's OWN InterPro memberships.
+    queries: list[str] = [family_query] if family_query else []
+    if not queries and data:
+        queries = [f"xref:interpro-{i}" for i in interpro_ids_from_json(data)]
+    for q in queries:
         counts: Counter = Counter()
         metals: Counter = Counter()
-        for acc in _reviewed_family_members(family_query):
+        for acc in _reviewed_family_members(q):
+            if acc == accession:
+                continue
             md = fetch(f"{_UNIPROT}/{acc}.json")
             if not md:
                 continue
@@ -143,7 +150,7 @@ def derive_metal_cofactor(
             count = counts.most_common(1)[0][0]
             metal = metals.most_common(1)[0][0]
             return {"ccd": metal, "count": count, "role": "catalytic_metal",
-                    "basis": f"family_reviewed_modal(n={sum(counts.values())})", "metal": metal}
+                    "basis": f"family_reviewed_modal({q},n={sum(counts.values())})", "metal": metal}
 
     return {"ccd": "MG", "count": default_count, "role": "catalytic_metal",
             "basis": "generic_default", "metal": "MG"}
