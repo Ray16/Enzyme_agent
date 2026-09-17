@@ -252,9 +252,9 @@ def _distinctive_family_queries(fam: dict) -> list[str]:
 
 
 def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro,
-                         max_folds: int = 4) -> list[str]:
-    """Resolve one derived family hypothesis to surveyable InterPro folds by
-    relevance, robustly and reproducibly across LLM phrasing.
+                         max_folds: int = 12) -> list[str]:
+    """Resolve one derived family hypothesis to the surveyable InterPro folds it
+    plausibly points to — RECALL-FIRST, robustly across LLM phrasing.
 
     The model's family LABEL is non-deterministic: one run writes a clean
     functional label that resolves onto the right catalytic family, the next
@@ -262,21 +262,28 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
     sharing a generic word.  Resolving off the whole verbose label lets that
     phrasing luck decide whether the on-target fold is ever surveyed at all.
 
-    So resolve by MEANING, not by luck: pool the surveyable InterPro entries that
-    the family's DISTINCTIVE queries return (gene-name tokens + enzyme-name
-    bigrams from name/descriptors/literature terms — see
-    :func:`_distinctive_family_queries`), then SCORE each pooled entry by how many
-    of the family's own distinctive tokens appear in the entry's InterPro name.
-    An on-target family shares several distinctive tokens with its InterPro entry
-    name and scores high; incidental keyword-search noise (an unrelated protein
-    that merely shares a generic word) scores zero and is dropped.  Highest score
-    wins, ties break to broadest reviewed coverage.
+    So resolve by MEANING, not by luck, and broadly: pool the surveyable InterPro
+    entries that the family's DISTINCTIVE queries return (gene-name tokens +
+    enzyme-name bigrams from name/descriptors/literature terms — see
+    :func:`_distinctive_family_queries`), keep every entry that shares at least
+    one of the family's own distinctive tokens with its InterPro name, and survey
+    them ALL.  Discovery is the wrong place to narrow: a fold that shares a
+    distinctive token and is surveyable is a legitimate candidate, and whether it
+    is really on-target is decided downstream by GROUNDED evidence (reaction
+    direction + native-substrate fit), not by a keyword-match rank here.  This is
+    what keeps the canonical catalytic family from being crowded out of a tight
+    top-K by incidental-token variants when the model's phrasing is noisy.
+
+    Breadth is still BOUNDED to the relevant, not the whole database: an entry is
+    kept only if it (a) shares a distinctive (generic-filtered) family token,
+    (b) is a family/domain entry (coarse superfamilies and sub-features dropped),
+    and (c) is surveyable (reviewed membership bounded and non-saturated).  The
+    result is ordered by relevance then coverage and capped at ``max_folds`` as a
+    generous safety valve, not as the discovery filter.
 
     Falls back to the original name-first / descriptor-supplement resolution when
     nothing scores — so a family whose label carries no distinctive token still
-    resolves, and the behaviour is unchanged for those cases.  Coarse
-    superfamilies and non-family sub-features are always dropped; only surveyable
-    (bounded, non-saturated) family/domain entries are kept.
+    resolves, and the behaviour is unchanged for those cases.
 
     Answer-agnostic by construction: names NO specific enzyme, family or
     accession; operates only on the run's own target-derived family record and the
