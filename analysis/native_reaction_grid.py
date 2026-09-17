@@ -32,7 +32,7 @@ RDLogger.DisableLog("rdApp.*")
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from PIL import Image
+from PIL import Image, ImageDraw
 
 # Phosphoryl-transfer cofactors and inorganic ions carry no discriminating
 # chemistry.  Dropped ONLY when --drop-cofactors is passed; by default every
