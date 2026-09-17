@@ -84,8 +84,8 @@ def _root_card() -> str:
         '<<table border="0" cellborder="0" cellspacing="0" cellpadding="12" '
         'style="rounded" bgcolor="#0f172a"><tr><td>'
         '<font point-size="18" color="white"><b>Enzyme Discovery Agent</b></font><br/>'
-        '<font point-size="11" color="#cbd5e1">The AI plans the search &#183; tools retrieve the real '
-        'enzymes<br/>&#8212; the answer is never shown to it (data-leakage firewall)</font>'
+        '<font point-size="11" color="#cbd5e1">AI plans the search &#183; tools find the enzymes &#183; '
+        'answer hidden from it<br/>(data-leakage firewall)</font>'
         '</td></tr></table>>'
     )
 
