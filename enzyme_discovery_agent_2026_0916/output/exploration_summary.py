@@ -73,9 +73,27 @@ def write_exploration_summary(run_dir: Path, log_fn=None) -> None:
                 "gene_names": meta.get("gene_names", []),
             })
 
+    mechanism_rollup = summarize_assignments(evaluated_list, mech_families)
+
     summary_lines = ["**Exploration Summary**\n"]
     for status, count in sorted(status_counts.items()):
         summary_lines.append(f"- {status}: {count}")
+    if mechanism_rollup:
+        summary_lines.append(
+            f"\n**Mechanism-family composition ({len(mechanism_rollup)} classes):**"
+        )
+        for row in mechanism_rollup:
+            bits = []
+            if row.get("level"):
+                bits.append(row["level"])
+            if row.get("promise"):
+                bits.append(f"promise={row['promise']}")
+            if row.get("best_rank") is not None:
+                bits.append(f"best rank #{row['best_rank']}")
+            suffix = f" ({', '.join(bits)})" if bits else ""
+            summary_lines.append(
+                f"  - {row['name']}: {row['n_candidates']} candidates{suffix}"
+            )
     if family_groups:
         summary_lines.append(f"\n**Evaluated by family ({len(family_groups)} families):**")
         for family, members in sorted(family_groups.items()):
