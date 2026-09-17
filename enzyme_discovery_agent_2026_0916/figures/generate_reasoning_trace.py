@@ -231,10 +231,10 @@ def build(run: Path):
         ax.add_patch(FancyBboxPatch((cx + 0.006, cy + ch2 - 0.030), cw2 - 0.012, 0.026,
                      boxstyle="round,pad=0.002", fc=_tint(accent, 0.9), ec="none", zorder=3))
         ax.text(cx + 0.016, cy + ch2 - 0.017, title, ha="left", va="center",
-                fontsize=8.6, fontweight="bold", color=INK, zorder=4)
+                fontsize=10.8, fontweight="bold", color=INK, zorder=4)
         if badge:
             ax.text(cx + cw2 - 0.016, cy + ch2 - 0.017, badge, ha="right", va="center",
-                    fontsize=8.0, color=badge_color, fontweight="bold", zorder=4)
+                    fontsize=10, color=badge_color, fontweight="bold", zorder=4)
         if glyph_label:  # one substrate is a macromolecule: mol + protein glyph
             img_at(mol_arr, cx + cw2 * 0.30, cy + ch2 * 0.52, 0.34)
             ax.text(cx + cw2 * 0.545, cy + ch2 * 0.52, "+", ha="center", va="center",
