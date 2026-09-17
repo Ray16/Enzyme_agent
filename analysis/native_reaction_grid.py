@@ -102,7 +102,7 @@ def _participants(names: list[str], smis: list[str], drop_cof: bool,
     """Annotated native-reaction participants, in order.  ``drop_cof`` removes the
     phosphoryl-transfer cofactors / inorganic ions in _COFACTORS; ``reactants_only``
     additionally drops species identified as reaction products."""
-    lhs, rhs = _rxn_sides(cat) if reactants_only else ([], [])
+    lhs, rhs = _rxn_sides(cat) if reactants_only else (set(), set())
     out = []
     for n, s in zip(names, smis):
         if drop_cof:
