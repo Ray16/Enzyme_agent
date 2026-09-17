@@ -208,11 +208,11 @@ def build(run: Path):
     # ---- 3. ENUMERATE ----
     card(0.10, 0.658, 0.80, 0.078, _tint(PURPLE, 0.94), PURPLE)
     tag(0.115, 0.726, f"ENUMERATE MECHANISMS  ·  {len(mech_names)} distinct folds "
-        f"(acyl-phosphate & acyl-adenylate intermediates)", PURPLE, fs=10)
-    ax.text(0.5, 0.696, "   ·   ".join(mech_names[:4]), ha="center", va="center",
-            fontsize=10, color=INK)
-    ax.text(0.5, 0.674, "   ·   ".join(mech_names[4:]), ha="center", va="center",
-            fontsize=10, color=INK)
+        f"(acyl-phosphate & acyl-adenylate intermediates)", PURPLE, fs=12.5)
+    ax.text(0.5, 0.697, "   ·   ".join(mech_names[:4]), ha="center", va="center",
+            fontsize=13, color=INK)
+    ax.text(0.5, 0.673, "   ·   ".join(mech_names[4:]), ha="center", va="center",
+            fontsize=13, color=INK)
     arrow(0.658, 0.632)
 
     # ---- 4. TRIAGE ----
