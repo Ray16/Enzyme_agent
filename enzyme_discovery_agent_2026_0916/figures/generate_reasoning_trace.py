@@ -255,34 +255,34 @@ def build(run: Path):
                  mol_img(smi, (240, 150)), sublabel, RED)
 
     # full-width decision-rule strip -------------------------------------------
-    card(0.035, 0.146, 2 * (2 * cw2 + gx) + 0.036, 0.048, _tint(INK, 0.96), INK, lw=1.2)
-    ax.text(0.5, 0.170, "decision rule:  same fold ≠ same substrate — pursue only the members "
+    card(0.035, 0.162, 2 * (2 * cw2 + gx) + 0.036, 0.048, _tint(INK, 0.96), INK, lw=1.2)
+    ax.text(0.5, 0.186, "decision rule:  same fold ≠ same substrate — pursue only the members "
             "whose native reaction matches the target chemistry (free amine + carboxylate)",
             ha="center", va="center", fontsize=9, color=INK)
-    arrow(0.135, 0.115)
+    arrow(0.150, 0.132)
 
     # ---- 5. SEARCH / SCREEN ----
     n_final = complete.get("candidates", 0)
-    card(0.10, 0.096, 0.80, 0.052, _tint(TEAL, 0.94), TEAL)
-    tag(0.115, 0.140, "SEARCH · SCREEN · EVALUATE", TEAL)
-    ax.text(0.5, 0.114, f"pursued families → resolve members + orthologs across {n_folds} folds  "
+    card(0.10, 0.082, 0.80, 0.048, _tint(TEAL, 0.94), TEAL)
+    tag(0.115, 0.122, "SEARCH · SCREEN · EVALUATE", TEAL)
+    ax.text(0.5, 0.100, f"pursued families → resolve members + orthologs across {n_folds} folds  "
             f"→  {n_final} candidates evaluated, deduplicated to distinct enzymes",
             ha="center", va="center", fontsize=10.5, fontweight="bold", color=INK)
-    arrow(0.096, 0.078)
+    arrow(0.082, 0.066)
 
     # ---- 6. RANK -> top leads (real, from CSV) ----
-    card(0.06, 0.008, 0.88, 0.066, _tint(TEAL, 0.88), TEAL, lw=1.8)
-    tag(0.075, 0.066, "RANK  →  top leads (deterministic priority spine)", TEAL)
+    card(0.06, 0.006, 0.88, 0.058, _tint(TEAL, 0.88), TEAL, lw=1.8)
+    tag(0.075, 0.056, "RANK  →  top leads (deterministic priority spine)", TEAL)
     n = max(len(leads), 1)
     cwl = 0.86 / n
     for i, r in enumerate(leads):
         cx = 0.07 + i * cwl
         tier = r.get("tier_label", "") or f"tier {r.get('tier','')}"
         fam = (r.get("interpro_family") or "").split(",")[0][:26]
-        ax.text(cx + cwl / 2, 0.048, f"{i+1}. {r.get('gene','?')}", ha="center", va="center",
+        ax.text(cx + cwl / 2, 0.041, f"{i+1}. {r.get('gene','?')}", ha="center", va="center",
                 fontsize=10.5, fontweight="bold", color=INK)
-        ax.text(cx + cwl / 2, 0.030, fam, ha="center", va="center", fontsize=7.4, color=MUTED)
-        ax.text(cx + cwl / 2, 0.015, tier, ha="center", va="center", fontsize=8.0,
+        ax.text(cx + cwl / 2, 0.025, fam, ha="center", va="center", fontsize=7.4, color=MUTED)
+        ax.text(cx + cwl / 2, 0.012, tier, ha="center", va="center", fontsize=8.0,
                 color=TEAL, fontweight="bold")
 
     out = FIG_DIR / "reasoning_trace.png"
