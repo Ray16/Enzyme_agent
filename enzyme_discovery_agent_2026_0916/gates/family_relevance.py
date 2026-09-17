@@ -194,25 +194,24 @@ def _distinctive_family_queries(fam: dict) -> list[str]:
     """Clean, discriminating InterPro query strings mined from a family's OWN
     model-written label, descriptors and literature terms.
 
-    The verbose family label the model writes ("NIS (siderophore) synthetase fold
-    amide ligase") resolves, under InterPro's keyword search, onto whatever shares
-    its generic words ("synthetase", "fold", "ligase") — polyprenyl synthetase,
-    GAR synthetase, ATP synthase — and misses the functional family it names.  The
-    discriminating signal is already present in the record, just diluted; this
-    extracts it as short, specific queries:
+    A verbose multi-word family label resolves, under InterPro's keyword search,
+    onto whatever shares its generic words ("synthetase", "fold", "ligase" ...)
+    rather than the functional family it names — so the on-target fold can be
+    missed entirely.  The discriminating signal is already present in the record,
+    just diluted; this extracts it as short, specific queries:
 
-      * gene-name tokens — CamelCase (``IucA``, ``RimK``, ``PylC``) and the parts
-        of slash-joined gene pairs (``IucA/IucC``) — which name a specific family
-        directly, and
+      * gene-name tokens — CamelCase tokens (a lower-case run with an internal
+        capital, e.g. ``AbcD``) and the parts of slash-joined gene pairs
+        (``AbcD/AbcE``) — which name a specific family directly, and
       * enzyme-name bigrams — a distinctive modifier immediately followed by an
-        enzyme-class head noun (``glutamine synthetase``, ``asparagine
-        synthetase``, ``Mur ligase``), skipping labels whose modifier is generic
-        (``amide ligase``).
+        enzyme-class head noun, skipping labels whose modifier is itself generic
+        reaction/structure vocabulary (which would carry no discriminating signal).
 
-    Answer-agnostic by construction: it names NO enzyme; every query is derived at
-    runtime from the run's own LLM-written ``mechanism_families.json`` (itself
-    derived from the target chemistry, never from the answer set) using the same
-    generic reaction/structure stopword vocabulary the module already relies on.
+    Answer-agnostic by construction: it names NO enzyme, family or accession;
+    every query is derived at runtime from the run's own LLM-written
+    ``mechanism_families.json`` (itself derived from the target chemistry, never
+    from the answer set) using only the generic reaction/structure/enzyme-class
+    stopword vocabulary the module already relies on.
     """
     texts: list[str] = [str(fam.get("name", ""))]
     texts.extend(str(d) for d in (fam.get("descriptors") or []))
