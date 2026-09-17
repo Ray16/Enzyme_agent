@@ -210,14 +210,20 @@ def build(run: Path):
             ha="center", va="center", fontsize=10, fontweight="bold", color="white", zorder=4)
     cw2, ch2, gx, gy = 0.285, 0.146, 0.014, 0.014
     top = 0.520
-    for i, (fam, gene, acc, amine, acid) in enumerate(PURSUED):
+    ranked = list(rows.values())  # already in rank order (CSV is rank-sorted)
+    for i, (fam, substrs, amine, acid) in enumerate(PURSUED):
+        rep = next((r for r in ranked
+                    if any(s in (r.get("interpro_family") or "").lower() for s in substrs)), None)
+        if rep is None:
+            continue
+        gene, acc, rank = rep.get("gene", "?"), rep.get("accession", ""), rep.get("rank", "")
         cx = lx + (i % 2) * (cw2 + gx)
         cy = top - ch2 - (i // 2) * (ch2 + gy)
         card(cx, cy, cw2, ch2, "white", GREEN, lw=1.5)
         ax.text(cx + 0.012, cy + ch2 - 0.018, fam, ha="left", va="center",
                 fontsize=9.4, fontweight="bold", color=INK)
-        ax.text(cx + cw2 - 0.012, cy + ch2 - 0.018, gene, ha="right", va="center",
-                fontsize=8.8, color=GREEN, fontweight="bold")
+        ax.text(cx + cw2 - 0.012, cy + ch2 - 0.018, f"{gene}  ·  #{rank}",
+                ha="right", va="center", fontsize=8.8, color=GREEN, fontweight="bold")
         arr = pair_img(sub_smiles(rows, acc, amine), sub_smiles(rows, acc, acid),
                        amine.split("(")[0].strip(), acid)
         img_at(arr, cx + cw2 / 2, cy + ch2 * 0.42, 0.45)
