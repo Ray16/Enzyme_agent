@@ -213,15 +213,22 @@ def build(run: Path):
     gtop = 0.556
     ranked = list(rows.values())  # already in rank order (CSV is rank-sorted)
 
-    def fam_card(cx, cy, title, rep_tag, rep_color, mol_arr, caption, accent):
-        card(cx, cy, cw2, ch2, "white", accent, lw=1.5)
-        ax.text(cx + 0.010, cy + ch2 - 0.017, title, ha="left", va="center",
-                fontsize=8.8, fontweight="bold", color=INK)
-        ax.text(cx + cw2 - 0.010, cy + ch2 - 0.017, rep_tag, ha="right", va="center",
-                fontsize=8.4, color=rep_color, fontweight="bold")
-        img_at(mol_arr, cx + cw2 / 2, cy + ch2 * 0.44, 0.42)
-        ax.text(cx + cw2 / 2, cy + 0.012, caption, ha="center", va="center",
-                fontsize=7.8, color=MUTED)
+    def fam_card(cx, cy, title, badge, badge_color, mol_arr, caption, accent, subcaption=""):
+        card(cx, cy, cw2, ch2, "white", accent, lw=1.4)
+        # header band inside the card
+        ax.add_patch(FancyBboxPatch((cx + 0.006, cy + ch2 - 0.030), cw2 - 0.012, 0.026,
+                     boxstyle="round,pad=0.002", fc=_tint(accent, 0.9), ec="none", zorder=3))
+        ax.text(cx + 0.016, cy + ch2 - 0.017, title, ha="left", va="center",
+                fontsize=8.6, fontweight="bold", color=INK, zorder=4)
+        if badge:
+            ax.text(cx + cw2 - 0.016, cy + ch2 - 0.017, badge, ha="right", va="center",
+                    fontsize=8.0, color=badge_color, fontweight="bold", zorder=4)
+        img_at(mol_arr, cx + cw2 / 2, cy + ch2 * 0.50, 0.42)
+        ax.text(cx + cw2 / 2, cy + 0.024, caption, ha="center", va="center",
+                fontsize=8.2, color=INK)
+        if subcaption:
+            ax.text(cx + cw2 / 2, cy + 0.010, subcaption, ha="center", va="center",
+                    fontsize=7.2, color=MUTED, style="italic")
 
     # pursued (left half) ------------------------------------------------------
     lx = 0.035
