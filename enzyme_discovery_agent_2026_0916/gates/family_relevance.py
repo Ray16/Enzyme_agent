@@ -167,27 +167,12 @@ def _most_relevant_fold(interpro_ids: list[str], count_cache: dict[str, int]) ->
 _SURVEYABLE_ENTRY_TYPES = frozenset({"family", "domain"})
 
 
-# Enzyme-class head nouns: the last word of a functional enzyme name.  A clean
-# "<distinctive-modifier> <head>" bigram is the query that InterPro's keyword
-# search resolves precisely; a verbose multi-word structural label does not.
-# Generic enzyme-taxonomy vocabulary only (the -ase suffix classes), no specific
-# enzyme, family or answer name.
-_ENZYME_HEAD_NOUNS = frozenset({
-    "synthetase", "synthase", "ligase", "amidase", "carboxylase", "transferase",
-    "dehydratase", "decarboxylase", "reductase", "kinase", "hydrolase", "lyase",
-    "oxidase", "isomerase", "mutase", "epimerase", "aminotransferase",
-    "acyltransferase", "cyclase", "hydratase", "aldolase", "peptidase",
-})
-
-# Words that must not stand as the distinctive modifier of an enzyme-name phrase
-# (they are generic reaction/structure/chemistry vocabulary shared by every
-# family, so "<generic> <head>" — e.g. "amide ligase" — carries no discriminating
-# signal).  Union of the shared generic-family stopwords with a few more.
-_PHRASE_STOP_TOKENS = _GENERIC_FAMILY_TOKENS | frozenset({
-    "amide", "amido", "independent", "biosynthesis", "protein", "forming",
-    "adenylate", "adenylating", "carrier", "phosphate", "acyl", "ammonia",
-    "peptide", "trna", "aminoacyl", "non", "atp2", "mg2",
-})
+def _is_enzyme_head(word: str) -> bool:
+    """Whether a word is a functional-enzyme head noun, by the universal ``-ase``
+    class suffix (e.g. the last word of a two-word enzyme name).  A suffix rule,
+    not an enumerated list, so no enzyme class is named and nothing target-
+    specific is encoded."""
+    return len(word) >= 5 and word.lower().endswith("ase")
 
 
 def _distinctive_family_queries(fam: dict) -> list[str]:
@@ -195,23 +180,25 @@ def _distinctive_family_queries(fam: dict) -> list[str]:
     model-written label, descriptors and literature terms.
 
     A verbose multi-word family label resolves, under InterPro's keyword search,
-    onto whatever shares its generic words ("synthetase", "fold", "ligase" ...)
-    rather than the functional family it names — so the on-target fold can be
-    missed entirely.  The discriminating signal is already present in the record,
-    just diluted; this extracts it as short, specific queries:
+    onto whatever shares its generic words rather than the functional family it
+    names — so the on-target fold can be missed entirely.  The discriminating
+    signal is already present in the record, just diluted; this extracts it as
+    short, specific queries:
 
-      * gene-name tokens — CamelCase tokens (a lower-case run with an internal
-        capital, e.g. ``AbcD``) and the parts of slash-joined gene pairs
-        (``AbcD/AbcE``) — which name a specific family directly, and
-      * enzyme-name bigrams — a distinctive modifier immediately followed by an
-        enzyme-class head noun, skipping labels whose modifier is itself generic
-        reaction/structure vocabulary (which would carry no discriminating signal).
+      * gene-name tokens — a CamelCase token (a lower-case run with an internal
+        capital) and the parts of a slash-joined gene pair — which name a
+        specific family directly, and
+      * enzyme-name bigrams — a distinctive modifier immediately followed by a
+        functional-enzyme head noun (a ``-ase`` word), skipping bigrams whose
+        modifier is itself in the shared generic reaction/structure vocabulary
+        (those carry no discriminating signal; incidental hits from them are, in
+        any case, dropped by the relevance scoring in the caller).
 
-    Answer-agnostic by construction: it names NO enzyme, family or accession;
-    every query is derived at runtime from the run's own LLM-written
-    ``mechanism_families.json`` (itself derived from the target chemistry, never
-    from the answer set) using only the generic reaction/structure/enzyme-class
-    stopword vocabulary the module already relies on.
+    Answer-agnostic by construction: it names NO enzyme, family or accession, and
+    hard-codes no target vocabulary; every query is derived at runtime from the
+    run's own LLM-written ``mechanism_families.json`` (itself derived from the
+    target chemistry, never from the answer set), and the only static vocabulary
+    used is the generic stopword set the module already relies on.
     """
     texts: list[str] = [str(fam.get("name", ""))]
     texts.extend(str(d) for d in (fam.get("descriptors") or []))
