@@ -168,10 +168,10 @@ _SURVEYABLE_ENTRY_TYPES = frozenset({"family", "domain"})
 
 
 # Enzyme-class head nouns: the last word of a functional enzyme name.  A clean
-# "<distinctive-modifier> <head>" bigram (e.g. "glutamine synthetase") is the
-# query that InterPro's keyword search resolves precisely; the verbose full label
-# ("Glutamine-synthetase (GS) fold ATP-dependent carboxylate-amine ligase") does
-# not.  Generic reaction/structure vocabulary only, no enzyme or answer name.
+# "<distinctive-modifier> <head>" bigram is the query that InterPro's keyword
+# search resolves precisely; a verbose multi-word structural label does not.
+# Generic enzyme-taxonomy vocabulary only (the -ase suffix classes), no specific
+# enzyme, family or answer name.
 _ENZYME_HEAD_NOUNS = frozenset({
     "synthetase", "synthase", "ligase", "amidase", "carboxylase", "transferase",
     "dehydratase", "decarboxylase", "reductase", "kinase", "hydrolase", "lyase",
