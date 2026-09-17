@@ -400,19 +400,29 @@ def derive_mechanism_families(
     # (dedicated natural-product / secondary-metabolite biosynthetic synthetases,
     # standalone non-modular synthetases, …).  So, once the loop settles, ask the
     # model to REFLECT on the enumerated set and name what is MISSING — reasoning
-    # across all of metabolism, not just the first-pass region.  Union the new
-    # folds under the same direction/chemistry/free-substrate filter.  Answer-
-    # agnostic: the prompt names no family; it only widens the search region, so
-    # the model's own reasoning (which may name families) supplies the missing
-    # fold — the resolver + literature searches then reach it downstream.
-    if reflect and families and len(families) < max_families:
+    # across all of metabolism, not just the first-pass region.
+    #
+    # A SINGLE audit draw inherits the very LLM nondeterminism it exists to cancel:
+    # one sample may still miss the overlooked fold.  A guard against nondeterminism
+    # must not itself be one fragile draw — so SAMPLE the audit to convergence, the
+    # same way enumeration broadens: each pass is told everything already covered and
+    # asked what remains, and we stop once a pass adds nothing (the model's reasoning
+    # has settled) or the caps are hit.  Union under the same deterministic
+    # direction/chemistry/free-substrate filter.  Answer-agnostic: the prompt names
+    # no family; it only widens the search region, so the model's OWN reasoning
+    # (which may name families) supplies the missing fold — the resolver + literature
+    # searches then reach it downstream.
+    audit_attempt = 0
+    while reflect and families and len(families) < max_families and audit_attempt < max_attempts:
+        audit_attempt += 1
         try:
             audited = _derive_once(
                 query, substrate_smiles, llm_client, max_families,
                 exclude=sorted(seen), system=_COMPLETENESS_SYSTEM, audit=True)
         except Exception as exc:  # noqa: BLE001 - reflection must never sink derivation
             logger.warning("mechanism-family completeness audit failed: %s", exc)
-            audited = []
+            break
+        audit_added = 0
         for fam in audited:
             key = fam["name"].casefold()
             if key in seen:
@@ -425,9 +435,14 @@ def derive_mechanism_families(
                 continue
             fam["evidence_basis"] = "model_reasoning_completeness_audit"
             families.append(fam)
+            audit_added += 1
             logger.info("completeness audit added missing family: %s", fam["name"])
             if len(families) >= max_families:
                 break
+        # Converged: a reflection pass surfaced no new fold, so the model's audit
+        # has nothing left to add.  Stop sampling.
+        if audit_added == 0:
+            break
 
     # NOTE: a family's ARCHETYPAL native substrate is the TEXTBOOK reaction, NOT the
     # family's member RANGE — the same fold routinely contains members acting on
