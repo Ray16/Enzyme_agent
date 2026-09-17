@@ -110,16 +110,30 @@ def _short_mech(name: str) -> str:
     return name.split()[0]
 
 
+def _png_to_rgb(png_bytes):
+    return np.asarray(Image.open(io.BytesIO(png_bytes)).convert("RGB"))
+
+
 def pair_img(sa, sb, la, lb, size=(210, 150)):
     mols = [Chem.MolFromSmiles(sa), Chem.MolFromSmiles(sb)]
-    img = Draw.MolsToGridImage(mols, molsPerRow=2, subImgSize=size, legends=[la, lb])
-    if not isinstance(img, Image.Image):
-        img = Image.open(io.BytesIO(img.data))
-    return np.asarray(img.convert("RGB"))
+    pw, ph = size[0] * SS, size[1] * SS
+    d = rdMolDraw2D.MolDraw2DCairo(pw * 2, ph, pw, ph)
+    o = d.drawOptions()
+    o.legendFontSize = int(15 * SS)
+    o.bondLineWidth = max(1, int(1.3 * SS))
+    d.DrawMolecules(mols, legends=[la, lb])
+    d.FinishDrawing()
+    return _png_to_rgb(d.GetDrawingText())
 
 
 def mol_img(smiles, size=(220, 150)):
-    return np.asarray(Draw.MolToImage(Chem.MolFromSmiles(smiles), size=size).convert("RGB"))
+    pw, ph = size[0] * SS, size[1] * SS
+    d = rdMolDraw2D.MolDraw2DCairo(pw, ph)
+    o = d.drawOptions()
+    o.bondLineWidth = max(1, int(1.3 * SS))
+    d.DrawMolecule(Chem.MolFromSmiles(smiles))
+    d.FinishDrawing()
+    return _png_to_rgb(d.GetDrawingText())
 
 
 def load(run: Path):
