@@ -121,6 +121,7 @@ def pair_img(sa, sb, la, lb, size=(210, 150)):
     o = d.drawOptions()
     o.legendFontSize = int(15 * SS)
     o.bondLineWidth = max(1, int(1.3 * SS))
+    o.padding = 0.03
     d.DrawMolecules(mols, legends=[la, lb])
     d.FinishDrawing()
     return _png_to_rgb(d.GetDrawingText())
