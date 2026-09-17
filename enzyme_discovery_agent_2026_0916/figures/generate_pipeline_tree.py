@@ -111,18 +111,28 @@ def _step_card(title, desc, accent) -> str:
     )
 
 
-def _spine_card(accent) -> str:
-    rows = "".join(
-        f'<tr><td align="right"><font point-size="11" color="{accent}"><b>{tag}</b></font></td>'
-        f'<td width="10"></td>'
+def _spine_cell(tag, name, desc, accent) -> str:
+    """One rule rendered as three cells: number, name, description."""
+    return (
+        f'<td align="right"><font point-size="11" color="{accent}"><b>{tag}</b></font></td>'
+        f'<td width="8"></td>'
         f'<td align="left"><font point-size="11" color="{INK}"><b>{name}</b></font> '
-        f'<font point-size="10.5" color="{MUTED}">&#183; {desc}</font></td></tr>'
-        for tag, name, desc in SPINE
+        f'<font point-size="10.5" color="{MUTED}">&#183; {desc}</font></td>'
     )
+
+
+def _spine_card(accent) -> str:
+    """Ranking rules in two columns (1-4 left, 5-8 right) so the box stays low."""
+    half = len(SPINE) // 2
+    rows = ""
+    for i in range(half):
+        left = _spine_cell(*SPINE[i], accent)
+        right = _spine_cell(*SPINE[i + half], accent)
+        rows += f'<tr>{left}<td width="34"></td>{right}</tr>'
     return (
         f'<<table border="2" color="{accent}" cellborder="0" cellspacing="0" '
-        f'cellpadding="5" style="rounded" bgcolor="white">'
-        f'<tr><td colspan="3" bgcolor="{accent}" cellpadding="7" align="center">'
+        f'cellpadding="6" style="rounded" bgcolor="white">'
+        f'<tr><td colspan="7" bgcolor="{accent}" cellpadding="7" align="center">'
         f'<font point-size="12" color="white"><b>Ranking rules &#8212; applied in order; '
         f'each only breaks ties left by the rule above</b></font>'
         f'</td></tr>{rows}</table>>'
