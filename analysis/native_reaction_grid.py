@@ -210,10 +210,13 @@ def main() -> None:
                     help="max structures drawn per panel (default: no cap — draw all)")
     ap.add_argument("--drop-cofactors", action="store_true",
                     help="omit phosphoryl-transfer cofactors/ions (ammonium is kept — it is a substrate)")
+    ap.add_argument("--include-products", action="store_true",
+                    help="also draw reaction products (default: reactants only)")
     a = ap.parse_args()
     run_dir = Path(a.run_dir)
     out = Path(a.out) if a.out else run_dir / "native_reaction_grid.png"
-    p = build(run_dir, out, a.cols, a.top, a.cap, a.drop_cofactors)
+    p = build(run_dir, out, a.cols, a.top, a.cap, a.drop_cofactors,
+              reactants_only=not a.include_products)
     print(f"wrote {p}")
 
 
