@@ -87,8 +87,10 @@ def fig_landscape(df):
             color=GREEN, ha="right", va="bottom", fontsize=FS - 3)
     ax.set_xticks(x)
     ax.set_xticklabels(d.id, rotation=90, fontsize=FS - 6)
-    for lab, act in zip(ax.get_xticklabels(), d.is_active):
-        if act:
+    for lab, iid, act in zip(ax.get_xticklabels(), d.id, d.is_active):
+        if iid == "SfaB":
+            lab.set_color(BROWN); lab.set_fontweight("bold")
+        elif act:
             lab.set_color(RED); lab.set_fontweight("bold")
     ax.set_xlabel("panel member (sorted by activity)", labelpad=8)
     ax.set_ylabel("N66-L1 activity (µg/ml, log)")
