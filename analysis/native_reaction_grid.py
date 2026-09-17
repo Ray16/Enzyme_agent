@@ -115,16 +115,36 @@ def _participants(names: list[str], smis: list[str], drop_cof: bool,
     return out
 
 
-def _mol_png(smiles: str, w: int = 240, h: int = 185) -> Image.Image | None:
+def _parse(smiles: str) -> tuple["Chem.Mol | None", bool]:
+    """Return (mol, strict_ok).  A strict parse failure (e.g. an unkekulizable
+    aromatic ring from a malformed extracted SMILES like bare 'n' for indole) is
+    retried leniently so the structure can still be drawn — but strict_ok=False
+    marks it as an extraction defect for the correctness report."""
     m = Chem.MolFromSmiles(smiles)
+    if m is not None:
+        return m, True
+    m = Chem.MolFromSmiles(smiles, sanitize=False)
     if m is None:
-        return None
+        return None, False
+    try:
+        m.UpdatePropertyCache(strict=False)
+        Chem.SanitizeMol(
+            m, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+    except Exception:  # noqa: BLE001
+        return None, False
+    return m, False
+
+
+def _mol_png(mol: "Chem.Mol", kekulize: bool, w: int = 240, h: int = 185) -> Image.Image | None:
     d = rdMolDraw2D.MolDraw2DCairo(w, h)
     o = d.drawOptions()
     o.bondLineWidth = 2
     o.padding = 0.10
     o.clearBackground = True
-    rdMolDraw2D.PrepareAndDrawMolecule(d, m)
+    try:
+        rdMolDraw2D.PrepareAndDrawMolecule(d, mol, kekulize=kekulize)
+    except Exception:  # noqa: BLE001
+        return None
     d.FinishDrawing()
     return Image.open(io.BytesIO(d.GetDrawingText())).convert("RGBA")
 
