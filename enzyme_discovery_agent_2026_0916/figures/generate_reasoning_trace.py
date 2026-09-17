@@ -158,7 +158,7 @@ def build(run: Path):
         ax.add_patch(FancyArrowPatch((x, y0), (x, y1), arrowstyle="-|>",
                      mutation_scale=16, color=LINE, lw=2.0, zorder=1))
 
-    def tag(x, y, text, color, fs=10.5):
+    def tag(x, y, text, color, fs=13):
         ax.text(x, y, text, ha="left", va="center", fontsize=fs, fontweight="bold",
                 color="white", bbox=dict(boxstyle="round,pad=0.34", fc=color, ec="none"), zorder=4)
 
