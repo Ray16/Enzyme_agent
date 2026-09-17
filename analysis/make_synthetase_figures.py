@@ -97,6 +97,7 @@ def fig_landscape(df):
     ax.set_title("The panel is 3 hits over a flat tail — 3/49 actives, median 0.009 µg/ml")
     ax.set_xlim(-1, len(d))
     ax.legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
+                       Patch(color=BROWN, label="SfaB (baseline)"),
                        Patch(color="#c8cdd4", label="inactive")],
               loc="upper right", frameon=True, framealpha=0.95, edgecolor="#ccc")
     plt.tight_layout()
