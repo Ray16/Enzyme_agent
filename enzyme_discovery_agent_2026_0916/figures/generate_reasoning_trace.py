@@ -257,9 +257,9 @@ def build(run: Path):
     lx = 0.035
     ax.add_patch(FancyBboxPatch((lx, 0.570), 2 * cw2 + gx, 0.032, boxstyle="round,pad=0.004",
                  fc=GREEN, ec="none", zorder=3))
-    ax.text(lx + cw2 + gx / 2, 0.586, "PURSUED  —  native reaction = free amine + carboxylate",
+    ax.text(lx + cw2 + gx / 2, 0.586, "PURSUED  —  forms the target amide bond from small substrates",
             ha="center", va="center", fontsize=9.6, fontweight="bold", color="white", zorder=4)
-    for i, (fam, substrs, amine, acid) in enumerate(PURSUED):
+    for i, (fam, substrs, amine_h, amine_l, acid_h, acid_l, subc) in enumerate(PURSUED):
         rep = next((r for r in ranked
                     if any(s in (r.get("interpro_family") or "").lower() for s in substrs)), None)
         if rep is None:
@@ -267,11 +267,10 @@ def build(run: Path):
         gene, acc, rank = rep.get("gene", "?"), rep.get("accession", ""), rep.get("rank", "")
         cx = lx + (i % 2) * (cw2 + gx)
         cy = gtop - ch2 - (i // 2) * (ch2 + gy)
-        arr = pair_img(sub_smiles(rows, acc, amine), sub_smiles(rows, acc, acid),
-                       amine.split("(")[0].strip(), acid)
+        arr = pair_img(sub_smiles(rows, acc, amine_h), sub_smiles(rows, acc, acid_h),
+                       amine_l, acid_l)
         fam_card(cx, cy, fam, f"{gene} · #{rank}", GREEN, arr,
-                 f"{amine.split('(')[0].strip()} + {acid}", GREEN,
-                 subcaption="✓ free amine + carboxylate")
+                 f"{amine_l} + {acid_l}", GREEN, subcaption=subc)
 
     # stopped (right half) -----------------------------------------------------
     rx = lx + 2 * cw2 + gx + 0.036
