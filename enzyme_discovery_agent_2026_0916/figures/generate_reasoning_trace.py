@@ -42,7 +42,7 @@ BASE_DPI, DPI, SS = 200, 300, 4
 FIG_DIR = Path(__file__).resolve().parent
 DEFAULT_RUN = (
     FIG_DIR.parent / "runs"
-    / "20260916_120414_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl"
+    / "20260917_135330_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl"
 )
 
 INK, MUTED, LINE = "#0f172a", "#475569", "#94a3b8"
