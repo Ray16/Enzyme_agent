@@ -225,9 +225,9 @@ def build(run: Path):
 
     # pursued (left half) ------------------------------------------------------
     lx = 0.035
-    ax.add_patch(FancyBboxPatch((lx, 0.548), 2 * cw2 + gx, 0.032, boxstyle="round,pad=0.004",
+    ax.add_patch(FancyBboxPatch((lx, 0.570), 2 * cw2 + gx, 0.032, boxstyle="round,pad=0.004",
                  fc=GREEN, ec="none", zorder=3))
-    ax.text(lx + cw2 + gx / 2, 0.564, "PURSUED  —  native reaction = free amine + carboxylate",
+    ax.text(lx + cw2 + gx / 2, 0.586, "PURSUED  —  native reaction = free amine + carboxylate",
             ha="center", va="center", fontsize=9.6, fontweight="bold", color="white", zorder=4)
     for i, (fam, substrs, amine, acid) in enumerate(PURSUED):
         rep = next((r for r in ranked
