@@ -14,6 +14,7 @@ Without --handoff (or for an accession absent from it) it falls back to ATP + 2 
 Sequences from representatives.fasta; MSA matched via msa_cache/index.tsv (id->csv).
 """
 import argparse, json, os, string
+from cofactor_stoichiometry import derive_metal_cofactor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)                      # structural_modeling/
