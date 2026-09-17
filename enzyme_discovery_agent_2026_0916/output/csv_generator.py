@@ -84,6 +84,22 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
 
     all_evals = sorted(all_evals, key=sort_key)
 
+    # De-duplicate by accession: an accession evaluated across multiple iterations
+    # produces multiple evaluation artifacts, and the ranking is one row per
+    # representative accession -- so without this the same candidate lands on
+    # several identical CSV rows.  Keep the first occurrence (best rank after the
+    # sort above); the decision list is one row per candidate.
+    seen: set[str] = set()
+    deduped = []
+    for ev in all_evals:
+        acc = ev.get("data", ev).get("accession", "")
+        if acc and acc in seen:
+            continue
+        if acc:
+            seen.add(acc)
+        deduped.append(ev)
+    all_evals = deduped
+
     csv_path = run_dir / "ranked_candidates.csv"
     fieldnames = [
         "rank", "tier", "tier_label",
