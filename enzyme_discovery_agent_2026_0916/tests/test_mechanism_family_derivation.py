@@ -120,6 +120,36 @@ class TestCompletenessAudit(unittest.TestCase):
                                          target_direction="formation")
         self.assertNotIn("Hydrolase", {f["name"] for f in fams})
 
+    def test_audit_unions_across_draws_until_convergence(self):
+        # Each audit draw surfaces a DIFFERENT overlooked fold (LLM nondeterminism);
+        # the convergence loop must union them, not stop after one draw.
+        def fam(n):
+            return {"name": n, "descriptors": [f"{n} d"], "literature_terms": [f"{n} s"],
+                    "native_direction": "formation", "substrates_free": True}
+
+        class _MultiAudit:
+            def __init__(self):
+                self.draws = [[fam("M1")], [fam("M2")], []]  # two distinct, then dry
+                self.enum = 0
+                self.aud = 0
+
+            def call(self, messages=None, **kwargs):
+                if "COMPLETENESS AUDIT" in (messages or [{}])[0].get("content", ""):
+                    d = self.draws[self.aud] if self.aud < len(self.draws) else []
+                    self.aud += 1
+                    return _Resp(json.dumps({"families": d}))
+                self.enum += 1
+                base = [fam(n) for n in (["A", "B"] if self.enum == 1 else [])]
+                return _Resp(json.dumps({"families": base}))
+
+        llm = _MultiAudit()
+        fams = derive_mechanism_families("form an amide bond", "", llm, min_families=2,
+                                         max_families=10, max_attempts=6,
+                                         target_direction="formation")
+        names = {f["name"] for f in fams}
+        self.assertEqual(names, {"A", "B", "M1", "M2"})  # both audit draws unioned
+        self.assertEqual(llm.aud, 3)  # M1, M2, then a dry pass converged
+
     def test_reflect_can_be_disabled(self):
         llm = _AuditLLM([["A", "B", "C"], []],
                         [{"name": "X", "descriptors": ["X d"], "native_direction": "formation",
