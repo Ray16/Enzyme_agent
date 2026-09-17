@@ -244,14 +244,14 @@ def build(run: Path):
             ax.add_patch(FancyBboxPatch((bx, by), bw, bh, boxstyle="round,pad=0.006",
                          fc="#e5e7eb", ec=MUTED, lw=1.2, zorder=5))
             ax.text(bx + bw / 2, by + bh / 2, glyph_label, ha="center", va="center",
-                    fontsize=7.0, color=MUTED, zorder=6, linespacing=1.1)
+                    fontsize=9.0, color=MUTED, zorder=6, linespacing=1.1)
         else:
-            img_at(mol_arr, cx + cw2 / 2, cy + ch2 * 0.50, 0.42)
-        ax.text(cx + cw2 / 2, cy + 0.024, caption, ha="center", va="center",
-                fontsize=8.2, color=INK)
+            img_at(mol_arr, cx + cw2 / 2, cy + ch2 * 0.50, 0.46)
+        ax.text(cx + cw2 / 2, cy + 0.026, caption, ha="center", va="center",
+                fontsize=10.5, color=INK)
         if subcaption:
-            ax.text(cx + cw2 / 2, cy + 0.010, subcaption, ha="center", va="center",
-                    fontsize=7.2, color=MUTED, style="italic")
+            ax.text(cx + cw2 / 2, cy + 0.011, subcaption, ha="center", va="center",
+                    fontsize=9.2, color=MUTED, style="italic")
 
     # pursued (left half) ------------------------------------------------------
     lx = 0.035
