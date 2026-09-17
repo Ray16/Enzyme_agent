@@ -260,12 +260,12 @@ def build(run: Path):
                  fc=RED, ec="none", zorder=3))
     ax.text(rx + cw2 + gx / 2, 0.586, "STOPPED  —  same fold, off-target substrate",
             ha="center", va="center", fontsize=9.6, fontweight="bold", color="white", zorder=4)
-    for i, (fold, sublabel, smi, why) in enumerate(STOPPED):
+    for i, (fold, la, sa, lb, sb, why) in enumerate(STOPPED):
         cx = rx + (i % 2) * (cw2 + gx)
         cy = gtop - ch2 - (i // 2) * (ch2 + gy)
-        fam_card(cx, cy, fold, "✗ off-target", RED,
-                 mol_img(smi, (240, 150)), sublabel, RED,
-                 subcaption=why.replace("*", "").strip())
+        arr = pair_img(sa, sb, la, lb)
+        fam_card(cx, cy, fold, "✗ off-target", RED, arr,
+                 f"{la} + {lb}", RED, subcaption=why)
 
     # full-width decision-rule strip -------------------------------------------
     card(0.035, 0.162, 2 * (2 * cw2 + gx) + 0.036, 0.048, _tint(INK, 0.96), INK, lw=1.2)
