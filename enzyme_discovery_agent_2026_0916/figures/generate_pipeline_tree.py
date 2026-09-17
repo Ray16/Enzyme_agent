@@ -90,13 +90,13 @@ def _phase_card(num, title, accent) -> str:
 
 def _step_card(title, desc, accent) -> str:
     # No fixed width: the card sizes to its content so the rounded border hugs
-    # the text, and both lines are centred.
+    # the text, and everything is centred.  A blank desc yields a title-only card.
+    sub = (f'<br/><font point-size="10.5" color="{MUTED}">{desc}</font>') if desc else ""
     return (
         f'<<table border="2" color="{accent}" cellborder="0" cellspacing="0" '
         f'cellpadding="11" style="rounded" bgcolor="{_tint(accent, 0.94)}">'
         f'<tr><td align="center" balign="center">'
-        f'<font point-size="13" color="{INK}"><b>{title}</b></font><br/>'
-        f'<font point-size="10.5" color="{MUTED}">{desc}</font>'
+        f'<font point-size="13" color="{INK}"><b>{title}</b></font>{sub}'
         f'</td></tr></table>>'
     )
 
