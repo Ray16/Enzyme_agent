@@ -98,7 +98,8 @@ def fig_landscape(df):
     ax.invert_yaxis()                                     # most active on top
     tr = ax.get_xaxis_transform()
     ax.axvline(SF, color=BROWN, ls=":", lw=1.8, zorder=1)
-    ax.text(SF, 1.004, f"SfaB {SF:.3g}", transform=tr, color=BROWN, ha="center", va="bottom", fontsize=FS - 5)
+    ax.text(SF, 0.5, f"  SfaB baseline ({SF:.3g})", transform=tr, color=BROWN, rotation=90,
+            ha="left", va="center", fontsize=FS - 5, fontweight="bold")
     ax.set_yticks(y)
     ax.set_yticklabels(d.id, fontsize=FS - 7)
     for lab, iid, a in zip(ax.get_yticklabels(), d.id, d.act):
