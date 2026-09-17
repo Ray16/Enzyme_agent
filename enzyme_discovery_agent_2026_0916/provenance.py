@@ -170,6 +170,11 @@ def capture_code_provenance(run_dir: Path | None = None) -> dict[str, Any]:
         "dirty_files": [line[3:] for line in (status or "").splitlines()][:50],
     }
     code.update(_capture_package_diff(run_dir))
+    if run_dir is not None:
+        try:
+            code.update(snapshot_source_code(run_dir))
+        except Exception as e:  # noqa: BLE001 - provenance must never break the run
+            logger.warning("Source snapshot failed: %s", e)
     return code
 
 
