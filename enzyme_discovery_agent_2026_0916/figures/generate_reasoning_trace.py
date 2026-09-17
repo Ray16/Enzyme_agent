@@ -197,11 +197,11 @@ def build(run: Path):
     for i, (k, v, why) in enumerate(cells):
         cx = 0.06 + i * (cw + 0.018)
         card(cx, 0.772, cw, 0.054, "white", _tint(BLUE, 0.4), lw=1.2)
-        ax.text(cx + cw / 2, 0.815, k, ha="center", va="center", fontsize=8.6,
+        ax.text(cx + cw / 2, 0.815, k, ha="center", va="center", fontsize=11,
                 color=BLUE, fontweight="bold")
-        ax.text(cx + cw / 2, 0.799, v, ha="center", va="center", fontsize=9.6,
+        ax.text(cx + cw / 2, 0.799, v, ha="center", va="center", fontsize=12,
                 color=INK, fontweight="bold", linespacing=0.95)
-        ax.text(cx + cw / 2, 0.781, why, ha="center", va="center", fontsize=7.6,
+        ax.text(cx + cw / 2, 0.781, why, ha="center", va="center", fontsize=9.5,
                 color=MUTED, linespacing=0.95)
     arrow(0.766, 0.748)
 
