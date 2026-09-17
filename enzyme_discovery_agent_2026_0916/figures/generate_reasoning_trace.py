@@ -75,6 +75,22 @@ def mol_img(smiles: str, size=(240, 150)):
     return np.asarray(Image.open(io.BytesIO(d.GetDrawingText())))
 
 
+def _short_mech(name: str) -> str:
+    n = name.lower()
+    for key, short in (
+        ("siderophore", "NIS siderophore"), ("nis", "NIS siderophore"),
+        ("atp-grasp", "ATP-grasp"),
+        ("anl", "ANL adenylating"),
+        ("glutamine synthetase", "Glutamine-synthetase"),
+        ("asparagine synthetase", "Asparagine-synthetase B"),
+        ("aminoacyl-trna", "class-II aaRS-like"),
+        ("mur ligase", "Mur-ligase"),
+    ):
+        if key in n:
+            return short
+    return name.split()[0]
+
+
 def load(run: Path):
     evs = [json.loads(l) for l in (run / "events.jsonl").read_text().splitlines() if l.strip()]
     contract = next((e for e in evs if e["type"] == "contract_derived"), {})
