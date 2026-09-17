@@ -228,13 +228,14 @@ def _distinctive_family_queries(fam: dict) -> list[str]:
     for text in texts:
         if not text:
             continue
-        # (a) gene-name tokens: CamelCase and slash-joined gene pairs.
-        for tok in re.findall(r"\b[A-Z][a-z]+[A-Z][A-Za-z0-9]*\b", text):
-            _add(tok)
+        # (a) gene-name tokens: mixed-case symbols and the parts of a
+        #     slash-joined gene pair (roman numerals / all-caps excluded).
+        for tok in re.findall(r"\b[A-Za-z][A-Za-z0-9]*\b", text):
+            if _is_gene_token(tok):
+                _add(tok)
         for pair in re.findall(r"\b[A-Za-z]{2,}[0-9]?/[A-Za-z]{2,}[0-9]?\b", text):
             for part in pair.split("/"):
-                # keep only parts that carry a gene-like internal capital.
-                if re.search(r"[A-Z]", part[1:] or ""):
+                if _is_gene_token(part):
                     _add(part)
         # (b) enzyme-name bigram: a distinctive modifier + a -ase head noun.
         words = re.findall(r"[A-Za-z][A-Za-z0-9]*", text.replace("-", " "))
