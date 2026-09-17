@@ -121,44 +121,42 @@ def fig_landscape(df):
 
 
 def fig_proxy_ranking(df):
-    """Validated proxy: ranked bar of mean in-line angle + ROC (conclusive enzymes)."""
+    """Validated proxy as a vertical ranking (horizontal bars, highest angle on top)."""
     c = df[df.concl].copy()
     d = c.sort_values("mean_inline_angle", ascending=False).reset_index(drop=True)
-    y = c.is_active.values
-    s = c.mean_inline_angle.values
-    rho, pval = spearmanr(c.mean_inline_angle, np.log10(c.act + 1e-3))
-    fpr, tpr, _ = roc_curve(y, s); a = auc(fpr, tpr)
-    grid, lo, hi, aci = boot_auc_ci(y, s)
-    # top-6 panel members by measured activity: 3 strong hits (>0.2) + 3 marginal (0.14-0.2)
-    top6 = df.sort_values("act", ascending=False).head(6).id.tolist()
-    strong, near = top6[:3], top6[3:]
-    ang_rank = {r.id: i + 1 for i, r in d.iterrows()}   # only conclusive enzymes have a rank
+    SF = float(df.loc[df.id == "SfaB", "act"].iloc[0]) if (df.id == "SfaB").any() else 0.0489
+    ang_rank = {r.id: i + 1 for i, r in d.iterrows()}     # only conclusive enzymes have a rank
+    beat = df[df.act > SF].sort_values("act", ascending=False)   # enzymes beating SfaB
+    n = len(d)
 
-    fig, axA = plt.subplots(1, 1, figsize=(11, 8.5))
-    fig.suptitle("Mean in-line attack angle (distance-gated cofold poses) ranks the active enzymes to the top",
+    fig, axA = plt.subplots(1, 1, figsize=(10, max(9, 0.26 * n)))
+    fig.suptitle("Mean in-line attack angle (distance-gated poses) ranks the active enzymes to the top",
                  fontweight="bold")
-    # ranked bar
-    x = np.arange(len(d))
-    colors = [RED if i in strong else ORANGE if i in near else "#c8cdd4" for i in d.id]
-    axA.bar(x, d.mean_inline_angle, color=colors, edgecolor="k", linewidth=0.3, zorder=2)
-    lines = ["top 6 by activity  →  angle rank"]
-    for i, e in enumerate(top6, 1):
-        rk = f"#{ang_rank[e]}" if e in ang_rank else "INCONCLUSIVE"
-        lines.append(f"{i}. {e}  →  {rk}")
-    axA.text(0.985, 0.985, "\n".join(lines), transform=axA.transAxes, ha="right", va="top",
-             fontsize=FS - 4, color="#222", fontweight="bold",
+    y = np.arange(n)
+    colors = [_tier(i, a, SF) for i, a in zip(d.id, d.act)]
+    axA.barh(y, d.mean_inline_angle, color=colors, edgecolor="k", linewidth=0.3, zorder=2)
+    axA.invert_yaxis()                                    # rank #1 (highest angle) on top
+    for i, (iid, a) in enumerate(zip(d.id, d.act)):       # label the enzymes that beat SfaB
+        if a > SF:
+            axA.text(d.mean_inline_angle[i] + 0.4, i, iid, va="center", ha="left",
+                     fontsize=FS - 7, fontweight="bold", color=_tier(iid, a, SF))
+    lines = ["beats SfaB (by activity)  →  angle rank"]
+    for k, (_, r) in enumerate(beat.iterrows(), 1):
+        rk = f"#{ang_rank[r.id]}" if r.id in ang_rank else "INCONCLUSIVE"
+        lines.append(f"{k}. {r.id}  →  {rk}")
+    axA.text(0.985, 0.02, "\n".join(lines), transform=axA.transAxes, ha="right", va="bottom",
+             fontsize=FS - 5, color="#222", fontweight="bold",
              bbox=dict(boxstyle="round,pad=0.5", fc="#fbfbfb", ec="#888", lw=1.2))
-    axA.legend(handles=[Patch(color=RED, label="active  (>0.2 µg/ml)"),
-                        Patch(color=ORANGE, label="marginal  (#4–6 by activity)"),
-                        Patch(color="#c8cdd4", label="other")],
-               loc="upper left", bbox_to_anchor=(0.01, 1.0), ncol=1,
+    axA.legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
+                        Patch(color=ORANGE, label="beats SfaB (<0.2)"),
+                        Patch(color="#c8cdd4", label="≤ SfaB")],
+               loc="lower right", bbox_to_anchor=(0.985, 0.30),
                frameon=True, framealpha=0.95, edgecolor="#ccc")
-    axA.set_xlabel(f"rank by mean in-line angle  ({len(d)} conclusive enzymes)")
-    axA.set_ylabel("mean in-line attack angle (°)")
-    axA.set_ylim(min(d.mean_inline_angle) - 4, 182)
-    axA.set_xlim(-1, len(d))
-    # ROC/AUROC dropped: only 3 actives make discrimination metrics uninformative
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    axA.set_ylabel(f"rank by mean in-line angle  ({n} conclusive enzymes)")
+    axA.set_xlabel("mean in-line attack angle (°)")
+    axA.set_xlim(min(d.mean_inline_angle) - 4, 184)
+    axA.set_ylim(n - 0.5, -0.5)
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
     p = f"{FIG}/synthetase_angle_proxy_ranking.png"
     plt.savefig(p, bbox_inches="tight"); plt.close(fig)
     return p
