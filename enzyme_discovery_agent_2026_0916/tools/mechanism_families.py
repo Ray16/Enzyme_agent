@@ -144,6 +144,12 @@ _CONSTRAINTS = (
     "be diverted to the target', 'shares an activation step') is NOT sufficient: "
     "the family's OWN native transformation must itself be the target's bond on "
     "the target's kind of free substrates, or omit it.\n"
+)
+
+# Output schema shared by BOTH passes (identical fields, no drift).  It describes
+# only the OUTPUT structure and carries the STRICT no-specific-enzyme-name rule; it
+# does not narrow the fold search, so the agnostic audit reuses it as-is.
+_SCHEMA_TAIL = (
     "For EACH family give:\n"
     "  - name: a short family / fold name (a mechanism class, not an enzyme);\n"
     "  - descriptors: annotation/domain/fold words that identify its members in "
