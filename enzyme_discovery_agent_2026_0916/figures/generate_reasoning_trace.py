@@ -307,12 +307,12 @@ def build(run: Path):
                  fc=RED, ec="none", zorder=3))
     ax.text(rx + cw2 + gx / 2, 0.586, "STOPPED  —  off-target native chemistry",
             ha="center", va="center", fontsize=12, fontweight="bold", color="white", zorder=4)
-    for i, (fold, la, sa, lb, sb, why) in enumerate(STOPPED):
+    for i, (fold, la, sa, lb, sb, why, glyph) in enumerate(STOPPED):
         cx = rx + (i % 2) * (cw2 + gx)
         cy = gtop - ch2 - (i // 2) * (ch2 + gy)
         if sb is None:  # second substrate is a carrier protein, not a small molecule
             fam_card(cx, cy, fold, "✗ off-target", RED, mol_img(sa, (200, 150)),
-                     f"{la} + {lb}", RED, subcaption=why, glyph_label="LysW\ncarrier\nprotein")
+                     f"{la} + {lb}", RED, subcaption=why, glyph_label=glyph)
         else:
             fam_card(cx, cy, fold, "✗ off-target", RED, pair_img(sa, sb, la, lb),
                      f"{la} + {lb}", RED, subcaption=why)
