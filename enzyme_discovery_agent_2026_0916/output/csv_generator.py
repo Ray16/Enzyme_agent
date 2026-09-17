@@ -65,6 +65,7 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
         return
 
     ranking = _load_ranking(run_dir)
+    mech_families = load_mechanism_families(run_dir)
     # A persisted ranking is authoritative and already contains one selected
     # representative per ortholog group. Do not expand its nested alternatives
     # back into separate rows.
