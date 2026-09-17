@@ -95,16 +95,17 @@ class TestDistinctiveFamilyQueries(unittest.TestCase):
         self.assertIn("abce", qs)
 
     def test_enzyme_bigram_kept_generic_modifier_dropped(self):
+        # "catalytic" is in the shared generic vocabulary; "widget" is not.
         fam = {
-            "name": "Widgetase (WG) fold ATP-dependent amide ligase",
-            "descriptors": ["catalytic widget synthetase domain"],
+            "name": "Widget fold catalytic synthase family",
+            "descriptors": ["a distinctive widget synthase domain"],
             "literature_terms": [],
         }
         qs = {q.lower() for q in _distinctive_family_queries(fam)}
-        # A distinctive modifier + enzyme head is kept ...
-        self.assertIn("widget synthetase", qs)
+        # A distinctive modifier + a -ase head is kept ...
+        self.assertIn("widget synthase", qs)
         # ... but "<generic> <head>" carries no discriminating signal and is dropped.
-        self.assertNotIn("amide ligase", qs)
+        self.assertNotIn("catalytic synthase", qs)
 
 
 class TestScoredResolution(unittest.TestCase):
