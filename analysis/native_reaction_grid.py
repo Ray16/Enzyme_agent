@@ -129,6 +129,24 @@ def _mol_png(smiles: str, w: int = 240, h: int = 185) -> Image.Image | None:
     return Image.open(io.BytesIO(d.GetDrawingText())).convert("RGBA")
 
 
+def _placeholder(name: str, w: int = 240, h: int = 185) -> Image.Image:
+    """A dashed-border box naming a species whose SMILES would not parse — so a
+    broken extraction is shown explicitly, never silently dropped."""
+    im = Image.new("RGBA", (w, h), (255, 255, 255, 0))
+    d = ImageDraw.Draw(im)
+    for x in range(0, w, 10):
+        d.line([(x, 2), (x + 5, 2)], fill=(200, 60, 60), width=2)
+        d.line([(x, h - 3), (x + 5, h - 3)], fill=(200, 60, 60), width=2)
+    for y in range(0, h, 10):
+        d.line([(2, y), (2, y + 5)], fill=(200, 60, 60), width=2)
+        d.line([(w - 3, y), (w - 3, y + 5)], fill=(200, 60, 60), width=2)
+    lines = textwrap.wrap(name, 22)[:4]
+    d.text((w // 2, h // 2 - 18), "SMILES unavailable", fill=(180, 40, 40), anchor="mm")
+    for i, ln in enumerate(lines):
+        d.text((w // 2, h // 2 + 2 + i * 13), ln, fill=(90, 90, 90), anchor="mm")
+    return im
+
+
 def _plus_strip(imgs: list[Image.Image], gap: int = 26) -> Image.Image:
     """Composite substrate images side by side with '+' gaps into one strip."""
     if not imgs:
