@@ -130,10 +130,10 @@ def build() -> Digraph:
             g.node(sid, _step_card(stitle, sdesc, accent))
             g.edge(prev, sid)
             prev = sid
-            if sid == "rank":                       # expand the spine under Rank
+            if sid == "rank":                       # spine sits in-flow, below Rank
                 g.node("spine", _spine_card(accent))
-                g.edge("rank", "spine", style="dashed", penwidth="2.0",
-                       color=accent, constraint="false")
+                g.edge("rank", "spine")
+                prev = "spine"
 
     return g
 
