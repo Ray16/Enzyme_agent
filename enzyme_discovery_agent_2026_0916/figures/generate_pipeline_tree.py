@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Render the enzyme_discovery_agent pipeline as a top-down TREE: a root that
 branches into the three phases, each phase a vertical chain of its ordered
-steps, and the Rank step expanding into the deterministic P0->P6 priority spine.
+steps, and the Rank step expanding into the deterministic priority spine.
 
 Complements ``generate_pipeline_figure.py`` (the horizontal 5-card summary) with
-a hierarchical view that shows the sub-steps inside each phase.
+a hierarchical view that shows the sub-steps inside each phase.  Every label is
+written to be self-explanatory at a glance (no internal jargon).
 
 Generic and answer-agnostic (firewall-safe): describes the pipeline only; never
 a specific target, substrate, or answer enzyme.
@@ -24,37 +25,51 @@ MUTED = "#475569"
 LINE = "#b8c2d0"
 
 # (phase_id, number, title, accent, [ (step_id, title, descriptor) ... ] )
+# Descriptors may use <br/> to wrap onto a second line.
 PHASES = [
     ("p1", "1", "Reaction analysis", "#2563eb", [
-        ("decompose", "Decompose reaction", "bond type + direction (formation vs. hydrolysis)"),
-        ("mechanisms", "Enumerate mechanisms", "2-4 distinct folds, each a different intermediate"),
+        ("decompose", "Understand the reaction",
+         "Which chemical bond is made or broken,<br/>and in which direction (build vs. break)"),
+        ("mechanisms", "List possible mechanisms",
+         "2-4 distinct catalytic routes, each using<br/>a different protein fold &amp; intermediate"),
     ]),
-    ("p2", "2", "Discovery", "#7c3aed", [
-        ("lit", "Literature harvest", "early read seeds which families to explore"),
-        ("search", "Broad database search", "seed the pool across all mechanisms"),
-        ("family", "Per-family depth", "resolve members, pull reps, expand orthologs"),
-        ("screen", "Screen candidates", "reject wrong direction / wrong reaction"),
-        ("coverage", "Coverage gap-check", "every family gets a screened representative"),
+    ("p2", "2", "Enzyme discovery", "#7c3aed", [
+        ("lit", "Read the literature",
+         "Learn which enzyme families<br/>are worth exploring"),
+        ("search", "Search databases broadly",
+         "Collect candidate enzymes from<br/>every proposed mechanism"),
+        ("family", "Go deep in each family",
+         "Pull the real family members<br/>and their close relatives"),
+        ("screen", "Screen out mismatches",
+         "Drop enzymes that run the<br/>wrong reaction or wrong direction"),
+        ("coverage", "Check for coverage gaps",
+         "Make sure every family has at<br/>least one candidate examined"),
     ]),
-    ("p3", "3", "Evaluate &amp; rank", "#0d9488", [
-        ("evaluate", "Full-text + evaluate", "mine mechanism + measurements, score fit"),
-        ("dedup", "Ortholog dedup", "collapse to distinct enzymes before ranking"),
-        ("rank", "Rank (lexicographic spine)", "deterministic priority over grounded facts"),
-        ("tier", "Tier", "T1 strong lead / T2 worth testing / T3 weak-gated"),
-        ("report", "Report + handoff", "CSV, reports, structural-modeling handoff"),
+    ("p3", "3", "Evaluation &amp; ranking", "#0d9488", [
+        ("evaluate", "Evaluate each candidate",
+         "Read full papers for mechanism &amp; activity,<br/>then score how well the enzyme fits"),
+        ("dedup", "Remove duplicates",
+         "Merge near-identical enzymes so<br/>only distinct ones are ranked"),
+        ("rank", "Rank by priority rules",
+         "Order candidates using fixed rules<br/>over verified facts (see below)"),
+        ("tier", "Sort into confidence tiers",
+         "Tier 1 strong lead &#183; Tier 2 worth<br/>testing &#183; Tier 3 weak"),
+        ("report", "Report &amp; hand off",
+         "Ranked table + written reports;<br/>pass leads to structure modeling"),
     ]),
 ]
 
-# The deterministic ranking spine expanded under the Rank step (P0 -> P6).
+# The ranking priority rules expanded under the Rank step. Applied strictly in
+# order: each rule only breaks ties left by the rule above it.
 SPINE = [
-    ("P0", "hard gate", "critical warning &#8594; bottom (Tier 3)"),
-    ("PF", "fold decision", "on-target &gt; neutral &gt; stopped"),
-    ("P1", "substrate", "functional-group similarity"),
-    ("P2", "mechanism", "grounded &gt; supported &gt; tentative"),
-    ("P3", "curation", "Swiss-Prot reviewed higher"),
-    ("P4", "depth", "characterization papers"),
-    ("P5", "structure", "PDB &gt; AlphaFold &gt; none"),
-    ("P6", "engineering", "engineering precedent"),
+    ("1", "Safety gate", "any critical flaw sinks the candidate to the bottom"),
+    ("2", "Fold match", "correct fold beats an unrelated one beats a known-wrong one"),
+    ("3", "Substrate fit", "closer functional-group match ranks higher"),
+    ("4", "Mechanism evidence", "experimentally proven &gt; supported &gt; only hinted"),
+    ("5", "Curation", "manually reviewed (Swiss-Prot) entries rank higher"),
+    ("6", "Study depth", "more characterization papers ranks higher"),
+    ("7", "Structure", "experimental (PDB) &gt; predicted (AlphaFold) &gt; none"),
+    ("8", "Engineering record", "prior successful protein engineering ranks higher"),
 ]
 
 
@@ -69,8 +84,8 @@ def _root_card() -> str:
         '<<table border="0" cellborder="0" cellspacing="0" cellpadding="12" '
         'style="rounded" bgcolor="#0f172a"><tr><td>'
         '<font point-size="18" color="white"><b>Enzyme Discovery Agent</b></font><br/>'
-        '<font point-size="11" color="#cbd5e1">LLM proposes strategies &#183; tools find entities '
-        '(data-leakage firewall)</font>'
+        '<font point-size="11" color="#cbd5e1">The AI plans the search &#183; tools retrieve the real '
+        'enzymes<br/>&#8212; the answer is never shown to it (data-leakage firewall)</font>'
         '</td></tr></table>>'
     )
 
@@ -88,27 +103,28 @@ def _phase_card(num, title, accent) -> str:
 def _step_card(title, desc, accent) -> str:
     return (
         f'<<table border="2" color="{accent}" cellborder="0" cellspacing="0" '
-        f'cellpadding="8" style="rounded" bgcolor="{_tint(accent, 0.94)}" width="240">'
-        f'<tr><td align="left" width="240">'
-        f'<font point-size="12.5" color="{INK}"><b>{title}</b></font><br/>'
-        f'<font point-size="10" color="{MUTED}">{desc}</font>'
+        f'cellpadding="9" style="rounded" bgcolor="{_tint(accent, 0.94)}" width="270">'
+        f'<tr><td align="left" width="270">'
+        f'<font point-size="13" color="{INK}"><b>{title}</b></font><br/>'
+        f'<font point-size="10.5" color="{MUTED}">{desc}</font>'
         f'</td></tr></table>>'
     )
 
 
 def _spine_card(accent) -> str:
     rows = "".join(
-        f'<tr><td align="right"><font point-size="10.5" color="{accent}"><b>{tag}</b></font></td>'
-        f'<td width="8"></td>'
-        f'<td align="left"><font point-size="10.5" color="{INK}"><b>{name}</b></font> '
-        f'<font point-size="10" color="{MUTED}">&#183; {desc}</font></td></tr>'
+        f'<tr><td align="right"><font point-size="11" color="{accent}"><b>{tag}</b></font></td>'
+        f'<td width="10"></td>'
+        f'<td align="left"><font point-size="11" color="{INK}"><b>{name}</b></font> '
+        f'<font point-size="10.5" color="{MUTED}">&#183; {desc}</font></td></tr>'
         for tag, name, desc in SPINE
     )
     return (
         f'<<table border="2" color="{accent}" cellborder="0" cellspacing="0" '
-        f'cellpadding="4" style="rounded" bgcolor="white">'
-        f'<tr><td colspan="3" bgcolor="{accent}" cellpadding="6" align="center">'
-        f'<font point-size="11.5" color="white"><b>Ranking spine &#183; strict lexicographic order</b></font>'
+        f'cellpadding="5" style="rounded" bgcolor="white">'
+        f'<tr><td colspan="3" bgcolor="{accent}" cellpadding="7" align="center">'
+        f'<font point-size="12" color="white"><b>Ranking rules &#8212; applied in order; '
+        f'each only breaks ties left by the rule above</b></font>'
         f'</td></tr>{rows}</table>>'
     )
 
