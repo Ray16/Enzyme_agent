@@ -224,10 +224,14 @@ def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int | None,
         shown = org if cap is None else org[:cap]
         imgs = []
         for nm, s in shown:
-            im = _mol_png(s)
+            mol, strict_ok = _parse(s)
+            im = _mol_png(mol, kekulize=strict_ok) if mol is not None else None
             if im is None:
-                bad_smiles.append((r.get("rank"), r.get("gene"), nm, s))
+                bad_smiles.append((r.get("rank"), r.get("gene"), nm, s, "unparseable"))
                 im = _placeholder(nm)
+            elif not strict_ok:
+                # drawn via lenient parse, but the extracted SMILES is defective
+                bad_smiles.append((r.get("rank"), r.get("gene"), nm, s, "malformed-aromatic (drawn leniently)"))
             imgs.append(im)
         strip = _plus_strip(imgs)
         ax.imshow(strip)
