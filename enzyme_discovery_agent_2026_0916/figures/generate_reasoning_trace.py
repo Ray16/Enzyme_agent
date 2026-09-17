@@ -78,7 +78,7 @@ PURSUED = [
 #    glyph-label-or-None).  When subB SMILES is None the second reactant is a
 #    macromolecule (carrier protein), drawn as the glyph box instead of a mol.
 STOPPED = [
-    ("ATP-grasp (PurT/PurK-type)", "glycinamide ribonucleotide",
+    ("ATP-grasp (PurT)", "glycinamide ribonucleotide",
      "C(C1C(C(C(O1)NC(=O)CN)O)O)OP(=O)(O)O", "formate", "C(=O)[O-]",
      "purine / nucleotide biosynthesis", None),
     ("RimK / LysW-type ligase", "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
