@@ -205,19 +205,30 @@ def build(run: Path):
     arrow(0.626, 0.598)
 
     # ---- 4. TRIAGE ----
-    card(0.03, 0.170, 0.94, 0.426, "white", INK, lw=1.2)
-    tag(0.045, 0.583, f"TRIAGE FAMILIES  →  expand vs stop   "
+    card(0.02, 0.135, 0.96, 0.470, "white", INK, lw=1.2)
+    tag(0.035, 0.592, f"TRIAGE FAMILIES  →  expand vs stop   "
         f"(key decision:  {n_expand} expand · {n_stop} stop)", INK)
 
-    # pursued (left) -----------------------------------------------------------
-    lx, lw_ = 0.045, 0.585
-    ax.add_patch(FancyBboxPatch((lx, 0.535), lw_, 0.034, boxstyle="round,pad=0.004",
-                 fc=GREEN, ec="none", zorder=3))
-    ax.text(lx + lw_ / 2, 0.552, "PURSUED  —  native reaction condenses a free amine + a carboxylate",
-            ha="center", va="center", fontsize=10, fontweight="bold", color="white", zorder=4)
-    cw2, ch2, gx, gy = 0.285, 0.146, 0.014, 0.014
-    top = 0.520
+    cw2, ch2, gx, gy = 0.222, 0.150, 0.013, 0.013
+    gtop = 0.535
     ranked = list(rows.values())  # already in rank order (CSV is rank-sorted)
+
+    def fam_card(cx, cy, title, rep_tag, rep_color, mol_arr, caption, accent):
+        card(cx, cy, cw2, ch2, "white", accent, lw=1.5)
+        ax.text(cx + 0.010, cy + ch2 - 0.017, title, ha="left", va="center",
+                fontsize=8.8, fontweight="bold", color=INK)
+        ax.text(cx + cw2 - 0.010, cy + ch2 - 0.017, rep_tag, ha="right", va="center",
+                fontsize=8.4, color=rep_color, fontweight="bold")
+        img_at(mol_arr, cx + cw2 / 2, cy + ch2 * 0.44, 0.42)
+        ax.text(cx + cw2 / 2, cy + 0.012, caption, ha="center", va="center",
+                fontsize=7.8, color=MUTED)
+
+    # pursued (left half) ------------------------------------------------------
+    lx = 0.035
+    ax.add_patch(FancyBboxPatch((lx, 0.548), 2 * cw2 + gx, 0.032, boxstyle="round,pad=0.004",
+                 fc=GREEN, ec="none", zorder=3))
+    ax.text(lx + cw2 + gx / 2, 0.564, "PURSUED  —  native reaction = free amine + carboxylate",
+            ha="center", va="center", fontsize=9.6, fontweight="bold", color="white", zorder=4)
     for i, (fam, substrs, amine, acid) in enumerate(PURSUED):
         rep = next((r for r in ranked
                     if any(s in (r.get("interpro_family") or "").lower() for s in substrs)), None)
@@ -225,38 +236,30 @@ def build(run: Path):
             continue
         gene, acc, rank = rep.get("gene", "?"), rep.get("accession", ""), rep.get("rank", "")
         cx = lx + (i % 2) * (cw2 + gx)
-        cy = top - ch2 - (i // 2) * (ch2 + gy)
-        card(cx, cy, cw2, ch2, "white", GREEN, lw=1.5)
-        ax.text(cx + 0.012, cy + ch2 - 0.018, fam, ha="left", va="center",
-                fontsize=9.4, fontweight="bold", color=INK)
-        ax.text(cx + cw2 - 0.012, cy + ch2 - 0.018, f"{gene}  ·  #{rank}",
-                ha="right", va="center", fontsize=8.8, color=GREEN, fontweight="bold")
+        cy = gtop - ch2 - (i // 2) * (ch2 + gy)
         arr = pair_img(sub_smiles(rows, acc, amine), sub_smiles(rows, acc, acid),
                        amine.split("(")[0].strip(), acid)
-        img_at(arr, cx + cw2 / 2, cy + ch2 * 0.42, 0.45)
-    ax.text(lx + lw_ / 2, 0.192, "→ the same two-substrate amide ligation the target needs",
-            ha="center", va="center", fontsize=8.8, color=GREEN, style="italic")
+        fam_card(cx, cy, fam, f"{gene} · #{rank}", GREEN, arr,
+                 f"{amine.split('(')[0].strip()} + {acid}", GREEN)
 
-    # stopped (right) ----------------------------------------------------------
-    rx, rw = 0.645, 0.315
-    ax.add_patch(FancyBboxPatch((rx, 0.535), rw, 0.034, boxstyle="round,pad=0.004",
+    # stopped (right half) -----------------------------------------------------
+    rx = lx + 2 * cw2 + gx + 0.036
+    ax.add_patch(FancyBboxPatch((rx, 0.548), 2 * cw2 + gx, 0.032, boxstyle="round,pad=0.004",
                  fc=RED, ec="none", zorder=3))
-    ax.text(rx + rw / 2, 0.552, "STOPPED  —  same folds, off-target chemistry",
-            ha="center", va="center", fontsize=10, fontweight="bold", color="white", zorder=4)
-    for i, (fold, why) in enumerate(REJECTED):
-        cy = 0.478 - i * 0.053
-        card(rx, cy, rw, 0.045, _tint(RED, 0.95), RED, lw=1.2)
-        ax.text(rx + 0.012, cy + 0.030, fold, ha="left", va="center", fontsize=8.8,
-                fontweight="bold", color=INK)
-        ax.text(rx + 0.012, cy + 0.013, why, ha="left", va="center", fontsize=8.0, color=MUTED)
-    # decision-rule box fills the bottom-right
-    card(rx, 0.198, rw, 0.062, _tint(INK, 0.96), INK, lw=1.2)
-    ax.text(rx + rw / 2, 0.242, "decision rule", ha="center", va="center", fontsize=8.6,
-            color=INK, fontweight="bold")
-    ax.text(rx + rw / 2, 0.216, "same fold ≠ same substrate — keep only members\n"
-            "whose native reaction matches the target chemistry",
-            ha="center", va="center", fontsize=8.0, color=MUTED, linespacing=1.1)
-    arrow(0.170, 0.150)
+    ax.text(rx + cw2 + gx / 2, 0.564, "STOPPED  —  same fold, off-target substrate",
+            ha="center", va="center", fontsize=9.6, fontweight="bold", color="white", zorder=4)
+    for i, (fold, sublabel, smi, why) in enumerate(STOPPED):
+        cx = rx + (i % 2) * (cw2 + gx)
+        cy = gtop - ch2 - (i // 2) * (ch2 + gy)
+        fam_card(cx, cy, fold, why.replace("*", "").strip()[:26], RED,
+                 mol_img(smi, (240, 150)), sublabel, RED)
+
+    # full-width decision-rule strip -------------------------------------------
+    card(0.035, 0.146, 2 * (2 * cw2 + gx) + 0.036, 0.048, _tint(INK, 0.96), INK, lw=1.2)
+    ax.text(0.5, 0.170, "decision rule:  same fold ≠ same substrate — pursue only the members "
+            "whose native reaction matches the target chemistry (free amine + carboxylate)",
+            ha="center", va="center", fontsize=9, color=INK)
+    arrow(0.135, 0.115)
 
     # ---- 5. SEARCH / SCREEN ----
     n_final = complete.get("candidates", 0)
