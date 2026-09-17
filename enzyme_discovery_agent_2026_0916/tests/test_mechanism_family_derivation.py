@@ -104,7 +104,9 @@ class TestCompletenessAudit(unittest.TestCase):
         self.assertIn("Overlooked", names)
         self.assertEqual(self.__audit_basis(fams, "Overlooked"),
                          "model_reasoning_completeness_audit")
-        self.assertEqual(llm.audit_calls, 1)
+        # The audit SAMPLES TO CONVERGENCE (a guard must not be one fragile draw):
+        # one productive pass adds the fold, the next pass is dry and stops it.
+        self.assertEqual(llm.audit_calls, 2)
 
     def test_audit_family_still_direction_filtered(self):
         # The audit must not smuggle in a wrong-direction (native-cleavage) fold.
