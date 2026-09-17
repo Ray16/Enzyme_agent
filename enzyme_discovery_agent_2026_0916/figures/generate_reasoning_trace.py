@@ -196,14 +196,14 @@ def build(run: Path):
     cw = 0.212
     for i, (k, v, why) in enumerate(cells):
         cx = 0.06 + i * (cw + 0.018)
-        card(cx, 0.772, cw, 0.054, "white", _tint(BLUE, 0.4), lw=1.2)
-        ax.text(cx + cw / 2, 0.815, k, ha="center", va="center", fontsize=11,
+        card(cx, 0.760, cw, 0.070, "white", _tint(BLUE, 0.4), lw=1.2)
+        ax.text(cx + cw / 2, 0.821, k, ha="center", va="center", fontsize=11,
                 color=BLUE, fontweight="bold")
-        ax.text(cx + cw / 2, 0.799, v, ha="center", va="center", fontsize=12,
+        ax.text(cx + cw / 2, 0.803, v, ha="center", va="center", fontsize=12,
                 color=INK, fontweight="bold", linespacing=0.95)
-        ax.text(cx + cw / 2, 0.781, why, ha="center", va="center", fontsize=9.5,
+        ax.text(cx + cw / 2, 0.780, why, ha="center", va="center", fontsize=9.5,
                 color=MUTED, linespacing=0.95)
-    arrow(0.766, 0.748)
+    arrow(0.752, 0.744)
 
     # ---- 3. ENUMERATE ----
     card(0.10, 0.658, 0.80, 0.078, _tint(PURPLE, 0.94), PURPLE)
