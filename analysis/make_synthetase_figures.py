@@ -131,7 +131,7 @@ def fig_proxy_ranking(df):
     n = len(d)
 
     fig, axA = plt.subplots(1, 1, figsize=(10, max(9, 0.26 * n)))
-    fig.suptitle("Mean in-line attack angle (distance-gated poses) ranks the active enzymes to the top",
+    fig.suptitle(f"Mean in-line attack angle (d < {D_GATE:.1f} Å–gated poses) ranks the active enzymes to the top",
                  fontweight="bold")
     y = np.arange(n)
     colors = [_tier(i, a, SF) for i, a in zip(d.id, d.act)]
