@@ -384,6 +384,41 @@ def derive_mechanism_families(
         if added == 0 and attempt >= 2:
             break
 
+    # COMPLETENESS AUDIT (reflection): the broadening loop converges on the folds
+    # the model volunteers first, which skew to central-metabolism textbook
+    # families and silently miss QUALIFYING folds in other corners of biology
+    # (dedicated natural-product / secondary-metabolite biosynthetic synthetases,
+    # standalone non-modular synthetases, …).  So, once the loop settles, ask the
+    # model to REFLECT on the enumerated set and name what is MISSING — reasoning
+    # across all of metabolism, not just the first-pass region.  Union the new
+    # folds under the same direction/chemistry/free-substrate filter.  Answer-
+    # agnostic: the prompt names no family; it only widens the search region, so
+    # the model's own reasoning (which may name families) supplies the missing
+    # fold — the resolver + literature searches then reach it downstream.
+    if reflect and families and len(families) < max_families:
+        try:
+            audited = _derive_once(
+                query, substrate_smiles, llm_client, max_families,
+                exclude=sorted(seen), system=_COMPLETENESS_SYSTEM, audit=True)
+        except Exception as exc:  # noqa: BLE001 - reflection must never sink derivation
+            logger.warning("mechanism-family completeness audit failed: %s", exc)
+            audited = []
+        for fam in audited:
+            key = fam["name"].casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            ok, reason = family_passes_constraints(fam, target_direction)
+            if not ok:
+                dropped += 1
+                logger.info("audit family dropped: %s (%s)", fam["name"], reason)
+                continue
+            fam["evidence_basis"] = "model_reasoning_completeness_audit"
+            families.append(fam)
+            logger.info("completeness audit added missing family: %s", fam["name"])
+            if len(families) >= max_families:
+                break
+
     # NOTE: a family's ARCHETYPAL native substrate is the TEXTBOOK reaction, NOT the
     # family's member RANGE — the same fold routinely contains members acting on
     # substrates quite unlike the archetype, some of which are close analogues of the
