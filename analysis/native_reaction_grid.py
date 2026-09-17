@@ -241,6 +241,23 @@ def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int | None,
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=150, bbox_inches="tight", facecolor="white")
     plt.close(fig)
+
+    # Correctness check — always emitted.  Any drawn reactant whose SMILES will
+    # not parse is an EXTRACTION error in the run's data; surface it loudly and
+    # record it beside the figure rather than letting the structure vanish.
+    report = out.with_suffix(".validation.txt")
+    if bad_smiles:
+        lines = [f"#{rk} {gn}: unparseable SMILES for reactant '{nm}': {sm}"
+                 for rk, gn, nm, sm in bad_smiles]
+        report.write_text("UNPARSEABLE NATIVE-SUBSTRATE SMILES (extraction errors)\n"
+                          + "\n".join(lines) + "\n")
+        print(f"WARNING: {len(bad_smiles)} reactant(s) have unparseable SMILES "
+              f"(shown as placeholders); see {report}")
+        for ln in lines:
+            print("  " + ln)
+    else:
+        report.write_text("All drawn reactant SMILES parsed cleanly.\n")
+        print("validation: all drawn reactant SMILES parsed cleanly")
     return out
 
 
