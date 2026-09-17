@@ -84,10 +84,10 @@ STOPPED = [
     ("RimK / LysW-type ligase", "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
      "carrier protein", None, "glutamate tethered to LysW carrier — not free",
      "LysW\ncarrier\nprotein"),
-    ("Aryl-acid adenylation (EntE)", "2,3-dihydroxybenzoate",
+    ("Aryl-acid adenylation", "2,3-dihydroxybenzoate",
      "OC(=O)c1cccc(O)c1O", "carrier protein", None,
      "aryl acid tethered to ACP — not free", "aryl-carrier\nprotein\n(ACP)"),
-    ("Methylamine-glutamate ligase", "methylamine", "CN",
+    ("Methylamine ligase", "methylamine", "CN",
      "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
      "right chemistry, amine far too small", None),
 ]
