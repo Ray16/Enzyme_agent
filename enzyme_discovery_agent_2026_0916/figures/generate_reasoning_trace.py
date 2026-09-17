@@ -46,15 +46,22 @@ GREEN, RED = "#15803d", "#b91c1c"
 # it is resolved at draw time to the TOP-RANKED member of that family in
 # ranked_candidates.csv.  Each entry: (family label, InterPro-match substrings,
 # amine substrate to draw, acid substrate to draw).
+# (family, InterPro-match substrings, amine-hint, amine-label, acid-hint,
+#  acid-label, subcaption).  Hints select the substrate from the run's data;
+#  labels are what we print (verified names).
 PURSUED = [
     ("Glutamine-synthetase fold", ["glutamine synthetase", "glutamylputrescine"],
-     "cadaverine", "L-glutamate"),
+     "cadaverine", "cadaverine", "L-glutamate", "L-glutamate",
+     "✓ free amine + carboxylate"),
     ("ATP-grasp ligase (PylC)", ["atp-grasp", "pylc"],
-     "ornithine", "lysin"),
+     "ornithine", "3-methyl-D-ornithine", "lysin", "L-lysine",
+     "✓ free amine + carboxylate"),
     ("NIS / IucA-IucC synthetase", ["iuca", "aerobactin", "siderophore"],
-     "spermidine", "citrate"),
+     "spermidine", "spermidine", "citrate", "citrate",
+     "✓ free amine + carboxylate"),
     ("Asparagine synthetase B", ["asparagine"],
-     "L-glutamine", "L-aspartate"),
+     "L-glutamine", "L-glutamine", "L-aspartate", "L-aspartate",
+     "amide via acyl-adenylate (N from Gln)"),
 ]
 # Rejected folds -> the BOTH native substrates of a representative off-target
 # reaction (SMILES from PubChem), shown like the pursued reactions so the
