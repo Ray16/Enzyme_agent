@@ -184,9 +184,9 @@ _ENZYME_HEAD_NOUNS = frozenset({
 # family, so "<generic> <head>" — e.g. "amide ligase" — carries no discriminating
 # signal).  Union of the shared generic-family stopwords with a few more.
 _PHRASE_STOP_TOKENS = _GENERIC_FAMILY_TOKENS | frozenset({
-    "independent", "biosynthesis", "protein", "forming", "adenylate",
-    "adenylating", "carrier", "phosphate", "acyl", "ammonia", "peptide",
-    "trna", "aminoacyl", "non", "atp2", "mg2",
+    "amide", "amido", "independent", "biosynthesis", "protein", "forming",
+    "adenylate", "adenylating", "carrier", "phosphate", "acyl", "ammonia",
+    "peptide", "trna", "aminoacyl", "non", "atp2", "mg2",
 })
 
 
