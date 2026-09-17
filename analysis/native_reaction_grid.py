@@ -103,7 +103,8 @@ def load_rows(run_dir: Path, top: int | None) -> list[dict]:
     return rows[:top] if top else rows
 
 
-def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int) -> Path:
+def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int | None,
+          drop_cof: bool) -> Path:
     rows = load_rows(run_dir, top)
     n = len(rows)
     rowsN = math.ceil(n / cols)
