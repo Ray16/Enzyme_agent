@@ -172,14 +172,14 @@ def build(run: Path):
             ha="center", va="top", fontsize=13.5, color=MUTED, style="italic")
 
     # ---- 1. INPUT ----
-    card(0.24, 0.876, 0.52, 0.070, "white", BLUE)
-    tag(0.253, 0.938, "INPUT  ·  target substrates", BLUE)
-    ax.text(0.38, 0.918, "diacid", ha="center", fontsize=11.5, color=MUTED)
-    ax.text(0.62, 0.918, "diamine", ha="center", fontsize=11.5, color=MUTED)
-    img_at(mol_img("O=C(O)CCCCC(=O)O", (260, 120)), 0.38, 0.898, 0.62)
-    img_at(mol_img("NCCCCCCN", (260, 120)), 0.62, 0.898, 0.62)
-    ax.text(0.5, 0.898, "+", ha="center", va="center", fontsize=20, color=INK)
-    arrow(0.876, 0.860)
+    card(0.24, 0.866, 0.52, 0.068, "white", BLUE)
+    tag(0.253, 0.926, "INPUT  ·  target substrates", BLUE)
+    ax.text(0.38, 0.908, "diacid", ha="center", fontsize=11.5, color=MUTED)
+    ax.text(0.62, 0.908, "diamine", ha="center", fontsize=11.5, color=MUTED)
+    img_at(mol_img("O=C(O)CCCCC(=O)O", (260, 120)), 0.38, 0.889, 0.62)
+    img_at(mol_img("NCCCCCCN", (260, 120)), 0.62, 0.889, 0.62)
+    ax.text(0.5, 0.889, "+", ha="center", va="center", fontsize=20, color=INK)
+    arrow(0.866, 0.852)
 
     # ---- 2. PARSE (4 columns, each with the why) ----
     card(0.04, 0.766, 0.92, 0.084, _tint(BLUE, 0.94), BLUE)
