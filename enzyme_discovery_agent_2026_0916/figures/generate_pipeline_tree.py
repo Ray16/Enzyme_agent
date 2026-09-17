@@ -47,7 +47,7 @@ PHASES = [
 
 # The deterministic ranking spine expanded under the Rank step (P0 -> P6).
 SPINE = [
-    ("P0", "hard gate", "critical warning -> bottom (Tier 3)"),
+    ("P0", "hard gate", "critical warning &#8594; bottom (Tier 3)"),
     ("PF", "fold decision", "on-target &gt; neutral &gt; stopped"),
     ("P1", "substrate", "functional-group similarity"),
     ("P2", "mechanism", "grounded &gt; supported &gt; tentative"),
