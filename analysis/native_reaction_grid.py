@@ -161,7 +161,8 @@ def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int | None,
         r = rows[idx]
         names = [x.strip() for x in (r.get("native_substrates") or "").split(";") if x.strip()]
         smis = [x.strip() for x in (r.get("native_substrate_smiles") or "").replace(".", ";").split(";") if x.strip()]
-        org = _participants(names, smis, drop_cof)
+        org = _participants(names, smis, drop_cof, r.get("catalytic_activities", ""),
+                            reactants_only)
         shown = org if cap is None else org[:cap]
         imgs = [im for _, s in shown if (im := _mol_png(s)) is not None]
         strip = _plus_strip(imgs)
