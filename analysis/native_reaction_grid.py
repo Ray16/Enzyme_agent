@@ -32,16 +32,19 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from PIL import Image
 
-# Generic cofactors carry no discriminating chemistry for an amide-ligase survey,
-# so they are dropped from the drawn structures (the equation caption still shows
-# them).  Matched as a standalone name, never as a substring, so organic species
-# like "1,4-butanediammonium" or "gamma-L-glutamylputrescinium" are kept.
+# Phosphoryl-transfer cofactors and inorganic ions carry no discriminating
+# chemistry.  Dropped ONLY when --drop-cofactors is passed; by default every
+# annotated native-reaction participant is drawn (the point of the gallery).
+# NOTE: ammonium is deliberately NOT here — for glutamine synthetases / CPS /
+# asparagine synthetase it is the actual amine SUBSTRATE, not a spectator.
+# Matched as a standalone name, never as a substring, so "1,4-butanediammonium"
+# and "gamma-L-glutamylputrescinium" are always kept.
 _COFACTORS = {
     "atp", "adp", "amp", "gtp", "gdp", "ctp", "utp", "itp", "idp",
     "phosphate", "hydrogenphosphate", "diphosphate", "pyrophosphate",
     "h2o", "water", "h(+)", "h+", "hydron", "o2", "co2",
     "nad(+)", "nadh", "nadp(+)", "nadph", "coa", "coenzyme a",
-    "ammonium", "nh4(+)", "mg(2+)", "mn(2+)", "k(+)", "na(+)",
+    "mg(2+)", "mn(2+)", "k(+)", "na(+)",
 }
 
 _TIER_COLOR = {"1": "#0f8a4f", "2": "#b06a00", "3": "#7a4fd0"}
