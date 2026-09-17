@@ -102,7 +102,7 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
 
     csv_path = run_dir / "ranked_candidates.csv"
     fieldnames = [
-        "rank", "tier", "tier_label",
+        "rank", "tier",
         "substrate_fit", "evidence_level", "family_relevance", "direction",
         "gene", "accession", "uniprot_url", "protein_name", "organism",
         "ec_numbers", "interpro_family", "mechanism_family", "is_swissprot", "sequence_length",
