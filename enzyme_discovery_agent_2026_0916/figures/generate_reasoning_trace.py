@@ -247,7 +247,8 @@ def build(run: Path):
         arr = pair_img(sub_smiles(rows, acc, amine), sub_smiles(rows, acc, acid),
                        amine.split("(")[0].strip(), acid)
         fam_card(cx, cy, fam, f"{gene} · #{rank}", GREEN, arr,
-                 f"{amine.split('(')[0].strip()} + {acid}", GREEN)
+                 f"{amine.split('(')[0].strip()} + {acid}", GREEN,
+                 subcaption="✓ free amine + carboxylate")
 
     # stopped (right half) -----------------------------------------------------
     rx = lx + 2 * cw2 + gx + 0.036
