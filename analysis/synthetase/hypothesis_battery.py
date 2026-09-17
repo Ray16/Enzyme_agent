@@ -68,10 +68,11 @@ def pose_s1(pdb):
     cbx = carboxyls(m["E"])
     if not Ps or len(cbx) < 2:
         return None
-    react = min(cbx, key=lambda co: min(_d(co[0], p) for p in Ps))
-    distal = max(cbx, key=lambda co: min(_d(co[0], p) for p in Ps))
+    keyfn = lambda co: min(_d(o, p) for o in co[1] for p in Ps)   # nearest carboxyl-O to any P
+    react = min(cbx, key=keyfn)
+    distal = max(cbx, key=keyfn)
     rc, ro = react; dc, do = distal
-    dP = min(_d(rc, p) for p in Ps)                       # docking gate
+    dP = min(_d(o, p) for o in ro for p in Ps)            # near-attack O...P gate (matches angle proxy)
     # H1 oxyanion: protein N/O within 3.5A of reactive carboxyl O's
     oxy = sum(1 for a in prot if a.element in ("N", "O")
               for o in ro if _d(a, o) < 3.5)
