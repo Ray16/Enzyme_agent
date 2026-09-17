@@ -201,7 +201,13 @@ def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int | None,
         org = _participants(names, smis, drop_cof, r.get("catalytic_activities", ""),
                             reactants_only)
         shown = org if cap is None else org[:cap]
-        imgs = [im for _, s in shown if (im := _mol_png(s)) is not None]
+        imgs = []
+        for nm, s in shown:
+            im = _mol_png(s)
+            if im is None:
+                bad_smiles.append((r.get("rank"), r.get("gene"), nm, s))
+                im = _placeholder(nm)
+            imgs.append(im)
         strip = _plus_strip(imgs)
         ax.imshow(strip)
         extra = f"  (+{len(org) - cap} more)" if (cap and len(org) > cap) else ""
