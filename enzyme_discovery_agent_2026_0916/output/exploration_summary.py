@@ -27,9 +27,9 @@ def write_exploration_summary(run_dir: Path, log_fn=None) -> None:
         return
 
     # Mechanism-family assignment: tie each evaluated candidate back to the run's
-    # own derived mechanism families (NIS/ANL/ATP-grasp/... — labels come from
-    # mechanism_families.json, never from code) so the summary can report the
-    # fold/superfamily composition of the actual pool, not just the prior.
+    # own derived mechanism families (all labels come from mechanism_families.json,
+    # never from code) so the summary can report the fold/superfamily composition
+    # of the actual pool, not just the prior.
     mech_families = load_mechanism_families(run_dir)
     ranking = _load_ranking(run_dir)
 
