@@ -346,7 +346,7 @@ def build(run: Path):
                 color=TEAL, fontweight="bold")
 
     out = FIG_DIR / "reasoning_trace.png"
-    fig.savefig(out, dpi=200, facecolor="white")
+    fig.savefig(out, dpi=DPI, facecolor="white")
     print(f"wrote {out}")
 
 
