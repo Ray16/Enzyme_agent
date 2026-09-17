@@ -276,7 +276,7 @@ def build(run: Path):
     rx = lx + 2 * cw2 + gx + 0.036
     ax.add_patch(FancyBboxPatch((rx, 0.570), 2 * cw2 + gx, 0.032, boxstyle="round,pad=0.004",
                  fc=RED, ec="none", zorder=3))
-    ax.text(rx + cw2 + gx / 2, 0.586, "STOPPED  —  same fold, off-target substrate",
+    ax.text(rx + cw2 + gx / 2, 0.586, "STOPPED  —  off-target native chemistry",
             ha="center", va="center", fontsize=9.6, fontweight="bold", color="white", zorder=4)
     for i, (fold, la, sa, lb, sb, why) in enumerate(STOPPED):
         cx = rx + (i % 2) * (cw2 + gx)
