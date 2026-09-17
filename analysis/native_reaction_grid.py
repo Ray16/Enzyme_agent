@@ -129,11 +129,12 @@ def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int | None,
         r = rows[idx]
         names = [x.strip() for x in (r.get("native_substrates") or "").split(";") if x.strip()]
         smis = [x.strip() for x in (r.get("native_substrate_smiles") or "").replace(".", ";").split(";") if x.strip()]
-        org = _organic(names, smis)
-        imgs = [im for _, s in org[:cap] if (im := _mol_png(s)) is not None]
+        org = _participants(names, smis, drop_cof)
+        shown = org if cap is None else org[:cap]
+        imgs = [im for _, s in shown if (im := _mol_png(s)) is not None]
         strip = _plus_strip(imgs)
         ax.imshow(strip)
-        extra = f"  (+{len(org) - cap} more)" if len(org) > cap else ""
+        extra = f"  (+{len(org) - cap} more)" if (cap and len(org) > cap) else ""
 
         tier = str(r.get("tier") or "").strip()
         color = _TIER_COLOR.get(tier, "#444")
