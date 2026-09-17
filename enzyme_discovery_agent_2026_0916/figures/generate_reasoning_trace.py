@@ -259,8 +259,9 @@ def build(run: Path):
     for i, (fold, sublabel, smi, why) in enumerate(STOPPED):
         cx = rx + (i % 2) * (cw2 + gx)
         cy = gtop - ch2 - (i // 2) * (ch2 + gy)
-        fam_card(cx, cy, fold, why.replace("*", "").strip()[:26], RED,
-                 mol_img(smi, (240, 150)), sublabel, RED)
+        fam_card(cx, cy, fold, "✗ off-target", RED,
+                 mol_img(smi, (240, 150)), sublabel, RED,
+                 subcaption=why.replace("*", "").strip())
 
     # full-width decision-rule strip -------------------------------------------
     card(0.035, 0.162, 2 * (2 * cw2 + gx) + 0.036, 0.048, _tint(INK, 0.96), INK, lw=1.2)
