@@ -292,7 +292,7 @@ def build(run: Path):
     card(0.035, 0.162, 2 * (2 * cw2 + gx) + 0.036, 0.048, _tint(INK, 0.96), INK, lw=1.2)
     ax.text(0.5, 0.186, "decision rule:  same fold ≠ same substrate — pursue only the members "
             "whose native reaction matches the target chemistry (free amine + carboxylate)",
-            ha="center", va="center", fontsize=9, color=INK)
+            ha="center", va="center", fontsize=11.5, color=INK)
     arrow(0.150, 0.132)
 
     # ---- 5. SEARCH / SCREEN ----
