@@ -316,9 +316,9 @@ def build(run: Path):
         if len(fam) > 26:
             fam = fam[:25].rsplit(" ", 1)[0] + "…"
         ax.text(cx + cwl / 2, 0.041, f"{i+1}. {r.get('gene','?')}", ha="center", va="center",
-                fontsize=10.5, fontweight="bold", color=INK)
-        ax.text(cx + cwl / 2, 0.025, fam, ha="center", va="center", fontsize=7.4, color=MUTED)
-        ax.text(cx + cwl / 2, 0.012, tier, ha="center", va="center", fontsize=8.0,
+                fontsize=13, fontweight="bold", color=INK)
+        ax.text(cx + cwl / 2, 0.025, fam, ha="center", va="center", fontsize=9.3, color=MUTED)
+        ax.text(cx + cwl / 2, 0.012, tier, ha="center", va="center", fontsize=10.5,
                 color=TEAL, fontweight="bold")
 
     out = FIG_DIR / "reasoning_trace.png"
