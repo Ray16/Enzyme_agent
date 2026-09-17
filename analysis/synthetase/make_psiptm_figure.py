@@ -41,8 +41,12 @@ fig, ax = plt.subplots(figsize=(11, 8.5))
 fig.suptitle("Enzyme–diacid ps_iptm does NOT rank the active enzymes to the top",
              fontweight="bold")
 x = np.arange(len(d))
-colors = [RED if i in strong else ORANGE if i in near else GREY for i in d.id]
+colors = [BROWN if i == "SfaB" else RED if i in strong else ORANGE if i in near else GREY
+          for i in d.id]
 ax.bar(x, d[SCORE], color=colors, edgecolor="k", linewidth=0.3, zorder=2)
+sf_i = int(d.index[d.id == "SfaB"][0])                 # label the parent baseline
+ax.text(sf_i, d[SCORE].iloc[sf_i] + 0.004, "SfaB", ha="center", va="bottom",
+        fontsize=FS - 7, fontweight="bold", color=BROWN)
 lines = ["above SfaB baseline  →  ps_iptm rank"]
 for i, e in enumerate(above, 1):
     lines.append(f"{i}. {e}  →  #{rank[e]}")
