@@ -56,19 +56,23 @@ PURSUED = [
     ("Asparagine synthetase B", ["asparagine"],
      "L-glutamine", "L-aspartate"),
 ]
-# Rejected folds -> a representative OFF-TARGET native substrate (SMILES from
-# PubChem) that shows why the fold's members are wrong: they act on phosphosugar
-# nucleotides / isoprenoid diphosphates / carrier-tethered amino acids, not a
-# free diamine + diacid.  (fold, off-target substrate label, SMILES, why)
+# Rejected folds -> the BOTH native substrates of a representative off-target
+# reaction (SMILES from PubChem), shown like the pursued reactions so the
+# off-target chemistry (phosphosugar nucleotides / isoprenoid diphosphates /
+# poly-glutamate) is explicit.  (fold, subA name, subA SMILES, subB name,
+# subB SMILES, why)
 STOPPED = [
-    ("ATP-grasp (PurK/PurT)", "AIR (phosphoribonucleotide)",
-     "C1=C(N(C=N1)C2C(C(C(O2)COP(=O)(O)O)O)O)N", "purine / nucleotide biosynthesis"),
+    ("ATP-grasp (PurT)", "glycinamide ribonucleotide",
+     "C(C1C(C(C(O1)NC(=O)CN)O)O)OP(=O)(O)O", "formate", "C(=O)[O-]",
+     "purine / nucleotide biosynthesis"),
     ("NIS-fold prenyltransferase", "dimethylallyl-PP",
-     "CC(=CCOP(=O)(O)OP(=O)(O)O)C", "isoprenoid transfer — not amide"),
-    ("ANL adenylating (Pur)", "glycinamide ribonucleotide",
-     "C(C1C(C(C(O1)NC(=O)CN)O)O)OP(=O)(O)O", "glycinamide-ribonucleotide biosynthesis"),
-    ("ATP-grasp (RimK-type)", "L-glutamate*",
-     "C(CC(=O)O)C(C(=O)O)N", "*polymerised / LysW-carrier-tethered"),
+     "CC(=CCOP(=O)(O)OP(=O)(O)O)C", "isopentenyl-PP", "CC(=C)CCOP(=O)(O)OP(=O)(O)O",
+     "isoprenoid transfer — not amide"),
+    ("ANL adenylating (Pur)", "5-phospho-D-ribosylamine",
+     "C(C1C(C(C(O1)N)O)O)OP(=O)(O)O", "glycine", "C(C(=O)O)N",
+     "glycinamide-ribonucleotide biosynthesis"),
+    ("ATP-grasp (RimK-type)", "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
+     "L-glutamate (chain)", "C(CC(=O)O)C(C(=O)O)N", "polymerised poly-glutamate"),
 ]
 
 
