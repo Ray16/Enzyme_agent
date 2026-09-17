@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -35,6 +36,10 @@ from enzyme_discovery_agent.tools.family_reactions import (
     _seed_fold_ids,
     _target_profile_for_run,
     classify_member_reaction,
+)
+from enzyme_discovery_agent.tools.mechanism_families import (
+    _GENERIC_FAMILY_TOKENS,
+    _family_search_tokens,
 )
 
 logger = logging.getLogger("enzyme_agent")
