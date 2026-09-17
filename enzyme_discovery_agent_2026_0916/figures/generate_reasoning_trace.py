@@ -161,18 +161,18 @@ def build(run: Path):
             ha="center", va="top", fontsize=10.5, color=MUTED, style="italic")
 
     # ---- 1. INPUT ----
-    card(0.20, 0.870, 0.60, 0.080, "white", BLUE)
-    tag(0.215, 0.938, "INPUT  ·  target substrates", BLUE)
-    ax.text(0.35, 0.908, "diacid", ha="center", fontsize=9, color=MUTED)
-    ax.text(0.65, 0.908, "diamine", ha="center", fontsize=9, color=MUTED)
-    img_at(mol_img("O=C(O)CCCCC(=O)O", (230, 120)), 0.35, 0.890, 0.5)
-    img_at(mol_img("NCCCCCCN", (230, 120)), 0.65, 0.890, 0.5)
-    ax.text(0.5, 0.890, "+", ha="center", va="center", fontsize=17, color=INK)
-    arrow(0.870, 0.842)
+    card(0.20, 0.878, 0.60, 0.072, "white", BLUE)
+    tag(0.215, 0.940, "INPUT  ·  target substrates", BLUE)
+    ax.text(0.35, 0.912, "diacid", ha="center", fontsize=9, color=MUTED)
+    ax.text(0.65, 0.912, "diamine", ha="center", fontsize=9, color=MUTED)
+    img_at(mol_img("O=C(O)CCCCC(=O)O", (230, 110)), 0.35, 0.896, 0.5)
+    img_at(mol_img("NCCCCCCN", (230, 110)), 0.65, 0.896, 0.5)
+    ax.text(0.5, 0.896, "+", ha="center", va="center", fontsize=17, color=INK)
+    arrow(0.878, 0.860)
 
     # ---- 2. PARSE (4 columns, each with the why) ----
-    card(0.04, 0.744, 0.92, 0.090, _tint(BLUE, 0.94), BLUE)
-    tag(0.055, 0.822, "PARSE REACTION  →  contract", BLUE)
+    card(0.04, 0.766, 0.92, 0.084, _tint(BLUE, 0.94), BLUE)
+    tag(0.055, 0.840, "PARSE REACTION  →  contract", BLUE)
     bt = ", ".join(contract.get("bond_types", []) or [])
     rd = contract.get("reaction_direction", "")
     rg = " + ".join(contract.get("reactive_groups", []) or [])
@@ -185,24 +185,24 @@ def build(run: Path):
     cw = 0.212
     for i, (k, v, why) in enumerate(cells):
         cx = 0.06 + i * (cw + 0.018)
-        card(cx, 0.752, cw, 0.056, "white", _tint(BLUE, 0.4), lw=1.2)
-        ax.text(cx + cw / 2, 0.797, k, ha="center", va="center", fontsize=8.6,
+        card(cx, 0.772, cw, 0.054, "white", _tint(BLUE, 0.4), lw=1.2)
+        ax.text(cx + cw / 2, 0.815, k, ha="center", va="center", fontsize=8.6,
                 color=BLUE, fontweight="bold")
-        ax.text(cx + cw / 2, 0.781, v, ha="center", va="center", fontsize=9.6,
+        ax.text(cx + cw / 2, 0.799, v, ha="center", va="center", fontsize=9.6,
                 color=INK, fontweight="bold", linespacing=0.95)
-        ax.text(cx + cw / 2, 0.762, why, ha="center", va="center", fontsize=7.6,
+        ax.text(cx + cw / 2, 0.781, why, ha="center", va="center", fontsize=7.6,
                 color=MUTED, linespacing=0.95)
-    arrow(0.744, 0.716)
+    arrow(0.766, 0.748)
 
     # ---- 3. ENUMERATE ----
-    card(0.10, 0.626, 0.80, 0.082, _tint(PURPLE, 0.94), PURPLE)
-    tag(0.115, 0.698, f"ENUMERATE MECHANISMS  ·  {len(mech_names)} distinct folds "
+    card(0.10, 0.658, 0.80, 0.078, _tint(PURPLE, 0.94), PURPLE)
+    tag(0.115, 0.726, f"ENUMERATE MECHANISMS  ·  {len(mech_names)} distinct folds "
         f"(each a different activated intermediate)", PURPLE, fs=10)
-    ax.text(0.5, 0.668, "   ·   ".join(mech_names[:4]), ha="center", va="center",
+    ax.text(0.5, 0.696, "   ·   ".join(mech_names[:4]), ha="center", va="center",
             fontsize=10, color=INK)
-    ax.text(0.5, 0.646, "   ·   ".join(mech_names[4:]), ha="center", va="center",
+    ax.text(0.5, 0.674, "   ·   ".join(mech_names[4:]), ha="center", va="center",
             fontsize=10, color=INK)
-    arrow(0.626, 0.598)
+    arrow(0.658, 0.632)
 
     # ---- 4. TRIAGE ----
     card(0.02, 0.135, 0.96, 0.470, "white", INK, lw=1.2)
