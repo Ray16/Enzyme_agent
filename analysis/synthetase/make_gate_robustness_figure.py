@@ -63,10 +63,13 @@ for ax, cut in zip(axes, CUTS):
     ax.set_ylabel("rank by mean in-line angle" if cut == CUTS[0] else "")
     ax.set_xlabel("mean angle (°)")
 axes[0].legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
-                        Patch(color=ORANGE, label="marginal (#4–6)"),
-                        Patch(color=GREY, label="other")],
+                        Patch(color=ORANGE, label="marginal (> SfaB, < 0.2)"),
+                        Patch(color=GREY, label="≤ SfaB")],
                loc="lower left", frameon=True, framealpha=0.95, edgecolor="#ccc", fontsize=10)
-plt.tight_layout(rect=[0, 0, 1, 0.965])
+fig.text(0.5, 0.012, "SfaB (parent) is INCONCLUSIVE at every cutoff — its diacid docks "
+         ">10 Å from Pα in all 50 poses, never reaching near-attack",
+         ha="center", va="bottom", fontsize=12, color=BROWN, fontstyle="italic")
+plt.tight_layout(rect=[0, 0.03, 1, 0.965])
 plt.savefig(FIG, bbox_inches="tight"); plt.close(fig)
 print("wrote", FIG)
 for cut in CUTS:
