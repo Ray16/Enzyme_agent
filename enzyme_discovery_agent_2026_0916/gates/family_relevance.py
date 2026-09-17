@@ -225,15 +225,17 @@ def _distinctive_family_queries(fam: dict) -> list[str]:
                 # keep only parts that carry a gene-like internal capital.
                 if re.search(r"[A-Z]", part[1:] or ""):
                     _add(part)
-        # (b) enzyme-name bigram: a distinctive modifier + enzyme head noun.
+        # (b) enzyme-name bigram: a distinctive modifier + a -ase head noun.
         words = re.findall(r"[A-Za-z][A-Za-z0-9]*", text.replace("-", " "))
-        low = [w.lower() for w in words]
-        for i, w in enumerate(low):
-            if w in _ENZYME_HEAD_NOUNS and i > 0:
-                modifier = low[i - 1]
-                if modifier in _PHRASE_STOP_TOKENS or modifier in _ENZYME_HEAD_NOUNS:
-                    continue
-                _add(f"{words[i - 1]} {w}")
+        for i in range(1, len(words)):
+            if not _is_enzyme_head(words[i]):
+                continue
+            modifier = words[i - 1].lower()
+            # The modifier must carry signal: not shared generic vocabulary and
+            # not itself an enzyme-class word.
+            if modifier in _GENERIC_FAMILY_TOKENS or _is_enzyme_head(modifier):
+                continue
+            _add(f"{words[i - 1]} {words[i]}")
     return queries
 
 
