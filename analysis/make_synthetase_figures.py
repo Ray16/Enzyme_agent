@@ -147,6 +147,7 @@ def fig_proxy_ranking(df):
     for k, (_, r) in enumerate(beat.iterrows(), 1):
         rk = f"#{ang_rank[r.id]}" if r.id in ang_rank else "INCONCLUSIVE"
         lines.append(f"{k}. {r.id}  →  {rk}")
+    lines += ["", "SfaB (parent): INCONCLUSIVE", "  diacid never < 4 Å of Pα (min 10 Å)"]
     axA.text(0.985, 0.02, "\n".join(lines), transform=axA.transAxes, ha="right", va="bottom",
              fontsize=FS - 5, color="#222", fontweight="bold",
              bbox=dict(boxstyle="round,pad=0.5", fc="#fbfbfb", ec="#888", lw=1.2))
