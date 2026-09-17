@@ -194,6 +194,11 @@ _SHARED_TAIL = (
     '"disqualifying_observations":["..",".."]}]}'
 )
 
+# Enumeration = broad first pass; completeness audit = "what did the first pass
+# miss?".  Both share the identical constraints + schema tail.
+_SYSTEM = _ENUM_INTRO + _SHARED_TAIL
+_COMPLETENESS_SYSTEM = _AUDIT_INTRO + _SHARED_TAIL
+
 # Guard the firewall: drop any descriptor/term that looks like a specific
 # gene/enzyme token (a short mixed-case symbol) rather than a mechanism word.
 _ENZYME_TOKEN_RE = re.compile(r"^[A-Z][a-z]{1,3}[A-Z0-9]$")
