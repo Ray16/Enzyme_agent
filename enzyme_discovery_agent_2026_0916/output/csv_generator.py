@@ -89,7 +89,7 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
         "rank", "tier", "tier_label",
         "substrate_fit", "evidence_level", "family_relevance", "direction",
         "gene", "accession", "uniprot_url", "protein_name", "organism",
-        "ec_numbers", "interpro_family", "is_swissprot", "sequence_length",
+        "ec_numbers", "interpro_family", "mechanism_family", "is_swissprot", "sequence_length",
         "pdb_ids", "has_alphafold", "alphafold_url",
         "characterization_papers", "engineering_papers", "n_mutations",
         "tanimoto_score", "native_substrates", "native_substrate_smiles",
