@@ -182,7 +182,7 @@ def build(run: Path):
     arrow(0.866, 0.852)
 
     # ---- 2. PARSE (4 columns, each with the why) ----
-    card(0.04, 0.766, 0.92, 0.084, _tint(BLUE, 0.94), BLUE)
+    card(0.04, 0.752, 0.92, 0.096, _tint(BLUE, 0.94), BLUE)
     tag(0.055, 0.840, "PARSE REACTION  →  contract", BLUE)
     bt = ", ".join(contract.get("bond_types", []) or [])
     rd = contract.get("reaction_direction", "")
