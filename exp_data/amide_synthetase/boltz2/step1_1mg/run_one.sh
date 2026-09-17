@@ -2,7 +2,7 @@
 # Fold ONE enzyme's 1-Mg step-1 input with Boltz-2. Args: GPU_IDX ENZYME
 # GPU is passed by gpu_reserve via CUDA_VISIBLE_DEVICES; we ignore $1 for device sel
 # (gpu_reserve already exported it) and just use $2 = enzyme.
-set -euo pipefail
+set -eo pipefail   # NOT -u: conda's binutils activate script uses unbound vars
 ENZ=$2
 ROOT=/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent
 BASE=$ROOT/exp_data/amide_synthetase/boltz2/step1_1mg
