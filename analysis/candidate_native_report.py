@@ -438,7 +438,7 @@ def build_html(runs: list[dict], fragment: bool = False) -> str:
     head = f"<title>{title}</title>{_FONTS}<style>{_CSS}</style>"
     if fragment:
         return head + "\n" + content
-    return (f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+    return (f'<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width,initial-scale=1">'
             f"{head}</head><body>{content}</body></html>")
 
