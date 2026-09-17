@@ -218,12 +218,16 @@ def _clean_terms(terms) -> list[str]:
 
 
 def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: int,
-                 exclude: list[str] | None = None) -> list[dict]:
+                 exclude: list[str] | None = None, system: str | None = None,
+                 audit: bool = False) -> list[dict]:
     """A single derivation call -> parsed family dicts (may be empty).
 
     ``exclude`` names families already found on prior attempts; the model is
     asked for ADDITIONAL distinct folds beyond them, so a retry broadens the set
-    instead of repeating the first (often single, umbrella) answer.
+    instead of repeating the first (often single, umbrella) answer.  ``system``
+    overrides the default enumeration prompt (the completeness audit passes
+    ``_COMPLETENESS_SYSTEM``); ``audit`` frames the exclude list as the
+    already-covered set to hunt BEYOND, rather than a plain de-dup list.
     """
     from enzyme_discovery_agent import config
 
@@ -231,16 +235,24 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
     if substrate_smiles:
         user += f"\nSubstrate SMILES: {substrate_smiles}"
     if exclude:
-        user += (
-            "\n\nYou have ALREADY listed these families: " + "; ".join(exclude) +
-            ".\nList ONLY ADDITIONAL, genuinely DISTINCT folds/activation "
-            "chemistries NOT already covered above — different structural "
-            "superfamilies or a different activated intermediate/cofactor. Do "
-            "not restate or rename the ones above."
-        )
+        if audit:
+            user += (
+                "\n\nFamilies ALREADY covered (do NOT repeat or rename any): " +
+                "; ".join(exclude) + ".\nReturn ONLY the qualifying folds that are "
+                "MISSING from this set — those a first pass overlooked, from any "
+                "region of metabolism. If nothing is missing, return an empty list."
+            )
+        else:
+            user += (
+                "\n\nYou have ALREADY listed these families: " + "; ".join(exclude) +
+                ".\nList ONLY ADDITIONAL, genuinely DISTINCT folds/activation "
+                "chemistries NOT already covered above — different structural "
+                "superfamilies or a different activated intermediate/cofactor. Do "
+                "not restate or rename the ones above."
+            )
     try:
         response = llm_client.call(
-            messages=[{"role": "system", "content": _SYSTEM},
+            messages=[{"role": "system", "content": system or _SYSTEM},
                       {"role": "user", "content": user}],
             temperature=config.LLM_TEMPERATURE,
             timeout=max(config.LLM_TIMEOUT, 120),
