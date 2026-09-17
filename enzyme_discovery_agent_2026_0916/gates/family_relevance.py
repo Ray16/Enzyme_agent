@@ -328,7 +328,9 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
         if relevance >= 1:
             scored.append((relevance, c, acc))
     if scored:
-        # Highest relevance first, then broadest surveyable coverage.
+        # Survey every relevant, surveyable fold; order by relevance then
+        # coverage so the safety cap (if ever hit) keeps the strongest.  The
+        # real on/off-target decision is the downstream direction + fit filter.
         scored.sort(key=lambda t: (-t[0], -t[1]))
         return [acc for _, _, acc in scored][:max_folds]
 
