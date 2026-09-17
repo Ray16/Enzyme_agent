@@ -32,9 +32,11 @@ for cfg in sorted(glob.glob(f"{RES}/step1_*")):
 
 act = pd.read_csv(f"{ROOT}/exp_data/amide_synthetase/assay_data/panel_activity.csv")[
     ["id", "activity_N66L1_ugml_avg"]].rename(columns={"activity_N66L1_ugml_avg": "act"})
+SF = float(act.loc[act.id == "SfaB", "act"].iloc[0]) if (act.id == "SfaB").any() else 0.0489
 act = act[act.id != "SfaB"].set_index("id")["act"]
-top6 = list(act.sort_values(ascending=False).head(6).index)
-ACTIVES, MARGINAL = top6[:3], top6[3:]     # AS9/17/23 ; AS41/AS8/AS3
+# tiers match the angle-proxy + ps_iptm figures: active (>0.2), marginal (> SfaB, <0.2)
+ACTIVES = list(act[act > 0.2].sort_values(ascending=False).index)          # AS9/17/23
+MARGINAL = list(act[(act > SF) & (act <= 0.2)].sort_values(ascending=False).index)  # AS41/AS8/AS3/AS36
 
 fig, axes = plt.subplots(1, len(CUTS), figsize=(3.6 * len(CUTS), 11), sharex=True)
 fig.suptitle("Angle-proxy ranking is robust to the distance-gate cutoff — actives stay on top",
