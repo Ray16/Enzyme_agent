@@ -54,9 +54,9 @@ def load_mechanism_families(run_dir: Path) -> list[dict]:
 def mechanism_family_level(name: str) -> str | None:
     """Structural rank implied by a family's own name (fold/superfamily/family).
 
-    The model already encodes this in the label it writes, e.g. "ANL
-    *superfamily* ...", "ATP-grasp *fold* ..."; we read it back rather than
-    guessing.  Returns ``None`` when the name states no rank."""
+    The model already encodes this in the label it writes (e.g. "... *fold* ..."
+    vs "... *superfamily* ..."); we read it back rather than guessing.  Returns
+    ``None`` when the name states no rank."""
     low = str(name or "").lower()
     for word in _RANK_WORDS:
         if re.search(rf"\b{word}\b", low):
