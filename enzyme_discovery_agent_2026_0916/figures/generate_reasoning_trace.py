@@ -57,36 +57,39 @@ GREEN, RED = "#15803d", "#b91c1c"
 #  acid-label, subcaption).  Hints select the substrate from the run's data;
 #  labels are what we print (verified names).
 PURSUED = [
-    ("Glutamine-synthetase fold", ["glutamine synthetase", "glutamylputrescine"],
-     "cadaverine", "cadaverine", "L-glutamate", "L-glutamate",
+    ("DdaG-type amide ligase", ["fumarate", "diaminopropanoate"],
+     "amino-l-alanine", "3-amino-L-alanine", "fumarate", "fumarate",
      "✓ free amine + carboxylate"),
-    ("ATP-grasp ligase (PylC)", ["atp-grasp", "pylc"],
-     "ornithine", "3-methyl-D-ornithine", "lysin", "L-lysine",
+    ("Glutamine-synthetase fold (PuuA)", ["glutamylputrescine", "glutamine synthetase"],
+     "butanediammonium", "putrescine", "l-glutamate", "L-glutamate",
+     "✓ free amine + carboxylate"),
+    ("ATP-grasp ligase (PylC)", ["pylc", "pyrrolysine"],
+     "methyl-d-ornithine", "3-methyl-D-ornithine", "l-lysinium", "L-lysine",
      "✓ free amine + carboxylate"),
     ("NIS / IucA-IucC synthetase", ["iuca", "aerobactin", "siderophore"],
-     "spermidine", "spermidine", "citrate", "citrate",
+     "hydroxy-l-lysine", "N6-Ac-N6-OH-L-lysine", "citrate", "citrate",
      "✓ free amine + carboxylate"),
-    ("Asparagine synthetase B", ["asparagine"],
-     "L-glutamine", "L-glutamine", "L-aspartate", "L-aspartate",
-     "amide via acyl-adenylate (N from Gln)"),
 ]
 # Rejected folds -> the BOTH native substrates of a representative off-target
 # reaction (SMILES from PubChem), shown like the pursued reactions so the
-# off-target chemistry (phosphosugar nucleotides / isoprenoid diphosphates /
-# poly-glutamate) is explicit.  (fold, subA name, subA SMILES, subB name,
-# subB SMILES, why)
+# off-target chemistry (purine/carbamate nucleotides / carrier-protein-tethered
+# substrates / too-small amines) is explicit.  Each entry:
+#   (fold, subA name, subA SMILES, subB name, subB SMILES-or-None, why,
+#    glyph-label-or-None).  When subB SMILES is None the second reactant is a
+#    macromolecule (carrier protein), drawn as the glyph box instead of a mol.
 STOPPED = [
-    ("ATP-grasp (PurT)", "glycinamide ribonucleotide",
+    ("ATP-grasp (PurT/PurK-type)", "glycinamide ribonucleotide",
      "C(C1C(C(C(O1)NC(=O)CN)O)O)OP(=O)(O)O", "formate", "C(=O)[O-]",
-     "purine / nucleotide biosynthesis"),
-    ("Polyprenyl synthetase", "dimethylallyl-PP",
-     "CC(=CCOP(=O)(O)OP(=O)(O)O)C", "isopentenyl-PP", "CC(=C)CCOP(=O)(O)OP(=O)(O)O",
-     "isoprenoid transfer — not amide"),
-    ("ATP-grasp (PurD)", "5-phospho-D-ribosylamine",
-     "C(C1C(C(C(O1)N)O)O)OP(=O)(O)O", "glycine", "C(C(=O)O)N",
-     "glycinamide-ribonucleotide biosynthesis"),
-    ("ATP-grasp (RimK-type)", "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
-     "carrier protein", None, "substrate tethered to LysW carrier — not free"),
+     "purine / nucleotide biosynthesis", None),
+    ("RimK / LysW-type ligase", "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
+     "carrier protein", None, "glutamate tethered to LysW carrier — not free",
+     "LysW\ncarrier\nprotein"),
+    ("Aryl-acid adenylation (EntE)", "2,3-dihydroxybenzoate",
+     "OC(=O)c1cccc(O)c1O", "carrier protein", None,
+     "aryl acid tethered to ACP — not free", "aryl-carrier\nprotein\n(ACP)"),
+    ("Methylamine-glutamate ligase", "methylamine", "CN",
+     "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
+     "right chemistry, amine far too small", None),
 ]
 
 
