@@ -166,20 +166,20 @@ def build(run: Path):
         ax.add_artist(AnnotationBbox(OffsetImage(arr, zoom=zoom), (x, y), frameon=False, zorder=5))
 
     # ---- title ----
-    ax.text(0.5, 0.986, "Enzyme Discovery Agent — reasoning trace along the pipeline",
-            ha="center", va="top", fontsize=17, fontweight="bold", color=INK)
-    ax.text(0.5, 0.963, "one run · target: adipic acid + hexamethylenediamine (nylon-6,6 amide ligation)",
-            ha="center", va="top", fontsize=10.5, color=MUTED, style="italic")
+    ax.text(0.5, 0.988, "Enzyme Discovery Agent — reasoning trace along the pipeline",
+            ha="center", va="top", fontsize=22, fontweight="bold", color=INK)
+    ax.text(0.5, 0.966, "one run · target: adipic acid + hexamethylenediamine (nylon-6,6 amide ligation)",
+            ha="center", va="top", fontsize=13.5, color=MUTED, style="italic")
 
     # ---- 1. INPUT ----
-    card(0.20, 0.878, 0.60, 0.072, "white", BLUE)
-    tag(0.215, 0.940, "INPUT  ·  target substrates", BLUE)
-    ax.text(0.35, 0.912, "diacid", ha="center", fontsize=9, color=MUTED)
-    ax.text(0.65, 0.912, "diamine", ha="center", fontsize=9, color=MUTED)
-    img_at(mol_img("O=C(O)CCCCC(=O)O", (230, 110)), 0.35, 0.896, 0.5)
-    img_at(mol_img("NCCCCCCN", (230, 110)), 0.65, 0.896, 0.5)
-    ax.text(0.5, 0.896, "+", ha="center", va="center", fontsize=17, color=INK)
-    arrow(0.878, 0.860)
+    card(0.24, 0.876, 0.52, 0.070, "white", BLUE)
+    tag(0.253, 0.938, "INPUT  ·  target substrates", BLUE)
+    ax.text(0.38, 0.918, "diacid", ha="center", fontsize=11.5, color=MUTED)
+    ax.text(0.62, 0.918, "diamine", ha="center", fontsize=11.5, color=MUTED)
+    img_at(mol_img("O=C(O)CCCCC(=O)O", (260, 120)), 0.38, 0.898, 0.62)
+    img_at(mol_img("NCCCCCCN", (260, 120)), 0.62, 0.898, 0.62)
+    ax.text(0.5, 0.898, "+", ha="center", va="center", fontsize=20, color=INK)
+    arrow(0.876, 0.860)
 
     # ---- 2. PARSE (4 columns, each with the why) ----
     card(0.04, 0.766, 0.92, 0.084, _tint(BLUE, 0.94), BLUE)
