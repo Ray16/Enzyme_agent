@@ -83,7 +83,7 @@ def load(run: Path):
     n_expand = sum(1 for v in dec.values() if v["decision"] == "expand")
     n_stop = sum(1 for v in dec.values() if v["decision"] == "stop")
     mech = json.loads((run / "mechanism_families.json").read_text())
-    mech_names = [m["name"].split(" (")[0].split(" fold")[0] for m in mech]
+    mech_names = [_short_mech(m["name"]) for m in mech]
     rows = {}
     with open(run / "ranked_candidates.csv") as f:
         for r in csv.DictReader(f):
