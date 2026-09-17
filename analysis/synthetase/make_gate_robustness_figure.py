@@ -36,31 +36,35 @@ act = act[act.id != "SfaB"].set_index("id")["act"]
 top6 = list(act.sort_values(ascending=False).head(6).index)
 ACTIVES, MARGINAL = top6[:3], top6[3:]     # AS9/17/23 ; AS41/AS8/AS3
 
-fig, axes = plt.subplots(len(CUTS), 1, figsize=(13, 3.0 * len(CUTS)), sharey=True)
-fig.suptitle("Angle-proxy ranking is robust to the distance-gate cutoff — actives stay at the top",
-             fontsize=17, fontweight="bold", y=0.997)
+fig, axes = plt.subplots(1, len(CUTS), figsize=(3.6 * len(CUTS), 11), sharex=True)
+fig.suptitle("Angle-proxy ranking is robust to the distance-gate cutoff — actives stay on top",
+             fontsize=17, fontweight="bold", y=0.995)
 for ax, cut in zip(axes, CUTS):
     score = {i: arr[arr[:, 1] < cut][:, 0].mean() for i, arr in data.items()
              if (arr[:, 1] < cut).sum() >= 5}
-    order = sorted(score, key=lambda i: -score[i])
+    order = sorted(score, key=lambda i: -score[i])          # rank 1 = highest angle
     rank = {i: r + 1 for r, i in enumerate(order)}
+    y = np.arange(len(order))                               # 0 = top after invert
     vals = [score[i] for i in order]
     colors = [RED if i in ACTIVES else ORANGE if i in MARGINAL else GREY for i in order]
-    ax.bar(np.arange(len(order)), vals, color=colors, edgecolor="k", linewidth=0.3)
+    ax.barh(y, vals, color=colors, edgecolor="k", linewidth=0.3)
+    ax.invert_yaxis()                                       # rank #1 on top
+    for i in order:                                         # label the highlighted enzymes
+        if i in ACTIVES or i in MARGINAL:
+            ax.text(vals[rank[i] - 1] + 0.6, rank[i] - 1, i, va="center", ha="left",
+                    fontsize=8.5, fontweight="bold",
+                    color=RED if i in ACTIVES else ORANGE)
     hitranks = ", ".join(f"#{rank[a]}" for a in ACTIVES if a in rank)
-    inconc = [a for a in ACTIVES if a not in rank]
-    extra = f"  (AS8 inconcl.)" if "AS8" in [m for m in MARGINAL if m not in rank] else ""
-    ax.set_title(f"d < {cut} Å   —   {len(order)} conclusive   —   3 hits at ranks {hitranks}",
-                 loc="left")
-    ax.set_ylabel("mean angle (°)")
-    ax.set_xlim(-1, max(len(v) for v in [order]) if order else 1)
-    ax.set_ylim(122, 183)
-axes[-1].set_xlabel("rank by mean in-line attack angle")
+    ax.set_title(f"d < {cut} Å\n{len(order)} conclusive\nhits at {hitranks}", fontsize=13)
+    ax.set_xlim(122, 186)
+    ax.set_ylim(len(order) - 0.5, -0.5)
+    ax.set_ylabel("rank by mean in-line angle" if cut == CUTS[0] else "")
+    ax.set_xlabel("mean angle (°)")
 axes[0].legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
-                        Patch(color=ORANGE, label="marginal (#4–6 by activity)"),
+                        Patch(color=ORANGE, label="marginal (#4–6)"),
                         Patch(color=GREY, label="other")],
-               loc="upper right", frameon=True, framealpha=0.95, edgecolor="#ccc", ncol=3)
-plt.tight_layout(rect=[0, 0, 1, 0.985])
+               loc="lower left", frameon=True, framealpha=0.95, edgecolor="#ccc", fontsize=10)
+plt.tight_layout(rect=[0, 0, 1, 0.965])
 plt.savefig(FIG, bbox_inches="tight"); plt.close(fig)
 print("wrote", FIG)
 for cut in CUTS:
