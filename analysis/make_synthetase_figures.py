@@ -75,7 +75,8 @@ def fig_landscape(df):
     d = df.sort_values("act", ascending=False).reset_index(drop=True)
     fig, ax = plt.subplots(figsize=(22, 8))
     x = np.arange(len(d))
-    colors = [RED if a else "#c8cdd4" for a in d.is_active]
+    colors = [BROWN if i == "SfaB" else RED if a else "#c8cdd4"
+              for i, a in zip(d.id, d.is_active)]
     floor = 4e-4
     ax.bar(x, d.act.clip(lower=floor), color=colors, edgecolor="k", linewidth=0.3, width=0.82, zorder=2)
     ax.errorbar(x, d.act.clip(lower=floor), yerr=[np.zeros(len(d)), d.act_std.fillna(0)],
