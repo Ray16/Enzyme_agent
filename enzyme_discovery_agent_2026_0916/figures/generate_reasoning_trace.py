@@ -136,7 +136,7 @@ def build(run: Path):
     contract, complete, n_expand, n_stop, mech_names, rows, n_folds = load(run)
     leads = list(rows.values())[:5]
 
-    fig = plt.figure(figsize=(14.0, 15.4))
+    fig = plt.figure(figsize=(16.5, 15.8))
     ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
 
     def card(x, y, w, h, fc, ec, lw=1.6, z=2):
