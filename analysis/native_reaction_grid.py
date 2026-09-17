@@ -271,12 +271,11 @@ def build(run_dir: Path, out: Path, cols: int, top: int | None, cap: int | None,
     # record it beside the figure rather than letting the structure vanish.
     report = out.with_suffix(".validation.txt")
     if bad_smiles:
-        lines = [f"#{rk} {gn}: unparseable SMILES for reactant '{nm}': {sm}"
-                 for rk, gn, nm, sm in bad_smiles]
-        report.write_text("UNPARSEABLE NATIVE-SUBSTRATE SMILES (extraction errors)\n"
+        lines = [f"#{rk} {gn}: [{st}] reactant '{nm}': {sm}"
+                 for rk, gn, nm, sm, st in bad_smiles]
+        report.write_text("NATIVE-SUBSTRATE SMILES DEFECTS (extraction errors in the run)\n"
                           + "\n".join(lines) + "\n")
-        print(f"WARNING: {len(bad_smiles)} reactant(s) have unparseable SMILES "
-              f"(shown as placeholders); see {report}")
+        print(f"WARNING: {len(bad_smiles)} reactant(s) have defective SMILES; see {report}")
         for ln in lines:
             print("  " + ln)
     else:
