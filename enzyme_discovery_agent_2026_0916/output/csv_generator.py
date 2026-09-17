@@ -141,6 +141,9 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None) -
                     "organism": d.get("organism", ""),
                     "ec_numbers": "; ".join(ec_list),
                     "interpro_family": d.get("interpro_family", ""),
+                    "mechanism_family": (
+                        (assign_mechanism_family(d, mech_families) or {}).get("name", "")
+                    ),
                     "is_swissprot": d.get("is_swissprot", False),
                     "sequence_length": d.get("sequence_length", ""),
                     "pdb_ids": "; ".join(pdb_ids),
