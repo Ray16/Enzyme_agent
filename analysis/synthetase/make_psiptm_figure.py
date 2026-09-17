@@ -43,8 +43,8 @@ fig.suptitle("Enzyme–diacid ps_iptm does NOT rank the active enzymes to the to
 x = np.arange(len(d))
 colors = [RED if i in strong else ORANGE if i in near else GREY for i in d.id]
 ax.bar(x, d[SCORE], color=colors, edgecolor="k", linewidth=0.3, zorder=2)
-lines = ["top 6 by activity  →  ps_iptm rank"]
-for i, e in enumerate(top6, 1):
+lines = ["above SfaB baseline  →  ps_iptm rank"]
+for i, e in enumerate(above, 1):
     lines.append(f"{i}. {e}  →  #{rank[e]}")
 lines.append("")
 lines.append(f"Spearman ρ = {rho:+.2f}  (p={pv:.2f}, n.s.)")
