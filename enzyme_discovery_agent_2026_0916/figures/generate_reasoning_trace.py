@@ -132,6 +132,7 @@ def mol_img(smiles, size=(220, 150)):
     d = rdMolDraw2D.MolDraw2DCairo(pw, ph)
     o = d.drawOptions()
     o.bondLineWidth = max(1, int(1.3 * SS))
+    o.padding = 0.04
     d.DrawMolecule(Chem.MolFromSmiles(smiles))
     d.FinishDrawing()
     return _png_to_rgb(d.GetDrawingText())
