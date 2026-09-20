@@ -184,6 +184,32 @@ FULLTEXT_MINE_MIN_SCORE = 0.55
 # otherwise network-bound discovery run.
 ENABLE_SEMANTIC_RERANK = os.environ.get("ENZYME_AGENT_ENABLE_SEMANTIC_RERANK", "0") == "1"
 
+# --- Candidate embedding map (agent-invoked ESM neighbor exploration) ---
+# Opt-in: the heavy torch/transformers embedding runs only in a GPU subprocess
+# (tools/esm_embed_worker.py) launched via the cluster reservation gate, so a
+# normal run never imports torch or touches a GPU. The map_candidate_neighbors
+# tool is registered regardless but no-ops when this flag is off.
+ENABLE_CANDIDATE_MAP = os.environ.get("ENZYME_AGENT_ENABLE_CANDIDATE_MAP", "0") == "1"
+CANDIDATE_MAP_ESM_MODEL = os.environ.get(
+    "ENZYME_AGENT_ESM_MODEL", "facebook/esm2_t33_650M_UR50D"
+)
+CANDIDATE_MAP_STEER_MODE = "exploit"  # future hook: "explore" / "balanced"
+# Fallback DEFAULTS only -- the agent overrides these per call via tool params.
+CANDIDATE_MAP_TOP_K = 5
+CANDIDATE_MAP_PROMISING_N = 10
+# GPU embedding subprocess plumbing (never sets CUDA_VISIBLE_DEVICES directly).
+CANDIDATE_MAP_GPU_RESERVE = os.environ.get(
+    "ENZYME_AGENT_GPU_RESERVE", "/nfs/lambda_stor_01/homes/rzhu/bin/gpu_reserve"
+)
+CANDIDATE_MAP_EMBED_PYTHON = os.environ.get(
+    "ENZYME_AGENT_EMBED_PYTHON", "/homes/rzhu/miniforge3/envs/palm/bin/python"
+)
+CANDIDATE_MAP_EMBED_TIMEOUT = 1800  # seconds for the GPU embedding subprocess
+# Reference enzymes to STAR in the standalone plot are supplied out-of-band
+# (CLI/env/optional file), never hardcoded -- the benchmark answer must not live
+# in package source (see CLAUDE.md data-leakage firewall). Empty by default.
+CANDIDATE_MAP_REFERENCE_ACCESSIONS = os.environ.get("ENZYME_AGENT_MAP_REFERENCE_ACCS", "")
+
 # --- Database search ---
 KEGG_EC_FETCH_LIMIT = 25
 KEGG_THREAD_POOL_WORKERS = 5
