@@ -11,7 +11,7 @@ this file is scanned by the leakage firewall).
 
 Usage:
     python figures/plot_esm_embedding_map.py <run_dir> \
-        [--title "Amide synthetases (nylon-6,6)"] [--top 10] \
+        [--title "Amide synthetases"] [--top 10] \
         [--model facebook/esm2_t33_650M_UR50D] [--out figures/xxx.png] \
         [--refs A,B] [--no-embed]
 
