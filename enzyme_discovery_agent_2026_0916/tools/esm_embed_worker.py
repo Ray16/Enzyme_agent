@@ -36,7 +36,21 @@ def embed_sequences(model_name: str, sequences: list[str]):
     import torch
     from transformers import AutoTokenizer, AutoModel
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # Require a GPU: the whole point is to compute the ESM forward pass on the
+    # reserved GPU. Fail loudly rather than silently crawling on CPU. The CPU
+    # escape hatch exists only for explicit developer testing.
+    allow_cpu = os.environ.get("ENZYME_AGENT_EMBED_ALLOW_CPU", "0") == "1"
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif allow_cpu:
+        device = "cpu"
+    else:
+        raise RuntimeError(
+            "CUDA is not available; ESM embedding requires a GPU. Launch this worker "
+            "via `gpu_reserve run <idx> -- ...` (which sets CUDA_VISIBLE_DEVICES), or "
+            "set ENZYME_AGENT_EMBED_ALLOW_CPU=1 to override for testing."
+        )
+    sys.stderr.write(f"esm_embed_worker: device={device} model={model_name}\n")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name).to(device).eval()
 
