@@ -310,15 +310,25 @@ def render(run_dir: Path, out_path: Path, title: str, n_top: int,
             ax.scatter(xy[i, 0], xy[i, 1], s=300, marker="*", facecolor="white",
                        edgecolors="black", linewidths=1.4, zorder=4)
 
-    # Top candidates: bold family-colored markers with a numbered halo label.
-    halo = [pe.withStroke(linewidth=2.4, foreground="white")]
+    # Top candidates: bold family-colored markers, with numbered labels placed
+    # off the marker via short leader lines (greedy, guaranteed non-overlapping).
+    halo = [pe.withStroke(linewidth=2.6, foreground="white")]
+    spanx = float(xy[:, 0].max() - xy[:, 0].min())
+    spany = float(xy[:, 1].max() - xy[:, 1].min())
+    pts = [(rank, float(xy[store.acc_to_row[acc], 0]), float(xy[store.acc_to_row[acc], 1]))
+           for rank, acc in enumerate(tops, start=1)]
     for rank, acc in enumerate(tops, start=1):
         i = store.acc_to_row[acc]
-        ax.scatter(xy[i, 0], xy[i, 1], s=150, c=[color_of(fams[i])],
-                   edgecolors="black", linewidths=1.5, zorder=5)
-        ax.text(xy[i, 0], xy[i, 1], str(rank), ha="center", va="center",
-                fontsize=8.5, fontweight="bold", color="black",
-                path_effects=halo, zorder=6)
+        ax.scatter(xy[i, 0], xy[i, 1], s=155, c=[color_of(fams[i])],
+                   edgecolors="black", linewidths=1.6, zorder=5)
+    for rank, px, py, lx, ly in _place_labels(ax, pts, spanx, spany):
+        ax.annotate(
+            str(rank), xy=(px, py), xytext=(lx, ly), ha="center", va="center",
+            fontsize=9.5, fontweight="bold", color="black", zorder=7,
+            path_effects=halo,
+            bbox=dict(boxstyle="circle,pad=0.18", fc="white", ec="black", lw=1.1),
+            arrowprops=dict(arrowstyle="-", lw=0.8, color="#333333", shrinkA=1, shrinkB=3),
+        )
 
     ax.set_xticks([]); ax.set_yticks([])
     ax.set_xlabel("UMAP 1", fontsize=11); ax.set_ylabel("UMAP 2", fontsize=11)
