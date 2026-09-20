@@ -274,7 +274,8 @@ def render(run_dir: Path, out_path: Path, title: str, n_top: int,
     xy = np.asarray(xy)
 
     # Family per point; color the most common families, rest -> "Other".
-    fams = [family_display(registry.get(a, {}).get("metadata", {}), a) for a in store.accessions]
+    fams = [_clean_family(family_display(registry.get(a, {}).get("metadata", {}), a))
+            for a in store.accessions]
     from collections import Counter
     counts = Counter(fams)
     top_fams = [f for f, _ in counts.most_common(12)]
