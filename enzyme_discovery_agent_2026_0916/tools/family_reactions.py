@@ -1018,7 +1018,9 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
         "reasons": {
             "type": "object", "default": {},
             "description": (
-                "Map of fold id -> one-line reason for the decision (why stop / why expand)."
+                "REQUIRED: map of fold id -> one-line reason for the decision (why stop / "
+                "why expand). Provide a reason for EVERY id in expand and stop; the call is "
+                "rejected if any id lacks one, so the decision trail stays auditable."
             ),
         },
     },
