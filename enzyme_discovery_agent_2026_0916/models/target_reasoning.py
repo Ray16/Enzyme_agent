@@ -485,6 +485,10 @@ def derive_target_reasoning(
         "activation_categories": extra["activation_categories"],
         "cofactor_requirements": extra["cofactor_requirements"],
         "disqualifiers": extra["disqualifiers"],
+        # Polymer-aware modeling substrate: a representative oligomer the agent
+        # reasoned out for a polymer target (None for non-polymer targets).
+        "polymer_target": bool(extra.get("polymer_target")),
+        "modeling_oligomer": extra.get("modeling_oligomer"),
     }
     return normalize_target_reasoning(contract)
 
