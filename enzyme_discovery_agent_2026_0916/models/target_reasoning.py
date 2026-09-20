@@ -209,7 +209,9 @@ def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
     the tokens this derivation spent even when parsing later fails.
     """
     empty = ({"activation_problem": "", "activation_categories": [],
-              "cofactor_requirements": [], "disqualifiers": []}, [])
+              "cofactor_requirements": [], "disqualifiers": [],
+              "reaction_direction": None, "bond_types": [],
+              "substrate_topology": None}, [])
     if llm_client is None:
         return empty
     facts = {
