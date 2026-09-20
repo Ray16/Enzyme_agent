@@ -138,7 +138,8 @@ class TestAtomicClaimVerdicts(unittest.TestCase):
         self.assertEqual(_claim(result_rev, "substrate_topology")["verdict"], "contradicted")
         self.assertFalse(result_rev["promotion_eligible"])
 
-    def test_unspecific_reaction_does_not_prove_free_small_molecule_topology(self):
+    def test_unspecific_reaction_topology_is_insufficient_not_assumed_free(self):
+        # An unspecific reaction is NOT assumed to be a free small molecule...
         reaction = "substrate + cosubstrate = product"
         self.assertIsNone(reaction_topology([reaction]))
         result = validate_uniprot_claims(
@@ -147,18 +148,10 @@ class TestAtomicClaimVerdicts(unittest.TestCase):
         )
         self.assertEqual(_claim(result, "substrate_topology")["verdict"],
                          "insufficient_evidence")
-        self.assertFalse(result["promotion_eligible"])
-
-    def test_unspecific_reaction_does_not_prove_free_small_molecule_topology(self):
-        reaction = "substrate + cosubstrate = product"
-        self.assertIsNone(reaction_topology([reaction]))
-        result = validate_uniprot_claims(
-            _entry(reaction=reaction), expected_accession="P00001",
-            target_topology="free_small_molecule",
-        )
-        self.assertEqual(_claim(result, "substrate_topology")["verdict"],
-                         "insufficient_evidence")
-        self.assertFalse(result["promotion_eligible"])
+        # ...and insufficient topology evidence is ADVISORY: it must not hard-block
+        # promotion (only a definite contradiction does). A native reaction whose
+        # topology cannot be parsed should not be rejected on that basis.
+        self.assertNotIn("substrate_topology", result["blocking_claims"])
 
 
 class TestPromotionBoundary(unittest.TestCase):
