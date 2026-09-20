@@ -97,13 +97,8 @@ def _note(text) -> str:
 
 def build() -> Digraph:
     g = Digraph("enzyme_discovery_pipeline_reasoning")
-    g.attr(rankdir="LR", bgcolor="white", dpi="220", pad="0.35",
-           ranksep="0.55", nodesep="0.45", fontname=FONT,
-           label=('<<font point-size="20" color="#0f172a"><b>Reasoning-driven enzyme '
-                  'discovery</b></font><br/><font point-size="11.5" color="#94a3b8">'
-                  'the agent reasons about the chemistry, then uses tools to test each '
-                  'hypothesis</font>>'),
-           labelloc="t", labeljust="c")
+    g.attr(rankdir="LR", bgcolor="white", dpi="220", pad="0.3",
+           ranksep="0.5", nodesep="0.4", fontname=FONT)
     g.attr("node", fontname=FONT, shape="plain")
 
     g.node("in", _pill("Target<br/>reaction", "#334155"))
@@ -114,14 +109,6 @@ def build() -> Digraph:
     order = ["in"] + [s[0] for s in STAGES] + ["out"]
     for a, b in zip(order, order[1:]):
         g.edge(a, b, color=LINE, penwidth="2.8", arrowsize="1.1")
-
-    # Safeguards strip, spanning below the flow.
-    g.node("safe", _note(SAFEGUARDS))
-    with g.subgraph() as s:
-        s.attr(rank="same")
-        s.node("eval")
-        s.node("safe")
-    g.edge("safe", "eval", style="invis")
     return g
 
 
