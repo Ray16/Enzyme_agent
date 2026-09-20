@@ -9,6 +9,12 @@
 python -m unittest discover -s enzyme_discovery_agent_improved/tests -v
 ```
 
+Its internal ownership and dependency rules are documented in
+[`enzyme_discovery_agent_improved/ARCHITECTURE.md`](../enzyme_discovery_agent_improved/ARCHITECTURE.md).
+In particular, LLM-facing operations live in `tools/`, deterministic workflow policy in
+`gates/`, cross-stage orchestration in `services/`, persisted state in `models/`, and
+rendering/export code in `output/`.
+
 `structural_modeling` is the dedicated precision layer. It prepares and evaluates structures,
 pockets, and co-folds; reserve it for a shortlisted set of candidates rather than a full
 discovery pool. Geometry uses the validated **distance-gated in-line angle** proxy
@@ -35,6 +41,38 @@ The resulting `structural_evidence_review.json` is an evidence matrix, not a ran
 candidate's raw structural checks, whether required checks are present, and the remaining review
 questions. Final candidate selection must retain the discovery, literature, substrate-scope, and
 reaction-direction evidence.
+
+## Candidate ESM-embedding map (agent-invoked)
+
+The agent can map its discovered candidates in an ESM2 protein-language-model space and
+retrieve the nearest neighbors of its most-promising candidates — as new leads to expand
+and as the cofold panel. It is exposed as the LLM-callable `map_candidate_neighbors` tool
+(the agent decides *when* to call it and *how many* neighbors / candidates to use via tool
+params; `config.CANDIDATE_MAP_*` only supplies fallback defaults), gated behind
+`ENABLE_CANDIDATE_MAP` (env `ENZYME_AGENT_ENABLE_CANDIDATE_MAP=1`) so a normal run never
+imports torch. The heavy ESM forward pass runs in a **separate GPU subprocess**
+(`tools/esm_embed_worker.py`, fair-esm) launched through the cluster reservation gate
+`gpu_reserve` — the main run stays GPU-free. State persists per run under `embedding_store/`
+(`vectors.npy` + `index.json` + `sequences.json`) and `candidate_map.json`; neighbors are
+folded into `structural_modeling_handoff.json`.
+
+Setup — install the `embedding-map` extra and point the worker at a fair-esm env (palm's
+`transformers` is version-broken; fair-esm loads ESM2 via torch.hub, needing neither
+transformers nor huggingface_hub):
+
+```bash
+python -m venv --system-site-packages /nfs/lambda_stor_01/homes/rzhu/esm_embed_env
+/nfs/lambda_stor_01/homes/rzhu/esm_embed_env/bin/python -m pip install --no-deps fair-esm
+# config.CANDIDATE_MAP_EMBED_PYTHON points here by default
+```
+
+Publication figure of a run's explored candidates — embeds every candidate across all free
+GPUs (parallel, sharded via `gpu_reserve`), then UMAP with numbered top-ranked candidates:
+
+```bash
+python enzyme_discovery_agent_2026_0916/figures/plot_esm_embedding_map.py <run_dir> \
+  --title "..." --top 10        # add --no-embed to re-plot from a cached store
+```
 
 ## Standalone validation harnesses
 
