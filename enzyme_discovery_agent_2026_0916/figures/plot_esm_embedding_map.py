@@ -353,9 +353,13 @@ def render(run_dir: Path, out_path: Path, title: str, n_top: int,
                    random_state=42).fit_transform(store.matrix)
     xy = np.asarray(xy)
 
-    # Family per point; color the most common families, rest -> "Other".
-    fams = [_clean_family(family_display(registry.get(a, {}).get("metadata", {}), a))
-            for a in store.accessions]
+    # Family per point (canonical fold/common name); color the most common
+    # families, rest -> "Other".
+    fams = []
+    for a in store.accessions:
+        m = registry.get(a, {}).get("metadata", {})
+        ipr = str(m.get("interpro_family_id") or m.get("screening_family_id") or "")
+        fams.append(_canonical_family(family_display(m, a), ipr))
     from collections import Counter
     counts = Counter(fams)
     top_fams = [f for f, _ in counts.most_common(12)]
