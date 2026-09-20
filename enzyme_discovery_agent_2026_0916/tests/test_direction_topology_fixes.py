@@ -90,21 +90,30 @@ class TestTargetReasoningLLMAuthoritative(unittest.TestCase):
         self.assertEqual(c["reaction_direction"], "cleavage")  # deterministic fallback
 
 
-class TestTopologyIsAdvisory(unittest.TestCase):
-    def test_topology_mismatch_does_not_hard_block(self):
-        # A polymer-native hydrolase validated against a small-molecule PROXY target:
-        # topology contradicts, but must NOT block promotion (recall for the enzymes
-        # we actually want). The claim is still recorded as advisory evidence.
+class TestTopologyCompatibility(unittest.TestCase):
+    def test_polymer_native_enzyme_accommodates_small_proxy_target(self):
+        # A polymer-native hydrolase vs a small-molecule PROXY target must be
+        # compatible (topology supported), not rejected -- this is the NylC case.
         entry = _entry("a peptidoglycan polymer + H2O = shorter polymer + amino acid",
                        ec="3.5.1.28")
         v = validate_uniprot_claims(
             entry, expected_accession="P00001",
             target_topology="free_small_molecule",
         )
-        self.assertNotIn("substrate_topology", v["required_claims"])
+        topo = [c for c in v["claims"] if c["claim_type"] == "substrate_topology"]
+        self.assertTrue(topo and topo[0]["verdict"] == "supported")
         self.assertNotIn("substrate_topology", v["blocking_claims"])
-        claim_types = {c["claim_type"] for c in v["claims"]}
-        self.assertIn("substrate_topology", claim_types)  # still recorded
+
+    def test_monomer_only_enzyme_blocked_for_polymer_target(self):
+        # The counterfactual: a free/monomer enzyme cannot act on a genuine polymer
+        # target -> topology contradicted and blocking (guard preserved).
+        entry = _entry("a small molecule + H2O = two products", ec="3.5.1.1")
+        v = validate_uniprot_claims(
+            entry, expected_accession="P00001", target_topology="polymer",
+        )
+        topo = [c for c in v["claims"] if c["claim_type"] == "substrate_topology"]
+        self.assertTrue(topo and topo[0]["verdict"] == "contradicted")
+        self.assertIn("substrate_topology", v["blocking_claims"])
 
 
 if __name__ == "__main__":
