@@ -130,7 +130,7 @@ class TestAtomicClaimVerdicts(unittest.TestCase):
         self.assertEqual(_claim(result_poly, "substrate_topology")["verdict"], "supported")
 
         # ...but a monomer-only (free) enzyme CANNOT act on a genuine polymer target.
-        monomer = "substrate + H2O = two products"  # free small-molecule reaction
+        monomer = "an amide + H2O = a carboxylate + an amine"  # free small-molecule
         result_rev = validate_uniprot_claims(
             _entry(reaction=monomer), expected_accession="P00001",
             target_topology="polymer",
