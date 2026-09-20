@@ -198,6 +198,86 @@ def top_candidates(run_dir: Path, registry: dict, n: int) -> list[str]:
     return [a for a, _ in scored[:n]]
 
 
+# Curated fold / common-name mapping for a legible legend (visualization layer
+# only). Keyed off the InterPro entry id or family name -- generic mechanism-class
+# vocabulary (ATP-grasp, NIS, Ntn-hydrolase, ...), never the benchmark's primary
+# answer identifiers (gene/accession), so it stays firewall-clean.
+_CANON_BY_IPR = {
+    "IPR037455": "NIS synthetase (IucA/IucC)",
+    "IPR050292": "Glutamine synthetase",
+    "IPR008146": "Glutamine synthetase",
+    "IPR017536": "Glutamine synthetase",
+    "IPR004666": "RimK (ATP-grasp)",
+    "IPR006275": "Carbamoyl-P synthase (ATP-grasp)",
+    "IPR000115": "PurD (ATP-grasp)",
+    "IPR000120": "Amidase signature (AS)",
+    "IPR023631": "Amidase signature (AS)",
+    "IPR051705": "Glutathionylspermidine synthetase (ATP-grasp)",
+    "IPR023719": "Aliphatic amidase (CN-hydrolase)",
+    "IPR003010": "Nitrilase / CN-hydrolase",
+    "IPR000675": "Cutinase (α/β-hydrolase)",
+    "IPR050261": "Cutinase-like (α/β-hydrolase)",
+    "IPR005321": "Ntn-hydrolase (Peptidase S58/DmpA)",
+    "IPR016117": "Ntn-hydrolase (Peptidase S58/DmpA)",
+    "IPR012101": "Biotinidase (Ntn-hydrolase)",
+    "IPR016699": "N-acylethanolamine amidase (NAAA)",
+    "IPR050789": "β-lactamase-fold hydrolase",
+    "IPR001466": "β-lactamase-fold hydrolase",
+    "IPR050237": "ANL / adenylation (AMP-binding)",
+    "IPR004618": "Asparagine synthetase A (AsnA)",
+    "IPR050695": "MurNAc-L-Ala amidase",
+    "IPR005750": "MurA (enolpyruvyl transferase)",
+    "IPR024710": "Amino-acid--glutamate ligase (ATP-grasp)",
+    "IPR013486": "SpoIID amidase enhancer",
+}
+_CANON_BY_NAME = [  # ordered; first substring match wins (checked when no IPR hit)
+    ("formate-dependent phosphoribosylglycinamide", "PurT (ATP-grasp)"),
+    ("n5-carboxyaminoimidazole ribonucleotide", "PurK (ATP-grasp)"),
+    ("phosphoribosylamine--glycine ligase", "PurD (ATP-grasp)"),
+    ("phosphoribosylglycinamide synthetase", "PurD (ATP-grasp)"),
+    ("carbamoyl phosphate synthase", "Carbamoyl-P synthase (ATP-grasp)"),
+    ("carbamoyl-phosphate synthase", "Carbamoyl-P synthase (ATP-grasp)"),
+    ("udp-n-acetylmuramoyl", "Mur ligase (ATP-grasp)"),
+    ("d-alanine--d-alanine ligase", "D-Ala–D-Ala ligase (ATP-grasp)"),
+    ("aspartate--ammonia ligase", "Asparagine synthetase A (AsnA)"),
+    ("glutamine synthetase", "Glutamine synthetase"),
+    ("aerobactin", "NIS synthetase (IucA/IucC)"),
+    ("iuca", "NIS synthetase (IucA/IucC)"),
+    ("iucc", "NIS synthetase (IucA/IucC)"),
+    ("glutathionylspermidine", "Glutathionylspermidine synthetase (ATP-grasp)"),
+    ("cyanophycin synthetase", "Cyanophycin synthetase (ATP-grasp)"),
+    ("amp-binding", "ANL / adenylation (AMP-binding)"),
+    ("acyl-coa synthetase", "ANL / adenylation (AMP-binding)"),
+    ("amidase signature", "Amidase signature (AS)"),
+    ("aliphatic amidase", "Aliphatic amidase (CN-hydrolase)"),
+    ("carbon-nitrogen hydrolase", "Nitrilase / CN-hydrolase"),
+    ("nitrilase", "Nitrilase / CN-hydrolase"),
+    ("peptidase s58", "Ntn-hydrolase (Peptidase S58/DmpA)"),
+    ("poly(ethylene terephthalate) hydrolase", "PETase/cutinase (α/β-hydrolase)"),
+    ("cutinase", "Cutinase (α/β-hydrolase)"),
+    ("acetylxylan esterase", "Cutinase (α/β-hydrolase)"),
+    ("n-acetylmuramoyl-l-alanine amidase", "MurNAc-L-Ala amidase"),
+    ("acid ceramidase", "N-acylethanolamine amidase (NAAA)"),
+    ("n-acylethanolamine", "N-acylethanolamine amidase (NAAA)"),
+    ("biotinidase", "Biotinidase (Ntn-hydrolase)"),
+]
+
+
+def _canonical_family(disp: str, ipr: str) -> str:
+    """Map an InterPro entry (id + display name) to a canonical fold/common name."""
+    if ipr and ipr in _CANON_BY_IPR:
+        return _CANON_BY_IPR[ipr]
+    low = disp.lower()
+    for pre in ("name:", "gene:", "accession:", "ipr:"):
+        if low.startswith(pre):
+            low = low[len(pre):]
+            break
+    for sub, canon in _CANON_BY_NAME:
+        if sub in low:
+            return canon
+    return _clean_family(disp)
+
+
 def _clean_family(label: str) -> str:
     """Prettify a family_display label into a legend-ready name: drop internal
     prefixes (name:/gene:/ipr:/accession:) and a trailing '(IPRxxxxx)', title-case.
