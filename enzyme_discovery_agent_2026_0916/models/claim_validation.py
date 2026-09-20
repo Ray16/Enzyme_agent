@@ -263,10 +263,14 @@ def validate_uniprot_claims(
 
     observed_topology = reaction_topology(reactions)
     if target_topology:
-        if observed_topology == target_topology:
-            verdict, reason = "supported", "recorded reaction uses the required substrate topology"
+        if observed_topology and topology_compatible(observed_topology, target_topology):
+            verdict, reason = "supported", (
+                "recorded reaction's substrate topology can accommodate the target "
+                "(equal, or the native substrate is at least as complex)")
         elif observed_topology:
-            verdict, reason = "contradicted", "recorded reaction uses an incompatible substrate topology"
+            verdict, reason = "contradicted", (
+                "recorded reaction's substrate topology cannot accommodate the target "
+                "(native substrate is simpler, or a carrier/free mismatch)")
         else:
             verdict, reason = "insufficient_evidence", "record does not establish substrate topology"
         claims.append(_claim(
