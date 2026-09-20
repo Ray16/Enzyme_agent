@@ -293,11 +293,19 @@ def validate_uniprot_claims(
         required.add("reaction_direction")
     if wanted_bonds:
         required.add("bond_type")
-    if target_topology:
-        required.add("substrate_topology")
     by_type = {c["claim_type"]: c for c in claims}
     blocking = [by_type[name] for name in sorted(required)
                 if name not in by_type or by_type[name]["verdict"] != "supported"]
+    # substrate_topology is NOT a "must be supported" required claim: it blocks only on
+    # a DEFINITE contradiction (native substrate topology known to be incompatible with
+    # the target -- e.g. a monomer-only enzyme for a genuine polymer target, or a
+    # carrier/free mismatch). It never blocks on insufficient_evidence, because a native
+    # reaction whose topology cannot be parsed (Rhea notation varies) must not be rejected
+    # on that basis -- and the target is often a small-molecule PROXY for a polymer with no
+    # reliable topology ground truth. The claim is still recorded as advisory evidence.
+    topo_claim = by_type.get("substrate_topology")
+    if topo_claim is not None and topo_claim["verdict"] == "contradicted":
+        blocking.append(topo_claim)
     return {
         "schema_version": SCHEMA_VERSION,
         "subject": subject,
