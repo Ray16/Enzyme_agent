@@ -20,6 +20,7 @@ Exit 0 on success; non-zero on any failure (the caller treats that as "skip").
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
