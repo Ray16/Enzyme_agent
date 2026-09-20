@@ -526,6 +526,8 @@ def normalize_target_reasoning(contract: dict | None) -> dict:
     result["cofactor_requirements"] = list(result.get("cofactor_requirements") or [])
     result["disqualifiers"] = list(result.get("disqualifiers") or [])
     result.setdefault("activation_problem", "")
+    result.setdefault("polymer_target", False)
+    result.setdefault("modeling_oligomer", None)
     topology = result["substrate_topology"]
     if topology is not None and topology not in TOPOLOGIES:
         raise ValueError(f"invalid substrate_topology: {topology}")
