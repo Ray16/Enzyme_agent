@@ -90,26 +90,32 @@ def _pill(text, accent) -> str:
     )
 
 
-def _note(text) -> str:
-    return (f'<<table border="0" cellborder="0" cellspacing="0" cellpadding="8">'
-            f'<tr><td>{_wrap(f"<font point-size=\'10.5\' color=\'{MUTED}\'>{text}</font>", 1180)}'
-            f'</td></tr></table>>')
-
-
 def build() -> Digraph:
     g = Digraph("enzyme_discovery_pipeline_reasoning")
-    g.attr(rankdir="LR", bgcolor="white", dpi="220", pad="0.3",
-           ranksep="0.5", nodesep="0.4", fontname=FONT)
+    # Top-to-bottom vertical spine: compact for a proposal page (portrait).
+    g.attr(rankdir="TB", bgcolor="white", dpi="220", pad="0.3",
+           ranksep="0.42", nodesep="0.55", fontname=FONT)
     g.attr("node", fontname=FONT, shape="plain")
 
-    g.node("in", _pill("Target<br/>reaction", "#334155"))
-    for sid, num, title, body, footer, accent in STAGES:
-        g.node(sid, _stage_card(num, title, body, footer, accent))
-    g.node("out", _pill("Ranked<br/>candidates", "#334155"))
+    g.node("in", _pill("Target reaction", "#334155"))
+    for sid, num, title, body, tool, accent in STAGES:
+        g.node(sid, _stage_card(num, title, body, accent))
+        g.node(sid + "_t", _tool_chip(tool))
+    g.node("out", _pill("Ranked candidates", "#334155"))
 
+    # Reasoning spine (bold vertical flow).
     order = ["in"] + [s[0] for s in STAGES] + ["out"]
     for a, b in zip(order, order[1:]):
-        g.edge(a, b, color=LINE, penwidth="2.8", arrowsize="1.1")
+        g.edge(a, b, color=LINE, penwidth="2.8", arrowsize="1.0")
+
+    # Tool chips hang to the RIGHT of each reasoning step, as subordinate notes.
+    for sid, *_ in STAGES:
+        with g.subgraph() as s:
+            s.attr(rank="same")
+            s.node(sid)
+            s.node(sid + "_t")
+        g.edge(sid, sid + "_t", color=FAINT, penwidth="1.2", style="dashed",
+               dir="none", constraint="false")
     return g
 
 
