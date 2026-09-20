@@ -160,8 +160,8 @@ def embed_all_candidates(run_dir: Path, model: str) -> str:
     ]
     if not items:
         return "no sequences resolved"
-    print(f"  embedding {len(items)} sequences on GPU ({model})...")
-    rows, note = _run_embed_subprocess(run_dir, items, model)
+    print(f"  embedding {len(items)} sequences across free GPUs ({model})...")
+    rows, note = embed_multi_gpu(run_dir, items, model, max_gpus=8)
     if not rows:
         return f"embedding skipped: {note}"
     added = es.append_vectors(run_dir, model, rows)
