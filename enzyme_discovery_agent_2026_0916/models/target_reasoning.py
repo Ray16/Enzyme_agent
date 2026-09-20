@@ -327,6 +327,26 @@ def derive_target_reasoning(
     fields, det_claims = _deterministic_layer(query, substrate_smiles, target_profile)
     extra, llm_claims = _llm_layer(
         query, substrate_smiles, fields, llm_client, on_response=on_response)
+
+    # The LLM's semantic reading is authoritative for direction and topology
+    # (string-matching is brittle — it silently missed "hydrolyze/hydrolases");
+    # the deterministic parser is the fallback when the LLM is unavailable or
+    # returned an unrecognized value. Bond types stay deterministic-primary (already
+    # normalized/reliable), with the LLM only filling in when the parser found none.
+    def _prefer(llm_value, det_value):
+        return llm_value if llm_value else det_value
+
+    direction = _prefer(extra.get("reaction_direction"), fields["reaction_direction"])
+    topology = _prefer(extra.get("substrate_topology"), fields["substrate_topology"])
+    bond_types = fields["bond_types"] or extra.get("bond_types") or []
+    for name, llm_v, det_v in (
+        ("reaction_direction", extra.get("reaction_direction"), fields["reaction_direction"]),
+        ("substrate_topology", extra.get("substrate_topology"), fields["substrate_topology"]),
+    ):
+        if llm_v and det_v and llm_v != det_v:
+            logger.warning("target-reasoning %s disagreement: llm=%s deterministic=%s "
+                           "(using llm)", name, llm_v, det_v)
+
     contract = {
         "schema_version": SCHEMA_VERSION,
         "derived_at": datetime.now(timezone.utc).isoformat(),
@@ -334,10 +354,11 @@ def derive_target_reasoning(
         "substrate_smiles": substrate_smiles,
         "substrate_name": substrate_name,
         "claims": det_claims + llm_claims,
-        # Normalized machine-readable fields the deterministic guards consume.
-        "reaction_direction": fields["reaction_direction"],
-        "bond_types": fields["bond_types"],
-        "substrate_topology": fields["substrate_topology"],
+        # Machine-readable fields the guards consume: LLM-authoritative for
+        # direction/topology, deterministic fallback (see above).
+        "reaction_direction": direction,
+        "bond_types": bond_types,
+        "substrate_topology": topology,
         "reactive_groups": fields["reactive_groups"],
         "activation_problem": extra["activation_problem"],
         "activation_categories": extra["activation_categories"],
