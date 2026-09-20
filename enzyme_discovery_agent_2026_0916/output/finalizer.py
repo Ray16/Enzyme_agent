@@ -338,17 +338,32 @@ class RunFinalizer:
             lambda: render_family_fit_plot(self.run_dir, log_fn=self.log),
             produces=self.run_dir / "family_substrate_fit.png",
         )
+        # Candidate map in ESM embedding space (best-effort; only when the
+        # agent-invoked embedding map was enabled for this run).
+        if config.ENABLE_CANDIDATE_MAP:
+            self._run_finalization_stage(
+                "candidate_map_plot",
+                lambda: render_candidate_map(self.run_dir, log_fn=self.log),
+                produces=self.run_dir / "candidate_map.png",
+            )
         self._run_finalization_stage(
             "candidates_csv",
             lambda: generate_candidates_csv(self.run_dir, evaluations, log_fn=self.log),
             produces=self.run_dir / "ranked_candidates.csv",
         )
+        # ESM neighbors of promising candidates feed the cofold shortlist.
+        neighbor_map = None
+        try:
+            neighbor_map = json.loads((self.run_dir / "candidate_map.json").read_text())
+        except (OSError, json.JSONDecodeError):
+            neighbor_map = None
         handoff_path = self._run_finalization_stage(
             "structural_modeling_handoff",
             lambda: write_structural_modeling_handoff(
                 self.run_dir,
                 evaluations,
                 target=target_context or {"query": query},
+                neighbor_map=neighbor_map,
             ),
             produces=self.run_dir / "structural_modeling_handoff.json",
         )
