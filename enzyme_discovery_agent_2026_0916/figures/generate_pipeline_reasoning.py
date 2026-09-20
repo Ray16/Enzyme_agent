@@ -65,17 +65,27 @@ def _wrap(inner, width) -> str:
             f'width="{width}"><tr><td align="center">{inner}</td></tr></table>')
 
 
-def _stage_card(num, title, body, footer, accent) -> str:
-    header = f'<font point-size="15" color="white"><b>{num}&#160;&#160;{title}</b></font>'
+def _stage_card(num, title, body, accent) -> str:
+    header = f'<font point-size="16" color="white"><b>{num}&#160;&#160;{title}</b></font>'
     body_html = "<br/>".join(body)
-    body_font = f'<font point-size="11.5" color="{MUTED}">{body_html}</font>'
-    foot = (f'<font point-size="9.5" color="{FAINT}">uses:&#160;{footer}</font>')
+    body_font = f'<font point-size="12" color="{INK}">{body_html}</font>'
     return (
         f'<<table border="2" color="{accent}" cellborder="0" cellspacing="0" '
         f'cellpadding="0" style="rounded" bgcolor="white">'
-        f'<tr><td bgcolor="{accent}" cellpadding="9">{_wrap(header, 210)}</td></tr>'
-        f'<tr><td cellpadding="12">{_wrap(body_font, 210)}</td></tr>'
-        f'<tr><td cellpadding="7">{_wrap(foot, 210)}</td></tr>'
+        f'<tr><td bgcolor="{accent}" cellpadding="10">{_wrap(header, 210)}</td></tr>'
+        f'<tr><td cellpadding="13">{_wrap(body_font, 210)}</td></tr>'
+        f'</table>>'
+    )
+
+
+def _tool_chip(text) -> str:
+    """A small, muted chip naming the tools a step invokes -- deliberately minor,
+    so the reasoning card above it reads as the substance."""
+    return (
+        f'<<table border="1" color="{LINE}" cellborder="0" cellspacing="0" '
+        f'cellpadding="7" style="rounded" bgcolor="#f8fafc">'
+        f'<tr><td>{_wrap(f"<font point-size=\'8.5\' color=\'{FAINT}\'><b>TOOLS</b></font>", 150)}</td></tr>'
+        f'<tr><td>{_wrap(f"<font point-size=\'9.5\' color=\'{MUTED}\'>{text}</font>", 150)}</td></tr>'
         f'</table>>'
     )
 
