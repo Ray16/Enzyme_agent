@@ -390,6 +390,34 @@ def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
     llm_topology = str(obj.get("substrate_topology") or "").strip()
     llm_topology = llm_topology if llm_topology in TOPOLOGIES else None
 
+    # Polymer targets: when the reaction builds or breaks a repeating chain (even
+    # from monomeric inputs), have the model reason out a representative oligomer
+    # (>= a tetramer of residues) for structural modeling to use in place of a
+    # single monomer or dimer. The proposal is RDKit-validated before it is kept.
+    polymer_target = bool(obj.get("polymer_target"))
+    modeling_oligomer = None
+    if polymer_target:
+        modeling_oligomer = validate_polymer_oligomer(
+            obj.get("oligomer_smiles"),
+            llm_bonds or fields.get("bond_types"),
+            substrate_smiles,
+        )
+        if modeling_oligomer is not None:
+            repeat_unit = str(obj.get("repeat_unit") or "").strip() or None
+            modeling_oligomer["repeat_unit"] = repeat_unit
+            n_res = modeling_oligomer["n_backbone_bonds"] + 1
+            claims.append(_claim(
+                f"The target is a repeating chain ({repeat_unit or 'polymer'}); a "
+                f"representative oligomer of about {n_res} residues should stand in for "
+                f"the chain in structural modeling, not a single monomer or dimer.",
+                "mechanistic reasoning about the target's polymeric context",
+                "structural modeling should use the derived oligomer as the substrate",
+                "inferred", uncertainty,
+            ))
+        elif obj.get("oligomer_smiles"):
+            logger.warning("target-reasoning: LLM oligomer proposal rejected as not a "
+                           "credible multi-residue chain")
+
     extra = {
         "activation_problem": problem,
         "activation_categories": activation,
@@ -398,6 +426,8 @@ def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
         "reaction_direction": llm_direction,
         "bond_types": llm_bonds,
         "substrate_topology": llm_topology,
+        "polymer_target": polymer_target,
+        "modeling_oligomer": modeling_oligomer,
     }
     return extra, claims
 
