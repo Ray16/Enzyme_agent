@@ -24,34 +24,25 @@ MUTED = "#475569"
 FAINT = "#94a3b8"
 LINE = "#b8c2d0"
 
-# (id, number, reasoning-act title, body lines [the DECISION], tool footer, accent)
+# (id, number, reasoning-act title, body lines [the DECISION], tool chip text, accent)
 STAGES = [
     ("ra", "1", "Analyze the reaction",
-     ["Decompose bond type, direction, functional",
-      "groups &amp; activation chemistry, then",
+     ["Decompose the target chemistry;",
       "<b>deduce candidate fold families</b>"],
-     "chemistry reasoning", "#2563eb"),
+     "chemistry (RDKit)", "#2563eb"),
     ("disc", "2", "Pursue the hypotheses",
-     ["Search literature &amp; databases per family,",
-      "keep genuine leads over keyword matches,",
-      "screen a <b>family-diverse</b> candidate set"],
-     "federated literature &#183; UniProt / KEGG / InterPro &#183; citations", "#7c3aed"),
+     ["Search per family, keep real leads;",
+      "screen a <b>family-diverse</b> set"],
+     "literature &#183; UniProt / KEGG / InterPro", "#7c3aed"),
     ("eval", "3", "Judge compatibility",
-     ["Per candidate, reason: right direction?",
-      "right bond? substrate fit? &#8212; from",
-      "decomposed facts, not one similarity score"],
-     "EC bond-type &#183; catalytic annotations &#183; structures", "#0d9488"),
+     ["Right direction, bond &amp; substrate fit",
+      "from decomposed facts, not one score"],
+     "annotations &#183; EC bond-type &#183; structures", "#0d9488"),
     ("rank", "4", "Rank with reasons",
-     ["Weigh the evidence dimensions into a",
-      "<b>justified shortlist</b> in which every",
-      "placement is backed by explicit reasoning"],
-     "deterministic priority over evidence", "#e11d48"),
+     ["Weigh the evidence into a",
+      "<b>justified, inspectable shortlist</b>"],
+     "evidence weighting", "#e11d48"),
 ]
-
-SAFEGUARDS = ("Reasoning safeguards:  data-leakage firewall (families come from "
-              "reasoning, not the answer)  &#183;  every proposed family must be "
-              "covered before concluding  &#183;  multi-substrate fit scored by the "
-              "worst-matched substrate")
 
 
 def _tint(hex_color: str, amount: float = 0.90) -> str:
