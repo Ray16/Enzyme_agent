@@ -198,6 +198,49 @@ def top_candidates(run_dir: Path, registry: dict, n: int) -> list[str]:
     return [a for a, _ in scored[:n]]
 
 
+def _clean_family(label: str) -> str:
+    """Prettify a family_display label into a legend-ready name: drop internal
+    prefixes (name:/gene:/ipr:/accession:) and a trailing '(IPRxxxxx)', title-case.
+    This also merges near-duplicate variants (e.g. 'name:glutamine synthetase' and
+    'Glutamine Synthetase (IPR...)') into one entry."""
+    s = label or ""
+    for pre in ("name:", "gene:", "accession:", "ipr:"):
+        if s.startswith(pre):
+            s = s[len(pre):]
+            break
+    s = re.sub(r"\s*\(IPR\d+\)\s*$", "", s).strip()
+    return s.title() if s else "Unknown"
+
+
+def _place_labels(ax, points, spanx, spany):
+    """Greedy leader-line placement for numbered labels so none overlap.
+
+    ``points`` = list of (rank, px, py). Returns list of (rank, px, py, lx, ly).
+    Tries a ring of offsets at increasing radius, rejecting positions that collide
+    with already-placed labels or with data points to keep the figure clean."""
+    import numpy as np
+    R = 0.045 * max(spanx, spany)
+    minsep = 0.055 * max(spanx, spany)
+    dirs = [(np.cos(a), np.sin(a)) for a in np.linspace(0, 2 * np.pi, 12, endpoint=False)]
+    placed_centers: list[tuple[float, float]] = []
+    out = []
+    for rank, px, py in points:
+        best = None
+        for scale in (1.0, 1.7, 2.5, 3.4):
+            for dx, dy in dirs:
+                lx, ly = px + dx * R * scale, py + dy * R * scale
+                if all((lx - qx) ** 2 + (ly - qy) ** 2 > minsep ** 2 for qx, qy in placed_centers):
+                    best = (lx, ly)
+                    break
+            if best:
+                break
+        if not best:
+            best = (px + R, py + R)
+        placed_centers.append(best)
+        out.append((rank, px, py, best[0], best[1]))
+    return out
+
+
 def _short_name(meta: dict, acc: str, maxlen: int = 26) -> str:
     name = (meta.get("protein_name") or "").strip()
     if not name and meta.get("gene_names"):
