@@ -146,6 +146,88 @@ def _reactive_groups(substrate_smiles: str | None) -> list[str]:
     return groups
 
 
+# Backbone-linkage SMARTS for the common target bond types, used only to sanity-
+# check that an LLM-proposed oligomer really is a multi-residue chain of the right
+# kind. Generic chemistry (no target/answer is encoded here).
+_BOND_SMARTS = {
+    "amide": "[NX3][CX3](=O)",
+    "peptide": "[NX3][CX3](=O)",
+    "ester": "[#6][CX3](=O)[OX2H0][#6]",
+    "thioester": "[#6][CX3](=O)[SX2][#6]",
+    "carbamate": "[NX3][CX3](=O)[OX2][#6]",
+}
+
+
+def _backbone_bond_count(mol, bond_types) -> tuple[int, bool]:
+    """(max linkages of any recognized target bond type, whether any was recognized)."""
+    from rdkit import Chem  # local import: RDKit may be unavailable
+    best, recognized = 0, False
+    for bt in bond_types or []:
+        key = str(bt).strip().casefold()
+        smarts = next((s for k, s in _BOND_SMARTS.items() if k in key), None)
+        if not smarts:
+            continue
+        patt = Chem.MolFromSmarts(smarts)
+        if patt is None:
+            continue
+        recognized = True
+        best = max(best, len(mol.GetSubstructMatches(patt)))
+    return best, recognized
+
+
+def _largest_monomer_mw(substrate_smiles: str | None) -> float:
+    from rdkit import Chem
+    from rdkit.Chem import Descriptors
+    mw = 0.0
+    for comp in str(substrate_smiles or "").split("."):
+        comp = comp.strip()
+        if not comp:
+            continue
+        m = Chem.MolFromSmiles(comp)
+        if m is not None:
+            mw = max(mw, Descriptors.MolWt(m))
+    return mw
+
+
+def validate_polymer_oligomer(smiles: str | None, bond_types, substrate_smiles: str | None,
+                              min_residues: int = 4) -> dict | None:
+    """Validate an LLM-proposed representative oligomer for a polymer target.
+
+    Returns ``{smiles, n_backbone_bonds, ...}`` for a credible oligomer, or None
+    when it is missing, unparseable, or not clearly a multi-residue chain.  A
+    recognized backbone bond type must appear at least ``min_residues - 1`` times
+    (four residues -> three linkages); when the bond type is not one we can match
+    by SMARTS, the oligomer must at least be substantially larger than the largest
+    named monomer.  Answer-agnostic: only the target's own chemistry is used.
+    """
+    smiles = str(smiles or "").strip()
+    if not smiles:
+        return None
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import Descriptors
+    except Exception as exc:  # noqa: BLE001 - RDKit missing, cannot validate
+        logger.debug("oligomer validation unavailable: %s", exc)
+        return None
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return None
+    n_bonds, recognized = _backbone_bond_count(mol, bond_types)
+    if recognized:
+        if n_bonds < max(1, min_residues - 1):
+            return None
+    else:
+        mono = _largest_monomer_mw(substrate_smiles)
+        if mono and Descriptors.MolWt(mol) < 2.0 * mono:
+            return None
+    return {
+        "smiles": Chem.MolToSmiles(mol),
+        "n_backbone_bonds": n_bonds,
+        "n_residues_min": min_residues,
+        "basis": "llm_derived",
+    }
+
+
 def _deterministic_layer(query: str, substrate_smiles: str | None,
                          target_profile: dict | None) -> tuple[dict, list[dict]]:
     """Extract the mechanical, high-confidence facts and their claims."""
