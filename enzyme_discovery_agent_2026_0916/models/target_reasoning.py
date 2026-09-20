@@ -60,10 +60,18 @@ _LLM_SYSTEM = (
     'coupled favorable process that could solve it"],\n'
     '  "cofactor_requirements": ["cofactors/leaving groups chemically implied, if any"],\n'
     '  "disqualifiers": ["observations about a candidate that would rule it out"],\n'
+    '  "polymer_target": true|false,  // does the reaction BUILD or BREAK a repeating '
+    'polymer/oligomer chain, even if the named inputs are monomers (e.g. a polyamide/'
+    'polyester synthesized from, or degraded to, small monomers)?\n'
+    '  "repeat_unit": "if polymer_target, a short phrase for the repeating unit (else null)",\n'
+    '  "oligomer_smiles": "if polymer_target, a VALID SMILES for a representative oligomer '
+    'of at least four residues (a few repeat units) that a structural model should use to '
+    'stand in for the chain, built from the named monomers/repeat unit; else null",\n'
     '  "uncertainty": "low|medium|high"\n'
     "}\n"
     "Keep every list short and general. If a field is not chemically implied, use "
-    "an empty list (or null for the scalar fields)."
+    "an empty list (or null for the scalar fields). The oligomer, when given, must be a "
+    "chemically valid extension of the target chemistry, not a copy of a single monomer."
 )
 
 
