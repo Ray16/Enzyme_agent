@@ -214,8 +214,7 @@ def _atomic_write_text(path: Path, text: str) -> None:
 
 
 def _atomic_write_npy(path: Path, array: np.ndarray) -> None:
-    tmp = path.with_suffix(".npy.tmp")
+    # Temp name ends in ".npy" so np.save writes exactly it (no extra suffix).
+    tmp = path.with_name(path.name + ".tmp.npy")
     np.save(tmp, array)
-    # np.save appends .npy if missing; normalize the temp name it actually wrote.
-    written = tmp if tmp.exists() else tmp.with_suffix(".npy.tmp.npy")
-    os.replace(written, path)
+    os.replace(tmp, path)
