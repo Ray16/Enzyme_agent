@@ -301,7 +301,8 @@ def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
     empty = ({"activation_problem": "", "activation_categories": [],
               "cofactor_requirements": [], "disqualifiers": [],
               "reaction_direction": None, "bond_types": [],
-              "substrate_topology": None}, [])
+              "substrate_topology": None,
+              "polymer_target": False, "modeling_oligomer": None}, [])
     if llm_client is None:
         return empty
     facts = {
