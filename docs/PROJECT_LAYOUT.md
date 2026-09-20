@@ -20,6 +20,14 @@ pockets, and co-folds; reserve it for a shortlisted set of candidates rather tha
 discovery pool. Geometry uses the validated **distance-gated in-line angle** proxy
 (`scripts/angle_gate_proxy.py`), not raw NAC.
 
+Cofold work is organized **one folder per discovery run** under
+`structural_modeling/cofold/<run-id>/` (folder named exactly after `runs/<run-id>/`); each
+holds that campaign's `step1/`, `stage_configs/`, `results/`, `msa_cache/`, `candidates.csv`,
+etc. Shared tooling stays at the `structural_modeling/` root: `scripts/` (argument-driven, so
+they run on any campaign — point them at `cofold/<run-id>/...`), `tests/`,
+`CANDIDATE_RANKING_POLICY.md`, and `figures/`. Large Boltz outputs (~1 GB/campaign) are
+untracked by git. See `structural_modeling/cofold/README.md`.
+
 Discovery finalization writes `structural_modeling_handoff.json` when evaluations are available —
 now carrying, per candidate, the InterPro family, the deterministically-derived activation
 mechanism (reactive phosphate), and a cofactor spec. The active structural workflow keeps reviewed
