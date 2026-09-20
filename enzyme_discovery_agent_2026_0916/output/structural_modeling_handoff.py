@@ -75,10 +75,40 @@ def write_structural_modeling_handoff(
                 entry.get("orthologs", []) for entry in ranking
                 if entry.get("accession") == accession
             ), []),
+            "esm_neighbors": neighbors_by_promising.get(accession, []),
             "selection_reason": "Evaluated discovery candidate; structural modeling is required before geometry-based promotion.",
         })
         if len(candidates) == max_candidates:
             break
+
+    # Append ESM neighbors of the shortlisted promising candidates as extra
+    # cofold-panel entries (the neighbors themselves become structural targets),
+    # respecting the overall cap and skipping anything already shortlisted.
+    for promising_acc, nbrs in neighbors_by_promising.items():
+        for nbr in nbrs:
+            if len(candidates) >= max_candidates:
+                break
+            nbr_acc = nbr.get("accession")
+            if not nbr_acc or nbr_acc in seen:
+                continue
+            seen.add(nbr_acc)
+            metadata = registry.get(nbr_acc, {}).get("metadata", {})
+            candidates.append({
+                "accession": nbr_acc,
+                "protein_name": metadata.get("protein_name", ""),
+                "organism": metadata.get("organism", ""),
+                "gene_names": metadata.get("gene_names", []),
+                "ec_numbers": metadata.get("ec_numbers", []),
+                "structure_sources": {},
+                "native_substrate_evidence": [],
+                "reaction_chemistry": {},
+                "mechanism_evidence": metadata.get("mechanism_evidence"),
+                "structural_homology": metadata.get("structural_homology"),
+                "ortholog_alternatives": [],
+                "esm_neighbor_of": promising_acc,
+                "esm_distance": nbr.get("distance"),
+                "selection_reason": f"ESM neighbor of promising candidate {promising_acc}.",
+            })
 
     if not candidates:
         return None
