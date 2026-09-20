@@ -97,6 +97,30 @@ def reaction_topology(reactions: list[str]) -> str | None:
     return None
 
 
+# Substrate-complexity order for DIRECTIONAL topology compatibility. An enzyme whose
+# native substrate is at least as complex as the target can physically accommodate
+# the target (a polymer/oligomer-active site fits a smaller fragment); a simpler-native
+# enzyme cannot reach up to a more complex target. This matters because a polymer target
+# is often represented as a discrete small-molecule PROXY (no polymer substrate-fit
+# ground truth) -- with a proxy target every enzyme is "at least as complex", so none is
+# wrongly excluded; but a GENUINE polymer target still rejects a monomer-only enzyme.
+_TOPOLOGY_COMPLEXITY = {
+    "free_small_molecule": 0, "mixed": 0,
+    "polymer": 1, "macromolecule": 1,
+}
+
+
+def topology_compatible(observed: str | None, target: str | None) -> bool:
+    """True if an enzyme with `observed` native topology can act on a `target` of the
+    given topology. Carrier-tethered is a distinct machinery requirement, so it must
+    match exactly; otherwise compatibility is directional by substrate complexity."""
+    if observed == target:
+        return True
+    if "carrier_protein_tethered" in (observed, target):
+        return False
+    return _TOPOLOGY_COMPLEXITY.get(observed, 0) >= _TOPOLOGY_COMPLEXITY.get(target, 0)
+
+
 def _record_reactions(entry: dict) -> list[str]:
     out = []
     for comment in entry.get("comments", []):
