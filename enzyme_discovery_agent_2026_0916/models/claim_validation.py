@@ -262,14 +262,8 @@ def validate_uniprot_claims(
         required.add("reaction_direction")
     if wanted_bonds:
         required.add("bond_type")
-    # NOTE: substrate_topology is deliberately NOT a hard promotion requirement.
-    # A polymer/oligomer target is often represented as a discrete small-molecule
-    # PROXY (e.g. an oligomeric fragment) because a true polymer has no substrate-fit
-    # ground truth, so topology "match" is unreliable and would wrongly exclude the
-    # very polymer/oligomer-native enzymes we want (they read as "contradicted" vs a
-    # free_small_molecule proxy). The substrate_topology claim is still computed and
-    # recorded above as advisory evidence for ranking/reporting; it just never sets
-    # promotion_eligible=False. Fold + mechanism + direction gate instead.
+    if target_topology:
+        required.add("substrate_topology")
     by_type = {c["claim_type"]: c for c in claims}
     blocking = [by_type[name] for name in sorted(required)
                 if name not in by_type or by_type[name]["verdict"] != "supported"]
