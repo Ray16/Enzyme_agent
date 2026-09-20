@@ -1061,8 +1061,11 @@ def set_family_focus(run_dir: Path | str, stop: list | None = None,
                 "hydrolase fold; native ester/amide cleavage resembles the target bond\"}.",
             ],
         }
+    # Resolve human-readable InterPro names so the decision trail is auditable
+    # without an id lookup (best-effort, cached; falls back to the id).
+    names = {fid: interpro_name(fid) for fid in (list(expand) + list(stop))}
     decisions = record_family_decisions(
-        run_dir, expand=expand, stop=stop, reasons=reasons)
+        run_dir, expand=expand, stop=stop, reasons=reasons, names=names)
     stopped_now = sorted(k for k, v in decisions.items() if v.get("decision") == "stop")
     return {
         "status": "success",
