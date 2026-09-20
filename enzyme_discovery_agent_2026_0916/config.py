@@ -201,8 +201,10 @@ CANDIDATE_MAP_PROMISING_N = 10
 CANDIDATE_MAP_GPU_RESERVE = os.environ.get(
     "ENZYME_AGENT_GPU_RESERVE", "/nfs/lambda_stor_01/homes/rzhu/bin/gpu_reserve"
 )
+# Dedicated venv with fair-esm layered on palm's CUDA torch (palm's transformers
+# is version-broken); loads ESM2 via torch.hub, no transformers/huggingface_hub.
 CANDIDATE_MAP_EMBED_PYTHON = os.environ.get(
-    "ENZYME_AGENT_EMBED_PYTHON", "/homes/rzhu/miniforge3/envs/palm/bin/python"
+    "ENZYME_AGENT_EMBED_PYTHON", "/nfs/lambda_stor_01/homes/rzhu/esm_embed_env/bin/python"
 )
 CANDIDATE_MAP_EMBED_TIMEOUT = 1800  # seconds for the GPU embedding subprocess
 # Reference enzymes to STAR in the standalone plot are supplied out-of-band
