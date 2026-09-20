@@ -23,9 +23,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import socket
+import subprocess
 import sys
+import tempfile
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from enzyme_discovery_agent import config
@@ -37,36 +42,103 @@ from enzyme_discovery_agent.tools.embedding_map import _run_embed_subprocess
 
 
 # --------------------------------------------------------------------------- #
-# Sequences
+# Sequences (parallel batched fetch)
 # --------------------------------------------------------------------------- #
-def batch_fetch_sequences(accessions: list[str], chunk: int = 100) -> dict[str, str]:
-    """Fetch sequences for many accessions with few requests (UniProt accessions
-    endpoint: comma-separated ids, <=100 per request, FASTA)."""
+def _fetch_chunk(block: list[str]) -> dict[str, str]:
+    url = ("https://rest.uniprot.org/uniprotkb/accessions?"
+           + urllib.parse.urlencode({"accessions": ",".join(block), "format": "fasta"}))
     out: dict[str, str] = {}
-    for i in range(0, len(accessions), chunk):
-        block = accessions[i:i + chunk]
-        url = ("https://rest.uniprot.org/uniprotkb/accessions?"
-               + urllib.parse.urlencode({"accessions": ",".join(block), "format": "fasta"}))
-        try:
-            with urllib.request.urlopen(url, timeout=120) as resp:
-                fasta = resp.read().decode()
-        except Exception as exc:  # noqa: BLE001
-            sys.stderr.write(f"  batch fetch failed ({exc}); continuing\n")
-            continue
-        acc, seq = None, []
-        for line in fasta.splitlines():
-            if line.startswith(">"):
-                if acc and seq:
-                    out[acc] = "".join(seq)
-                # header: sp|ACC|NAME ... or tr|ACC|NAME
-                parts = line[1:].split("|")
-                acc = parts[1] if len(parts) >= 2 else line[1:].split()[0]
-                seq = []
-            else:
-                seq.append(line.strip())
-        if acc and seq:
-            out[acc] = "".join(seq)
+    try:
+        with urllib.request.urlopen(url, timeout=120) as resp:
+            fasta = resp.read().decode()
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(f"  batch fetch failed ({exc}); continuing\n")
+        return out
+    acc, seq = None, []
+    for line in fasta.splitlines():
+        if line.startswith(">"):
+            if acc and seq:
+                out[acc] = "".join(seq)
+            parts = line[1:].split("|")  # sp|ACC|NAME or tr|ACC|NAME
+            acc = parts[1] if len(parts) >= 2 else line[1:].split()[0]
+            seq = []
+        else:
+            seq.append(line.strip())
+    if acc and seq:
+        out[acc] = "".join(seq)
     return out
+
+
+def batch_fetch_sequences(accessions: list[str], chunk: int = 100,
+                          workers: int = 8) -> dict[str, str]:
+    """Fetch sequences in parallel over 100-accession UniProt requests."""
+    chunks = [accessions[i:i + chunk] for i in range(0, len(accessions), chunk)]
+    out: dict[str, str] = {}
+    with ThreadPoolExecutor(max_workers=min(workers, max(1, len(chunks)))) as ex:
+        for d in ex.map(_fetch_chunk, chunks):
+            out.update(d)
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# Multi-GPU embedding: shard across all free GPUs, one worker per GPU.
+# --------------------------------------------------------------------------- #
+def _free_gpu_indices(max_n: int) -> list[str]:
+    host = socket.gethostname().split(".")[0]
+    try:
+        r = subprocess.run([config.CANDIDATE_MAP_GPU_RESERVE, "list"],
+                           capture_output=True, text=True, timeout=60)
+    except Exception:  # noqa: BLE001
+        return []
+    idxs = [p.split()[1] for p in r.stdout.splitlines()
+            if len(p.split()) >= 2 and p.split()[0] == host and p.split()[1].isdigit()]
+    return idxs[:max_n]
+
+
+def embed_multi_gpu(run_dir: Path, items: list[dict], model: str, max_gpus: int = 8):
+    """Embed ``items`` by sharding across up to ``max_gpus`` reserved GPUs in
+    parallel (one gpu_reserve-run worker each). Falls back to single-GPU if only
+    one is free. Returns (rows, note) like _run_embed_subprocess."""
+    gpus = _free_gpu_indices(max_gpus)
+    if len(gpus) <= 1:
+        return _run_embed_subprocess(run_dir, items, model)
+
+    n = len(gpus)
+    shards = [items[i::n] for i in range(n)]  # round-robin balances long/short seqs
+    workdir = Path(run_dir) / "embedding_store" / "_work"
+    workdir.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    env.update({"OMP_NUM_THREADS": "4", "MKL_NUM_THREADS": "4"})
+
+    procs = []
+    for idx, shard in zip(gpus, shards):
+        if not shard:
+            continue
+        d = Path(tempfile.mkdtemp(dir=str(workdir)))
+        pj, ov, om = d / "pending.json", d / "vec.npy", d / "meta.json"
+        pj.write_text(json.dumps({"model": model, "items": shard}))
+        cmd = [config.CANDIDATE_MAP_GPU_RESERVE, "run", idx, "--label", "esm_embed_mg", "--",
+               config.CANDIDATE_MAP_EMBED_PYTHON, "-m",
+               "enzyme_discovery_agent.tools.esm_embed_worker", str(pj), str(ov), str(om)]
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                             text=True, env=env)
+        procs.append((p, ov, om, idx))
+
+    import numpy as np
+    rows: list[tuple] = []
+    used = []
+    for p, ov, om, idx in procs:
+        out = p.communicate(timeout=config.CANDIDATE_MAP_EMBED_TIMEOUT)[0]
+        if p.returncode != 0 or not ov.exists():
+            sys.stderr.write(f"  shard GPU {idx} failed rc={p.returncode}: {(out or '')[-200:]}\n")
+            continue
+        v = np.load(ov)
+        meta = json.loads(om.read_text())
+        accs, hs = meta["accessions"], meta.get("seq_sha1", [""] * len(meta["accessions"]))
+        for i in range(min(len(accs), v.shape[0])):
+            rows.append((accs[i], hs[i] if i < len(hs) else "", v[i]))
+        used.append(idx)
+    return rows, f"embedded {len(rows)} via {len(used)} GPU(s): {','.join(used)}"
 
 
 def embed_all_candidates(run_dir: Path, model: str) -> str:
