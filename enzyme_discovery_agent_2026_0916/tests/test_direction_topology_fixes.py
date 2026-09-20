@@ -107,7 +107,7 @@ class TestTopologyCompatibility(unittest.TestCase):
     def test_monomer_only_enzyme_blocked_for_polymer_target(self):
         # The counterfactual: a free/monomer enzyme cannot act on a genuine polymer
         # target -> topology contradicted and blocking (guard preserved).
-        entry = _entry("a small molecule + H2O = two products", ec="3.5.1.1")
+        entry = _entry("an amide + H2O = a carboxylate + an amine", ec="3.5.1.1")
         v = validate_uniprot_claims(
             entry, expected_accession="P00001", target_topology="polymer",
         )
