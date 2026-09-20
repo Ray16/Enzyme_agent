@@ -1,13 +1,14 @@
 [project]
 name = "enzyme-discovery-agent"
 version = "0.1.0"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "openai>=1.0",
     "pandas",
     "rdkit",
     "biopython",
     "requests",
+    "pymupdf>=1.23",
 ]
 
 [project.optional-dependencies]
@@ -26,14 +27,22 @@ scoring = [
 rerank = [
     "sentence-transformers>=2.2",
 ]
-# Full-text acquisition: PDF text extraction (XML full text needs no dep).
-# Without this, PDFs are still downloaded and stored -- just not text-extracted.
-fulltext = [
-    "pymupdf>=1.23",
+# Agent-invoked candidate ESM-embedding map (map_candidate_neighbors tool +
+# candidate_map_plot). The heavy ESM forward pass runs in a SEPARATE GPU
+# subprocess (tools/esm_embed_worker.py) via fair-esm -- loads ESM2 weights
+# through torch.hub, needing neither transformers nor huggingface_hub -- so it is
+# typically installed in a dedicated env layered on the main one (see
+# docs/PROJECT_LAYOUT.md). umap-learn/scikit-learn/matplotlib drive the 2-D
+# projection + figure; numpy comes via pandas (a core dep).
+embedding-map = [
+    "fair-esm>=2.0",
+    "torch>=2.0",
+    "umap-learn>=0.5",
+    "scikit-learn>=1.1",
+    "matplotlib>=3.5",
 ]
-
 [tool.setuptools.packages.find]
-include = ["enzyme_discovery_agent*"]
+include = ["enzyme_discovery_agent_improved*"]
 
 [project.scripts]
-enzyme-discovery-agent = "enzyme_discovery_agent.__main__:main"
+enzyme-discovery-agent = "enzyme_discovery_agent_improved.__main__:main"
