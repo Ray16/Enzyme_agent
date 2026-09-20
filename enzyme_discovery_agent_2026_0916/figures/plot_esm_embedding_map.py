@@ -39,14 +39,14 @@ from enzyme_discovery_agent.tools.embedding_map import _run_embed_subprocess
 # --------------------------------------------------------------------------- #
 # Sequences
 # --------------------------------------------------------------------------- #
-def batch_fetch_sequences(accessions: list[str], chunk: int = 200) -> dict[str, str]:
-    """Fetch sequences for many accessions with few requests (UniProt FASTA stream)."""
+def batch_fetch_sequences(accessions: list[str], chunk: int = 100) -> dict[str, str]:
+    """Fetch sequences for many accessions with few requests (UniProt accessions
+    endpoint: comma-separated ids, <=100 per request, FASTA)."""
     out: dict[str, str] = {}
     for i in range(0, len(accessions), chunk):
         block = accessions[i:i + chunk]
-        q = " OR ".join(f"accession:{a}" for a in block)
-        url = ("https://rest.uniprot.org/uniprotkb/stream?format=fasta&query="
-               + urllib.parse.quote(q))
+        url = ("https://rest.uniprot.org/uniprotkb/accessions?"
+               + urllib.parse.urlencode({"accessions": ",".join(block), "format": "fasta"}))
         try:
             with urllib.request.urlopen(url, timeout=120) as resp:
                 fasta = resp.read().decode()
