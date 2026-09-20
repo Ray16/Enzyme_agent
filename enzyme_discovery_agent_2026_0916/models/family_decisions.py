@@ -98,8 +98,8 @@ def record_family_decisions(
 
     # Emit outside the lock: telemetry must never hold the write lock.
     from enzyme_discovery_agent.models.event_log import append_event
-    for key, decision, reason in updates:
+    for key, decision, reason, name in updates:
         if decision in _VALID and key:
             append_event(run_dir, "family_decision",
-                         fold=key, decision=decision, reason=reason[:200])
+                         fold=key, name=name, decision=decision, reason=reason[:200])
     return decisions
