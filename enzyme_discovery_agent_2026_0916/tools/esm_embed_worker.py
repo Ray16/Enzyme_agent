@@ -1,6 +1,6 @@
-"""Standalone GPU worker: embed protein sequences with an ESM2 model.
+"""Standalone GPU worker: embed protein sequences with an ESM2 model (fair-esm).
 
-This is the ONLY module in the package that imports torch/transformers, so it is
+This is the ONLY module in the package that imports torch/esm, so it is
 deliberately NOT registered as an agent tool and NOT listed in bootstrap.py -- the
 main network/LLM-bound run never imports it. It is launched as a subprocess through
 the cluster GPU reservation gate, e.g.::
@@ -9,6 +9,9 @@ the cluster GPU reservation gate, e.g.::
         pending.json out_vectors.npy out_meta.json
 
 ``gpu_reserve run`` sets ``CUDA_VISIBLE_DEVICES`` for us; this worker never sets it.
+It uses ``fair-esm`` (``import esm``), which loads weights via torch.hub and needs
+neither ``transformers`` nor ``huggingface_hub`` -- run it with a python that has
+fair-esm + a CUDA torch (see config.CANDIDATE_MAP_EMBED_PYTHON).
 
 Input  ``pending.json``  = {"model": str, "items": [{"accession","seq_sha1","sequence"}]}
 Output ``out_vectors.npy`` = float32 (N, D), rows L2-normalized, aligned to items order
@@ -21,20 +24,26 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
-# Sequences longer than the model's positional limit are truncated. 1022 leaves
-# room for the ESM CLS/EOS tokens under the common 1024 limit.
+# Sequences longer than the model's positional limit are truncated.
 _MAX_LEN = 1022
 _BATCH = 8
+
+
+def _resolve_model_name(model: str) -> str:
+    """Map an HF-style id ('facebook/esm2_t33_650M_UR50D') to the fair-esm loader
+    name ('esm2_t33_650M_UR50D')."""
+    return model.split("/")[-1] if model else "esm2_t33_650M_UR50D"
 
 
 def embed_sequences(model_name: str, sequences: list[str]):
     """Return an (N, D) float32 numpy array of mean-pooled, L2-normalized embeddings."""
     import numpy as np
     import torch
-    from transformers import AutoTokenizer, AutoModel
+    import esm
 
     # Require a GPU: the whole point is to compute the ESM forward pass on the
     # reserved GPU. Fail loudly rather than silently crawling on CPU. The CPU
@@ -50,23 +59,36 @@ def embed_sequences(model_name: str, sequences: list[str]):
             "via `gpu_reserve run <idx> -- ...` (which sets CUDA_VISIBLE_DEVICES), or "
             "set ENZYME_AGENT_EMBED_ALLOW_CPU=1 to override for testing."
         )
-    sys.stderr.write(f"esm_embed_worker: device={device} model={model_name}\n")
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name).to(device).eval()
+
+    short = _resolve_model_name(model_name)
+    m = re.search(r"_t(\d+)_", short)
+    if not m:
+        raise ValueError(f"cannot infer representation layer from model '{short}'")
+    repr_layer = int(m.group(1))
+    sys.stderr.write(f"esm_embed_worker: device={device} model={short} layer={repr_layer}\n")
+
+    loader = getattr(esm.pretrained, short, None)
+    if loader is None:
+        raise ValueError(f"unknown fair-esm model '{short}'")
+    model, alphabet = loader()
+    model = model.eval().to(device)
+    batch_converter = alphabet.get_batch_converter()
+    pad_idx, cls_idx, eos_idx = alphabet.padding_idx, alphabet.cls_idx, alphabet.eos_idx
 
     out_rows: list[np.ndarray] = []
     with torch.no_grad():
         for start in range(0, len(sequences), _BATCH):
-            batch = [s[:_MAX_LEN] for s in sequences[start:start + _BATCH]]
-            enc = tokenizer(
-                batch, return_tensors="pt", padding=True, truncation=True,
-                max_length=_MAX_LEN + 2,
-            ).to(device)
-            hidden = model(**enc).last_hidden_state  # (B, L, D)
-            mask = enc["attention_mask"].unsqueeze(-1).float()  # (B, L, 1)
-            summed = (hidden * mask).sum(dim=1)
+            chunk = [s[:_MAX_LEN] for s in sequences[start:start + _BATCH]]
+            data = [(f"seq{start + i}", s) for i, s in enumerate(chunk)]
+            _, _, tokens = batch_converter(data)
+            tokens = tokens.to(device)
+            reps = model(tokens, repr_layers=[repr_layer])["representations"][repr_layer]
+            # Mask out BOS/EOS/pad, mean-pool over real residues.
+            mask = (tokens != pad_idx) & (tokens != cls_idx) & (tokens != eos_idx)
+            mask = mask.unsqueeze(-1).float()
+            summed = (reps * mask).sum(dim=1)
             counts = mask.sum(dim=1).clamp(min=1.0)
-            pooled = summed / counts  # (B, D) mean over real residues
+            pooled = summed / counts
             pooled = torch.nn.functional.normalize(pooled, p=2, dim=1)
             out_rows.append(pooled.float().cpu().numpy())
     return np.vstack(out_rows).astype("float32")
