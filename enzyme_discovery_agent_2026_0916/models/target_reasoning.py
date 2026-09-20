@@ -290,11 +290,23 @@ def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
             "inferred", uncertainty,
         ))
 
+    # Semantic determination of direction/bond/topology by the LLM (validated
+    # against the known vocabularies; unrecognized -> None so the caller falls
+    # back to the deterministic parser).
+    llm_direction = str(obj.get("reaction_direction") or "").strip().casefold()
+    llm_direction = llm_direction if llm_direction in DIRECTIONS else None
+    llm_bonds = _terms(obj.get("bond_types"))
+    llm_topology = str(obj.get("substrate_topology") or "").strip()
+    llm_topology = llm_topology if llm_topology in TOPOLOGIES else None
+
     extra = {
         "activation_problem": problem,
         "activation_categories": activation,
         "cofactor_requirements": cofactors,
         "disqualifiers": disqualifiers,
+        "reaction_direction": llm_direction,
+        "bond_types": llm_bonds,
+        "substrate_topology": llm_topology,
     }
     return extra, claims
 
