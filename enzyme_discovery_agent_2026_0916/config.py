@@ -184,6 +184,15 @@ FULLTEXT_MINE_MIN_SCORE = 0.55
 # otherwise network-bound discovery run.
 ENABLE_SEMANTIC_RERANK = os.environ.get("ENZYME_AGENT_ENABLE_SEMANTIC_RERANK", "0") == "1"
 
+# --- Deep literature search (citation-graph snowball) ---
+# Per-run caps on how many papers the citation snowball pulls, so the deduped pool
+# (fed to regex entity extraction) stays bounded. OpenAlex is the primary graph;
+# the extra graphs (Semantic Scholar / Europe PMC / PubMed) each add coverage +
+# redundancy up to their own cap (backward references + forward citations combined).
+DEEP_SEARCH_BACKWARD_CAP = 60      # OpenAlex backward references, total
+DEEP_SEARCH_FORWARD_CAP = 40       # OpenAlex forward citations, total
+DEEP_SEARCH_EXTRA_SOURCE_CAP = 40  # per extra graph, backward + forward combined
+
 # --- Candidate embedding map (agent-invoked ESM neighbor exploration) ---
 # Opt-in: the heavy torch/transformers embedding runs only in a GPU subprocess
 # (tools/esm_embed_worker.py) launched via the cluster reservation gate, so a
