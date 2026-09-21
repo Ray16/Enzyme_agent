@@ -1683,7 +1683,7 @@ def deep_literature_search(
     # overlap (dedup collapses those) but adds coverage for seeds without a DOI and
     # resilience if OpenAlex misses/omits a seed. Each source runs concurrently and
     # is best-effort; the per-host rate limiter bounds request rate.
-    EXTRA_SOURCE_CAP = 40
+    EXTRA_SOURCE_CAP = config.DEEP_SEARCH_EXTRA_SOURCE_CAP
     seed_ids = _seed_identifiers(seeds)
     extra_papers: dict[str, list[dict]] = {"semanticscholar": [], "europepmc": [], "pubmed": []}
     if seed_ids:
