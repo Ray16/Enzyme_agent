@@ -1720,11 +1720,13 @@ def deep_literature_search(
         "abstract": (s.get("abstract") or "")[:300],
     } for s in seeds]
 
+    extra_count = len(extra_all)
     return {
         "status": "success",
         "summary": (
             f"Deep search: {len(seeds)} seeds, {len(backward_papers)} backward + "
-            f"{len(forward_papers)} forward citations, "
+            f"{len(forward_papers)} forward (OpenAlex) + {extra_count} from "
+            f"S2/EuropePMC/PubMed citation graphs -> {len(ref_papers)} unique refs, "
             f"{len(entities.get('gene_names', []))} genes, "
             f"{len(entities.get('ec_numbers', []))} ECs extracted"
         ),
@@ -1735,6 +1737,7 @@ def deep_literature_search(
                 "seed_count": len(seeds),
                 "backward_refs": len(backward_papers),
                 "forward_citations": len(forward_papers),
+                "extra_source_refs": {k: len(v) for k, v in extra_papers.items()},
                 "references_fetched": len(ref_papers),
                 "total_papers_scanned": len(papers_with_text),
             },
