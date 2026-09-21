@@ -1366,6 +1366,202 @@ def _interleave(list_a: list, list_b: list):
             j += 1
 
 
+# ---------------------------------------------------------------------------
+# Multi-source citation-graph traversal (Semantic Scholar / Europe PMC / PubMed)
+#
+# OpenAlex is the primary bidirectional citation graph (see deep_literature_search
+# step 3-4). These helpers add the SAME backward(references)+forward(citations)
+# snowball over three additional graphs, for (a) redundancy when OpenAlex misses a
+# seed or is unavailable, and (b) reach on seeds that carry a PMID/PMCID but no
+# DOI (OpenAlex is resolved here by DOI). Every helper is best-effort: any per-seed
+# or per-source failure is logged and skipped, never raised, and the per-host rate
+# limiter in tools._http bounds request rate. Each returned paper carries a
+# ``source`` and ``direction`` tag; identity fields let _dedup_papers collapse
+# duplicates against the OpenAlex pool.
+# ---------------------------------------------------------------------------
+
+def _seed_identifiers(seeds: list[dict]) -> list[dict]:
+    """Per-seed {doi, pmid, pmcid} for seeds carrying at least one identifier."""
+    ids: list[dict] = []
+    for s in seeds:
+        entry = {
+            "doi": (s.get("doi") or "").strip(),
+            "pmid": str(s.get("pmid") or "").strip(),
+            "pmcid": str(s.get("pmcid") or "").strip(),
+        }
+        if entry["doi"] or entry["pmid"] or entry["pmcid"]:
+            ids.append(entry)
+    return ids
+
+
+def _s2_record_to_paper(rec: dict, direction: str) -> dict:
+    ext = rec.get("externalIds") or {}
+    return {
+        "title": rec.get("title", "") or "",
+        "year": rec.get("year"),
+        "doi": (ext.get("DOI", "") or ""),
+        "pmid": str(ext.get("PubMed", "") or ""),
+        "abstract": (rec.get("abstract") or "")[:1500],
+        "cited_by_count": rec.get("citationCount", 0) or 0,
+        "source": "semanticscholar",
+        "direction": direction,
+    }
+
+
+def _s2_snowball(seed_ids: list[dict], per_seed: int, cap: int) -> list[dict]:
+    """Backward references + forward citations via the Semantic Scholar graph."""
+    out: list[dict] = []
+    headers = {"Accept": "application/json"}
+    if config.S2_API_KEY:
+        headers["x-api-key"] = config.S2_API_KEY
+    fields = "title,abstract,year,externalIds,citationCount"
+    for ids in seed_ids:
+        if len(out) >= cap:
+            break
+        pid = None
+        if ids["doi"]:
+            pid = f"DOI:{ids['doi']}"
+        elif ids["pmid"]:
+            pid = f"PMID:{ids['pmid']}"
+        elif ids["pmcid"]:
+            pid = f"PMCID:{ids['pmcid']}"
+        if not pid:
+            continue
+        for endpoint, rec_key, direction in (
+            ("references", "citedPaper", "backward"),
+            ("citations", "citingPaper", "forward"),
+        ):
+            if len(out) >= cap:
+                break
+            url = (f"{config.SEMANTIC_SCHOLAR_API}/paper/"
+                   f"{urllib.parse.quote(pid, safe=':')}/{endpoint}"
+                   f"?fields={fields}&limit={per_seed}")
+            try:
+                data = json.loads(request_with_retry(
+                    urllib.request.Request(url, headers=headers), timeout=30).decode())
+            except Exception as e:  # noqa: BLE001 - best-effort per source
+                logger.warning("S2 %s fetch failed for %s: %s", endpoint, pid, e)
+                continue
+            for row in data.get("data", []) or []:
+                rec = row.get(rec_key) or {}
+                if rec.get("title"):
+                    out.append(_s2_record_to_paper(rec, direction))
+                    if len(out) >= cap:
+                        break
+    return out
+
+
+def _europepmc_record_to_paper(rec: dict, direction: str) -> dict:
+    src = rec.get("source", "")
+    rid = str(rec.get("id", "") or "")
+    return {
+        "title": rec.get("title", "") or "",
+        "year": rec.get("pubYear"),
+        "doi": (rec.get("doi", "") or ""),
+        "pmid": rid if src == "MED" else "",
+        # The citations/references endpoints return metadata only (no abstract);
+        # the record still enters the pool for dedup + title-level entity mining.
+        "abstract": "",
+        "source": "europepmc",
+        "direction": direction,
+    }
+
+
+def _europepmc_snowball(seed_ids: list[dict], per_seed: int, cap: int) -> list[dict]:
+    """Backward references + forward citations via the Europe PMC graph."""
+    out: list[dict] = []
+    for ids in seed_ids:
+        if len(out) >= cap:
+            break
+        if ids["pmid"]:
+            source, sid = "MED", ids["pmid"]
+        elif ids["pmcid"]:
+            pmc = ids["pmcid"]
+            source, sid = "PMC", (pmc if pmc.upper().startswith("PMC") else f"PMC{pmc}")
+        else:
+            continue
+        for endpoint, list_key, item_key, direction in (
+            ("references", "referenceList", "reference", "backward"),
+            ("citations", "citationList", "citation", "forward"),
+        ):
+            if len(out) >= cap:
+                break
+            url = (f"{config.EUROPEPMC_API}/{source}/{sid}/{endpoint}"
+                   f"?format=json&pageSize={per_seed}")
+            try:
+                data = json.loads(request_with_retry(
+                    urllib.request.Request(url, headers={"Accept": "application/json"}),
+                    timeout=30).decode())
+            except Exception as e:  # noqa: BLE001 - best-effort per source
+                logger.warning("EuropePMC %s fetch failed for %s/%s: %s",
+                               endpoint, source, sid, e)
+                continue
+            for rec in (data.get(list_key, {}) or {}).get(item_key, []) or []:
+                if rec.get("title"):
+                    out.append(_europepmc_record_to_paper(rec, direction))
+                    if len(out) >= cap:
+                        break
+    return out
+
+
+def _efetch_pubmed_papers(pmids: list[str]) -> list[dict]:
+    """Fetch title/abstract for a list of PMIDs (reuses the search_pubmed parser)."""
+    if not pmids:
+        return []
+    params = _ncbi_params({"db": "pubmed", "id": ",".join(pmids), "retmode": "xml"})
+    url = f"{config.NCBI_EUTILS}/efetch.fcgi?{urllib.parse.urlencode(params)}"
+    try:
+        xml_data = request_with_retry(urllib.request.Request(url), timeout=30).decode()
+        root = ET.fromstring(xml_data)
+    except Exception as e:  # noqa: BLE001 - best-effort
+        logger.warning("PubMed efetch (snowball) failed: %s", e)
+        return []
+    papers: list[dict] = []
+    for elem in root.findall(".//PubmedArticle"):
+        art = _parse_pubmed_article(elem)
+        if art:
+            papers.append(art)
+    return papers
+
+
+def _pubmed_snowball(seed_ids: list[dict], per_seed: int, cap: int) -> list[dict]:
+    """Backward references + forward citations via PubMed elink (best-effort).
+
+    Forward links (``pubmed_pubmed_citedin``) are limited to PMC-indexed citers, so
+    this graph is partial; it is included as an additional, redundant source.
+    """
+    pmids = [ids["pmid"] for ids in seed_ids if ids["pmid"]]
+    if not pmids:
+        return []
+    out: list[dict] = []
+    for direction, linkname in (("backward", "pubmed_pubmed_refs"),
+                                ("forward", "pubmed_pubmed_citedin")):
+        linked: list[str] = []
+        for pmid in pmids:
+            if len(linked) >= cap:
+                break
+            params = _ncbi_params({"dbfrom": "pubmed", "db": "pubmed", "id": pmid,
+                                   "linkname": linkname, "retmode": "json"})
+            url = f"{config.NCBI_EUTILS}/elink.fcgi?{urllib.parse.urlencode(params)}"
+            try:
+                data = json.loads(request_with_retry(
+                    urllib.request.Request(url, headers={"Accept": "application/json"}),
+                    timeout=30).decode())
+            except Exception as e:  # noqa: BLE001 - best-effort
+                logger.warning("PubMed elink %s failed for %s: %s", linkname, pmid, e)
+                continue
+            for ls in data.get("linksets", []) or []:
+                for db in ls.get("linksetdbs", []) or []:
+                    for lk in (db.get("links", []) or [])[:per_seed]:
+                        linked.append(str(lk))
+        uniq = [p for p in dict.fromkeys(linked) if p not in pmids][:cap]
+        for paper in _efetch_pubmed_papers(uniq):
+            paper["source"] = "pubmed"
+            paper["direction"] = direction
+            out.append(paper)
+    return out
+
+
 @tool(
     description=(
         "Multi-hop snowball literature search. Finds seed papers across PubMed, "
