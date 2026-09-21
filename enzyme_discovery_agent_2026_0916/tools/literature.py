@@ -1677,7 +1677,33 @@ def deep_literature_search(
     backward_papers = _batch_fetch_openalex_works(unique_back) if unique_back else []
     forward_papers = _fetch_forward_citations(
         cited_by_urls, per_seed=max_refs_per_seed, total_cap=FORWARD_CAP)
-    ref_papers = _dedup_papers(backward_papers + forward_papers)
+
+    # Step 4b: augment the OpenAlex snowball with three more citation graphs
+    # (Semantic Scholar, Europe PMC, PubMed). Redundant with OpenAlex where they
+    # overlap (dedup collapses those) but adds coverage for seeds without a DOI and
+    # resilience if OpenAlex misses/omits a seed. Each source runs concurrently and
+    # is best-effort; the per-host rate limiter bounds request rate.
+    EXTRA_SOURCE_CAP = 40
+    seed_ids = _seed_identifiers(seeds)
+    extra_papers: dict[str, list[dict]] = {"semanticscholar": [], "europepmc": [], "pubmed": []}
+    if seed_ids:
+        snowball_fns = {
+            "semanticscholar": _s2_snowball,
+            "europepmc": _europepmc_snowball,
+            "pubmed": _pubmed_snowball,
+        }
+        with ThreadPoolExecutor(max_workers=len(snowball_fns)) as pool:
+            futs = {name: pool.submit(fn, seed_ids, max_refs_per_seed, EXTRA_SOURCE_CAP)
+                    for name, fn in snowball_fns.items()}
+            for name, fut in futs.items():
+                try:
+                    extra_papers[name] = fut.result() or []
+                except Exception as e:  # noqa: BLE001 - one source failing never breaks the search
+                    logger.warning("Snowball source %s failed: %s", name, e)
+                    extra_papers[name] = []
+    extra_all = [p for recs in extra_papers.values() for p in recs]
+
+    ref_papers = _dedup_papers(backward_papers + forward_papers + extra_all)
 
     # Step 5: Extract entities from all collected papers
     all_papers = seeds + ref_papers
