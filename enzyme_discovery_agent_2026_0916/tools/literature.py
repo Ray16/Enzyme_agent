@@ -1642,7 +1642,7 @@ def deep_literature_search(
     # Step 3: From each seed's OpenAlex work, collect BACKWARD reference ids and
     # the FORWARD cited_by URL. The global budget is split so forward citations
     # do not starve backward coverage (a landmark seed has thousands of citers).
-    BACKWARD_CAP, FORWARD_CAP = 60, 40
+    BACKWARD_CAP, FORWARD_CAP = config.DEEP_SEARCH_BACKWARD_CAP, config.DEEP_SEARCH_FORWARD_CAP
     seed_dois = [s["doi"] for s in seeds if s.get("doi")]
     backward_ids: list[str] = []
     cited_by_urls: list[str] = []
