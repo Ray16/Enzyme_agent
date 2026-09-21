@@ -1321,26 +1321,43 @@ def _fetch_forward_citations(cited_by_urls: list[str], per_seed: int,
 
 
 def _dedup_papers(papers: list[dict]) -> list[dict]:
-    """Dedup a list of paper dicts across sources.
+    """Dedup paper dicts across sources by matching on ANY shared identifier.
 
-    Keyed by DOI first, then PMID, then OpenAlex id, then title. DOI/PMID lead so
-    the same paper returned by different citation graphs (OpenAlex work, Semantic
-    Scholar record, Europe PMC/PubMed record) collapses to one entry even when the
-    sources expose different id subsets.
+    A paper is a duplicate if it shares a DOI, PMID, or OpenAlex id with a paper
+    already kept (title used only when a record carries no structured id). Matching
+    on any id — rather than a single precedence key — collapses both intra-source
+    duplicates (same OpenAlex work, different DOI strings) and cross-source ones
+    (the same paper returned by the OpenAlex, Semantic Scholar, Europe PMC, and
+    PubMed citation graphs, each exposing a different id subset). Every id of every
+    record is registered even when the record is dropped, so identity bridges across
+    records that overlap on different ids.
     """
-    seen, out = set(), []
+    seen_doi: set[str] = set()
+    seen_pmid: set[str] = set()
+    seen_oa: set[str] = set()
+    seen_title: set[str] = set()
+    out: list[dict] = []
     for p in papers:
-        key = ((p.get("doi") or "").strip().lower()
-               or (p.get("pmid") or "").strip()
-               or (p.get("openalex_id") or "").strip()
-               or (p.get("title") or "").strip().lower())
-        if not key:
+        doi = (p.get("doi") or "").strip().lower()
+        pmid = (p.get("pmid") or "").strip()
+        oa = (p.get("openalex_id") or "").strip()
+        title = (p.get("title") or "").strip().lower()
+        has_id = bool(doi or pmid or oa)
+        is_dup = ((doi and doi in seen_doi)
+                  or (pmid and pmid in seen_pmid)
+                  or (oa and oa in seen_oa)
+                  or (not has_id and title and title in seen_title))
+        # Register all identifiers regardless, so identity bridges across records.
+        if doi:
+            seen_doi.add(doi)
+        if pmid:
+            seen_pmid.add(pmid)
+        if oa:
+            seen_oa.add(oa)
+        if not has_id and title:
+            seen_title.add(title)
+        if not is_dup:
             out.append(p)
-            continue
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append(p)
     return out
 
 
