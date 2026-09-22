@@ -7,11 +7,15 @@ or the enzyme is INCONCLUSIVE); the SCORE is the MEAN in-line attack angle among
 poses. Distance never enters the score. Raw NAC (d AND angle) and best-single-pose angle
 were shown to fail (rho ~0.09) and are not used.
 
-Regenerate the proxy CSV first:
+Regenerate the proxy CSV first (CORRECTED 1-Mg panel; all members are ANL/adenylate
+so use a SINGLE catalytic Mg -- see project_cofold_metal_stoichiometry):
   python structural_modeling/scripts/angle_gate_proxy.py \
-      exp_data/amide_synthetase/boltz2/step1/results/output_configs \
-      --phosphate pa --out exp_data/amide_synthetase/analysis/angle_gate_step1_pa.csv
+      exp_data/amide_synthetase/boltz2/step1_1mg/results \
+      --phosphate pa --prefix "" \
+      --out exp_data/amide_synthetase/analysis/angle_gate_step1_1mg.csv
 then:  python analysis/make_synthetase_figures.py
+Evaluate:  python analysis/synthetase/evaluate_angle_gate.py \
+      exp_data/amide_synthetase/analysis/angle_gate_step1_1mg.csv
 """
 import os
 import numpy as np
@@ -147,7 +151,13 @@ def fig_proxy_ranking(df):
     for k, (_, r) in enumerate(beat.iterrows(), 1):
         rk = f"#{ang_rank[r.id]}" if r.id in ang_rank else "INCONCLUSIVE"
         lines.append(f"{k}. {r.id}  →  {rk}")
-    lines += ["", "SfaB (parent): INCONCLUSIVE", "  diacid never < 4 Å of Pα (min 10 Å)"]
+    sf = df[df.id == "SfaB"].iloc[0]
+    lines += [
+        "",
+        "SfaB (parent, 1 Mg²⁺): INCONCLUSIVE",
+        f"  {int(sf.n_gated)}/50 poses at d < {D_GATE:.0f} Å; "
+        f"mean angle {sf.mean_inline_angle:.1f}°",
+    ]
     axA.text(0.985, 0.02, "\n".join(lines), transform=axA.transAxes, ha="right", va="bottom",
              fontsize=FS - 5, color="#222", fontweight="bold",
              bbox=dict(boxstyle="round,pad=0.5", fc="#fbfbfb", ec="#888", lw=1.2))
