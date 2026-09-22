@@ -14,7 +14,9 @@ import os, re
 SRC = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/data/amide_synthetase/step1"
 OUT = os.path.dirname(os.path.abspath(__file__)) + "/inputs"
 ADIPATE = "[O-]C(=O)CCCCC(=O)[O-]"
-ENZYMES = ["SfaB", "AS9", "AS17", "AS23"]
+# Full ANL diversity panel: SfaB + AS1..AS48 (all sequence homologs of SfaB, all
+# adenylate-forming -> 1 Mg). Extends the original 4-enzyme control to the whole panel.
+ENZYMES = ["SfaB"] + [f"AS{i}" for i in range(1, 49)]
 
 
 def field(text, key):
