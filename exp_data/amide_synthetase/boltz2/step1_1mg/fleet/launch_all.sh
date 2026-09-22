@@ -13,7 +13,7 @@ while read -r host idx; do
   [ -z "$host" ] && continue
   [ "$n" -ge "$MAX" ] && break
   if echo "$EXCLUDE" | grep -qw "$host"; then continue; fi
-  if ssh -o BatchMode=yes -o ConnectTimeout=8 "$host" \
+  if ssh -n -o BatchMode=yes -o ConnectTimeout=8 "$host" \
       "setsid nohup $GR run $idx -- bash $FLEET/fold_loop.sh \
          > $FLEET/logs/worker_${host}_gpu${idx}.log 2>&1 < /dev/null & \
        echo launched $host gpu$idx"; then
