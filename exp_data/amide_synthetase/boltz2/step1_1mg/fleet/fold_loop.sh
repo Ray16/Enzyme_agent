@@ -11,10 +11,14 @@ H=$(hostname); G=${CUDA_VISIBLE_DEVICES:-NA}
 
 source /nfs/lambda_stor_01/homes/rzhu/miniforge3/etc/profile.d/conda.sh
 conda activate boltz-2
+# libmpi shim: some nodes (lambda4/11/13) lack a system OpenMPI that mpi4py (pulled
+# in by boltz) needs. This NFS env provides libmpi.so.40 cluster-wide (matches the
+# system OpenMPI 4.1 on lambda1/5), so boltz-2 runs on ALL nodes.
+export LD_LIBRARY_PATH=/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/mpi-shim/lib:${LD_LIBRARY_PATH:-}
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 TOKENIZERS_PARALLELISM=false
 
-# (1) PREFLIGHT — a node that can't run must NOT claim anything.
-if ! python -c "import torch,sys; sys.exit(0 if torch.cuda.is_available() else 1)" >/dev/null 2>&1; then
+# (1) PREFLIGHT — a node that can't run the REAL import chain must NOT claim anything.
+if ! python -c "import sys, torch, mpi4py.MPI, boltz; sys.exit(0 if torch.cuda.is_available() else 1)" >/dev/null 2>&1; then
   echo "$H gpu$G PREFLIGHT FAIL -> no-op"; exit 3
 fi
 
