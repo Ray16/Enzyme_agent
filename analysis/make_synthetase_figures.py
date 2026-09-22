@@ -29,7 +29,7 @@ from sklearn.metrics import roc_curve, auc
 
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
 AS = f"{ROOT}/exp_data/amide_synthetase"
-PROXY_CSV = f"{AS}/analysis/angle_gate_step1_pa.csv"
+PROXY_CSV = f"{AS}/analysis/angle_gate_step1_1mg.csv"  # corrected 1-Mg panel
 FIG = f"{ROOT}/figures"
 os.makedirs(FIG, exist_ok=True)
 
