@@ -197,37 +197,53 @@ def step2_reactive(het):
     return (best[1], best[2]) if best else None
 
 
+def _agg(vals):
+    return (round(float(np.mean(vals)), 4), round(float(np.std(vals)), 4)) if vals else (None, None)
+
+
 def enzyme(e):
     res = {"id": e, "esp_pa": None, "esp_pa_std": None,
-           "esp_carbonyl": None, "esp_carbonyl_std": None}
-    # --- step 1 ---
+           "esp_carbonyl": None, "esp_carbonyl_std": None,
+           "lef_pa": None, "lef_pa_std": None,
+           "lef_carbonyl": None, "lef_carbonyl_std": None}
+    # --- step 1: ESP + projected LEF at P-alpha; axis O_nuc -> Pa (positive) ---
     pdbs = sorted(glob.glob(f"{pred1(e)}/*model_*.pdb"))
     if pdbs:
-        cmap, net = build_charge_map(pdbs[0])
+        cmap, _ = build_charge_map(pdbs[0])
         if cmap:
-            vals = []
+            esp, lef = [], []
             for p in pdbs:
                 ra = step1_reactive(parse_pdb_het(p))
                 if ra is None:
                     continue
-                vals.append(esp_at(ra, parse_pdb_protein(p), cmap))
-            if vals:
-                res["esp_pa"] = round(float(np.mean(vals)), 4)
-                res["esp_pa_std"] = round(float(np.std(vals)), 4)
-    # --- step 2 ---
+                pa, onuc = ra
+                s, E = field_and_potential(pa, parse_pdb_protein(p), cmap)
+                esp.append(s)
+                axis = pa - onuc
+                nrm = np.linalg.norm(axis)
+                if nrm > 1e-3:
+                    lef.append(float(np.dot(E, axis / nrm)))
+            res["esp_pa"], res["esp_pa_std"] = _agg(esp)
+            res["lef_pa"], res["lef_pa_std"] = _agg(lef)
+    # --- step 2: ESP + projected LEF at acyl carbonyl C; axis C -> O (positive) ---
     pdbs = sorted(glob.glob(f"{pred2(e)}/*model_*.pdb"))
     if pdbs:
-        cmap, net = build_charge_map(pdbs[0])
+        cmap, _ = build_charge_map(pdbs[0])
         if cmap:
-            vals = []
+            esp, lef = [], []
             for p in pdbs:
                 ra = step2_reactive(parse_pdb_het(p))
                 if ra is None:
                     continue
-                vals.append(esp_at(ra, parse_pdb_protein(p), cmap))
-            if vals:
-                res["esp_carbonyl"] = round(float(np.mean(vals)), 4)
-                res["esp_carbonyl_std"] = round(float(np.std(vals)), 4)
+                c, oc = ra
+                s, E = field_and_potential(c, parse_pdb_protein(p), cmap)
+                esp.append(s)
+                axis = oc - c
+                nrm = np.linalg.norm(axis)
+                if nrm > 1e-3:
+                    lef.append(float(np.dot(E, axis / nrm)))
+            res["esp_carbonyl"], res["esp_carbonyl_std"] = _agg(esp)
+            res["lef_carbonyl"], res["lef_carbonyl_std"] = _agg(lef)
     return res
 
 
