@@ -28,6 +28,7 @@ SRC = {
     "exploratory_mg_coordination.csv": "mg",
     "psiptm_enzyme_diacid_1mg.csv": "psiptm",
     "esp_reactive.csv": "esp",              # electrostatics: ESP + projected LEF at reactive atom
+    "propka_active_site.csv": "pka",        # nucleophile/base activation: active-site pKa (PROPKA)
     "crossmodel_nearattack.csv": "boltz",   # only boltz2_* cols kept below
 }
 META = {"id", "activity", "act", "activity_n66l1", "label_gt_sfab", "status", "is_active",
