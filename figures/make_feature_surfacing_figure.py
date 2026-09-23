@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 """Which structural feature surfaces the top synthetase catalysts? (Boltz-2, 50-sample)
 
-Form = heatmap (features x surfacing-metrics), the data's job is to compare many
-features across several agreement metrics at once. Sequential single-hue blue
-(white = random, deep blue = strong; magnitude = how well a feature ranks the
-top actives); NO categorical colour.
-Each cell = AUROC in that feature's activity-consistent direction (0.5 = random,
-darker = better). Columns are nested cutoffs (top-3/5/10 most active, and
-activity > SfaB) plus their mean. Rows grouped: always-defined vs conditional on
-the d<4A near-attack gate (marked +, survivorship-biased).
+Curated, MECHANISM-MOTIVATED panel: one representative proxy per catalytic
+determinant of the ANL-family adenylating amide synthetase reaction
+(adipate + ATP + HMDA -> nylon-6,6 amide), NOT a maximal feature dump. Weak /
+physically-unmotivated proxies are excluded (e.g. ps-iPTM = model confidence,
+not chemistry; raw near-attack fraction = near-random).
 
-Descriptive row names so the mechanism is legible at a glance. The gated in-line
-attack angle (the validated near-attack proxy: d<4Å gate -> rank by in-line
-angle) is shown in the conditional block with a + -- its top-3 AUROC 0.94 is
-strong but survivorship-biased, so its across-metric mean is only 0.69. The
-always-defined near-attack pose fraction is its bias-free counterpart.
+Rows are grouped along the reaction coordinate:
+  1. Ground-state binding      - acyl donor (distal carboxyl) + cofactor (ATP)
+  2. Adenylation (step 1)      - in-line attack of the carboxylate on ATP-Palpha
+  3. Metal-ion organization    - Mg2+ positioning of the phosphates / phosphorane TS
+  4. Active-site preorganization - rigidity of the reactive center across the ensemble
+  5. Aminolysis (step 2)       - delivery of the amine to the acyl-adenylate carbonyl
+
+Form = heatmap (features x surfacing-metrics). Sequential single-hue blue
+(white = random 0.5, deep blue = strong). Each cell = AUROC in that feature's
+activity-consistent direction. Columns are nested cutoffs (top-3/5/10 most
+active, activity > SfaB) plus their mean. Rows marked + are conditional on the
+d<4A near-attack gate (survivorship-biased); all others are always-defined.
 
 Usage: python make_feature_surfacing_figure.py [--base exp_data/amide_synthetase]
 """
@@ -25,27 +29,26 @@ import numpy as np
 
 FS = 18  # base text size (user spec)
 
-# curated: ranking-CSV key -> (descriptive name, group). One representative per
-# mechanism family. group "A" = always-defined (n=48); "C" = conditional on the
-# d<4A gate (n<48, >=5 gated poses required) -> survivorship-biased, marked with +.
-ROWS = [
-    # --- always-defined ---
-    ("mg:mgP_all_median",   "Mg²⁺–phosphate distance",          "A"),
-    ("bat:mg_pa_dist",      "Mg²⁺–Pα distance",            "A"),
-    ("hyp:H7_adenineBurial","ATP adenine burial",                              "A"),
-    ("sasa:distalC_sasa",   "Distal-carboxyl solvent exposure",                "A"),
-    ("boltz:boltz2_min_d",  "Adipate–Pα closest approach",           "A"),
-    ("bat:near_attack_frac","Near-attack pose fraction (d<4Å, in-line)",  "A"),
-    ("bat:reactive_sasa",   "Reactive-carbon burial (resting adipate)",        "A"),
-    ("mg:frac_coord",       "Mg²⁺ inner-sphere coordination",        "A"),
-    ("psiptm:es_mean",      "Enzyme–substrate confidence (ps-iPTM)",      "A"),
-    # --- conditional on the d<4A gate (survivorship-biased) ---
-    ("preorg:posn_rmsf",    "Reactive-center positional RMSF",                 "C"),
-    ("preorg:approach_std", "Attack-angle spread",                             "C"),
-    ("tunnel:enc_tight",    "Acceptor-tunnel enclosure",                       "C"),
-    ("elec:acidO_8",        "Amine-subsite acidic O (8Å)",                "C"),
-    ("elec:nearBase_6",     "Amine-subsite base proximity (6Å)",          "C"),
-    ("bat:mean_inline_angle","Gated in-line attack angle (d<4Å→angle)",    "C"),
+# Mechanism-motivated categories along the reaction coordinate. Each entry:
+# (ranking-CSV key, descriptive feature name, defined-flag). defined-flag
+# "cond" = conditional on the d<4A near-attack gate (survivorship-biased, +).
+GROUPS = [
+    ("Ground-state binding", [
+        ("sasa:distalC_sasa",    "Distal-carboxyl anchoring",        "always"),
+        ("hyp:H7_adenineBurial", "ATP adenine burial",               "always"),
+    ]),
+    ("Adenylation · step 1", [
+        ("bat:mean_inline_angle","In-line attack angle (d<4Å→angle)", "cond"),
+    ]),
+    ("Metal-ion organization", [
+        ("mg:mgP_all_median",    "Mg²⁺–phosphate distance",          "always"),
+    ]),
+    ("Active-site preorganization", [
+        ("preorg:posn_rmsf",     "Reactive-center positional RMSF",  "cond"),
+    ]),
+    ("Aminolysis · step 2", [
+        ("tunnel:enc_tight",     "Acceptor-tunnel enclosure",        "cond"),
+    ]),
 ]
 COLS = [("robust_meanAUROC", "mean"), ("top3_auroc", "top-3"),
         ("top5_auroc", "top-5"), ("top10_auroc", "top-10"),
@@ -63,17 +66,30 @@ def main():
     rk = {r["feature"]: r for r in csv.DictReader(
         open(os.path.join(base, "analysis/feature_surfacing_ranking.csv")))}
 
-    # keep only curated features present, preserving group order; sort by mean within group
-    rows = [(k, lbl, g) for k, lbl, g in ROWS if k in rk]
-    rows.sort(key=lambda t: (t[2], -fnum(rk[t[0]]["robust_meanAUROC"])))
-    labels = [(lbl + ("†" if g == "C" else ""), g) for _, lbl, g in rows]
-    M = np.array([[fnum(rk[k][c]) for c, _ in COLS] for k, _, _ in rows])
+    # Flatten groups into rows, inserting a masked "header" row before each group.
+    # kinds: "hdr" (category band) or "feat" (data row).
+    rows = []          # (kind, text, key_or_None, defined_or_None)
+    for cat, feats in GROUPS:
+        rows.append(("hdr", cat, None, None))
+        for key, lbl, dflag in feats:
+            if key not in rk:
+                continue
+            rows.append(("feat", lbl + ("†" if dflag == "cond" else ""), key, dflag))
 
     n = len(rows)
-    fig, ax = plt.subplots(figsize=(12.6, 0.62 * n + 2.4))
-    im = ax.imshow(M, cmap="Blues", vmin=0.42, vmax=0.95, aspect="auto")
+    M = np.full((n, len(COLS)), np.nan)
+    for i, (kind, _, key, _) in enumerate(rows):
+        if kind == "feat":
+            M[i] = [fnum(rk[key][c]) for c, _ in COLS]
+    Mm = np.ma.masked_invalid(M)
 
-    # cell annotations (black on light, white on dark)
+    cmap = plt.get_cmap("Blues").copy()
+    cmap.set_bad(color="white")
+
+    fig, ax = plt.subplots(figsize=(12.8, 0.62 * n + 2.0))
+    im = ax.imshow(Mm, cmap=cmap, vmin=0.42, vmax=0.95, aspect="auto")
+
+    # cell annotations (black on light, white on dark); skip header rows
     for i in range(n):
         for j in range(len(COLS)):
             v = M[i, j]
@@ -84,14 +100,20 @@ def main():
     ax.set_xticks(range(len(COLS)))
     ax.set_xticklabels([c for _, c in COLS], fontsize=FS)
     ax.set_yticks(range(n))
-    ax.set_yticklabels([l for l, _ in labels], fontsize=FS)
+    ax.set_yticklabels([t for _, t, _, _ in rows], fontsize=FS)
+    # style header rows: bold, left-aligned category bands; indent feature rows
+    for i, (lab, (kind, _, _, _)) in enumerate(zip(ax.get_yticklabels(), rows)):
+        if kind == "hdr":
+            lab.set_fontweight("bold"); lab.set_fontsize(FS - 3)
+            lab.set_color("#1f4e79")
     ax.tick_params(length=0)
     for s in ax.spines.values(): s.set_visible(False)
 
-    # separator line between always-defined (above) and conditional (below, +)
-    first_C = next((i for i, (_, _, g) in enumerate(rows) if g == "C"), None)
-    if first_C is not None:
-        ax.axhline(first_C - 0.5, color="black", lw=1.6)
+    # rule under each category header (top edge of its first data row)
+    for i, (kind, _, _, _) in enumerate(rows):
+        if kind == "hdr":
+            ax.axhline(i + 0.5, color="#1f4e79", lw=1.2, alpha=0.5)
+
     # thin white gridlines between cells for legibility
     ax.set_xticks(np.arange(-0.5, len(COLS), 1), minor=True)
     ax.set_yticks(np.arange(-0.5, n, 1), minor=True)
@@ -110,7 +132,9 @@ def main():
     fig.tight_layout(rect=(0, 0.02, 1, 1))
     out = os.path.join(base, "figures", "synthetase_feature_surfacing.png")
     fig.savefig(out, dpi=170, bbox_inches="tight")
-    print("wrote", out, "|", n, "features x", len(COLS), "metrics")
+    nfeat = sum(1 for k, *_ in rows if k == "feat")
+    print("wrote", out, "|", nfeat, "features x", len(COLS), "metrics,",
+          len(GROUPS), "categories")
 
 
 if __name__ == "__main__":
