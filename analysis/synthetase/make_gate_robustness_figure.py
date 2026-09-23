@@ -83,4 +83,4 @@ print("wrote", FIG)
 for cut in CUTS:
     score = {i: arr[arr[:, 1] < cut][:, 0].mean() for i, arr in data.items() if (arr[:, 1] < cut).sum() >= 5}
     order = sorted(score, key=lambda i: -score[i])
-    print(f"d<{cut}: n={len(order)}  hit ranks={[order.index(a)+1 for a in ACTIVES if a in order]}  AS9=#{order.index('AS9')+1}")
+    print(f"d<{cut}: n={len(order)}  active hit ranks={[order.index(a)+1 for a in ACTIVES if a in order]}")
