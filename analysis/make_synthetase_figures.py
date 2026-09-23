@@ -105,9 +105,9 @@ def fig_landscape(df):
     tr = ax.get_xaxis_transform()
     ax.axvline(SF, color=BROWN, ls=":", lw=1.8, zorder=1)
     ax.text(SF, 0.5, f"  SfaB baseline ({SF:.3g})", transform=tr, color=BROWN, rotation=90,
-            ha="left", va="center", fontsize=FS - 5, fontweight="bold")
+            ha="left", va="center", fontsize=FS, fontweight="bold")
     ax.set_yticks(y)
-    ax.set_yticklabels(d.id, fontsize=FS - 7)
+    ax.set_yticklabels(d.id, fontsize=FS)
     for lab, iid, a in zip(ax.get_yticklabels(), d.id, d.act):
         col = _tier(iid, a, SF)
         if col != "#c8cdd4":
