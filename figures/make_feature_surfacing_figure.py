@@ -48,9 +48,9 @@ ROWS = [
     #   tunnel:enc_tight — actives have MORE OPEN tunnel (contradicts walled-pocket hypothesis)
     #   mg:* — Boltz Mg placement can't resolve catalytic geometry
 ]
-COLS = [("robust_meanAUROC", "mean"), ("top3_auroc", "top-3"),
-        ("top5_auroc", "top-5"), ("top10_auroc", "top-10"),
-        ("binary_auroc_gtSfaB", ">SfaB")]
+COLS = [("significant_auroc", "significant"),   # red: AS9/17/23, significantly > SfaB
+        ("marginal_auroc", "marginal"),         # orange: marginally > SfaB vs grey background
+        ("overall_cindex", "overall rank")]     # concordance over all enzymes by activity
 
 
 def fnum(v):
