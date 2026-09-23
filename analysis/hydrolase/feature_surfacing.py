@@ -121,12 +121,13 @@ def main():
     print(f"label={args.label}  n={len(ids)} enzymes, {n_active} significant (positives)")
     print(f"top-5 by {args.label}: {top}")
     print(f"ranked {len(out)} features -> {args.out}\n")
-    hdr = f"{'feature':22s} {'rob':>5s} {'t5':>5s} {'t10':>5s} {'t20':>5s} {'sig':>5s} {'rho':>6s} {'dir':>3s} {'NylC':>4s}"
+    print("(directions FIXED by mechanism; '*' = data correlation disagrees with mechanism = overfit risk)")
+    hdr = f"{'feature':22s} {'rob':>5s} {'t5':>5s} {'t10':>5s} {'t20':>5s} {'sig':>5s} {'rho':>6s} {'dir':>3s} {'!':>1s} {'NylC':>4s}"
     print(hdr)
     for r in out:
         print(f"{r['feature']:22s} {str(r['robust_meanAUROC']):>5s} {str(r['top5_auroc']):>5s} "
               f"{str(r['top10_auroc']):>5s} {str(r['top20_auroc']):>5s} {str(r['binary_auroc_sig']):>5s} "
-              f"{str(r['spearman_L2']):>6s} {r['dir']:>3s} {str(r['nylc_rank']):>4s}")
+              f"{str(r['spearman']):>6s} {r['dir']:>3s} {r['mech_disagree']:>1s} {str(r['nylc_rank']):>4s}")
 
 
 if __name__ == "__main__":
