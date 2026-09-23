@@ -78,7 +78,7 @@ def evaluate(csv_path, which, n_models):
     # --- PRIMARY: Spearman vs the WHOLE continuous activity distribution ---
     print("  Spearman rho vs continuous activity (whole panel):")
     metrics = [
-        ("near_attack_frac", [naf for *_, in [()] for (_, _, naf, _, _) in [d]] if False else [d[2] for d in data]),
+        ("near_attack_frac", [d[2] for d in data]),
         ("mean_inline_angle", [d[3] for d in data]),   # None -> handled below
         ("inline_frac_gated", [d[4] for d in data]),
     ]
