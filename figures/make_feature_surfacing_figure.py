@@ -66,30 +66,24 @@ def main():
     rk = {r["feature"]: r for r in csv.DictReader(
         open(os.path.join(base, "analysis/feature_surfacing_ranking.csv")))}
 
-    # Flatten groups into rows, inserting a masked "header" row before each group.
-    # kinds: "hdr" (category band) or "feat" (data row).
-    rows = []          # (kind, text, key_or_None, defined_or_None)
-    for cat, feats in GROUPS:
-        rows.append(("hdr", cat, None, None))
+    # Flatten groups into a single continuous list of feature rows, preserving
+    # the reaction-coordinate order (no category bands/separators).
+    rows = []          # (label, key)
+    for _cat, feats in GROUPS:
         for key, lbl, dflag in feats:
             if key not in rk:
                 continue
-            rows.append(("feat", lbl + ("†" if dflag == "cond" else ""), key, dflag))
+            rows.append((lbl + ("†" if dflag == "cond" else ""), key))
 
     n = len(rows)
-    M = np.full((n, len(COLS)), np.nan)
-    for i, (kind, _, key, _) in enumerate(rows):
-        if kind == "feat":
-            M[i] = [fnum(rk[key][c]) for c, _ in COLS]
-    Mm = np.ma.masked_invalid(M)
+    M = np.array([[fnum(rk[key][c]) for c, _ in COLS] for _, key in rows])
 
     cmap = plt.get_cmap("Blues").copy()
-    cmap.set_bad(color="white")
 
     fig, ax = plt.subplots(figsize=(12.8, 0.62 * n + 2.0))
-    im = ax.imshow(Mm, cmap=cmap, vmin=0.42, vmax=0.95, aspect="auto")
+    im = ax.imshow(M, cmap=cmap, vmin=0.42, vmax=0.95, aspect="auto")
 
-    # cell annotations (black on light, white on dark); skip header rows
+    # cell annotations (black on light, white on dark)
     for i in range(n):
         for j in range(len(COLS)):
             v = M[i, j]
@@ -100,19 +94,9 @@ def main():
     ax.set_xticks(range(len(COLS)))
     ax.set_xticklabels([c for _, c in COLS], fontsize=FS)
     ax.set_yticks(range(n))
-    ax.set_yticklabels([t for _, t, _, _ in rows], fontsize=FS)
-    # style header rows: bold, left-aligned category bands; indent feature rows
-    for i, (lab, (kind, _, _, _)) in enumerate(zip(ax.get_yticklabels(), rows)):
-        if kind == "hdr":
-            lab.set_fontweight("bold"); lab.set_fontsize(FS - 3)
-            lab.set_color("#1f4e79")
+    ax.set_yticklabels([t for t, _ in rows], fontsize=FS)
     ax.tick_params(length=0)
     for s in ax.spines.values(): s.set_visible(False)
-
-    # rule under each category header (top edge of its first data row)
-    for i, (kind, _, _, _) in enumerate(rows):
-        if kind == "hdr":
-            ax.axhline(i + 0.5, color="#1f4e79", lw=1.2, alpha=0.5)
 
     # thin white gridlines between cells for legibility
     ax.set_xticks(np.arange(-0.5, len(COLS), 1), minor=True)
