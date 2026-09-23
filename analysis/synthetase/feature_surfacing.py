@@ -111,9 +111,9 @@ def main():
         for r in rows: w.writerow(r)
     print(f"top-3 actives: {sorted(top3, key=lambda i:-act[i])}  (AS9,AS17,AS23)")
     print(f"ranked {len(rows)} features -> {out}\n")
-    print(f"{'feature':30s} {'n':>3s} {'top3AUROC':>9s} {'dir':>3s} {'AS9rk':>5s} {'top3ranks':>10s} {'binAUROC':>8s} {'rho':>6s}")
+    print(f"{'feature':30s} {'robust':>6s} {'top3':>5s} {'top5':>5s} {'top10':>5s} {'>SfaB':>6s} {'rho':>6s} {'dir':>3s} {'AS9':>4s}")
     for r in rows[:25]:
-        print(f"{r['feature']:30s} {r['n']:>3d} {str(r['top3_auroc']):>9s} {r['dir']:>3s} {str(r['as9_rank']):>5s} {r['top3_ranks']:>10s} {str(r['binary_auroc']):>8s} {str(r['spearman']):>6s}")
+        print(f"{r['feature']:30s} {str(r['robust_meanAUROC']):>6s} {str(r['top3_auroc']):>5s} {str(r['top5_auroc']):>5s} {str(r['top10_auroc']):>5s} {str(r['binary_auroc_gtSfaB']):>6s} {str(r['spearman_all']):>6s} {r['dir']:>3s} {str(r['as9_rank']):>4s}")
     return rows
 
 
