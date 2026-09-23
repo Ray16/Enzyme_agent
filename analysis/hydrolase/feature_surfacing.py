@@ -28,6 +28,20 @@ SRC = os.path.join(BASE, "hydrolase_proxies.csv")
 META = {"id", "n", "L1", "L2", "total", "L1sig", "L2sig"}
 CUTS = (5, 10, 20)
 
+# FIXED mechanistic direction per proxy: +1 => HIGHER value should mean MORE active.
+# We orient by mechanism, NOT by the sign of the observed correlation -- picking the
+# direction from a near-zero rho on a small positive set manufactures spurious top-k
+# AUROC (verified: it turned L1 oxyanion/TI proxies into fake 0.9s that are actually
+# ~0.1 in the correct direction). rho is still reported so the reader can see when the
+# data disagree with the mechanism.
+SIGN = {
+    "nac:joint_frac": +1, "nac:bd_gated_dev": -1, "nac:min_d": -1, "nac:median_d": -1,
+    "oxh:ge2_frac": +1, "oxh:inplane_frac": +1, "oxh:mean_ndonor": +1, "oxh:min_dON": -1,
+    "base:hb_frac": +1, "base:median_dN_OG1": -1, "preorg:og1_rmsf": -1,
+    "ti:rmsd_min": -1, "ti:rmsd_mean": -1, "esp:oxyanion_O_mean": +1, "esp:carbonyl_C_mean": +1,
+    "conf:ligand_iptm": +1, "conf:complex_plddt": +1, "conf:thr_plddt": +1,
+}
+
 
 def main():
     ap = argparse.ArgumentParser()
