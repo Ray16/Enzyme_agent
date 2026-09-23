@@ -124,6 +124,7 @@ def main():
             "robust_meanAUROC": R(robust),
             "top3_auroc": R(aur[3]), "top5_auroc": R(aur[5]), "top10_auroc": R(aur[10]),
             "binary_auroc_gtSfaB": R(aub), "spearman_all": round(rho, 3),
+            "significant_auroc": R(sig), "marginal_auroc": R(marg), "overall_cindex": R(overall),
             "as9_rank": rk.get("AS9"), "top3_ranks": "|".join(map(str, t3r)),
         })
     rows.sort(key=lambda r: (r["robust_meanAUROC"] if r["robust_meanAUROC"] != "" else 0), reverse=True)
