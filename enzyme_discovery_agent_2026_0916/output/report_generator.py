@@ -249,6 +249,24 @@ def _deterministic_evidence_ranking(query: str, all_evals: list[dict]) -> list[d
 from enzyme_discovery_agent.models.ortholog import ortholog_key as _ortholog_key
 
 
+def _expression_pref(data: dict) -> int:
+    """Rank an ortholog by how readily it is likely to express in the standard
+    heterologous host (E. coli).  When several orthologs of one enzyme survive,
+    the representative shown to an experimentalist should be the one most likely
+    to express: documented/native E. coli expression is best, any bacterial host
+    next, an unknown origin neutral, and a eukaryotic origin least favourable.
+    This preference decides only WHICH member represents the group, not whether
+    the group is included."""
+    expr = data.get("expression_data") or {}
+    if expr.get("ecoli_expression"):
+        return 3
+    if expr.get("bacterial_expression"):
+        return 2
+    if expr.get("is_eukaryote"):
+        return 0
+    return 1
+
+
 def _collapse_orthologs(
     pass1_ranking: list[dict], acc_to_eval: dict[str, dict],
 ) -> list[dict]:
@@ -256,32 +274,53 @@ def _collapse_orthologs(
 
     Experimentalists want DISTINCT enzyme families at the top, not the same
     enzyme repeated across a dozen organisms (one enzyme was filling 7 of the
-    top 10 slots).  The best-ranked member of each ortholog group stays as the
-    entry; the others are attached as ``orthologs`` (accession + organism) so
-    the enzyme is represented once but its organism spread is preserved, not
-    lost.  Rank order is otherwise unchanged.
+    top 10 slots).  Each ortholog group is represented once; the remaining
+    members are attached as ``orthologs`` (accession + organism) so the organism
+    spread is preserved, not lost.  The representative is the member most likely
+    to express heterologously (see ``_expression_pref``), with ties broken by
+    the best original rank, and the group is placed at that best rank so the
+    choice of representative never demotes a strong candidate.
     """
-    groups: dict[str, dict] = {}
+    groups: dict[str, list[dict]] = {}
     order: list[str] = []
+
+    def _data(entry: dict) -> dict:
+        ev = acc_to_eval.get(entry.get("accession", ""), {})
+        return ev.get("data", ev)
+
     for entry in pass1_ranking:
-        acc = entry.get("accession", "")
-        ev = acc_to_eval.get(acc, {})
-        d = ev.get("data", ev)
-        key = _ortholog_key(d) or f"acc:{acc}"
+        key = _ortholog_key(_data(entry)) or f"acc:{entry.get('accession', '')}"
         if key not in groups:
-            entry.setdefault("orthologs", [])
-            groups[key] = entry
+            groups[key] = []
             order.append(key)
-        else:
-            rep = groups[key]
-            rep.setdefault("orthologs", []).append({
-                "accession": acc,
-                "organism": d.get("organism", ""),
-                "gene": entry.get("gene", ""),
-            })
-    collapsed = [groups[k] for k in order]
+        groups[key].append(entry)
+
+    collapsed: list[dict] = []
+    for key in order:
+        members = groups[key]
+        # Representative: most expressible first, then best (lowest) original rank.
+        rep_src = max(
+            members,
+            key=lambda e: (_expression_pref(_data(e)), -(e.get("rank") or 1_000_000)),
+        )
+        rep = dict(rep_src)
+        rep["orthologs"] = [
+            {
+                "accession": m.get("accession", ""),
+                "organism": _data(m).get("organism", ""),
+                "gene": m.get("gene", ""),
+            }
+            for m in members
+            if m is not rep_src
+        ]
+        # Keep the group at the best rank held by any of its members.
+        rep["_group_rank"] = min((m.get("rank") or 1_000_000) for m in members)
+        collapsed.append(rep)
+
+    collapsed.sort(key=lambda e: e["_group_rank"])
     for i, entry in enumerate(collapsed, start=1):
         entry["rank"] = i
+        entry.pop("_group_rank", None)
         if entry.get("orthologs"):
             entry["n_orthologs"] = len(entry["orthologs"])
     return collapsed
