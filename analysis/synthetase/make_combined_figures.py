@@ -179,8 +179,9 @@ def fig_proxy_comparison(df, bat):
 
     fig, ax = plt.subplots(figsize=(12.5, 0.82 * len(res) + 2.2))
     y = np.arange(len(res))
-    # significant (CI excludes 0.5) => highlight; else neutral grey
-    sig = (res.ci_lo > 0.5) | (res.ci_hi < 0.5)
+    # highlight ONLY features that surface actives better than chance (CI above 0.5);
+    # a feature with AUROC<0.5 fails at surfacing regardless of anti-correlation.
+    sig = res.ci_lo > 0.5
     colors = [HILITE if s else NEUTRAL for s in sig]
     xerr = np.vstack([res.auroc - res.ci_lo, res.ci_hi - res.auroc])
     ax.barh(y, res.auroc, color=colors, edgecolor="k", linewidth=0.3, height=0.68, zorder=2)
