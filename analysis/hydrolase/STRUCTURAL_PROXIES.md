@@ -66,13 +66,18 @@ Unlike the fold-diverse synthetase panel (Boltz-2 near-attack angle surfaces the
 catalysts at AUROC **0.94**), **no catalytic-geometry proxy correctly surfaces the top
 hydrolases** for either readout:
 
-- The only feature with correct-direction signal for **both** L1 and L2 is **model confidence /
-  active-site pLDDT** — but this is best read as a **foldability/detectability confound, not a
-  mechanistic predictor**: the assay is crude lysate (activity needs expression + solubility),
-  pLDDT plausibly reports "well-formed folded family member," and even its rate correlation is
-  weak (ρ ≈ 0.12–0.22). It is the same kind of null the synthetase study excluded. Best
-  *mechanistic* proxy: near-attack joint gate (L2 top-5 0.69), but it is matched by pLDDT and
-  vanishes for L1.
+- The only features with correct-direction signal are **model-confidence** terms, and the best of
+  them is **active-site / autocleavage confidence** (autocleavage-junction ipTM tops L2 at top-5
+  0.81; catalytic-Thr pLDDT and β-chain pTM top L1 at 0.81 / 0.77). This is mechanistically
+  motivated — Ntn enzymes require autocleavage to expose the catalytic N-terminal Thr, so
+  confidence in the active-site / A|B-junction region reports whether the correctly self-processed,
+  poised mature state is reconstructed — and is **distinct from global foldability**: shell/Thr
+  pLDDT correlate only ~0.5 with complex-pLDDT (β-chain pTM 0.26), and active-site-shell pLDDT
+  keeps a partial ρ of +0.14 (L1) / +0.08 (L2) after controlling for complex-pLDDT. It is still a
+  **weak** predictor (raw ρ ≈ 0.12–0.18) and a confidence measure, not catalytic geometry.
+- Best *catalytic-geometry* proxy: near-attack joint gate (L2 top-5 0.69), but it is matched by the
+  confidence terms and vanishes for L1; reactive-center RMSF (L2 top-5 0.73) is confounded with
+  complex-pLDDT (ρ = −0.63).
 - Every enzyme binds the tetrad (median best Oγ···C ≈ 2.5 Å in both actives and inactives) and
   productive near-attack is rare for *all* of them (47/96 have zero joint-NAC poses). The
   catalytic apparatus is essentially invariant across this single fold.
