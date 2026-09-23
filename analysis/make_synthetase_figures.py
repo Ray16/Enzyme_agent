@@ -114,10 +114,9 @@ def fig_landscape(df):
             lab.set_color(BROWN if iid == "SfaB" else col); lab.set_fontweight("bold")
     ax.set_ylabel("panel member (ranked by activity)")
     ax.set_xlabel("N66-L1 activity (µg/ml, log)")
-    ax.set_title("Activity landscape — hits (>0.2), enzymes beating SfaB, and the tail")
     ax.set_ylim(n - 0.5, -0.5)
-    ax.legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
-                       Patch(color=ORANGE, label="marginal (> SfaB, < 0.2)"),
+    ax.legend(handles=[Patch(color=RED, label="significantly better than SfaB"),
+                       Patch(color=ORANGE, label="marginally better than SfaB"),
                        Patch(color=BROWN, label="SfaB (baseline)"),
                        Patch(color="#c8cdd4", label="≤ SfaB")],
               loc="lower right", frameon=True, framealpha=0.95, edgecolor="#ccc")
