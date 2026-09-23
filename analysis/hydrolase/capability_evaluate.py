@@ -213,7 +213,7 @@ def main():
         a, _ = auroc_store[col]
         parts = ax.boxplot([cap_v, inc_v], labels=["capable", "incapable"],
                            widths=0.5, showfliers=False, patch_artist=True)
-        for patch, c in zip(parts["boxes"], ["#3b6ea5", "#b0б0b0"[:0] or "#b5b5b5"]):
+        for patch, c in zip(parts["boxes"], ["#3b6ea5", "#b5b5b5"]):
             patch.set_facecolor(c); patch.set_alpha(0.5)
         import random
         for i, vals in enumerate([cap_v, inc_v], 1):
