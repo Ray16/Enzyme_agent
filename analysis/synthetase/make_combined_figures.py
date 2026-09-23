@@ -114,7 +114,7 @@ def fig_activity_and_proxy(df):
     axB.set_yticklabels([str(t + 1) for t in [0, 4, 9, 14, 19, 24, 29, 34, 39]])
     axB.set_xlabel("mean in-line attack angle (°)")
     axB.set_ylabel("rank by structural proxy")
-    axB.set_title("(b) Structural proxy", loc="left")
+    axB.set_title("(b) Top structural proxy", loc="left")
 
     fig.legend(handles=[Patch(color=RED, label="significantly > SfaB (active)"),
                         Patch(color=ORANGE, label="marginally > SfaB"),
