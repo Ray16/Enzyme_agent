@@ -2,8 +2,9 @@
 """Which structural feature surfaces the top synthetase catalysts? (Boltz-2, 50-sample)
 
 Form = heatmap (features x surfacing-metrics), the data's job is to compare many
-features across several agreement metrics at once. Monochrome sequential gray
-(magnitude = how well a feature ranks the top actives); NO categorical colour.
+features across several agreement metrics at once. Sequential single-hue blue
+(white = random, deep blue = strong; magnitude = how well a feature ranks the
+top actives); NO categorical colour.
 Each cell = AUROC in that feature's activity-consistent direction (0.5 = random,
 darker = better). Columns are nested cutoffs (top-3/5/10 most active, and
 activity > SfaB) plus their mean. Rows grouped: always-defined vs conditional on
