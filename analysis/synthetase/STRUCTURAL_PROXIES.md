@@ -75,8 +75,24 @@ number.
 
 ## Considered and excluded
 
+**Failed the direction-vs-mechanism audit** (good AUROC, but activity-consistent direction
+contradicts the stated physics — the "Mg trap"):
+
+| Proxy | AUROC | What the data actually says | Verdict |
+|---|---|---|---|
+| **Catalytic His pKa** (min\|pKa−7\|) | 0.75 | Top actives (AS9, AS23) have His pKa in the top 10–15% of *deviation* from 7 → His **far** from neutral, not "poised at 7". Falsifies the proton-shuttle motivation; lumps protonated & neutral His. | drop (det. iv uncovered) |
+| **Acceptor-tunnel enclosure** | 0.71 | Actives have **more open** tunnels (AS9/AS23 in bottom 5–19% of enclosure) → contradicts the walled-pocket / water-exclusion hypothesis; only rescuable by an ad-hoc accessibility story; weak (ρ −0.13). | drop |
+| **Mg–phosphate distance** | 0.76 | Farther Mg → more active (ρ +0.35); ranks AS9 25/48. Backwards for metal catalysis. | drop |
+
+*Note:* the perturbed-His-pKa observation (actives have a strongly shifted active-site His) is
+a possible future hypothesis (electrostatic stabilization by a cationic His), but only if the
+shift is consistently one-directional — not built (would be post-hoc).
+
+**Other exclusions:**
+
 | Proxy | Reason |
 |---|---|
+| **Step-2 aminolysis NAC** (amine→carbonyl dist/Bürgi–Dunitz) | Weak (0.55–0.63, AS9 ranks 11–18); step-2 geometry is low-signal on these cofolds. |
 | **All Mg proxies** (distance, β,γ-bridging, coordination) | Boltz Mg-placement fidelity (above). |
 | **Bare Coulomb-LEF magnitude** | Near-random (~0.53–0.56); MM-charge field magnitude is a crude approximation (only the ensemble *spread* carried signal). |
 | **ESP-at-Pα (step 1)** | Direction not mechanistically clean; kept only the physically-clean carbonyl ESP. |
