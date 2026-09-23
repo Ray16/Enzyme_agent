@@ -111,12 +111,11 @@ def main():
         put(cols["donor"], draw(mol(ds), 460, 360), 0.20)
         fig.text(cols["plus"], yc, "+", ha="center", va="center", fontsize=26)
         put(cols["acc"], draw(mol(acs), 460, 360), 0.20)
-        # reaction arrow with ATP label
+        # reaction arrow
         axr = fig.add_axes([cols["arrow"] - 0.06, yc - 0.02, 0.12, 0.05]); axr.axis("off")
         axr.annotate("", xy=(1, 0.5), xytext=(0, 0.5), xycoords="axes fraction",
                      arrowprops=dict(arrowstyle="-|>", lw=2.4, color="black"))
-        fig.text(cols["arrow"], yc + 0.045 / n * 4, "ATP", ha="center", va="bottom", fontsize=15)
-        put(cols["prod"], draw(mol(ps), 620, 360, highlight_amide=True), 0.235)
+        put(cols["prod"], draw(mol(ps), 620, 360), 0.235)
 
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(a.out, bbox_inches="tight", facecolor="white")
