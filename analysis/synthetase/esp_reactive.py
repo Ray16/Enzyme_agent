@@ -128,46 +128,73 @@ def build_charge_map(model0_pdb):
         except OSError: pass
 
 
-def esp_at(reactive_xyz, protein, cmap):
-    """sum q_i / r_i over protein heavy atoms within RCUT of reactive atom."""
+def field_and_potential(reactive_xyz, protein, cmap):
+    """Over protein heavy atoms within RCUT of the reactive atom, return
+    (esp, E_vec):  esp = sum q_i/r_i ;  E = sum q_i (r_reactive - r_i)/r_i^3
+    (eps=1, prefactor dropped -> arbitrary units, ranking-invariant)."""
     s = 0.0
+    E = np.zeros(3)
     for ch, resid, name, xyz in protein:
         q = cmap.get((ch, resid, name))
         if q is None:
             continue
-        r = np.linalg.norm(xyz - reactive_xyz)
-        if r < RCUT and r > 1e-3:
+        d = reactive_xyz - xyz
+        r = float(np.linalg.norm(d))
+        if 1e-3 < r < RCUT:
             s += q / r
-    return s
+            E += q * d / (r ** 3)
+    return s, E
 
 
 def step1_reactive(het):
+    """returns (Pa_xyz, O_nuc_xyz): P-alpha and the nearest CARBOXYLATE O to it
+    (the nucleophile), matching battery_1mg.py. Bond axis O_nuc->Pa."""
+    pa = None
     for name, el, xyz in het:
         if el == "P" and name == "PA":
-            return xyz
-    return None
+            pa = xyz
+    if pa is None:
+        return None
+    Cs = [(n, xyz) for n, el, xyz in het if el == "C"]
+    Os = [(n, xyz) for n, el, xyz in het if el == "O"]
+    # carboxylate O = O bonded to a C that has >=2 O neighbours
+    carbox_O = []
+    for on, oxyz in Os:
+        for cn, cxyz in Cs:
+            if np.linalg.norm(oxyz - cxyz) < 1.7:
+                nO = sum(np.linalg.norm(o2 - cxyz) < 1.7 for _, o2 in Os)
+                if nO >= 2:
+                    carbox_O.append(oxyz)
+                break
+    if not carbox_O:
+        return None
+    onuc = min(carbox_O, key=lambda o: np.linalg.norm(o - pa))
+    return pa, onuc
 
 
 def step2_reactive(het):
-    """acyl-AMP carbonyl C: ligand C whose O-neighbour bridges to a P (ester O)."""
-    Ps = [xyz for name, el, xyz in het if el == "P"]
-    Cs = [(name, xyz) for name, el, xyz in het if el == "C"]
-    Os = [(name, xyz) for name, el, xyz in het if el == "O"]
+    """returns (C_xyz, O_carbonyl_xyz): acyl-AMP carbonyl C (ligand C whose
+    O-neighbour bridges to a P = ester O) and its double-bonded carbonyl O (the
+    O neighbour NOT bridging to P). Bond axis C->O (Boxer C=O Stark convention)."""
+    Ps = [xyz for n, el, xyz in het if el == "P"]
+    Cs = [(n, xyz) for n, el, xyz in het if el == "C"]
+    Os = [(n, xyz) for n, el, xyz in het if el == "O"]
     if not Ps or not Cs:
         return None
     best = None
-    for cname, cxyz in Cs:
-        onb = [oxyz for oname, oxyz in Os if np.linalg.norm(oxyz - cxyz) < 1.7]
+    for cn, cxyz in Cs:
+        onb = [oxyz for on, oxyz in Os if np.linalg.norm(oxyz - cxyz) < 1.7]
         if len(onb) < 2:
             continue
-        # does one O neighbour bridge to a phosphorus (ester O)?
-        bridges = any(np.linalg.norm(o - p) < 1.8 for o in onb for p in Ps)
-        if bridges:
-            # prefer the C closest to a P (the acyl centre, not a phosphodiester)
+        ester = [o for o in onb if any(np.linalg.norm(o - p) < 1.8 for p in Ps)]
+        carbonyl = [o for o in onb if not any(np.linalg.norm(o - p) < 1.8 for p in Ps)]
+        if ester and carbonyl:
             dmin = min(np.linalg.norm(cxyz - p) for p in Ps)
+            # carbonyl O = shortest C-O (double bond ~1.2 A)
+            oc = min(carbonyl, key=lambda o: np.linalg.norm(o - cxyz))
             if best is None or dmin < best[0]:
-                best = (dmin, cxyz)
-    return best[1] if best else None
+                best = (dmin, cxyz, oc)
+    return (best[1], best[2]) if best else None
 
 
 def enzyme(e):
