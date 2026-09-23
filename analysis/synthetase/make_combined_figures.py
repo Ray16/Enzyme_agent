@@ -93,10 +93,6 @@ def fig_activity_and_proxy(df):
         col = _tier(iid, v, SF)
         if col != GREY:
             lab.set_color(col); lab.set_fontweight("bold")
-    tr = axA.get_xaxis_transform()
-    axA.axvline(SF, color=BROWN, ls=":", lw=1.8, zorder=1)
-    axA.text(SF, 0.5, f"  SfaB baseline ({SF:.3g})", transform=tr, color=BROWN,
-             rotation=90, ha="left", va="center", fontsize=FS - 3, fontweight="bold")
     axA.set_ylim(na - 0.5, -0.5)
     axA.set_xlabel("Nylon-6,6 diad molecular yield (µg/mL, log)")
     axA.set_ylabel("panel member (ranked by measured activity)")
