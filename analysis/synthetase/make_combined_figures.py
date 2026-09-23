@@ -52,7 +52,7 @@ def load():
     bat = pd.read_csv(f"{AS}/analysis/battery_1mg.csv")           # full geometric battery
     df = act.merge(ang, on="id", how="left")
     df["is_active"] = (df["act"] > ACT_THR).astype(int)
-    df["concl"] = df["docking_ok"].fillna(False).astype(bool)
+    df["concl"] = (df["docking_ok"] == True)  # noqa: E712 (NaN from left-merge -> False)
     return df, bat, act
 
 
