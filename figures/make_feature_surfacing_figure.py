@@ -10,9 +10,11 @@ darker = better). Columns are nested cutoffs (top-3/5/10 most active, and
 activity > SfaB) plus their mean. Rows grouped: always-defined vs conditional on
 the d<4A near-attack gate (marked +, survivorship-biased).
 
-Descriptive row names so the mechanism is legible at a glance. The bare gated
-in-line angle is deliberately excluded (meaningless without the distance gate);
-the always-defined near-attack pose fraction is its rigorous stand-in.
+Descriptive row names so the mechanism is legible at a glance. The gated in-line
+attack angle (the validated near-attack proxy: d<4Å gate -> rank by in-line
+angle) is shown in the conditional block with a + -- its top-3 AUROC 0.94 is
+strong but survivorship-biased, so its across-metric mean is only 0.69. The
+always-defined near-attack pose fraction is its bias-free counterpart.
 
 Usage: python make_feature_surfacing_figure.py [--base exp_data/amide_synthetase]
 """
