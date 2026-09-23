@@ -29,26 +29,22 @@ import numpy as np
 
 FS = 18  # base text size (user spec)
 
-# Mechanism-motivated categories along the reaction coordinate. Each entry:
-# (ranking-CSV key, descriptive feature name, defined-flag). defined-flag
-# "cond" = conditional on the d<4A near-attack gate (survivorship-biased, +).
-GROUPS = [
-    ("Ground-state binding", [
-        ("sasa:distalC_sasa",    "Distal-carboxyl anchoring",        "always"),
-        ("hyp:H7_adenineBurial", "ATP adenine burial",               "always"),
-    ]),
-    ("Adenylation · step 1", [
-        ("bat:mean_inline_angle","In-line attack angle (d<4Å→angle)", "cond"),
-    ]),
-    ("Metal-ion organization", [
-        ("mg:mgP_all_median",    "Mg²⁺–phosphate distance",          "always"),
-    ]),
-    ("Active-site preorganization", [
-        ("preorg:posn_rmsf",     "Reactive-center positional RMSF",  "cond"),
-    ]),
-    ("Aminolysis · step 2", [
-        ("tunnel:enc_tight",     "Acceptor-tunnel enclosure",        "cond"),
-    ]),
+# Final physically-motivated panel, one flat list in reaction-coordinate order.
+# Each entry: (ranking-CSV key, descriptive name, marker). marker:
+#   ""  = always-defined (all 48 enzymes)
+#   "†" = conditional on the d<4 Å near-attack gate (survivorship-biased)
+#   "‡" = His-present subset (n=44 of 48)
+# Metal (Mg) proxies dropped: Boltz-2 Mg placement can't resolve catalytic
+# geometry (distance ranks backwards; β,γ-bridging & coordination near-random).
+ROWS = [
+    ("sasa:distalC_sasa",    "Distal-carboxyl anchoring",         ""),   # i  ground-state
+    ("hyp:H7_adenineBurial", "ATP adenine burial",                ""),   # i  ground-state
+    ("bat:mean_inline_angle","In-line attack angle (d<4Å→angle)", "†"),  # ii NAC geometry
+    ("preorg:posn_rmsf",     "Reactive-center positional RMSF",   "†"),  # vi dynamics/preorg
+    ("esp:lef_pa_std",       "Electric-field preorganization (LEF)", ""),# iii electrostatics
+    ("pka:s1_his_dev7",      "Catalytic His pKa (poised ~7)",     "‡"),  # iv nucleophile/base
+    ("esp:esp_carbonyl",     "Carbonyl-oxyanion ESP (step 2)",    ""),   # iii electrostatics
+    ("tunnel:enc_tight",     "Acceptor-tunnel enclosure",         "†"),  # i/ii step-2 shape
 ]
 COLS = [("robust_meanAUROC", "mean"), ("top3_auroc", "top-3"),
         ("top5_auroc", "top-5"), ("top10_auroc", "top-10"),
