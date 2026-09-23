@@ -1,100 +1,117 @@
 #!/usr/bin/env python3
-"""Holistic view: which structural feature surfaces top synthetase catalysts?
+"""Which structural feature surfaces the top synthetase catalysts? (Boltz-2, 50-sample)
 
-Form = scatter (the data's job is a 2-D tradeoff, not a 1-D ranking):
-  x = global rank-ordering  (Spearman rho vs continuous activity, oriented + = active)
-  y = enrichment of the very top  (top-3 AUROC)
-Each point = one representative feature (redundant families collapsed), coloured by
-mechanism category (CVD-validated categorical palette). Marker dark-edge ring = the
-contrast relief the palette check flagged. Quadrants read: top-left = enriches the
-few best only; top-right = ranks the best AND the whole panel; bottom = uninformative.
+Form = heatmap (features x surfacing-metrics), the data's job is to compare many
+features across several agreement metrics at once. Monochrome sequential gray
+(magnitude = how well a feature ranks the top actives); NO categorical colour.
+Each cell = AUROC in that feature's activity-consistent direction (0.5 = random,
+darker = better). Columns are nested cutoffs (top-3/5/10 most active, and
+activity > SfaB) plus their mean. Rows grouped: always-defined vs conditional on
+the d<4A near-attack gate (marked +, survivorship-biased).
+
+Descriptive row names so the mechanism is legible at a glance. The bare gated
+in-line angle is deliberately excluded (meaningless without the distance gate);
+the always-defined near-attack pose fraction is its rigorous stand-in.
 
 Usage: python make_feature_surfacing_figure.py [--base exp_data/amide_synthetase]
 """
 import os, csv, argparse, math
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
+import numpy as np
 
-# CVD-validated categorical hues (dataviz reference palette, light mode)
-CAT = {
-    "near-attack angle": "#2a78d6",
-    "preorganization":   "#eb6834",
-    "Mg coordination":   "#1baf7a",
-    "electrostatics":    "#eda100",
-    "burial / SASA":     "#e87ba4",
-    "tunnel geometry":   "#008300",
-    "confidence/other":  "#7f8c8d",
-}
-# curated: feature key in ranking CSV -> (nice label, category). One rep per family.
-CUR = {
-    "preorg:angle":            ("in-line attack angle", "near-attack angle"),
-    "bat:inline_frac_gated":   ("in-line pose fraction", "near-attack angle"),
-    "boltz:boltz2_min_d":      ("adipate→Pα distance", "near-attack angle"),
-    "preorg:posn_rmsf":        ("reactive-center RMSF", "preorganization"),
-    "preorg:approach_std":     ("approach-angle spread", "preorganization"),
-    "mg:mgP_all_median":       ("Mg–phosphate distance", "Mg coordination"),
-    "bat:mg_pa_dist":          ("Mg–Pα distance", "Mg coordination"),
-    "hyp:H7_adenineBurial":    ("adenine burial", "burial / SASA"),
-    "sasa:distalC_sasa":       ("distal-carboxyl SASA", "burial / SASA"),
-    "bat:reactive_sasa":       ("reactive-center SASA", "burial / SASA"),
-    "elec:nearBase_6":         ("near-base residues", "electrostatics"),
-    "elec:acidO_8":            ("acidic-O residues", "electrostatics"),
-    "tunnel:enc_tight":        ("acceptor-tunnel width", "tunnel geometry"),
-    "psiptm:es_mean":          ("ps-iPTM confidence", "confidence/other"),
-}
+FS = 18  # base text size (user spec)
+
+# curated: ranking-CSV key -> (descriptive name, group). One representative per
+# mechanism family. group "A" = always-defined (n=48); "C" = conditional on the
+# d<4A gate (n<48, >=5 gated poses required) -> survivorship-biased, marked with +.
+ROWS = [
+    # --- always-defined ---
+    ("mg:mgP_all_median",   "Mg²⁺–phosphate distance",          "A"),
+    ("bat:mg_pa_dist",      "Mg²⁺–Pα distance",            "A"),
+    ("hyp:H7_adenineBurial","ATP adenine burial",                              "A"),
+    ("sasa:distalC_sasa",   "Distal-carboxyl solvent exposure",                "A"),
+    ("boltz:boltz2_min_d",  "Adipate–Pα closest approach",           "A"),
+    ("bat:near_attack_frac","Near-attack pose fraction (d<4Å, in-line)",  "A"),
+    ("bat:reactive_sasa",   "Reactive-carbon burial (resting adipate)",        "A"),
+    ("mg:frac_coord",       "Mg²⁺ inner-sphere coordination",        "A"),
+    ("psiptm:es_mean",      "Enzyme–substrate confidence (ps-iPTM)",      "A"),
+    # --- conditional on the d<4A gate (survivorship-biased) ---
+    ("preorg:posn_rmsf",    "Reactive-center positional RMSF",                 "C"),
+    ("preorg:approach_std", "Attack-angle spread",                             "C"),
+    ("tunnel:enc_tight",    "Acceptor-tunnel enclosure",                       "C"),
+    ("elec:acidO_8",        "Amine-subsite acidic O (8Å)",                "C"),
+    ("elec:nearBase_6",     "Amine-subsite base proximity (6Å)",          "C"),
+]
+COLS = [("robust_meanAUROC", "mean"), ("top3_auroc", "top-3"),
+        ("top5_auroc", "top-5"), ("top10_auroc", "top-10"),
+        ("binary_auroc_gtSfaB", ">SfaB")]
+
 
 def fnum(v):
     try: return float(v)
-    except: return math.nan
+    except (ValueError, TypeError): return math.nan
+
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--base", default="exp_data/amide_synthetase")
     base = os.path.abspath(ap.parse_args().base)
-    rk = {r["feature"]: r for r in csv.DictReader(open(os.path.join(base, "analysis/feature_surfacing_ranking.csv")))}
+    rk = {r["feature"]: r for r in csv.DictReader(
+        open(os.path.join(base, "analysis/feature_surfacing_ranking.csv")))}
 
-    fig, ax = plt.subplots(figsize=(9.5, 7.0))
-    ax.set_facecolor("#fcfcfb")
-    # quadrant guides
-    ax.axhline(0.70, ls=":", c="#9a9a95", lw=1); ax.axvline(0.15, ls=":", c="#9a9a95", lw=1)
-    ax.text(0.005, 0.985, "enrich top only", transform=ax.transAxes, fontsize=8, color="#777", va="top")
-    ax.text(0.995, 0.985, "ranks top + panel", transform=ax.transAxes, fontsize=8, color="#777", va="top", ha="right")
+    # keep only curated features present, preserving group order; sort by mean within group
+    rows = [(k, lbl, g) for k, lbl, g in ROWS if k in rk]
+    rows.sort(key=lambda t: (t[2], -fnum(rk[t[0]]["robust_meanAUROC"])))
+    labels = [(lbl + ("†" if g == "C" else ""), g) for _, lbl, g in rows]
+    M = np.array([[fnum(rk[k][c]) for c, _ in COLS] for k, _, _ in rows])
 
-    pts = []
-    for key, (label, cat) in CUR.items():
-        r = rk.get(key)
-        if not r: continue
-        y = fnum(r["top3_auroc"]); rho = fnum(r["spearman_all"]); d = r["dir"]
-        if math.isnan(y) or math.isnan(rho): continue
-        x = rho if d == "+" else -rho          # oriented: higher = more active
-        pts.append((x, y, label, cat, d))
-        ax.scatter(x, y, s=110, c=CAT[cat], edgecolor="#2b2b2b", linewidth=0.8, zorder=3)
-    # direct labels (offset, small), collision-avoided by hand-nudge dict
-    nudge = {"in-line attack angle": (6, 4), "reactive-center RMSF": (6, -12),
-             "approach-angle spread": (-6, 8), "Mg–phosphate distance": (6, 4),
-             "Mg–Pα distance": (6, -10), "in-line pose fraction": (6, 4),
-             "adenine burial": (6, 4), "distal-carboxyl SASA": (6, -4),
-             "near-base residues": (6, 4), "adipate→Pα distance": (6, -10),
-             "ps-iPTM confidence": (6, 4), "acceptor-tunnel width": (6, 4),
-             "acidic-O residues": (6, -10), "reactive-center SASA": (-6, -12)}
-    for x, y, label, cat, d in pts:
-        dx, dy = nudge.get(label, (6, 4))
-        ax.annotate(label, (x, y), fontsize=7.5, color="#2b2b2b",
-                    xytext=(dx, dy), textcoords="offset points",
-                    ha="right" if dx < 0 else "left")
+    n = len(rows)
+    fig, ax = plt.subplots(figsize=(12.6, 0.62 * n + 2.4))
+    im = ax.imshow(M, cmap="Greys", vmin=0.42, vmax=0.95, aspect="auto")
 
-    ax.set_xlabel("global rank-ordering  ·  Spearman ρ (feature vs activity, all 48)", fontsize=10)
-    ax.set_ylabel("enrichment of the top actives  ·  top-3 AUROC", fontsize=10)
-    ax.set_ylim(0.48, 0.98); ax.set_title(
-        "Which structural features surface the top synthetase catalysts?\n"
-        "Boltz-2 step-1, 50 samples · near-attack angle enriches the very top; Mg/preorg rank the panel",
-        fontsize=11)
-    ax.legend(handles=[Patch(color=c, label=l) for l, c in CAT.items() if any(p[3]==l for p in pts)],
-              fontsize=8, loc="lower right", framealpha=0.95, title="feature category", title_fontsize=8)
-    for s in ("top", "right"): ax.spines[s].set_visible(False)
-    fig.tight_layout()
+    # cell annotations (black on light, white on dark)
+    for i in range(n):
+        for j in range(len(COLS)):
+            v = M[i, j]
+            if math.isnan(v): continue
+            ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=FS - 2,
+                    color="white" if v >= 0.74 else "black")
+
+    ax.set_xticks(range(len(COLS)))
+    ax.set_xticklabels([c for _, c in COLS], fontsize=FS)
+    ax.set_yticks(range(n))
+    ax.set_yticklabels([l for l, _ in labels], fontsize=FS)
+    ax.tick_params(length=0)
+    for s in ax.spines.values(): s.set_visible(False)
+
+    # separator line + group labels between always-defined and conditional
+    first_C = next((i for i, (_, _, g) in enumerate(rows) if g == "C"), None)
+    if first_C is not None:
+        y = first_C - 0.5
+        ax.axhline(y, color="black", lw=1.6)
+        ax.text(-0.44, (first_C - 1) / 2, "always defined", rotation=90,
+                va="center", ha="center", fontsize=FS - 3, color="#333",
+                transform=ax.get_yaxis_transform() if False else ax.transData)
+    # thin white gridlines between cells for legibility
+    ax.set_xticks(np.arange(-0.5, len(COLS), 1), minor=True)
+    ax.set_yticks(np.arange(-0.5, n, 1), minor=True)
+    ax.grid(which="minor", color="white", linewidth=2)
+    ax.tick_params(which="minor", length=0)
+
+    cb = fig.colorbar(im, ax=ax, fraction=0.035, pad=0.02)
+    cb.set_label("surfacing AUROC  (0.5 = random)", fontsize=FS - 3)
+    cb.ax.tick_params(labelsize=FS - 4)
+
+    fig.text(0.01, 0.005,
+             "† conditional on the d<4Å near-attack gate (survivorship-biased); "
+             "cells = AUROC in each feature's activity-consistent direction.",
+             fontsize=FS - 6, color="#555")
+
+    fig.tight_layout(rect=(0, 0.02, 1, 1))
     out = os.path.join(base, "figures", "synthetase_feature_surfacing.png")
-    fig.savefig(out, dpi=170, bbox_inches="tight"); print("wrote", out, "|", len(pts), "features")
+    fig.savefig(out, dpi=170, bbox_inches="tight")
+    print("wrote", out, "|", n, "features x", len(COLS), "metrics")
+
 
 if __name__ == "__main__":
     main()
