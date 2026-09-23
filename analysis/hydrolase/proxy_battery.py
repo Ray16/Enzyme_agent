@@ -268,6 +268,11 @@ def process(cfgdir):
     # electrostatics (rank-only Coulomb ESP)
     row["esp:oxyanion_O_mean"] = round(float(A("espO").mean()), 4)      # +  stabilise developing negative O
     row["esp:carbonyl_C_mean"] = round(float(A("espC").mean()), 4)      # +
+    # model-confidence NULLs (expected non-predictive; also used to test the RMSF confound)
+    cf = np.array(conf, float)
+    row["conf:ligand_iptm"] = round(float(np.nanmean(cf[:, 0])), 3)
+    row["conf:complex_plddt"] = round(float(np.nanmean(cf[:, 1])), 3)
+    row["conf:thr_plddt"] = round(float(np.nanmean(cf[:, 2])), 2)
     return row
 
 
