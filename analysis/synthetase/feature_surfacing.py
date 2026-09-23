@@ -107,6 +107,11 @@ def main():
         xo = x if desc else [-v for v in x]           # oriented so higher=more active
         aur = {k: au([1 if i in topk[k] else 0 for i in obs_ids], xo) for k in (3, 5, 10)}
         aub = au([lab[i] for i in obs_ids], xo)       # activity > SfaB (natural cutoff, ~7 actives)
+        # activity-tier metrics (oriented feature)
+        sig = au([1 if i in red else 0 for i in obs_ids], xo)              # red (signif.) vs rest
+        sub = [(i, v) for i, v in zip(obs_ids, xo) if i not in red]        # exclude red
+        marg = au([1 if i in marginal_ids else 0 for i, _ in sub], [v for _, v in sub])  # orange vs grey
+        overall = cindex(xo, a)                                            # concordance over all
         order = sorted(obs_ids, key=lambda i: -vals[i] if desc else vals[i])
         rk = {i: k + 1 for k, i in enumerate(order)}
         t3r = sorted(rk[i] for i in topk[3] if i in rk)
