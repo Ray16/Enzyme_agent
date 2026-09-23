@@ -42,6 +42,9 @@ SIGN = {
     "conf:ligand_iptm": +1, "conf:complex_plddt": +1, "conf:thr_plddt": +1,
     # active-site / autocleavage confidence (mechanistically motivated for Ntn enzymes)
     "as:shell_plddt": +1, "conf:ab_iptm": +1, "conf:bchain_ptm": +1,
+    # determinant 1: ground-state binding / substrate accommodation (tetrad)
+    "gsb:enclosure": +1, "gsb:n_contact_res": +1, "gsb:scissile_bury": +1,
+    "gsb:amide_presented": +1, "gsb:lig_rmsf": -1,
 }
 
 
