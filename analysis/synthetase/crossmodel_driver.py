@@ -137,8 +137,10 @@ def main():
             w.writerow(row)
 
     # predictivity summary
+    from sklearn.metrics import roc_auc_score as _auc
     act = {T: activity[T][0] for T in ids}
     lab = {T: activity[T][1] for T in ids}
+    top3 = set(sorted(ids, key=lambda i: -act[i])[:3])   # 3 most active catalysts
     sum_csv = os.path.join(outdir, "crossmodel_predictivity_summary.csv")
     summary = []
     for m in present:
@@ -147,7 +149,16 @@ def main():
             rho, auroc, as9_rank, n = predictivity(ids, score, act, lab)
             npos = [per[m][T]["n_poses"] for T in ids if per[m].get(T)]
             as9 = per[m].get("AS9") or {}
+            # top-3 surfacing: AUROC(label=in top-3) and the ranks of the 3 top actives
+            sm = list(zip(ids, score))
+            valid = [(i, s) for i, s in sm if not (isinstance(s, float) and math.isnan(s))]
+            order = sorted(sm, key=lambda x: (-(x[1]) if not (isinstance(x[1], float) and math.isnan(x[1])) else float("inf")))
+            rk = {i: k + 1 for k, (i, s) in enumerate(order)}
+            t3_ranks = sorted(rk[i] for i in top3)
+            yy = [1 if i in top3 else 0 for i, s in valid]; xx = [s for i, s in valid]
+            t3_auroc = round(_auc(yy, xx), 3) if len(set(yy)) == 2 else ""
             summary.append({"model": m, "metric": metric, "n_scored": n,
+                            "top3_auroc": t3_auroc, "top3_ranks": "|".join(map(str, t3_ranks)),
                             "auroc": round(auroc, 3) if not math.isnan(auroc) else "",
                             "spearman": round(rho, 3) if not math.isnan(rho) else "",
                             "as9_rank": as9_rank, "n_targets_scored_of": len(ids),
