@@ -89,7 +89,9 @@ def draw(m, w, h, highlight_amide=False):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="exp_data/amide_synthetase/figures/synthetase_native_reactions.png")
+    # Discovery/paper figure (not panel data): lives in the top-level figures/ dir.
+    # exp_data/ is reserved for the experimental diversity panel only.
+    ap.add_argument("--out", default="figures/synthetase_native_reactions.png")
     a = ap.parse_args()
 
     n = len(REACTIONS)
