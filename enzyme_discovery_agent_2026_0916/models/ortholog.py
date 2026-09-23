@@ -9,20 +9,38 @@ from __future__ import annotations
 import re
 
 
+def _ec_subclass(ec: str) -> str:
+    """Normalise an EC number to its sub-subclass (first three fields).
+
+    A candidate is often annotated with only a partial EC (e.g. ``6.3.1.-``)
+    while its ortholog carries the fully resolved number (``6.3.1.11``).  Keying
+    on the raw string splits the same enzyme into two groups, so we compare at
+    the sub-subclass level, which is stable across that annotation gap while
+    still separating genuinely different chemistries (``6.3.1`` vs ``6.3.2``).
+    """
+    parts = [p for p in (ec or "").strip().split(".") if p and p != "-"]
+    return ".".join(parts[:3])
+
+
 def ortholog_key(data: dict) -> str | None:
     """Group true orthologs — the SAME enzyme in different organisms — together.
 
-    Uses the normalised gene symbol plus the primary EC number.  Suffix noise that
-    only distinguishes copies of one enzyme (e.g. ``geneX``, ``geneX-1``,
-    ``geneX-II``, ``geneX_2``) is stripped so they collapse, while genuinely
-    different enzymes that merely share a gene letter or an EC do NOT (different
-    gene stem or different EC → different key).  Only i/v/x are treated as roman
-    suffixes so a gene legitimately ending in 'c'/'d'/'m' (murC, iucC) is intact.
+    Uses the normalised gene symbol plus the primary EC sub-subclass.  Copy
+    suffixes that only distinguish duplicates of one enzyme (``geneX-1``,
+    ``geneX_2``, ``geneX II``) are stripped so they collapse, but a digit fused
+    directly to the stem is kept, because it names a DISTINCT gene (``glnA2`` and
+    ``faah2`` are different enzymes from ``glnA``/``faah`` and must not merge).
+    Genuinely different enzymes that merely share a gene letter or an EC class
+    still stay apart (different gene stem or different EC sub-subclass → different
+    key).  Only i/v/x are treated as roman suffixes so a gene legitimately ending
+    in 'c'/'d'/'m' (murC, iucC) is intact.
     """
     genes = data.get("gene_names") or []
     gene = (genes[0] if genes else "").lower().strip()
-    gene = re.sub(r"[\s_\-]*(?:[ivx]+|\d+)$", "", gene)  # drop paralog/copy suffix
-    ec = (data.get("ec_numbers") or [""])[0]
+    # Strip only a *separated* copy/paralog suffix (geneX-1, geneX_2, geneX II),
+    # never a digit fused to the name itself (glnA2, faah2 stay distinct).
+    gene = re.sub(r"[\s_\-]+(?:[ivx]+|\d+)$", "", gene)
+    ec = _ec_subclass((data.get("ec_numbers") or [""])[0])
     if gene and ec:
         return f"{gene}|{ec}"
     if gene:
