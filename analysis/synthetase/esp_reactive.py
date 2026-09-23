@@ -251,12 +251,13 @@ def main():
     enz = sorted([os.path.basename(d) for d in glob.glob(f"{P1}/*") if os.path.isdir(d)])
     with Pool(8) as pool:
         rows = pool.map(enzyme, enz)
-    cols = ["id", "esp_pa", "esp_pa_std", "esp_carbonyl", "esp_carbonyl_std"]
+    cols = ["id", "esp_pa", "esp_pa_std", "esp_carbonyl", "esp_carbonyl_std",
+            "lef_pa", "lef_pa_std", "lef_carbonyl", "lef_carbonyl_std"]
     with open(OUT, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols); w.writeheader(); w.writerows(rows)
     n1 = sum(1 for r in rows if r["esp_pa"] is not None)
     n2 = sum(1 for r in rows if r["esp_carbonyl"] is not None)
-    print(f"wrote {OUT}  ({len(rows)} enzymes; step1 esp_pa n={n1}, step2 esp_carbonyl n={n2})")
+    print(f"wrote {OUT}  ({len(rows)} enzymes; step1 n={n1}, step2 n={n2})")
 
 
 if __name__ == "__main__":
