@@ -1,12 +1,17 @@
 # Nylon-hydrolase feature surfacing: structure does not predict within-fold hydrolytic rate
 
 **Date:** 2026-09-23 · **Verdict:** For the 96-enzyme Ntn-hydrolase panel (Peptidase S58 / NylC
-family) assayed on crystalline nylon powder, **no computable structural proxy predicts within-fold
-hydrolytic activity.** No catalytic-geometry proxy surfaces the top catalysts; the only
-correct-direction feature is model confidence (pLDDT), and that is best read as a
-**foldability/detectability confound, not a mechanistic predictor** — the crude-lysate assay gates
-detection on expression + solubility, pLDDT plausibly reports "well-formed folded family member,"
-and even its correlation with activity is weak (ρ ≈ 0.22 complex-pLDDT/L2, 0.12 active-site/L1).
+family) assayed on crystalline nylon powder, **no catalytic-geometry proxy predicts activity.**
+The only correct-direction signal is model confidence — and the *best* of it is **active-site /
+autocleavage confidence** (active-site-shell pLDDT, catalytic-Thr pLDDT, β-chain pTM, A|B-junction
+ipTM), which is mechanistically motivated: these enzymes require AUTOCLEAVAGE to expose the
+catalytic N-terminal Thr, so confidence in the active-site / mature-junction region reports whether
+the model reconstructs the correctly self-processed, catalytically-poised state. This is **distinct
+from global foldability** (shell-pLDDT correlates only ~0.5 with complex-pLDDT and retains a partial
+ρ ≈ +0.14 for L1 after controlling for it) — *not* merely a foldability confound. It remains a
+**weak** predictor, though (raw ρ ≈ 0.12–0.18), and it is a confidence measure, not catalytic
+geometry: the honest headline is that **no structural catalytic-geometry proxy predicts within-fold
+hydrolytic rate; the best (weak) signal is active-site/autocleavage model confidence.**
 
 ## Question
 Repeating the amide-synthetase feature-surfacing analysis for the hydrolases: does any structural
