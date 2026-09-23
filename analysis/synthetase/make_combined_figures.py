@@ -118,8 +118,7 @@ def fig_activity_and_proxy(df):
     if as9_rank:
         note += f"\nbut most-active AS9 ranks #{as9_rank}"
     axB.text(0.97, 0.03, note, transform=axB.transAxes, ha="right", va="bottom",
-             fontsize=FS - 4, color="#333",
-             bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="#ccc"))
+             fontsize=FS - 4, color="#333")
 
     fig.legend(handles=[Patch(color=RED, label="significantly > SfaB (active)"),
                         Patch(color=ORANGE, label="marginally > SfaB"),
