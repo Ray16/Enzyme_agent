@@ -87,12 +87,13 @@ def fig_activity_and_proxy(df):
     axA.errorbar(a.act.clip(lower=floor), y, xerr=[np.zeros(na), a.act_std.fillna(0)],
                  fmt="none", ecolor="#555", elinewidth=0.7, capsize=2, alpha=0.6, zorder=3)
     axA.set_xscale("log")
-    axA.set_yticks(y)
-    axA.set_yticklabels(a.id)
-    for lab, iid, v in zip(axA.get_yticklabels(), a.id, a.act):
-        col = _tier(iid, v, SF)
-        if col != GREY:
-            lab.set_color(col); lab.set_fontweight("bold")
+    # label only the enzymes that beat SfaB (+ SfaB); grey ≤SfaB tail stays unlabeled
+    notable = [(i, iid, v) for i, (iid, v) in enumerate(zip(a.id, a.act))
+               if _tier(iid, v, SF) != GREY]
+    axA.set_yticks([i for i, _, _ in notable])
+    axA.set_yticklabels([iid for _, iid, _ in notable])
+    for lab, (_, iid, v) in zip(axA.get_yticklabels(), notable):
+        lab.set_color(_tier(iid, v, SF)); lab.set_fontweight("bold")
     axA.set_ylim(na - 0.5, -0.5)
     axA.set_xlabel("Nylon-6,6 diad molecular yield (µg/mL, log)")
     axA.set_ylabel("panel member (ranked by measured activity)")
