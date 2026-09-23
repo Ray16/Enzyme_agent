@@ -70,6 +70,11 @@ def main():
                 except (ValueError, TypeError):
                     pass
 
+    topk = {k: set(sorted(ids, key=lambda i: -act[i])[:k]) for k in (3, 5, 10)}
+
+    def au(y, x):
+        return roc_auc_score(y, x) if len(set(y)) == 2 else float("nan")
+
     rows = []
     for col, vals in feats.items():
         xs = [(i, vals[i]) for i in ids if i in vals and not math.isnan(vals[i])]
@@ -77,26 +82,28 @@ def main():
             continue
         obs_ids = [i for i, _ in xs]; x = [v for _, v in xs]
         a = [act[i] for i in obs_ids]
-        y3 = [1 if i in top3 else 0 for i in obs_ids]
-        yb = [lab[i] for i in obs_ids]
         rho = spearmanr(x, a).correlation
-        au3 = roc_auc_score(y3, x) if len(set(y3)) == 2 else float("nan")
-        aub = roc_auc_score(yb, x) if len(set(yb)) == 2 else float("nan")
-        # best-direction ranking: if higher-feature associates with active (au3>=.5) rank desc else asc
-        desc = (au3 >= 0.5) if not math.isnan(au3) else (rho >= 0)
+        rho = 0.0 if (rho is None or math.isnan(rho)) else rho
+        # ONE direction per feature (higher feature -> more active), from continuous rho
+        desc = rho >= 0
+        xo = x if desc else [-v for v in x]           # oriented so higher=more active
+        aur = {k: au([1 if i in topk[k] else 0 for i in obs_ids], xo) for k in (3, 5, 10)}
+        aub = au([lab[i] for i in obs_ids], xo)       # activity > SfaB (natural cutoff, ~7 actives)
         order = sorted(obs_ids, key=lambda i: -vals[i] if desc else vals[i])
         rk = {i: k + 1 for k, i in enumerate(order)}
-        t3r = sorted(rk[i] for i in top3 if i in rk)
+        t3r = sorted(rk[i] for i in topk[3] if i in rk)
+        # robustness: mean AUROC across the 4 cutoffs (all oriented same way)
+        vals4 = [v for v in (aur[3], aur[5], aur[10], aub) if not math.isnan(v)]
+        robust = sum(vals4) / len(vals4) if vals4 else float("nan")
+        def R(v): return round(v, 3) if not math.isnan(v) else ""
         rows.append({
-            "feature": col, "n": len(xs),
-            "top3_auroc": round(au3, 3) if not math.isnan(au3) else "",
-            "top3_disc": round(abs(au3 - 0.5) + 0.5, 3) if not math.isnan(au3) else "",
-            "dir": "+" if desc else "-",
+            "feature": col, "n": len(xs), "dir": "+" if desc else "-",
+            "robust_meanAUROC": R(robust),
+            "top3_auroc": R(aur[3]), "top5_auroc": R(aur[5]), "top10_auroc": R(aur[10]),
+            "binary_auroc_gtSfaB": R(aub), "spearman_all": round(rho, 3),
             "as9_rank": rk.get("AS9"), "top3_ranks": "|".join(map(str, t3r)),
-            "binary_auroc": round(aub, 3) if not math.isnan(aub) else "",
-            "spearman": round(rho, 3) if rho is not None and not math.isnan(rho) else "",
         })
-    rows.sort(key=lambda r: (r["top3_disc"] if r["top3_disc"] != "" else 0), reverse=True)
+    rows.sort(key=lambda r: (r["robust_meanAUROC"] if r["robust_meanAUROC"] != "" else 0), reverse=True)
 
     out = os.path.join(an, "feature_surfacing_ranking.csv")
     with open(out, "w", newline="") as f:
