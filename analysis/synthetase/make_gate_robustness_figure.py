@@ -59,8 +59,8 @@ for ax, cut in zip(axes, CUTS):
             ax.text(vals[rank[i] - 1] + 0.6, rank[i] - 1, i, va="center", ha="left",
                     fontsize=8.5, fontweight="bold",
                     color=RED if i in ACTIVES else ORANGE)
-    hitranks = ", ".join(f"#{rank[a]}" for a in ACTIVES if a in rank)
-    ax.set_title(f"d < {cut} Å\n{len(order)} conclusive\nhits at {hitranks}", fontsize=13)
+    hitranks = ", ".join(f"#{rank[a]}" for a in ACTIVES if a in rank) or "none (<5 poses)"
+    ax.set_title(f"d < {cut} Å\n{len(order)} conclusive\nactive hits at {hitranks}", fontsize=13)
     ax.set_xlim(122, 186)
     ax.set_ylim(len(order) - 0.5, -0.5)
     ax.set_ylabel("rank by mean in-line angle" if cut == CUTS[0] else "")
