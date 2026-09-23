@@ -23,8 +23,8 @@ _CARRIER_RE = re.compile(
     re.IGNORECASE,
 )
 # Polymer/oligomer signal. Rhea writes a repeating chain both as "(n)" and with a
-# bracketed subscript, e.g. "[N-(6-aminohexanoyl)]n + H2O = [N-(6-aminohexanoyl)]n-x ..."
-# (NylC), so recognize the "]n" / "]n-x" / "]n+1" subscript form as well as "oligomer".
+# bracketed subscript, e.g. "[monomer]n + H2O = [monomer]n-x + [monomer]x", so
+# recognize the "]n" / "]n-x" / "]n+1" subscript form as well as "oligomer".
 _POLYMER_RE = re.compile(
     r"\(n(?:[+\-]\d)?\)|\]\s*n(?:[+\-]\w+)?|\boligomer\b|"
     r"\bpoly(?:mer|peptide|saccharide)\b",
