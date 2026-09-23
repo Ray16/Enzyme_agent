@@ -202,8 +202,8 @@ def fig_proxy_comparison(df, bat):
     ax.set_ylim(-0.6, len(res) - 0.4)
     ax.set_xlabel("AUROC for surfacing the 3 measured actives (95% CI)")
     ax.set_title("Which structural features surface the top candidates?", loc="left")
-    ax.legend(handles=[Patch(color=HILITE, label="separation better than chance (95% CI excludes 0.5)"),
-                       Patch(color=NEUTRAL, label="not distinguishable from chance")],
+    ax.legend(handles=[Patch(color=HILITE, label="surfaces actives better than chance (95% CI > 0.5)"),
+                       Patch(color=NEUTRAL, label="not better than chance")],
               loc="lower right", frameon=True, framealpha=0.95, edgecolor="#ccc")
     fig.tight_layout()
     p = f"{FIG}/synthetase_proxy_comparison.png"
