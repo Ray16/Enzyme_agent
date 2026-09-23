@@ -184,7 +184,8 @@ def fig_proxy_comparison(df, bat):
     ax.errorbar(res.auroc, y, xerr=xerr, fmt="none", ecolor="#333", elinewidth=1.1,
                 capsize=3, zorder=3)
     ax.axvline(0.5, color="#888", ls="--", lw=1.6, zorder=1)
-    ax.text(0.5, -0.45, "random", color="#888", fontsize=FS - 4, ha="center", va="bottom")
+    # place "random" in the empty part of the lowest-AUROC row (its bar is far left)
+    ax.text(0.515, 0.0, "random", color="#888", fontsize=FS - 5, ha="left", va="center")
     for i, r in res.iterrows():
         ax.text(min(r.ci_hi, 1.0) + 0.015, i, f"{r.auroc:.2f}", va="center", ha="left",
                 fontsize=FS - 4, fontweight="bold",
