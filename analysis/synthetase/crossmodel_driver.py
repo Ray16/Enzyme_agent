@@ -171,9 +171,9 @@ def main():
 
     print(f"[driver] wrote {pt_csv}")
     print(f"[driver] wrote {sum_csv}")
-    print(f"\n{'model':10s} {'metric':17s} {'n':>3s} {'AUROC':>6s} {'rho':>6s} {'AS9rank':>8s} {'AS9 min_d':>10s}")
+    print(f"\n{'model':10s} {'metric':17s} {'n':>3s} {'AUROC':>6s} {'rho':>6s} {'AS9rk':>6s} {'top3AUROC':>9s} {'top3ranks':>11s}")
     for r in summary:
-        print(f"{r['model']:10s} {r['metric']:17s} {r['n_scored']:>3d} {str(r['auroc']):>6s} {str(r['spearman']):>6s} {str(r['as9_rank']):>8s} {str(r['as9_min_d']):>10s}")
+        print(f"{r['model']:10s} {r['metric']:17s} {r['n_scored']:>3d} {str(r['auroc']):>6s} {str(r['spearman']):>6s} {str(r['as9_rank']):>6s} {str(r['top3_auroc']):>9s} {str(r['top3_ranks']):>11s}")
     return summary, per, ids, activity, present
 
 
