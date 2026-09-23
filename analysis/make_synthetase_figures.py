@@ -135,9 +135,7 @@ def fig_proxy_ranking(df):
     beat = df[df.act > SF].sort_values("act", ascending=False)   # enzymes beating SfaB
     n = len(d)
 
-    fig, axA = plt.subplots(1, 1, figsize=(10, max(9, 0.26 * n)))
-    fig.suptitle(f"Mean in-line attack angle (d < {D_GATE:.1f} Å–gated poses) ranks the active enzymes to the top",
-                 fontweight="bold")
+    fig, axA = plt.subplots(1, 1, figsize=(10, max(9, 0.30 * n)))
     y = np.arange(n)
     colors = [_tier(i, a, SF) for i, a in zip(d.id, d.act)]
     axA.barh(y, d.mean_inline_angle, color=colors, edgecolor="k", linewidth=0.3, zorder=2)
