@@ -43,6 +43,7 @@ ROWS = [
     ("tunnel:enc_tight",    "Acceptor-tunnel enclosure",                       "C"),
     ("elec:acidO_8",        "Amine-subsite acidic O (8Å)",                "C"),
     ("elec:nearBase_6",     "Amine-subsite base proximity (6Å)",          "C"),
+    ("bat:mean_inline_angle","Gated in-line attack angle (d<4Å→angle)",    "C"),
 ]
 COLS = [("robust_meanAUROC", "mean"), ("top3_auroc", "top-3"),
         ("top5_auroc", "top-5"), ("top10_auroc", "top-10"),
