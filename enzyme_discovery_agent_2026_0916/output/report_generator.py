@@ -250,13 +250,16 @@ from enzyme_discovery_agent.models.ortholog import ortholog_key as _ortholog_key
 
 
 def _expression_pref(data: dict) -> int:
-    """Rank an ortholog by how readily it is likely to express in the standard
-    heterologous host (E. coli).  When several orthologs of one enzyme survive,
-    the representative shown to an experimentalist should be the one most likely
-    to express: documented/native E. coli expression is best, any bacterial host
-    next, an unknown origin neutral, and a eukaryotic origin least favourable.
-    This preference decides only WHICH member represents the group, not whether
-    the group is included."""
+    """Rank an ortholog by how readily it is likely to express heterologously.
+
+    When several orthologs of one enzyme survive, the representative shown to an
+    experimentalist should be the one most likely to express.  The preference is
+    not tied to a single organism: E. coli is the default preferred host, but any
+    bacterial host counts as favourable (documented expression in other bacteria,
+    e.g. a Pseudomonad, is still good evidence).  Documented expression in the
+    preferred host ranks first, any bacterial expression next, an unknown origin
+    neutral, and a eukaryotic origin least favourable.  This decides only WHICH
+    member represents the group, not whether the group is included."""
     expr = data.get("expression_data") or {}
     if expr.get("ecoli_expression"):
         return 3
