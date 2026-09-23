@@ -39,13 +39,15 @@ Ntn / Ser-nucleophile amide hydrolysis.
 | TI-template RMSD | 0.52 / 0.62 | 0.30 / 0.11 |
 | oxyanion-hole / ESP / base | ≤0.57, several *backwards* | ≤0.54, mostly backwards |
 
-- **The only correct-direction feature is model confidence — likely a foldability confound.**
-  complex pLDDT (L2) and active-site pLDDT (L1) are the only features that survive fixed-direction
-  scoring, but the assay is crude lysate (activity requires expression + solubility) and pLDDT
-  correlation with rate is weak (ρ ≈ 0.12–0.22), so pLDDT is most honestly read as "is this a
-  well-formed, expressible family member" — detectability, not turnover — not a mechanistic
-  predictor. The best mechanistic proxy (near-attack joint gate, L2 top-5 0.69) is matched by
-  pLDDT and collapses for L1.
+- **The best signal is active-site / autocleavage confidence — distinct from global foldability.**
+  Autocleavage-junction ipTM (A|B) tops L2 (top-5 0.81); catalytic-Thr pLDDT and β-chain pTM top L1
+  (top-5 0.81 / 0.77). These are mechanistically loaded for autoprocessing Ntn enzymes and are only
+  moderately correlated with global complex-pLDDT (~0.5 for shell/Thr pLDDT, 0.26 for β-chain pTM);
+  active-site-shell pLDDT retains a partial ρ of +0.14 (L1) / +0.08 (L2) after controlling for
+  complex-pLDDT — so there is an active-site-specific component, not just global foldability. Caveat:
+  still weak (raw ρ ≈ 0.12–0.18), and the crude-lysate assay means part of any pLDDT signal reflects
+  expressibility/detectability. The best catalytic-GEOMETRY proxy (near-attack joint gate, L2 top-5
+  0.69) is matched by these confidence terms and collapses for L1.
 - **The RMSF "signal" is a confidence confound** — `preorg:og1_rmsf` correlates ρ = −0.63 with
   complex pLDDT; active enzymes are simply modeled more rigidly/confidently.
 - **Oxyanion-hole, ESP, and base-distance proxies are near-random or backwards** (`*`). The
