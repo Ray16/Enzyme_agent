@@ -106,10 +106,25 @@ def accommodation_facts(
         fg = cmp.get("functional_group_similarity")
         fg = fg if isinstance(fg, (int, float)) else None
         heavy = _heavy_atoms(n)
+        native_c = _carbon_atoms(n)
+        target_c = _carbon_atoms(t)
         # A one- or two-heavy-atom native (e.g. water or a single-atom ion)
         # cannot be a structural analogue of a multi-atom target substrate — a
         # structural FACT, not a tuned relevance threshold.
         minimal = heavy is not None and heavy <= 2
+        # Relative structural comparability (generalises the absolute check
+        # above): a counterpart that shares the target substrate's functional
+        # group TYPE but whose carbon skeleton is only a small fraction of the
+        # target's is not a genuine structural analogue — it carries the group
+        # without a comparable backbone to fill the substrate role, so the
+        # functional-group match is degenerate (a similarity-of-type artefact).
+        # Expressed as a ratio against the target substrate's OWN size, so it
+        # holds for any target reaction and assumes no enzyme, mechanism, or
+        # substrate identity.  A target substrate that is itself tiny is exempt.
+        incomparable_scaffold = (
+            target_c is not None and target_c >= _MIN_TARGET_CARBONS
+            and native_c is not None
+            and native_c < _SCAFFOLD_COMPARABILITY_RATIO * target_c)
         shares = bool(fg and fg > 0)
         entry = {
             "target_smiles": t,
@@ -121,11 +136,11 @@ def accommodation_facts(
             "native_heavy_atoms": heavy,
             # Neutral decomposed size facts (carbon skeleton alongside heavy-atom
             # count) so the reasoning layer can judge whether a functional-group
-            # match rests on a genuine organic counterpart or a tiny one; no
-            # verdict is baked in here.
-            "native_carbons": _carbon_atoms(n),
-            "target_carbons": _carbon_atoms(t),
+            # match rests on a genuine organic counterpart or a tiny one.
+            "native_carbons": native_c,
+            "target_carbons": target_c,
             "native_is_cofactor_scale": minimal,
+            "native_scaffold_comparable": not incomparable_scaffold,
             "mw_target": cmp.get("mw_target"),
             "mw_native": cmp.get("mw_native"),
             "chain_length_target": cmp.get("chain_length_target"),
@@ -133,9 +148,10 @@ def accommodation_facts(
         }
         per_target.append(entry)
         # A target substrate is UNACCOMMODATED when its only counterpart shares
-        # none of its reactive groups OR is cofactor-scale — the enzyme lacks a
-        # genuine partner for it, however well other axes (size/shape) match.
-        if not shares or minimal:
+        # none of its reactive groups, is cofactor-scale, or is not a
+        # structurally comparable analogue — the enzyme lacks a genuine partner
+        # for it, however well the functional-group type happens to match.
+        if not shares or minimal or incomparable_scaffold:
             unaccommodated.append(t)
 
     matched_fg = [p["functional_group_similarity"] for p in per_target
