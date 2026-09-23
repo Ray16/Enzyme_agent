@@ -43,8 +43,8 @@ BROWN = "#8b5a2b"                          # SfaB (the baseline / starting enzym
 FS = 18
 plt.rcParams.update({
     "font.size": FS, "axes.titlesize": FS, "axes.titleweight": "bold",
-    "axes.labelsize": FS, "xtick.labelsize": FS - 3, "ytick.labelsize": FS - 3,
-    "legend.fontsize": FS - 3, "figure.titlesize": FS + 2,
+    "axes.labelsize": FS, "xtick.labelsize": FS, "ytick.labelsize": FS,
+    "legend.fontsize": FS, "figure.titlesize": FS,
     "axes.spines.top": False, "axes.spines.right": False,
     "savefig.dpi": 300, "figure.dpi": 300,
 })
