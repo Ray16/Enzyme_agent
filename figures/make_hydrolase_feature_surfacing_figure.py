@@ -114,8 +114,9 @@ def main():
 
     fig.text(0.01, 0.005,
              "Directions fixed by mechanism; * = data correlation runs opposite to mechanism "
-             "(apparent value is a sign-flip artifact). Only the model-confidence nulls show "
-             "correct-direction signal.", fontsize=FS - 7, color="#555")
+             "(sign-flip artifact). No catalytic-geometry proxy surfaces activity; the only "
+             "correct-direction signal is active-site / autocleavage confidence — weak (ρ≈0.1–0.2) "
+             "but partly independent of global foldability.", fontsize=FS - 7, color="#555")
 
     fig.tight_layout(rect=(0, 0.02, 1, 1))
     out = f"{BASE}/figures/hydrolase_feature_surfacing.png"
