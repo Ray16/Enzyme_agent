@@ -268,7 +268,7 @@ def _expression_pref(data: dict) -> int:
 
 
 def _collapse_orthologs(
-    pass1_ranking: list[dict], acc_to_eval: dict[str, dict], log_fn=None,
+    pass1_ranking: list[dict], acc_to_eval: dict[str, dict],
 ) -> list[dict]:
     """Collapse same-enzyme orthologs into one representative entry.
 
