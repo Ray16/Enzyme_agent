@@ -62,14 +62,13 @@ def main():
     rk = {r["feature"]: r for r in csv.DictReader(
         open(os.path.join(base, "analysis/feature_surfacing_ranking.csv")))}
 
-    # Flatten groups into a single continuous list of feature rows, preserving
-    # the reaction-coordinate order (no category bands/separators).
+    # Single continuous list of feature rows, in reaction-coordinate order
+    # (no category bands/separators).
     rows = []          # (label, key)
-    for _cat, feats in GROUPS:
-        for key, lbl, dflag in feats:
-            if key not in rk:
-                continue
-            rows.append((lbl + ("†" if dflag == "cond" else ""), key))
+    for key, lbl, mark in ROWS:
+        if key not in rk:
+            continue
+        rows.append((lbl + mark, key))
 
     n = len(rows)
     M = np.array([[fnum(rk[key][c]) for c, _ in COLS] for _, key in rows])
