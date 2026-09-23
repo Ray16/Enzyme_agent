@@ -100,7 +100,7 @@ def main():
     ax.tick_params(which="minor", length=0)
 
     cb = fig.colorbar(im, ax=ax, fraction=0.035, pad=0.02)
-    cb.set_label("surfacing AUROC  (0.5 = random)", fontsize=FS - 3)
+    cb.set_label("AUROC  (0.5 = random)", fontsize=FS - 3)
     cb.ax.tick_params(labelsize=FS - 4)
 
     fig.text(0.01, 0.005,
