@@ -88,8 +88,9 @@ def main():
         a = [act[i] for i in obs]
         rho = spearmanr(x, a).correlation
         rho = 0.0 if (rho is None or math.isnan(rho)) else rho
-        desc = rho >= 0
-        xo = x if desc else [-v for v in x]
+        s = SIGN.get(col, +1)                    # FIXED mechanistic direction
+        desc = s > 0
+        xo = [s * v for v in x]                   # oriented so higher=more active BY MECHANISM
         aur = {k: au([1 if i in topk[k] else 0 for i in obs], xo) for k in CUTS}
         aub = au([lab[i] for i in obs], xo)
         order = sorted(obs, key=lambda i: -vals[i] if desc else vals[i])
@@ -98,11 +99,14 @@ def main():
         vals4 = [v for v in (aur[5], aur[10], aur[20], aub) if not math.isnan(v)]
         robust = sum(vals4) / len(vals4) if vals4 else float("nan")
         R = lambda v: round(v, 3) if not math.isnan(v) else ""
+        # flag when the data's own correlation disagrees with the mechanistic sign
+        # (i.e. the "signal" only appears if you flip against mechanism = overfit risk)
+        disagree = "*" if (rho * s < -0.05) else ""
         out.append({
             "feature": col, "n": len(xs), "dir": "+" if desc else "-",
             "robust_meanAUROC": R(robust), "top5_auroc": R(aur[5]),
             "top10_auroc": R(aur[10]), "top20_auroc": R(aur[20]),
-            "binary_auroc_sig": R(aub), "spearman_L2": round(rho, 3),
+            "binary_auroc_sig": R(aub), "spearman": round(rho, 3), "mech_disagree": disagree,
             "nylc_rank": rk.get("NylC"), "top5_ranks": "|".join(map(str, t5r)),
         })
     out.sort(key=lambda r: (r["robust_meanAUROC"] if r["robust_meanAUROC"] != "" else 0), reverse=True)
