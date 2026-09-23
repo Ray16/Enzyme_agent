@@ -118,7 +118,7 @@ def fig_activity_and_proxy(df):
     axB.set_xlabel("mean in-line attack angle (°)")
     axB.set_ylabel("rank by structural proxy")
     axB.set_title("(b) Structural proxy", loc="left")
-    note = "all 3 actives in top 5 (AUROC 0.95)"
+    note = "all 3 actives in top 5 (AUROC ≈ 0.94)"
     if as9_rank:
         note += f"\nbut most-active AS9 ranks #{as9_rank}"
     axB.text(0.97, 0.03, note, transform=axB.transAxes, ha="right", va="bottom",
