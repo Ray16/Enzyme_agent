@@ -1,9 +1,12 @@
-# Nylon-hydrolase feature surfacing: structure does not predict activity (single-fold, access-gated)
+# Nylon-hydrolase feature surfacing: structure does not predict within-fold hydrolytic rate
 
 **Date:** 2026-09-23 · **Verdict:** For the 96-enzyme Ntn-hydrolase panel (Peptidase S58 / NylC
-family) assayed on crystalline nylon powder, **no static/ensemble structural catalytic-geometry
-proxy surfaces the top experimental catalysts.** The only correct-direction predictor is model
-confidence (pLDDT), a foldability proxy — not catalytic chemistry.
+family) assayed on crystalline nylon powder, **no computable structural proxy predicts within-fold
+hydrolytic activity.** No catalytic-geometry proxy surfaces the top catalysts; the only
+correct-direction feature is model confidence (pLDDT), and that is best read as a
+**foldability/detectability confound, not a mechanistic predictor** — the crude-lysate assay gates
+detection on expression + solubility, pLDDT plausibly reports "well-formed folded family member,"
+and even its correlation with activity is weak (ρ ≈ 0.22 complex-pLDDT/L2, 0.12 active-site/L1).
 
 ## Question
 Repeating the amide-synthetase feature-surfacing analysis for the hydrolases: does any structural
