@@ -227,6 +227,8 @@ def process(cfgdir):
             d_base=d_base, base_hb=int(BASE_LO <= d_base <= BASE_HI),
             espO=espO, espC=espC,
             ti=ti_rmsd(C, og1, O, Nlv)))
+        li, cp = _conf(pred, name, mi)
+        conf.append((li, cp, _bfac(pdb)))
         # for RMSF: align this model's protein CA onto the first usable model
         ca = np.array([x for (rn, an, el, x) in prot if an == "CA"])
         if ca_ref is None:
