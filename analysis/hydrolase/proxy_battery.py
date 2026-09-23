@@ -148,6 +148,28 @@ def ti_rmsd(C, OG1, O, N):
 
 
 # ---- per-enzyme processing ---------------------------------------------------
+def _bfac(path):
+    """Mean B-factor (= Boltz pLDDT) of the catalytic Thr (chain B res 1)."""
+    vals = []
+    for ln in open(path):
+        if ln[:4] == "ATOM" and ln[21] == "B" and int(ln[22:26]) == 1:
+            try:
+                vals.append(float(ln[60:66]))
+            except ValueError:
+                pass
+    return float(np.mean(vals)) if vals else float("nan")
+
+
+def _conf(pred, name, model_i):
+    """(ligand_iptm, complex_plddt) from the per-model confidence json, or nan."""
+    p = f"{pred}/confidence_{name}_model_{model_i}.json"
+    try:
+        d = json.load(open(p))
+        return float(d.get("ligand_iptm", "nan")), float(d.get("complex_plddt", "nan"))
+    except (OSError, ValueError):
+        return float("nan"), float("nan")
+
+
 def process(cfgdir):
     name = os.path.basename(cfgdir)
     pred = f"{cfgdir}/boltz_results_{name}/predictions/{name}"
@@ -157,8 +179,10 @@ def process(cfgdir):
 
     per = []          # per-model scalar features
     cats = []         # catalytic-atom coords for RMSF (OG1) in each model's frame
+    conf = []         # (ligand_iptm, complex_plddt, thr_plddt) per model
     ca_ref = None; frames = []
     for pdb in pdbs:
+        mi = int(os.path.basename(pdb).split("_model_")[1].split(".")[0])
         thr, prot, lig = parse(pdb)
         if "OG1" not in thr or "N" not in thr or not lig:
             continue
