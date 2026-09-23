@@ -37,14 +37,16 @@ FS = 18  # base text size (user spec)
 # Metal (Mg) proxies dropped: Boltz-2 Mg placement can't resolve catalytic
 # geometry (distance ranks backwards; β,γ-bridging & coordination near-random).
 ROWS = [
-    ("sasa:distalC_sasa",    "Distal-carboxyl anchoring",         ""),   # i  ground-state
-    ("hyp:H7_adenineBurial", "ATP adenine burial",                ""),   # i  ground-state
-    ("bat:mean_inline_angle","In-line attack angle (d<4Å→angle)", "†"),  # ii NAC geometry
-    ("preorg:posn_rmsf",     "Reactive-center positional RMSF",   "†"),  # vi dynamics/preorg
+    ("sasa:distalC_sasa",    "Distal-carboxyl solvent exposure",  ""),   # i   ground-state
+    ("hyp:H7_adenineBurial", "ATP adenine burial",                ""),   # i   ground-state
+    ("bat:mean_inline_angle","In-line attack angle (d<4Å→angle)", "†"),  # ii  NAC geometry
+    ("preorg:posn_rmsf",     "Reactive-center positional RMSF",   "†"),  # vi  dynamics/preorg
     ("esp:lef_pa_std",       "Electric-field preorganization (LEF)", ""),# iii electrostatics
-    ("pka:s1_his_dev7",      "Catalytic His pKa (poised ~7)",     "‡"),  # iv nucleophile/base
     ("esp:esp_carbonyl",     "Carbonyl-oxyanion ESP (step 2)",    ""),   # iii electrostatics
-    ("tunnel:enc_tight",     "Acceptor-tunnel enclosure",         "†"),  # i/ii step-2 shape
+    # Dropped after direction-vs-mechanism audit (good AUROC, backwards physics):
+    #   pka:s1_his_dev7 — actives have His FAR from pH 7 (falsifies "poised proton shuttle")
+    #   tunnel:enc_tight — actives have MORE OPEN tunnel (contradicts walled-pocket hypothesis)
+    #   mg:* — Boltz Mg placement can't resolve catalytic geometry
 ]
 COLS = [("robust_meanAUROC", "mean"), ("top3_auroc", "top-3"),
         ("top5_auroc", "top-5"), ("top10_auroc", "top-10"),
