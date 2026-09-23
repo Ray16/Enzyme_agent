@@ -153,7 +153,7 @@ def fig_proxy_ranking(df):
     axA.set_xlabel("mean in-line attack angle (°)")
     axA.set_xlim(min(d.mean_inline_angle) - 4, 184)
     axA.set_ylim(n - 0.5, -0.5)
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.tight_layout()
     p = f"{FIG}/synthetase_angle_proxy_ranking.png"
     plt.savefig(p, bbox_inches="tight"); plt.close(fig)
     return p
