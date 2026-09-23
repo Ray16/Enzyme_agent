@@ -143,27 +143,13 @@ def fig_proxy_ranking(df):
     for i, (iid, a) in enumerate(zip(d.id, d.act)):       # label the enzymes that beat SfaB
         if a > SF:
             axA.text(d.mean_inline_angle[i] + 0.4, i, iid, va="center", ha="left",
-                     fontsize=FS - 7, fontweight="bold", color=_tier(iid, a, SF))
-    lines = ["above SfaB baseline  →  angle rank"]
-    for k, (_, r) in enumerate(beat.iterrows(), 1):
-        rk = f"#{ang_rank[r.id]}" if r.id in ang_rank else "INCONCLUSIVE"
-        lines.append(f"{k}. {r.id}  →  {rk}")
-    sf = df[df.id == "SfaB"].iloc[0]
-    lines += [
-        "",
-        "SfaB (parent, 1 Mg²⁺): INCONCLUSIVE",
-        f"  {int(sf.n_gated)}/50 poses at d < {D_GATE:.0f} Å; "
-        f"mean angle {sf.mean_inline_angle:.1f}°",
-    ]
-    axA.text(0.985, 0.02, "\n".join(lines), transform=axA.transAxes, ha="right", va="bottom",
-             fontsize=FS - 5, color="#222", fontweight="bold",
-             bbox=dict(boxstyle="round,pad=0.5", fc="#fbfbfb", ec="#888", lw=1.2))
-    axA.legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
-                        Patch(color=ORANGE, label="marginal (> SfaB, < 0.2)"),
+                     fontsize=FS, fontweight="bold", color=_tier(iid, a, SF))
+    axA.legend(handles=[Patch(color=RED, label="significantly better than SfaB"),
+                        Patch(color=ORANGE, label="marginally better than SfaB"),
                         Patch(color="#c8cdd4", label="≤ SfaB")],
                loc="lower right", bbox_to_anchor=(0.985, 0.30),
                frameon=True, framealpha=0.95, edgecolor="#ccc")
-    axA.set_ylabel(f"rank by mean in-line angle  ({n} conclusive enzymes)")
+    axA.set_ylabel("rank by mean in-line angle")
     axA.set_xlabel("mean in-line attack angle (°)")
     axA.set_xlim(min(d.mean_inline_angle) - 4, 184)
     axA.set_ylim(n - 0.5, -0.5)
