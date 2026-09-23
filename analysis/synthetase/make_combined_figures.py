@@ -190,8 +190,7 @@ def fig_proxy_comparison(df, bat):
                 fontsize=FS - 4, fontweight="bold",
                 color=HILITE if sig[i] else "#555")
     ax.set_yticks(y)
-    ax.set_yticklabels([f"{r['name']}\n" + r"$\it{" + r['cat'].replace(' ', r'\ ') + r"}$ · n=" + str(r['n_scored'])
-                        for _, r in res.iterrows()])
+    ax.set_yticklabels([f"{r['name']}\n{r['cat']} · n={r['n_scored']}" for _, r in res.iterrows()])
     ax.set_xlim(0, 1.08)
     ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
     ax.set_ylim(-0.6, len(res) - 0.4)
