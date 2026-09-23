@@ -22,14 +22,16 @@ plt.rcParams.update({"font.size": 14, "axes.titlesize": 15, "axes.titleweight": 
 
 # per-pose (angle, distance-to-Pa) for every enzyme
 data = {}
-for cfg in sorted(glob.glob(f"{RES}/step1_*")):
+for cfg in sorted(glob.glob(f"{RES}/*")):
+    if not os.path.isdir(cfg):
+        continue
     pred = glob.glob(f"{cfg}/boltz_results_*/predictions/*")
     if not pred:
         continue
     per = [(g["ang_pa"], g["d_pa"]) for pdb in sorted(glob.glob(f"{pred[0]}/*model_*.pdb"))
            for g in [s.geom_model(pdb)] if g]
     if per:
-        data[os.path.basename(cfg)[len("step1_"):]] = np.array(per)
+        data[os.path.basename(cfg)] = np.array(per)   # 1-Mg dirs are 'AS9'/'SfaB' (no prefix)
 
 act = pd.read_csv(f"{ROOT}/exp_data/amide_synthetase/assay_data/panel_activity.csv")[
     ["id", "activity_N66L1_ugml_avg"]].rename(columns={"activity_N66L1_ugml_avg": "act"})
