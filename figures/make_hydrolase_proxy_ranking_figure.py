@@ -51,9 +51,10 @@ def main():
         ax.set_yscale("log")
 
         # label the 5 most active enzymes where they land in the proxy ranking
+        d["_rk"] = rk
         top5 = d.sort_values(val, ascending=False).head(5)
         for _, r in top5.iterrows():
-            ax.annotate(r["id"], (r["rank"], r[val]), fontsize=FS - 7,
+            ax.annotate(r["id"], (r["_rk"], r[val]), fontsize=FS - 7,
                         xytext=(4, 4), textcoords="offset points", color=ACT)
 
         ax.set_title(title, fontsize=FS + 1, fontweight="bold", pad=10)
