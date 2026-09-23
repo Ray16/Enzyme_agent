@@ -31,6 +31,10 @@ from PIL import Image
 # Each entry: label, donor (acid), acceptor (amine), product (amide).
 # Neutral forms; connectivity matches the run's UniProt/Rhea SMILES.
 REACTIONS = [
+    ("Target reaction",
+     "OC(=O)CCCCC(=O)O",                  # adipic acid
+     "NCCCCCCN",                          # hexamethylenediamine
+     "OC(=O)CCCCC(=O)NCCCCCCN"),          # N-(6-aminohexyl) adipamide
     ("DdaG",
      "OC(=O)/C=C/C(=O)O",                 # fumarate
      "N[C@@H](CN)C(=O)O",                 # L-2,3-diaminopropanoate
@@ -43,10 +47,6 @@ REACTIONS = [
      "C[C@H](CCN)[C@@H](N)C(=O)O",        # (3R)-3-methyl-D-ornithine
      "NCCCC[C@H](N)C(=O)O",               # L-lysine
      "C[C@H](CCN)[C@@H](N)C(=O)NCCCC[C@H](N)C(=O)O"),  # N6-(3-Me-D-ornithyl)-L-lysine
-    ("Target (nylon-6,6 diad)",
-     "OC(=O)CCCCC(=O)O",                  # adipic acid
-     "NCCCCCCN",                          # hexamethylenediamine
-     "OC(=O)CCCCC(=O)NCCCCCCN"),          # N-(6-aminohexyl) adipamide
 ]
 
 AMIDE = Chem.MolFromSmarts("[CX3](=O)[NX3]")
