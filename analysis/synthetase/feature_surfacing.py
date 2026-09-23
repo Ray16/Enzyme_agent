@@ -27,6 +27,7 @@ SRC = {
     "acceptor_tunnel_geometry.csv": "tunnel",
     "exploratory_mg_coordination.csv": "mg",
     "psiptm_enzyme_diacid_1mg.csv": "psiptm",
+    "esp_reactive.csv": "esp",              # electrostatics: ESP + projected LEF at reactive atom
     "crossmodel_nearattack.csv": "boltz",   # only boltz2_* cols kept below
 }
 META = {"id", "activity", "act", "activity_n66l1", "label_gt_sfab", "status", "is_active",
