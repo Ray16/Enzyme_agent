@@ -40,13 +40,13 @@ def main():
         d = df.dropna(subset=[proxy, val]).copy()
         # rank 1 = best proxy score (higher ipTM/pLDDT = predicted more active)
         d = d.sort_values(proxy, ascending=False).reset_index(drop=True)
-        d["rank"] = np.arange(1, len(d) + 1)
-        d["active"] = d[sig] == 1
-        y = d[val].clip(lower=d[val][d[val] > 0].min())
+        rk = np.arange(1, len(d) + 1)
+        act = (d[sig] == 1).to_numpy()
+        y = d[val].clip(lower=d[val][d[val] > 0].min()).to_numpy()
 
-        ax.scatter(d.rank[~d.active], y[~d.active], s=55, c=INA, edgecolor="none",
+        ax.scatter(rk[~act], y[~act], s=55, c=INA, edgecolor="none",
                    label="inactive", zorder=2)
-        ax.scatter(d.rank[d.active], y[d.active], s=95, c=ACT, edgecolor="black",
+        ax.scatter(rk[act], y[act], s=95, c=ACT, edgecolor="black",
                    linewidth=0.4, label="active (> control)", zorder=3)
         ax.set_yscale("log")
 
