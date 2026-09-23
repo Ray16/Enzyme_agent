@@ -30,6 +30,17 @@ from enzyme_discovery_agent.substrate_fit import assign_one_to_one
 
 logger = logging.getLogger("enzyme_agent")
 
+# A native counterpart is treated as a genuine structural analogue of a target
+# substrate only if its carbon skeleton is at least this fraction of the target
+# substrate's — below it, a shared functional-group type rests on too small a
+# backbone to fill the role (a similarity-of-type artefact).  The rule is applied
+# only when the target substrate itself has a real carbon skeleton (>= the
+# minimum below), so tiny target substrates are exempt.  These are structural
+# comparability parameters, not tuned relevance thresholds, and encode no enzyme
+# or substrate identity.
+_SCAFFOLD_COMPARABILITY_RATIO = 0.25
+_MIN_TARGET_CARBONS = 2
+
 
 def _heavy_atoms(smiles: str) -> int | None:
     try:
