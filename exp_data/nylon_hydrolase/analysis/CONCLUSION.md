@@ -30,14 +30,17 @@ Ntn / Ser-nucleophile amide hydrolysis.
 - Activity: L2 = PA66 dimer release (primary, 38/96 active), L1 = PA66 monomer (15/96).
 
 ## Result
-| feature (fixed dir) | L2 mean / top-5 | L1 mean / top-5 |
-|---|---|---|
-| **complex pLDDT** (null) | **0.66 / 0.72** | 0.57 / 0.57 |
-| **active-site pLDDT** (null) | 0.51 / 0.46 | **0.64 / 0.81** |
-| reactive-center RMSF | 0.63 / 0.73 | 0.51 / 0.42 |
-| near-attack joint gate | 0.58 / 0.69 | 0.39 / 0.23 |
-| TI-template RMSD | 0.52 / 0.62 | 0.30 / 0.11 |
-| oxyanion-hole / ESP / base | ≤0.57, several *backwards* | ≤0.54, mostly backwards |
+| feature (fixed mechanistic dir) | L2 mean / top-5 | L1 mean / top-5 | block |
+|---|---|---|---|
+| **autocleavage-junction ipTM (A\|B)** | **0.70 / 0.81** | 0.52 / 0.43 | active-site conf. |
+| **catalytic-Thr pLDDT** | 0.51 / 0.46 | **0.64 / 0.81** | active-site conf. |
+| **nucleophile β-chain pTM** | 0.54 / 0.50 | 0.61 / 0.77 | active-site conf. |
+| active-site-shell pLDDT | 0.55 / 0.51 | 0.62 / 0.64 | active-site conf. |
+| complex pLDDT (global) | 0.66 / 0.72 | 0.57 / 0.57 | global conf. |
+| reactive-center RMSF | 0.63 / 0.73 | 0.51 / 0.42 | geometry (pLDDT-confounded) |
+| near-attack joint gate | 0.58 / 0.69 | 0.39 / 0.23 | geometry |
+| TI-template RMSD | 0.52 / 0.62 | 0.30 / 0.11 | geometry |
+| oxyanion-hole / ESP / base | ≤0.57, several *backwards* | ≤0.54, mostly backwards | geometry |
 
 - **The best signal is active-site / autocleavage confidence — distinct from global foldability.**
   Autocleavage-junction ipTM (A|B) tops L2 (top-5 0.81); catalytic-Thr pLDDT and β-chain pTM top L1
