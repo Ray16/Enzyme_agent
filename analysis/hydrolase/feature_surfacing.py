@@ -40,6 +40,8 @@ SIGN = {
     "base:hb_frac": +1, "base:median_dN_OG1": -1, "preorg:og1_rmsf": -1,
     "ti:rmsd_min": -1, "ti:rmsd_mean": -1, "esp:oxyanion_O_mean": +1, "esp:carbonyl_C_mean": +1,
     "conf:ligand_iptm": +1, "conf:complex_plddt": +1, "conf:thr_plddt": +1,
+    # active-site / autocleavage confidence (mechanistically motivated for Ntn enzymes)
+    "as:shell_plddt": +1, "conf:ab_iptm": +1, "conf:bchain_ptm": +1,
 }
 
 
