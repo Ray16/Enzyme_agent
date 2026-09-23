@@ -1,0 +1,207 @@
+# structural_proxy_prior.yaml
+#
+# A GENERIC reasoning scaffold for turning predicted/cofolded structures into an
+# experimental-activity prediction (the "structure -> activity bridge"), for ANY
+# enzyme mechanism. This file is a STRUCTURED WAY OF THINKING, not a list of
+# recipes: it names the catalytic determinants worth probing and, for each, the
+# questions the agent must REASON THROUGH to construct a proxy tailored to the
+# specific enzyme system in front of it. Concrete, system-specific instantiations
+# appear only under `evidence:` as worked examples/priors, never as rules to copy.
+#
+# Consumed by two clients:
+#   - llm_planner        : reads determinants + evidence as context; reasons out a
+#                          mechanism-appropriate proxy per determinant.
+#   - deterministic_scorer: computes each instantiated proxy over the ensemble and,
+#                          when labels exist, runs the direction audit + confound
+#                          checks (cross_cutting) and demotes proxies that fail.
+#
+# Grows over time (Aim 3): each labeled campaign appends to the relevant
+# `evidence:` lists, so the prior sharpens rather than being re-derived.
+
+version: 1
+scope: "map cofolded / predicted structures to measured activity for any enzyme mechanism"
+
+usage:
+  procedure:
+    - "From the reasoning contract, read: mechanism, reaction step(s), nucleophile,
+       electrophile / reactive atom, cofactors and metal count, and substrate identity."
+    - "For each determinant below, answer its `instantiate` questions FOR THIS SYSTEM
+       to define a concrete, computable proxy (atoms, geometry, aggregation)."
+    - "Prefer proxies whose required feature the structure predictor can actually
+       resolve at the available `tier` (see cross_cutting.tier_awareness)."
+    - "Compute each proxy over the structure ensemble. When activity labels exist,
+       run cross_cutting.direction_audit and cross_cutting.confound_check, and demote
+       any proxy that fails."
+    - "Report per-proxy with decomposed evidence; never fuse into a single composite
+       score (cross_cutting.no_composite). State honesty flags (survivorship, tier)."
+  reads_reasoning_contract: [mechanism, reaction_steps, nucleophile, electrophile, metals, substrate]
+  emits: "an evaluation plan: {determinant -> instantiated proxy, expected_direction, tier, caveats}"
+
+# ------------------------------------------------------------------------------
+# Mechanism-agnostic catalytic determinants (the physical "why"). One+ proxy each.
+# ------------------------------------------------------------------------------
+determinants:
+
+  - id: ground_state_binding
+    question: "Are the substrate and any cofactor positioned and complementary for the reaction to begin?"
+    physical_principle: >
+      A productive Michaelis complex requires the reacting substrate (and cofactor)
+      to be bound in the correct orientation and register, not merely present.
+    instantiate:
+      - "Which substrate atom/group must be presented to the active site, and which end should face solvent vs be buried?"
+      - "Is there a cofactor whose correct seating gates the chemistry (e.g. ATP, PLP, FAD, metal)?"
+      - "Is registration mono-dentate/regioselective (e.g. a diacid activated at one carboxyl only)?"
+    direction_logic: "Correct orientation/seating -> more competent; audit the sign against labels."
+    tier: ensemble
+    guardrails:
+      - "This is a binding-orientation signal, not catalysis; it can correlate with activity but does not imply turnover."
+    evidence:
+      - system: amide_synthetase (adenylation)
+        instantiation: "distal (non-activated) carboxyl solvent exposure; ATP adenine ring burial"
+        outcome: "modest, class-level (significant-tier AUROC ~0.7-0.77); weak overall ranking"
+
+  - id: reactive_conformation
+    question: "Does the structure place the reacting groups in a geometry competent for the rate-limiting chemical step?"
+    physical_principle: >
+      Catalysis requires the nucleophile and electrophile to sample a near-attack
+      conformation - correct approach distance AND trajectory angle - for the
+      bond-making/breaking step.
+    instantiate:
+      - "What is the nucleophile and the electrophilic atom it attacks, for THIS mechanism and step?"
+      - "What is the ideal attack geometry for this bond type? (in-line ~180 deg for phosphoryl/SN2 transfer; Burgi-Dunitz ~105 deg for carbonyl addition; ...)"
+      - "Is the reactive complex present in the cofold, or must a step (e.g. an acyl intermediate) be modeled separately?"
+    direction_logic: "Nearer the ideal geometry across the ensemble -> more competent. Distance-gate then score angle; never keep a backwards sign."
+    tier: ensemble
+    guardrails:
+      - "Distance-gating a pose set introduces survivorship bias -> report class-level enrichment, not calibrated ranking."
+      - "Only trust if the predictor resolves the reactive complex; a non-native substrate may fail to dock (false negatives)."
+    evidence:
+      - system: amide_synthetase (adenylation)
+        instantiation: "carboxylate-O -> ATP P-alpha, in-line angle, gated <4A"
+        outcome: "sharp but NARROW: top-3 AUROC 0.94, but ~0.36 on the marginal tier and does not rank the best catalyst; a coarse class screen"
+      - system: nylon_hydrolase (Ntn-hydrolase)
+        instantiation: "Thr-O-gamma -> scissile amide carbonyl C, Burgi-Dunitz, on a nylon-6,6 oligomer"
+        outcome: "weak (top-5 ~0.69); not predictive in a single-fold panel; can give false negatives (NylC near-attack fraction = 0)"
+
+  - id: transition_state_electrostatics
+    question: "Does the active-site electrostatic environment stabilize the transition state / developing charge?"
+    physical_principle: >
+      Enzymes accelerate reactions largely by a pre-organized electrostatic field
+      that stabilizes the TS charge redistribution more than the ground state (Warshel).
+    instantiate:
+      - "Where does charge develop in the TS (e.g. an oxyanion on a carbonyl O; a phosphorane)?"
+      - "Which is more computable here: the potential AT the reactive atom, or the field projected on the scissile bond?"
+      - "Is the field's CONSISTENCY across the ensemble (preorganization) more robust than its cheap absolute magnitude?"
+    direction_logic: "A field/potential oriented to stabilize the developing charge -> more active. Prefer field consistency over raw MM-charge magnitude."
+    tier: ensemble
+    guardrails:
+      - "Cheap Coulomb-from-MM-charge fields are ranking-only; magnitudes will not match QM/MM."
+      - "Full electrostatic-preorganization / catalytic-field methods (CAMM-DTSS, VSE) need QM and are out of the static/ensemble tier."
+    evidence:
+      - system: amide_synthetase (adenylation)
+        instantiation: "ensemble SD of field projected on nucleophile->P-alpha axis (preorg); ESP at acyl-adenylate carbonyl C"
+        outcome: "modest (mean AUROC ~0.65-0.71); field CONSISTENCY beat magnitude (bare LEF magnitude ~random)"
+
+  - id: nucleophile_base_activation
+    question: "Is the nucleophile (or a general acid/base) protonation-poised for chemistry?"
+    physical_principle: >
+      The nucleophile often must be deprotonated/activated, or a general acid-base
+      must be poised, for the step to proceed at physiological pH.
+    instantiate:
+      - "What is the nucleophile, and does it need activation (deprotonation) or a general base?"
+      - "Which residue could serve, and what pKa/protonation state would make it competent?"
+      - "Is the effect directional (e.g. an up-shifted, cationic residue for electrostatics) or symmetric?"
+    direction_logic: "A residue poised in the competent protonation state -> more active. BEWARE a symmetric 'deviation from neutral' metric: it lumps opposite states and often audits backwards."
+    tier: ensemble
+    guardrails:
+      - "Empirical pKa (e.g. PROPKA) on non-relaxed cofolds is ordinal at best."
+      - "A high-AUROC 'His near pH 7' style metric can be a direction-audit failure - verify the sign before trusting."
+    evidence:
+      - system: amide_synthetase (adenylation)
+        instantiation: "PROPKA min|pKa-7| of active-site His near P-alpha"
+        outcome: "DROPPED: AUROC ~0.75 but direction backwards (actives had His FAR from 7); mechanism falsified"
+
+  - id: leaving_group_metal_stabilization
+    question: "Is the leaving group / metal-ion geometry set up to stabilize the departing group?"
+    physical_principle: >
+      Many reactions need a metal (or H-bond network) to organize and stabilize the
+      leaving group and TS (e.g. Mg2+ bridging the beta,gamma-pyrophosphate in adenylation).
+    instantiate:
+      - "What is the leaving group, and what stabilizes it (metal, oxyanion hole, positive residue)?"
+      - "For a metal: how many ions, and which atoms should it bridge/coordinate for THIS mechanism?"
+    direction_logic: "Tighter/geometrically-correct leaving-group stabilization -> more active."
+    tier: ensemble
+    guardrails:
+      - "CRITICAL: only trust if the predictor places the metal/leaving group with catalytic fidelity - often it does NOT."
+    evidence:
+      - system: amide_synthetase (adenylation)
+        instantiation: "Mg2+ beta,gamma-diphosphate bridging; Mg-phosphate distance; inner-sphere coordination"
+        outcome: "ALL DROPPED: near-random or directionally backwards; Boltz-2 does not place Mg2+ with catalytic fidelity. Determinant left uncovered."
+
+  - id: dynamic_preorganization
+    question: "Is the reactive center held rigidly and pre-organized across conformations?"
+    physical_principle: >
+      A catalytic site pays a low entropic/reorganization cost: the reactive geometry
+      is maintained (low fluctuation) across the conformational ensemble.
+    instantiate:
+      - "Which atoms define the reactive center whose rigidity matters?"
+      - "Can rigidity be read from the generative ensemble (pose-to-pose fluctuation) without MD?"
+      - "Are there orthogonal ensemble stats (catalytic H-bond angle spread, rotamer fraction)?"
+    direction_logic: "Lower fluctuation / higher consistency -> more preorganized -> more active."
+    tier: ensemble
+    guardrails:
+      - "Confound: ensemble rigidity can be driven by overall model confidence (pLDDT), not catalysis - see cross_cutting.confound_check."
+    evidence:
+      - system: amide_synthetase (adenylation)
+        instantiation: "positional RMSF of reactive-center atoms across 50 diffusion samples"
+        outcome: "strongest and most CONSISTENT proxy (significant 0.85 / marginal 0.63 / overall 0.62)"
+      - system: nylon_hydrolase (Ntn-hydrolase)
+        instantiation: "reactive-center RMSF across ensemble"
+        outcome: "was a pLDDT CONFOUND (rho ~-0.63 with pLDDT); not an independent catalytic signal there"
+
+  - id: integrated_barrier
+    question: "What is the activation barrier of the rate-limiting step?"
+    physical_principle: "The most predictive quantity, but it integrates all determinants and requires reactive-path sampling."
+    instantiate:
+      - "Is any lightweight surrogate available (theozyme-RMSD to an idealized TS; semi-empirical cluster single-point)?"
+    direction_logic: "Lower barrier -> more active."
+    tier: [MD, QM]
+    guardrails:
+      - "Full QM/MM and EVB require MD sampling - OUT of the static/ensemble budget. Do not claim coverage of this determinant from static structure alone."
+    evidence:
+      - system: (none at static/ensemble tier)
+        instantiation: "-"
+        outcome: "not accessible without MD/QM"
+
+# ------------------------------------------------------------------------------
+# Cross-cutting reasoning principles / guardrails (apply to constructing ANY bridge)
+# ------------------------------------------------------------------------------
+cross_cutting:
+  direction_audit:
+    rule: "Retain a proxy only if its observed activity-consistent direction matches its mechanistic rationale."
+    why: "A high AUROC with a backwards sign is a confound, not catalysis (caught Mg-distance and His-pKa)."
+    action: "When labels exist, compare observed sign to expected_direction; if opposite, demote/flag, do not ship."
+  confound_check:
+    rule: "Before crediting a mechanistic proxy, test whether the signal is really foldability/confidence (pLDDT) or a trivial covariate (size, chain length)."
+    why: "In the hydrolase panel the ONLY predictor was pLDDT, and RMSF was a pLDDT confound."
+  no_composite:
+    rule: "Reason over decomposed, per-determinant facts; never fuse proxies into one blended score."
+    why: "Fusion cancels signal and hides direction errors (same lesson as raw-NAC cancellation and Tanimoto)."
+  tier_awareness:
+    rule: "Match each proxy to the fidelity the structure predictor actually delivers; know which determinants are uncoverable at the available tier."
+    why: "Metal geometry (v) is uncoverable from Boltz-2 cofolds; the barrier (vii) needs MD/QM."
+  survivorship:
+    rule: "Any distance/quality gate on the pose set biases the surviving subset; report class-level enrichment, not calibrated ranking, for gated proxies."
+  panel_context:
+    rule: "Calibrate expectations to the panel: graded within-family / access-gated panels can surface class-level signal; homogeneous single-fold panels often show none beyond foldability."
+  leakage_firewall:
+    rule: "This prior is mechanistic and general - never seed proxy choice with the known answer/family; keep evidence from other campaigns to avoid overfitting one panel."
+  reporting:
+    rule: "Prefer activity TIERS (significantly-active / marginal / overall rank) over arbitrary top-k cutoffs; state whether a proxy is a class screen vs a quantitative ranker."
+
+# ------------------------------------------------------------------------------
+# Intended integration (not yet wired):
+#   target_reasoning (mechanism) -> structural_modeling_handoff (selects proxies
+#   from this prior, keyed by mechanism) -> scorer (computes + audits) -> evidence
+#   append-back after experimental labels arrive.
+# ------------------------------------------------------------------------------
