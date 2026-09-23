@@ -107,7 +107,6 @@ def main():
 
     fig.text(0.01, 0.005,
              "† conditional on the d<4Å near-attack gate (survivorship-biased);  "
-             "‡ His-present subset (n=44 of 48);  "
              "cells = AUROC in each feature's activity-consistent direction.",
              fontsize=FS - 6, color="#555")
 
