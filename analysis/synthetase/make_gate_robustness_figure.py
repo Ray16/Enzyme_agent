@@ -12,8 +12,9 @@ ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
 sys.path.insert(0, f"{ROOT}/structural_modeling/scripts")
 import step1_nac as s
 assert hasattr(s, "geom_model")
-RES = f"{ROOT}/exp_data/amide_synthetase/boltz2/step1/results/output_configs"
-FIG = f"{ROOT}/figures/synthetase_gate_robustness_ranking.png"
+RES = f"{ROOT}/exp_data/amide_synthetase/boltz2/step1_1mg/results"   # corrected 1-Mg panel
+FIG = f"{ROOT}/exp_data/amide_synthetase/figures/synthetase_gate_robustness_ranking.png"
+os.makedirs(os.path.dirname(FIG), exist_ok=True)
 CUTS = [3.5, 4.0, 4.5, 5.0, 6.0]
 RED, ORANGE, GREY, BROWN = "#d62728", "#f39c12", "#c8cdd4", "#8b5a2b"
 plt.rcParams.update({"font.size": 14, "axes.titlesize": 15, "axes.titleweight": "bold",
