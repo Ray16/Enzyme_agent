@@ -116,9 +116,7 @@ def main():
     fig.tight_layout(rect=(0, 0.02, 1, 1))
     out = os.path.join(base, "figures", "synthetase_feature_surfacing.png")
     fig.savefig(out, dpi=170, bbox_inches="tight")
-    nfeat = sum(1 for k, *_ in rows if k == "feat")
-    print("wrote", out, "|", nfeat, "features x", len(COLS), "metrics,",
-          len(GROUPS), "categories")
+    print("wrote", out, "|", n, "features x", len(COLS), "metrics")
 
 
 if __name__ == "__main__":
