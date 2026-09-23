@@ -67,7 +67,7 @@ def main():
 
     n = len(rows)
     fig, ax = plt.subplots(figsize=(12.6, 0.62 * n + 2.4))
-    im = ax.imshow(M, cmap="Greys", vmin=0.42, vmax=0.95, aspect="auto")
+    im = ax.imshow(M, cmap="Blues", vmin=0.42, vmax=0.95, aspect="auto")
 
     # cell annotations (black on light, white on dark)
     for i in range(n):
