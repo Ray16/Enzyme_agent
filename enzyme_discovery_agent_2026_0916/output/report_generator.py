@@ -303,6 +303,7 @@ def _collapse_orthologs(
             members,
             key=lambda e: (_expression_pref(_data(e)), -(e.get("rank") or 1_000_000)),
         )
+        best_ranked = min(members, key=lambda e: (e.get("rank") or 1_000_000))
         rep = dict(rep_src)
         rep["orthologs"] = [
             {
@@ -313,6 +314,23 @@ def _collapse_orthologs(
             for m in members
             if m is not rep_src
         ]
+        # Record why this member represents the group, so the choice is auditable.
+        if len(members) > 1:
+            overridden = rep_src is not best_ranked
+            rep["representative_selection"] = {
+                "reason": "e_coli_expressibility" if overridden else "top_ranked",
+                "chosen": rep_src.get("accession", ""),
+                "expression_pref": _expression_pref(_data(rep_src)),
+                "members": [m.get("accession", "") for m in members],
+            }
+            if overridden:
+                logger.info(
+                    "Ortholog collapse [%s]: kept %s as representative for E. coli "
+                    "expressibility (pref=%d) over higher-ranked %s (rank %s)",
+                    key, rep_src.get("accession", ""),
+                    _expression_pref(_data(rep_src)),
+                    best_ranked.get("accession", ""), best_ranked.get("rank"),
+                )
         # Keep the group at the best rank held by any of its members.
         rep["_group_rank"] = min((m.get("rank") or 1_000_000) for m in members)
         collapsed.append(rep)
