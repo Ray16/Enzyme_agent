@@ -34,9 +34,13 @@ Ntn / Ser-nucleophile amide hydrolysis.
 | TI-template RMSD | 0.52 / 0.62 | 0.30 / 0.11 |
 | oxyanion-hole / ESP / base | ≤0.57, several *backwards* | ≤0.54, mostly backwards |
 
-- **Model confidence wins.** complex pLDDT (L2) and active-site pLDDT (L1) are the only features
-  with correct-direction signal across both readouts. The best mechanistic proxy (near-attack
-  joint gate, L2 top-5 0.69) is matched by pLDDT and collapses for L1.
+- **The only correct-direction feature is model confidence — likely a foldability confound.**
+  complex pLDDT (L2) and active-site pLDDT (L1) are the only features that survive fixed-direction
+  scoring, but the assay is crude lysate (activity requires expression + solubility) and pLDDT
+  correlation with rate is weak (ρ ≈ 0.12–0.22), so pLDDT is most honestly read as "is this a
+  well-formed, expressible family member" — detectability, not turnover — not a mechanistic
+  predictor. The best mechanistic proxy (near-attack joint gate, L2 top-5 0.69) is matched by
+  pLDDT and collapses for L1.
 - **The RMSF "signal" is a confidence confound** — `preorg:og1_rmsf` correlates ρ = −0.63 with
   complex pLDDT; active enzymes are simply modeled more rigidly/confidently.
 - **Oxyanion-hole, ESP, and base-distance proxies are near-random or backwards** (`*`). The
