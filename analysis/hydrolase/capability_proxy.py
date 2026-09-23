@@ -132,10 +132,9 @@ def score_pose(path):
     # metal near carbonyl C (from any chain)
     metal_near = False
     for a in atoms:
-        if a["elem"] in METALS and a["resname"] in METALS | {a["resname"]}:
-            if a["elem"] in METALS and dist(a["xyz"], cCxyz) <= METAL_CUT:
-                metal_near = True
-                break
+        if a["elem"] in METALS and dist(a["xyz"], cCxyz) <= METAL_CUT:
+            metal_near = True
+            break
     return {"min_d": min_d, "bd": bd_at_min, "near_attack": near_attack,
             "oxy": oxy, "metal": metal_near}
 
