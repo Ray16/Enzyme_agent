@@ -67,9 +67,12 @@ catalysts at AUROC **0.94**), **no catalytic-geometry proxy correctly surfaces t
 hydrolases** for either readout:
 
 - The only feature with correct-direction signal for **both** L1 and L2 is **model confidence /
-  active-site pLDDT** (a foldability/quality proxy, *not* catalytic geometry) — the same null
-  the synthetase study excluded. Best mechanistic proxy: near-attack joint gate (L2 top-5 0.69),
-  but it is matched by pLDDT and vanishes for L1.
+  active-site pLDDT** — but this is best read as a **foldability/detectability confound, not a
+  mechanistic predictor**: the assay is crude lysate (activity needs expression + solubility),
+  pLDDT plausibly reports "well-formed folded family member," and even its rate correlation is
+  weak (ρ ≈ 0.12–0.22). It is the same kind of null the synthetase study excluded. Best
+  *mechanistic* proxy: near-attack joint gate (L2 top-5 0.69), but it is matched by pLDDT and
+  vanishes for L1.
 - Every enzyme binds the tetrad (median best Oγ···C ≈ 2.5 Å in both actives and inactives) and
   productive near-attack is rare for *all* of them (47/96 have zero joint-NAC poses). The
   catalytic apparatus is essentially invariant across this single fold.
