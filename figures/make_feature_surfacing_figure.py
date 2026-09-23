@@ -1,53 +1,91 @@
 #!/usr/bin/env python3
-"""Rank structural features by top-3-catalyst surfacing (Boltz-2 synthetase panel).
+"""Holistic structural-feature comparison for surfacing synthetase catalysts.
 
-Reads exp_data/amide_synthetase/analysis/feature_surfacing_ranking.csv and draws a
-horizontal bar of top-3 discrimination (|AUROC-0.5|+0.5, direction-agnostic) for the
-top-N features, colored by feature category, annotated with AS9 rank and direction.
-Usage: python make_feature_surfacing_figure.py [--base exp_data/amide_synthetase] [--top 18]
+Reads exp_data/amide_synthetase/analysis/feature_surfacing_ranking.csv and renders
+ONE essential figure with two panels:
+  (A) heatmap: top-N features x cutoff AUROCs (top-3/5/10 actives, activity>SfaB),
+      oriented so higher = better — shows each feature's behaviour across "how many
+      count as active".
+  (B) scatter: enrichment (top-5 AUROC) vs global rank-correlation (|Spearman rho|),
+      coloured by feature category — separates "enrich the very top" features (high y,
+      low x) from "rank-order the whole panel" features (high both).
+Usage: python make_feature_surfacing_figure.py [--base exp_data/amide_synthetase] [--top 16]
 """
 import os, csv, argparse
+import numpy as np
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
 CATS = [
-    ("near-attack angle", "#2E6E9E", ("inline_angle", "gated_angle", "inline_frac", "near_attack", "preorg:angle")),
+    ("near-attack angle", "#2E6E9E", ("inline_angle", "gated_angle", "inline_frac", "near_attack", "preorg:angle", "min_d")),
     ("preorganization",   "#27ae60", ("posn_rmsf", "approach_std", "clamp")),
     ("Mg coordination",   "#8e44ad", ("mg", "bridge")),
-    ("electrostatics",    "#e67e22", ("base", "netchg", "acid", "elec:")),
-    ("burial / SASA",     "#c0392b", ("sasa", "burial", "distalsasa", "oxyanion")),
-    ("tunnel geometry",   "#16a085", ("tunnel", "channel", "enc_", "exit", "l2.", "l3.")),
+    ("electrostatics",    "#e67e22", ("base", "netchg", "acido", "elec:")),
+    ("burial / SASA",     "#c0392b", ("sasa", "burial", "distalsasa", "oxyanion", "h1_", "h2_")),
+    ("tunnel geometry",   "#16a085", ("tunnel", "channel", "enc_", "exit", "l2.", "l3.", "h3_", "h4_")),
     ("confidence/other",  "#7f8c8d", ()),
 ]
-def cat(name):
+def catcol(name):
     n = name.lower()
-    for label, col, keys in CATS[:-1]:
-        if any(k in n for k in keys): return label, col
-    return CATS[-1][0], CATS[-1][1]
+    for lab, col, keys in CATS[:-1]:
+        if any(k in n for k in keys): return lab, col
+    return CATS[-1][:2]
+
+def fnum(v):
+    try: return float(v)
+    except: return np.nan
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--base", default="exp_data/amide_synthetase"); ap.add_argument("--top", type=int, default=18)
+    ap = argparse.ArgumentParser(); ap.add_argument("--base", default="exp_data/amide_synthetase"); ap.add_argument("--top", type=int, default=16)
     a = ap.parse_args(); base = os.path.abspath(a.base)
-    rows = [r for r in csv.DictReader(open(os.path.join(base, "analysis/feature_surfacing_ranking.csv"))) if r["top3_disc"]]
-    rows = sorted(rows, key=lambda r: float(r["top3_disc"]), reverse=True)[:a.top][::-1]
-    labels = [r["feature"] for r in rows]
-    disc = [float(r["top3_disc"]) for r in rows]
-    cols = [cat(r["feature"])[1] for r in rows]
-    fig, ax = plt.subplots(figsize=(9.5, max(4, 0.42*len(rows))))
-    y = range(len(rows))
-    ax.barh(list(y), disc, color=cols)
-    ax.axvline(0.5, ls=":", c="k", lw=1)
-    ax.set_yticks(list(y)); ax.set_yticklabels(labels, fontsize=8)
-    ax.set_xlim(0.5, 1.0); ax.set_xlabel("top-3 surfacing discrimination  (|AUROC−0.5|+0.5)")
-    ax.set_title("Which structural feature surfaces the top synthetase catalysts?\nBoltz-2 step-1 panel, 50 samples · label = 3 most active (AS9/AS17/AS23)", fontsize=10)
-    for i, r in enumerate(rows):
-        ax.text(disc[i]+0.004, i, f"AS9 #{r['as9_rank']} ({r['dir']})", va="center", fontsize=7)
-    seen=set(); handles=[]
-    for lab,col,_ in CATS:
-        handles.append(Patch(color=col, label=lab))
-    ax.legend(handles=handles, fontsize=7, loc="lower right", framealpha=0.9)
-    fig.tight_layout()
+    rows = list(csv.DictReader(open(os.path.join(base, "analysis/feature_surfacing_ranking.csv"))))
+    for r in rows: r["_rob"] = fnum(r["robust_meanAUROC"])
+    rows = [r for r in rows if not np.isnan(r["_rob"])]
+    rows.sort(key=lambda r: r["_rob"], reverse=True)
+    topR = rows[:a.top][::-1]
+
+    fig = plt.figure(figsize=(14, max(5, 0.5*len(topR))))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.15, 1.0], wspace=0.35)
+
+    # ---- A: heatmap ----
+    axA = fig.add_subplot(gs[0, 0])
+    mcols = [("top3_auroc","top-3"),("top5_auroc","top-5"),("top10_auroc","top-10"),("binary_auroc_gtSfaB",">SfaB")]
+    M = np.array([[fnum(r[c]) for c,_ in mcols] for r in topR])
+    im = axA.imshow(M, cmap="RdYlGn", vmin=0.4, vmax=1.0, aspect="auto")
+    axA.set_xticks(range(len(mcols))); axA.set_xticklabels([l for _,l in mcols])
+    axA.set_yticks(range(len(topR))); axA.set_yticklabels([r["feature"] for r in topR], fontsize=8)
+    for i in range(len(topR)):
+        for j in range(len(mcols)):
+            if not np.isnan(M[i,j]): axA.text(j, i, f"{M[i,j]:.2f}", ha="center", va="center", fontsize=7)
+    # color feature labels by category
+    for tick, r in zip(axA.get_yticklabels(), topR):
+        tick.set_color(catcol(r["feature"])[1])
+    axA.set_title("A. Feature × activity-cutoff AUROC (oriented, higher=better)", fontsize=10)
+    cb = fig.colorbar(im, ax=axA, fraction=0.046, pad=0.02); cb.set_label("AUROC", fontsize=8)
+
+    # ---- B: enrichment vs global ----
+    axB = fig.add_subplot(gs[0, 1])
+    for r in rows:
+        t5 = fnum(r["top5_auroc"]); rho = abs(fnum(r["spearman_all"]))
+        if np.isnan(t5) or np.isnan(rho): continue
+        lab, col = catcol(r["feature"])
+        axB.scatter(rho, t5, c=col, s=32, alpha=0.75, edgecolor="none")
+    # label a few notable features
+    notable = {"preorg:posn_rmsf","preorg:angle","mg:mgP_all_median","bat:mean_inline_angle","preorg:approach_std","hyp:H7_adenineBurial"}
+    for r in rows:
+        if r["feature"] in notable:
+            t5=fnum(r["top5_auroc"]); rho=abs(fnum(r["spearman_all"]))
+            if not (np.isnan(t5) or np.isnan(rho)):
+                axB.annotate(r["feature"].split(":")[1], (rho,t5), fontsize=7,
+                             xytext=(4,3), textcoords="offset points")
+    axB.axhline(0.5, ls=":", c="k", lw=0.8)
+    axB.set_xlabel("global rank-correlation  |Spearman ρ|  (all 48)")
+    axB.set_ylabel("enrichment of top actives  (top-5 AUROC)")
+    axB.set_title("B. Enrich-the-top vs rank-the-panel", fontsize=10)
+    axB.legend(handles=[Patch(color=c, label=l) for l,c,_ in CATS], fontsize=6.5, loc="lower right", framealpha=0.9)
+
+    fig.suptitle("Structural features surfacing synthetase catalysts — Boltz-2 step-1, 50 samples", fontsize=12, y=1.01)
     out = os.path.join(base, "figures", "synthetase_feature_surfacing.png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     fig.savefig(out, dpi=160, bbox_inches="tight"); print("wrote", out)
