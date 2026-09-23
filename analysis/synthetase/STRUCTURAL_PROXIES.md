@@ -30,26 +30,26 @@ Determinant key: **(i)** ground-state positioning · **(ii)** reactive-conformat
 
 ---
 
-## Final panel (8 proxies, on the figure)
+## Final panel (6 proxies, on the figure)
+
+Every proxy passes a **direction-vs-mechanism audit**: its activity-consistent direction
+matches a clean physical mechanism (not a backwards/confounded correlation).
 
 | Proxy | Det. | Step | Definition (how computed) | mean / top-3 | dir | AS9 rank |
 |---|---|---|---|---|---|---|
-| **Distal-carboxyl anchoring** | i | 1 | SASA of adipate's distal (non-reacting) carboxyl in the step-1 complex, over docked poses. More exposed → more active. | 0.68 / 0.73 | + | 2 |
+| **Distal-carboxyl solvent exposure** | i | 2 | SASA of the distal (free, non-adenylated) carboxyl of the adipyl-AMP intermediate. More exposed → more active (distal carboxyl solvent-facing = correct intermediate orientation). | 0.68 / 0.73 | + | 2 |
 | **ATP adenine burial** | i | 1 | Burial (1 − rel. SASA) of the ATP adenine ring — cofactor correctly seated. | 0.71 / 0.77 | + | 5 |
 | **In-line attack angle** `†` | ii | 1 | Among poses with carboxylate-O···Pα < 4 Å, mean O_nuc–Pα–O_leaving angle (→180°). Validated near-attack proxy; strong top-3, survivorship-biased. | 0.69 / **0.94** | + | 6 |
 | **Reactive-center positional RMSF** `†` | vi | 1 | Positional RMSF of reactive-center atoms across the 50-pose ensemble (lower = more preorganized). Strongest overall. | **0.79** / 0.85 | − | 6 |
-| **Electric-field preorganization (LEF)** | iii | 1 | Ensemble **spread (std)** of the protein electric field projected on the O_nuc→Pα axis, from FF partial charges (Coulomb, ε=1). Lower variability → more active (Warshel electrostatic preorganization). | 0.70 / 0.71 | − | 5 |
-| **Catalytic His pKa (poised ~7)** `‡` | iv | 1 | PROPKA per pose; min \|pKa − 7\| of His within 10 Å of Pα, ensemble mean. A His poised near physiological pH = proton shuttle. First handle on determinant (iv). | 0.75 / 0.85 | + | 4 |
+| **Electric-field preorganization (LEF)** | iii | 1 | Ensemble **spread (std)** of the protein electric field projected on the O_nuc→Pα axis, from FF partial charges (Coulomb, ε=1). Lower variability → more active (Warshel electrostatic preorganization; the field *consistency*, not its cheap magnitude). | 0.70 / 0.71 | − | 5 |
 | **Carbonyl-oxyanion ESP (step 2)** | iii | 2 | Electrostatic potential at the acyl-AMP carbonyl C from protein charges (Σ qᵢ/rᵢ, 15 Å), ensemble mean. More positive → stabilizes the developing tetrahedral oxyanion. | 0.65 / 0.67 | + | 13 |
-| **Acceptor-tunnel enclosure** `†` | i/ii | 2 | Geometric enclosure of the channel along the inferred amine-approach vector — can HMDA be delivered to the carbonyl. | 0.71 / 0.77 | − | 8 |
 
-Generators: `battery_1mg.py` (angle), `reactive_sasa_intermediate.py` (distal SASA),
+Generators: `battery_1mg.py` (angle), `archive/reactive_sasa_intermediate.py` (distal SASA),
 `hypothesis_battery.py` (adenine burial), `reactive_preorganization.py` (RMSF),
-`esp_reactive.py` (LEF, carbonyl ESP), `propka_active_site.py` (His pKa),
-`acceptor_tunnel_geometry.py` (tunnel).
+`esp_reactive.py` (LEF, carbonyl ESP).
 
-**Determinant coverage:** i, ii, iii, iv, vi + step-2 shape covered. **(v) metal and
-(vii) barrier are NOT covered** (see below).
+**Determinant coverage:** i, ii, iii, vi covered. **(iv) nucleophile/base activation,
+(v) metal, and (vii) barrier are NOT covered** (see below).
 
 ---
 
