@@ -74,9 +74,24 @@ def main():
                     pass
 
     topk = {k: set(sorted(ids, key=lambda i: -act[i])[:k]) for k in (3, 5, 10)}
+    # activity tiers: red = significantly > SfaB (top-3), orange = marginally > SfaB, grey = <= SfaB
+    red = topk[3]
+    marginal_ids = {i for i in ids if lab[i] == 1 and i not in red}
 
     def au(y, x):
         return roc_auc_score(y, x) if len(set(y)) == 2 else float("nan")
+
+    def cindex(feat, a):   # concordance: P(proxy ranks the more-active enzyme higher); 0.5 = random
+        c = d = 0.0
+        for i in range(len(a)):
+            for j in range(i + 1, len(a)):
+                if a[i] == a[j]:
+                    continue
+                hi, lo = (i, j) if a[i] > a[j] else (j, i)
+                if feat[hi] > feat[lo]: c += 1
+                elif feat[hi] < feat[lo]: d += 1
+                else: c += 0.5; d += 0.5
+        return c / (c + d) if (c + d) else float("nan")
 
     rows = []
     for col, vals in feats.items():
