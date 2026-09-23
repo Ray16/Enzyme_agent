@@ -84,14 +84,10 @@ def main():
     ax.tick_params(length=0)
     for s in ax.spines.values(): s.set_visible(False)
 
-    # separator line + group labels between always-defined and conditional
+    # separator line between always-defined (above) and conditional (below, +)
     first_C = next((i for i, (_, _, g) in enumerate(rows) if g == "C"), None)
     if first_C is not None:
-        y = first_C - 0.5
-        ax.axhline(y, color="black", lw=1.6)
-        ax.text(-0.44, (first_C - 1) / 2, "always defined", rotation=90,
-                va="center", ha="center", fontsize=FS - 3, color="#333",
-                transform=ax.get_yaxis_transform() if False else ax.transData)
+        ax.axhline(first_C - 0.5, color="black", lw=1.6)
     # thin white gridlines between cells for legibility
     ax.set_xticks(np.arange(-0.5, len(COLS), 1), minor=True)
     ax.set_yticks(np.arange(-0.5, n, 1), minor=True)
