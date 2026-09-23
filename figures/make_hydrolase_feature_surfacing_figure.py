@@ -23,20 +23,25 @@ import numpy as np
 FS = 18
 BASE = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/nylon_hydrolase"
 
-# (ranking-CSV feature key, display label). None = blank separator row.
+# (ranking-CSV feature key, display label). None = blank separator between blocks.
+# Block 1 = catalytic GEOMETRY (mechanistic); Block 2 = active-site / autocleavage
+# CONFIDENCE (mechanistically motivated for these Ntn autoprocessing enzymes);
+# Block 3 = GLOBAL confidence (foldability reference).
 ROWS = [
     ("nac:joint_frac",       "Near-attack joint gate (dist & Bürgi–Dunitz)"),   # ii
-    ("nac:bd_gated_dev",     "Bürgi–Dunitz angle deviation (gated)"),           # ii
-    ("ti:rmsd_min",          "Tetrahedral-intermediate template RMSD"),         # ii integrated
+    ("ti:rmsd_min",          "Tetrahedral-intermediate template RMSD"),         # ii
     ("oxh:inplane_frac",     "Oxyanion-hole in-plane donors"),                  # iii
-    ("oxh:mean_ndonor",      "Oxyanion-hole donor count"),                      # iii
     ("base:hb_frac",         "Nucleophile activation (α-amine⋯Oγ)"),            # iv
     ("preorg:og1_rmsf",      "Reactive-center positional RMSF"),                # vi
     ("esp:oxyanion_O_mean",  "Oxyanion electrostatic potential"),              # iii
     (None, None),
-    ("conf:complex_plddt",   "Complex pLDDT  (confidence null)"),
-    ("conf:thr_plddt",       "Active-site pLDDT  (confidence null)"),
-    ("conf:ligand_iptm",     "Ligand ipTM  (confidence null)"),
+    ("as:shell_plddt",       "Active-site shell pLDDT"),
+    ("conf:thr_plddt",       "Catalytic-Thr pLDDT"),
+    ("conf:bchain_ptm",      "Nucleophile β-chain pTM"),
+    ("conf:ab_iptm",         "Autocleavage-junction ipTM (A|B)"),
+    (None, None),
+    ("conf:complex_plddt",   "Complex pLDDT (global)"),
+    ("conf:ligand_iptm",     "Ligand ipTM (global)"),
 ]
 # (ranking column key, header)
 METRICS = [("robust_meanAUROC", "mean"), ("top5_auroc", "top-5"), ("binary_auroc_sig", ">ctrl")]
