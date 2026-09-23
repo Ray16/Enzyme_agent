@@ -2,16 +2,23 @@
 """Evaluate an angle-gate proxy CSV (from angle_gate_proxy.py) against measured
 N66-L1 activity for the amide-synthetase diversity panel.
 
-Reports AUROC + Monte-Carlo permutation p + P@k for the two near-attack scores
-(mean_inline_angle [primary], inline_frac_gated), under two activity labels:
-  * top3   : the three most active candidates (clean "clearly active" set)
-  * gtSfaB : all candidates whose activity exceeds the SfaB reference (the stated goal)
-Docking-failed (docking_ok=False / no angle) candidates score lowest (INCONCLUSIVE
-ranked last), matching the pipeline's treatment.
+PRIMARY evaluation = Spearman rho of each proxy vs the CONTINUOUS activity, over the
+WHOLE panel (no binary active/inactive cutoff). AUROC/P@k under binary labels (top3,
+gtSfaB) are reported secondarily for reference.
 
-Usage: evaluate_angle_gate.py <proxy_csv> [--label top3|gtSfaB|both]
+Proxy scores evaluated:
+  * near_attack_frac  : fraction of ALL poses that are BOTH docked (d<4A) AND in-line
+                        (>150 deg) = n_gated/n_models * inline_frac_gated. Accounts for
+                        docking FREQUENCY (out-of-site poses lower it) AND geometry;
+                        defined for every enzyme incl. INCONCLUSIVE (-> low). [preferred]
+  * mean_inline_angle : mean in-line angle among docked poses (conclusive enzymes only;
+                        ignores docking frequency).
+  * inline_frac_gated : fraction of docked poses that are in-line (conclusive only).
+
+Usage: evaluate_angle_gate.py <proxy_csv> [--label top3|gtSfaB|both] [--n_models 50]
 """
 import argparse, csv, random
+from scipy.stats import spearmanr
 random.seed(0)
 ROOT = "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent"
 ACT = f"{ROOT}/exp_data/amide_synthetase/assay_data/panel_activity.csv"
