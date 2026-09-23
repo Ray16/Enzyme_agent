@@ -69,9 +69,14 @@ axes[0].legend(handles=[Patch(color=RED, label="active (>0.2 µg/ml)"),
                         Patch(color=ORANGE, label="marginal (> SfaB, < 0.2)"),
                         Patch(color=GREY, label="≤ SfaB")],
                loc="lower left", frameon=True, framealpha=0.95, edgecolor="#ccc", fontsize=10)
-fig.text(0.5, 0.012, "SfaB (parent) is INCONCLUSIVE at every cutoff — its diacid docks "
-         ">10 Å from Pα in all 50 poses, never reaching near-attack",
-         ha="center", va="bottom", fontsize=12, color=BROWN, fontstyle="italic")
+_sf = data.get("SfaB")
+if _sf is not None:
+    _ng = int((_sf[:, 1] < 4.0).sum()); _md = float(_sf[:, 1].min())
+    _foot = (f"SfaB (parent, 1 Mg²⁺) is INCONCLUSIVE at every cutoff — its adipate reaches "
+             f"near-attack of Pα in only {_ng}/50 poses (min {_md:.1f} Å), below the ≥5-pose bar")
+else:
+    _foot = "SfaB (parent, 1 Mg²⁺) is INCONCLUSIVE at every cutoff (<5 near-attack poses)"
+fig.text(0.5, 0.012, _foot, ha="center", va="bottom", fontsize=12, color=BROWN, fontstyle="italic")
 plt.tight_layout(rect=[0, 0.03, 1, 0.965])
 plt.savefig(FIG, bbox_inches="tight"); plt.close(fig)
 print("wrote", FIG)
