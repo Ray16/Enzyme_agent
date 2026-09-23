@@ -106,10 +106,24 @@ def accommodation_facts(
         fg = cmp.get("functional_group_similarity")
         fg = fg if isinstance(fg, (int, float)) else None
         heavy = _heavy_atoms(n)
+        native_c = _carbon_atoms(n)
+        target_c = _carbon_atoms(t)
         # A one- or two-heavy-atom native (e.g. water or a single-atom ion)
         # cannot be a structural analogue of a multi-atom target substrate — a
         # structural FACT, not a tuned relevance threshold.
         minimal = heavy is not None and heavy <= 2
+        # A native with at most one carbon (ammonia, bicarbonate, CO2, urea,
+        # carbamate, cyanate) is an inorganic / one-carbon role-filler: it cannot
+        # be a structural analogue of a multi-carbon organic target substrate, so
+        # a functional-group-TYPE match to it (e.g. bicarbonate "has a carboxyl",
+        # ammonia "is an amine") is degenerate.  This is the signature of
+        # carboxylases and amidotransferases, whose acyl/amino source is a one-
+        # carbon or inorganic unit rather than an organic substrate.  Keyed on the
+        # target's own carbon count, so a genuinely one-carbon target substrate is
+        # not flagged and the rule stays correct for any target reaction.
+        trivial_one_carbon = (
+            native_c is not None and native_c <= 1
+            and target_c is not None and target_c >= 2)
         shares = bool(fg and fg > 0)
         entry = {
             "target_smiles": t,
@@ -119,17 +133,25 @@ def accommodation_facts(
             "functional_group_similarity": (round(fg, 3) if fg is not None else None),
             "shares_functional_groups": shares,
             "native_heavy_atoms": heavy,
+            "native_carbons": native_c,
             "native_is_cofactor_scale": minimal,
+            "native_is_one_carbon_filler": trivial_one_carbon,
             "mw_target": cmp.get("mw_target"),
             "mw_native": cmp.get("mw_native"),
             "chain_length_target": cmp.get("chain_length_target"),
             "chain_length_native": cmp.get("chain_length_native"),
         }
+        if trivial_one_carbon:
+            entry["note"] = (
+                "counterpart is a one-carbon/inorganic unit, not an organic "
+                "analogue of this target substrate (carboxylase/amidotransferase "
+                "signature); the functional-group match is degenerate")
         per_target.append(entry)
         # A target substrate is UNACCOMMODATED when its only counterpart shares
-        # none of its reactive groups OR is cofactor-scale — the enzyme lacks a
-        # genuine partner for it, however well other axes (size/shape) match.
-        if not shares or minimal:
+        # none of its reactive groups, is cofactor-scale, or is a one-carbon /
+        # inorganic filler — the enzyme lacks a genuine organic partner for it,
+        # however well other axes (size/shape) match.
+        if not shares or minimal or trivial_one_carbon:
             unaccommodated.append(t)
 
     matched_fg = [p["functional_group_similarity"] for p in per_target
