@@ -175,17 +175,16 @@ def fig_proxy_comparison(df, bat):
 
     fig, ax = plt.subplots(figsize=(12.5, 0.82 * len(res) + 2.2))
     y = np.arange(len(res))
-    # highlight ONLY features that surface actives better than chance (CI above 0.5);
-    # a feature with AUROC<0.5 fails at surfacing regardless of anti-correlation.
-    sig = res.ci_lo > 0.5
+    # highlight ONLY features that surface actives better than chance by the
+    # permutation test (handles heavy ties, e.g. mg_coord, that fool the bootstrap CI).
+    sig = res.perm_p < 0.05
     colors = [HILITE if s else NEUTRAL for s in sig]
     xerr = np.vstack([res.auroc - res.ci_lo, res.ci_hi - res.auroc])
     ax.barh(y, res.auroc, color=colors, edgecolor="k", linewidth=0.3, height=0.68, zorder=2)
     ax.errorbar(res.auroc, y, xerr=xerr, fmt="none", ecolor="#333", elinewidth=1.1,
                 capsize=3, zorder=3)
     ax.axvline(0.5, color="#888", ls="--", lw=1.6, zorder=1)
-    ax.text(0.5, len(res) - 0.35, "random", color="#888", fontsize=FS - 4,
-            ha="center", va="bottom")
+    ax.text(0.5, -0.45, "random", color="#888", fontsize=FS - 4, ha="center", va="bottom")
     for i, r in res.iterrows():
         ax.text(min(r.ci_hi, 1.0) + 0.015, i, f"{r.auroc:.2f}", va="center", ha="left",
                 fontsize=FS - 4, fontweight="bold",
