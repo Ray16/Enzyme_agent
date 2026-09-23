@@ -106,9 +106,9 @@ def main():
     cb.ax.tick_params(labelsize=FS - 4)
 
     fig.text(0.01, 0.005,
-             "† conditional on the d<4Å near-attack gate (survivorship-biased);  "
-             "cells = AUROC in each feature's activity-consistent direction.",
-             fontsize=FS - 6, color="#555")
+             "significant = surface the 3 actives ≫SfaB (AUROC);  marginal = the 4 actives >SfaB vs ≤SfaB background (AUROC);  "
+             "overall rank = concordance over all enzymes by activity.  † d<4Å-gate (survivorship-biased);  0.5 = random, oriented per feature.",
+             fontsize=FS - 7, color="#555")
 
     fig.tight_layout(rect=(0, 0.02, 1, 1))
     out = os.path.join(base, "figures", "synthetase_feature_surfacing.png")
