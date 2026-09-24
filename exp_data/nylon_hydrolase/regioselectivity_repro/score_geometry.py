@@ -17,8 +17,8 @@ import csv, glob, json, os
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-RES = f"{HERE}/results"
-SUBS = json.load(open(f"{HERE}/substrates/substrates.json"))
+RES = f"{HERE}/verified/results"                       # canonical (isolated) folds
+SUBS = json.load(open(f"{HERE}/verified/substrates_verified.json"))
 # per-enzyme oxyanion residues in chain A (full-length == alpha numbering)
 OXY = {"Nyl10": {"fy": 106, "asn": 180}, "Nyl12": {"fy": 113, "asn": 186},
        "Nyl50": {"fy": 105, "asn": 180}}
