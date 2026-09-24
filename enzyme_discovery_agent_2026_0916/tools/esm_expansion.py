@@ -279,10 +279,12 @@ def expand_candidates_esm(
 
     # 3) ESM rerank: nearest background members to each seed (cosine on L2-normed).
     bg_acc = [r[0] for r in bg_rows]
-    bg_mat = np.vstack([
-        (v / n if (n := float(np.linalg.norm(v))) > 0 else v)
-        for _, _, v in (( a, h, np.asarray(vec, dtype=np.float32).ravel()) for a, h, vec in bg_rows)
-    ]).astype(np.float32)
+    bg_vecs = []
+    for _, _, vec in bg_rows:
+        v = np.asarray(vec, dtype=np.float32).ravel()
+        norm = float(np.linalg.norm(v))
+        bg_vecs.append(v / norm if norm > 0 else v)
+    bg_mat = np.vstack(bg_vecs).astype(np.float32)  # (B, D), rows L2-normalized
 
     promising_out = []
     registered = 0
