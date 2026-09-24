@@ -3,6 +3,10 @@
 The GPU embedding subprocess, seed-sequence fetch, and UniProt family fetch are
 all stubbed, so these exercise the tool's outside-pool retrieval + ESM-rerank +
 registration logic deterministically.
+
+Accessions are UniProt-shaped (the tool validates them with a UniProt accession
+regex): SEED0x = promising seeds, NEAR0x = family members, INPOOL = a member that
+is already in the pool (must never be re-surfaced as a new lead).
 """
 
 import json
@@ -22,33 +26,33 @@ from enzyme_discovery_agent.models.candidate_registry import (
 )
 from enzyme_discovery_agent.tools import esm_expansion as ex
 
-# Deterministic vectors: N1 nearest P1; N3 nearest P2.
+# Deterministic vectors: NEAR01 nearest SEED01; NEAR03 nearest SEED02.
 _VECS = {
-    "P1": [1.0, 0.0, 0.0, 0.0],
-    "P2": [0.0, 0.0, 1.0, 0.0],
-    "N1": [0.98, 0.2, 0.0, 0.0],   # family IPR000111, near P1
-    "N2": [0.0, 1.0, 0.0, 0.0],    # family IPR000111, far
-    "N3": [0.0, 0.0, 0.98, 0.2],   # family IPR000222, near P2
-    "N4": [0.0, 0.1, 0.9, 0.0],    # family IPR000222, less near P2
-    "X1": [0.9, 0.1, 0.0, 0.0],    # already in the pool -> must be excluded
+    "SEED01": [1.0, 0.0, 0.0, 0.0],
+    "SEED02": [0.0, 0.0, 1.0, 0.0],
+    "NEAR01": [0.98, 0.2, 0.0, 0.0],   # family IPR000111, near SEED01
+    "NEAR02": [0.0, 1.0, 0.0, 0.0],    # family IPR000111, far
+    "NEAR03": [0.0, 0.0, 0.98, 0.2],   # family IPR000222, near SEED02
+    "NEAR04": [0.0, 0.1, 0.9, 0.0],    # family IPR000222, less near SEED02
+    "INPOOL": [0.9, 0.1, 0.0, 0.0],    # already in the pool -> must be excluded
 }
 
 # What "UniProt" returns as the membership of each family (keyed by the IPR id
-# embedded in the query). Includes a pool member (P1/X1) to prove exclusion.
+# embedded in the query). Includes pool members (SEED01/INPOOL) to prove exclusion.
 _FAMILY_MEMBERS = {
-    "IPR000111": {"P1": "M" + "A" * 30, "X1": "M" + "C" * 30,
-                  "N1": "M" + "D" * 30, "N2": "M" + "E" * 30},
-    "IPR000222": {"N3": "M" + "F" * 30, "N4": "M" + "G" * 30},
+    "IPR000111": {"SEED01": "M" + "A" * 30, "INPOOL": "M" + "C" * 30,
+                  "NEAR01": "M" + "D" * 30, "NEAR02": "M" + "E" * 30},
+    "IPR000222": {"NEAR03": "M" + "F" * 30, "NEAR04": "M" + "G" * 30},
 }
 
 
 def _seed_registry(root: Path):
-    update_candidate_registry(root, "P1", "evaluated",
+    update_candidate_registry(root, "SEED01", "evaluated",
                               metadata={"substrate_fit": 0.9, "interpro_family_id": "IPR000111"})
-    update_candidate_registry(root, "P2", "evaluated",
+    update_candidate_registry(root, "SEED02", "evaluated",
                               metadata={"substrate_fit": 0.8, "interpro_family_id": "IPR000222"})
     # A pre-existing pool member that is ALSO a family member of IPR000111.
-    update_candidate_registry(root, "X1", "discovered", metadata={"source_tool": "search"})
+    update_candidate_registry(root, "INPOOL", "discovered", metadata={"source_tool": "search"})
 
 
 def _fake_embed(run_dir, items, model, max_gpus=8):
@@ -71,10 +75,10 @@ def _fake_uniprot_family_fasta(query, size):
 class TestFamilyBackground(unittest.TestCase):
     def test_excludes_pool_and_caps(self):
         with mock.patch.object(ex, "_uniprot_family_fasta", _fake_uniprot_family_fasta):
-            bg = ex._fetch_family_background("IPR000111", exclude={"P1", "X1"}, cap=10)
-        self.assertEqual(set(bg), {"N1", "N2"})   # pool members excluded
-        self.assertNotIn("P1", bg)
-        self.assertNotIn("X1", bg)
+            bg = ex._fetch_family_background("IPR000111", exclude={"SEED01", "INPOOL"}, cap=10)
+        self.assertEqual(set(bg), {"NEAR01", "NEAR02"})   # pool members excluded
+        self.assertNotIn("SEED01", bg)
+        self.assertNotIn("INPOOL", bg)
 
     def test_cap_limits_count(self):
         with mock.patch.object(ex, "_uniprot_family_fasta", _fake_uniprot_family_fasta):
@@ -103,31 +107,31 @@ class TestExpandCandidatesEsm(unittest.TestCase):
             payload = json.loads((root / "candidate_map.json").read_text())
             self.assertEqual(payload["steer_mode"], "expand")
             promising = {p["accession"]: p for p in payload["promising"]}
-            self.assertEqual(set(promising), {"P1", "P2"})
+            self.assertEqual(set(promising), {"SEED01", "SEED02"})
 
-            # ESM decides expansion: P1 pulls N1 first, P2 pulls N3 first.
-            self.assertEqual(promising["P1"]["neighbors"][0]["accession"], "N1")
-            self.assertEqual(promising["P2"]["neighbors"][0]["accession"], "N3")
+            # ESM decides expansion: SEED01 pulls NEAR01 first, SEED02 pulls NEAR03.
+            self.assertEqual(promising["SEED01"]["neighbors"][0]["accession"], "NEAR01")
+            self.assertEqual(promising["SEED02"]["neighbors"][0]["accession"], "NEAR03")
 
             # New leads are genuinely OUTSIDE the prior pool, registered as discovered
             # with expansion provenance + the family they came from.
             reg = load_candidate_registry(root).get("candidates", {})
-            self.assertIn("N1", reg)
-            self.assertEqual(current_candidate_status(reg["N1"]), "discovered")
-            self.assertEqual(reg["N1"]["metadata"]["source_tool"], "esm_expansion:P1")
-            self.assertEqual(reg["N1"]["metadata"]["expansion_background"], "family:IPR000111")
-            self.assertIn("esm_distance", reg["N1"]["metadata"])
+            self.assertIn("NEAR01", reg)
+            self.assertEqual(current_candidate_status(reg["NEAR01"]), "discovered")
+            self.assertEqual(reg["NEAR01"]["metadata"]["source_tool"], "esm_expansion:SEED01")
+            self.assertEqual(reg["NEAR01"]["metadata"]["expansion_background"], "family:IPR000111")
+            self.assertIn("esm_distance", reg["NEAR01"]["metadata"])
 
             # A pre-existing pool member is never surfaced as an expansion lead.
             all_nbrs = {n["accession"] for p in payload["promising"] for n in p["neighbors"]}
-            self.assertNotIn("X1", all_nbrs)
-            self.assertNotIn("P1", all_nbrs)
-            self.assertEqual(reg["X1"]["metadata"]["source_tool"], "search")
+            self.assertNotIn("INPOOL", all_nbrs)
+            self.assertNotIn("SEED01", all_nbrs)
+            self.assertEqual(reg["INPOOL"]["metadata"]["source_tool"], "search")
 
             # Selected leads' vectors are persisted so they appear on the map.
             store = store_mod.load_store(root)
-            self.assertIn("N1", store.acc_to_row)
-            self.assertIn("N3", store.acc_to_row)
+            self.assertIn("NEAR01", store.acc_to_row)
+            self.assertIn("NEAR03", store.acc_to_row)
 
     def test_no_gpu_does_not_block_or_register(self):
         with tempfile.TemporaryDirectory() as tmp, \
@@ -141,7 +145,7 @@ class TestExpandCandidatesEsm(unittest.TestCase):
             out = ex.expand_candidates_esm(run_dir=str(root), k=2, n_seeds=2)
             self.assertEqual(out["status"], "partial")
             reg = load_candidate_registry(root).get("candidates", {})
-            self.assertNotIn("N1", reg)   # nothing registered
+            self.assertNotIn("NEAR01", reg)   # nothing registered
 
     def test_no_families_resolved_is_partial(self):
         with tempfile.TemporaryDirectory() as tmp, \
@@ -151,7 +155,7 @@ class TestExpandCandidatesEsm(unittest.TestCase):
                 mock.patch.object(ex, "_resolve_families", lambda *a, **k: []), \
                 mock.patch.object(ex, "_uniprot_family_fasta", _fake_uniprot_family_fasta):
             root = Path(tmp)
-            update_candidate_registry(root, "P1", "evaluated", metadata={"substrate_fit": 0.9})
+            update_candidate_registry(root, "SEED01", "evaluated", metadata={"substrate_fit": 0.9})
             out = ex.expand_candidates_esm(run_dir=str(root), n_seeds=1)
             self.assertEqual(out["status"], "partial")
             self.assertIn("no outside-pool", out["summary"].lower())
