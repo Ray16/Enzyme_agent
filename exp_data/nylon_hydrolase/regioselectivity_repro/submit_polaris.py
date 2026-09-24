@@ -26,7 +26,7 @@ def submit_job(base):
         mkdir -p results logs
         source /home/ray16/anaconda3/etc/profile.d/conda.sh
         conda activate /grand/projects/FRAME-IDP/rzhu/env/boltz-cp
-        export BOLTZ_CACHE=/grand/projects/FRAME-IDP/rzhu/.boltz
+        export BOLTZ_CACHE=/grand/projects/FRAME-IDP/rzhu/weights/boltz2
         export http_proxy=http://proxy.alcf.anl.gov:3128 https_proxy=http://proxy.alcf.anl.gov:3128
         export OMP_NUM_THREADS=8
         run_gpu() {{ local g=$1; shift; for n in "$@"; do
