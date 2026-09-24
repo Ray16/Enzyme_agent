@@ -84,7 +84,7 @@ quit
     from openmm import app, unit, LangevinIntegrator, Platform
     import openmm as mm
     prm = app.AmberPrmtopFile(complex_top); crd = app.AmberInpcrdFile(complex_crd)
-    system_mm = prm.createSystem(implicitSolvent=app.GBn2, nonbondedMethod=app.NoCutoff,
+    system_mm = prm.createSystem(implicitSolvent=app.OBC2, nonbondedMethod=app.NoCutoff,
                                  constraints=app.HBonds)
     integ = LangevinIntegrator(300*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
     try:
