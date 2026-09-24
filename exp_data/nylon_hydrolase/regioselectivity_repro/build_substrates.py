@@ -20,7 +20,7 @@ in the YAML targets the right atom. MUST run under the boltz-2 env's RDKit.
 """
 import json, os
 from rdkit import Chem
-from rdkit.Chem import AllChem, Draw
+from rdkit.Chem import AllChem, Draw, Descriptors, rdMolDescriptors
 from rdkit.Chem.Draw import rdMolDraw2D
 
 HERE = os.path.dirname(os.path.abspath(__file__))
