@@ -216,6 +216,16 @@ CANDIDATE_MAP_EMBED_PYTHON = os.environ.get(
     "ENZYME_AGENT_EMBED_PYTHON", "/nfs/lambda_stor_01/homes/rzhu/esm_embed_env/bin/python"
 )
 CANDIDATE_MAP_EMBED_TIMEOUT = 1800  # seconds for the GPU embedding subprocess
+# --- Embedding-driven expansion (expand_candidates_esm) ---
+# The expansion tool reaches OUTSIDE the discovered pool: it fetches the wider
+# membership of the families its own top candidates belong to, embeds them in the
+# same representation space, and keeps the ones NEAREST the top candidates as new
+# leads. All values are fallback defaults the agent can override per call.
+CANDIDATE_MAP_EXPANSION_N_SEEDS = 5           # top candidates to expand around
+CANDIDATE_MAP_EXPANSION_K = 10                # new leads kept per seed
+CANDIDATE_MAP_EXPANSION_BACKGROUND_PER_FAMILY = 300  # members fetched per family
+CANDIDATE_MAP_EXPANSION_MAX_BACKGROUND = 1000        # total background cap (dedup)
+CANDIDATE_MAP_EXPANSION_MIN_REVIEWED = 30     # below this, widen fetch to TrEMBL
 # Reference enzymes to STAR in the standalone plot are supplied out-of-band
 # (CLI/env/optional file), never hardcoded -- the benchmark answer must not live
 # in package source (see CLAUDE.md data-leakage firewall). Empty by default.
