@@ -21,6 +21,8 @@ OUT = f"{ROOT}/exp_data/nylon_hydrolase/figures/ranking_candidates"
 os.makedirs(OUT, exist_ok=True)
 
 RED, GREY, BROWN, HILITE = "#d62728", "#c8cdd4", "#8b5a2b", "#3060c0"
+# individually highlighted members (override RED/GREY), each a distinct color
+HIGHLIGHT = {"Nyl10": "#1f77b4", "Nyl12": "#2ca02c", "Nyl50": "#9467bd"}
 FS = 17
 plt.rcParams.update({"font.size": FS, "axes.titlesize": FS, "axes.titleweight": "bold",
                      "axes.labelsize": FS, "xtick.labelsize": FS - 2, "ytick.labelsize": FS - 3,
