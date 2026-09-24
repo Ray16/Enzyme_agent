@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Step (b) of the paper's protocol: classical-force-field energy minimization of the
-top Boltz pose. Amber FF19SB (protein) + GAFF2 (substrate); substrate partial charges
+top Boltz pose. Amber FF19SB (protein) + GAFF v1 (substrate); substrate partial charges
 via antechamber (AM1-BCC). Build with tleap, minimize with OpenMM. Run in the `fep`
 env (antechamber+tleap+openmm+parmed all present).
 
@@ -29,7 +29,7 @@ def read_pdb_lines(pdb):
 
 def ligand_mol2(lig_lines, smiles, work):
     """Assign bonds from the SMILES template onto the docked ligand coords, add Hs at
-    a sensible geometry, write a mol2; antechamber then does GAFF2 + AM1-BCC charges."""
+    a sensible geometry, write a mol2; antechamber then does GAFF v1 + AM1-BCC charges."""
     # write heavy-atom ligand PDB
     ligpdb = f"{work}/lig_heavy.pdb"
     with open(ligpdb, "w") as f:
@@ -45,12 +45,12 @@ def ligand_mol2(lig_lines, smiles, work):
     nc = Chem.GetFormalCharge(mol)
     ligmol2 = f"{work}/lig_bcc.mol2"
     r = subprocess.run(["antechamber", "-i", ligsdf, "-fi", "mdl", "-o", ligmol2,
-                        "-fo", "mol2", "-c", "bcc", "-nc", str(nc), "-at", "gaff2",
+                        "-fo", "mol2", "-c", "bcc", "-nc", str(nc), "-at", "gaff",
                         "-rn", "LIG", "-pf", "y"], capture_output=True, text=True, cwd=work)
     if not os.path.exists(ligmol2):
         raise RuntimeError("antechamber failed:\n" + r.stdout[-2000:] + r.stderr[-2000:])
     frcmod = f"{work}/lig.frcmod"
-    subprocess.run(["parmchk2", "-i", ligmol2, "-f", "mol2", "-o", frcmod, "-s", "gaff2"],
+    subprocess.run(["parmchk2", "-i", ligmol2, "-f", "mol2", "-o", frcmod, "-s", "gaff"],
                    check=True, capture_output=True, cwd=work)
     return ligmol2, frcmod
 
@@ -67,7 +67,7 @@ def build_and_min(system):
     complex_top = f"{work}/complex.prmtop"; complex_crd = f"{work}/complex.inpcrd"
     open(tleap, "w").write(f"""\
 source leaprc.protein.ff19SB
-source leaprc.gaff2
+source leaprc.gaff
 set default PBRadii mbondi2
 lig = loadmol2 {ligmol2}
 loadamberparams {frcmod}
@@ -87,11 +87,10 @@ quit
     system_mm = prm.createSystem(implicitSolvent=app.OBC2, nonbondedMethod=app.NoCutoff,
                                  constraints=app.HBonds)
     integ = LangevinIntegrator(300*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
-    try:
-        plat = Platform.getPlatformByName("CUDA")
-    except Exception:
-        plat = Platform.getPlatformByName("CPU")
-    sim = app.Simulation(prm.topology, system_mm, integ, plat)
+    # default CPU (minimization is fast + sqm-bound); avoids grabbing an ungated GPU
+    plat = Platform.getPlatformByName(os.environ.get("OPENMM_PLATFORM", "CPU"))
+    props = {"Threads": os.environ.get("OPENMM_CPU_THREADS", "4")} if plat.getName() == "CPU" else {}
+    sim = app.Simulation(prm.topology, system_mm, integ, plat, props)
     sim.context.setPositions(crd.positions)
     e0 = sim.context.getState(getEnergy=True).getPotentialEnergy()
     sim.minimizeEnergy(maxIterations=5000)
