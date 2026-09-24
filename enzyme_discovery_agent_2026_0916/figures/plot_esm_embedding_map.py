@@ -278,6 +278,24 @@ def render(run_dir: Path, out_path: Path, title: str, n_top: int,
         bx.append(xy[i, 0]); by.append(xy[i, 1]); bc.append(color_of(fams[i]))
     ax.scatter(bx, by, s=20, c=bc, alpha=0.55, linewidths=0, zorder=1)
 
+    # Expansion overlay: mark leads pulled in by embedding-driven expansion
+    # (metadata source_tool == "esm_expansion:<seed>") and draw a thin leader back
+    # to the seed they were expanded from -- so the figure shows what ESM added.
+    n_expansion = 0
+    if show_expansion:
+        for i, acc in enumerate(store.accessions):
+            src = str(registry.get(acc, {}).get("metadata", {}).get("source_tool") or "")
+            if not src.startswith("esm_expansion:"):
+                continue
+            n_expansion += 1
+            seed = src.split(":", 1)[1]
+            si = store.acc_to_row.get(seed)
+            if si is not None:
+                ax.plot([xy[i, 0], xy[si, 0]], [xy[i, 1], xy[si, 1]],
+                        color="#9aa0a6", lw=0.4, alpha=0.5, zorder=0.5)
+            ax.scatter(xy[i, 0], xy[i, 1], s=42, marker="D", facecolor="none",
+                       edgecolors="#d1495b", linewidths=1.1, zorder=3)
+
     # Reference enzymes (starred), if supplied out-of-band.
     for i, acc in enumerate(store.accessions):
         if acc in refs:
