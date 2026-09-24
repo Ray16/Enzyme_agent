@@ -51,8 +51,15 @@ def build(enz, sub):
     for ch in BETA_CHAINS:
         L += [f"- protein:\n    id: {ch}\n    sequence: {beta}\n    msa: {mb}"]
     L += [f"- ligand:\n    id: {LIG}\n    smiles: '{smiles}'"]
-    # restraints into heterodimer-1 (alpha=A, beta=B)
+    # restraints into heterodimer-1 (alpha=A, beta=B):
+    #  (i) a pocket constraint keeps the whole ligand seated in the catalytic
+    #      machinery (Thr nucleophile + oxyanion Asn + Phe/Tyr) so it cannot wander
+    #      out of the site; (ii) two atom-level contacts pin the SPECIFIC scissile
+    #      carbonyl (defines the MAXA vs XAMA framing).
+    fy = FY[enz]
     L += ["constraints:",
+          f"  - pocket:\n      binder: {LIG}\n      contacts: [[B, 1], [A, {ASN[enz]}], [A, {fy}]]\n"
+          f"      max_distance: 6.0\n      force: true",
           f"  - contact:\n      token1: [B, 1]\n      token2: [{LIG}, {cn}]\n"
           f"      max_distance: {MAXD}\n      force: true",
           f"  - contact:\n      token1: [A, {ASN[enz]}]\n      token2: [{LIG}, {on}]\n"
