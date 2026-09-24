@@ -182,7 +182,8 @@ deterministic budget then honors as an override layer). The gate set, in firing 
   validation), `search_kegg_enzyme`, `search_interpro` (+ query simplification),
   `get_protein_domains`, `lookup_genbank_to_uniprot`, `search_modelseed_reactions`,
   `get_modelseed_compound`, `search_structural_homologs` (Foldseek + AlphaFold),
-  `map_candidate_neighbors` (ESM2, opt-in).
+  `map_candidate_neighbors` (ESM2 in-pool neighbors, opt-in), `expand_candidates_esm`
+  (ESM2 expansion beyond the pool via wider family membership, opt-in).
 - **Literature:** `search_pubmed`, `search_openalex`, `search_europepmc`,
   `search_semantic_scholar`, `search_crossref`, `extract_entities`, `deep_literature_search`
   (citation snowball), `sequence_literature_search`, `extract_experimental_measurements`
@@ -201,9 +202,12 @@ deterministic budget then honors as an override layer). The gate set, in firing 
   suitability re-rank).
 - `pass1_ranking.json` — the ranking of record.
 - `ranked_candidates.csv` — decision list, one row per representative with grounded columns.
-- `structural_modeling_handoff.json` — shortlist manifest (top ~20) handed to the structural-
-  modeling pipeline: per candidate, native chemistry, mechanism/structural evidence, ortholog
-  alternatives, and any ESM neighbors, with an explicit "modeling is a deliberate next step."
+- `structural_modeling_handoff.json` — schema-2.0 shortlist manifest (top ~20) handed to the
+  structural-modeling pipeline. Each candidate has three explicit sections: `evidence` contains
+  retrieved identity, reaction, substrate, family/domain, structure, cofactor, and mechanism
+  facts; `modeling_input` contains the agent-derived and reviewable cofold specification; and
+  `selection` records why the candidate entered the panel, including ortholog and ESM-neighbor
+  context. The top-level accession remains the stable candidate key.
 - `family_landscape.json`, `family_decisions.json` (expand/stop with reason + InterPro name),
   `mechanism_families.json`, `family_budget.json` — the discovery/decision trail.
 - `exploration_summary.json`, `exploration_log.md`, `events.jsonl` — run rollup + audit trail.
