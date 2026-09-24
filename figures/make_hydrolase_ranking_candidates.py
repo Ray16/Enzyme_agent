@@ -85,9 +85,11 @@ def fig_bars():
     axB.set_ylabel("rank by structural proxy")
     axB.set_title("(b) Top structural proxy", loc="left")
 
-    fig.legend(handles=[Patch(color=RED, label="active (significant dimer release)"),
-                        Patch(color=BROWN, label="NylC (reference)"),
-                        Patch(color=GREY, label="inactive")],
+    handles = [Patch(color=RED, label="active (significant dimer release)"),
+               Patch(color=BROWN, label="NylC (reference)"),
+               Patch(color=GREY, label="inactive")]
+    handles += [Patch(color=c, label=k) for k, c in HIGHLIGHT.items()]
+    fig.legend(handles=handles,
                loc="lower center", ncol=3, frameon=True, framealpha=0.95, edgecolor="#ccc",
                bbox_to_anchor=(0.5, -0.005))
     fig.subplots_adjust(bottom=0.07, top=0.96, left=0.10, right=0.98)
