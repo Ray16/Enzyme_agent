@@ -322,10 +322,8 @@ def expand_candidates_esm(
             except Exception:  # noqa: BLE001 - registration must not break the tool
                 pass
             # Persist the new lead's vector so it appears on the map / is queryable.
-            for br in bg_rows:
-                if br[0] == acc:
-                    selected_rows[acc] = br
-                    break
+            if acc in bg_row_by_acc:
+                selected_rows[acc] = bg_row_by_acc[acc]
             if len(nbr_out) >= k:
                 break
         promising_out.append({
