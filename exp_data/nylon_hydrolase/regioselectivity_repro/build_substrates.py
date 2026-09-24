@@ -45,33 +45,20 @@ def build(smiles_mapped, label, expect_leaving):
     amideN = [nb for nb in cat.GetNeighbors() if nb.GetSymbol() == "N"]
     assert len(amideN) == 1, f"{label}: scissile C must have exactly one amide N"
     nN = amideN[0]
-    # walk from N to the next carbon: aromatic CH2 -> X (via aromatic ring), else M
+    # leaving-group side: the non-carbonyl C neighbour of the amide N; benzylic (bonded
+    # to an aromatic C) -> X (p-xylylene), purely aliphatic -> M (hexamethylene)
     ncar = [nb for nb in nN.GetNeighbors() if nb.GetSymbol() == "C" and nb.GetIdx() != c_idx][0]
-    leaving = "X" if any(b.GetIsAromatic() or b.GetOtherAtom(ncar).GetIsAromatic()
-                         for b in ncar.GetBonds()) else "M"
-    # follow one more bond for aromatic detection (benzylic CH2 -> ring)
-    if leaving != "X":
-        nbrs = [x for a2 in [ncar] for x in a2.GetNeighbors()]
-        if any(x.GetIsAromatic() for x in nbrs):
-            leaving = "X"
+    leaving = "X" if any(nb.GetIsAromatic() for nb in ncar.GetNeighbors()) else "M"
     assert leaving == expect_leaving, f"{label}: leaving-adjacent is {leaving}, expected {expect_leaving}"
 
-    # strip atom maps -> plain SMILES for Boltz
+    # strip atom maps -> plain SMILES for Boltz; scissile atom indices are unchanged
     for a in mol.GetAtoms():
         a.SetAtomMapNum(0)
     plain = Chem.MolToSmiles(mol)
-
-    # Boltz atom names (element + CanonicalRankAtoms(AddHs)+1)
-    molH = Chem.AddHs(Chem.MolFromSmiles(plain))
-    # locate scissile atoms in the plain mol by substructure (unique carbonyl->leaving pattern)
-    ranks = list(Chem.CanonicalRankAtoms(molH))
-    # recompute canonical rank on the SAME mol object we have indices for
-    mol_noh = Chem.MolFromSmiles(plain)
-    # match scissile C/O back: use the mapped mol's canonical atom ranking to map indices
-    molH_orig = Chem.AddHs(mol)                        # mol already had maps zeroed
-    ranks_orig = list(Chem.CanonicalRankAtoms(molH_orig))
-    c_name = "C" + str(ranks_orig[c_idx] + 1)
-    o_name = "O" + str(ranks_orig[o_idx] + 1)
+    # Boltz atom names = <ELEM><CanonicalRankAtoms(AddHs)+1> (canonical -> order-invariant)
+    ranks = list(Chem.CanonicalRankAtoms(Chem.AddHs(mol)))
+    c_name = "C" + str(ranks[c_idx] + 1)
+    o_name = "O" + str(ranks[o_idx] + 1)
 
     info = {
         "label": label, "smiles": plain,
