@@ -145,7 +145,8 @@ def main():
 
     act = {}
     for r in csv.DictReader(open(ACT)):
-        act[r["enzyme"]] = r
+        if r["type"] == "Powder":                 # canonical assay (has significance calls)
+            act[r["enzyme"]] = r
     def norm(name):
         return "Nyl" + str(int(name[3:])) if name.startswith("Nyl") and name[3:].isdigit() else name
 
