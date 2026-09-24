@@ -21,8 +21,8 @@ def main(system):
     sf = pyrosetta.create_score_function("ref2015")
     # ligand is the last residue; analyze the interface across its chain
     lig_chain = pose.chain(pose.total_residue())
-    fixed = pyrosetta.rosetta.std.set_unsigned_long_t()
-    fixed.add(lig_chain)
+    fixed = pyrosetta.rosetta.std.set_int_t()
+    fixed.add(int(lig_chain))
     # (fixed_chains, tracer, sf, compute_packstat, pack_input, pack_separated)
     iam = InterfaceAnalyzerMover(fixed, False, sf, False, False, True)
     iam.apply(pose)
