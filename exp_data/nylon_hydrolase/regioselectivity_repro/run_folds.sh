@@ -30,12 +30,14 @@ for y in "${yamls[@]}"; do
   echo "[launch] $name -> gpu $idx  (log: $log)"
   (
     "$GATE" run "$idx" -- bash -c '
-      export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4
-      export LD_LIBRARY_PATH=/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/boltz-2/lib:${LD_LIBRARY_PATH:-}
+      source /nfs/lambda_stor_01/homes/rzhu/miniforge3/etc/profile.d/conda.sh
+      conda activate boltz-2
+      export LD_LIBRARY_PATH=/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/mpi-shim/lib:${LD_LIBRARY_PATH:-}
+      export OMP_NUM_THREADS=4 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 TOKENIZERS_PARALLELISM=false
       echo "[$(date +%H:%M:%S)] '"$name"' start on CUDA=$CUDA_VISIBLE_DEVICES"
-      "'"$BOLTZ"'" predict "'"$y"'" --out_dir "'"$out"'" \
+      boltz predict "'"$y"'" --out_dir "'"$out"'" \
           --diffusion_samples 10 --output_format pdb \
-          --accelerator gpu --devices 1 --override
+          --accelerator gpu --devices 1 --num_workers 1 --override
       rc=$?; echo "[$(date +%H:%M:%S)] '"$name"' exit $rc"; exit $rc
     '
   ) > "$log" 2>&1 &
