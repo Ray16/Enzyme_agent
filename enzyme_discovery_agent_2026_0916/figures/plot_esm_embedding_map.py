@@ -82,66 +82,9 @@ def batch_fetch_sequences(accessions: list[str], chunk: int = 100,
 
 
 # --------------------------------------------------------------------------- #
-# Multi-GPU embedding: shard across all free GPUs, one worker per GPU.
+# Embedding: delegated to the shared multi-GPU util in tools.embedding_map so the
+# figure and the agent expansion tool use one implementation.
 # --------------------------------------------------------------------------- #
-def _free_gpu_indices(max_n: int) -> list[str]:
-    host = socket.gethostname().split(".")[0]
-    try:
-        r = subprocess.run([config.CANDIDATE_MAP_GPU_RESERVE, "list"],
-                           capture_output=True, text=True, timeout=60)
-    except Exception:  # noqa: BLE001
-        return []
-    idxs = [p.split()[1] for p in r.stdout.splitlines()
-            if len(p.split()) >= 2 and p.split()[0] == host and p.split()[1].isdigit()]
-    return idxs[:max_n]
-
-
-def embed_multi_gpu(run_dir: Path, items: list[dict], model: str, max_gpus: int = 8):
-    """Embed ``items`` by sharding across up to ``max_gpus`` reserved GPUs in
-    parallel (one gpu_reserve-run worker each). Falls back to single-GPU if only
-    one is free. Returns (rows, note) like _run_embed_subprocess."""
-    gpus = _free_gpu_indices(max_gpus)
-    if len(gpus) <= 1:
-        return _run_embed_subprocess(run_dir, items, model)
-
-    n = len(gpus)
-    shards = [items[i::n] for i in range(n)]  # round-robin balances long/short seqs
-    workdir = Path(run_dir) / "embedding_store" / "_work"
-    workdir.mkdir(parents=True, exist_ok=True)
-    env = os.environ.copy()
-    env.update({"OMP_NUM_THREADS": "4", "MKL_NUM_THREADS": "4"})
-
-    procs = []
-    for idx, shard in zip(gpus, shards):
-        if not shard:
-            continue
-        d = Path(tempfile.mkdtemp(dir=str(workdir)))
-        pj, ov, om = d / "pending.json", d / "vec.npy", d / "meta.json"
-        pj.write_text(json.dumps({"model": model, "items": shard}))
-        cmd = [config.CANDIDATE_MAP_GPU_RESERVE, "run", idx, "--label", "esm_embed_mg", "--",
-               config.CANDIDATE_MAP_EMBED_PYTHON, "-m",
-               "enzyme_discovery_agent.tools.esm_embed_worker", str(pj), str(ov), str(om)]
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                             text=True, env=env)
-        procs.append((p, ov, om, idx))
-
-    import numpy as np
-    rows: list[tuple] = []
-    used = []
-    for p, ov, om, idx in procs:
-        out = p.communicate(timeout=config.CANDIDATE_MAP_EMBED_TIMEOUT)[0]
-        if p.returncode != 0 or not ov.exists():
-            sys.stderr.write(f"  shard GPU {idx} failed rc={p.returncode}: {(out or '')[-200:]}\n")
-            continue
-        v = np.load(ov)
-        meta = json.loads(om.read_text())
-        accs, hs = meta["accessions"], meta.get("seq_sha1", [""] * len(meta["accessions"]))
-        for i in range(min(len(accs), v.shape[0])):
-            rows.append((accs[i], hs[i] if i < len(hs) else "", v[i]))
-        used.append(idx)
-    return rows, f"embedded {len(rows)} via {len(used)} GPU(s): {','.join(used)}"
-
-
 def embed_all_candidates(run_dir: Path, model: str) -> str:
     """Ensure every registry candidate with a sequence is in the embedding store."""
     registry = load_candidate_registry(run_dir).get("candidates", {})
