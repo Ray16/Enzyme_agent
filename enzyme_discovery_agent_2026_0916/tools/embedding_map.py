@@ -165,6 +165,85 @@ def _run_embed_subprocess(run_dir: Path, items: list[dict], model: str):
     return rows, f"embedded {len(rows)} sequence(s) on GPU {host}:{idx}"
 
 
+def _free_gpu_indices(max_n: int) -> list[str]:
+    """Free GPU indices on this host, via the cluster reservation gate."""
+    host = socket.gethostname().split(".")[0]
+    try:
+        r = subprocess.run([config.CANDIDATE_MAP_GPU_RESERVE, "list"],
+                           capture_output=True, text=True, timeout=60)
+    except Exception:  # noqa: BLE001
+        return []
+    idxs = [p.split()[1] for p in r.stdout.splitlines()
+            if len(p.split()) >= 2 and p.split()[0] == host and p.split()[1].isdigit()]
+    return idxs[:max_n]
+
+
+def embed_sequences(run_dir: Path, items: list[dict], model: str, max_gpus: int = 8):
+    """Embed ``items`` by sharding across up to ``max_gpus`` free GPUs in parallel
+    (one ``gpu_reserve run`` worker each), falling back to the single-GPU path when
+    only one GPU is free. Returns ``(rows, note)`` exactly like
+    :func:`_run_embed_subprocess` (``rows`` = ``(accession, seq_sha1, vector)`` or
+    None if embedding was skipped). Shared by the agent expansion tool and the
+    standalone figure so both use one implementation.
+
+    Sharding is round-robin (``items[i::n]``) so long/short sequences balance across
+    workers, and the merged result is identical to embedding the whole list on one
+    GPU (order-independent: each row is keyed by accession) -- fast path == slow path.
+    """
+    if not items:
+        return [], "nothing to embed"
+    gpus = _free_gpu_indices(max_gpus)
+    if len(gpus) <= 1:
+        return _run_embed_subprocess(run_dir, items, model)
+
+    import numpy as np
+
+    n = len(gpus)
+    shards = [items[i::n] for i in range(n)]
+    workdir = Path(run_dir) / "embedding_store" / "_work"
+    workdir.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    env.update({"OMP_NUM_THREADS": "4", "MKL_NUM_THREADS": "4",
+                "OPENBLAS_NUM_THREADS": "4"})
+
+    procs = []
+    for idx, shard in zip(gpus, shards):
+        if not shard:
+            continue
+        d = Path(tempfile.mkdtemp(dir=str(workdir)))
+        pj, ov, om = d / "pending.json", d / "vec.npy", d / "meta.json"
+        pj.write_text(json.dumps({"model": model, "items": shard}))
+        cmd = [config.CANDIDATE_MAP_GPU_RESERVE, "run", idx, "--label", "esm_embed_mg", "--",
+               config.CANDIDATE_MAP_EMBED_PYTHON, "-m",
+               "enzyme_discovery_agent.tools.esm_embed_worker", str(pj), str(ov), str(om)]
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                             text=True, env=env)
+        procs.append((p, ov, om, idx))
+
+    rows: list[tuple] = []
+    used: list[str] = []
+    for p, ov, om, idx in procs:
+        try:
+            out = p.communicate(timeout=config.CANDIDATE_MAP_EMBED_TIMEOUT)[0]
+        except Exception as exc:  # noqa: BLE001
+            p.kill()
+            sys.stderr.write(f"  shard GPU {idx} error ({exc})\n")
+            continue
+        if p.returncode != 0 or not ov.exists():
+            sys.stderr.write(f"  shard GPU {idx} failed rc={p.returncode}: {(out or '')[-200:]}\n")
+            continue
+        v = np.load(ov)
+        meta = json.loads(om.read_text())
+        accs = meta.get("accessions", [])
+        hs = meta.get("seq_sha1", [""] * len(accs))
+        for i in range(min(len(accs), v.shape[0])):
+            rows.append((accs[i], hs[i] if i < len(hs) else "", v[i]))
+        used.append(idx)
+    if not rows:
+        return None, "multi-GPU embedding produced no rows"
+    return rows, f"embedded {len(rows)} via {len(used)} GPU(s): {','.join(used)}"
+
+
 @tool(
     description=(
         "Embed the discovered candidate protein sequences in a protein "
