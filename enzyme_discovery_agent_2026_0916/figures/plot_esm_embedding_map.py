@@ -39,7 +39,7 @@ from enzyme_discovery_agent.models import embedding_store as es
 from enzyme_discovery_agent.models.candidate_registry import (
     family_display, load_candidate_registry,
 )
-from enzyme_discovery_agent.tools.embedding_map import _run_embed_subprocess
+from enzyme_discovery_agent.tools.embedding_map import embed_sequences
 
 
 # --------------------------------------------------------------------------- #
