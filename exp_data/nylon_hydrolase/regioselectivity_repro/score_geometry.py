@@ -71,7 +71,7 @@ def process(system):
     oxy = OXY[enz]
     pred = glob.glob(f"{RES}/{system}/boltz_results_*/predictions/*")[0]
     rows = []
-    for m in range(10):
+    for m in range(40):
         pdb = f"{pred}/{system}_model_{m}.pdb"
         if not os.path.exists(pdb):
             continue
