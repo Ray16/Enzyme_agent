@@ -40,13 +40,11 @@ def ligand_mol2(lig_lines, smiles, work):
     templ = Chem.MolFromSmiles(smiles)
     mol = AllChem.AssignBondOrdersFromTemplate(templ, raw)
     mol = Chem.AddHs(mol, addCoords=True)                 # protons on docked heavy atoms
-    ligmol2_in = f"{work}/lig_in.mol2"
-    Chem.MolToMolFile(mol, f"{work}/lig.sdf")
-    subprocess.run(["obabel", f"{work}/lig.sdf", "-O", ligmol2_in], check=True,
-                   capture_output=True)
+    ligsdf = f"{work}/lig.sdf"
+    Chem.MolToMolFile(mol, ligsdf)                        # MDL molfile w/ 3D coords + bonds
     nc = Chem.GetFormalCharge(mol)
     ligmol2 = f"{work}/lig_bcc.mol2"
-    r = subprocess.run(["antechamber", "-i", ligmol2_in, "-fi", "mol2", "-o", ligmol2,
+    r = subprocess.run(["antechamber", "-i", ligsdf, "-fi", "mdl", "-o", ligmol2,
                         "-fo", "mol2", "-c", "bcc", "-nc", str(nc), "-at", "gaff2",
                         "-rn", "LIG", "-pf", "y"], capture_output=True, text=True, cwd=work)
     if not os.path.exists(ligmol2):
