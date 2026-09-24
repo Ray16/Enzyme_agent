@@ -25,6 +25,7 @@ INP = f"{HERE}/inputs"; os.makedirs(INP, exist_ok=True)
 
 # oxyanion-hole Asn residue (full-length numbering == alpha-chain numbering; all < split)
 ASN = {"Nyl10": 180, "Nyl12": 186, "Nyl50": 180}
+FY = {"Nyl10": 106, "Nyl12": 113, "Nyl50": 105}   # oxyanion Phe/Tyr (backbone N)
 NCOPIES = 4                                        # tetramer of heterodimers
 ALPHA_CHAINS = ["A", "C", "E", "G"][:NCOPIES]
 BETA_CHAINS = ["B", "D", "F", "H"][:NCOPIES]
