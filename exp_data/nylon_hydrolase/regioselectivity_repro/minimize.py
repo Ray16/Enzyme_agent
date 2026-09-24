@@ -68,11 +68,11 @@ def build_and_min(system):
     open(tleap, "w").write(f"""\
 source leaprc.protein.ff19SB
 source leaprc.gaff2
+set default PBRadii mbondi2
 lig = loadmol2 {ligmol2}
 loadamberparams {frcmod}
 prot = loadpdb {protpdb}
 complex = combine {{prot lig}}
-setBox complex vdw
 saveamberparm complex {complex_top} {complex_crd}
 quit
 """)
