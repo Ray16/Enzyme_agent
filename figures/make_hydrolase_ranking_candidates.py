@@ -37,6 +37,8 @@ PROXY, PNAME = "conf:ab_iptm", "autocleavage-junction ipTM"
 
 
 def tier(iid, sig):
+    if iid in HIGHLIGHT:
+        return HIGHLIGHT[iid]
     if iid == "NylC":
         return BROWN
     return RED if sig == 1 else GREY
