@@ -398,7 +398,7 @@ def main() -> int:
 
     if not args.no_embed:
         print(embed_all_candidates(run_dir, args.model))
-    result = render(run_dir, out, title, args.top, refs)
+    result = render(run_dir, out, title, args.top, refs, show_expansion=args.show_expansion)
     return 0 if result else 1
 
 
