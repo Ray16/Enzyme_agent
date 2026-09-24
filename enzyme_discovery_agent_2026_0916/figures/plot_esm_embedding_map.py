@@ -344,6 +344,8 @@ def render(run_dir: Path, out_path: Path, title: str, n_top: int,
                         frameon=False, handletextpad=0.5, labelspacing=0.5)
     leg._legend_box.align = "left"
     marker_note = "Numbered = top-ranked candidate"
+    if show_expansion and n_expansion:
+        marker_note += "   ◇ = ESM-expansion lead"
     if refs:
         marker_note += "   ★ = reference"
     ax_leg.text(-0.05, 0.02, marker_note, transform=ax_leg.transAxes,
