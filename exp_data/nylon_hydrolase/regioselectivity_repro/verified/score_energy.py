@@ -56,7 +56,7 @@ def pose_ligand(system):
             if ln.startswith("@<TRIPOS>ATOM"): inatom = True; continue
             if ln.startswith("@<TRIPOS>BOND"): break
             if inatom:
-                p = ln.split(); names.append(p[1]); elems.append(p[5].split(".")[0].upper())
+                p = ln.split(); names.append(p[1]); elems.append(p[5][0].upper())  # GAFF type -> element (CHNO)
     assert len(names) == mp.GetNumAtoms(), f"atom count mol2 {len(names)} vs pose {mp.GetNumAtoms()}"
     pc = mp.GetConformer()
     lig_lines = []
