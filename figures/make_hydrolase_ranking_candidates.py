@@ -74,7 +74,7 @@ def fig_bars():
     axB.barh(yB, b[PROXY], color=[tier(i, s) for i, s in zip(b.id, b.L2sig)],
              edgecolor="k", linewidth=0.3, height=0.82, zorder=2)
     for i, (iid, s, v) in enumerate(zip(b.id, b.L2sig, b[PROXY])):
-        if iid in set(a.head(8).id) or iid == "NylC":
+        if iid in set(a.head(8).id) or iid == "NylC" or iid in HIGHLIGHT:
             axB.text(v + 0.002, i, iid, va="center", ha="left", fontsize=FS - 6,
                      fontweight="bold", color=tier(iid, s))
     axB.set_ylim(n - 0.5, -0.5)
