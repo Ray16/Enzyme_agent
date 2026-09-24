@@ -80,7 +80,11 @@ quit
     if not os.path.exists(complex_top):
         raise RuntimeError("tleap failed:\n" + r.stdout[-3000:])
 
-    # OpenMM minimization (implicit solvent GBN2)
+    if os.environ.get("PARAM_ONLY"):        # stop after parametrization; GPU min runs separately
+        print(f"{system}: prmtop+inpcrd built -> {work}")
+        return work
+
+    # OpenMM minimization (implicit solvent OBC2)
     from openmm import app, unit, LangevinIntegrator, Platform
     import openmm as mm
     prm = app.AmberPrmtopFile(complex_top); crd = app.AmberInpcrdFile(complex_crd)
