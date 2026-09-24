@@ -1,54 +1,35 @@
 #!/usr/bin/env python3
-"""Scoring Part B (pyrosetta env): Rosetta REF2015 interface_delta between the protein
-(chain A) and the ligand (chain X) for each GPU-minimized complex, then compare
-Delta(MAXA) vs Delta(XAMA) per enzyme against the paper (Nyl50->XAMA, Nyl12->MAXA,
-Nyl10->tie). Reads rosetta/<system>.params + rosetta/<system>_complex.pdb from prep.
+"""Scoring Part B (pyrosetta env): Rosetta REF2015 interface_delta for ONE system
+(fresh process per system, since each ligand's params share resname LIG). Appends
+{system: interface_delta} to rosetta/interface_delta.json.
+Usage: score_pyrosetta.py <system>
 """
-import os, glob
+import json, os, sys
 import pyrosetta
 from pyrosetta import pose_from_pdb
 from pyrosetta.rosetta.protocols.analysis import InterfaceAnalyzerMover
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROS = f"{HERE}/rosetta"
-SYSTEMS = ["Nyl10__MAXA_precursor", "Nyl10__XAMA_precursor",
-           "Nyl12__MAXA_precursor", "Nyl12__XAMA_precursor",
-           "Nyl50__MAXA_precursor", "Nyl50__XAMA_precursor"]
+OUTJSON = f"{ROS}/interface_delta.json"
 
 
-def score(system):
+def main(system):
     params = f"{ROS}/{system}.params"; cpx = f"{ROS}/{system}_complex.pdb"
-    if not (os.path.exists(params) and os.path.exists(cpx)):
-        return None
-    pyrosetta.init(f"-extra_res_fa {params} -mute all -ignore_zero_occupancy false", silent=True)
+    pyrosetta.init(f"-extra_res_fa {params} -mute all -ignore_zero_occupancy false")
     pose = pose_from_pdb(cpx)
     iam = InterfaceAnalyzerMover("A_X")
     iam.set_pack_separated(True)
     iam.apply(pose)
-    return float(iam.get_interface_dG())
-
-
-def main():
+    dG = float(iam.get_interface_dG())
     res = {}
-    for s in SYSTEMS:
-        try:
-            d = score(s)
-        except Exception as e:
-            d = None; print(f"{s}: ERROR {str(e)[:120]}")
-        if d is not None:
-            res[s] = d; print(f"{s}: interface_delta = {d:.1f} REU")
-    print("\n=== regioselectivity: Delta(MAXA) vs Delta(XAMA) (more negative = preferred) ===")
-    paper = {"Nyl10": "tie", "Nyl12": "MAXA", "Nyl50": "XAMA"}
-    print(f"{'enzyme':8}{'d(MAXA)':>10}{'d(XAMA)':>10}{'pred':>8}{'paper':>8}{'match':>7}")
-    for enz in ["Nyl10", "Nyl12", "Nyl50"]:
-        dm = res.get(f"{enz}__MAXA_precursor"); dx = res.get(f"{enz}__XAMA_precursor")
-        if dm is None or dx is None:
-            print(f"{enz:8}{'--':>10}{'--':>10}   (incomplete)"); continue
-        gap = dx - dm
-        pred = "MAXA" if gap > 2 else ("XAMA" if gap < -2 else "tie")
-        match = "Y" if pred == paper[enz] else ("~" if paper[enz] == "tie" else "N")
-        print(f"{enz:8}{dm:>10.1f}{dx:>10.1f}{pred:>8}{paper[enz]:>8}{match:>7}")
+    if os.path.exists(OUTJSON):
+        try: res = json.load(open(OUTJSON))
+        except Exception: res = {}
+    res[system] = round(dG, 2)
+    json.dump(res, open(OUTJSON, "w"), indent=2)
+    print(f"{system}: interface_delta = {dG:.1f} REU")
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1])
