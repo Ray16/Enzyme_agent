@@ -21,7 +21,7 @@ from rdkit.Chem import AllChem
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SUBS = json.load(open(f"{HERE}/substrates_verified.json"))
-SEL = json.load(open(f"{HERE}/selected_models.json"))
+SEL = json.load(open(os.path.join(os.path.dirname(HERE), "selected_models.json")))
 LIGDIR = "/tmp/claude-21574/-nfs-lambda-stor-01-homes-rzhu-Enzyme-agent/831c52d9-0140-4c6d-84de-412b3946de17/scratchpad/ligparams"
 WORK = f"{HERE}/energy"; os.makedirs(WORK, exist_ok=True)
 TLEAP = "/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/fep/bin/tleap"
