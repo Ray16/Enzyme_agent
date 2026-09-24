@@ -28,14 +28,19 @@ they run on any campaign — point them at `cofold/<run-id>/...`), `tests/`,
 `CANDIDATE_RANKING_POLICY.md`, and `figures/`. Large Boltz outputs (~1 GB/campaign) are
 untracked by git. See `structural_modeling/cofold/README.md`.
 
-Discovery finalization writes `structural_modeling_handoff.json` when evaluations are available —
-now carrying, per candidate, the InterPro family, the deterministically-derived activation
-mechanism (reactive phosphate), and a cofactor spec. The active structural workflow keeps reviewed
-candidates in `structural_modeling/candidates.csv` and prepares staged inputs with the scripts under
-`structural_modeling/scripts/`.
+Discovery finalization writes a schema-2.0 `structural_modeling_handoff.json` when evaluations are
+available. Each candidate separates retrieved `evidence`, agent-derived `modeling_input`, and panel
+`selection` provenance. The evidence layer includes identity, native reactions and substrates,
+InterPro family and domain assignments, available structures, cofactor annotations, and
+literature-derived mechanism evidence. The modeling layer contains the reviewed enzyme construct,
+modeled molecular representations and roles, cofactor identities and counts, activation assignment,
+geometry hypothesis, and explicit unresolved items.
 
-Provide verified substrate SMILES when preparing stage inputs; the discovery handoff does not infer
-unverified ligand chemistry.
+`structural_modeling/scripts/build_step1_inputs.py` accepts only this layered schema and fails closed
+unless the modeling input is ready. An explicit exploratory override may bypass evidence-review
+items, but never malformed execution inputs. It compiles the modeling layer into Boltz YAML and
+records every execution or rejection in `campaign_manifest.json`. Structure-only cofolding is the
+default; `--include-affinity` explicitly enables the optional Boltz-2 affinity property.
 
 After structural evaluation, export and import decomposed evidence rather than a single opaque
 activity score:
@@ -63,6 +68,19 @@ imports torch. The heavy ESM forward pass runs in a **separate GPU subprocess**
 `gpu_reserve` — the main run stays GPU-free. State persists per run under `embedding_store/`
 (`vectors.npy` + `index.json` + `sequences.json`) and `candidate_map.json`; neighbors are
 folded into `structural_modeling_handoff.json`.
+
+**Embedding-driven expansion (reach outside the pool)** — where `map_candidate_neighbors`
+finds neighbors *within* the discovered pool, the `expand_candidates_esm` tool reaches
+*out*: for the top candidates (or one you name) it fetches the wider UniProt membership of
+the InterPro families they belong to (Swiss-Prot first, widening to TrEMBL for sparse
+families), embeds that background in the same space, and registers as new `discovered`
+leads the members sitting NEAREST the top candidates — the embedding is the decision layer
+that picks which broadly retrieved sequences to pursue. The agent chooses `n_seeds` / `k` /
+`per_family` (family membership provides clean search provenance — the families come from
+its own candidates, never a seeded answer); `config.CANDIDATE_MAP_EXPANSION_*` are fallback
+defaults. Selected leads' vectors are appended to the store (so they appear on the map) and
+written into `candidate_map.json`, so they flow into the cofold panel unchanged. Same
+`ENABLE_CANDIDATE_MAP` gate + `gpu_reserve` subprocess embedding as the map tool.
 
 Setup — install the `embedding-map` extra and point the worker at a fair-esm env (palm's
 `transformers` is version-broken; fair-esm loads ESM2 via torch.hub, needing neither
