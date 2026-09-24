@@ -31,11 +31,12 @@ for y in "${yamls[@]}"; do
   (
     "$GATE" run "$idx" -- bash -c '
       export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4
+      export LD_LIBRARY_PATH=/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/boltz-2/lib:${LD_LIBRARY_PATH:-}
       echo "[$(date +%H:%M:%S)] '"$name"' start on CUDA=$CUDA_VISIBLE_DEVICES"
       "'"$BOLTZ"'" predict "'"$y"'" --out_dir "'"$out"'" \
           --diffusion_samples 10 --output_format pdb \
           --accelerator gpu --devices 1 --override
-      echo "[$(date +%H:%M:%S)] '"$name"' exit $?"
+      rc=$?; echo "[$(date +%H:%M:%S)] '"$name"' exit $rc"; exit $rc
     '
   ) > "$log" 2>&1 &
   pids+=($!)
