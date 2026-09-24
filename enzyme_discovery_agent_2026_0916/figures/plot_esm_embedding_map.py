@@ -395,7 +395,10 @@ def main() -> int:
         sys.stderr.write(f"run dir not found: {run_dir}\n")
         return 2
     title = args.title or run_dir.name
-    out = Path(args.out) if args.out else (Path(__file__).parent / f"esm_map_{run_dir.name[:40]}.png")
+    # Default: write the UMAP INTO the run's own folder (a per-run artifact, next to
+    # family_substrate_fit.png / native_reaction_grid.png). Pass --out to override
+    # (e.g. to also drop a curated copy in the shared figures/ deck).
+    out = Path(args.out) if args.out else (run_dir / "esm_embedding_umap.png")
     refs = {a.strip() for a in args.refs.replace(",", " ").split() if a.strip()}
 
     if not args.no_embed:
