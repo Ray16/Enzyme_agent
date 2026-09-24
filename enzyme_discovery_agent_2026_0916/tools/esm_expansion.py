@@ -285,6 +285,7 @@ def expand_candidates_esm(
         norm = float(np.linalg.norm(v))
         bg_vecs.append(v / norm if norm > 0 else v)
     bg_mat = np.vstack(bg_vecs).astype(np.float32)  # (B, D), rows L2-normalized
+    bg_row_by_acc = {r[0]: r for r in bg_rows}
 
     promising_out = []
     registered = 0
