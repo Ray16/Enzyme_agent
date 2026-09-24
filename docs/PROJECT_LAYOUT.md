@@ -98,6 +98,8 @@ GPUs (parallel, sharded via `gpu_reserve`), then UMAP with numbered top-ranked c
 ```bash
 python enzyme_discovery_agent_2026_0916/figures/plot_esm_embedding_map.py <run_dir> \
   --title "..." --top 10        # add --no-embed to re-plot from a cached store
+                                # add --show-expansion to mark esm_expansion leads
+                                #   with a diamond and a leader back to their seed
 ```
 
 ## Standalone validation harnesses
