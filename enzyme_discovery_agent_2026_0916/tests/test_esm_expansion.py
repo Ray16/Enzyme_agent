@@ -32,8 +32,8 @@ _VECS = {
     "SEED02": [0.0, 0.0, 1.0, 0.0],
     "NEAR01": [0.98, 0.2, 0.0, 0.0],   # family IPR000111, near SEED01
     "NEAR02": [0.0, 1.0, 0.0, 0.0],    # family IPR000111, far
-    "NEAR03": [0.0, 0.0, 0.98, 0.2],   # family IPR000222, near SEED02
-    "NEAR04": [0.0, 0.1, 0.9, 0.0],    # family IPR000222, less near SEED02
+    "NEAR03": [0.0, 0.0, 1.0, 0.05],   # family IPR000222, near SEED02
+    "NEAR04": [0.0, 0.5, 0.7, 0.0],    # family IPR000222, less near SEED02
     "INPOOL": [0.9, 0.1, 0.0, 0.0],    # already in the pool -> must be excluded
 }
 
