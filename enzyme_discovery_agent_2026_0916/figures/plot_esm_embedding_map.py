@@ -384,6 +384,8 @@ def main() -> int:
     ap.add_argument("--out", default="")
     ap.add_argument("--refs", default="")
     ap.add_argument("--no-embed", action="store_true")
+    ap.add_argument("--show-expansion", action="store_true",
+                    help="mark ESM-expansion leads and draw leaders to their seeds")
     args = ap.parse_args()
 
     run_dir = Path(args.run_dir)
