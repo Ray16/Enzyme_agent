@@ -12,7 +12,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SEL = json.load(open(f"{HERE}/selected_models.json"))
+SEL = json.load(open(os.environ.get("MINSEL", f"{HERE}/selected_models.json")))
 SUBS = json.load(open(f"{HERE}/substrates/substrates.json"))
 OUTD = f"{HERE}/minimized"; os.makedirs(OUTD, exist_ok=True)
 
