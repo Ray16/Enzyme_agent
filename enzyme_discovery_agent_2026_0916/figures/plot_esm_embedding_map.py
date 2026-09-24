@@ -179,6 +179,8 @@ def _clean_family(label: str) -> str:
             s = s[len(pre):]
             break
     s = re.sub(r"\s*\(IPR\d+\)\s*$", "", s).strip()
+    if re.fullmatch(r"ipr\d{6}", s, re.I):   # a bare InterPro id -> keep it uppercase
+        return s.upper()
     return s.title() if s else "Unknown"
 
 
