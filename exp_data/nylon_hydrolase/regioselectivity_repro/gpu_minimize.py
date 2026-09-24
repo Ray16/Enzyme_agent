@@ -23,9 +23,23 @@ def main(system):
     system_mm = prm.createSystem(implicitSolvent=app.OBC2, nonbondedMethod=app.NoCutoff,
                                  constraints=app.HBonds)
     integ = LangevinIntegrator(300*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
-    plat = Platform.getPlatformByName("CUDA")
-    sim = app.Simulation(prm.topology, system_mm, integ, plat)
-    sim.context.setPositions(crd.positions)
+    # prefer GPU; CUDA build may be too new for the node driver (PTX), so fall back to
+    # OpenCL (still GPU) then CPU
+    order = [os.environ.get("OPENMM_PLATFORM", "CUDA"), "OpenCL", "CPU"]
+    sim = None; used = None
+    for name in dict.fromkeys(order):
+        try:
+            sim = app.Simulation(prm.topology, system_mm, integ,
+                                 Platform.getPlatformByName(name))
+            sim.context.setPositions(crd.positions)
+            sim.context.getState(getEnergy=True).getPotentialEnergy()   # force ctx build
+            used = name; break
+        except Exception:
+            integ = LangevinIntegrator(300*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
+            sim = None
+    if sim is None:
+        raise SystemExit(f"{system}: no working OpenMM platform")
+    print(f"{system}: platform={used}")
     e0 = sim.context.getState(getEnergy=True).getPotentialEnergy().value_in_unit(unit.kilocalorie_per_mole)
     sim.minimizeEnergy(maxIterations=5000)
     e1 = sim.context.getState(getEnergy=True).getPotentialEnergy().value_in_unit(unit.kilocalorie_per_mole)
