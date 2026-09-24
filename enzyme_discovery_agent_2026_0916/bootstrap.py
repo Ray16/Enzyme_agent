@@ -28,6 +28,7 @@ _BUILTIN_TOOL_MODULES = (
     "enzyme_discovery_agent.tools.measurement_extraction",
     "enzyme_discovery_agent.tools.mechanism_extraction",
     "enzyme_discovery_agent.tools.embedding_map",
+    "enzyme_discovery_agent.tools.esm_expansion",
     "enzyme_discovery_agent.models.notebook",
 )
 
