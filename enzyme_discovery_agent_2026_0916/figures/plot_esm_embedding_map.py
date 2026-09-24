@@ -223,7 +223,7 @@ def _short_name(meta: dict, acc: str, maxlen: int = 26) -> str:
 # Figure
 # --------------------------------------------------------------------------- #
 def render(run_dir: Path, out_path: Path, title: str, n_top: int,
-           refs: set[str]) -> Path | None:
+           refs: set[str], show_expansion: bool = False) -> Path | None:
     import numpy as np
     import matplotlib
     matplotlib.use("Agg")
