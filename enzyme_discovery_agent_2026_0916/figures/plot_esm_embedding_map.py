@@ -327,7 +327,10 @@ def render(run_dir: Path, out_path: Path, title: str, n_top: int,
     for s in ("top", "right"):
         ax.spines[s].set_visible(False)
     ax.set_title(title, fontsize=15, fontweight="bold", pad=12, loc="left")
-    ax.text(0.0, 1.015, f"{len(store)} explored candidates - ESM2 embedding",
+    subtitle = f"{len(store)} explored candidates - ESM2 embedding"
+    if show_expansion and n_expansion:
+        subtitle += f"  ({n_expansion} pulled in by ESM expansion)"
+    ax.text(0.0, 1.015, subtitle,
             transform=ax.transAxes, fontsize=10, color="#555555")
 
     # Family legend (right column).
