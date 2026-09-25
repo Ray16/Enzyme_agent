@@ -24,6 +24,7 @@ env/
 /runs/
 /logs/
 enzyme_discovery_agent/runs/
+enzyme_discovery_agent_improved/runs/
 *.log
 
 # ---- structural_modeling_pipeline: heavy data/results dirs (code is tracked) ----
@@ -116,3 +117,16 @@ data/cofold_hydrolase_panel/inputs/
 exp_data/amide_synthetase/archives/
 exp_data/amide_synthetase/boltz2/**/results/
 exp_data/amide_synthetase/decaf/step1/results/
+exp_data/amide_synthetase/esmfold2/step1_1mg/
+exp_data/amide_synthetase/af3/step1_1mg/
+exp_data/amide_synthetase/protenix/step1_1mg/
+
+# ---- Heavy data artifacts too large for GitHub (>100MB limit): kept on disk, not tracked ----
+# MSA search outputs and result archives (multi-hundred-MB to multi-GB)
+*.a3m
+*.tar.zst
+*.tar.zst.discarded
+
+# ---- Per-run output snapshots (code+artifacts copied per run; not source) ----
+**/runs/
+enzyme_discovery_agent_2026_0916/runs/
