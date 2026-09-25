@@ -110,6 +110,15 @@ def frag_msa(seq):
     return os.path.join(MSA_DIR, hashlib.sha1(seq.encode()).hexdigest()[:16] + ".csv")
 
 
+def pocket_contacts(asn, fy):
+    """FY only seeds the SOFT pocket restraint; drop it when not aromatic rather
+    than losing the enzyme (the two hard contacts do not depend on it)."""
+    c = [f"[B, 1]", f"[A, {asn}]"]
+    if fy is not None:
+        c.append(f"[A, {fy}]")
+    return "[" + ", ".join(c) + "]"
+
+
 def yaml_for(name, seqs, split, asn, fy, cn, on):
     s = seqs[name]; k = split[name]
     alpha, beta = s[:k - 1], s[k - 1:]
