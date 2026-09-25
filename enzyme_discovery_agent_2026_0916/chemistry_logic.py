@@ -260,6 +260,190 @@ def classify_reaction_chemistry(
     }
 
 
+# --------------------------------------------------------------------------
+# NTP-dependent activation chemistry
+# --------------------------------------------------------------------------
+
+_NTP_RE = re.compile(r"\b([AGCUI])TP\b", re.IGNORECASE)
+_NMP_RE = re.compile(r"\b([AGCUI])MP\b", re.IGNORECASE)
+_NDP_RE = re.compile(r"\b([AGCUI])DP\b", re.IGNORECASE)
+_PPI_RE = re.compile(r"\b(?:diphosphate|pyrophosphate|PPi)\b", re.IGNORECASE)
+_PI_RE = re.compile(r"(?<!di)(?<!pyro)\b(?:orthophosphate|phosphate|Pi)\b", re.IGNORECASE)
+
+
+def _reaction_sides(equation: str) -> tuple[str, str] | None:
+    """Split an explicit reaction equation without guessing its direction."""
+    parts = re.split(r"\s+(?:=|->|=>|→)\s+", str(equation), maxsplit=1)
+    if len(parts) != 2:
+        return None
+    return parts[0], parts[1]
+
+
+def derive_activation_mechanism(catalytic_activities: list[str] | None) -> dict | None:
+    """Derive the attacked NTP phosphorus from explicit native reaction sides.
+
+    NTP -> NMP + PPi identifies nucleotidyl transfer at P-alpha; NTP -> NDP + Pi
+    identifies phosphoryl transfer at P-gamma. Conflicting equations are retained
+    as a conflict and never resolved by voting.
+    """
+    observations = []
+    for equation in catalytic_activities or []:
+        sides = _reaction_sides(str(equation))
+        if not sides:
+            continue
+        reactants, products = sides
+        ntps = {m.group(1).upper() for m in _NTP_RE.finditer(reactants)}
+        if not ntps:
+            continue
+        product_nmps = {m.group(1).upper() for m in _NMP_RE.finditer(products)}
+        product_ndps = {m.group(1).upper() for m in _NDP_RE.finditer(products)}
+        for base in sorted(ntps):
+            if base in product_nmps and base not in product_ndps:
+                observations.append({
+                    "activation_mode": "acyl_adenylate",
+                    "reactive_phosphate": "Palpha",
+                    "reactive_atom": "PA",
+                    "leaving_group_atom": "O3A",
+                    "nucleotide": f"{base}TP",
+                    "corroborated": bool(_PPI_RE.search(products)),
+                    "equation": str(equation),
+                })
+            elif base in product_ndps and base not in product_nmps:
+                observations.append({
+                    "activation_mode": "acyl_phosphate",
+                    "reactive_phosphate": "Pgamma",
+                    "reactive_atom": "PG",
+                    "leaving_group_atom": "O3B",
+                    "nucleotide": f"{base}TP",
+                    "corroborated": bool(_PI_RE.search(products)),
+                    "equation": str(equation),
+                })
+
+    if not observations:
+        return None
+    signatures = {
+        (item["activation_mode"], item["nucleotide"]) for item in observations
+    }
+    if len(signatures) != 1:
+        return {
+            "status": "conflicting",
+            "confidence": "low",
+            "observations": observations,
+            "basis": {
+                "source_type": "uniprot_catalytic_activity",
+                "derivation_rule": "NTP_product_signature",
+            },
+        }
+
+    result = dict(observations[0])
+    result["status"] = "assigned"
+    result["confidence"] = (
+        "high" if all(item["corroborated"] for item in observations) else "medium"
+    )
+    result["basis"] = {
+        "source_type": "uniprot_catalytic_activity",
+        "source_value": result.pop("equation"),
+        "derivation_rule": (
+            "NTP_to_NMP_plus_PPi"
+            if result["activation_mode"] == "acyl_adenylate"
+            else "NTP_to_NDP_plus_Pi"
+        ),
+        "confidence": result["confidence"],
+    }
+    result.pop("corroborated", None)
+    return result
+
+
+_METAL_CCD = {
+    "mg": "MG", "magnesium": "MG", "mn": "MN", "manganese": "MN",
+    "zn": "ZN", "zinc": "ZN", "co": "CO", "cobalt": "CO",
+    "ca": "CA", "calcium": "CA", "fe": "FE", "iron": "FE",
+}
+_NUMBER_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4}
+_METAL_COUNT_RE = re.compile(
+    r"\b(\d+|one|two|three|four)\s+"
+    r"(mg|mn|zn|co|ca|fe|magnesium|manganese|zinc|cobalt|calcium|iron)"
+    r"(?:\(\d\+\))?\s+(?:ion|ions)\b",
+    re.IGNORECASE,
+)
+
+
+def _metal_ccd(name: str) -> str | None:
+    for token, ccd in _METAL_CCD.items():
+        if re.search(rf"\b{re.escape(token)}\b", str(name), re.IGNORECASE):
+            return ccd
+    return None
+
+
+def derive_modeling_cofactors(
+    catalytic_activities: list[str] | None,
+    cofactor_names: list[str] | None = None,
+    cofactor_notes: list[str] | None = None,
+) -> dict:
+    """Project source-supported NTP cofactors when an NTP signature is present.
+
+    This is an optional chemistry adapter, not a universal cofactor requirement.
+    A reaction with no NTP returns an empty, non-error projection so other
+    mechanism classes can be handled by their own grounded mechanism evidence.
+    """
+    activation = derive_activation_mechanism(catalytic_activities)
+    cofactors = []
+    unresolved = []
+    if activation is None:
+        return {"cofactors": [], "unresolved": [], "applicable": False}
+    if activation and activation.get("status") == "assigned":
+        ntp = activation["nucleotide"]
+        cofactors.append({
+            "name": ntp,
+            "ccd": ntp,
+            "count": 1,
+            "role": "nucleotide_substrate",
+            "basis": activation["basis"],
+            "confidence": activation["confidence"],
+        })
+    elif activation and activation.get("status") == "conflicting":
+        unresolved.append("conflicting nucleotide activation signatures")
+
+    metal_ccds = []
+    for name in cofactor_names or []:
+        ccd = _metal_ccd(name)
+        if ccd and ccd not in metal_ccds:
+            metal_ccds.append(ccd)
+    count_by_metal = {}
+    count_note_by_metal = {}
+    for note in cofactor_notes or []:
+        match = _METAL_COUNT_RE.search(note)
+        if match:
+            token = match.group(1).lower()
+            count = _NUMBER_WORDS.get(token) or int(token)
+            ccd = _metal_ccd(match.group(2))
+            if ccd:
+                count_by_metal.setdefault(ccd, count)
+                count_note_by_metal.setdefault(ccd, note)
+
+    if len(metal_ccds) == 1 and metal_ccds[0] in count_by_metal:
+        metal_ccd = metal_ccds[0]
+        cofactors.append({
+            "name": metal_ccd,
+            "ccd": metal_ccd,
+            "count": count_by_metal[metal_ccd],
+            "role": "catalytic_metal",
+            "basis": {
+                "source_type": "uniprot_cofactor_annotation",
+                "source_value": count_note_by_metal[metal_ccd],
+                "derivation_rule": "explicit_metal_identity_and_count",
+                "confidence": "high",
+            },
+            "confidence": "high",
+        })
+    elif metal_ccds:
+        unresolved.append("catalytic metal identity or stoichiometry is not uniquely annotated")
+    elif activation:
+        unresolved.append("required catalytic metal identity and stoichiometry are unverified")
+
+    return {"cofactors": cofactors, "unresolved": unresolved, "applicable": True}
+
+
 def extract_target_bond_type(target_reaction_type: str) -> dict:
     """Parse the target_reaction_type string for bond type and direction keywords."""
     target_lower = target_reaction_type.lower()

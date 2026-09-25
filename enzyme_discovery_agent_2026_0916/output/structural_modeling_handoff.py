@@ -7,6 +7,70 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
+from enzyme_discovery_agent.models.modeling_handoff import (
+    SCHEMA_VERSION,
+    build_modeling_input,
+)
+
+
+def _first(data: dict, metadata: dict, key: str, default=None):
+    """Prefer populated evaluation evidence, then later registry enrichment."""
+    if data.get(key):
+        return data[key]
+    if metadata.get(key):
+        return metadata[key]
+    if key in data:
+        return data[key]
+    if key in metadata:
+        return metadata[key]
+    return default
+
+
+def _evidence_layer(accession: str, data: dict, metadata: dict) -> dict:
+    mechanism = metadata.get("mechanism_evidence") or data.get("mechanism_evidence")
+    return {
+        "identity": {
+            "accession": accession,
+            "protein_name": _first(data, metadata, "protein_name", ""),
+            "organism": _first(data, metadata, "organism", ""),
+            "gene_names": _first(data, metadata, "gene_names", []),
+            "ec_numbers": _first(data, metadata, "ec_numbers", []),
+        },
+        "native_reactions": _first(data, metadata, "catalytic_activities", []),
+        "native_substrates": _first(data, metadata, "native_substrates", []),
+        "family_assignment": {
+            "interpro_family": _first(data, metadata, "interpro_family"),
+            "interpro_family_id": _first(data, metadata, "interpro_family_id"),
+        },
+        "domain_architecture": _first(data, metadata, "domain_architecture", []),
+        "structures": _first(data, metadata, "structural_data", {}),
+        "cofactor_annotations": {
+            "names": _first(data, metadata, "required_cofactors", []),
+            "notes": _first(data, metadata, "cofactor_notes", []),
+        },
+        "reaction_chemistry": _first(data, metadata, "reaction_chemistry", {}),
+        "mechanism": {
+            "status": (
+                mechanism.get("status", "not_attempted")
+                if isinstance(mechanism, dict)
+                else "not_attempted"
+            ),
+            "evidence": mechanism,
+        },
+        "structural_homology": metadata.get("structural_homology"),
+    }
+
+
+def _modeling_source(evidence: dict, metadata: dict) -> dict:
+    annotations = evidence["cofactor_annotations"]
+    mechanism = evidence["mechanism"]["evidence"]
+    return {
+        "catalytic_activities": evidence["native_reactions"],
+        "required_cofactors": annotations["names"],
+        "cofactor_notes": annotations["notes"],
+        "mechanism_evidence": mechanism,
+        "modeling_specification": metadata.get("modeling_specification"),
+    }
 
 
 def write_structural_modeling_handoff(
@@ -15,6 +79,7 @@ def write_structural_modeling_handoff(
     target: dict,
     max_candidates: int = 20,
     neighbor_map: dict | None = None,
+    output_path: Path | None = None,
 ) -> Path | None:
     """Write a shortlist manifest; structural modeling remains a deliberate next step.
 
@@ -58,25 +123,30 @@ def write_structural_modeling_handoff(
             continue
         seen.add(accession)
         metadata = registry.get(accession, {}).get("metadata", {})
+        evidence = _evidence_layer(accession, data, metadata)
+        projection_source = _modeling_source(evidence, {
+            **metadata,
+            "modeling_specification": (
+                data.get("modeling_specification")
+                or metadata.get("modeling_specification")
+            ),
+        })
+        modeling_input = build_modeling_input(projection_source, target)
         candidates.append({
             "accession": accession,
-            "protein_name": data.get("protein_name") or metadata.get("protein_name", ""),
-            "organism": data.get("organism") or metadata.get("organism", ""),
-            "gene_names": data.get("gene_names") or metadata.get("gene_names", []),
-            "ec_numbers": data.get("ec_numbers") or metadata.get("ec_numbers", []),
-            "structure_sources": data.get("structural_data", {}),
-            "native_substrate_evidence": data.get("native_substrates", []),
-            "reaction_chemistry": data.get("reaction_chemistry", {}),
-            "mechanism_evidence": (
-                data.get("mechanism_evidence") or metadata.get("mechanism_evidence")
-            ),
-            "structural_homology": metadata.get("structural_homology"),
-            "ortholog_alternatives": next((
-                entry.get("orthologs", []) for entry in ranking
-                if entry.get("accession") == accession
-            ), []),
-            "esm_neighbors": neighbors_by_promising.get(accession, []),
-            "selection_reason": "Evaluated discovery candidate; structural modeling is required before geometry-based promotion.",
+            "evidence": evidence,
+            "modeling_input": modeling_input,
+            "selection": {
+                "source": "evaluated_discovery_candidate",
+                "reason": (
+                    "Structural modeling is required before geometry-based promotion."
+                ),
+                "ortholog_alternatives": next((
+                    entry.get("orthologs", []) for entry in ranking
+                    if entry.get("accession") == accession
+                ), []),
+                "esm_neighbors": neighbors_by_promising.get(accession, []),
+            },
         })
         if len(candidates) == max_candidates:
             break
@@ -93,37 +163,39 @@ def write_structural_modeling_handoff(
                 continue
             seen.add(nbr_acc)
             metadata = registry.get(nbr_acc, {}).get("metadata", {})
+            evidence = _evidence_layer(nbr_acc, {}, metadata)
+            projection_source = _modeling_source(evidence, metadata)
             candidates.append({
                 "accession": nbr_acc,
-                "protein_name": metadata.get("protein_name", ""),
-                "organism": metadata.get("organism", ""),
-                "gene_names": metadata.get("gene_names", []),
-                "ec_numbers": metadata.get("ec_numbers", []),
-                "structure_sources": {},
-                "native_substrate_evidence": [],
-                "reaction_chemistry": {},
-                "mechanism_evidence": metadata.get("mechanism_evidence"),
-                "structural_homology": metadata.get("structural_homology"),
-                "ortholog_alternatives": [],
-                "esm_neighbor_of": promising_acc,
-                "esm_distance": nbr.get("distance"),
-                "selection_reason": f"ESM neighbor of promising candidate {promising_acc}.",
+                "evidence": evidence,
+                "modeling_input": build_modeling_input(projection_source, target),
+                "selection": {
+                    "source": "esm_neighbor",
+                    "reason": f"ESM neighbor of promising candidate {promising_acc}.",
+                    "ortholog_alternatives": [],
+                    "esm_neighbors": [],
+                    "esm_neighbor_of": promising_acc,
+                    "esm_distance": nbr.get("distance"),
+                },
             })
 
     if not candidates:
         return None
     manifest = {
-        "schema_version": "1.0",
+        "schema_version": SCHEMA_VERSION,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "source_run": str(run_dir),
         "target": target,
         "max_candidates": max_candidates,
         "candidates": candidates,
         "next_step": (
-            "Review the shortlist, then pass selected accessions and verified substrate SMILES "
-            "to structural_modeling_pipeline/run_structural_modeling.py."
+            "Review every needs_review modeling_input and record approved substrate "
+            "states, stereochemistry, cofactors, and stoichiometry. Then use "
+            "structural_modeling/scripts/build_step1_inputs.py with explicit FASTA "
+            "and MSA-index paths; it accepts only status=ready candidates unless an "
+            "exploratory override is explicit."
         ),
     }
-    path = run_dir / "structural_modeling_handoff.json"
+    path = output_path or (run_dir / "structural_modeling_handoff.json")
     path.write_text(json.dumps(manifest, indent=2, default=str) + "\n")
     return path

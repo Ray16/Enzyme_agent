@@ -60,6 +60,23 @@ _LLM_SYSTEM = (
     'coupled favorable process that could solve it"],\n'
     '  "cofactor_requirements": ["cofactors/leaving groups chemically implied, if any"],\n'
     '  "disqualifiers": ["observations about a candidate that would rule it out"],\n'
+    '  "modeling_specification": {\n'
+    '    "state": "<chemical state represented by the proposed complex>",\n'
+    '    "components": [\n'
+    '      {"source_component_index": 1, "name": "<target molecule>", '
+    '"role": "<mechanistic role>", '
+    '"modeling_smiles": "<isomeric SMILES in the proposed modeled state>", '
+    '"state_rationale": "<basis for charge/protonation state>", '
+    '"reactive_atom": "<unambiguous atom description or null>", '
+    '"include_in_model": true, "affinity_target": true|false}\n'
+    "    ],\n"
+    '    "geometry": {"kind": "<distance|distance_angle|other|none>", '
+    '"atom_a": "<participant/atom description or null>", '
+    '"atom_b": "<participant/atom description or null>", '
+    '"atom_c": "<participant/atom description or null>", '
+    '"rationale": "<chemical basis or null>"},\n'
+    '    "uncertainties": ["<choice that requires evidence or review>"]\n'
+    "  },\n"
     '  "polymer_target": true|false,  // does the reaction BUILD or BREAK a repeating '
     'polymer/oligomer chain, even if the named inputs are monomers (i.e. the target '
     'reaction synthesizes or degrades a repeating chain)?\n'
@@ -69,6 +86,14 @@ _LLM_SYSTEM = (
     'stand in for the chain, built from the named monomers/repeat unit; else null",\n'
     '  "uncertainty": "low|medium|high"\n'
     "}\n"
+    "For modeling_specification, preserve every stereocenter stated by a substrate "
+    "name or source structure and never choose an unspecified stereoisomer. Keep "
+    "source and proposed modeled molecular states separate. Propose a different "
+    "protonation or charge state only when the modeled chemical step requires it, "
+    "explain why, and list the change in uncertainties so it is reviewed. A reacting "
+    "nucleophile must be represented in a nucleophilic state. Assign roles from the "
+    "target bond change, not component order. Atom descriptions must be specific "
+    "enough to map to a structure; use null when they are not. "
     "Keep every list short and general. If a field is not chemically implied, use "
     "an empty list (or null for the scalar fields). The oligomer, when given, must be a "
     "chemically valid extension of the target chemistry, not a copy of a single monomer."
@@ -302,7 +327,8 @@ def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
               "cofactor_requirements": [], "disqualifiers": [],
               "reaction_direction": None, "bond_types": [],
               "substrate_topology": None,
-              "polymer_target": False, "modeling_oligomer": None}, [])
+              "polymer_target": False, "modeling_oligomer": None,
+              "modeling_specification": None}, [])
     if llm_client is None:
         return empty
     facts = {
@@ -418,6 +444,10 @@ def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
             logger.warning("target-reasoning: LLM oligomer proposal rejected as not a "
                            "credible multi-residue chain")
 
+    modeling_specification = obj.get("modeling_specification")
+    if not isinstance(modeling_specification, dict):
+        modeling_specification = None
+
     extra = {
         "activation_problem": problem,
         "activation_categories": activation,
@@ -428,6 +458,7 @@ def _llm_layer(query: str, substrate_smiles: str | None, fields: dict,
         "substrate_topology": llm_topology,
         "polymer_target": polymer_target,
         "modeling_oligomer": modeling_oligomer,
+        "modeling_specification": modeling_specification,
     }
     return extra, claims
 
@@ -489,6 +520,7 @@ def derive_target_reasoning(
         # reasoned out for a polymer target (None for non-polymer targets).
         "polymer_target": bool(extra.get("polymer_target")),
         "modeling_oligomer": extra.get("modeling_oligomer"),
+        "modeling_specification": extra.get("modeling_specification"),
     }
     return normalize_target_reasoning(contract)
 
@@ -528,6 +560,10 @@ def normalize_target_reasoning(contract: dict | None) -> dict:
     result.setdefault("activation_problem", "")
     result.setdefault("polymer_target", False)
     result.setdefault("modeling_oligomer", None)
+    modeling = result.get("modeling_specification")
+    if modeling is not None and not isinstance(modeling, dict):
+        raise ValueError("modeling_specification must be an object or null.")
+    result.setdefault("modeling_specification", None)
     topology = result["substrate_topology"]
     if topology is not None and topology not in TOPOLOGIES:
         raise ValueError(f"invalid substrate_topology: {topology}")
