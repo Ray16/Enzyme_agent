@@ -93,11 +93,12 @@ def main():
     xr, yr = 75.0, 58.0  # axis spans, for spacing scale
     def free(x, y):
         for px, py in placed:
-            if abs(x - px) / xr < 0.045 and abs(y - py) / yr < 0.055:
+            if abs(x - px) / xr < 0.058 and abs(y - py) / yr < 0.052:
                 return False
         return True
-    cands = [(6, 6), (6, -12), (-6, 6), (-6, -12), (10, 14), (10, -20),
-             (-12, 14), (-12, -20), (14, 2), (-16, 2)]
+    cands = [(6, 6), (6, -13), (-30, 6), (-30, -13), (12, 16), (12, -24),
+             (-34, 16), (-34, -24), (18, 3), (-40, 3), (6, 26), (6, -34),
+             (-34, 26), (-34, -34)]
     for _, r in to_label.sort_values(["n_distance_gated", "mean_inline_angle"],
                                      ascending=False).iterrows():
         x0, y0 = r.mean_inline_angle, r.n_distance_gated
