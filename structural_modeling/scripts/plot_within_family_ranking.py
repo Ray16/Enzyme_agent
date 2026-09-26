@@ -61,40 +61,62 @@ def main():
     concl = df[df.n_distance_gated >= CONCLUSIVE_MIN].copy()
     incon = df[df.n_distance_gated < CONCLUSIVE_MIN].copy()
 
-    fig, ax = plt.subplots(figsize=(12, 8.5))
+    fig, ax = plt.subplots(figsize=(13.5, 8.5))
 
-    # quadrant shading: reliable (y>=5) AND in-line (x>=150)
-    ax.axhspan(CONCLUSIVE_MIN, N_SAMPLES + 3, xmin=0, xmax=1, color="none")
-    ax.axvspan(ANGLE_THRESH, 180, color="#009E73", alpha=0.04, zorder=0)
+    # in-line & reliable quadrant shading (x>=150 and y>=5)
+    ax.axvspan(ANGLE_THRESH, 180, ymin=(CONCLUSIVE_MIN + 2) / (N_SAMPLES + 5),
+               ymax=1.0, color="#009E73", alpha=0.06, zorder=0)
     ax.axhline(CONCLUSIVE_MIN, color="#888", ls=":", lw=1.2, zorder=1)
     ax.axvline(ANGLE_THRESH, color="#2a7f62", ls="--", lw=1.4, zorder=1)
 
     # scatter conclusive candidates
     for fam, sub in concl.groupby("family"):
         ax.scatter(sub.mean_inline_angle, sub.n_distance_gated,
-                   s=90, c=FAM_COLORS.get(fam, "#7F7F7F"),
-                   edgecolors="white", linewidths=0.8, alpha=0.9,
+                   s=95, c=FAM_COLORS.get(fam, "#7F7F7F"),
+                   edgecolors="white", linewidths=0.9, alpha=0.92,
                    zorder=3, label=fam)
 
-    # annotate: ground truth, and the strongest / notable per family
-    concl["_lab"] = concl.apply(label_of, axis=1)
-    # label the top-3 by pose-count-weighted angle within the two dominant families,
-    # plus any high-consistency (n>=20) point, plus ground truth if present.
-    to_label = set()
-    for fam, sub in concl.groupby("family"):
-        top = sub.sort_values(["n_distance_gated", "mean_inline_angle"],
-                              ascending=False).head(2)
-        to_label.update(top.index)
-    to_label.update(concl[concl.n_distance_gated >= 20].index)
-
-    for i in to_label:
-        r = concl.loc[i]
-        ax.annotate(r._lab, (r.mean_inline_angle, r.n_distance_gated),
-                    xytext=(5, 5), textcoords="offset points",
-                    fontsize=9, color="#333", zorder=4)
-
     ax.set_xlim(100, 175)
-    ax.set_ylim(-2, N_SAMPLES + 3)
+    ax.set_ylim(-3, N_SAMPLES + 5)
+
+    # ---- curated labels: the in-line & reliable shortlist + a few outliers ----
+    concl["_lab"] = concl.apply(label_of, axis=1)
+    shortlist = concl[(concl.mean_inline_angle >= ANGLE_THRESH) &
+                      (concl.n_distance_gated >= CONCLUSIVE_MIN)]
+    outliers = concl[(concl.n_distance_gated >= 30) &
+                     (concl.mean_inline_angle < ANGLE_THRESH)]
+    lo = concl.sort_values("mean_inline_angle").head(1)  # weakest geometry (purD)
+    to_label = pd.concat([shortlist, outliers, lo]).drop_duplicates()
+
+    # lightweight greedy repel in axis (data) coords
+    placed = []  # (x, y) of placed label anchors
+    xr, yr = 75.0, 58.0  # axis spans, for spacing scale
+    def free(x, y):
+        for px, py in placed:
+            if abs(x - px) / xr < 0.045 and abs(y - py) / yr < 0.055:
+                return False
+        return True
+    cands = [(6, 6), (6, -12), (-6, 6), (-6, -12), (10, 14), (10, -20),
+             (-12, 14), (-12, -20), (14, 2), (-16, 2)]
+    for _, r in to_label.sort_values(["n_distance_gated", "mean_inline_angle"],
+                                     ascending=False).iterrows():
+        x0, y0 = r.mean_inline_angle, r.n_distance_gated
+        best = None
+        for dx, dy in cands:
+            lx = x0 + dx * xr / 300.0
+            ly = y0 + dy * yr / 170.0
+            if free(lx, ly):
+                best = (dx, dy, lx, ly)
+                break
+        if best is None:
+            best = (6, 6, x0 + 6 * xr / 300.0, y0 + 6 * yr / 170.0)
+        dx, dy, lx, ly = best
+        placed.append((lx, ly))
+        ax.annotate(r._lab, (x0, y0), xytext=(dx, dy),
+                    textcoords="offset points", fontsize=9, color="#222",
+                    zorder=5,
+                    arrowprops=dict(arrowstyle="-", color="#bbb", lw=0.6,
+                                    shrinkA=0, shrinkB=3))
     ax.set_xlabel("mean in-line attack angle (°)  —  geometry quality  "
                   "(dashed = 150° in-line threshold)")
     ax.set_ylabel("near-attack poses (d < 4 Å) out of 50  —  reliability")
