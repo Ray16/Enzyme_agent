@@ -125,12 +125,12 @@ def main():
                  "top-right = in-line AND reliable", loc="left")
 
     # quadrant guide text
-    ax.text(174, N_SAMPLES + 1.5, "in-line & reliable", ha="right", va="top",
-            fontsize=10, style="italic", color="#2a7f62")
-    ax.text(101, CONCLUSIVE_MIN - 0.5, f"n < {CONCLUSIVE_MIN}: inconclusive",
+    ax.text(174.5, N_SAMPLES + 4, "in-line & reliable", ha="right", va="top",
+            fontsize=11, style="italic", color="#2a7f62")
+    ax.text(100.5, CONCLUSIVE_MIN - 0.8, f"n < {CONCLUSIVE_MIN}: inconclusive",
             ha="left", va="top", fontsize=9, color="#888")
 
-    # legend: families present, ordered by count
+    # legend outside, to the right (families present, ordered by count)
     fams_present = concl.family.value_counts().index.tolist()
     handles = [Line2D([0], [0], marker="o", ls="", markersize=9,
                       markerfacecolor=FAM_COLORS.get(f, "#7F7F7F"),
@@ -138,7 +138,8 @@ def main():
                       label=f"{f} (n={int((concl.family==f).sum())})")
                for f in fams_present]
     leg = ax.legend(handles=handles, title="mechanistic family",
-                    loc="lower right", frameon=True, fontsize=9, title_fontsize=10)
+                    loc="upper left", bbox_to_anchor=(1.01, 1.0),
+                    frameon=True, fontsize=9.5, title_fontsize=10.5)
     leg.get_frame().set_alpha(0.95)
 
     # inconclusive strip (incl. ground truth) as a text box
