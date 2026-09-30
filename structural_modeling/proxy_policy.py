@@ -61,38 +61,88 @@ _PG_GROUPS = (
 )
 
 
+_PA_TRANSFER_GROUPS = (
+    (("iuca", "iucc", "aerobactin"), "Aerobactin NIS"),
+    (("dapdiamide", "fumarate--(s)-2,3- diaminopropanoate"), "Dapdiamide"),
+)
+
+
+def _adenylate(family_group: str, evidence_scope: str) -> ProxyMechanism:
+    """Pa attack along the Pa--O3A axis, one catalytic Mg2+ (AMP + PPi released)."""
+    return ProxyMechanism("acyl-adenylate", "PA", "ATP P-alpha", "P-alpha--O3A",
+                          family_group, evidence_scope, 1)
+
+
+def _acyl_phosphate(family_group: str, evidence_scope: str) -> ProxyMechanism:
+    """Pg attack along the Pg--O3B axis, two catalytic Mg2+ (ADP + Pi released)."""
+    return ProxyMechanism("acyl-phosphate", "PG", "ATP P-gamma", "P-gamma--O3B",
+                          family_group, evidence_scope, 2)
+
+
+# Rhea half-reaction signatures. Which phosphorus is attacked is a *property of the
+# reaction*, so read it from the annotated equation instead of guessing from the
+# family name: AMP + diphosphate means the carboxylate attacked Pa; ADP + phosphate
+# means it attacked Pg. This is the same principle cofactor_stoichiometry.py uses
+# for metal count -- per-enzyme annotation, no mechanism table keyed on names.
+_AMP_RE = re.compile(r"\bAMP\b", re.I)
+_ADP_RE = re.compile(r"\bADP\b", re.I)
+
+
+def mechanism_from_catalytic_activities(activities) -> ProxyMechanism | None:
+    """Resolve the reaction coordinate from UniProt/Rhea catalytic-activity text.
+
+    Authoritative and per-enzyme, so it is preferred over
+    :func:`proxy_mechanism_for_family`. Returns None when the annotation is absent
+    or names both nucleotide products (abstain rather than guess).
+    """
+    if isinstance(activities, str):
+        activities = [activities]
+    text = " ".join(str(a) for a in (activities or []))
+    if not text.strip():
+        return None
+    amp = bool(_AMP_RE.search(text)) and "diphosphate" in text.lower()
+    adp = bool(_ADP_RE.search(text))
+    if amp and not adp:
+        return _adenylate("Rhea:AMP+PPi", "reaction_derived")
+    if adp and not amp:
+        return _acyl_phosphate("Rhea:ADP+Pi", "reaction_derived")
+    return None
+
+
 def proxy_mechanism_for_family(family: str | None) -> ProxyMechanism | None:
-    """Return the supported reaction coordinate, or abstain for unknown families."""
+    """Fallback coordinate from the family name; abstain for unknown families.
+
+    Only a fallback: family names are a weak proxy for mechanism (they once put
+    the adenylate-forming Dapdiamide ligase in the acyl-phosphate group). Callers
+    holding a catalytic-activity annotation should use
+    :func:`mechanism_from_catalytic_activities` first.
+    """
     normalized = (family or "").strip().lower()
     if any(key in normalized for key in _ANL_VALIDATED_KEYS):
-        return ProxyMechanism(
-            "acyl-adenylate",
-            "PA",
-            "ATP P-alpha",
-            "P-alpha--O3A",
-            "ANL/AMP-binding",
-            "panel_validated",
-        )
-    if any(key in normalized for key in _ANL_TRANSFER_KEYS):
-        return ProxyMechanism(
-            "acyl-adenylate",
-            "PA",
-            "ATP P-alpha",
-            "P-alpha--O3A",
-            "Aerobactin NIS",
-            "mechanistically_transferred",
-        )
+        return _adenylate("ANL/AMP-binding", "panel_validated")
+    for keys, group in _PA_TRANSFER_GROUPS:
+        if any(key in normalized for key in keys):
+            return _adenylate(group, "mechanistically_transferred")
     for keys, group in _PG_GROUPS:
         if any(key in normalized for key in keys):
-            return ProxyMechanism(
-                "acyl-phosphate",
-                "PG",
-                "ATP P-gamma",
-                "P-gamma--O3B",
-                group,
-                "mechanistically_transferred",
-            )
+            return _acyl_phosphate(group, "mechanistically_transferred")
     return None
+
+
+def resolve_mechanism(family: str | None = None, catalytic_activities=None):
+    """Best available coordinate plus the basis it came from.
+
+    Returns ``(ProxyMechanism | None, basis)`` where basis is ``"reaction"``,
+    ``"family"`` or ``"unresolved"``. Reaction annotation wins; the family name is
+    consulted only when the reaction is unavailable or ambiguous.
+    """
+    from_reaction = mechanism_from_catalytic_activities(catalytic_activities)
+    if from_reaction is not None:
+        return from_reaction, "reaction"
+    from_family = proxy_mechanism_for_family(family)
+    if from_family is not None:
+        return from_family, "family"
+    return None, "unresolved"
 
 
 def structural_support_tier(
