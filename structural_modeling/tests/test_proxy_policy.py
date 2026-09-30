@@ -130,5 +130,87 @@ class ProxyPolicyTests(unittest.TestCase):
         self.assertEqual(rows["A2"]["struct_rank_within_family"], "")
 
 
+class ReactionDerivedMechanismTests(unittest.TestCase):
+    """RULE 1: the attacked phosphorus follows from the nucleotide products."""
+
+    ADENYLATE = "a carboxylate + an amine + ATP = an amide + AMP + diphosphate"
+    ACYL_PHOSPHATE = "a carboxylate + an amine + ATP = an amide + ADP + phosphate"
+
+    def test_amp_and_diphosphate_means_p_alpha_with_one_metal(self):
+        mech = mechanism_from_reaction(self.ADENYLATE)
+        self.assertEqual(mech.phosphate, "PA")
+        self.assertEqual(mech.leaving_axis, "P-alpha--O3A")
+        self.assertEqual(mech.metal_count, 1)
+        self.assertEqual(mech.evidence_scope, "reaction_derived")
+
+    def test_adp_means_p_gamma_with_two_metals(self):
+        mech = mechanism_from_reaction(self.ACYL_PHOSPHATE)
+        self.assertEqual(mech.phosphate, "PG")
+        self.assertEqual(mech.leaving_axis, "P-gamma--O3B")
+        self.assertEqual(mech.metal_count, 2)
+
+    def test_calibrated_flag_is_the_only_route_to_panel_validated(self):
+        self.assertEqual(mechanism_from_reaction(self.ADENYLATE).evidence_scope,
+                         "reaction_derived")
+        self.assertEqual(
+            mechanism_from_reaction(self.ADENYLATE, calibrated=True).evidence_scope,
+            "panel_validated")
+
+    def test_abstains_rather_than_guessing(self):
+        for bad in (None, "", [], ["   "], "an unrelated hydrolysis reaction",
+                    "ATP = AMP + diphosphate and also ADP + phosphate"):
+            with self.subTest(reaction=bad):
+                self.assertIsNone(mechanism_from_reaction(bad))
+
+    def test_accepts_a_list_of_equations(self):
+        self.assertEqual(mechanism_from_reaction([self.ADENYLATE]).phosphate, "PA")
+
+    def test_reaction_overrides_a_contradicting_family_name(self):
+        """The regression: a family name must never beat an annotated equation."""
+        family = "Glutamine synthetase"                     # fallback says PG / 2 Mg
+        self.assertEqual(proxy_mechanism_for_family(family).phosphate, "PG")
+        mech, basis = resolve_mechanism(family, self.ADENYLATE)
+        self.assertEqual(basis, "reaction")
+        self.assertEqual(mech.phosphate, "PA")
+        self.assertEqual(mech.metal_count, 1)
+
+    def test_family_is_used_only_when_no_equation_resolves(self):
+        mech, basis = resolve_mechanism("ATP-grasp fold", None)
+        self.assertEqual((basis, mech.phosphate, mech.metal_count), ("family", "PG", 2))
+        mech, basis = resolve_mechanism("something unheard of", None)
+        self.assertEqual((mech, basis), (None, "unresolved"))
+
+    def test_metal_count_travels_with_every_resolved_mechanism(self):
+        """Cofold stoichiometry and geometry scoring read one source of truth."""
+        for family in ("AMP-binding enzyme", "Aerobactin IucA/IucC-like",
+                       "ATP-grasp fold", "Glutamine synthetase"):
+            with self.subTest(family=family):
+                mech = proxy_mechanism_for_family(family)
+                self.assertEqual(mech.metal_count, 1 if mech.phosphate == "PA" else 2)
+
+
+class FallbackDataFileTests(unittest.TestCase):
+    def test_fallback_is_data_driven_and_orders_calibrated_first(self):
+        path = ROOT / "knowledge" / "family_mechanism_fallback.json"
+        self.assertTrue(path.is_file(), "the family fallback must live in data, not code")
+        import json as _json
+        entries = _json.loads(path.read_text())["entries"]
+        self.assertTrue(entries)
+        for e in entries:
+            with self.subTest(group=e.get("family_group")):
+                self.assertIn(e["coordinate"], ("adenylate", "acyl_phosphate"))
+                self.assertTrue(e["keywords"])
+        calibrated = [i for i, e in enumerate(entries) if e.get("calibrated")]
+        self.assertEqual(calibrated, list(range(len(calibrated))),
+                         "calibrated entries must come first, since first match wins")
+
+    def test_only_calibrated_entries_claim_panel_validation(self):
+        for family, expected in (("AMP-binding enzyme", "panel_validated"),
+                                 ("Aerobactin IucA/IucC-like", "mechanistically_transferred"),
+                                 ("ATP-grasp fold", "mechanistically_transferred")):
+            with self.subTest(family=family):
+                self.assertEqual(proxy_mechanism_for_family(family).evidence_scope, expected)
+
+
 if __name__ == "__main__":
     unittest.main()
