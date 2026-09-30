@@ -1,18 +1,44 @@
-"""Shared policy for mechanism-specific structural proxy interpretation.
+"""Rules for mechanism-specific structural-proxy interpretation.
 
-The amide-synthetase assay panel validates the P-alpha angle proxy only for the
-AMP-binding/ANL superfamily. Analogous coordinates in other ligase families are
-useful mechanistic hypotheses, but remain transferred rather than calibrated.
+This module holds *rules*, not enzymes. Two general rules do the work:
+
+RULE 1 -- which phosphorus is attacked follows from the reaction's nucleotide
+products, because that is what the transfer chemistry *is*:
+
+    ... + ATP = ... + AMP + diphosphate   ->  the nucleophile attacked P-alpha
+                                              (adenylate; leaves along Pa--O3A; 1 Mg2+)
+    ... + ATP = ... + ADP + phosphate     ->  the nucleophile attacked P-gamma
+                                              (acyl-phosphate; leaves along Pg--O3B; 2 Mg2+)
+
+  Read it from the annotated equation (UniProt/Rhea) per enzyme. This is the same
+  principle ``cofactor_stoichiometry.py`` applies to metal count: per-enzyme
+  annotation, never a mechanism table keyed on family names. Inferring mechanism
+  from a family name is unsound -- it previously assigned an adenylate-forming
+  ligase to the acyl-phosphate coordinate and scored the wrong phosphorus.
+
+RULE 2 -- an angle is only a calibrated activity signal inside the regime the
+assay panel actually covered. Everything else is a mechanistic transfer:
+``evidence_scope`` records which, and transfers must never be reported as
+validated activity models.
+
+Family-name keywords are a *fallback* for enzymes with no annotated equation.
+They are data, not policy, and live in ``knowledge/family_mechanism_fallback.json``
+so adding one needs no code change and carries no implied validation.
 """
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
-
+from functools import lru_cache
+from pathlib import Path
 
 PROXY_VERSION = "step1-angle-v2"
 MIN_GATED_POSES = 5
 COMPATIBLE_ANGLE = 150.0
 STRONG_ANGLE = 165.0
+
+_FALLBACK_PATH = Path(__file__).resolve().parent / "knowledge" / "family_mechanism_fallback.json"
 
 
 @dataclass(frozen=True)
@@ -23,120 +49,109 @@ class ProxyMechanism:
     leaving_axis: str
     family_group: str
     evidence_scope: str
-    # Catalytic Mg2+ per active site. Carried HERE so the cofold setup and the
-    # geometry scoring can never disagree about the mechanism's metal count --
-    # they previously drifted, because the stoichiometry lived only in prose.
-    # One Mg for adenylate (Pa) transfer, two for two-metal acyl-phosphate (Pg).
+    # Catalytic Mg2+ per active site, carried with the mechanism so cofold setup
+    # and geometry scoring cannot disagree about stoichiometry. They previously
+    # drifted because the count lived only in prose.
     metal_count: int = 0
 
 
-_ANL_VALIDATED_KEYS = ("amp-binding", "anl")
-# Adenylate-forming families recognised by name. Dapdiamide (DdaG) sits here, NOT
-# in the acyl-phosphate groups: its UniProt/Rhea reaction is
-#   (S)-2,3-diaminopropanoate + fumarate + ATP = N(3)-fumaroyl-Dap + AMP + diphosphate
-# i.e. AMP + PPi, which is Pa attack with one Mg. It was previously grouped with
-# the ATP-grasp/acyl-phosphate families on a family-name guess, which scored the
-# WRONG phosphorus for it. Prefer mechanism_from_catalytic_activities() when the
-# reaction is available -- this name map is only the fallback.
-_ANL_TRANSFER_KEYS = (
-    "iuca", "iucc", "aerobactin",
-    "dapdiamide", "fumarate--(s)-2,3- diaminopropanoate",
-)
-_PG_GROUPS = (
-    (("glutamine synthetase", "gamma-glutamylputrescine"), "Glutamine synthetase"),
-    (("rimk", "lysx", "tyramine--l-glutamate"), "RimK/bS6"),
-    (
-        ("phosphoribosylglycinamide synthetase", "formyltransferase"),
-        "PurD/GAR",
-    ),
-    (
-        ("atp-grasp", "pyrrolysine", "l-propargylglycine"),
-        "ATP-grasp",
-    ),
-    (
-        ("phosphoribosylformylglycinamidine cyclo-ligase",),
-        "phosphoribosylformylglycinamidine cyclo-ligase",
-    ),
-    (("carbamoyl-phosphate synthase",), "carbamoyl-phosphate synthase"),
-)
+# RULE 1, as data: the nucleotide-product signature of each transfer coordinate.
+# Keyed on chemistry, not on any enzyme, family or pathway.
+_COORDINATES = {
+    "adenylate": {
+        "mechanism": "acyl-adenylate",
+        "phosphate": "PA",
+        "electrophile": "ATP P-alpha",
+        "leaving_axis": "P-alpha--O3A",
+        "metal_count": 1,
+        # AMP released with diphosphate: the nucleophile displaced PPi at P-alpha.
+        "requires": (re.compile(r"\bAMP\b", re.I), re.compile(r"diphosphate", re.I)),
+        "excludes": (re.compile(r"\bADP\b", re.I),),
+    },
+    "acyl_phosphate": {
+        "mechanism": "acyl-phosphate",
+        "phosphate": "PG",
+        "electrophile": "ATP P-gamma",
+        "leaving_axis": "P-gamma--O3B",
+        "metal_count": 2,
+        # ADP released: the nucleophile displaced ADP at P-gamma.
+        "requires": (re.compile(r"\bADP\b", re.I),),
+        "excludes": (re.compile(r"\bAMP\b", re.I),),
+    },
+}
 
 
-_PA_TRANSFER_GROUPS = (
-    (("iuca", "iucc", "aerobactin"), "Aerobactin NIS"),
-    (("dapdiamide", "fumarate--(s)-2,3- diaminopropanoate"), "Dapdiamide"),
-)
+def _build(coordinate: str, family_group: str, evidence_scope: str) -> ProxyMechanism:
+    spec = _COORDINATES[coordinate]
+    return ProxyMechanism(
+        spec["mechanism"], spec["phosphate"], spec["electrophile"],
+        spec["leaving_axis"], family_group, evidence_scope, spec["metal_count"],
+    )
 
 
-def _adenylate(family_group: str, evidence_scope: str) -> ProxyMechanism:
-    """Pa attack along the Pa--O3A axis, one catalytic Mg2+ (AMP + PPi released)."""
-    return ProxyMechanism("acyl-adenylate", "PA", "ATP P-alpha", "P-alpha--O3A",
-                          family_group, evidence_scope, 1)
+def mechanism_from_reaction(catalytic_activities, *, calibrated: bool = False):
+    """RULE 1: resolve the coordinate from an annotated reaction equation.
 
-
-def _acyl_phosphate(family_group: str, evidence_scope: str) -> ProxyMechanism:
-    """Pg attack along the Pg--O3B axis, two catalytic Mg2+ (ADP + Pi released)."""
-    return ProxyMechanism("acyl-phosphate", "PG", "ATP P-gamma", "P-gamma--O3B",
-                          family_group, evidence_scope, 2)
-
-
-# Rhea half-reaction signatures. Which phosphorus is attacked is a *property of the
-# reaction*, so read it from the annotated equation instead of guessing from the
-# family name: AMP + diphosphate means the carboxylate attacked Pa; ADP + phosphate
-# means it attacked Pg. This is the same principle cofactor_stoichiometry.py uses
-# for metal count -- per-enzyme annotation, no mechanism table keyed on names.
-_AMP_RE = re.compile(r"\bAMP\b", re.I)
-_ADP_RE = re.compile(r"\bADP\b", re.I)
-
-
-def mechanism_from_catalytic_activities(activities) -> ProxyMechanism | None:
-    """Resolve the reaction coordinate from UniProt/Rhea catalytic-activity text.
-
-    Authoritative and per-enzyme, so it is preferred over
-    :func:`proxy_mechanism_for_family`. Returns None when the annotation is absent
-    or names both nucleotide products (abstain rather than guess).
+    ``catalytic_activities`` is a Rhea/UniProt equation string or a list of them.
+    Abstains (returns None) when no equation is given, when none matches, or when
+    an equation names both nucleotide products -- ambiguity is not a licence to
+    guess. ``calibrated`` marks the candidate as inside the assay-validated
+    regime; callers that cannot establish that must leave it False.
     """
-    if isinstance(activities, str):
-        activities = [activities]
-    text = " ".join(str(a) for a in (activities or []))
+    if isinstance(catalytic_activities, str):
+        catalytic_activities = [catalytic_activities]
+    text = " ".join(str(a) for a in (catalytic_activities or []) if a)
     if not text.strip():
         return None
-    amp = bool(_AMP_RE.search(text)) and "diphosphate" in text.lower()
-    adp = bool(_ADP_RE.search(text))
-    if amp and not adp:
-        return _adenylate("Rhea:AMP+PPi", "reaction_derived")
-    if adp and not amp:
-        return _acyl_phosphate("Rhea:ADP+Pi", "reaction_derived")
-    return None
+    scope = "panel_validated" if calibrated else "reaction_derived"
+    matches = [
+        name for name, spec in _COORDINATES.items()
+        if all(p.search(text) for p in spec["requires"])
+        and not any(p.search(text) for p in spec["excludes"])
+    ]
+    if len(matches) != 1:
+        return None
+    return _build(matches[0], f"reaction:{_COORDINATES[matches[0]]['phosphate']}", scope)
+
+
+@lru_cache(maxsize=1)
+def _fallback_entries() -> tuple[dict, ...]:
+    """Family-name keyword fallback, loaded from data (absent file -> no fallback)."""
+    try:
+        with _FALLBACK_PATH.open() as handle:
+            return tuple(json.load(handle).get("entries", []))
+    except (OSError, ValueError):
+        return ()
 
 
 def proxy_mechanism_for_family(family: str | None) -> ProxyMechanism | None:
-    """Fallback coordinate from the family name; abstain for unknown families.
+    """Fallback coordinate from a family name; abstains for unknown families.
 
-    Only a fallback: family names are a weak proxy for mechanism (they once put
-    the adenylate-forming Dapdiamide ligase in the acyl-phosphate group). Callers
-    holding a catalytic-activity annotation should use
-    :func:`mechanism_from_catalytic_activities` first.
+    Weaker than :func:`mechanism_from_reaction` and only for enzymes lacking an
+    annotated equation: a family name does not determine transfer chemistry.
     """
     normalized = (family or "").strip().lower()
-    if any(key in normalized for key in _ANL_VALIDATED_KEYS):
-        return _adenylate("ANL/AMP-binding", "panel_validated")
-    for keys, group in _PA_TRANSFER_GROUPS:
-        if any(key in normalized for key in keys):
-            return _adenylate(group, "mechanistically_transferred")
-    for keys, group in _PG_GROUPS:
-        if any(key in normalized for key in keys):
-            return _acyl_phosphate(group, "mechanistically_transferred")
+    if not normalized:
+        return None
+    for entry in _fallback_entries():
+        if any(str(k).lower() in normalized for k in entry.get("keywords", ())):
+            return _build(
+                entry["coordinate"],
+                entry.get("family_group", "unnamed group"),
+                "panel_validated" if entry.get("calibrated") else "mechanistically_transferred",
+            )
     return None
 
 
-def resolve_mechanism(family: str | None = None, catalytic_activities=None):
-    """Best available coordinate plus the basis it came from.
+def resolve_mechanism(family: str | None = None, catalytic_activities=None,
+                      *, calibrated: bool = False):
+    """Best available coordinate and the basis it rests on.
 
-    Returns ``(ProxyMechanism | None, basis)`` where basis is ``"reaction"``,
-    ``"family"`` or ``"unresolved"``. Reaction annotation wins; the family name is
-    consulted only when the reaction is unavailable or ambiguous.
+    Returns ``(ProxyMechanism | None, basis)`` with basis ``"reaction"``,
+    ``"family"`` or ``"unresolved"``. The annotated reaction wins; a family name
+    is consulted only when no equation resolves.
     """
-    from_reaction = mechanism_from_catalytic_activities(catalytic_activities)
+    from_reaction = mechanism_from_reaction(catalytic_activities, calibrated=calibrated)
     if from_reaction is not None:
         return from_reaction, "reaction"
     from_family = proxy_mechanism_for_family(family)
@@ -150,7 +165,7 @@ def structural_support_tier(
     n_gated: int,
     mechanism_status: str,
 ) -> str:
-    """Interpret an eligible conditional mean without treating abstention as failure."""
+    """RULE 2 applied to an eligible mean: abstention is not failure."""
     if mechanism_status != "assigned" or n_gated < MIN_GATED_POSES or angle is None:
         return "inconclusive"
     if angle >= STRONG_ANGLE:
