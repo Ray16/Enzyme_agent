@@ -41,17 +41,52 @@ _event_lock = threading.Lock()
 _seq_counters: dict[str, int] = {}
 
 
+def _terminate_truncated_tail(path: Path) -> bool:
+    """Newline-terminate a partially-written final line.  Returns True if repaired.
+
+    A run killed mid-``write`` leaves a fragment with no trailing newline.  Because
+    :func:`append_event` opens in append mode, the next event would be written
+    *onto* that fragment, fusing a real event into one unparseable line -- so the
+    first event after a resume was silently lost and its ``seq`` duplicated.
+    Terminating the fragment instead keeps it as its own (skipped) line, so the
+    damage stays bounded to the single event that was actually interrupted.
+
+    Append-only, per the event stream's contract: the fragment is preserved for
+    audit rather than trimmed.  Caller holds ``_event_lock``.
+    """
+    try:
+        if not path.exists() or path.stat().st_size == 0:
+            return False
+        with path.open("rb") as f:
+            f.seek(-1, 2)
+            if f.read(1) == b"\n":
+                return False
+        with path.open("a") as f:
+            f.write("\n")
+    except OSError as e:
+        logger.warning("Could not repair truncated event-log tail in %s: %s", path, e)
+        return False
+    logger.warning(
+        "Repaired a truncated final line in %s (run interrupted mid-write); "
+        "the interrupted event is retained as an unparseable line.", path
+    )
+    return True
+
+
 def _next_seq(run_dir: Path, run_key: str) -> int:
     """Return the next per-run sequence number, seeding from disk on first use.
 
     Seeding from the existing line count keeps ``seq`` continuous when a run is
     resumed in a fresh process, so the stream never restarts its ordinal mid-run.
+    First use in a process is exactly the resume case, so that is where a
+    truncated tail from the previous process is repaired.
     Caller holds ``_event_lock``.
     """
     if run_key not in _seq_counters:
         existing = 0
         path = run_dir / "events.jsonl"
         if path.exists():
+            _terminate_truncated_tail(path)
             try:
                 with path.open() as f:
                     existing = sum(1 for _ in f)
