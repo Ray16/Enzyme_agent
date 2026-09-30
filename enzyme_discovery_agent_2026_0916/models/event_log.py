@@ -133,6 +133,7 @@ def read_events(run_dir: str | Path) -> list[dict]:
     if not path.exists():
         return []
     out: list[dict] = []
+    skipped = 0
     for line in path.read_text().splitlines():
         line = line.strip()
         if not line:
@@ -140,5 +141,10 @@ def read_events(run_dir: str | Path) -> list[dict]:
         try:
             out.append(json.loads(line))
         except json.JSONDecodeError:
-            continue
+            skipped += 1
+    if skipped:
+        # Never silent: this stream is the record a finished run is audited from,
+        # so a reader that drops events has to say how many it dropped.
+        logger.warning("Skipped %d unparseable line(s) in %s (read %d event(s)).",
+                       skipped, path, len(out))
     return out
