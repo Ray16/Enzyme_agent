@@ -31,11 +31,20 @@ class ProxyMechanism:
 
 
 _ANL_VALIDATED_KEYS = ("amp-binding", "anl")
-_ANL_TRANSFER_KEYS = ("iuca", "iucc", "aerobactin")
+# Adenylate-forming families recognised by name. Dapdiamide (DdaG) sits here, NOT
+# in the acyl-phosphate groups: its UniProt/Rhea reaction is
+#   (S)-2,3-diaminopropanoate + fumarate + ATP = N(3)-fumaroyl-Dap + AMP + diphosphate
+# i.e. AMP + PPi, which is Pa attack with one Mg. It was previously grouped with
+# the ATP-grasp/acyl-phosphate families on a family-name guess, which scored the
+# WRONG phosphorus for it. Prefer mechanism_from_catalytic_activities() when the
+# reaction is available -- this name map is only the fallback.
+_ANL_TRANSFER_KEYS = (
+    "iuca", "iucc", "aerobactin",
+    "dapdiamide", "fumarate--(s)-2,3- diaminopropanoate",
+)
 _PG_GROUPS = (
     (("glutamine synthetase", "gamma-glutamylputrescine"), "Glutamine synthetase"),
     (("rimk", "lysx", "tyramine--l-glutamate"), "RimK/bS6"),
-    (("dapdiamide", "fumarate--(s)-2,3- diaminopropanoate"), "Dapdiamide"),
     (
         ("phosphoribosylglycinamide synthetase", "formyltransferase"),
         "PurD/GAR",
