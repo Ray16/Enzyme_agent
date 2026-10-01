@@ -96,6 +96,20 @@ _FIELD_DECISION_POINTS = {
 }
 
 
+def _candidate_family_ids(candidate: dict) -> list[str]:
+    """InterPro family/domain accessions for the candidate, for family-based mechanism transfer."""
+    evidence = candidate.get("evidence") or {}
+    ids: list[str] = []
+    fam = (evidence.get("family_assignment") or {}).get("interpro_family_id")
+    if fam:
+        ids.append(fam)
+    for dom in evidence.get("domain_architecture") or []:
+        acc = dom.get("accession")
+        if acc:
+            ids.append(acc)
+    return list(dict.fromkeys(ids))
+
+
 def _derive_features(candidate: dict, manifest: dict) -> dict[str, Any]:
     """Feature flags used to guard literature-rule applicability.
 
@@ -359,7 +373,19 @@ def _resolve_attack_atom(mi: dict, spec: dict, nucleotide_ccd: str | None, selec
         "match_count": match["match_count"],
         "reactive_atom_indices": match["reactive_atom_indices"],
     }
-    errors = [] if match["match_count"] else [f"cannot locate {selector} on {role} ligand"]
+    if not match["match_count"]:
+        errors = [f"cannot locate {selector} on {role} ligand"]
+    elif match["match_count"] > 1:
+        # Fail closed on ambiguity. A selector matching several sites means the
+        # downstream consumer silently picks one, and picking the wrong carbonyl
+        # scores a different reaction than the one being modelled.
+        errors = [
+            f"selector {selector!r} is ambiguous on {role}: {match['match_count']} "
+            f"matches at atoms {match['reactive_atom_indices']}; tighten the SMARTS "
+            f"so it identifies the reacting site uniquely"
+        ]
+    else:
+        errors = []
     return resolved, errors
 
 
@@ -463,7 +489,12 @@ def resolve_candidate(
     atom_selectors = atom_selectors if atom_selectors is not None else load_atom_selectors()
     activation = mi.get("activation") or {}
     nucleotide = activation.get("nucleotide")
-    mech_key, mechanism = coordinates.select_mechanism(activation.get("activation_mode"), mechanism_override)
+    family_ids = _candidate_family_ids(candidate)
+    mech_key, mechanism, selection_basis = coordinates.select(
+        family_ids=family_ids,
+        activation_mode=activation.get("activation_mode"),
+        override=mechanism_override,
+    )
     provenance: dict[str, Any] = {}
     errors: list[str] = []
 
@@ -502,6 +533,8 @@ def resolve_candidate(
             "index": step_spec.get("index"),
             "name": step_spec.get("name"),
             "mechanism": mech_key,
+            "mechanism_selected_by": selection_basis,
+            "candidate_family_ids": family_ids,
             "reactive_state": step_spec.get("reactive_state"),
             "chosen_because": step_directive.get("chosen_because"),
             "dropped_species": dropped,
