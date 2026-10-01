@@ -12,10 +12,9 @@ contract / ``proxy_policy`` and is data, not code: adding a class means adding a
 resolver to ``RESOLVERS``, no change to any proxy in ``library.py``.
 
 Chain handling is composition-based, so the same resolver works regardless of the
-order chains happen to appear in a YAML. That matters: the amide-synthetase
-diversity panel and the literature panel use different chain orders for the same
-chemistry, and index-keyed code silently read the wrong pair (``angle_gate_proxy``
-reports an ATP-ligand ipTM under the name ``mean_iptm`` for exactly this reason).
+order chains happen to appear in an input file. Two campaigns modelling the same
+chemistry routinely order chains differently, and code keyed on a chain index
+rather than on composition reads the wrong entity without erroring.
 """
 from __future__ import annotations
 
