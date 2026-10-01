@@ -105,8 +105,8 @@ def test_trajectory_deviation_is_mechanism_relative():
     geom = [3.0] * 6
     inline = evaluate(ensemble(geom, ideal=180.0))["trajectory_angle_deviation"]
     burgi = evaluate(ensemble(geom, ideal=107.0))["trajectory_angle_deviation"]
-    assert inline == pytest.approx(0.0, abs=1e-6)
-    assert burgi == pytest.approx(73.0, abs=1e-6)
+    assert inline == pytest.approx(0.0, abs=ANGLE_TOL)
+    assert burgi == pytest.approx(73.0, abs=ANGLE_TOL)
 
 
 def test_gated_proxies_need_minimum_evidence():
