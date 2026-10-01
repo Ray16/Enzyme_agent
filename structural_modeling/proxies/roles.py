@@ -160,7 +160,8 @@ def parse_pose(path: str) -> Pose:
     def arr(v):
         return np.array(v) if v else np.zeros((0, 3))
 
-    return Pose(ca=arr(ca), protein=arr(prot), donors=arr(don), bases=arr(bas), ligands=lig)
+    return Pose(ca=arr(ca), protein=arr(prot), donors=arr(don), bases=arr(bas),
+                ligands=lig, source_path=path)
 
 
 # --------------------------------------------------------------------------- #
