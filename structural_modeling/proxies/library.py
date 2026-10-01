@@ -136,10 +136,10 @@ def _near_attack_fraction(ens: Ensemble, cut=DEFAULT_DISTANCE_GATE, tol=30.0):
 
 
 def _trajectory_angle(ens: Ensemble, cut=DEFAULT_DISTANCE_GATE):
-    """THE INCUMBENT, generalised: mean deviation from the mechanism's ideal attack
-    angle among distance-gated poses. Returned as deviation so that, unlike the
-    adenylation-only 'mean in-line angle', the direction is the same for an SN2
-    (ideal 180) and a Burgi-Dunitz addition (ideal 107)."""
+    """Mean deviation from the mechanism's ideal attack angle among distance-gated
+    poses. Expressed as a DEVIATION rather than a raw angle so one direction of
+    merit holds across mechanism classes with different ideal angles; a raw angle
+    is only comparable within a single class."""
     g = ens.gate(cut)
     if g.sum() < MIN_GATED_POSES:
         return None
