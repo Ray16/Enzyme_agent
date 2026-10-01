@@ -121,14 +121,19 @@ def _bonded(centre: np.ndarray, atoms, element: str, cut: float):
     return [x for _n, e, x in atoms if e == element and np.linalg.norm(centre - x) < cut]
 
 
-def resolve_substitution_at_phosphorus(pose: Pose, leaving_atom: str = "O3A",
-                                       phosphorus: str = "PA") -> ReactiveSite | None:
+def resolve_substitution_at_phosphorus(pose: Pose, *, phosphorus: str,
+                                       leaving_atom: str) -> ReactiveSite | None:
     """In-line (SN2-like) displacement at a phosphorus centre.
 
-    Generic over which phosphate is attacked: the caller passes the phosphorus and
-    the bridging leaving oxygen, both of which ``proxy_policy`` derives from the
-    reaction's nucleotide products. Nucleophile = the carboxylate/hydroxyl O of the
-    non-phosphate ligand closest to that phosphorus.
+    Which phosphorus is attacked, and which bridging oxygen leaves, are properties
+    of the reaction -- not of this module. Both are REQUIRED arguments supplied by
+    the caller from the mechanism record (``proxy_policy`` derives them from the
+    reaction's nucleotide products). They are deliberately not defaulted: a default
+    would hard-code one transfer chemistry into a general resolver and silently
+    score the wrong centre for every other one.
+
+    Nucleophile = the carboxylate/hydroxyl O of the non-phosphate ligand closest to
+    that phosphorus.
     """
     cof = pose.chain_with("P")
     if cof is None:
