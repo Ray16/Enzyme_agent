@@ -40,7 +40,13 @@ try:
 except ImportError:  # pragma: no cover
     Chem = AllChem = None
 
-from structural_modeling.proxies import Pose, ReactiveSite
+try:
+    from structural_modeling.proxies import Pose, ReactiveSite
+except ImportError:  # siblings here are written script-style (flat imports, this
+    import pathlib   # directory on sys.path), so support being loaded that way too
+    import sys as _sys
+    _sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+    from structural_modeling.proxies import Pose, ReactiveSite
 
 ROLE_KEYS = ("nucleophile", "electrophile", "leaving_group", "charge_centre")
 
