@@ -11,7 +11,18 @@ The pre-existing panel folder was named `20260917_135330_...` but its
 the Aug-30 panel migrated under a new name on Sep 19. This folder holds the folds that
 the canonical run actually needs and the older panel lacks.
 
-- Canonical run candidates: 43.  Already folded in the old panel: 29.  **Folded here: 14.**
+- Canonical run candidates: 43.  Already folded in the old panel (reusable): 29.
+  **Folded here: 7.  Excluded: 7** (>800 aa — see below).  Structural panel = **36**.
+
+## Size cutoff: candidates >800 aa are NOT folded
+The 7 largest candidates (ranks 9-12, 23, 34, 42) are excluded — see `DROPPED_CANDIDATES.csv`.
+Every one is a large multidomain enzyme whose **validated native reaction is not** diacid +
+diamine amide ligation: carbamoyl-phosphate synthase large/small subunits make carbamoyl
+phosphate from bicarbonate + glutamine (arg-3, CPA2, pyrAB, CARB, Cps1), lamA carboxylates
+urea, and the 830-aa PurD ortholog is redundant with the smaller PurD members already folded
+(A2SQ86 #21, P52420 #22). They pass the discovery direction gate only as generic "C-N ligase /
+amide formation" (substrate fit ~0.0-0.08). A step-1 monomer cofold with adipate is not
+informative for them, so they are not modeled.
 
 ## Mechanism + Mg are reaction-derived, not family-name-guessed
 Each YAML's catalytic Mg2+ count and the phosphorus to be scored come from the
