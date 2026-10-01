@@ -1,44 +1,66 @@
-"""Resolve GENERIC catalytic roles from a cofolded structure.
+"""The contract between a system-specific resolver and the generic proxy library.
 
-A structural proxy is only transferable if it is defined over *roles* --
-nucleophile, electrophile, leaving group, charge centre -- rather than over named
-atoms. ``PA``/``O3A``/``adenine`` are adenylation vocabulary; a proxy written in
-those terms cannot be tried on a hydrolase. This module is the translation layer:
-chemistry in, roles out.
+DIVISION OF LABOUR
+------------------
+This package is deliberately system-free. It does not know what enzyme is being
+studied, what cofactor is present, or which atom attacks which. Those are
+properties of one reaction, and a general module that tried to encode them would
+either be wrong for most systems or quietly become a catalogue of special cases.
 
-Role resolution is keyed on the MECHANISM CLASS (what the transfer chemistry is),
-never on the enzyme, family or pathway. Mechanism class comes from the reasoning
-contract / ``proxy_policy`` and is data, not code: adding a class means adding a
-resolver to ``RESOLVERS``, no change to any proxy in ``library.py``.
+So the split is:
 
-Chain handling is composition-based, so the same resolver works regardless of the
-order chains happen to appear in an input file. Two campaigns modelling the same
-chemistry routinely order chains differently, and code keyed on a chain index
-rather than on composition reads the wrong entity without erroring.
+    the AGENT writes, per system:   a resolver -- the code that reads one predicted
+                                    pose and returns a ReactiveSite, i.e. which atom
+                                    is the nucleophile, which is the electrophile,
+                                    what leaves, and what the ideal attack angle is
+                                    for that chemistry. It is short, specific, and
+                                    the agent VALIDATES it (see ``check_resolver``).
+
+    this package provides:          the ReactiveSite contract, a pose parser, the
+                                    ensemble machinery, the proxy library computed
+                                    from ReactiveSite alone, and the statistics that
+                                    decide whether any proxy's score means anything.
+
+A resolver is a callable ``(Pose) -> ReactiveSite | None``, returning None for a
+pose where the roles cannot be found. Nothing else about it is constrained.
+
+WHY ``leaving`` AND ``charge_centre`` ARE SEPARATE
+--------------------------------------------------
+Most substitutions at a trigonal/tetrahedral centre share one regularity that is
+worth knowing when writing a resolver: the leaving group is a BRIDGING substituent
+(bonded onward, so it departs as part of a fragment) while the atom that develops
+negative charge is a TERMINAL substituent. That is a useful heuristic for the
+agent's resolver, not a rule this module enforces.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Callable, Sequence
 
 import numpy as np
 
-COVALENT_CUT = 1.6          # heavy-atom bond cutoff, Angstrom
-P_O_BOND = 1.75             # P-O bond is longer than C-O
+#: A system-specific resolver, written by the agent for one reaction.
+Resolver = Callable[["Pose"], "ReactiveSite | None"]
 
 
 @dataclass(frozen=True)
 class ReactiveSite:
-    """One pose's catalytic geometry, in generic role terms.
+    """One pose's catalytic geometry, in role terms. The agent's resolver fills this.
 
-    nucleophile  attacking atom
-    electrophile atom under attack
-    leaving      atom/centroid departing along the breaking bond (may be None)
-    charge_centre atom that accumulates negative charge in the transition state
-                  (carbonyl O for acyl transfer, a non-bridging O for phosphoryl);
-                  the target of oxyanion-hole-style stabilisation
-    frame        other substituents on the electrophile, defining its local plane
-    ideal_angle  mechanism's ideal nucleophile-electrophile-leaving angle (deg)
+    nucleophile   attacking atom                                      (required)
+    electrophile  atom under attack                                   (required)
+    leaving       atom departing along the breaking bond; None if the mechanism
+                  has no leaving group (e.g. a simple addition)
+    charge_centre atom accumulating negative charge in the transition state --
+                  the target of oxyanion-hole-style stabilisation; None if the
+                  transition state is not polarised this way
+    frame         other substituents on the electrophile, defining its local
+                  plane; needed only by the trajectory-alignment proxy
+    ideal_angle   ideal nucleophile-electrophile-leaving angle in degrees for this
+                  chemistry (~180 in-line displacement, ~107 Burgi-Dunitz addition)
+
+    Proxies that need a role you leave as None are skipped for that complex and
+    reported as missing, never as zero.
     """
 
     nucleophile: np.ndarray
@@ -55,25 +77,45 @@ class ReactiveSite:
 
 @dataclass(frozen=True)
 class Pose:
-    """Parsed structure: protein scaffold plus ligand chains, element-annotated."""
+    """A parsed predicted structure, with no interpretation applied.
+
+    ``ligands`` maps chain id -> [(atom_name, element, xyz)] and is kept keyed by
+    composition rather than by position, because chain ORDER differs between
+    campaigns modelling the same chemistry; a resolver that indexes chains by
+    number reads the wrong entity without erroring.
+    """
 
     ca: np.ndarray                       # protein CA, for ensemble superposition
     protein: np.ndarray                  # protein heavy atoms
     donors: np.ndarray                   # protein H-bond donor N/O
-    bases: np.ndarray                    # Arg/Lys/His sidechain N (general base/acid)
-    ligands: dict[str, list[tuple[str, str, np.ndarray]]]   # chain -> [(name, element, xyz)]
+    bases: np.ndarray                    # Arg/Lys/His sidechain N
+    ligands: dict[str, list[tuple[str, str, np.ndarray]]]
 
     def chain_with(self, element: str) -> str | None:
+        """First ligand chain containing ``element``. Composition, not position."""
         for ch, atoms in self.ligands.items():
             if any(e == element for _n, e, _x in atoms):
                 return ch
         return None
 
     def lone_atom_chain(self, element: str) -> str | None:
+        """Chain that is a single atom of ``element`` (e.g. an isolated metal)."""
         for ch, atoms in self.ligands.items():
             if len(atoms) == 1 and atoms[0][1] == element:
                 return ch
         return None
+
+    def bonded(self, centre: np.ndarray, chain: str, element: str | None = None,
+               cut: float = 1.75) -> list[tuple[str, str, np.ndarray]]:
+        """Heavy atoms of ``chain`` within ``cut`` of ``centre``, excluding itself."""
+        out = []
+        for name, elem, xyz in self.ligands.get(chain, []):
+            if element is not None and elem != element:
+                continue
+            d = float(np.linalg.norm(xyz - centre))
+            if 1e-6 < d < cut:
+                out.append((name, elem, xyz))
+        return out
 
 
 _DONOR_SC = {
@@ -85,7 +127,7 @@ _BASE_SC = {"ARG": {"NE", "NH1", "NH2"}, "LYS": {"NZ"}, "HIS": {"ND1", "NE2"}}
 
 
 def parse_pose(path: str) -> Pose:
-    """Read a PDB into a Pose. Stdlib + numpy only; no Biopython dependency."""
+    """Read a PDB into a Pose. Stdlib + numpy only, no Biopython."""
     ca, prot, don, bas = [], [], [], []
     lig: dict[str, list[tuple[str, str, np.ndarray]]] = {}
     with open(path) as fh:
@@ -117,121 +159,85 @@ def parse_pose(path: str) -> Pose:
     return Pose(ca=arr(ca), protein=arr(prot), donors=arr(don), bases=arr(bas), ligands=lig)
 
 
-def _bonded(centre: np.ndarray, atoms, element: str, cut: float):
-    return [x for _n, e, x in atoms if e == element and np.linalg.norm(centre - x) < cut]
+# --------------------------------------------------------------------------- #
+# validating a system-specific resolver
+# --------------------------------------------------------------------------- #
+@dataclass(frozen=True)
+class ResolverReport:
+    n_poses: int
+    n_resolved: int
+    coverage: float
+    distance_range: tuple[float, float] | None
+    problems: tuple[str, ...]
+
+    @property
+    def ok(self) -> bool:
+        return not self.problems
+
+    def __str__(self) -> str:
+        head = (f"resolver: {self.n_resolved}/{self.n_poses} poses resolved "
+                f"({self.coverage:.0%})")
+        if self.distance_range:
+            head += f", attack distance {self.distance_range[0]:.2f}-{self.distance_range[1]:.2f} A"
+        return head + ("\n  OK" if self.ok else
+                       "".join(f"\n  PROBLEM: {p}" for p in self.problems))
 
 
-def resolve_substitution_at_phosphorus(pose: Pose, *, phosphorus: str,
-                                       leaving_atom: str) -> ReactiveSite | None:
-    """In-line (SN2-like) displacement at a phosphorus centre.
+def check_resolver(resolver: Resolver, poses: Sequence[Pose],
+                   min_coverage: float = 0.9,
+                   plausible_distance: tuple[float, float] = (1.5, 25.0)) -> ResolverReport:
+    """Sanity-check a system-specific resolver before trusting any proxy built on it.
 
-    Which phosphorus is attacked, and which bridging oxygen leaves, are properties
-    of the reaction -- not of this module. Both are REQUIRED arguments supplied by
-    the caller from the mechanism record (``proxy_policy`` derives them from the
-    reaction's nucleotide products). They are deliberately not defaulted: a default
-    would hard-code one transfer chemistry into a general resolver and silently
-    score the wrong centre for every other one.
+    Catches the failure modes that silently produce confident nonsense: the
+    resolver finding nothing, picking the same atom for nucleophile and
+    electrophile, returning physically impossible separations, or selecting a
+    nucleophile that is actually part of the electrophile's own molecule (an
+    intramolecular self-match, the most common bug when a resolver forgets to
+    exclude the donor chain).
 
-    Nucleophile = the carboxylate/hydroxyl O of the non-phosphate ligand closest to
-    that phosphorus.
+    This validates MECHANICS, not biochemistry. It cannot tell you the resolver
+    picked the chemically correct atom -- only the agent, reasoning about the
+    reaction, can do that.
     """
-    cof = pose.chain_with("P")
-    if cof is None:
-        return None
-    named = {n: x for n, _e, x in pose.ligands[cof]}
-    if phosphorus not in named:
-        return None
-    elec = named[phosphorus]
-    leaving = named.get(leaving_atom)
-
-    best = None
-    for ch, atoms in pose.ligands.items():
-        if ch == cof or len(atoms) < 2:
+    problems: list[str] = []
+    sites, dists, selfmatch, clash = [], [], 0, 0
+    for pose in poses:
+        site = resolver(pose)
+        if site is None:
             continue
-        for _n, e, cx in atoms:
-            if e != "C":
-                continue
-            oxy = _bonded(cx, atoms, "O", COVALENT_CUT)
-            if len(oxy) < 2:                       # a carboxylate, not an ester/alcohol
-                continue
-            o = min(oxy, key=lambda z: np.linalg.norm(z - elec))
-            d = float(np.linalg.norm(o - elec))
-            if best is None or d < best[0]:
-                best = (d, o)
-    if best is None:
-        return None
+        sites.append(site)
+        d = site.attack_distance
+        dists.append(d)
+        if d < 0.5:
+            selfmatch += 1
+        if site.leaving is not None and np.allclose(site.leaving, site.nucleophile):
+            clash += 1
 
-    # charge centre: a non-bridging O on the attacked phosphorus
-    nonbridge = [x for _n, e, x in pose.ligands[cof]
-                 if e == "O" and np.linalg.norm(x - elec) < P_O_BOND
-                 and (leaving is None or not np.allclose(x, leaving))]
-    frame = tuple(x for _n, e, x in pose.ligands[cof]
-                  if e == "O" and np.linalg.norm(x - elec) < P_O_BOND)
-    return ReactiveSite(nucleophile=best[1], electrophile=elec, leaving=leaving,
-                        charge_centre=nonbridge[0] if nonbridge else None,
-                        frame=frame, ideal_angle=180.0)
-
-
-def resolve_acyl_addition_elimination(pose: Pose) -> ReactiveSite | None:
-    """Nucleophilic addition at an activated acyl carbon (ester/anhydride/thioester).
-
-    Electrophile = the carbon bearing BOTH a carbonyl O and an ester O that is bonded
-    to the activating group (here P; generalises to any heteroatom leaving group).
-    Nucleophile = the nearest N/O/S of a ligand chain that is not the acyl donor.
-    Ideal trajectory is Burgi-Dunitz (~107 deg), not in-line.
-    """
-    cof = pose.chain_with("P")
-    if cof is None:
-        return None
-    atoms = pose.ligands[cof]
-    phos = [x for _n, e, x in atoms if e == "P"]
-
-    elec = carbonyl = ester = alkyl = None
-    for _n, e, cx in atoms:
-        if e != "C":
-            continue
-        oxy = _bonded(cx, atoms, "O", COVALENT_CUT)
-        if len(oxy) < 2:
-            continue
-        est = [o for o in oxy if any(np.linalg.norm(o - p) < P_O_BOND for p in phos)]
-        car = [o for o in oxy if not any(np.linalg.norm(o - p) < P_O_BOND for p in phos)]
-        if est and car:
-            elec, carbonyl, ester = cx, car[0], est[0]
-            nb = [x for _n2, e2, x in atoms
-                  if e2 == "C" and not np.allclose(x, cx)
-                  and np.linalg.norm(cx - x) < 1.7]
-            alkyl = nb[0] if nb else None
-            break
-    if elec is None:
-        return None
-
-    cand = []
-    for ch, lig in pose.ligands.items():
-        if ch == cof or (len(lig) == 1 and lig[0][1] == "MG"):
-            continue
-        cand += [x for _n, e, x in lig if e in ("N", "O", "S")]
-    if not cand:
-        return None
-    nuc = min(cand, key=lambda z: np.linalg.norm(z - elec))
-
-    frame = tuple(z for z in (carbonyl, ester, alkyl) if z is not None)
-    return ReactiveSite(nucleophile=nuc, electrophile=elec, leaving=ester,
-                        charge_centre=carbonyl, frame=frame, ideal_angle=107.0)
-
-
-#: Mechanism class -> resolver. Keyed on CHEMISTRY, never on enzyme or family.
-RESOLVERS: dict[str, Callable[..., ReactiveSite | None]] = {
-    "substitution_at_phosphorus": resolve_substitution_at_phosphorus,
-    "acyl_addition_elimination": resolve_acyl_addition_elimination,
-}
-
-
-def resolve(pose: Pose, mechanism_class: str, **kwargs) -> ReactiveSite | None:
-    try:
-        resolver = RESOLVERS[mechanism_class]
-    except KeyError as exc:
-        raise KeyError(
-            f"no resolver for mechanism class {mechanism_class!r}; "
-            f"known: {sorted(RESOLVERS)}"
-        ) from exc
-    return resolver(pose, **kwargs)
+    n, k = len(poses), len(sites)
+    coverage = (k / n) if n else 0.0
+    if n == 0:
+        problems.append("no poses supplied")
+    elif coverage < min_coverage:
+        problems.append(f"resolved only {coverage:.0%} of poses (want >={min_coverage:.0%}); "
+                        "the selection rule is probably too strict or chain-order dependent")
+    if selfmatch:
+        problems.append(f"{selfmatch} poses have nucleophile == electrophile "
+                        "(forgot to exclude the electrophile's own molecule?)")
+    if clash:
+        problems.append(f"{clash} poses have leaving group == nucleophile")
+    rng = None
+    if dists:
+        lo, hi = float(min(dists)), float(max(dists))
+        rng = (lo, hi)
+        if lo < plausible_distance[0]:
+            problems.append(f"minimum attack distance {lo:.2f} A is below a bonded "
+                            "contact; roles are probably mis-assigned")
+        if lo > plausible_distance[1]:
+            problems.append(f"closest approach over the whole ensemble is {lo:.1f} A; "
+                            "the two roles may be on unrelated entities")
+    if sites:
+        ideals = {round(s.ideal_angle, 1) for s in sites}
+        if len(ideals) > 1:
+            problems.append(f"ideal_angle is not constant across poses: {sorted(ideals)}")
+    return ResolverReport(n_poses=n, n_resolved=k, coverage=coverage,
+                          distance_range=rng, problems=tuple(problems))
