@@ -1,25 +1,24 @@
 """Deciding whether a proxy's score means anything.
 
 The library is small on purpose, but even a small library is a multiple-comparison
-problem when the panel has a handful of actives. Measured on the amide-synthetase
-diversity panel (49 enzymes, 3 actives), scoring 121 candidate features against
-SHUFFLED activity labels gave:
+problem when a panel has few actives. Reporting the best proxy out of several
+without a matching null is uninterpretable: the maximum over a set of uninformative
+features is biased upward, and the bias grows with the size of the set and shrinks
+with the number of actives. On a panel with a handful of actives that upward bias
+is large enough to produce respectable-looking AUROCs from pure noise.
 
-    best-of-121 robust AUROC under the null:  median 0.780, 90th 0.837, 95th 0.855
-
-That is, picking the winner out of a feature sweep yields ~0.78 from noise alone,
-and 0.85 one run in twenty. Any "our best proxy scored 0.85" claim that does not
-quote this null is uninterpretable. ``selection_null`` reproduces it for whatever
-library and panel are in play; ``screen`` refuses to promote a proxy that does not
-clear it.
+``selection_null`` therefore reproduces the ACTUAL selection procedure -- permute
+the labels, score every proxy, keep the maximum -- so a candidate is compared
+against the right reference rather than against 0.5. ``screen`` refuses to promote
+a proxy that does not clear it.
 
 Three gates, from ``knowledge/structural_proxy_prior.yaml`` cross_cutting:
   direction_audit  the sign must match the pre-declared ``expected_direction``;
                    a proxy that only works sign-flipped after seeing labels is
                    fitting noise
-  confound_check   the proxy must survive controlling for fold/complex confidence,
-                   because prediction confidence alone is often a decent activity
-                   predictor and is not catalysis
+  confound_check   the proxy must survive controlling for a nuisance covariate,
+                   typically model confidence: prediction confidence alone can be
+                   a serviceable activity predictor without reflecting catalysis
   selection_null   the score must beat the best-of-library noise distribution
 """
 from __future__ import annotations
