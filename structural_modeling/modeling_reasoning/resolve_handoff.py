@@ -409,13 +409,17 @@ def _resolve_geometry_for_step(
             "provenance": step_spec.get("provenance"),
         },
     }
-    for participant in ("nucleophile", "electrophile", "leaving_group"):
+    for participant in ("nucleophile", "electrophile", "leaving_group", "charge_centre"):
         spec = attack.get(participant)
         if not spec:
             continue
         resolved, atom_errors = _resolve_attack_atom(mi, spec, nucleotide_ccd, selectors)
         geometry[participant] = resolved
         errors.extend(atom_errors)
+    # The ideal attack angle is a property of the mechanism's geometry, so it travels
+    # with the resolved record rather than being re-decided by whatever scores it.
+    if attack.get("ideal_angle") is not None:
+        geometry["ideal_angle"] = attack["ideal_angle"]
     mi["geometry"] = geometry
     mi["geometry_status"] = "ready" if not errors else "unresolved"
     prov = _provenance(directive, _basis(knowledge, "geometry", features, [directive.get("decision_point")]))
