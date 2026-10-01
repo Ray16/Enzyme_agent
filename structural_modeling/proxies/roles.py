@@ -110,7 +110,8 @@ def parse_pose(path: str) -> Pose:
             if name == "N" or (resn in _DONOR_SC and name in _DONOR_SC[resn]):
                 don.append(xyz)
             if resn in _BASE_SC and name in _BASE_SC[resn]:
-                bas.append(xyz)//
+                bas.append(xyz)
+
     def arr(v):
         return np.array(v) if v else np.zeros((0, 3))
 
