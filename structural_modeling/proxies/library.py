@@ -248,8 +248,7 @@ LIBRARY: tuple[Proxy, ...] = (
           "Fraction of poses inside both the distance gate and the mechanism's "
           "angular window.", _near_attack_fraction),
     Proxy("trajectory_angle_deviation", "reactive_conformation", "-", True,
-          "Mean |attack angle - mechanism ideal| among distance-gated poses. "
-          "Generalisation of the validated adenylation in-line-angle proxy.",
+          "Mean |attack angle - mechanism ideal| among distance-gated poses.",
           _trajectory_angle),
     Proxy("trajectory_alignment", "reactive_conformation", "+", True,
           "Mean out-of-plane angle of the attack vector against the electrophile's "
