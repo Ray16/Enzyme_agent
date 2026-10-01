@@ -90,6 +90,10 @@ class Pose:
     donors: np.ndarray                   # protein H-bond donor N/O
     bases: np.ndarray                    # Arg/Lys/His sidechain N
     ligands: dict[str, list[tuple[str, str, np.ndarray]]]
+    #: where this pose was read from. A resolver that needs chemistry beyond
+    #: element and distance (bond orders, aromaticity, a SMARTS match) must re-read
+    #: the file with a chemistry toolkit; element-level parsing cannot supply it.
+    source_path: str | None = None
 
     def chain_with(self, element: str) -> str | None:
         """First ligand chain containing ``element``. Composition, not position."""
