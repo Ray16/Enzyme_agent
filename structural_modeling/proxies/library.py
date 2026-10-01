@@ -6,13 +6,13 @@ proxy earns a place here only if it can be computed for an arbitrary enzyme once
 its mechanism class is known.
 
 Deliberately EXCLUDED (see README for the full argument):
-  * cofactor-coordination geometry (Mg-P distance, bridging fraction, inner-sphere
-    coordination) -- meaningless for a cofactor-free hydrolase
-  * cofactor-moiety burial (adenine burial) -- ATP vocabulary
-  * named-atom features (O3A, PA, PG) -- these live in ``proxy_policy`` as
-    mechanism DATA and reach proxies only through ``ReactiveSite``
-  * residue-specific pKa (catalytic-His deviation) -- needs per-enzyme catalytic
-    residue annotation, so it is an enzyme-specific follow-up, not a default try
+  * metal- and cofactor-coordination geometry -- undefined for systems that use a
+    different cofactor, or none
+  * burial or contact features of a specific cofactor moiety -- cofactor vocabulary
+  * features addressed by atom name -- atom identity is mechanism DATA and reaches
+    proxies only through ``ReactiveSite``
+  * residue-specific pKa or named catalytic residues -- these need per-enzyme
+    annotation, so they are a targeted follow-up, not a default try
   * any composite / fused score -- forbidden by the prior's ``no_composite``
 
 Each entry declares ``expected_direction`` so the direction audit in
