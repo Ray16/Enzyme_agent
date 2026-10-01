@@ -125,10 +125,10 @@ def screen(scores: dict[str, np.ndarray], activity: np.ndarray,
     """Run all three gates and return a verdict per proxy, best first.
 
     ``scores``   proxy id -> per-complex value (NaN where unsupported)
-    ``confound`` per-complex nuisance (e.g. mean complex pLDDT). Strongly
-                 recommended: on the synthetase panel pLDDT ALONE reached
-                 gtSfaB AUROC 0.70, so a proxy correlated with it can look
-                 predictive without reflecting catalysis.
+    ``confound`` per-complex nuisance covariate (e.g. mean complex pLDDT).
+                 Strongly recommended: model confidence alone is frequently a
+                 serviceable activity predictor, so a proxy correlated with it
+                 inherits that predictiveness without reflecting catalysis.
     """
     by_id = {p.id: p for p in library}
     usable = {k: np.asarray(v, float) for k, v in scores.items()
