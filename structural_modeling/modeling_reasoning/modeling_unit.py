@@ -347,11 +347,22 @@ def gather_evidence(accession, catalytic_position=None, cache_dir=None, kb=None)
     if catalytic_position is None and facts["active_sites"]:
         catalytic_position = facts["active_sites"][-1]
 
+    # Rank entries by assembly size first. Walking PDB ids in UniProt order can land
+    # on an entry whose largest assembly is a monomer and conclude from it, while a
+    # sibling entry of the same protein deposits the full oligomer.
+    candidates = []
     for pdb_id in facts["pdb_ids"]:
         try:
             assembly_id, count = largest_assembly(pdb_id)
-            if assembly_id is None:
-                continue
+        except Exception as exc:
+            ev.notes.append(f"{pdb_id}: {type(exc).__name__}: {exc}")
+            continue
+        if assembly_id is not None:
+            candidates.append((count, pdb_id, assembly_id))
+    candidates.sort(reverse=True)
+
+    for count, pdb_id, assembly_id in candidates:
+        try:
             for hit in measure_ligand_contacts(pdb_id, assembly_id, cache_dir, kb):
                 ev.liganded_other_chain_fraction = hit["other_chain_fraction"]
                 ev.liganded_pdb = pdb_id
