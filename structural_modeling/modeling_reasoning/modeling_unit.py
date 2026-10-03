@@ -473,16 +473,18 @@ def resolve_panel(accessions, ligand_heavy_atoms, ligand_topology="linear",
         # A rank-3 *positive* is a weak positive by construction (reach assumes a fully
         # extended ligand), so liganded evidence from a relative outranks it. A rank-3
         # *negative* ("beyond reach") is definitive geometry and is never overridden.
+        # A rank-4 record rests on the accession's OWN annotation, which is direct
+        # evidence about that protein; a transfer from a relative must not displace it.
         overridable = (
             rec.get("unit") == "undetermined"
-            or rec.get("evidence_rank_used") == 4
             or (rec.get("evidence_rank_used") == 3 and rec.get("unit") == "assembly")
         )
         if not overridable:
             continue
         best = None
         for donor_acc, donor in donors:
-            shared = families[acc] & families[donor_acc]
+            shared = {ipr for ipr in families[acc] & families[donor_acc]
+                      if interpro_entry_type(ipr) in transferable}
             if shared and (best is None or len(shared) > len(best[2])):
                 best = (donor_acc, donor, shared)
         if best is None:
