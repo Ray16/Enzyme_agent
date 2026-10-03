@@ -185,7 +185,10 @@ def uniprot_facts(accession: str) -> dict:
         if comment.get("commentType") == "SUBUNIT":
             subunit = " ".join(t["value"] for t in comment.get("texts", []))
             break
-    act_sites = [f["location"]["start"]["value"]
+    # Keep the description: an entry often annotates several active-site residues
+    # (nucleophile, proton donor, charge relay) and the distance test is only
+    # meaningful from the NUCLEOPHILE, where the scissile bond must sit.
+    act_sites = [(f["location"]["start"]["value"], (f.get("description") or ""))
                  for f in doc.get("features", []) if f["type"] == "Active site"]
     pdbs = [x["id"] for x in doc.get("uniProtKBCrossReferences", [])
             if x["database"] == "PDB"]
