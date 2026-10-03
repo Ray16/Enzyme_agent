@@ -192,11 +192,14 @@ def uniprot_facts(accession: str) -> dict:
                  for f in doc.get("features", []) if f["type"] == "Active site"]
     pdbs = [x["id"] for x in doc.get("uniProtKBCrossReferences", [])
             if x["database"] == "PDB"]
+    interpro = [x["id"] for x in doc.get("uniProtKBCrossReferences", [])
+                if x["database"] == "InterPro"]
     return {"accession": accession,
             "sequence": doc["sequence"]["value"],
             "subunit": subunit,
             "active_sites": act_sites,
-            "pdb_ids": pdbs}
+            "pdb_ids": pdbs,
+            "interpro": interpro}
 
 
 def nucleophile_position(active_sites, keywords=("nucleophile", "acyl-ester",
