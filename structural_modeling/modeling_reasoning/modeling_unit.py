@@ -412,3 +412,58 @@ def gather_evidence(accession, catalytic_position=None, cache_dir=None, kb=None)
         except Exception as exc:  # a missing assembly file must not abort the walk
             ev.notes.append(f"{pdb_id}: {type(exc).__name__}: {exc}")
     return ev, facts
+
+
+def resolve_panel(accessions, ligand_heavy_atoms, ligand_topology="linear",
+                  cache_dir=None, kb=None):
+    """Resolve a set of accessions together, then fill gaps by family transfer.
+
+    Resolving as a set is strictly better than one at a time: an accession with no
+    structure and no SUBUNIT is undetermined alone, but if a relative sharing an
+    InterPro family has rank-1 (liganded) evidence, that verdict transfers. Donors are
+    restricted to rank-1 so a weak annotation-only default never propagates, and the
+    donor accession plus the shared family are recorded on the recipient.
+    """
+    kb = kb or knowledge()
+    records, families = {}, {}
+    for acc in accessions:
+        try:
+            ev, facts = gather_evidence(acc, cache_dir=cache_dir, kb=kb)
+            rec = assess(ev, ligand_heavy_atoms, ligand_topology, kb=kb)
+            rec["uniprot_subunit"] = facts["subunit"]
+            families[acc] = set(facts.get("interpro") or [])
+        except Exception as exc:
+            rec = {"accession": acc, "unit": "undetermined",
+                   "error": f"{type(exc).__name__}: {exc}",
+                   "notes": [], "warnings": []}
+            families[acc] = set()
+        records[acc] = rec
+
+    donors = [(a, r) for a, r in records.items() if r.get("evidence_rank_used") == 1]
+    for acc, rec in records.items():
+        # Transfer into the undetermined, AND over a rank-4 SUBUNIT default: the
+        # hierarchy holds that SUBUNIT answers "what oligomer exists", never "does the
+        # ligand site need it", so liganded evidence from a relative is the stronger
+        # claim about the site. Without this, orthologs resolve inconsistently -
+        # whichever happens to carry a SUBUNIT comment gets the assembly and its
+        # siblings get the functional unit.
+        if rec.get("unit") != "undetermined" and rec.get("evidence_rank_used") != 4:
+            continue
+        best = None
+        for donor_acc, donor in donors:
+            shared = families[acc] & families[donor_acc]
+            if shared and (best is None or len(shared) > len(best[2])):
+                best = (donor_acc, donor, shared)
+        if best is None:
+            continue
+        donor_acc, donor, shared = best
+        rec["unit"] = donor["unit"]
+        rec["origin"] = "experience"
+        rec["evidence_rank_used"] = 5
+        rec["rationale"] = (f"transferred from {donor_acc} (shared InterPro "
+                            f"{sorted(shared)[0]}), which has liganded evidence: "
+                            f"{donor['rationale']}")
+        rec.setdefault("warnings", []).append(
+            f"family transfer from {donor_acc}; no structure or SUBUNIT for this "
+            f"accession itself")
+    return records
