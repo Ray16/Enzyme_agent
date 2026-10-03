@@ -347,8 +347,13 @@ def gather_evidence(accession, catalytic_position=None, cache_dir=None, kb=None)
     kb = kb or knowledge()
     facts = uniprot_facts(accession)
     ev = UnitEvidence(accession=accession, uniprot_subunit=facts["subunit"])
-    if catalytic_position is None and facts["active_sites"]:
-        catalytic_position = facts["active_sites"][-1]
+    if catalytic_position is None:
+        catalytic_position = nucleophile_position(facts["active_sites"])
+        if catalytic_position is None and facts["active_sites"]:
+            ev.notes.append(
+                "no active site is annotated as the nucleophile; distance measured "
+                "from an unspecified catalytic residue and may not mark the scissile "
+                "position")
 
     # Rank entries by assembly size first. Walking PDB ids in UniProt order can land
     # on an entry whose largest assembly is a monomer and conclude from it, while a
