@@ -40,6 +40,60 @@ Every resolved field carries a `resolution` block: `origin`
 `literature_basis` — the matched PDF rules with `paper_id` + `claim_id` + verbatim
 quote.
 
+## Oligomeric unit: ask where the ligand sits
+
+Two questions get conflated, and only one of them decides what you cofold:
+
+* **Q1 — what oligomer does the protein form?** UniProt `SUBUNIT` answers this.
+* **Q2 — does the *ligand site* need more than one subunit?** Only this one matters.
+
+A homo-oligomer with N independent intra-subunit sites is correctly modeled as **one
+subunit**; a small oligomer whose site straddles an interface must be modeled
+**assembled**. So the rule is geometric, not annotational:
+
+```text
+model the assembly  <=>  site_to_nearest_other_chain_distance < ligand_reach
+```
+
+The chemistry happens at the nucleophile, which is intra-subunit in essentially every
+hydrolase fold. What a neighbour can contribute is the **specificity channel** holding
+the distal part of the substrate — so the question is whether the substrate can
+physically reach the interface from the catalytic centre.
+
+`modeling_unit.py` walks an evidence hierarchy and records which rank it used:
+
+1. **liganded structure** — residues within 5 Å of a bound substrate/product/inhibitor,
+   split by chain. Decisive and non-circular. Buffer/cryo components are excluded by
+   `non_substrate_het_codes`, because they bind crystal interfaces and will fake an
+   interfacial site.
+2. apo structure — is the catalytic constellation single-chain? (settles chemistry only)
+3. **nucleophile-to-interface distance** in the *largest* deposited assembly — a
+   **falsifier**: beyond reach ⇒ assembly cannot matter; within reach ⇒ only *may*.
+4. `SUBUNIT` — Q1 only, used as a conservative default and flagged as such.
+5. family transfer from a liganded relative, recorded with the donor accession.
+
+Guards worth reading before trusting any answer here (`knowledge/oligomeric_state.json`):
+
+* **circularity** — evidence computed from poses docked *into* assembly X can never
+  justify assembly X. A neighbouring chain can only line a ligand if you placed it
+  there and the ligand had nowhere else to go.
+* **control first** — validate any site-interface probe on a case with a known answer
+  before trusting it. A 5 Å shell around a single nucleophile reports that residue's own
+  buried environment, not the substrate channel, and will return 0% for a site that is
+  genuinely interfacial.
+* **chain counting** — PDB `oligomeric_count` counts *chains*, not protomers. For a
+  self-processing precursor deposited as one chain per protomer, `tetrameric(4)` means
+  four protomers. Misreading this inverts the conclusion.
+* **assembly id** — assembly 1 is frequently the crystallographic monomer; enumerate
+  all assemblies and take the largest.
+* **measure from the nucleophile** — entries annotate several active-site residues;
+  measuring from a proton donor moves the reference point and can flip the verdict. The
+  resolver abstains when no residue is annotated as the nucleophile (which is itself the
+  right answer for metal-hydroxide mechanisms, where there is no protein nucleophile).
+
+Thresholds, radii and the exclusion list are all in the knowledge file; `_param()` has
+no in-code default, so a tuned threshold cannot quietly become a hard-coded constant.
+
 ## Catalytic metal: reason, don't count
 
 A catalytic-metal count is **reasoned, not tallied**. A raw UniProt number
