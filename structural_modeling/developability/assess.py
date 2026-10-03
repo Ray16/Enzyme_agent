@@ -63,10 +63,16 @@ def assess_developability(
     family_ids: tuple[str, ...] | list[str] = (),
     knowledge: LiabilityKnowledge | None = None,
     predictor: SolubilityPredictor | None = None,
+    predictor_name: str = "netsolp",
 ) -> DevelopabilityAssessment:
-    """Assess one candidate's developability, evidence-first and fail-closed."""
+    """Assess one candidate's developability, evidence-first and fail-closed.
+
+    Pass an explicit ``predictor`` to inject one (tests, custom config); otherwise the
+    registry builds ``predictor_name`` (default NetSolP). The flag boundary comes from
+    the predictor's own prediction, never a global constant.
+    """
     knowledge = knowledge or LiabilityKnowledge.load()
-    predictor = predictor or NetSolPPredictor()
+    predictor = predictor or get_predictor(predictor_name)
 
     records: list[LiabilityRecord] = knowledge.lookup(uniprot=uniprot, family_ids=family_ids)
     liabilities = [r.to_dict() for r in records]
