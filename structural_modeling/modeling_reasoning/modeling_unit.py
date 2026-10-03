@@ -500,4 +500,51 @@ def resolve_panel(accessions, ligand_heavy_atoms, ligand_topology="linear",
         rec.setdefault("warnings", []).append(
             f"family transfer from {donor_acc}; no structure or SUBUNIT for this "
             f"accession itself")
+
+    # Ortholog tier: a still-undetermined accession inherits from a close homolog that
+    # has any direct evidence (its own annotation included). Tighter than a shared
+    # domain - above the identity threshold the subunit interface is itself conserved -
+    # and it stops orthologs of the same protein being modelled inconsistently just
+    # because only one of them carries a SUBUNIT comment.
+    identity_cut = _param("ortholog_identity_threshold", kb=kb)
+    resolved = [(a, r) for a, r in records.items()
+                if r.get("unit") != "undetermined"
+                and r.get("evidence_rank_used") in (1, 3, 4)]
+    for acc, rec in records.items():
+        if rec.get("unit") != "undetermined" or acc not in sequences:
+            continue
+        best = None
+        for donor_acc, donor in resolved:
+            if donor_acc not in sequences:
+                continue
+            ident = sequence_identity(sequences[acc], sequences[donor_acc])
+            if ident >= identity_cut and (best is None or ident > best[2]):
+                best = (donor_acc, donor, ident)
+        if best is None:
+            rec["rationale"] = (
+                "no structure, no SUBUNIT, no family-level or ortholog donor; "
+                "modelling the minimal unit as the only defined option")
+            rec["unit"] = "functional_unit"
+            rec.setdefault("warnings", []).append(
+                "NO EVIDENCE for the oligomeric unit; minimal unit chosen by default")
+            continue
+        donor_acc, donor, ident = best
+        rec["unit"] = donor["unit"]
+        rec["origin"] = "experience"
+        rec["evidence_rank_used"] = 4.5
+        rec["rationale"] = (f"ortholog transfer from {donor_acc} at {ident:.0%} "
+                            f"sequence identity: {donor['rationale']}")
+        rec.setdefault("warnings", []).append(
+            f"ortholog transfer from {donor_acc} ({ident:.0%} identity)")
     return records
+
+
+def sequence_identity(a: str, b: str) -> float:
+    """Global pairwise identity, as a fraction of the shorter sequence."""
+    from Bio import Align
+    aligner = Align.PairwiseAligner(mode="global", open_gap_score=-10,
+                                    extend_gap_score=-0.5, match_score=1,
+                                    mismatch_score=0)
+    aln = aligner.align(a, b)[0]
+    matches = sum(1 for x, y in zip(aln[0], aln[1]) if x == y and x != "-")
+    return matches / min(len(a), len(b))
