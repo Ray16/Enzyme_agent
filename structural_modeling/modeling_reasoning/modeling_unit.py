@@ -1,46 +1,49 @@
 #!/usr/bin/env python3
-"""Resolve WHICH OLIGOMERIC UNIT to cofold, with provenance.
+"""Resolve WHICH OLIGOMERIC UNIT to cofold, for any enzyme, with provenance.
 
-This is a modeling determinant of the same kind as catalytic-metal count: a thing a
-human used to decide by eye, which silently decides whether the predicted pocket is
-the real one. Getting it wrong is expensive in both directions - modelling a monomer
-whose site is interfacial leaves a third of the pocket open to solvent, while
-modelling an annotated hexamer whose six sites are independent multiplies cost ~36x
-(pair representation is ~O(N^2)) and buys nothing.
+A modeling determinant of the same kind as catalytic-metal count: a thing a human used
+to decide by eye, which silently decides whether the predicted pocket is the real one.
+Wrong in either direction is costly - modelling a single subunit whose site is
+interfacial leaves part of the pocket open to solvent, while modelling an annotated
+oligomer whose sites are independent multiplies cost superlinearly (the pair
+representation is ~O(N^2)) and buys nothing.
 
-The module encodes one rule, from ``knowledge/oligomeric_state.json``:
+One rule, read from ``knowledge/oligomeric_state.json``:
 
     model the assembly  <=>  site_to_nearest_other_chain < ligand_reach
 
-and refuses to treat UniProt's SUBUNIT comment as an answer to it. SUBUNIT says what
+and a refusal to treat UniProt's SUBUNIT comment as an answer to it. SUBUNIT says what
 the protein *is*; the rule asks what the *ligand* touches.
+
+Nothing here is specific to a target, family or campaign: thresholds, radii and the
+buffer-component exclusion list all live in the knowledge file, and evidence is
+discovered from UniProt + RCSB at call time. Per-target measurements belong with the
+campaign that made them.
 
 Two failure modes this module exists to prevent, both of which actually happened:
 
-* **Circular justification.** "The tetramer is needed because 24-41% of the pocket
-  comes from other subunits" - where that fraction was measured on poses docked into
-  the tetramer. Chains can only line a ligand if you put them there. ``assess`` marks
-  any such evidence ``circular`` and refuses to score it.
+* **Circular justification.** "The oligomer is needed because X% of the pocket comes
+  from other subunits" - where X was measured on poses docked into that oligomer.
+  Chains can only line a ligand if you put them there. ``assess`` marks such evidence
+  circular and refuses to score it.
 * **Chain-count misreading.** PDB ``oligomeric_count`` counts chains. For a
-  self-processing Ntn hydrolase deposited as one chain per protomer,
-  ``tetrameric(4)`` is four protomers, i.e. the tetramer of heterodimers - not two.
+  self-processing precursor deposited as one chain per protomer, ``tetrameric(4)`` is
+  four protomers, not two.
 """
 from __future__ import annotations
 
 import json
 import os
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass, field
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 KNOWLEDGE = os.path.join(HERE, "knowledge", "oligomeric_state.json")
-
-# Buffer / cryoprotectant components. They bind crystal-packing interfaces and will
-# manufacture a false interfacial signal if treated as substrate analogues.
-NON_SUBSTRATE_HETS = {
-    "MES", "GOL", "EDO", "PEG", "PG4", "ACT", "DMS", "TRS", "EPE", "FMT", "IMD",
-    "SO4", "PO4", "CL", "NA", "K", "CA", "MG", "ZN", "MN", "FE", "CO", "NI", "CU",
-    "HOH",
-}
+_RCSB_ENTRY = "https://data.rcsb.org/rest/v1/core/entry/{}"
+_RCSB_ASSEMBLY = "https://data.rcsb.org/rest/v1/core/assembly/{}/{}"
+_RCSB_FILE = "https://files.rcsb.org/download/{}-assembly{}.cif"
+_UNIPROT = "https://rest.uniprot.org/uniprotkb/{}.json"
 
 
 def knowledge() -> dict:
@@ -48,46 +51,58 @@ def knowledge() -> dict:
         return json.load(fh)
 
 
-def ligand_reach_angstrom(n_heavy_atoms: int, topology: str = "linear") -> float:
-    """Half the extended end-to-end length of the ligand, from the reacting atom.
+def _param(name, *path, kb=None):
+    """Read a parameter from the knowledge file; fail loudly if absent.
 
-    The distal end of the substrate is what reaches an interface, so reach is measured
-    from the scissile bond outward, not across the whole molecule. ~1.27 A of extension
-    per heavy atom along an sp3 chain; branched/cyclic ligands extend far less per atom.
+    Deliberately has no in-code default: a silent fallback is how a tuned threshold
+    becomes an invisible hard-coded constant.
     """
-    per_atom = 1.27 if topology == "linear" else 0.6
-    return 0.5 * n_heavy_atoms * per_atom
+    kb = kb or knowledge()
+    node = kb["parameters"][name]
+    for key in path:
+        node = node[key]
+    return node["value"] if isinstance(node, dict) and "value" in node else node
+
+
+def _get_json(url):
+    with urllib.request.urlopen(url) as fh:
+        return json.load(fh)
+
+
+def ligand_reach_angstrom(n_heavy_atoms: int, topology: str = "linear", kb=None) -> float:
+    """Half the extended end-to-end ligand length, measured from the reacting atom."""
+    kb = kb or knowledge()
+    reach = kb["parameters"]["ligand_reach"]
+    per_atom = reach["extension_per_heavy_atom_A"][topology]
+    return reach["fraction_of_length_from_reacting_atom"] * n_heavy_atoms * per_atom
 
 
 @dataclass
 class UnitEvidence:
-    """Evidence for one candidate. Fields left None are simply absent, not negative."""
+    """Evidence for one candidate. Fields left None are absent, not negative."""
     accession: str
-    # rank-1: residues within 5 A of a bound SUBSTRATE-LIKE ligand, split by chain
     liganded_other_chain_fraction: float | None = None
     liganded_pdb: str | None = None
     liganded_comp_id: str | None = None
-    # rank-3: nucleophile -> nearest other-chain atom, in the LARGEST assembly
     site_to_interface_A: float | None = None
     interface_pdb: str | None = None
-    # rank-4 (Q1 only)
     uniprot_subunit: str | None = None
-    # rank-5
     transferred_from: str | None = None
-    # provenance hygiene
     derived_from_docked_poses: bool = False
     notes: list[str] = field(default_factory=list)
 
 
 def assess(evidence: UnitEvidence, ligand_heavy_atoms: int,
-           ligand_topology: str = "linear") -> dict:
+           ligand_topology: str = "linear", kb=None) -> dict:
     """Decide the modeling unit and return a resolution record.
 
-    Returns ``unit`` in {"assembly", "functional_unit", "undetermined"} together with
-    the basis actually used, so a downstream reader can see whether the choice rested
-    on a bound ligand or merely on an annotation.
+    ``unit`` is one of {"assembly", "functional_unit", "undetermined"}; the record also
+    reports which evidence rank was used, so a reader can tell whether the choice
+    rested on a bound ligand or merely on an annotation.
     """
-    reach = ligand_reach_angstrom(ligand_heavy_atoms, ligand_topology)
+    kb = kb or knowledge()
+    reach = ligand_reach_angstrom(ligand_heavy_atoms, ligand_topology, kb=kb)
+    threshold = _param("interfacial_contact_fraction_threshold", kb=kb)
     rec = {
         "accession": evidence.accession,
         "ligand_reach_A": round(reach, 1),
@@ -104,46 +119,36 @@ def assess(evidence: UnitEvidence, ligand_heavy_atoms: int,
             "would justify; not scored. Need a deposited assembly, solution "
             "stoichiometry, or a liganded structure.")
 
-    # rank 1 - a bound substrate-like ligand is decisive
     if evidence.liganded_other_chain_fraction is not None:
         frac = evidence.liganded_other_chain_fraction
-        interfacial = frac >= 0.15
+        interfacial = frac >= threshold
         rec.update(
-            origin="database",
-            evidence_rank_used=1,
+            origin="database", evidence_rank_used=1,
             unit="assembly" if interfacial else "functional_unit",
-            rationale=(
-                f"{evidence.liganded_comp_id or 'ligand'} bound in "
-                f"{evidence.liganded_pdb}: {frac:.0%} of 5 A contact residues come "
-                f"from another chain -> site is "
-                f"{'interfacial' if interfacial else 'intra-subunit'}"),
-        )
+            rationale=(f"{evidence.liganded_comp_id or 'ligand'} bound in "
+                       f"{evidence.liganded_pdb}: {frac:.0%} of contact residues come "
+                       f"from another chain (threshold {threshold:.0%}) -> site is "
+                       f"{'interfacial' if interfacial else 'intra-subunit'}"))
         return rec
 
-    # rank 3 - distance falsifier
     if evidence.site_to_interface_A is not None:
         d = evidence.site_to_interface_A
-        if d > reach:
-            rec.update(
-                origin="database", evidence_rank_used=3, unit="functional_unit",
-                rationale=(f"catalytic site is {d:.1f} A from the nearest other chain "
-                           f"in {evidence.interface_pdb}, beyond the ligand's "
-                           f"{reach:.1f} A reach - the neighbour cannot contact the "
-                           f"substrate"))
-        else:
-            rec.update(
-                origin="database", evidence_rank_used=3, unit="assembly",
-                rationale=(f"catalytic site is {d:.1f} A from the nearest other chain "
-                           f"in {evidence.interface_pdb}, within the ligand's "
-                           f"{reach:.1f} A reach - the neighbour can line the "
-                           f"specificity channel"))
+        beyond = d > reach
+        rec.update(
+            origin="database", evidence_rank_used=3,
+            unit="functional_unit" if beyond else "assembly",
+            rationale=(f"catalytic site is {d:.1f} A from the nearest other chain in "
+                       f"{evidence.interface_pdb}, "
+                       f"{'beyond' if beyond else 'within'} the ligand's {reach:.1f} A "
+                       f"reach - the neighbour "
+                       f"{'cannot contact' if beyond else 'can line the channel of'} "
+                       f"the substrate"))
+        if not beyond:
             rec["warnings"].append(
                 "weak positive: proximity shows the assembly MAY matter, not that it "
-                "does; a liganded structure or a functional-unit/assembly A-B would "
-                "settle it")
+                "does; a liganded structure or a functional-unit/assembly A-B settles it")
         return rec
 
-    # rank 5 - family transfer
     if evidence.transferred_from:
         rec.update(origin="experience", evidence_rank_used=5, unit="functional_unit",
                    rationale=(f"transferred from {evidence.transferred_from}, a "
@@ -151,13 +156,11 @@ def assess(evidence: UnitEvidence, ligand_heavy_atoms: int,
                               f"intra-subunit site"))
         return rec
 
-    # rank 4 - annotation only. Deliberately NOT decisive.
     if evidence.uniprot_subunit:
-        rec.update(
-            origin="database", evidence_rank_used=4, unit="assembly",
-            rationale=(f"no structural evidence for the site; falling back to the "
-                       f"annotated state ({evidence.uniprot_subunit}) as the "
-                       f"conservative choice"))
+        rec.update(origin="database", evidence_rank_used=4, unit="assembly",
+                   rationale=(f"no structural evidence about the site; falling back to "
+                              f"the annotated state ({evidence.uniprot_subunit}) as "
+                              f"the conservative choice"))
         rec["warnings"].append(
             "SUBUNIT answers 'what oligomer exists', not 'does the ligand site need "
             "it'; this is a default, not a finding")
@@ -167,74 +170,205 @@ def assess(evidence: UnitEvidence, ligand_heavy_atoms: int,
     return rec
 
 
-def measure_site_interface(pdb_id: str, assembly_id: str, uniprot_sequence: str,
-                           catalytic_position: int, cache_dir: str | None = None):
-    """Min distance from a catalytic residue to any other chain, in a real assembly.
+# --------------------------------------------------------------------------- #
+# evidence discovery - generic, driven by accession
+# --------------------------------------------------------------------------- #
 
-    Maps ``catalytic_position`` (UniProt numbering) onto the deposited chains by
-    alignment, because PDB numbering routinely differs. Returns a dict per chain.
-    Requires gemmi + biopython; imported lazily so the decision logic above stays
-    dependency-free and unit-testable.
+def uniprot_facts(accession: str) -> dict:
+    """Sequence, SUBUNIT text, PDB ids and annotated active-site positions."""
+    doc = _get_json(_UNIPROT.format(accession))
+    subunit = None
+    for comment in doc.get("comments", []):
+        if comment.get("commentType") == "SUBUNIT":
+            subunit = " ".join(t["value"] for t in comment.get("texts", []))
+            break
+    act_sites = [f["location"]["start"]["value"]
+                 for f in doc.get("features", []) if f["type"] == "Active site"]
+    pdbs = [x["id"] for x in doc.get("uniProtKBCrossReferences", [])
+            if x["database"] == "PDB"]
+    return {"accession": accession,
+            "sequence": doc["sequence"]["value"],
+            "subunit": subunit,
+            "active_sites": act_sites,
+            "pdb_ids": pdbs}
+
+
+def largest_assembly(pdb_id: str):
+    """(assembly_id, oligomeric_count) for the biggest deposited assembly.
+
+    Assembly 1 is often the crystallographic monomer, so never assume it.
     """
-    import urllib.request
-    import gemmi
-    from Bio import Align
+    entry = _get_json(_RCSB_ENTRY.format(pdb_id))
+    ids = entry.get("rcsb_entry_container_identifiers", {}).get("assembly_ids", [])
+    best = (None, -1)
+    for aid in ids:
+        try:
+            info = _get_json(_RCSB_ASSEMBLY.format(pdb_id, aid))
+        except Exception:
+            continue
+        count = info.get("pdbx_struct_assembly", {}).get("oligomeric_count")
+        count = int(count) if count is not None else -1
+        if count > best[1]:
+            best = (aid, count)
+    return best
 
-    cache_dir = cache_dir or os.path.expanduser("~/.cache/panel_assemblies")
+
+def _load_assembly(pdb_id, assembly_id, cache_dir=None):
+    import gemmi
+    cache_dir = cache_dir or os.path.expanduser("~/.cache/modeling_unit_assemblies")
     os.makedirs(cache_dir, exist_ok=True)
     path = os.path.join(cache_dir, f"{pdb_id}-assembly{assembly_id}.cif")
     if not os.path.exists(path):
-        urllib.request.urlretrieve(
-            f"https://files.rcsb.org/download/{pdb_id}-assembly{assembly_id}.cif", path)
-
+        urllib.request.urlretrieve(_RCSB_FILE.format(pdb_id, assembly_id), path)
     st = gemmi.read_structure(path)
     st.setup_entities()
     st.remove_waters()
-    model = st[0]
+    return st
 
-    def chain_seq(chain):
-        residues, letters = [], []
-        for res in chain:
-            info = gemmi.find_tabulated_residue(res.name)
-            if info and info.is_amino_acid():
-                residues.append(res)
-                letters.append(info.one_letter_code.upper())
-        return "".join(letters), residues
 
+def _amino_acid(res):
+    import gemmi
+    info = gemmi.find_tabulated_residue(res.name)
+    return info is not None and info.is_amino_acid()
+
+
+def _chain_sequence(chain):
+    import gemmi
+    residues, letters = [], []
+    for res in chain:
+        info = gemmi.find_tabulated_residue(res.name)
+        if info and info.is_amino_acid():
+            residues.append(res)
+            letters.append(info.one_letter_code.upper())
+    return "".join(letters), residues
+
+
+def _map_position(uniprot_sequence, chain_sequence, residues, position):
+    from Bio import Align
     aligner = Align.PairwiseAligner(mode="global", open_gap_score=-10,
                                     extend_gap_score=-0.5, match_score=2,
                                     mismatch_score=-1)
+    aln = aligner.align(uniprot_sequence, chain_sequence)[0]
+    for (u0, u1), (p0, p1) in zip(aln.aligned[0], aln.aligned[1]):
+        if u0 <= position - 1 < u1:
+            return residues[p0 + (position - 1 - u0)]
+    return None
 
+
+def measure_ligand_contacts(pdb_id, assembly_id, cache_dir=None, kb=None):
+    """Per bound substrate-like ligand, the other-chain fraction of its contacts."""
+    import gemmi
+    kb = kb or knowledge()
+    radius = _param("contact_radius_A", kb=kb)
+    min_heavy = _param("min_ligand_heavy_atoms", kb=kb)
+    excluded = set(kb["non_substrate_het_codes"]["codes"])
+
+    st = _load_assembly(pdb_id, assembly_id, cache_dir)
+    model = st[0]
+    search = gemmi.NeighborSearch(st, radius, 0).populate()
+
+    results = []
+    for chain in model:
+        for res in chain:
+            if _amino_acid(res) or res.name in excluded or len(res) < min_heavy:
+                continue
+            by_chain = {}
+            for atom in res:
+                for mark in search.find_atoms(atom.pos, "\0", radius=radius):
+                    cra = mark.to_cra(model)
+                    if not _amino_acid(cra.residue):
+                        continue
+                    by_chain.setdefault(cra.chain.name, set()).add(cra.residue.seqid.num)
+            total = sum(len(v) for v in by_chain.values())
+            if not total:
+                continue
+            own = max(by_chain.items(), key=lambda kv: len(kv[1]))[0]
+            other = total - len(by_chain[own])
+            results.append({"comp_id": res.name, "chain": chain.name,
+                            "contact_residues": total,
+                            "other_chain_residues": other,
+                            "other_chain_fraction": other / total,
+                            "by_chain": {k: len(v) for k, v in by_chain.items()}})
+    return results
+
+
+def measure_site_interface(pdb_id, assembly_id, uniprot_sequence, catalytic_position,
+                           cache_dir=None, kb=None):
+    """Min distance from a catalytic residue to any other chain, per chain."""
+    kb = kb or knowledge()
+    near_radius = _param("neighbourhood_radius_A", kb=kb)
+    min_len = _param("min_polymer_length", kb=kb)
+
+    st = _load_assembly(pdb_id, assembly_id, cache_dir)
+    model = st[0]
     out = []
     for chain in model:
-        seq, residues = chain_seq(chain)
-        if len(seq) < 50:
+        seq, residues = _chain_sequence(chain)
+        if len(seq) < min_len:
             continue
-        aln = aligner.align(uniprot_sequence, seq)[0]
-        target = None
-        for (u0, u1), (p0, p1) in zip(aln.aligned[0], aln.aligned[1]):
-            if u0 <= catalytic_position - 1 < u1:
-                target = residues[p0 + (catalytic_position - 1 - u0)]
-                break
+        target = _map_position(uniprot_sequence, seq, residues, catalytic_position)
         if target is None:
             continue
         best = float("inf")
-        near12 = set()
+        near = set()
         for other in model:
             if other.name == chain.name:
                 continue
             for res in other:
-                info = gemmi.find_tabulated_residue(res.name)
-                if not (info and info.is_amino_acid()):
+                if not _amino_acid(res):
                     continue
                 for atom in res:
                     for t_atom in target:
                         d = t_atom.pos.dist(atom.pos)
-                        best = min(best, d)
-                        if d <= 12.0:
-                            near12.add((other.name, res.seqid.num))
+                        if d < best:
+                            best = d
+                        if d <= near_radius:
+                            near.add((other.name, res.seqid.num))
         out.append({"chain": chain.name, "residue": target.name,
                     "seqid": target.seqid.num,
-                    "min_distance_other_chain_A": None if best == float("inf") else round(best, 1),
-                    "other_chain_residues_12A": len(near12)})
+                    "min_distance_other_chain_A": (None if best == float("inf")
+                                                   else round(best, 1)),
+                    f"other_chain_residues_{int(near_radius)}A": len(near)})
     return out
+
+
+def gather_evidence(accession, catalytic_position=None, cache_dir=None, kb=None):
+    """Discover the best available evidence for one accession, generically.
+
+    Walks the hierarchy: prefers a bound substrate-like ligand in the largest deposited
+    assembly; falls back to the catalytic-site-to-interface distance; then to SUBUNIT.
+    """
+    kb = kb or knowledge()
+    facts = uniprot_facts(accession)
+    ev = UnitEvidence(accession=accession, uniprot_subunit=facts["subunit"])
+    if catalytic_position is None and facts["active_sites"]:
+        catalytic_position = facts["active_sites"][-1]
+
+    for pdb_id in facts["pdb_ids"]:
+        try:
+            assembly_id, count = largest_assembly(pdb_id)
+            if assembly_id is None:
+                continue
+            for hit in measure_ligand_contacts(pdb_id, assembly_id, cache_dir, kb):
+                ev.liganded_other_chain_fraction = hit["other_chain_fraction"]
+                ev.liganded_pdb = pdb_id
+                ev.liganded_comp_id = hit["comp_id"]
+                ev.notes.append(
+                    f"{pdb_id} assembly {assembly_id} ({count} chains): "
+                    f"{hit['comp_id']} contacts {hit['by_chain']}")
+                return ev, facts
+            if ev.site_to_interface_A is None and catalytic_position:
+                rows = measure_site_interface(pdb_id, assembly_id, facts["sequence"],
+                                              catalytic_position, cache_dir, kb)
+                distances = [r["min_distance_other_chain_A"] for r in rows
+                             if r["min_distance_other_chain_A"] is not None]
+                if distances:
+                    ev.site_to_interface_A = min(distances)
+                    ev.interface_pdb = pdb_id
+                    ev.notes.append(
+                        f"{pdb_id} assembly {assembly_id} ({count} chains): "
+                        f"catalytic position {catalytic_position} is "
+                        f"{ev.site_to_interface_A} A from another chain")
+        except Exception as exc:  # a missing assembly file must not abort the walk
+            ev.notes.append(f"{pdb_id}: {type(exc).__name__}: {exc}")
+    return ev, facts
