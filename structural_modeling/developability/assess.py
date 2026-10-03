@@ -143,10 +143,13 @@ def main(argv=None) -> int:
     ap.add_argument("--sequence", help="candidate amino-acid sequence")
     ap.add_argument("--uniprot", help="UniProt accession (for curated-evidence lookup)")
     ap.add_argument("--family", action="append", default=[], help="InterPro family id (repeatable)")
+    ap.add_argument("--predictor", default="netsolp",
+                    help="registered predictor name (see predictors.PREDICTORS)")
     args = ap.parse_args(argv)
 
     a = assess_developability(sequence=args.sequence, uniprot=args.uniprot,
-                              family_ids=tuple(args.family))
+                              family_ids=tuple(args.family),
+                              predictor_name=args.predictor)
     print(json.dumps(a.to_dict(), indent=2))
     return 0
 
