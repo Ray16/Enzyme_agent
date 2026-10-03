@@ -199,6 +199,21 @@ def uniprot_facts(accession: str) -> dict:
             "pdb_ids": pdbs}
 
 
+def nucleophile_position(active_sites, keywords=("nucleophile", "acyl-ester",
+                                                 "acyl-enzyme")):
+    """Pick the active-site position that marks the nucleophile, if annotated.
+
+    ``active_sites`` is a list of (position, description). Falls back to None rather
+    than guessing: measuring from a proton donor instead of the nucleophile silently
+    moves the reference point several angstroms and can flip the verdict.
+    """
+    for pos, desc in active_sites:
+        low = desc.lower()
+        if any(k in low for k in keywords):
+            return pos
+    return None
+
+
 def largest_assembly(pdb_id: str):
     """(assembly_id, oligomeric_count) for the biggest deposited assembly.
 
