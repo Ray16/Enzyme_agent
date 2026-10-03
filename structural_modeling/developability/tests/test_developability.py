@@ -95,6 +95,41 @@ class TestEvidence(unittest.TestCase):
         self.assertEqual(kb.records, [])
 
 
+class TestRegistry(unittest.TestCase):
+    def test_get_default_is_netsolp(self):
+        self.assertIsInstance(P.get_predictor(), P.NetSolPPredictor)
+
+    def test_get_by_name_forwards_kwargs(self):
+        pred = P.get_predictor("netsolp", model_type="Accurate")
+        self.assertEqual(pred.model_type, "Accurate")
+
+    def test_unknown_predictor_raises(self):
+        with self.assertRaises(ValueError):
+            P.get_predictor("nope")
+
+
+class TestPredictorOwnedThreshold(unittest.TestCase):
+    def _kb(self):
+        return LiabilityKnowledge([])
+
+    def test_custom_threshold_flags_below_its_own_boundary(self):
+        # score 0.6 would be "ok" under NetSolP's 0.5, but this predictor's boundary is 0.7
+        a = A.assess_developability(sequence="DEKR" * 20, knowledge=self._kb(),
+                                    predictor=FakePredictor(0.6, threshold=0.7))
+        self.assertEqual(a.verdict, "flag")
+
+    def test_lower_is_better_axis(self):
+        # e.g. instability index: a HIGH score is poor
+        poor = A.assess_developability(sequence="DEKR" * 20, knowledge=self._kb(),
+                                       predictor=FakePredictor(60, threshold=40,
+                                                               higher_is_better=False))
+        good = A.assess_developability(sequence="DEKR" * 20, knowledge=self._kb(),
+                                       predictor=FakePredictor(30, threshold=40,
+                                                               higher_is_better=False))
+        self.assertEqual(poor.verdict, "flag")
+        self.assertEqual(good.verdict, "ok")
+
+
 class TestAssessment(unittest.TestCase):
     def _kb(self, records):
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
