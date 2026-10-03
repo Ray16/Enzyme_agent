@@ -202,4 +202,27 @@ class NetSolPPredictor(SolubilityPredictor):
             method=f"NetSolP-{self.model_type}",
             features={k: v for k, v in rec.items() if k != "sid"},
             citation=NETSOLP_CITATION,
-            note="E. coli solubility from a protein language model")
+            note="E. coli solubility from a protein language model",
+            # NetSolP is trained on a binary soluble/insoluble label -> 0.5 is its
+            # natural decision boundary, higher = more soluble.
+            threshold=0.5, higher_is_better=True)
+
+
+# =================================================================================
+# Registry -- select a predictor by name so new ones need no edit to the assessment
+# =================================================================================
+PREDICTORS: dict[str, type[SolubilityPredictor]] = {
+    "netsolp": NetSolPPredictor,
+}
+
+
+def get_predictor(name: str = "netsolp", **kwargs) -> SolubilityPredictor:
+    """Construct a registered predictor by name. Register a class in ``PREDICTORS`` to
+    add one; the assessment selects via ``predictor_name`` and never imports a concrete
+    predictor directly."""
+    try:
+        cls = PREDICTORS[name]
+    except KeyError:
+        raise ValueError(
+            f"unknown predictor {name!r}; registered: {sorted(PREDICTORS)}") from None
+    return cls(**kwargs)
