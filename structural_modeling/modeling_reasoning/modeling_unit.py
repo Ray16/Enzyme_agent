@@ -449,13 +449,14 @@ def resolve_panel(accessions, ligand_heavy_atoms, ligand_topology="linear",
     """
     kb = kb or knowledge()
     transferable = set(_param("transferable_interpro_types", kb=kb))
-    records, families = {}, {}
+    records, families, sequences = {}, {}, {}
     for acc in accessions:
         try:
             ev, facts = gather_evidence(acc, cache_dir=cache_dir, kb=kb)
             rec = assess(ev, ligand_heavy_atoms, ligand_topology, kb=kb)
             rec["uniprot_subunit"] = facts["subunit"]
             families[acc] = set(facts.get("interpro") or [])
+            sequences[acc] = facts["sequence"]
         except Exception as exc:
             rec = {"accession": acc, "unit": "undetermined",
                    "error": f"{type(exc).__name__}: {exc}",
