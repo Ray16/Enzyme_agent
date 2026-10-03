@@ -447,7 +447,15 @@ def resolve_panel(accessions, ligand_heavy_atoms, ligand_topology="linear",
         # claim about the site. Without this, orthologs resolve inconsistently -
         # whichever happens to carry a SUBUNIT comment gets the assembly and its
         # siblings get the functional unit.
-        if rec.get("unit") != "undetermined" and rec.get("evidence_rank_used") != 4:
+        # A rank-3 *positive* is a weak positive by construction (reach assumes a fully
+        # extended ligand), so liganded evidence from a relative outranks it. A rank-3
+        # *negative* ("beyond reach") is definitive geometry and is never overridden.
+        overridable = (
+            rec.get("unit") == "undetermined"
+            or rec.get("evidence_rank_used") == 4
+            or (rec.get("evidence_rank_used") == 3 and rec.get("unit") == "assembly")
+        )
+        if not overridable:
             continue
         best = None
         for donor_acc, donor in donors:
