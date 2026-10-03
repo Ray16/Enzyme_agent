@@ -121,12 +121,16 @@ def assess_developability(
             exploration_trigger=_trigger(
                 f"documented {flag_rec.liability} liability", flag_rec.exploration_hint))
 
-    if score < SOLUBILITY_FLOOR:
-        reasons.append(f"below solubility floor {SOLUBILITY_FLOOR}")
+    threshold = prediction.get("threshold", 0.5)
+    higher_is_better = prediction.get("higher_is_better", True)
+    poor = score < threshold if higher_is_better else score > threshold
+    if poor:
+        side = "below" if higher_is_better else "above"
+        reasons.append(f"{side} {prediction['method']} flag threshold {threshold}")
         return DevelopabilityAssessment(
             verdict="flag", score=score, reasons=reasons, liabilities=liabilities,
             prediction=prediction, descriptors=descriptors,
-            exploration_trigger=_trigger("predicted low solubility", None))
+            exploration_trigger=_trigger("predicted poor developability", None))
 
     return DevelopabilityAssessment(
         verdict="ok", score=score, reasons=reasons, liabilities=liabilities,
