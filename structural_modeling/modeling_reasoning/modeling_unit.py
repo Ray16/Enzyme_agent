@@ -202,6 +202,29 @@ def uniprot_facts(accession: str) -> dict:
             "interpro": interpro}
 
 
+_INTERPRO = "https://www.ebi.ac.uk/interpro/api/entry/interpro/{}"
+_IPR_TYPE_CACHE: dict[str, str | None] = {}
+
+
+def interpro_entry_type(ipr_id: str) -> str | None:
+    """InterPro entry type ('family', 'domain', 'homologous_superfamily', ...).
+
+    Needed because entry *specificity* decides whether a verdict may be transferred:
+    sharing a superfamily domain says nothing about oligomeric behaviour, while
+    sharing a family does. Cached per process; returns None if unavailable, which
+    callers must treat as 'not transferable' rather than as permission.
+    """
+    if ipr_id in _IPR_TYPE_CACHE:
+        return _IPR_TYPE_CACHE[ipr_id]
+    try:
+        doc = _get_json(_INTERPRO.format(ipr_id))
+        kind = (doc.get("metadata", {}).get("type") or "").lower() or None
+    except Exception:
+        kind = None
+    _IPR_TYPE_CACHE[ipr_id] = kind
+    return kind
+
+
 def nucleophile_position(active_sites, keywords=("nucleophile", "acyl-ester",
                                                  "acyl-enzyme")):
     """Pick the active-site position that marks the nucleophile, if annotated.
