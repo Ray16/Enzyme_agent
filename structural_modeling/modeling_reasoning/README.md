@@ -29,6 +29,7 @@ whose `unresolved` fields are now filled.
 | handoff field (was `unresolved`) | resolved from |
 | --- | --- |
 | `enzyme_state.chains` | manifest directive (intact / mature-chain split, copies) |
+| `enzyme_state` oligomeric unit | **ligand-site reasoning** (`modeling_unit.py` + `knowledge/oligomeric_state.json`): assembly vs functional unit, decided by where the ligand sits, not by UniProt SUBUNIT |
 | `target_substrates[].modeling_smiles`/role/`affinity_target`/`include_in_model` | manifest directive + **RDKit re-verification** (`chemistry.py`) |
 | `cofactors` catalytic metal | **family/mechanism reasoning** (`knowledge/family_metal.json`) x modeled active sites; UniProt tally is a cross-check reference only |
 | `geometry` | **derived from the declared reaction step** (nucleophile/electrophile atoms resolved onto the candidate), recorded **measurement-only** (never restrained) |
@@ -70,12 +71,22 @@ An agent must be able to model **any step** of a reaction and never silently mod
 the wrong one. The step is a **required, explicit** parameter — `manifest.step.index`
 or `--step` — with no default.
 
-`knowledge/reaction_coordinates.json` holds mechanism reaction coordinates keyed by
-mechanism/activation mode. Each step declares, as **roles** (never target-specific
-atoms), the species present at that step, the species consumed/produced, and the
-nucleophile/electrophile of its near-attack. These seed entries are meant to be
-populated by the reasoning module's exact-grounded `reaction-step` extraction, so
-they self-evolve with the literature like the cofolding rules.
+`knowledge/reaction_coordinates.json` holds mechanism reaction coordinates. Each step
+declares, as **roles** (never target-specific atoms), the species present, the species
+consumed/produced, and the nucleophile/electrophile of its near-attack.
+
+**Mechanism is a family-level property.** Each coordinate lists the InterPro `families`
+that use it, so it **transfers to any homolog of that family — including unannotated
+ones**. The resolver selects a candidate's coordinate by family first (from the
+handoff's `family_assignment` / `domain_architecture`), then falls back to activation
+mode, then abstains; the basis is recorded in `modeled_step.mechanism_selected_by`.
+
+The adenylate amide-ligase coordinate is **literature-derived**: `reasoning/extract_reaction_steps.py`
+harvests a pinned, provenance-stamped mechanism corpus (`reasoning/data/mechanism_corpus.json`),
+extracts quote-grounded step-claims (validation level 1), and synthesizes coordinates
+**grouped by (paper, mechanism_class)** so each enzyme's mechanism is assembled
+independently. Each step carries its `PMID` + verbatim quote. Coordinates not yet
+extracted (e.g. the acyl-phosphate two-metal mechanism) are marked `seed_unverified`.
 
 Given a declared step, the resolver:
 - **drops consumed cofactors** — ATP (NTP) is present at step 1 but consumed into the
@@ -153,7 +164,11 @@ CONDA_NO_PLUGINS=true ~/miniforge3/bin/python -m unittest discover \
 - `resolve_handoff.py` — the compiler (handoff in -> resolved handoff out) + CLI.
 - `literature.py` — load/match vendored PDF rules by decision point + feature guard.
 - `chemistry.py` — RDKit re-verification of changed ligand SMILES.
-- `reaction.py` — reaction-coordinate loader, mechanism/step selection, species-role mapping.
+- `reaction.py` — reaction-coordinate loader, mechanism/step selection (family-first), species-role mapping.
+- `refresh_coordinates.py` — vendor the discovery agent's family-keyed mechanism cache into
+  `knowledge/reaction_coordinates.json` (enriching merge: add new mechanisms, union families,
+  never downgrade structured steps; empty cache = no-op). The discovery agent OWNS extraction +
+  the cache; this pulls its output into the consumer snapshot.
 - `evolve.py` — self-evolution: pull, version, and diff the literature knowledge.
 - `knowledge/` — vendored literature snapshot, family/mechanism metal reasoning,
   reaction coordinates, atom selectors, provenance, and version history.
