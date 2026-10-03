@@ -110,7 +110,10 @@ def assess(evidence: UnitEvidence, ligand_heavy_atoms: int,
         "evidence_rank_used": None,
         "unit": "undetermined",
         "rationale": None,
-        "warnings": list(evidence.notes),
+        # informational trace vs things the reader must not ignore - kept apart, since
+        # folding notes into warnings makes real warnings invisible
+        "notes": list(evidence.notes),
+        "warnings": [],
     }
 
     if evidence.derived_from_docked_poses:
