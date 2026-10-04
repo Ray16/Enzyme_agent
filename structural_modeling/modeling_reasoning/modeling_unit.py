@@ -436,13 +436,24 @@ def gather_evidence(accession, catalytic_position=None, cache_dir=None, kb=None)
 
     for count, pdb_id, assembly_id in candidates:
         try:
-            for hit in measure_ligand_contacts(pdb_id, assembly_id, cache_dir, kb):
-                ev.liganded_other_chain_fraction = hit["other_chain_fraction"]
+            hits = measure_ligand_contacts(pdb_id, assembly_id, cache_dir, kb)
+            if hits:
+                # Choose the MOST-ENGAGED ligand (most protein contacts), not simply
+                # the first qualifying het in chain order: the first one is often an
+                # adventitious binder, while the substrate-like ligand makes the most
+                # contacts.  Record when the choice was contested so it can be audited.
+                best = max(hits, key=lambda h: h["contact_residues"])
+                ev.liganded_other_chain_fraction = best["other_chain_fraction"]
                 ev.liganded_pdb = pdb_id
-                ev.liganded_comp_id = hit["comp_id"]
+                ev.liganded_comp_id = best["comp_id"]
                 ev.notes.append(
                     f"{pdb_id} assembly {assembly_id} ({count} chains): "
-                    f"{hit['comp_id']} contacts {hit['by_chain']}")
+                    f"{best['comp_id']} contacts {best['by_chain']}")
+                if len(hits) > 1:
+                    others = ", ".join(sorted({h["comp_id"] for h in hits if h is not best}))
+                    ev.notes.append(
+                        f"{pdb_id}: chose {best['comp_id']} as most-engaged ligand "
+                        f"({best['contact_residues']} contacts) over {others}")
                 return ev, facts
             if ev.site_to_interface_A is None and catalytic_position:
                 rows = measure_site_interface(pdb_id, assembly_id, facts["sequence"],
