@@ -38,6 +38,12 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 
+# Hard dependency for both structural tiers (ligand-contact + site-interface
+# measurement).  Imported at module top so a missing gemmi fails LOUDLY at import,
+# never swallowed into a per-candidate note that silently degrades the oligomer
+# reasoning to the annotation-only default.
+import gemmi
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 KNOWLEDGE = os.path.join(HERE, "knowledge", "oligomeric_state.json")
 _RCSB_ENTRY = "https://data.rcsb.org/rest/v1/core/entry/{}"
