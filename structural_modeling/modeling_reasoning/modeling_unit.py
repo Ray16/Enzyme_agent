@@ -472,6 +472,7 @@ def resolve_panel(accessions, ligand_heavy_atoms, ligand_topology="linear",
     donor accession plus the shared family are recorded on the recipient.
     """
     kb = kb or knowledge()
+    _require_gemmi()  # loud dependency check before the per-accession error swallow
     transferable = set(_param("transferable_interpro_types", kb=kb))
     records, families, sequences = {}, {}, {}
     for acc in accessions:
