@@ -46,6 +46,29 @@ _RCSB_FILE = "https://files.rcsb.org/download/{}-assembly{}.cif"
 _UNIPROT = "https://rest.uniprot.org/uniprotkb/{}.json"
 
 
+def _require_gemmi():
+    """Import gemmi or fail LOUDLY -- never let a missing dependency degrade silently.
+
+    Both structural tiers (ligand-contact and site-interface measurement) need
+    gemmi.  Historically the ``import gemmi`` lived deep inside those functions, so
+    in an env without gemmi the ImportError was swallowed by the per-candidate
+    ``except Exception`` handlers and every candidate quietly fell back to the
+    annotation-only rank-4 default -- the oligomer reasoning *looked* like it ran
+    when it had not.  Resolving the unit without this measurement is not a
+    degraded answer, it is no answer, so a missing gemmi must abort with an
+    actionable error rather than be recorded as a note.
+    """
+    try:
+        import gemmi  # noqa: F401
+    except ImportError as exc:  # pragma: no cover - exercised via monkeypatch in tests
+        raise RuntimeError(
+            "modeling_unit requires the 'gemmi' package for structural measurement "
+            "(oligomeric-unit resolution). Install it into the active environment, "
+            "e.g. `python -m pip install gemmi`."
+        ) from exc
+    return gemmi
+
+
 def knowledge() -> dict:
     with open(KNOWLEDGE) as fh:
         return json.load(fh)
