@@ -1,0 +1,83 @@
+REVISED PARAGRAPH -- structural-proxy selection against experimental activity
+Source of record for the proxy set: structural_modeling/proxies/README.md,
+structural_modeling/proxies/library.py, knowledge/structural_proxy_prior.yaml
+Written 2026-10-06.
+
+----------------------------------------------------------------------
+PARAGRAPH
+----------------------------------------------------------------------
+
+After the cofolded ensembles are obtained, the next step is to identify which
+structural proxies, if any, correlate with experimental measurements. The proxy
+library is system-free: a short reaction-specific resolver assigns catalytic
+roles in each pose -- nucleophile, electrophile, leaving group, charge centre,
+and the ideal attack angle for that chemistry -- and every proxy is then computed
+from those roles alone over the superposed ensemble. Eleven proxies span six
+mechanistic determinants: ground-state binding (nucleophile-electrophile
+approach distance, nucleophile burial), reactive conformation (distance-gated
+near-attack fraction, in-line attack-angle deviation, and alignment of the
+approach vector with the electrophile's local plane), transition-state
+electrostatics (contacts to the atom accumulating negative charge), nucleophile
+activation (distance to the nearest candidate base), leaving-group stabilisation
+(metal contacts along the breaking bond), and dynamic preorganisation
+(positional fluctuation of the reactive pair and the stability of its approach
+across the ensemble). Angles are stored as deviation from the mechanism's ideal
+rather than as raw angles, so one direction of merit holds across mechanism
+classes; the preorganisation proxies are deliberately gate-free, because gated
+proxies are undefined for exactly the poses a true negative produces. A seventh
+determinant -- the integrated barrier -- is left visibly unfilled, since no
+ensemble geometry estimates one. Experimental activity is then used to select,
+revise, or reject these hypotheses rather than merely to validate a final
+ranking, under three gates: the sign must match the direction declared before
+labels were seen; the correlation must survive partialling out model confidence,
+which alone can predict activity without reflecting catalysis; and the winner
+must clear a null built by permuting labels, rescoring the whole panel, and
+keeping the maximum -- the same selection the analyst performs, whose upward bias
+grows with panel size and shrinks with the number of actives. In the synthetase
+study this procedure retained a distance-gated in-line attack angle as a coarse
+enrichment signal and exposed confidence, metal-geometry, and substrate-burial
+effects as misleading. In the hydrolase study it rejected static catalytic
+geometry as an exclusion criterion. The preliminary results below provide the
+quantitative evidence for both decisions.
+
+----------------------------------------------------------------------
+NOTES -- two open decisions before this goes in
+----------------------------------------------------------------------
+
+1. The synthetase hedge. "Coarse enrichment signal" is the right strength, but
+   the sentence can be misread as a promotion. On that panel the pre-registered
+   test gave p = 0.0016 while charging the full 142-descriptor battery penalty
+   gave p = 0.242 (selection null 95th percentile 0.982, only 3 positives). If
+   the text asserts the proxy *passed* the selection null, it overstates.
+   Defensible alternative: "...retained a distance-gated in-line attack angle as
+   a coarse enrichment signal, which the panel's three actives cannot adjudicate
+   further."
+
+2. The hydrolase rejection is stronger than a null correlation. On the discovery
+   panel the near-attack gate was degenerate -- distance saturated (gated
+   fraction 0.86-1.00) and the resulting ranking was rank-unstable to a 5-degree
+   threshold shift (Kendall tau <= 0.35, not significant). That is a cleaner
+   basis for rejection than "did not correlate" and is worth one clause.
+
+----------------------------------------------------------------------
+THE PROXY SET AS IMPLEMENTED (for checking the paragraph against code)
+----------------------------------------------------------------------
+
+determinant                        proxies (dir of merit)
+---------------------------------  --------------------------------------------
+ground_state_binding               approach_distance (-), nucleophile_burial (+)
+reactive_conformation              near_attack_fraction (+),
+                                   trajectory_angle_deviation (-),
+                                   trajectory_alignment (+)      [all gated]
+transition_state_electrostatics    ts_charge_stabilisation (+)
+nucleophile_base_activation        base_proximity (-)
+leaving_group_metal_stabilization  leaving_group_stabilisation (+)
+dynamic_preorganization            reactive_preorganisation (-),
+                                   approach_consistency (-),
+                                   distance_stability (-)        [gate-free]
+integrated_barrier                 UNFILLED by design
+
+Model confidence (e.g. mean complex pLDDT) is a confound covariate partialled
+out in screen(), not a proxy. Excluded by design: metal/cofactor coordination
+geometry, cofactor-moiety burial, anything addressed by atom name, residue-
+specific pKa or named catalytic residues, and composite/fused scores.
