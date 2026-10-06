@@ -305,6 +305,24 @@ class ReactionProfile:
                        f"overlap {ov:.2f} with the reaction coordinate",
                        value=round(ov, 2))
 
+    def _check_endpoint_mechanism(self, report: GateReport) -> None:
+        if self.endpoint_mechanism_ok is None:
+            report.add("endpoint_mechanism", "ABSTAIN",
+                       "no mechanism-consistency result recorded. Descending the "
+                       "imaginary mode from the saddle must land on the assumed "
+                       "reactant and product; without it a clean saddle may "
+                       "belong to a different reaction.")
+        elif self.endpoint_mechanism_ok is False:
+            report.add("endpoint_mechanism", "FAIL",
+                       "mode-descended endpoints do NOT match the assumed "
+                       "mechanism. The saddle connects something else -- this "
+                       "barrier is not the barrier for the declared step.",
+                       value=False)
+        else:
+            report.add("endpoint_mechanism", "PASS",
+                       "mode-descended endpoints match the assumed mechanism",
+                       value=True)
+
     def _check_labelling(self, report: GateReport) -> None:
         """Endpoints must be identified by geometry, never by which is lower.
 
