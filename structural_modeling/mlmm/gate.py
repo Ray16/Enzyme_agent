@@ -352,11 +352,26 @@ def _check_bond_changes(structure: Structure, spec: MLMMSpec,
 def _check_proton_coordinate(structure: Structure, spec: MLMMSpec,
                              report: GateReport) -> None:
     step = spec.step
-    if step.proton is None:
+    if step.proton_coupled is None:
         report.add("proton_coordinate", "ABSTAIN",
-                   "no proton transfer declared. If the mechanism is "
-                   "proton-coupled, declaring only the heavy-atom coordinates "
-                   "yields a nonsense endpoint -- confirm this step really has none.")
+                   "whether this step is proton-coupled was never stated. Set "
+                   "ReactionStep.proton_coupled explicitly: declaring only the "
+                   "heavy-atom coordinates of a proton-coupled step yields a "
+                   "nonsense endpoint, and silence is how that slips through.")
+        return
+    if step.proton_coupled is False:
+        if step.proton is not None:
+            report.add("proton_coordinate", "FAIL",
+                       f"proton_coupled=False but a proton {step.proton} is "
+                       "declared; the claim and the coordinates disagree")
+        else:
+            report.add("proton_coordinate", "PASS",
+                       "declared not proton-coupled; no proton coordinate expected")
+        return
+    if step.proton is None:
+        report.add("proton_coordinate", "FAIL",
+                   "proton_coupled=True but no proton declared; the coordinate "
+                   "that changes is unspecified")
         return
     h = _resolve(structure, step.proton, report, "proton")
     if h is None:
