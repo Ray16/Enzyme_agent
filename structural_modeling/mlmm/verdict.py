@@ -198,6 +198,10 @@ class ReactionProfile:
     # untrustworthy decarboxylase result in the previous campaign, so it is
     # carried through rather than recomputed.
     endpoint_mechanism_ok: bool | None = None
+    # The declared ReactionStep. Supplying it upgrades the endpoint-labelling
+    # check from "trust the recorded flag" to "measure it", which is the
+    # difference between abstaining on a swapped profile and catching it.
+    step: object | None = None
     # Provenance: where the numbers came from, so a figure can be traced back.
     provenance: dict[str, str] = field(default_factory=dict)
 
