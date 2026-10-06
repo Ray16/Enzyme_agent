@@ -107,14 +107,21 @@ def _mode_counts(freqs: list[float], *, threshold_cm: float
                  ) -> tuple[int, tuple[float, ...], int]:
     """(n_imag, imaginary magnitudes, n_real_vibrational) on ONE threshold.
 
-    A mode whose magnitude is below the threshold is counted as neither
-    imaginary nor a real vibration: it is noise. A measured rigid-body rotation
-    moved such a mode from 0.2i to 27.3i cm-1, so assigning it either way makes
-    the result orientation-dependent.
+    ``n_vib`` is every mode that is not counted as imaginary, i.e.
+    ``len(freqs) - n_imag``. A sub-threshold NEGATIVE mode therefore joins the
+    real set rather than vanishing: a rigid-body rotation was measured moving
+    such a mode from 0.2i to 27.3i cm-1, so it is noise about zero, not a
+    reaction coordinate -- but it is still one degree of freedom and must be
+    counted somewhere, consistently, at every state.
+
+    Counting instead only modes above +threshold (an earlier version of this
+    function) drops legitimate low-frequency vibrations and makes the totals
+    differ between states for no physical reason -- it manufactured an apparent
+    two-mode gap on real data where the Hessian subspaces were in fact
+    identical. The saddle criterion is only meaningful if the bookkeeping is.
     """
     n_imag, mags = imaginary_from_frequencies(freqs, threshold_cm=threshold_cm)
-    n_vib = sum(1 for f in freqs if f >= threshold_cm)
-    return n_imag, mags, n_vib
+    return n_imag, mags, len(freqs) - n_imag
 
 
 # --------------------------------------------------------------------------- #
