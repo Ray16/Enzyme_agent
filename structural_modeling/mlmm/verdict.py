@@ -64,6 +64,11 @@ MIN_DRIVEN_COORDINATE_CHANGE = 0.50
 
 HARTREE_TO_KCAL = 627.5094740631
 EV_TO_KCAL = 23.060547830619026
+# E_h/a_0 -> eV/A. Optimizer logs report forces in atomic units while the
+# stationarity tolerance above is in eV/A, so the conversion has to be explicit;
+# comparing 0.000039 E_h/a_0 against a 0.02 eV/A threshold without it would read
+# as converged by a factor of 50 for the wrong reason.
+HARTREE_PER_BOHR_TO_EV_PER_A = 51.42208619083232
 
 EnergyKind = str  # "potential" | "zpe_corrected" | "enthalpy" | "free_energy"
 _ENERGY_KINDS = ("potential", "zpe_corrected", "enthalpy", "free_energy")
