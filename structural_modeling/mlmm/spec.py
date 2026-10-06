@@ -63,6 +63,28 @@ class BondChange:
     second: AtomRef
     target: float
 
+    @property
+    def key(self) -> str:
+        """Stable short name, used to key measured distances on each state.
+
+        Atom names alone, because that is what reads well in a report
+        (``C1-C8``). Two bond changes in one step sharing both atom names would
+        collide; no mechanism does, and ``measure_driven_coordinates`` raises
+        rather than silently overwriting if one ever does.
+        """
+        return f"{self.first.name}-{self.second.name}"
+
+    @property
+    def reactant_is_longer(self) -> bool:
+        """Does this coordinate START long and END short?
+
+        A bond that FORMS is long in the reactant and short in the product; one
+        that BREAKS is the reverse. This single fact is enough to decide, from
+        geometry alone, which endpoint is the reactant -- which is the check that
+        energy-order labelling gets wrong for every exothermic reaction.
+        """
+        return self.kind == "form"
+
     def __str__(self) -> str:
         arrow = "->" if self.kind == "form" else "x"
         return f"{self.first} {arrow} {self.second} @ {self.target:.2f} A"
