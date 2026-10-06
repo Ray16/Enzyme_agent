@@ -397,13 +397,86 @@ class ReactionProfile:
                        "mode-descended endpoints match the assumed mechanism",
                        value=True)
 
+    def geometric_endpoints(self) -> EndpointVerdict | None:
+        """Which endpoint the geometry says is the reactant, or None if uncheckable."""
+        if self.step is None or not getattr(self.step, "bond_changes", ()):
+            return None
+        return classify_endpoints(self.step,
+                                  self.reactant.driven_coordinates,
+                                  self.product.driven_coordinates)
+
+    def relabel_from_geometry(self) -> "ReactionProfile":
+        """Return this profile with the endpoints assigned by geometry.
+
+        Use when the engine swapped them: the structures and the saddle are
+        fine, only the assignment is wrong, so swapping recovers the correct
+        forward barrier rather than discarding the run. Raises if geometry
+        cannot decide -- a profile that is merely confusing must not be
+        "fixed" by guessing.
+        """
+        v = self.geometric_endpoints()
+        if v is None or v.reactant_is is None:
+            raise NotReportable(
+                "cannot relabel: geometry does not decide which endpoint is the "
+                "reactant. " + (v.detail if v else "no ReactionStep supplied")
+            )
+        if v.reactant_is == "first":
+            return self
+        import dataclasses
+        swapped_r = dataclasses.replace(self.product, label=self.product.label
+                                        + "(relabelled reactant)")
+        swapped_p = dataclasses.replace(self.reactant, label=self.reactant.label
+                                        + "(relabelled product)")
+        return dataclasses.replace(
+            self, reactant=swapped_r, product=swapped_p,
+            labelled_by="driven_coordinate",
+            provenance={**self.provenance,
+                        "relabelled": "endpoints swapped by geometry",
+                        "relabel_evidence": v.detail},
+        )
+
     def _check_labelling(self, report: GateReport) -> None:
         """Endpoints must be identified by geometry, never by which is lower.
 
         Labelling the lower minimum "reactant" makes the reported barrier the
         REVERSE barrier for every exothermic step, and forces ADeltaE_rxn >= 0 by
         construction -- so every reaction comes out endothermic.
+
+        When a ReactionStep is available this is MEASURED rather than trusted: a
+        swapped profile is caught and the corrected barrier is reported in the
+        failure, instead of the check abstaining and leaving a human to notice.
         """
+        v = self.geometric_endpoints()
+        if v is not None:
+            if v.reactant_is == "first":
+                report.add("endpoint_labelling", "PASS",
+                           f"geometry confirms the labelling ({v.detail})",
+                           value="driven_coordinate")
+                return
+            if v.reactant_is == "second":
+                if self.transition_state is not None:
+                    fwd = self.transition_state.energy_kcal - self.product.energy_kcal
+                    corrected = (f" The forward barrier is {fwd:.2f} kcal/mol, "
+                                 f"not the "
+                                 f"{self.transition_state.energy_kcal - self.reactant.energy_kcal:.2f} "
+                                 "this profile reports.")
+                else:
+                    corrected = ""
+                report.add(
+                    "endpoint_labelling", "FAIL",
+                    "ENDPOINTS ARE SWAPPED: the state labelled 'reactant' is "
+                    "geometrically the product. The reported barrier is "
+                    "therefore the REVERSE barrier." + corrected
+                    + " The structures and the saddle are fine -- call "
+                    "relabel_from_geometry() to recover the forward barrier. "
+                    f"Evidence: {v.detail}",
+                    value="swapped",
+                )
+                return
+            report.add("endpoint_labelling", "FAIL",
+                       f"geometry cannot identify the reactant: {v.detail}",
+                       value="undecidable")
+            return
         if self.labelled_by is None:
             report.add("endpoint_labelling", "ABSTAIN",
                        "how reactant and product were identified is not "
