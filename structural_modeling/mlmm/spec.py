@@ -119,6 +119,12 @@ class ReactionStep:
     # A proton that moves as part of the same step. Omitting a real one produced a
     # +225 kcal/mol endpoint in a previous campaign; a concerted mechanism must
     # declare every coordinate that changes.
+    #
+    # ``proton_coupled`` must be stated. None means "not yet considered" and the
+    # gate abstains, because silence is exactly how a missing proton coordinate
+    # slips through; False is an affirmative claim that this step transfers no
+    # proton, which the gate accepts.
+    proton_coupled: bool | None = None
     proton: AtomRef | None = None
     proton_acceptor: AtomRef | None = None
 
