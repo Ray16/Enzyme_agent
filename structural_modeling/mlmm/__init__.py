@@ -12,6 +12,8 @@ What this package owns is the part the engine cannot know:
                    charges, metals, the coordinates that change
     gate.py        whether a given structure is fit to be computed at all,
                    decided BEFORE any GPU time and failing closed
+    verdict.py     whether a FINISHED profile may be reported as a barrier --
+                   the output gate, fatal rather than advisory
     structure.py   a reader that keeps the things an ML/MM setup lives on
                    (hydrogens, elements, virtual sites) and guesses nothing
 
