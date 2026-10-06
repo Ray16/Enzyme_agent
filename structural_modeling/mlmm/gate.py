@@ -120,6 +120,30 @@ class GateReport:
         }
 
 
+def measure_driven_coordinates(structure: Structure, step) -> dict[str, float]:
+    """Measure every declared bond-change distance on one structure.
+
+    The output feeds ``State.driven_coordinates``, which is what lets the output
+    gate decide which endpoint is the reactant from GEOMETRY instead of trusting
+    a label. Raises rather than guessing: an unresolvable or ambiguous atom
+    reference here would silently produce a coordinate for the wrong copy of a
+    multi-copy ligand, and a trimer has three.
+    """
+    out: dict[str, float] = {}
+    for bc in step.bond_changes:
+        a = structure.select(bc.first.name, resseq=bc.first.resseq,
+                             resname=bc.first.resname, chain=bc.first.chain)
+        b = structure.select(bc.second.name, resseq=bc.second.resseq,
+                             resname=bc.second.resname, chain=bc.second.chain)
+        if bc.key in out:
+            raise StructureError(
+                f"two bond changes share the key {bc.key!r}; qualify their "
+                "AtomRefs so each coordinate is distinguishable"
+            )
+        out[bc.key] = float(np.linalg.norm(a.xyz - b.xyz))
+    return out
+
+
 def check_structure(structure: Structure, spec: MLMMSpec, *,
                     strict: bool = True) -> GateReport:
     """Run the whole battery. Never raises on a bad structure -- it reports."""
