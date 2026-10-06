@@ -123,6 +123,11 @@ class ReactionProfile:
     # and how the endpoints were labelled.
     reaction_mode_overlap: float | None = None
     labelled_by: str | None = None          # "driven_coordinate" | "energy" | None
+    # Did the endpoints, relaxed along the imaginary mode, actually arrive at the
+    # assumed reactant and product? This is the check that correctly caught every
+    # untrustworthy decarboxylase result in the previous campaign, so it is
+    # carried through rather than recomputed.
+    endpoint_mechanism_ok: bool | None = None
     # Provenance: where the numbers came from, so a figure can be traced back.
     provenance: dict[str, str] = field(default_factory=dict)
 
