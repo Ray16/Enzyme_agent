@@ -355,6 +355,36 @@ class ReactionProfile:
         else:
             report.add("endpoints_distinct", "PASS", detail, value=round(best, 3))
 
+        # A concerted step must move EVERY coordinate it declares. Checking only
+        # the largest change lets a partial reaction through: one bond made while
+        # another never breaks is a different mechanism, and in the recorded
+        # corpus exactly that produced a "reactant" that relaxed back to product.
+        declared = {bc.key for bc in getattr(self.step, "bond_changes", ())} \
+            if self.step is not None else set()
+        if len(declared) > 1:
+            unmoved = sorted(
+                k for k in declared
+                if k in moved and moved[k] < MIN_DRIVEN_COORDINATE_CHANGE
+            )
+            unmeasured = sorted(declared - set(moved))
+            if unmoved:
+                report.add(
+                    "all_coordinates_changed", "FAIL",
+                    f"declared coordinate(s) {', '.join(unmoved)} did not change "
+                    f"between the endpoints (<{MIN_DRIVEN_COORDINATE_CHANGE} A) "
+                    "while others did. A concerted step must move all of them; "
+                    "this is a partial reaction, i.e. a different mechanism.",
+                    value=len(unmoved),
+                )
+            elif unmeasured:
+                report.add("all_coordinates_changed", "ABSTAIN",
+                           f"declared coordinate(s) {', '.join(unmeasured)} were "
+                           "not measured on the endpoints")
+            else:
+                report.add("all_coordinates_changed", "PASS",
+                           f"all {len(declared)} declared coordinates changed",
+                           value=len(declared))
+
     def _check_reaction_mode(self, report: GateReport) -> None:
         if self.transition_state is None:
             return
