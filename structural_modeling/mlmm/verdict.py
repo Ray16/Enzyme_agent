@@ -143,6 +143,7 @@ class ReactionProfile:
         self._check_mode_counts(report)
         self._check_endpoints_distinct(report)
         self._check_reaction_mode(report)
+        self._check_endpoint_mechanism(report)
         self._check_labelling(report)
         self._check_stationarity(report)
         self._check_comparability(report)
