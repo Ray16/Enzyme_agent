@@ -130,3 +130,9 @@ exp_data/amide_synthetase/protenix/step1_1mg/
 # ---- Per-run output snapshots (code+artifacts copied per run; not source) ----
 **/runs/
 enzyme_discovery_agent_2026_0916/runs/
+
+# ---- Lock files held by the mechanism-coordinate cache (runtime only) ----
+# flock sidecars, never source. The cache JSON itself is deliberately NOT listed:
+# whether it is a tracked knowledge asset or a runtime artifact is still open.
+# Path-agnostic: the agent package has been renamed once already.
+**/data/*.lock
