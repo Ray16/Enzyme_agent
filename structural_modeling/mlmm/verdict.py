@@ -74,6 +74,76 @@ class NotReportable(RuntimeError):
 
 
 @dataclass(frozen=True)
+class EndpointVerdict:
+    """Which endpoint the GEOMETRY says is the reactant.
+
+    ``reactant_is`` is "first", "second" or None (undecidable). ``votes`` records
+    the per-coordinate decision so a disagreement is visible rather than averaged
+    away.
+    """
+
+    reactant_is: str | None
+    votes: dict[str, str | None]
+    detail: str
+
+    @property
+    def unanimous(self) -> bool:
+        decided = [v for v in self.votes.values() if v is not None]
+        return bool(decided) and len(set(decided)) == 1
+
+
+def classify_endpoints(step, first: dict[str, float], second: dict[str, float],
+                       *, min_change: float = MIN_DRIVEN_COORDINATE_CHANGE
+                       ) -> EndpointVerdict:
+    """Decide which of two endpoint geometries is the reactant.
+
+    Uses only the declared bond changes: a forming bond is long in the reactant
+    and short in the product; a breaking bond is the reverse. Energy is never
+    consulted, which is the entire point -- for an exothermic reaction the
+    product is the LOWER minimum, so energy order says the opposite of the truth.
+
+    Each coordinate votes independently. Unanimity is required; a split vote
+    means the two structures are not a clean reactant/product pair (one endpoint
+    has moved along one coordinate but not another) and is reported as
+    undecidable rather than resolved by majority.
+    """
+    votes: dict[str, str | None] = {}
+    notes: list[str] = []
+    for bc in step.bond_changes:
+        k = bc.key
+        if k not in first or k not in second:
+            votes[k] = None
+            notes.append(f"{k}: not measured on both endpoints")
+            continue
+        d1, d2 = first[k], second[k]
+        if abs(d1 - d2) < min_change:
+            votes[k] = None
+            notes.append(f"{k}: {d1:.2f} vs {d2:.2f} A -- unchanged "
+                         f"(<{min_change} A), no information")
+            continue
+        if bc.reactant_is_longer:
+            winner = "first" if d1 > d2 else "second"
+            why = "forms, so the reactant is the longer one"
+        else:
+            winner = "first" if d1 < d2 else "second"
+            why = "breaks, so the reactant is the shorter one"
+        votes[k] = winner
+        notes.append(f"{k}: {d1:.2f} vs {d2:.2f} A -- {why} => {winner}")
+
+    decided = [v for v in votes.values() if v is not None]
+    if not decided:
+        return EndpointVerdict(None, votes,
+                               "no coordinate changed enough to decide; "
+                               + "; ".join(notes))
+    if len(set(decided)) > 1:
+        return EndpointVerdict(None, votes,
+                               "coordinates DISAGREE on which endpoint is the "
+                               "reactant, so these two structures are not a "
+                               "clean reactant/product pair; " + "; ".join(notes))
+    return EndpointVerdict(decided[0], votes, "; ".join(notes))
+
+
+@dataclass(frozen=True)
 class State:
     """One point on the profile, with the evidence needed to judge it.
 
