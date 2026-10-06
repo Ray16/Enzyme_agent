@@ -709,6 +709,24 @@ def kcal(value: float, unit: str) -> float:
     raise ValueError(f"unknown energy unit {unit!r}")
 
 
+def ev_per_a(value: float, unit: str) -> float:
+    """Convert a max-force to eV/A from atomic units, eV/A or kcal/mol/A, or raise.
+
+    Optimizer logs use E_h/a_0; ``State.max_force_ev_per_a`` and
+    ``MAX_FORCE_TOL_EV_PER_A`` use eV/A. Explicit, for the same reason as
+    ``kcal``: the two differ by ~51x, which is the difference between "converged"
+    and "nowhere near".
+    """
+    u = unit.strip().lower().replace(" ", "")
+    if u in ("ev/a", "ev/ang", "ev/angstrom"):
+        return float(value)
+    if u in ("hartree/bohr", "eh/a0", "eh/bohr", "au", "a.u."):
+        return float(value) * HARTREE_PER_BOHR_TO_EV_PER_A
+    if u in ("kcal/mol/a", "kcal/a"):
+        return float(value) / EV_TO_KCAL
+    raise ValueError(f"unknown force unit {unit!r}")
+
+
 def imaginary_from_frequencies(freqs_cm: list[complex] | list[float],
                                *, threshold_cm: float = IMAGINARY_THRESHOLD_CM
                                ) -> tuple[int, tuple[float, ...]]:
