@@ -11,7 +11,7 @@ ROOT = Path("/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent")
 HERE = ROOT / "exp_data/nylon_hydrolase/analysis/selectivity_proxy_20261009"
 ACT = ROOT / "exp_data/nylon_hydrolase/amide_hydrolase_biorep_activity.csv"
 FEAT = ROOT / "exp_data/nylon_hydrolase/analysis/proxy_verification_20261008/qc/features_complete50.csv"
-CLASH = sys.argv[1] if len(sys.argv) > 1 else "1.4"
+DESC_FILE = sys.argv[1] if len(sys.argv) > 1 else "ligand_axis_per_enzyme.csv"
 
 # activity
 act = {}
@@ -21,11 +21,16 @@ for r in csv.DictReader(open(ACT)):
         act[r["enzyme"]] = dict(l1=l1, l2=l2, tot=l1 + l2,
                                 frac=l1 / (l1 + l2) if (l1 + l2) > 0 else np.nan,
                                 l2sig=r["L2_significant"] in ("1", "True", "TRUE"))
-# alpha length
-alen = {r["id"]: float(r["alpha_len"]) for r in csv.DictReader(open(FEAT))}
+# alpha length (broad-search feature table covers all 95; take first row per id)
+BROAD = ROOT / "exp_data/nylon_hydrolase/analysis/broad_proxy_search_20261008/features/features.csv"
+alen = {}
+for r in csv.DictReader(open(BROAD)):
+    k = r.get("id") or r.get("enzyme")
+    if k not in alen and r.get("alpha_len"):
+        alen[k] = float(r["alpha_len"])
 # descriptor
 desc = {r["id"]: dict(asymmetry=float(r["asymmetry"]), distal_capacity=float(r["distal_capacity"]))
-        for r in csv.DictReader(open(HERE / f"per_enzyme_clash{CLASH}.csv"))}
+        for r in csv.DictReader(open(HERE / DESC_FILE))}
 
 DESCS = {"asymmetry": +1, "distal_capacity": -1}  # sign = pre-registered direction wrt frac_L1
 
