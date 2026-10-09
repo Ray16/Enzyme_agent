@@ -170,3 +170,34 @@ relevant one. No asymmetry value has been correlated with frac_L1 at the time of
 
 Everything else in §§1,2,4,5,6 is unchanged. Direction still fixed a priori: higher asymmetry
 → higher frac_L1.
+
+---
+
+## AMENDMENT 2 (2026-10-09) — descriptor operationalization
+
+**Why:** the amendment-1 beam-search threading descriptor **saturates**: on the ground-truth
+crystals (`thread_results.json`, max_len 20) it hits the length cap (42) on 4/6 catalytic sites;
+only NylC-GYAQ chA gave a non-capped value (33). With `min_depth=0` the chain is not confined to
+the tunnel, and raising the cap just lets it wander unphysically. So it fails the §3 dynamic-range /
+interpretability requirement and cannot deliver a valid test as specified. (This is the same
+"no stable value" failure the groove-volume observable hit in fig3.)
+
+**Replacement descriptor — ligand-axis tunnel-clearance asymmetry** (`ligand_axis.py`): the bound
+cofold ligand defines the tunnel axis (ligand PCA); from the catalytic Thr projection, walk the
+axis both ways and record the arc length until protein clearance drops below a 1.6 Å probe
+(tunnel closes). Terminates naturally — no length cap, no depth threshold.
+- `asymmetry = (ext_long - ext_short)/(ext_long + ext_short)` [primary]
+- `distal_extent = ext_short` [secondary]
+- Direction fixed a priori (in code, before any stats): higher asymmetry / shorter distal_extent
+  → higher frac_L1 (exo = short distal tract = monomer).
+
+**Known failure mode, declared up front:** when the capped ligand curls rather than lying along the
+tunnel, the PCA axis hits wall immediately and returns ~0 (seen for Nyl50, Nyl47). Poses whose
+origin clearance is already < probe (`total_extent <= 2*STEP`) are flagged `axis_fail` and excluded
+per site; an enzyme with no usable site is "missing", never 0.
+
+**Discipline:** this is run ONCE on the full QC panel with the direction above; the outcome is
+reported whatever it is (including null or wrong-signed). No further descriptor will be tried and
+selected on this endpoint — that would be p-hacking. A glance at 5 enzymes' asymmetry values
+(not their stats) during tool validation is noted as minor contamination; the selection-corrected
+null + α-length covariate on the full panel is the actual test. Decision rule §5 unchanged.

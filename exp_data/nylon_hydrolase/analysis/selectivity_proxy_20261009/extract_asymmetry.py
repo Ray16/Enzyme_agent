@@ -63,28 +63,83 @@ def prot_tuples(chains):
     return out
 
 
-def arm_lengths(prot, nuc, clash=1.4, seed=0):
-    """Rerun capacity's search but keep the two arm lengths separately."""
+# --- single-threaded copies of thread_chain.bulk_tree / grow (workers=1) ---
+# The shared tool hardcodes workers=-1 (every cKDTree query grabs all cores); under
+# process-level parallelism that oversubscribes a shared node. These copies force
+# workers=1 so N processes use exactly N cores. Logic is otherwise identical.
+from scipy.spatial import cKDTree  # noqa: E402
+
+
+def _bulk_tree(coords, radii, centre, box=32.0, spacing=0.7, water=1.4):
+    from scipy import ndimage
+    lo = centre - box
+    n = int(2 * box / spacing) + 1
+    ax = lo[:, None] + np.arange(n) * spacing
+    G = np.stack(np.meshgrid(ax[0], ax[1], ax[2], indexing="ij"), -1)
+    t = cKDTree(coords)
+    d, i = t.query(G.reshape(-1, 3), workers=1)
+    free = ((d - radii[i]) >= water).reshape(G.shape[:3])
+    lab, _ = ndimage.label(free)
+    edge = set(lab[0].ravel()) | set(lab[-1].ravel()) | set(lab[:, 0].ravel()) | \
+        set(lab[:, -1].ravel()) | set(lab[:, :, 0].ravel()) | set(lab[:, :, -1].ravel())
+    edge.discard(0)
+    mask = np.isin(lab, list(edge))
+    pts = lo + np.argwhere(mask) * spacing
+    return cKDTree(pts) if len(pts) else None
+
+
+def _grow(tree, radii, p0, p1, clash, max_len, beam, btree=None, min_depth=0.0):
+    beams = np.array([[p0, p1]], dtype=float)
+    best = beams[0]
+    for _ in range(max_len):
+        B, L, _ = beams.shape
+        cand = np.stack([tcmod.candidates(b[-2], b[-1]) for b in beams])
+        K = cand.shape[1]
+        flat = cand.reshape(-1, 3)
+        d, i = tree.query(flat, workers=1)
+        clear = (d - radii[i]).reshape(B, K)
+        ok = clear >= clash
+        if L > 3:
+            prev = beams[:, :-3, :]
+            dd = np.linalg.norm(cand[:, :, None, :] - prev[:, None, :, :], axis=-1)
+            ok &= dd.min(axis=2) >= 2.8
+        depth = None
+        if btree is not None:
+            depth = btree.query(flat, workers=1)[0].reshape(B, K)
+            ok &= depth > min_depth
+        bi, ki = np.nonzero(ok)
+        if not len(bi):
+            break
+        key = -depth[bi, ki] if btree is not None else clear[bi, ki]
+        order = np.argsort(key)[:beam]
+        bi, ki = bi[order], ki[order]
+        beams = np.concatenate([beams[bi], cand[bi, ki][:, None, :]], axis=1)
+        if beams.shape[1] > len(best):
+            best = beams[0]
+    return len(best), np.array(best)
+
+
+def arm_lengths(prot, nuc, clash=1.4, seed=0, n_seed=8, n_second=2, beam=60):
+    """capacity's bidirectional search, single-threaded, keeping the two arm lengths."""
     rng = np.random.default_rng(seed)
     coords = np.array([a[5] for a in prot])
     radii = np.array([tcmod.VDW[a[4]] for a in prot])
-    from scipy.spatial import cKDTree
     tree = cKDTree(coords)
-    btree = tcmod.bulk_tree(coords, radii, nuc)
+    btree = _bulk_tree(coords, radii, nuc)
     dirs = rng.normal(size=(2000, 3)); dirs /= np.linalg.norm(dirs, axis=1, keepdims=True)
     seeds = nuc + 3.0 * dirs
-    d, i = tree.query(seeds, workers=-1)
-    seeds = seeds[(d - radii[i]) >= clash][:10]
+    d, i = tree.query(seeds, workers=1)
+    seeds = seeds[(d - radii[i]) >= clash][:n_seed]
     if not len(seeds):
         return 0, 0
     best = (-1, 0, 0)
     for s in seeds:
         c2 = s + 1.49 * dirs[:200]
-        d2, i2 = tree.query(c2, workers=-1)
-        c2 = c2[(d2 - radii[i2]) >= clash][:3]
+        d2, i2 = tree.query(c2, workers=1)
+        c2 = c2[(d2 - radii[i2]) >= clash][:n_second]
         for b in c2:
-            lf, _ = tcmod.grow(tree, radii, s, b, clash, 40, 120, btree, 0.0)
-            lb, _ = tcmod.grow(tree, radii, b, s, clash, 40, 120, btree, 0.0)
+            lf, _ = _grow(tree, radii, s, b, clash, 40, beam, btree, 0.0)
+            lb, _ = _grow(tree, radii, b, s, clash, 40, beam, btree, 0.0)
             if lf + lb > best[0]:
                 best = (lf + lb, lf, lb)
     return best[1], best[2]
