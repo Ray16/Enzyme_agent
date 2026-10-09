@@ -140,3 +140,33 @@ No fourth descriptor will be added. Composite/learned scores are **excluded** (s
 Descriptor extraction reads only structures, never the activity CSV. Ranking/validation reads
 activity. No descriptor direction, cohort, or threshold defined in §§1–5 may change after this file
 is committed. See [[feedback_data_leakage]].
+
+---
+
+## AMENDMENT 1 (2026-10-09, before any asymmetry-vs-label computation)
+
+**Change:** the descriptor is computed on the **holo (αβ)₂ dimer cofolds**, not the apo AF2
+tetramers. **Empirical reason, not outcome-driven:** the apo tunnel is closed — at the catalytic
+Thr Oγ1 of apo `nyl50.pdb` there are **0 clash-free seed positions** at a 1.4 Å probe (9 at 1.0 Å),
+so no tunnel exists to thread. The holo cofold, whose tunnel is opened by the bound substrate
+(induced fit), gives **120–129 clash-free seeds** at 1.4 Å. Confirmed the cofold ligand sits
+2.58–2.60 Å from both catalytic Thr Oγ1 (near-attack), so the open tunnel is the physiologically
+relevant one. No asymmetry value has been correlated with frac_L1 at the time of this amendment.
+
+**Consequent frozen choices:**
+- Structures: `dimer_panel_cofold/capped/<id>/.../<id>_model_*.pdb`, QC-passing poses only
+  (`proxy_verification_20261008/qc/model_qc.csv`, `qc_pass == True`).
+- Catalytic Thr = β-subunit N-terminus (min resseq of each β chain), atom Oγ1. Two catalytic
+  sites per dimer (β chains B and D).
+- **Ligand (LIG) excluded** from the clash coordinate set (trap #6): the probe measures the
+  protein tunnel, not the bound substrate.
+- Threading params: `clash=1.4` (primary; 1.2 reported as sensitivity), `n_seed=8`, `n_second=2`,
+  `beam=60`, `max_len=40`. Reduced from tool defaults for runtime; stability vs defaults spot-checked.
+- Aggregation: per enzyme = mean of `asymmetry` over the first **up to 8** QC-passing poses × 2
+  β-sites. `distal_capacity = mean L_short` likewise. (`bottleneck_distal` deferred unless the
+  primary shows signal, to keep the multiplicity count honest — if computed it enters the BH set.)
+- Cohort: the n=38 (`L2_significant==1`) and n=26 (total≥1.0) cohorts of §2, **intersected with the
+  QC-passing cofold panel**; the realized n is reported.
+
+Everything else in §§1,2,4,5,6 is unchanged. Direction still fixed a priori: higher asymmetry
+→ higher frac_L1.
