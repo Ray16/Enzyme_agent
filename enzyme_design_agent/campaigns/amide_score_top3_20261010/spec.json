@@ -1,0 +1,435 @@
+{
+ "schema_version": "saturation-1",
+ "selection_evidence": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260917_135330_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl/gs_oligomer_refold/discovery_shortlist_gs_corrected.csv",
+ "selection_policy": "Top three tier-A candidates by proximity-weighted angle A that are not already running in amide_interface_20261010. Ranked on the structural score alone, as requested; substrate_fit was NOT used and is 0.0 for all three. A is unvalidated against activity (rho=-0.072, p=0.63 on the 49-member SfaB panel).",
+ "metrics": {
+  "angle": "sum(angle_i/d_i)/sum(1/d_i); larger is favorable",
+  "distance": "N/sum(1/d_i); smaller is favorable"
+ },
+ "n_samples": 50,
+ "seed": 20261010,
+ "cutoff_A": 5.0,
+ "scaffold_policy": "Union of residues simultaneously <=5 A from ATP heavy atoms and donor carboxylate oxygens in at least one of 50 WT poses. Counts retained; no cross-pose mixing of the two contacts.",
+ "interpretation": "Exploratory monomeric first-step geometry. No activity or native-assembly claim. Report both deltas and sampling uncertainty; do not combine metrics.",
+ "ranking_policy": "Rank by delta proximity-weighted angle versus matched WT only. Harmonic distance is a diagnostic, not a score or a cutoff.",
+ "folding_implementation": "Stock Boltz-2 in explicit FP32, process-local guarded serial sample cap; 50 samples, 3 recycles, 200 diffusion steps; fresh MSAs.",
+ "candidates": [
+  {
+   "id": "Q5UR44",
+   "name": "Q5UR44",
+   "structure_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_0.pdb",
+   "sequence": "MSGNSFERSDESNEQSSISIIEYVWIGGNGELRSKTRVLYSSIMTGYKLSDIPVWNYDGSSTNQANGSSSEVFLYPRNIYRCPFRRNVNGVIVICDTYDVNGVPLETNHRHNANIIFEKYQNEKPWYGLEQEYFIFRKDTNQPIGMEYASKQGQYYCSVGSQNAYGRRISDEHMEACLYAGIKISGTNLEVAPGQHEFQIGPVEGIDAADQLWIARFILEKISEHYDRYIVYHPKPLQGDWNGSGCHTNFSTESMRSEGGLTVIMEAVDKLRTKHSEHMKVYGIDNDLRLTGDHETASIDEFSHGIGSRQCSVRIPNDTVKNGYGYFEDRRPAANIDPYQVTSIILQTVCESD",
+   "protein_chain": "A",
+   "anchor": "E",
+   "components": [
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "phosphate": "PG",
+   "wt_ensemble_dir": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44",
+   "selection_reason": "Tier-A by proximity-weighted angle A in the GS-corrected discovery shortlist (gs_oligomer_refold/discovery_shortlist_gs_corrected.csv); pocket_verdict OK under template-grafted oligomer completion (1FPY/2QC8). Selected on structural score only: substrate_fit is 0.0 (native chemistry is glutamate+ammonium, not a dicarboxylate+diamine).",
+   "assembly_status": "Monomeric first-step model, retained for matched comparison with the WT ensemble. GS catalytic site is >=98.8%% intra-subunit at 5 A in 1FPY (measured); the partner contributes a capping loop (Asp50-prime/Ser53-prime) that a monomer cannot represent and that saturation cannot mutate.",
+   "boltz_input": {
+    "version": 1,
+    "sequences": [
+     {
+      "protein": {
+       "id": "A",
+       "sequence": "MSGNSFERSDESNEQSSISIIEYVWIGGNGELRSKTRVLYSSIMTGYKLSDIPVWNYDGSSTNQANGSSSEVFLYPRNIYRCPFRRNVNGVIVICDTYDVNGVPLETNHRHNANIIFEKYQNEKPWYGLEQEYFIFRKDTNQPIGMEYASKQGQYYCSVGSQNAYGRRISDEHMEACLYAGIKISGTNLEVAPGQHEFQIGPVEGIDAADQLWIARFILEKISEHYDRYIVYHPKPLQGDWNGSGCHTNFSTESMRSEGGLTVIMEAVDKLRTKHSEHMKVYGIDNDLRLTGDHETASIDEFSHGIGSRQCSVRIPNDTVKNGYGYFEDRRPAANIDPYQVTSIILQTVCESD"
+      }
+     },
+     {
+      "ligand": {
+       "id": "B",
+       "ccd": "ATP"
+      }
+     },
+     {
+      "ligand": {
+       "id": "C",
+       "ccd": "MG"
+      }
+     },
+     {
+      "ligand": {
+       "id": "D",
+       "ccd": "MG"
+      }
+     },
+     {
+      "ligand": {
+       "id": "E",
+       "smiles": "[O-]C(=O)CCCCC(=O)[O-]"
+      }
+     }
+    ]
+   },
+   "ensemble_paths": [
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_0.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_1.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_10.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_11.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_12.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_13.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_14.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_15.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_16.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_17.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_18.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_19.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_2.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_20.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_21.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_22.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_23.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_24.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_25.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_26.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_27.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_28.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_29.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_3.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_30.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_31.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_32.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_33.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_34.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_35.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_36.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_37.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_38.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_39.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_4.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_40.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_41.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_42.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_43.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_44.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_45.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_46.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_47.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_48.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_49.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_5.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_6.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_7.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_8.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q5UR44/boltz_results_step1_Q5UR44/predictions/step1_Q5UR44/step1_Q5UR44_model_9.pdb"
+   ],
+   "interface": {
+    "fragment_a": {
+     "chain": "B"
+    },
+    "fragment_b": {
+     "chain": "E",
+     "elements": [
+      "O"
+     ],
+     "n_atoms": 4
+    },
+    "min_contact_poses": 1
+   },
+   "geometry": {
+    "donor": {
+     "chain": "E",
+     "elements": [
+      "O"
+     ],
+     "n_atoms": 4
+    },
+    "electrophile": {
+     "chain": "B",
+     "atom_names": [
+      "PG"
+     ]
+    },
+    "leaving": {
+     "chain": "B",
+     "atom_names": [
+      "O3B"
+     ]
+    }
+   }
+  },
+  {
+   "id": "Q54WR9",
+   "name": "glnA3",
+   "structure_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_0.pdb",
+   "sequence": "MSNRRREFIEYIDSREPVEADIDISDKADRLTDIYDSDTYGLNAMRETLPSHCYKKIREVMQTGSALDPEIADMVANGMKEWAIKQGATHYCHWFLPLNGLAAEKHDSFISIFPGDDKVLLEFSGMQLIKGEPDASSFPSGGIRSTWEARGYTVWDATSPAFIRREKNGAILCIPTAFCSWTGEALDQKTPLLRSMEYVSNESIITLSSLFNEKHKRISPTLGIEQEFFLIDRKFYLARPDLVNCGRTLIGAKPPKGQEMEDHYFGTMNSRIISCIQEVEWKMWRLGMPLKTRHNEVAPGQYEVAPIFERANIAADHNMMLMDILKNVSTKHGLVCLFHEKPFAGVNGSGKHNNWSLSTDGGSNLLEPGHTPSQNARFILFLTAIIRAVDIHADLLRASVAVPGNEHRLGANEAPPAIISIYLGKELDTVINNIINNTDIQAPGSDDMDLGVVGFPPLPKDSTDRNRTSPFAFTGNKFEFRAVGSSQVVNFPCIVLNTIVAESLRFIREEILREMKVSSRQTAFNKIIKDTLIQHVRVVFNGDGYSGDWKELAKSRGLANLPSTPEALTNINSEKNIKLFSESNILSPVELESRQEILFEIYNKSIKIEANSLYDLVSTLVLPACFAHQKNIAESVNSIMPFIQSQKSFSQPNHQYSHLSEVVESVNLLIEANQKLLALIKQTKDFNSEHSLATFLNQSVIPQMNEVRKFSDHLEGIVEDKSWPVPKYSEILFLR",
+   "protein_chain": "A",
+   "anchor": "E",
+   "components": [
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "phosphate": "PG",
+   "wt_ensemble_dir": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9",
+   "selection_reason": "Tier-A by proximity-weighted angle A in the GS-corrected discovery shortlist (gs_oligomer_refold/discovery_shortlist_gs_corrected.csv); pocket_verdict OK under template-grafted oligomer completion (1FPY/2QC8). Selected on structural score only: substrate_fit is 0.0 (native chemistry is glutamate+ammonium, not a dicarboxylate+diamine).",
+   "assembly_status": "Monomeric first-step model, retained for matched comparison with the WT ensemble. GS catalytic site is >=98.8%% intra-subunit at 5 A in 1FPY (measured); the partner contributes a capping loop (Asp50-prime/Ser53-prime) that a monomer cannot represent and that saturation cannot mutate.",
+   "boltz_input": {
+    "version": 1,
+    "sequences": [
+     {
+      "protein": {
+       "id": "A",
+       "sequence": "MSNRRREFIEYIDSREPVEADIDISDKADRLTDIYDSDTYGLNAMRETLPSHCYKKIREVMQTGSALDPEIADMVANGMKEWAIKQGATHYCHWFLPLNGLAAEKHDSFISIFPGDDKVLLEFSGMQLIKGEPDASSFPSGGIRSTWEARGYTVWDATSPAFIRREKNGAILCIPTAFCSWTGEALDQKTPLLRSMEYVSNESIITLSSLFNEKHKRISPTLGIEQEFFLIDRKFYLARPDLVNCGRTLIGAKPPKGQEMEDHYFGTMNSRIISCIQEVEWKMWRLGMPLKTRHNEVAPGQYEVAPIFERANIAADHNMMLMDILKNVSTKHGLVCLFHEKPFAGVNGSGKHNNWSLSTDGGSNLLEPGHTPSQNARFILFLTAIIRAVDIHADLLRASVAVPGNEHRLGANEAPPAIISIYLGKELDTVINNIINNTDIQAPGSDDMDLGVVGFPPLPKDSTDRNRTSPFAFTGNKFEFRAVGSSQVVNFPCIVLNTIVAESLRFIREEILREMKVSSRQTAFNKIIKDTLIQHVRVVFNGDGYSGDWKELAKSRGLANLPSTPEALTNINSEKNIKLFSESNILSPVELESRQEILFEIYNKSIKIEANSLYDLVSTLVLPACFAHQKNIAESVNSIMPFIQSQKSFSQPNHQYSHLSEVVESVNLLIEANQKLLALIKQTKDFNSEHSLATFLNQSVIPQMNEVRKFSDHLEGIVEDKSWPVPKYSEILFLR"
+      }
+     },
+     {
+      "ligand": {
+       "id": "B",
+       "ccd": "ATP"
+      }
+     },
+     {
+      "ligand": {
+       "id": "C",
+       "ccd": "MG"
+      }
+     },
+     {
+      "ligand": {
+       "id": "D",
+       "ccd": "MG"
+      }
+     },
+     {
+      "ligand": {
+       "id": "E",
+       "smiles": "[O-]C(=O)CCCCC(=O)[O-]"
+      }
+     }
+    ]
+   },
+   "ensemble_paths": [
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_0.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_1.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_10.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_11.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_12.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_13.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_14.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_15.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_16.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_17.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_18.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_19.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_2.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_20.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_21.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_22.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_23.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_24.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_25.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_26.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_27.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_28.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_29.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_3.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_30.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_31.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_32.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_33.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_34.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_35.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_36.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_37.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_38.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_39.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_4.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_40.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_41.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_42.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_43.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_44.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_45.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_46.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_47.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_48.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_49.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_5.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_6.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_7.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_8.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_Q54WR9/boltz_results_step1_Q54WR9/predictions/step1_Q54WR9/step1_Q54WR9_model_9.pdb"
+   ],
+   "interface": {
+    "fragment_a": {
+     "chain": "B"
+    },
+    "fragment_b": {
+     "chain": "E",
+     "elements": [
+      "O"
+     ],
+     "n_atoms": 4
+    },
+    "min_contact_poses": 1
+   },
+   "geometry": {
+    "donor": {
+     "chain": "E",
+     "elements": [
+      "O"
+     ],
+     "n_atoms": 4
+    },
+    "electrophile": {
+     "chain": "B",
+     "atom_names": [
+      "PG"
+     ]
+    },
+    "leaving": {
+     "chain": "B",
+     "atom_names": [
+      "O3B"
+     ]
+    }
+   }
+  },
+  {
+   "id": "P13564",
+   "name": "P13564",
+   "structure_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_0.pdb",
+   "sequence": "MQVRRDDDGAGGCAGDAVPGGGEGQDGVPARQPAGRVWGVSRAARATSGFKVLALGPETTGVIQRMQQLLDMDTTPFTDKIIAEYIWVGGSGIDLRSKSRTISKPVEDPSELPKWNYDGSSTGQAPGEDSEVILYPQAIFKDPFRGGNNILVICDTYTPQGEPIPTNKRHMAAQIFSDPKVTSQVPWFGIEQEYTLMQRDVNWPLGWPVGGYPGPQGPYYCAVGSDKSFGRDISDAHYKACLYAGIEISGTNGEVMPGQWEYQVGPSVGIDAGDHIWASRYILERITEQAGVVLTLDPKPIQGDWNGAGCHTNYSTLSMREDGGFDVIKKAILNLSLRHDLHIAAYGEGNERRLTGLHETASISDFSWGVANRGCSIRVGRDTEAKGKGYLEDRRPASNMDPYTVTALLAETTILWEPTLEAEALAAKKLALKV",
+   "protein_chain": "A",
+   "anchor": "E",
+   "components": [
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "phosphate": "PG",
+   "wt_ensemble_dir": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564",
+   "selection_reason": "Tier-A by proximity-weighted angle A in the GS-corrected discovery shortlist (gs_oligomer_refold/discovery_shortlist_gs_corrected.csv); pocket_verdict OK under template-grafted oligomer completion (1FPY/2QC8). Selected on structural score only: substrate_fit is 0.0 (native chemistry is glutamate+ammonium, not a dicarboxylate+diamine).",
+   "assembly_status": "Monomeric first-step model, retained for matched comparison with the WT ensemble. GS catalytic site is >=98.8%% intra-subunit at 5 A in 1FPY (measured); the partner contributes a capping loop (Asp50-prime/Ser53-prime) that a monomer cannot represent and that saturation cannot mutate.",
+   "boltz_input": {
+    "version": 1,
+    "sequences": [
+     {
+      "protein": {
+       "id": "A",
+       "sequence": "MQVRRDDDGAGGCAGDAVPGGGEGQDGVPARQPAGRVWGVSRAARATSGFKVLALGPETTGVIQRMQQLLDMDTTPFTDKIIAEYIWVGGSGIDLRSKSRTISKPVEDPSELPKWNYDGSSTGQAPGEDSEVILYPQAIFKDPFRGGNNILVICDTYTPQGEPIPTNKRHMAAQIFSDPKVTSQVPWFGIEQEYTLMQRDVNWPLGWPVGGYPGPQGPYYCAVGSDKSFGRDISDAHYKACLYAGIEISGTNGEVMPGQWEYQVGPSVGIDAGDHIWASRYILERITEQAGVVLTLDPKPIQGDWNGAGCHTNYSTLSMREDGGFDVIKKAILNLSLRHDLHIAAYGEGNERRLTGLHETASISDFSWGVANRGCSIRVGRDTEAKGKGYLEDRRPASNMDPYTVTALLAETTILWEPTLEAEALAAKKLALKV"
+      }
+     },
+     {
+      "ligand": {
+       "id": "B",
+       "ccd": "ATP"
+      }
+     },
+     {
+      "ligand": {
+       "id": "C",
+       "ccd": "MG"
+      }
+     },
+     {
+      "ligand": {
+       "id": "D",
+       "ccd": "MG"
+      }
+     },
+     {
+      "ligand": {
+       "id": "E",
+       "smiles": "[O-]C(=O)CCCCC(=O)[O-]"
+      }
+     }
+    ]
+   },
+   "ensemble_paths": [
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_0.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_1.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_10.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_11.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_12.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_13.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_14.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_15.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_16.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_17.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_18.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_19.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_2.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_20.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_21.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_22.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_23.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_24.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_25.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_26.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_27.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_28.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_29.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_3.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_30.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_31.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_32.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_33.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_34.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_35.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_36.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_37.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_38.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_39.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_4.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_40.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_41.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_42.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_43.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_44.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_45.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_46.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_47.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_48.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_49.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_5.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_6.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_7.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_8.pdb",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/campaigns/amide_activation/modeling/results/output_configs/step1_P13564/boltz_results_step1_P13564/predictions/step1_P13564/step1_P13564_model_9.pdb"
+   ],
+   "interface": {
+    "fragment_a": {
+     "chain": "B"
+    },
+    "fragment_b": {
+     "chain": "E",
+     "elements": [
+      "O"
+     ],
+     "n_atoms": 4
+    },
+    "min_contact_poses": 1
+   },
+   "geometry": {
+    "donor": {
+     "chain": "E",
+     "elements": [
+      "O"
+     ],
+     "n_atoms": 4
+    },
+    "electrophile": {
+     "chain": "B",
+     "atom_names": [
+      "PG"
+     ]
+    },
+    "leaving": {
+     "chain": "B",
+     "atom_names": [
+      "O3B"
+     ]
+    }
+   }
+  }
+ ]
+}

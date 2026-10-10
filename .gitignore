@@ -162,3 +162,6 @@ structural_modeling/cofold/*/msa_cache/
 structural_modeling/cofold/*/logs/
 structural_modeling/cofold/*/step1/
 structural_modeling/cofold/*/gs_oligomer_refold/
+enzyme_design_agent/campaigns/*/results/
+enzyme_design_agent/campaigns/*/msa/
+enzyme_design_agent/campaigns/*/archive/
