@@ -136,3 +136,29 @@ enzyme_discovery_agent_2026_0916/runs/
 # whether it is a tracked knowledge asset or a runtime artifact is still open.
 # Path-agnostic: the agent package has been renamed once already.
 **/data/*.lock
+
+# ---- nylon_hydrolase: 2026-10-09 reorganization (see exp_data/nylon_hydrolase/README.md) ----
+# Heavy prediction/QC outputs stay on disk, as before the move. Code, READMEs, the proxy
+# ledger and the small panel-level tables ARE tracked.
+exp_data/nylon_hydrolase/cofolding/
+exp_data/nylon_hydrolase/qc/
+exp_data/nylon_hydrolase/data/paper/final_af2_dp95_zenodo/
+exp_data/nylon_hydrolase/archive/
+exp_data/nylon_hydrolase/regioselectivity_repro/
+exp_data/nylon_hydrolase/manuscript/manuscript_update_20261007/
+# Keep protocols, source, and compact result tables reviewable; ignore runtime caches.
+exp_data/nylon_hydrolase/structural_proxies/attempts/**/poses.json
+exp_data/nylon_hydrolase/structural_proxies/attempts/**/pose_cache*.json
+exp_data/nylon_hydrolase/structural_proxies/attempts/**/snapshot.json
+exp_data/nylon_hydrolase/structural_proxies/attempts/**/permutations*.npz
+
+# structural_modeling/cofold: restored discovery-run modeling (5.6 GB).
+# Keep the small provenance artifacts (README, candidates/manifest CSVs, analysis JSON);
+# never commit the prediction trees, MSA caches or refold scratch.
+structural_modeling/cofold/*/results/
+structural_modeling/cofold/*/results_*/
+structural_modeling/cofold/*/msa/
+structural_modeling/cofold/*/msa_cache/
+structural_modeling/cofold/*/logs/
+structural_modeling/cofold/*/step1/
+structural_modeling/cofold/*/gs_oligomer_refold/

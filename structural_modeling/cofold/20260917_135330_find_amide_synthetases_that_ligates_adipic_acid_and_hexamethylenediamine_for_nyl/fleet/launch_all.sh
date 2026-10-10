@@ -4,7 +4,7 @@
 # Claim-based + resumable: safe to re-run; already-done items are skipped, and a worker
 # joining late just claims whatever is left. Freeness/no-contention come from the gate.
 set -eo pipefail
-FLEET=/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260917_135330_canonical/fleet
+FLEET=/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260917_135330_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl/fleet
 GR=/nfs/lambda_stor_01/homes/rzhu/bin/gpu_reserve
 EXCLUDE="lambda3 lambda9"          # unreachable / no home mount
 MAX=${1:-10}                        # courtesy cap: leave headroom on the shared fleet

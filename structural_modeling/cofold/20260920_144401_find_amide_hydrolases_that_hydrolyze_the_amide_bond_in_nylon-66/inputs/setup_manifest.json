@@ -1,0 +1,274 @@
+{
+  "candidates": {
+    "A0A087VPB4": {
+      "assembly": "monomer",
+      "assembly_src": "default:no annotation",
+      "caveat": "NON_TER at both residue 1 and 459 - sequence fragment, incomplete at both ends; fold will be truncated",
+      "copies": 1,
+      "family": "cn_hydrolase",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "Biotinidase (Balearica regulorum gibbericeps)",
+      "nucleophile": [
+        "CYS",
+        188
+      ],
+      "nucleophile_kind": "cysteine",
+      "protein_chains": 1,
+      "protein_residues": 459,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/A0A087VPB4.yaml"
+    },
+    "A0A091CM89": {
+      "assembly": "homodimer",
+      "assembly_src": "ortholog:Q6GMR7 homodimer at 64% identity",
+      "caveat": "282 aa vs ~530 for full-length FAAH2 - probable partial entry",
+      "copies": 2,
+      "family": "amidase_signature",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "fatty acid amide hydrolase (Fukomys damarensis)",
+      "nucleophile": null,
+      "nucleophile_kind": "serine",
+      "protein_chains": 2,
+      "protein_residues": 564,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/A0A091CM89.yaml"
+    },
+    "A0A0B2A2N2": {
+      "assembly": "monomer",
+      "assembly_src": "family:NylB monomeric (PDB)",
+      "caveat": null,
+      "copies": 1,
+      "family": "beta_lactamase_fold",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "6-aminohexanoate-dimer hydrolase (Microbacterium mangrovi)",
+      "nucleophile": null,
+      "nucleophile_kind": "serine",
+      "protein_chains": 1,
+      "protein_residues": 390,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/A0A0B2A2N2.yaml"
+    },
+    "A0AA47M2G0": {
+      "excluded": "expressed polypeptide is 1681 aa, over the 800 aa expression limit",
+      "name": "Isoaspartyl peptidase/L-asparaginase (Merluccius polli)",
+      "yaml": null
+    },
+    "O25836": {
+      "assembly": "homotetramer",
+      "assembly_src": "uniprot:SUBUNIT",
+      "caveat": null,
+      "copies": 1,
+      "family": "cn_hydrolase",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "AmiF formamidase (Helicobacter pylori)",
+      "nucleophile": [
+        "CYS",
+        166
+      ],
+      "nucleophile_kind": "cysteine",
+      "protein_chains": 1,
+      "protein_residues": 334,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/O25836.yaml"
+    },
+    "O52063": {
+      "assembly": "homotetramer",
+      "assembly_src": "uniprot:SUBUNIT",
+      "caveat": null,
+      "copies": 1,
+      "family": "metallo_amidohydrolase",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 1,
+      "name": "AtzC N-isopropylammelide isopropyl amidohydrolase",
+      "nucleophile": null,
+      "nucleophile_kind": "zinc_hydroxide",
+      "protein_chains": 1,
+      "protein_residues": 403,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/O52063.yaml"
+    },
+    "P07061": {
+      "assembly": "monomer",
+      "assembly_src": "pdb:2E8I assembly 1 monomeric",
+      "caveat": null,
+      "copies": 1,
+      "family": "beta_lactamase_fold",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "NylB 6-aminohexanoate-dimer hydrolase",
+      "nucleophile": [
+        "SER",
+        112
+      ],
+      "nucleophile_kind": "serine",
+      "protein_chains": 1,
+      "protein_residues": 392,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/P07061.yaml"
+    },
+    "P07062": {
+      "assembly": "monomer",
+      "assembly_src": "pdb:1WYB/2E8I assembly 1 monomeric",
+      "caveat": null,
+      "copies": 1,
+      "family": "beta_lactamase_fold",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "NylB' 6-aminohexanoate-dimer hydrolase",
+      "nucleophile": [
+        "SER",
+        112
+      ],
+      "nucleophile_kind": "serine",
+      "protein_chains": 1,
+      "protein_residues": 392,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/P07062.yaml"
+    },
+    "P07662": {
+      "assembly": "heterotetramer of 2 alpha + 2 beta",
+      "assembly_src": "uniprot:SUBUNIT",
+      "caveat": null,
+      "copies": 2,
+      "family": "ntn_hydrolase_s45",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "Glutaryl-7-aminocephalosporanic-acid acylase",
+      "nucleophile": [
+        "SER",
+        199
+      ],
+      "nucleophile_kind": "ntn_serine",
+      "protein_chains": 4,
+      "protein_residues": 1364,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/P07662.yaml"
+    },
+    "P11436": {
+      "assembly": "homohexamer",
+      "assembly_src": "uniprot:SUBUNIT",
+      "caveat": null,
+      "copies": 1,
+      "family": "cn_hydrolase",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "AmiE aliphatic amidase (Pseudomonas aeruginosa)",
+      "nucleophile": [
+        "CYS",
+        166
+      ],
+      "nucleophile_kind": "cysteine",
+      "protein_chains": 1,
+      "protein_residues": 346,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/P11436.yaml"
+    },
+    "P13398": {
+      "assembly": "homodimer",
+      "assembly_src": "uniprot:SUBUNIT",
+      "caveat": null,
+      "copies": 1,
+      "family": "amidase_signature",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "NylA 6-aminohexanoate-cyclic-dimer hydrolase",
+      "nucleophile": [
+        "SER",
+        174
+      ],
+      "nucleophile_kind": "serine",
+      "protein_chains": 1,
+      "protein_residues": 493,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/P13398.yaml"
+    },
+    "P95896": {
+      "assembly": "monomer",
+      "assembly_src": "uniprot:SUBUNIT",
+      "caveat": null,
+      "copies": 1,
+      "family": "amidase_signature",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "Amidase (Saccharolobus solfataricus)",
+      "nucleophile": [
+        "SER",
+        195
+      ],
+      "nucleophile_kind": "serine",
+      "protein_chains": 1,
+      "protein_residues": 504,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/P95896.yaml"
+    },
+    "Q05AM4": {
+      "assembly": "homodimer",
+      "assembly_src": "family:Q6GMR7 FAAH2 homodimer",
+      "caveat": null,
+      "copies": 2,
+      "family": "amidase_signature",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "Fatty-acid amide hydrolase 2-B (zebrafish)",
+      "nucleophile": [
+        "SER",
+        227
+      ],
+      "nucleophile_kind": "serine",
+      "protein_chains": 2,
+      "protein_residues": 1052,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/Q05AM4.yaml"
+    },
+    "Q6DH69": {
+      "assembly": "homodimer",
+      "assembly_src": "family:Q6GMR7 FAAH2 homodimer",
+      "caveat": null,
+      "copies": 2,
+      "family": "amidase_signature",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "Fatty-acid amide hydrolase 2-A (zebrafish)",
+      "nucleophile": [
+        "SER",
+        228
+      ],
+      "nucleophile_kind": "serine",
+      "protein_chains": 2,
+      "protein_residues": 1064,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/Q6DH69.yaml"
+    },
+    "Q6GMR7": {
+      "assembly": "homodimer",
+      "assembly_src": "uniprot:SUBUNIT",
+      "caveat": null,
+      "copies": 2,
+      "family": "amidase_signature",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "Fatty-acid amide hydrolase 2 (human)",
+      "nucleophile": [
+        "SER",
+        230
+      ],
+      "nucleophile_kind": "serine",
+      "protein_chains": 2,
+      "protein_residues": 1064,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/Q6GMR7.yaml"
+    },
+    "Q79F77": {
+      "assembly": "heterotetramer (2 alpha + 2 beta)",
+      "assembly_src": "pdb:5XYG/5Y0L/7YU0-2 (2 alpha/beta units); strict heterotetramer reading of uniprot:SUBUNIT (PubMed:29950566)",
+      "caveat": null,
+      "copies": 2,
+      "family": "ntn_hydrolase_s58",
+      "ligand_heavy_atoms": 37,
+      "metal_ions": 0,
+      "name": "NylC 6-aminohexanoate-oligomer endohydrolase",
+      "nucleophile": [
+        "THR",
+        267
+      ],
+      "nucleophile_kind": "ntn_threonine",
+      "protein_chains": 4,
+      "protein_residues": 710,
+      "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260920_144401_find_amide_hydrolases_that_hydrolyze_the_amide_bond_in_nylon-66/inputs/Q79F77.yaml"
+    }
+  },
+  "diffusion_samples": 50,
+  "ligand_smiles": "CC(=O)NCCCCCCNC(=O)CCCCC(=O)NCCCCCCNC(=O)CCCCC(=O)NC",
+  "run": "20260920_144401",
+  "scoring_policy": "unrestrained"
+}

@@ -4,7 +4,7 @@
 # baked into each YAML (proxy_policy.resolve_mechanism, from the UniProt/Rhea reaction).
 # Launched via `gpu_reserve run <idx> -- bash fold_loop.sh`. Claim-based, resumable.
 set -eo pipefail
-BASE=/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260917_135330_canonical
+BASE=/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling/cofold/20260917_135330_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl
 FLEET=$BASE/fleet; CLAIMS=$FLEET/claims; LOGS=$FLEET/logs
 mkdir -p "$CLAIMS" "$LOGS"
 H=$(hostname); G=${CUDA_VISIBLE_DEVICES:-NA}

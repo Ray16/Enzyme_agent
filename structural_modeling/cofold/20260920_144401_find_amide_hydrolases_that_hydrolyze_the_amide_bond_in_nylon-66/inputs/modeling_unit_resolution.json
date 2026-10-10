@@ -1,0 +1,207 @@
+{
+  "A0A087VPB4": {
+    "accession": "A0A087VPB4",
+    "evidence_rank_used": null,
+    "ligand_reach_A": 23.5,
+    "notes": [],
+    "origin": "inference",
+    "rationale": "no structure, no SUBUNIT, no family-level or ortholog donor; modelling the minimal unit as the only defined option",
+    "uniprot_subunit": null,
+    "unit": "functional_unit",
+    "warnings": [
+      "NO EVIDENCE for the oligomeric unit; minimal unit chosen by default"
+    ]
+  },
+  "A0A091CM89": {
+    "accession": "A0A091CM89",
+    "evidence_rank_used": 4.5,
+    "ligand_reach_A": 23.5,
+    "notes": [],
+    "origin": "experience",
+    "rationale": "ortholog transfer from Q6GMR7 at 64% sequence identity: no structural evidence about the site; falling back to the annotated state (Homodimer) as the conservative choice",
+    "uniprot_subunit": null,
+    "unit": "assembly",
+    "warnings": [
+      "ortholog transfer from Q6GMR7 (64% identity)"
+    ]
+  },
+  "A0A0B2A2N2": {
+    "accession": "A0A0B2A2N2",
+    "evidence_rank_used": 5,
+    "ligand_reach_A": 23.5,
+    "notes": [],
+    "origin": "experience",
+    "rationale": "transferred from P07062 (shared InterPro IPR050789), which has liganded evidence: ACA bound in 3VWR: 7% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+    "uniprot_subunit": null,
+    "unit": "functional_unit",
+    "warnings": [
+      "family transfer from P07062; no structure or SUBUNIT for this accession itself"
+    ]
+  },
+  "O25836": {
+    "accession": "O25836",
+    "evidence_rank_used": 5,
+    "ligand_reach_A": 23.5,
+    "notes": [
+      "2E2L assembly 1 (6 chains): catalytic position 166 is 7.5 A from another chain"
+    ],
+    "origin": "experience",
+    "rationale": "transferred from P11436 (shared InterPro IPR050345), which has liganded evidence: C3Y bound in 2UXY: 0% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+    "uniprot_subunit": "Homotetramer",
+    "unit": "functional_unit",
+    "warnings": [
+      "weak positive: proximity shows the assembly MAY matter, not that it does; a liganded structure or a functional-unit/assembly A-B settles it",
+      "family transfer from P11436; no structure or SUBUNIT for this accession itself"
+    ]
+  },
+  "O52063": {
+    "accession": "O52063",
+    "evidence_rank_used": 1,
+    "ligand_reach_A": 23.5,
+    "notes": [
+      "no active site is annotated as the nucleophile; distance measured from an unspecified catalytic residue and may not mark the scissile position",
+      "4CQD assembly 1 (2 chains): MLI contacts {'A': 12}"
+    ],
+    "origin": "database",
+    "rationale": "MLI bound in 4CQD: 0% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+    "uniprot_subunit": "Homotetramer",
+    "unit": "functional_unit",
+    "warnings": []
+  },
+  "P07061": {
+    "accession": "P07061",
+    "evidence_rank_used": 1,
+    "ligand_reach_A": 23.5,
+    "notes": [
+      "no active site is annotated as the nucleophile; distance measured from an unspecified catalytic residue and may not mark the scissile position",
+      "3VWR assembly 1 (2 chains): ACA contacts {'A': 14, 'A-2': 1}"
+    ],
+    "origin": "database",
+    "rationale": "ACA bound in 3VWR: 7% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+    "uniprot_subunit": null,
+    "unit": "functional_unit",
+    "warnings": []
+  },
+  "P07062": {
+    "accession": "P07062",
+    "evidence_rank_used": 1,
+    "ligand_reach_A": 23.5,
+    "notes": [
+      "no active site is annotated as the nucleophile; distance measured from an unspecified catalytic residue and may not mark the scissile position",
+      "3VWR assembly 1 (2 chains): ACA contacts {'A': 14, 'A-2': 1}"
+    ],
+    "origin": "database",
+    "rationale": "ACA bound in 3VWR: 7% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+    "uniprot_subunit": null,
+    "unit": "functional_unit",
+    "warnings": []
+  },
+  "P07662": {
+    "accession": "P07662",
+    "evidence_rank_used": 3,
+    "ligand_reach_A": 23.5,
+    "notes": [
+      "1GK1 assembly 1 (4 chains): catalytic position 199 is 7.7 A from another chain"
+    ],
+    "origin": "database",
+    "rationale": "catalytic site is 7.7 A from the nearest other chain in 1GK1, within the ligand's 23.5 A reach - the neighbour can line the channel of the substrate",
+    "uniprot_subunit": "Heterotetramer of two alpha and two beta subunits processed from the same precursor",
+    "unit": "assembly",
+    "warnings": [
+      "weak positive: proximity shows the assembly MAY matter, not that it does; a liganded structure or a functional-unit/assembly A-B settles it"
+    ]
+  },
+  "P11436": {
+    "accession": "P11436",
+    "evidence_rank_used": 1,
+    "ligand_reach_A": 23.5,
+    "notes": [
+      "2UXY assembly 1 (6 chains): C3Y contacts {'A': 17}"
+    ],
+    "origin": "database",
+    "rationale": "C3Y bound in 2UXY: 0% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+    "uniprot_subunit": "Homohexamer",
+    "unit": "functional_unit",
+    "warnings": []
+  },
+  "P13398": {
+    "accession": "P13398",
+    "evidence_rank_used": 1,
+    "ligand_reach_A": 23.5,
+    "notes": [
+      "3A2Q assembly 2 (2 chains): ACA contacts {'A': 16}"
+    ],
+    "origin": "database",
+    "rationale": "ACA bound in 3A2Q: 0% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+    "uniprot_subunit": "Homodimer",
+    "unit": "functional_unit",
+    "warnings": []
+  },
+  "P95896": {
+    "accession": "P95896",
+    "evidence_rank_used": 4,
+    "ligand_reach_A": 23.5,
+    "notes": [],
+    "origin": "database",
+    "rationale": "no structural evidence about the site; falling back to the annotated state (Monomer) as the conservative choice",
+    "uniprot_subunit": "Monomer",
+    "unit": "assembly",
+    "warnings": [
+      "SUBUNIT answers 'what oligomer exists', not 'does the ligand site need it'; this is a default, not a finding"
+    ]
+  },
+  "Q05AM4": {
+    "accession": "Q05AM4",
+    "evidence_rank_used": 4.5,
+    "ligand_reach_A": 23.5,
+    "notes": [],
+    "origin": "experience",
+    "rationale": "ortholog transfer from Q6GMR7 at 53% sequence identity: no structural evidence about the site; falling back to the annotated state (Homodimer) as the conservative choice",
+    "uniprot_subunit": null,
+    "unit": "assembly",
+    "warnings": [
+      "ortholog transfer from Q6GMR7 (53% identity)"
+    ]
+  },
+  "Q6DH69": {
+    "accession": "Q6DH69",
+    "evidence_rank_used": 4.5,
+    "ligand_reach_A": 23.5,
+    "notes": [],
+    "origin": "experience",
+    "rationale": "ortholog transfer from Q6GMR7 at 57% sequence identity: no structural evidence about the site; falling back to the annotated state (Homodimer) as the conservative choice",
+    "uniprot_subunit": null,
+    "unit": "assembly",
+    "warnings": [
+      "ortholog transfer from Q6GMR7 (57% identity)"
+    ]
+  },
+  "Q6GMR7": {
+    "accession": "Q6GMR7",
+    "evidence_rank_used": 4,
+    "ligand_reach_A": 23.5,
+    "notes": [],
+    "origin": "database",
+    "rationale": "no structural evidence about the site; falling back to the annotated state (Homodimer) as the conservative choice",
+    "uniprot_subunit": "Homodimer",
+    "unit": "assembly",
+    "warnings": [
+      "SUBUNIT answers 'what oligomer exists', not 'does the ligand site need it'; this is a default, not a finding"
+    ]
+  },
+  "Q79F77": {
+    "accession": "Q79F77",
+    "evidence_rank_used": 3,
+    "ligand_reach_A": 23.5,
+    "notes": [
+      "5Y0M assembly 1 (4 chains): catalytic position 267 is 6.5 A from another chain"
+    ],
+    "origin": "database",
+    "rationale": "catalytic site is 6.5 A from the nearest other chain in 5Y0M, within the ligand's 23.5 A reach - the neighbour can line the channel of the substrate",
+    "uniprot_subunit": "Heterotetramer composed of 4 alpha/beta heterodimers (PubMed:29950566). Exists at the monomer/dimer/trimer equilibrium in aqueous solution (PubMed:29950566)",
+    "unit": "assembly",
+    "warnings": [
+      "weak positive: proximity shows the assembly MAY matter, not that it does; a liganded structure or a functional-unit/assembly A-B settles it"
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+rank,accession,gene,interpro_family,mechanism,phosphate,mg_count,mechanism_basis,evidence_scope,seq_length,msa_depth,msa_qc
+9,Q7SH52,arg-3,"Carbamoyl-phosphate synthase, large subunit",acyl-phosphate,PG,2,reaction,reaction_derived,1168,16384,ok
+10,P03965,CPA2,"Carbamoyl-phosphate synthase, large subunit",acyl-phosphate,PG,2,reaction,reaction_derived,1118,16384,ok
+11,O50302,pyrAB,"Carbamoyl-phosphate synthase, large subunit",acyl-phosphate,PG,2,reaction,reaction_derived,1064,16384,ok
+12,B9EXM2,CARB,"Carbamoyl-phosphate synthase, large subunit",acyl-phosphate,PG,2,reaction,reaction_derived,1172,16384,ok
+17,P90518,GSP,Glutathionylspermidine Synthetase/Amidase,acyl-phosphate,PG,2,reaction,reaction_derived,719,1435,thin
+18,O60993,TRS,Glutathionylspermidine Synthetase/Amidase,acyl-phosphate,PG,2,reaction,reaction_derived,652,2593,ok
+23,A0A0D1D1Z6,,Phosphoribosylglycinamide synthetase,acyl-phosphate,PG,2,reaction,reaction_derived,830,16384,ok
+27,P00965,Gln-gamma,Glutamine Synthetase,acyl-phosphate,PG,2,reaction,reaction_derived,356,10671,ok
+33,Q43066,GS3B,Glutamine Synthetase,acyl-phosphate,PG,2,reaction,reaction_derived,357,10133,ok
+34,P38095,lamA,Biotin-dependent Carboxylase Complex,acyl-phosphate,PG,2,reaction,reaction_derived,1241,16384,ok
+35,A0A0H2WWP1,murF,UDP-N-acetylmuramoyl-tripeptide--D-alanyl-D-alanine ligase,acyl-phosphate,PG,2,reaction,reaction_derived,452,11154,ok
+36,A1AHS4,asnA,Aspartate--ammonia ligase,acyl-adenylate,PA,1,reaction,reaction_derived,330,3505,ok
+39,P18204,iaaL,Type 1 Capsular Polysaccharide Biosynthesis Protein CapK,acyl-phosphate,PG,2,reaction,reaction_derived,395,101,shallow
+42,P07756,Cps1,"Carbamoyl-phosphate synthase, small subunit",acyl-phosphate,PG,2,reaction,reaction_derived,1500,16384,ok

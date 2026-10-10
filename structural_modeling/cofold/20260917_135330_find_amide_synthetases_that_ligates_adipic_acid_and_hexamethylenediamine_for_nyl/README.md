@@ -38,10 +38,11 @@ depth (QC) in `panel_inputs.csv`.
 ### DdaG correction (E2JA32) — carries into re-analysis, not this folder
 DdaG is already folded in the old panel at **1 Mg (correct)** but was **scored at Pgamma
 (wrong)**: its reaction releases AMP + diphosphate, so it is a Palpha/1-Mg adenylate. The
-old family-name map put "dapdiamide" in the acyl-phosphate group. Re-score its existing
-50 models at Palpha (min d 3.74 A, 4/50 gated, mean 102 deg -> still inconclusive, but for a
-legitimate reason). Its paralogue DdaF (E2JA31) genuinely IS Pgamma/2-Mg — same family,
-opposite coordinate — which is why the family name cannot decide this.
+old family-name map put "dapdiamide" in the acyl-phosphate group. Re-scoring its existing
+50 models at Palpha gives 6/50 distance-gated poses and a mean in-line angle of 85.8 deg:
+the result is scoreable but provides weak geometric support. Its paralogue DdaF (E2JA31)
+genuinely IS Pgamma/2-Mg -- same family, opposite coordinate -- which is why the family
+name cannot decide this.
 
 ## Layout
 - `step1/step1_<acc>.yaml`  — Boltz inputs (protein + ATP + N x MG + adipate, affinity on adipate)

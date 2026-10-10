@@ -6,8 +6,8 @@ directory (`runs/<run-id>/`), e.g.:
 ```
 structural_modeling/
   cofold/
-    20260917_135330_canonical/                     # CANONICAL synthetase panel (run 20260917_135330): 36 cofolds (29 reused + 7 folded)
-    20260830_125748_synthetase_panel_and_probes/   # Aug-30 panel (migrated) + 1mg/pocket/control/sfab synthetase probes
+    20260917_135330_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl/                     # CANONICAL synthetase panel (run 20260917_135330): 36 cofolds (29 reused + 7 folded)
+    20260830_125748_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl/   # Aug-30 panel (migrated) + 1mg/pocket/control/sfab synthetase probes
     20260919_201625_find_amide_hydrolases_.../     # nylon-6,6 hydrolase panel
   scripts/                 # SHARED tooling (build_step1_inputs.py, step1_nac.py, ...)
   tests/                   # SHARED tests
