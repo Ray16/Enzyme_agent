@@ -1,0 +1,1 @@
+{"stem": "step1_SfaB", "sample": 9, "seed": 1, "used_msa": true, "seqlen": 530, "mean_plddt": 89.126, "ptm": 0.9007, "iptm": 0.8587, "ps_iptm": 0.6559, "revision": "1ebf0e3481a5184eb6171d40615c79e384b48796", "loops": 20, "steps": 200, "maxmsa": 1024, "dtype": "float32", "device": "xpu:0", "runtime_s": 26.15}

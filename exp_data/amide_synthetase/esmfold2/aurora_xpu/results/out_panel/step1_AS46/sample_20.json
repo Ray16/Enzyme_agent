@@ -1,0 +1,1 @@
+{"stem": "step1_AS46", "sample": 20, "seed": 3, "used_msa": true, "seqlen": 494, "mean_plddt": 86.64, "ptm": 0.9111, "iptm": 0.9002, "ps_iptm": 0.5754, "revision": "1ebf0e3481a5184eb6171d40615c79e384b48796", "loops": 20, "steps": 200, "maxmsa": 1024, "dtype": "float32", "device": "xpu:0", "runtime_s": 22.03}

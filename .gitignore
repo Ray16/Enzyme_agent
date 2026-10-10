@@ -165,3 +165,6 @@ structural_modeling/cofold/*/gs_oligomer_refold/
 enzyme_design_agent/campaigns/*/results/
 enzyme_design_agent/campaigns/*/msa/
 enzyme_design_agent/campaigns/*/archive/
+
+# ESMFold2 claim-queue lock files (run artifacts, not data)
+.claim
