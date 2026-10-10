@@ -36,7 +36,14 @@ MODEL_ID = os.environ.get("ESMFOLD2_MODEL", "biohub/ESMFold2")
 # `DiffusionStructureHeadConfig.__init__() got an unexpected keyword argument
 # 'architectures'`. This is the snapshot in the kit's stock/PINS.json.
 REVISION = os.environ.get("ESMFOLD2_REVISION", "1ebf0e3481a5184eb6171d40615c79e384b48796")
-SAMPLES = int(os.environ.get("ESMFOLD2_SAMPLES", "5"))
+# 50 per complex is the house cofold standard and what the Boltz-2 panel ran
+# (`--diffusion_samples 50`, realized as exactly 50 poses x 49 enzymes). The
+# archived fast-mode ESMFold2 run used 5, which is a large part of why it
+# feeds no pose-level analysis -- do not inherit that number.
+SAMPLES = int(os.environ.get("ESMFOLD2_SAMPLES", "50"))
+# Samples per fold() call. One call shares the 6B LM forward and the 20-recycle
+# trunk across its diffusion samples, so a larger SPC is cheaper per sample;
+# the ceiling is tile memory.
 SPC = int(os.environ.get("ESMFOLD2_SPC", "5"))
 LOOPS = int(os.environ.get("ESMFOLD2_LOOPS", "20"))
 STEPS = int(os.environ.get("ESMFOLD2_STEPS", "200"))

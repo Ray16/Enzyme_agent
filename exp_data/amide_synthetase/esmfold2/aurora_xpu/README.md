@@ -50,12 +50,19 @@ Sanity-checked on compute node: `FLASH_ATTN_AVAILABLE False`, all imports OK.
 ```bash
 source env.sh
 export ESMFOLD2_INPUTDIR=$R/inputs ESMFOLD2_OUTPUTDIR=$R/out
-export ESMFOLD2_SAMPLES=5          # matches the archived fast-mode run
+export ESMFOLD2_SAMPLES=50         # house standard; Boltz-2 ran 50 too
 python fold_esmfold2_xpu.py
 ```
 
 Defaults are the stock ones: `LOOPS=20`, `STEPS=200`, `MAXMSA=1024`,
-`DTYPE=float32`. `ESMFOLD2_ONLY=step1_AS9` restricts to one target. Workers
+`DTYPE=float32`, and `SAMPLES=50`. **50 diffusion samples per complex is the
+house cofold standard**, and it is what the Boltz-2 panel ran
+(`--diffusion_samples 50`, realized as exactly 50 poses x 49 enzymes = 2450).
+The archived fast-mode ESMFold2 run used 5; that is a large part of why it
+feeds no pose-level analysis, since the near-attack / ligand-displacement work
+needs 50 poses per enzyme to be comparable with Boltz-2 at all. `SPC` sets how
+many of those come from one `fold()` call, which shares the LM and trunk across
+its samples. `ESMFOLD2_ONLY=step1_AS9` restricts to one target. Workers
 pull targets from a claim queue on Lustre and resume at per-sample granularity,
 so a job that dies mid-panel can simply be resubmitted.
 
