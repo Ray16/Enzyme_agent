@@ -31,6 +31,11 @@ INPUTDIR = os.environ.get("ESMFOLD2_INPUTDIR", os.path.join(HERE, "inputs"))
 MSADIR = os.environ.get("ESMFOLD2_MSADIR", INPUTDIR)
 OUTPUTDIR = os.environ.get("ESMFOLD2_OUTPUTDIR", os.path.join(HERE, "out"))
 MODEL_ID = os.environ.get("ESMFOLD2_MODEL", "biohub/ESMFold2")
+# Pin the checkpoint. `main` has moved ahead of the transformers 4.57.6 fork the
+# model code comes from, and loading it dies in the config with
+# `DiffusionStructureHeadConfig.__init__() got an unexpected keyword argument
+# 'architectures'`. This is the snapshot in the kit's stock/PINS.json.
+REVISION = os.environ.get("ESMFOLD2_REVISION", "1ebf0e3481a5184eb6171d40615c79e384b48796")
 SAMPLES = int(os.environ.get("ESMFOLD2_SAMPLES", "5"))
 SPC = int(os.environ.get("ESMFOLD2_SPC", "5"))
 LOOPS = int(os.environ.get("ESMFOLD2_LOOPS", "20"))
@@ -201,6 +206,7 @@ def fold_target(row, outdir, model, builder, torch, log, mods):
                                "ptm": (round(float(r.ptm), 4) if r.ptm is not None else None),
                                "iptm": (round(float(r.iptm), 4) if r.iptm is not None else None),
                                "ps_iptm": pair_iptm(r),
+                               "revision": REVISION,
                                "loops": LOOPS, "steps": STEPS, "maxmsa": MAXMSA,
                                "dtype": DTYPE, "device": str(model.device),
                                "runtime_s": round(dt / len(res), 2)}, w)
@@ -253,9 +259,11 @@ def main():
 
         dev = pick_device(torch)
         dtype = getattr(torch, DTYPE)
-        log(f"loading {MODEL_ID} device={dev} dtype={DTYPE} targets={len(rows)} "
-            f"samples={SAMPLES} spc={SPC} loops={LOOPS} steps={STEPS} maxmsa={MAXMSA}")
-        model = ESMFold2Model.from_pretrained(MODEL_ID, torch_dtype=dtype).to(dev).eval()
+        log(f"loading {MODEL_ID}@{REVISION[:8]} device={dev} dtype={DTYPE} "
+            f"targets={len(rows)} samples={SAMPLES} spc={SPC} loops={LOOPS} "
+            f"steps={STEPS} maxmsa={MAXMSA}")
+        model = ESMFold2Model.from_pretrained(
+            MODEL_ID, revision=REVISION, dtype=dtype).to(dev).eval()
         _ = (torch.zeros(1, device=dev) + 1).cpu()   # prove the device really works
         builder = ESMFold2InputBuilder()
         log(f"model loaded in {time.time()-t0:.1f}s ({dev} mem {dev_mem_gb(torch, dev)} GB)")
