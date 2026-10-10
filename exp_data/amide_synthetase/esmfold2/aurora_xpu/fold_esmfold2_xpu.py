@@ -145,8 +145,14 @@ def count_done(outdir):
                if os.path.getsize(p) > 0)
 
 
-def pair_iptm(r, i=0, j=1):
-    """Chain-pair ipTM, read symmetric-min. The matrix is strongly asymmetric."""
+def pair_matrix(r):
+    """Full chain-pair ipTM matrix as a nested list, or None.
+
+    Store the whole thing. Reducing it to one number at fold time is lossy and
+    easy to get wrong: the chain of interest is positional, and for this panel
+    the input order is protein, ATP, MG, adipate -- so the inherited (0, 1)
+    reads the protein-ATP interface, not protein-adipate.
+    """
     p = getattr(r, "pair_chains_iptm", None)
     if p is None:
         return None
@@ -155,7 +161,16 @@ def pair_iptm(r, i=0, j=1):
             p = p.detach().cpu().tolist()
         elif hasattr(p, "tolist"):
             p = p.tolist()
-        return round(float(min(p[i][j], p[j][i])), 4)
+        return [[round(float(x), 4) for x in row] for row in p]
+    except Exception:
+        return None
+
+
+def pair_iptm(r, i=0, j=1):
+    """One chain-pair ipTM, read symmetric-min (the matrix is asymmetric)."""
+    p = pair_matrix(r)
+    try:
+        return round(min(p[i][j], p[j][i]), 4)
     except Exception:
         return None
 
@@ -213,6 +228,7 @@ def fold_target(row, outdir, model, builder, torch, log, mods):
                                "ptm": (round(float(r.ptm), 4) if r.ptm is not None else None),
                                "iptm": (round(float(r.iptm), 4) if r.iptm is not None else None),
                                "ps_iptm": pair_iptm(r),
+                               "pair_chains_iptm": pair_matrix(r),
                                "revision": REVISION,
                                "loops": LOOPS, "steps": STEPS, "maxmsa": MAXMSA,
                                "dtype": DTYPE, "device": str(model.device),
