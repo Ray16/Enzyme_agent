@@ -1,0 +1,65 @@
+{
+  "P0DXD6": {
+    "donor": {
+      "chain": "D",
+      "elements": [
+        "O"
+      ],
+      "n_atoms": 4
+    },
+    "electrophile": {
+      "chain": "B",
+      "atom_names": [
+        "PA"
+      ]
+    },
+    "leaving": {
+      "chain": "B",
+      "atom_names": [
+        "O3A"
+      ]
+    }
+  },
+  "P78061": {
+    "donor": {
+      "chain": "E",
+      "elements": [
+        "O"
+      ],
+      "n_atoms": 4
+    },
+    "electrophile": {
+      "chain": "B",
+      "atom_names": [
+        "PG"
+      ]
+    },
+    "leaving": {
+      "chain": "B",
+      "atom_names": [
+        "O3B"
+      ]
+    }
+  },
+  "Q46E79": {
+    "donor": {
+      "chain": "E",
+      "elements": [
+        "O"
+      ],
+      "n_atoms": 4
+    },
+    "electrophile": {
+      "chain": "B",
+      "atom_names": [
+        "PG"
+      ]
+    },
+    "leaving": {
+      "chain": "B",
+      "atom_names": [
+        "O3B"
+      ]
+    }
+  }
+}
