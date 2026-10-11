@@ -1,0 +1,127 @@
+{
+  "source": {
+    "doi": "10.1002/anie.6159643",
+    "pmcid": "PMC13502555",
+    "title": "Environmental Identification of Novel Enzymes for Polyurethane and Polyamide Degradation",
+    "table": "Table 1",
+    "retrieved_by": "enzyme_discovery_agent.tools.measurement_extraction"
+  },
+  "substrate": {
+    "name": "PURp1",
+    "iupac": "2-(2-(2-methoxyethoxy)ethoxy)ethyl (2-butyl-1,3-dioxo-2,3-dihydro-1H-benzo[de]isoquinolin-6-yl)carbamate",
+    "smiles": "CCCCN1C(=O)c2cccc3c(NC(=O)OCCOCCOCCOC)ccc(c23)C1=O",
+    "formula": "C24H30N2O7",
+    "verified_against": "SI HRMS [M+H]+ calcd C24H31N2O7"
+  },
+  "note": "Single lab, single protocol. This is the only cross-enzyme activity comparison available for this chemistry; values from other studies use different substrates and formats and are not comparable.",
+  "measurements": [
+    {
+      "enzyme": "CCPUR1",
+      "family_interpro": "Amidase IPR052739",
+      "organism": "Chelatococcus composti",
+      "tm_c": 68.3,
+      "tm_sd": 0.1,
+      "purp1_specific_activity_umol_min_umol": 4.0,
+      "purp1_sd": 1.6
+    },
+    {
+      "enzyme": "CCPUR2",
+      "family_interpro": "Amidase IPR052739",
+      "organism": "Chelatococcus sp.",
+      "tm_c": 58.3,
+      "tm_sd": 0.1,
+      "purp1_specific_activity_umol_min_umol": 3.1,
+      "purp1_sd": 0.6
+    },
+    {
+      "enzyme": "MPPUR3",
+      "family_interpro": "Carboxylesterase family IPR050309",
+      "organism": "Mycolicibacterium phlei",
+      "tm_c": 50.4,
+      "tm_sd": 0.3,
+      "purp1_specific_activity_umol_min_umol": 0.00222,
+      "purp1_sd": 4e-05
+    },
+    {
+      "enzyme": "BLPUR4",
+      "family_interpro": "Carboxylesterase family IPR050309",
+      "organism": "Bacillus licheniformis",
+      "tm_c": 49.9,
+      "tm_sd": 0.3,
+      "purp1_specific_activity_umol_min_umol": 0.0218,
+      "purp1_sd": 0.0002
+    },
+    {
+      "enzyme": "AXPUR5",
+      "family_interpro": "Carboxylesterase family IPR050654",
+      "organism": "Alloalcanivorax xenomutans",
+      "tm_c": 49.7,
+      "tm_sd": 0.01,
+      "purp1_specific_activity_umol_min_umol": 2.98,
+      "purp1_sd": 0.02
+    },
+    {
+      "enzyme": "AMPUR6",
+      "family_interpro": "Amidase IPR000120",
+      "organism": "Aeromicrobium massiliense",
+      "tm_c": 53.8,
+      "tm_sd": 0.1,
+      "purp1_specific_activity_umol_min_umol": 0.00014,
+      "purp1_sd": 1e-05
+    },
+    {
+      "enzyme": "CCPUR7",
+      "family_interpro": "Amidase IPR000120",
+      "organism": "Cellulosimicrobium cellulans",
+      "tm_c": 64.1,
+      "tm_sd": 0.2,
+      "purp1_specific_activity_umol_min_umol": 0.114,
+      "purp1_sd": 0.003
+    },
+    {
+      "enzyme": "PMGPUR8",
+      "family_interpro": "Amidase IPR052739",
+      "organism": "Plastic metagenome GCA_020063665.1",
+      "tm_c": 52.9,
+      "tm_sd": 0.1,
+      "purp1_specific_activity_umol_min_umol": 0.67,
+      "purp1_sd": 0.05
+    },
+    {
+      "enzyme": "PMGPUR9",
+      "family_interpro": "Amidase IPR052739",
+      "organism": "Plastic metagenome GCA_020063665.1",
+      "tm_c": 50.6,
+      "tm_sd": 0.1,
+      "purp1_specific_activity_umol_min_umol": 13.4,
+      "purp1_sd": 0.4
+    },
+    {
+      "enzyme": "PYNYL1",
+      "family_interpro": "Amidase IPR000120",
+      "organism": "Paracoccus yeii",
+      "tm_c": 43.2,
+      "tm_sd": 0.1,
+      "purp1_specific_activity_umol_min_umol": 0.44,
+      "purp1_sd": 0.01
+    },
+    {
+      "enzyme": "UMG-SP2",
+      "family_interpro": "Amidase IPR052739",
+      "organism": "Metagenome",
+      "tm_c": 47.7,
+      "tm_sd": 0.1,
+      "purp1_specific_activity_umol_min_umol": null,
+      "purp1_sd": null
+    },
+    {
+      "enzyme": "UMG-SP3",
+      "family_interpro": "Amidase IPR052739",
+      "organism": "Metagenome",
+      "tm_c": 54.6,
+      "tm_sd": 0.1,
+      "purp1_specific_activity_umol_min_umol": 21.0,
+      "purp1_sd": 0.9
+    }
+  ]
+}
