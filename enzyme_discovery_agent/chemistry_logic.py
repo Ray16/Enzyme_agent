@@ -70,6 +70,50 @@ def get_chebi_name(chebi_id: str) -> str | None:
 
 
 _name_smiles_cache: dict[str, str | None] = {}
+_name_identity_cache: dict[str, dict] = {}
+
+
+def resolve_named_substrate_identity(name: str) -> dict | None:
+    """Resolve a named input to a unique, database-backed chemical identity.
+
+    Parsing a SMILES checks validity, not agreement with a compound name.
+    Ambiguous or unavailable identities remain unresolved. Transient lookup
+    failures are not permanently cached as negative chemical evidence.
+    """
+    key = name.strip().lower()
+    if not key:
+        return None
+    if key in _name_identity_cache:
+        return dict(_name_identity_cache[key])
+    url = ("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
+           f"{urllib.parse.quote(name.strip(), safe='')}/property/IsomericSMILES,MolecularFormula/JSON")
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import rdMolDescriptors
+        raw = request_with_retry(urllib.request.Request(url, headers={"Accept": "application/json"}), timeout=20)
+        entries = json.loads(raw.decode()).get("PropertyTable", {}).get("Properties", [])
+        identities = {}
+        for entry in entries:
+            smiles = entry.get("SMILES") or entry.get("IsomericSMILES")
+            mol = Chem.MolFromSmiles(smiles or "")
+            if mol is None or not smiles:
+                continue
+            formula = rdMolDescriptors.CalcMolFormula(mol)
+            if formula != entry.get("MolecularFormula") or not entry.get("CID"):
+                continue
+            canonical = Chem.MolToSmiles(mol, isomericSmiles=True)
+            identities[canonical] = {"name": name, "smiles": canonical,
+                "molecular_formula": formula, "pubchem_cid": entry["CID"],
+                "source_url": url, "verification": "database_identity_and_formula"}
+        if len(identities) != 1:
+            logger.warning("Named substrate identity unresolved or ambiguous: %s", name)
+            return None
+        identity = next(iter(identities.values()))
+        _name_identity_cache[key] = identity
+        return dict(identity)
+    except Exception as exc:
+        logger.warning("Named substrate identity lookup failed for %s: %s", name, type(exc).__name__)
+        return None
 
 
 def _pubchem_name_to_smiles(name: str) -> str | None:
@@ -108,23 +152,23 @@ def _pubchem_name_to_smiles(name: str) -> str | None:
 _SUBSTRATE_REASON_SYSTEM = (
     "At the start of an enzyme-discovery task you reason about the target reaction "
     "and its substrates. From the query, identify the CHEMICAL SUBSTRATES (the "
-    "reaction inputs / reactants the enzyme must act on) and give each one's "
-    "SMILES, reasoning as a chemist from the compound names in the query. "
-    "Return ONLY JSON: {\"substrates\":[{\"name\":\"..\",\"smiles\":\"..\"}]}. "
-    "Substrates only — not enzymes, not products, not solvents or cofactors. Give "
-    "a valid canonical SMILES for each. If the query names no specific substrate, "
+    "reaction inputs / reactants the enzyme must act on). Extract compound names; "
+    "do not invent SMILES or atom connectivity. Chemical identity will be checked "
+    "against a database. Return ONLY JSON: {\"substrates\":[{\"name\":\"..\","
+    "\"source_quote\":\"exact substrate-name phrase copied from the query\"}]}. "
+    "Substrates only — not enzymes, not products, not solvents or cofactors. "
+    "Before responding, check that every listed entity is a user-mentioned reactant. "
+    "If the query names no specific substrate, "
     'return {"substrates":[]}.'
 )
 
 
-def reason_target_substrate_smiles(query: str, llm_client) -> str | None:
-    """Reason the target reaction's substrate SMILES from a free-text query.
+def reason_target_substrate_smiles(query: str, llm_client, on_validation=None) -> str | None:
+    """Extract input names, then verify their database identities before scoring.
 
-    The agent already reasons about the reaction and substrates at the initial
-    stage, so the SMILES are REASONED by the model (it knows common reagents),
-    then validated with RDKit; an invalid/blank one falls back to a PubChem
-    name lookup.  Answer-agnostic: these are the reaction INPUTS the user named
-    (task setup), never any enzyme.  Returns a '.'-joined SMILES string, or None.
+    Optional legacy model-proposed SMILES are compared to the reference and
+    corrected, never trusted just because they parse. Every named input must
+    resolve; a partially resolved mixture is not treated as the complete target.
     """
     if not query or llm_client is None:
         return None
@@ -134,6 +178,7 @@ def reason_target_substrate_smiles(query: str, llm_client) -> str | None:
                       {"role": "user", "content": query}],
             temperature=config.LLM_TEMPERATURE,
             timeout=max(config.LLM_TIMEOUT, 60),
+            max_tokens=2048,
         )
         content = response.choices[0].message.content or ""
         obj = json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
@@ -146,19 +191,33 @@ def reason_target_substrate_smiles(query: str, llm_client) -> str | None:
     except Exception:  # noqa: BLE001
         Chem = None
     out = []
+    unresolved = False
     for s in obj.get("substrates") or []:
         if not isinstance(s, dict):
             continue
         name = str(s.get("name", "")).strip()
         smi = str(s.get("smiles", "")).strip()
-        valid = None
-        if smi and Chem is not None and Chem.MolFromSmiles(smi) is not None:
-            valid = Chem.CanonSmiles(smi)          # reasoned SMILES, validated
-        elif name:
-            valid = _pubchem_name_to_smiles(name)  # fallback: resolve the name
-        if valid:
-            out.append(valid)
-    return ".".join(out) if out else None
+        quote = str(s.get("source_quote", "")).strip()
+        grounded = bool(quote and quote.casefold() in query.casefold()) or bool(
+            name and name.casefold() in query.casefold())
+        identity = resolve_named_substrate_identity(name) if grounded else None
+        audit = {"name": name, "source_quote": quote, "grounded_in_query": grounded,
+                 "model_proposed_smiles": smi or None, "identity": identity,
+                 "status": "verified" if identity else "unresolved_identity"}
+        if identity:
+            if smi:
+                proposal = Chem.MolFromSmiles(smi) if Chem is not None else None
+                matches = proposal is not None and Chem.MolToSmiles(proposal, isomericSmiles=True) == identity["smiles"]
+                audit["proposal_matches_reference"] = bool(matches)
+                if not matches:
+                    audit["status"] = "model_proposal_corrected"
+                    logger.warning("Corrected model-proposed substrate structure using the named database identity: %s", name)
+            out.append(identity["smiles"])
+        else:
+            unresolved = True
+        if on_validation is not None:
+            on_validation(audit)
+    return ".".join(out) if out and not unresolved else None
 
 
 def resolve_substrate_names_to_smiles(text: str | None) -> str | None:
@@ -183,9 +242,11 @@ def resolve_substrate_names_to_smiles(text: str | None) -> str | None:
         # Skip obvious non-reagent words that survive splitting.
         if len(name) < 3 or name.lower() in {"monomer", "monomers", "substrate", "substrates"}:
             continue
-        smi = _pubchem_name_to_smiles(name)
-        if smi:
-            resolved.append(smi)
+        identity = resolve_named_substrate_identity(name)
+        if identity:
+            resolved.append(identity["smiles"])
+        else:
+            return None
     return ".".join(resolved) if resolved else None
 
 
@@ -450,24 +511,33 @@ def extract_target_bond_type(target_reaction_type: str) -> dict:
     target_bonds: set[str] = set()
     target_direction = None
 
+    # A keyword may map to SEVERAL bond types when the linkage genuinely has
+    # mixed character.  A carbamate (R-NH-CO-O-R') is simultaneously ester-like
+    # and amide-like: the acyl carbon bears both an O and an N substituent, and
+    # which bond breaks depends on the mechanism.  Emitting only a standalone
+    # "carbamate" token would be worse than emitting nothing, because the EC
+    # bond map never classifies an enzyme as "carbamate", so the downstream
+    # comparison would report a mismatch against every candidate.
     bond_keywords = [
-        ("thioester", "thioester"),
-        ("phosphoester", "phosphoester"),
-        ("phosphodiester", "phosphodiester"),
-        ("glycosidic", "glycosidic"),
-        ("disulfide", "S-S"),
-        ("peptide", "peptide"),
-        ("amide", "amide"),
-        ("ester", "ester"),
-        ("ether", "ether"),
-        ("c-c bond", "C-C"),
-        ("c-n bond", "C-N"),
-        ("c-o bond", "C-O"),
-        ("c-s bond", "C-S"),
+        ("thioester", ("thioester",)),
+        ("phosphoester", ("phosphoester",)),
+        ("phosphodiester", ("phosphodiester",)),
+        ("glycosidic", ("glycosidic",)),
+        ("disulfide", ("S-S",)),
+        ("peptide", ("peptide",)),
+        ("carbamate", ("ester", "amide", "C-N")),
+        ("urethane", ("ester", "amide", "C-N")),
+        ("amide", ("amide",)),
+        ("ester", ("ester",)),
+        ("ether", ("ether",)),
+        ("c-c bond", ("C-C",)),
+        ("c-n bond", ("C-N",)),
+        ("c-o bond", ("C-O",)),
+        ("c-s bond", ("C-S",)),
     ]
-    for keyword, bond_type in bond_keywords:
+    for keyword, bond_types in bond_keywords:
         if keyword in target_lower:
-            target_bonds.add(bond_type)
+            target_bonds.update(bond_types)
 
     _DIRECTION_KEYWORDS = {
         # Check explicit cleavage terms first.  Target descriptions commonly
