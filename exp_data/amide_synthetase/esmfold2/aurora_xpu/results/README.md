@@ -68,3 +68,37 @@ CUDA route was unavailable at −1,088 node hours.
   This does not affect the planned downstream work: the pose-level geometry
   (donor-Pα distance, attack angle, ligand displacement) is measured from the
   CIF coordinates, not from ipTM.
+
+## Which cofolder surfaces the measured actives? (Boltz-2, not this one)
+
+`panel_nac_esmfold2_vs_boltz2.csv` scores these 2450 poses and the matched
+2450-pose Boltz-2 1-Mg panel (`boltz2/step1_1mg`) through one element-based
+carboxylate/P-alpha selector (`nac_comparison/`). Ranking the 49 targets by the
+proximity-weighted angle `A`:
+
+| positives | Boltz-2 AUROC | ESMFold2 AUROC |
+|---|---|---|
+| AS9, AS17, AS23 | **0.942** (ranks 4/1/9) | 0.688 (21/24/4) |
+| **AS9, AS17 only** (see below) | **0.979** (ranks 4 and 1) | 0.553 (21 and 24) |
+| AS23 only | 0.833 | 0.938 |
+
+Paired bootstrap on the 3-positive label: dAUROC −0.254, 95% CI
+[−0.355, −0.159]. Against an 8-test selection-corrected null (4 metrics x 2
+models) Boltz-2's `A` survives (p=0.014); ESMFold2's does not (p=0.503).
+
+**AS23 is not a reproducible active** — 2.89 in the 1/24 batch vs 0.012 in the
+01/09 batch (238x, i.e. the BL21 control level), against 1.4x for AS9 and 2.4x
+for AS17. Dropping it is what splits the two models cleanly: ESMFold2's entire
+apparent signal was AS23, and it sits at chance on the two solid actives.
+
+Two caveats on reading this as a Boltz-2 endorsement. It is **specifically `A`**
+that carries Boltz-2 — its `D_h` (0.457) and `n_gated` (0.489) are at chance, so
+denser docking is not what helps; ESMFold2 in fact docks more (it puts adipate
+at P-alpha in 33/50 SfaB poses where Boltz-2 manages 1/50, on an enzyme that is
+experimentally near-dead). And this is a **comparative** result: `A` was
+selected on this same panel historically, only 2 trustworthy positives remain,
+and the known fold-confound on `A` is untested here.
+
+On the *continuous* question — rank correlation against yield rather than
+retrieval of the actives — neither model wins: ESMFold2 rho=+0.262 (p=0.069),
+Boltz-2 +0.226 (p=0.118), paired difference p=0.84.
