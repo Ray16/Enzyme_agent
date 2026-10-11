@@ -587,6 +587,82 @@ def _known_organism(organism):
     return "" if value.lower() in {"not specified", "not explicitly stated", "unknown", "unspecified", "n/a", "none"} else value
 
 
+# Words that are a substrate/activity description, never the identifier a paper
+# uses to name a specific enzyme.
+_DESCRIPTIVE_TOKENS = {
+    "amidase", "hydrolase", "esterase", "lipase", "protease", "peptidase",
+    "enzyme", "protein", "variant", "mutant", "wild", "type", "from",
+    "the", "and", "subunit", "domain", "family", "putative", "recombinant",
+}
+
+
+def _looks_like_identifier(token: str) -> bool:
+    """True for a token shaped like a specific enzyme/clone name.
+
+    Either it carries a digit (clone and construct names almost always do), or
+    it is short with internal capitals, which is how gene-symbol-style names are
+    written.  A plain lowercase word is a description, not an identifier.
+    """
+    bare = token.strip("()[],.;:")
+    if len(bare) < 3 or bare.lower() in _DESCRIPTIVE_TOKENS:
+        return False
+    if any(c.isdigit() for c in bare):
+        return True
+    return sum(1 for c in bare if c.isupper()) >= 2 and len(bare) <= 14
+
+
+def _identifier_candidates(raw: str) -> list[str]:
+    """Ordered identifier guesses for a messily-written literature name.
+
+    Extraction yields names like "Hydrolase (xyZ1234)", "esterase ABC-DE-2" or
+    a clone name broken by a stray space ("XY ABC1").  Taking the leading token
+    -- the previous behaviour -- searches for the DESCRIPTION ("Amidase") and
+    silently misses the enzyme.  Measured on one campaign, 94% of extracted
+    leads resolved to no accession at all, and names of this shape were a large
+    part of it.
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return []
+    out: list[str] = []
+
+    def add(tok: str) -> None:
+        tok = tok.strip("()[],.;: ")
+        if tok and tok not in out:
+            out.append(tok)
+
+    # 1. a parenthesised identifier is the paper naming the specific enzyme
+    for inner in re.findall(r"\(([^)]*)\)", raw):
+        for tok in inner.split():
+            if _looks_like_identifier(tok):
+                add(tok)
+    outside = re.sub(r"\([^)]*\)", " ", raw)
+    # 2. a clone name split by a stray space ("XY ABC1" -> "XYABC1").  Only the
+    #    rejoined whole is offered: the fragments are PARTS of one identifier,
+    #    and querying a part is how a split clone name silently resolves to an
+    #    unrelated protein that happens to share it.
+    toks = [t.strip("()[],.;:") for t in outside.split()]
+    if 2 <= len(toks) <= 3 and all(0 < len(t) <= 6 for t in toks) and any(
+            any(c.isdigit() for c in t) for t in toks):
+        add("".join(toks))
+        return out
+    # 3. identifier-looking tokens outside parentheses
+    for tok in outside.split():
+        if _looks_like_identifier(tok):
+            add(tok)
+    # A specific identifier that fails to resolve must stay unresolved.  Falling
+    # back to the descriptive word ("Amidase") substitutes a generic database
+    # record for the enzyme the paper named -- two different named enzymes then
+    # resolve to the SAME entry, which is a wrong answer, not a weak one.
+    if out:
+        return out
+    # 4. nothing identifier-shaped: the historical leading-token behaviour
+    m = re.match(r"[A-Za-z][A-Za-z0-9_-]{1,14}", raw)
+    if m:
+        add(m.group(0))
+    return out
+
+
 def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None) -> str | None:
     """Resolve an enzyme NAMED in a paper's body to a UniProt accession, using the
     stated organism as a disambiguator.
@@ -611,12 +687,19 @@ def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None
     organism = _known_organism(organism)
     if not raw:
         return None
-    # A paper names an enzyme with a descriptive suffix, e.g. "GeneA (characterised
-    # wild-type synthetase)": use the leading gene-symbol-like token for DB queries
-    # and keep the full descriptor (a direction hint) for the consistency gate.
+    # The full string stays the direction hint for the consistency gate, while
+    # each identifier guess is tried in turn as the DB query.
     descriptor = raw
-    m = re.match(r"[A-Za-z][A-Za-z0-9_-]{1,14}", raw)
-    symbol = m.group(0) if m else raw
+    for symbol in _identifier_candidates(raw) or [raw]:
+        hit = _resolve_symbol(symbol, descriptor, organism, direction)
+        if hit:
+            return hit
+    return None
+
+
+def _resolve_symbol(symbol: str, descriptor: str, organism: str,
+                    direction: str | None) -> str | None:
+    """Resolve ONE identifier guess against UniProt (see _resolve_named_enzyme)."""
     is_gene = bool(_GENE_TOKEN_RE.match(symbol))
     esc = symbol.replace('"', " ")
     name_clause = f'(gene:{symbol} OR protein_name:"{esc}")' if is_gene else f'protein_name:"{esc}"'
@@ -670,13 +753,21 @@ def _resolve_named_enzyme_ncbi(name: str, organism: str = "") -> dict | None:
     from enzyme_discovery_agent.tools.database import search_ncbi_protein
 
     raw = (name or "").strip()
-    if len(re.sub(r"[^A-Za-z0-9]", "", raw)) < 4:
-        return None     # too generic to identify a specific deposit
-    try:
-        result = search_ncbi_protein(raw, organism=organism, max_results=5)
-    except Exception as e:  # noqa: BLE001
-        raise LookupUnavailable(f"NCBI protein search failed: {e}") from e
-    records = result.get("data") or []
+    records: list[dict] = []
+    for cand in _identifier_candidates(raw) or [raw]:
+        if len(re.sub(r"[^A-Za-z0-9]", "", cand)) < 4:
+            continue    # too short to identify a specific deposit
+        if cand.lower() in _DESCRIPTIVE_TOKENS or not _looks_like_identifier(cand):
+            continue    # a bare activity word names a class, not an enzyme:
+                        # resolving it would attach a specific deposited
+                        # sequence to what the paper left unidentified
+        try:
+            result = search_ncbi_protein(cand, organism=organism, max_results=5)
+        except Exception as e:  # noqa: BLE001
+            raise LookupUnavailable(f"NCBI protein search failed: {e}") from e
+        records = result.get("data") or []
+        if records:
+            break
     if not records:
         return None
     records.sort(key=lambda r: (not r.get("title_names_query"), -r.get("sequence_length", 0)))

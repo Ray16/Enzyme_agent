@@ -121,3 +121,44 @@ class DepositedSequenceFallback(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IdentifierExtraction(unittest.TestCase):
+    """A specific identifier must never be swapped for a fragment or a description.
+
+    Extraction emits names like "Hydrolase (xyZ1234)" or a clone name split by a
+    stray space. Querying the leading token searches for the DESCRIPTION, and
+    querying a fragment of a split name finds an unrelated protein that happens
+    to share it -- both produce a confidently wrong identity, which is worse
+    than no identity at all.
+    """
+
+    def test_parenthesised_identifier_wins_over_the_description(self):
+        self.assertEqual(F._identifier_candidates("Hydrolase (xyZ1234)"), ["xyZ1234"])
+
+    def test_identifier_wins_over_a_leading_activity_word(self):
+        self.assertEqual(F._identifier_candidates("esterase AbcD250"), ["AbcD250"])
+
+    def test_split_clone_name_is_rejoined_and_fragments_are_not_offered(self):
+        self.assertEqual(F._identifier_candidates("XY ABC1"), ["XYABC1"])
+
+    def test_mixed_case_symbol_without_digits_is_an_identifier(self):
+        self.assertEqual(F._identifier_candidates("AbcDEF"), ["AbcDEF"])
+
+    def test_bare_activity_word_is_never_resolved_to_a_deposit(self):
+        with patch("enzyme_discovery_agent.tools.database.search_ncbi_protein") as m:
+            self.assertIsNone(F._resolve_named_enzyme_ncbi("Amidase"))
+            self.assertIsNone(F._resolve_named_enzyme_ncbi("hydrolase"))
+            m.assert_not_called()
+
+    def test_uniprot_resolver_tries_each_candidate_in_order(self):
+        seen = []
+
+        def fake(query, size=5, fields="accession"):
+            seen.append(query)
+            return []
+
+        with patch.object(F, "_uniprot_search", side_effect=fake):
+            F._resolve_named_enzyme("Hydrolase (xyZ1234)", "Escherichia coli")
+        self.assertTrue(any("xyZ1234" in q for q in seen),
+                        f"parenthesised identifier never queried: {seen}")
