@@ -45,33 +45,29 @@
     "motif_agreement_with_reference": 1
   },
   "AXPUR5": {
-    "nearest_reference": "NylC",
-    "reference_identity_pct": 26.8,
-    "position": 438,
-    "residue": "T",
-    "confidence": "low_confidence",
-    "basis": "alignment transfer from nearest reference NylC (Q79F77) T267",
-    "motif_context": "FGITDTPVGQY",
-    "motif_agreement_with_reference": 1,
-    "note": "nearest reference is distant and the local motif does not match it; the residue may be a chance Ser/Thr. Confirm independently before using this site for geometry."
+    "position": 187,
+    "residue": "S",
+    "confidence": "transferred",
+    "nearest_reference": "Aes72",
+    "reference_identity_pct": 30.6,
+    "motif_context": "VTIFGESAGGF",
+    "basis": "alignment transfer from Aes72 Ser147 (carboxylesterase fold); lands in a GxSxG nucleophile elbow"
   },
   "Aes72": {
-    "nearest_reference": "NylA",
-    "reference_identity_pct": 27.3,
-    "position": null,
-    "residue": null,
-    "confidence": "unresolved",
-    "basis": "nearest reference NylA transfers to L, not the expected S",
-    "observed_at_aligned_position": "L"
+    "position": 147,
+    "residue": "S",
+    "confidence": "annotated",
+    "basis": "literature catalytic triad S147/E241/H271 (PDB 9IZT), confirmed in-sequence: all three residues match and GDSAG at 147 is the only GxSxG motif present",
+    "motif_context": "VIAGDSAGGGL"
   },
   "BLPUR4": {
-    "nearest_reference": "NylC",
-    "reference_identity_pct": 25.9,
-    "position": null,
-    "residue": null,
-    "confidence": "unresolved",
-    "basis": "nearest reference NylC transfers to M, not the expected T",
-    "observed_at_aligned_position": "M"
+    "position": 189,
+    "residue": "S",
+    "confidence": "transferred",
+    "nearest_reference": "Aes72",
+    "reference_identity_pct": 30.0,
+    "motif_context": "ITVFGESAGSM",
+    "basis": "alignment transfer from Aes72 Ser147 (carboxylesterase fold); lands in a GxSxG nucleophile elbow"
   },
   "CCPUR1": {
     "nearest_reference": "NylA",
@@ -104,15 +100,13 @@
     "motif_agreement_with_reference": 1
   },
   "MPPUR3": {
-    "nearest_reference": "NylC",
-    "reference_identity_pct": 27.0,
-    "position": 388,
-    "residue": "T",
-    "confidence": "low_confidence",
-    "basis": "alignment transfer from nearest reference NylC (Q79F77) T267",
-    "motif_context": "AEAHSTHAPTY",
-    "motif_agreement_with_reference": 2,
-    "note": "nearest reference is distant and the local motif does not match it; the residue may be a chance Ser/Thr. Confirm independently before using this site for geometry."
+    "position": 196,
+    "residue": "S",
+    "confidence": "transferred",
+    "nearest_reference": "Aes72",
+    "reference_identity_pct": 27.9,
+    "motif_context": "VTIFGESAGAH",
+    "basis": "alignment transfer from Aes72 Ser147 (carboxylesterase fold); lands in a GxSxG nucleophile elbow"
   },
   "NylBp2_Hyb24_D1_mutant": {
     "nearest_reference": "NylB_prime",
