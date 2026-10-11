@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "reaction": {
+    "class": "carbamate (urethane) bond hydrolysis at an aliphatic nitrogen",
+    "direction": "cleavage"
+  },
+  "substrate": {
+    "physical_state": "water-soluble small-molecule biscarbamate in which the two carbamate nitrogens are joined by a flexible saturated six-carbon chain and each carbamate oxygen carries a short oligo-ether alcohol chain",
+    "access_constraint": "candidate must be assessed for its ability to cleave a resonance-stabilised linkage whose nitrogen bears no electron-withdrawing aromatic substituent, which makes the carbonyl less electrophilic and the amine a poorer leaving group than in the aryl-substituted case",
+    "product_context": "full cleavage of both linkages releases a free flexible aliphatic diamine, the free oligo-ether alcohol, and carbon dioxide"
+  },
+  "enzyme_requirements": {
+    "nucleophile": "possess a catalytic nucleophile capable of attacking a carbamate carbonyl that is deactivated relative to both an ester and an aryl-substituted carbamate",
+    "leaving_group": "accommodate alcohol departure and the subsequent breakdown of the resulting carbamic acid, without requiring an aromatic ring to stabilise the developing charge",
+    "pocket": "assess whether the substrate-binding site is an open or extended channel able to accommodate a long flexible aliphatic chain spanning the two reactive centres",
+    "secretion_and_stability": "note any evidence of extracellular localisation or elevated thermal stability, since process conditions for this substrate are harsh"
+  },
+  "review_requirements": [
+    "Assess reaction direction: cleavage of the stated linkage rather than its formation or transfer to another acceptor.",
+    "Distinguish demonstrated activity on the stated substrate class from promiscuous or trace activity inferred from a surrogate reporter molecule.",
+    "Assess compatibility with a flexible saturated aliphatic substituent at the nitrogen of the scissile bond, and specifically whether evidence exists for the aliphatic case rather than being carried over from an aromatic one.",
+    "Assess whether the catalytic site is open enough to admit a long-chain substrate rather than only a compact one.",
+    "Assess whether the evidence is a purified-enzyme measurement with quantified product, or only an annotation, a homology inference, or a whole-cell or indirect observation.",
+    "Record any reported thermal stability and any reported tolerance of organic co-solvents.",
+    "For every candidate that reaches the shortlist, harvest and record every quantitative measurement reported for it: value, units, the exact substrate measured, assay temperature, pH, enzyme loading and reaction time, and the source. Search beyond the abstract, including supplementary information, where the numbers usually are.",
+    "Record each measurement's comparability: state explicitly whether two candidates were measured on the SAME substrate under comparable conditions, since numbers from different substrates, labs or assay formats cannot be ranked against each other.",
+    "Mark any candidate with no quantitative measurement as unvalidated rather than dropping it, and say what measurement would be needed."
+  ],
+  "discovery_coverage": {
+    "minimum_screened_candidates": 12,
+    "minimum_distinct_families": 5,
+    "evidence_buckets": [
+      {
+        "name": "carbamate-linkage substrate context",
+        "match_any": [
+          "carbamate",
+          "urethane",
+          "carbamoyl"
+        ],
+        "minimum_candidates": 3
+      },
+      {
+        "name": "long-chain or flexible aliphatic substrate context",
+        "match_any": [
+          "aliphatic",
+          "long-chain",
+          "alkyl",
+          "fatty",
+          "linear chain"
+        ],
+        "minimum_candidates": 2
+      },
+      {
+        "name": "hindered non-peptide acyl-nitrogen cleavage",
+        "match_any": [
+          "amide hydrolysis",
+          "amide bond cleavage",
+          "acyl-enzyme intermediate"
+        ],
+        "minimum_candidates": 3
+      },
+      {
+        "name": "synthetic-polymer or xenobiotic degradation context",
+        "match_any": [
+          "polymer",
+          "plastic",
+          "xenobiotic",
+          "herbicide",
+          "pesticide",
+          "degradation pathway"
+        ],
+        "minimum_candidates": 2
+      }
+    ]
+  }
+}

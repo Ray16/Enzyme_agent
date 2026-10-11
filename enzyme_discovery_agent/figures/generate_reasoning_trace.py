@@ -4,20 +4,26 @@
 Reads a run's events + family decisions + ranked candidates and draws a single
 top-to-bottom flow where each pipeline stage is annotated with what the agent
 actually did:  parse the reaction (with the WHY behind each field) -> enumerate
-mechanisms -> the key expand/stop family decision (each pursued fold shown with
-its native REACTION, i.e. the amine + carboxylate it condenses) -> candidates ->
-the real top leads.
+mechanisms -> the key expand/stop family decision (each family shown with its
+representative's native REACTION) -> candidates -> the real top leads.
 
-Run-specific results figure (shows the real target and folds), not a generic
-pipeline diagram.
+TARGET-AGNOSTIC.  Every label, molecule and family in this figure is read from
+the run directory: the target from ``target_reasoning.json``, the families and
+the agent's own stated reasons from ``family_decisions.json``, and each
+family's representative plus its native substrates from
+``ranked_candidates.csv``.  Nothing about any particular campaign's chemistry,
+substrates or enzyme families is written into this file -- pointing it at a run
+for a different reaction produces that reaction's figure with no code change.
 
-Usage:  python figures/generate_reasoning_trace.py [RUN_DIR]
-Outputs: figures/reasoning_trace.png
+Usage:  python figures/generate_reasoning_trace.py RUN_DIR [-o OUT.png]
+        (with no RUN_DIR, the most recent run holding the required artifacts)
+Outputs: figures/reasoning_trace.png, or -o
 """
+import argparse
 import csv
 import io
 import json
-import sys
+import re
 from pathlib import Path
 
 import numpy as np
@@ -40,57 +46,25 @@ RDLogger.DisableLog("rdApp.*")
 BASE_DPI, DPI, SS = 200, 300, 4
 
 FIG_DIR = Path(__file__).resolve().parent
-DEFAULT_RUN = (
-    FIG_DIR.parent / "runs"
-    / "20260830_125748_find_amide_synthetases_that_ligates_adipic_acid_and_hexamethylenediamine_for_nyl"
-)
+RUNS_DIR = FIG_DIR.parent / "runs"
+
+# Artifacts this figure cannot be drawn without.
+REQUIRED = ("events.jsonl", "family_decisions.json", "ranked_candidates.csv")
+
+
+def latest_run(runs_dir: Path = RUNS_DIR) -> Path:
+    """Most recently modified run directory that has the required artifacts."""
+    usable = [d for d in runs_dir.iterdir()
+              if d.is_dir() and all((d / f).exists() for f in REQUIRED)]
+    if not usable:
+        raise SystemExit(f"No run under {runs_dir} has all of {REQUIRED}; pass RUN_DIR explicitly.")
+    return max(usable, key=lambda d: d.stat().st_mtime)
 
 INK, MUTED, LINE = "#0f172a", "#475569", "#94a3b8"
 BLUE, PURPLE, TEAL = "#2563eb", "#7c3aed", "#0d9488"
 GREEN, RED = "#15803d", "#b91c1c"
 
-# Distinct pursued mechanism families.  The representative enzyme is NOT hardcoded:
-# it is resolved at draw time to the TOP-RANKED member of that family in
-# ranked_candidates.csv.  Each entry: (family label, InterPro-match substrings,
-# amine substrate to draw, acid substrate to draw).
-# (family, InterPro-match substrings, amine-hint, amine-label, acid-hint,
-#  acid-label, subcaption).  Hints select the substrate from the run's data;
-#  labels are what we print (verified names).
-PURSUED = [
-    ("DdaG-type amide ligase", ["fumarate", "diaminopropanoate"],
-     "amino-l-alanine", "3-amino-L-alanine", "fumarate", "fumarate",
-     "✓ free amine + carboxylate"),
-    ("Glutamine-synthetase fold", ["glutamylputrescine", "glutamine synthetase"],
-     "butanediammonium", "putrescine", "l-glutamate", "L-glutamate",
-     "✓ free amine + carboxylate"),
-    ("ATP-grasp ligase (PylC)", ["pylc", "pyrrolysine"],
-     "methyl-d-ornithine", "3-methyl-D-ornithine", "l-lysinium", "L-lysine",
-     "✓ free amine + carboxylate"),
-    ("NIS / IucA-IucC synthetase", ["iuca", "aerobactin", "siderophore"],
-     "hydroxy-l-lysine", "N6-Ac-N6-OH-L-lysine", "citrate", "citrate",
-     "✓ free amine + carboxylate"),
-]
-# Rejected folds -> the BOTH native substrates of a representative off-target
-# reaction (SMILES from PubChem), shown like the pursued reactions so the
-# off-target chemistry (purine/carbamate nucleotides / carrier-protein-tethered
-# substrates / too-small amines) is explicit.  Each entry:
-#   (fold, subA name, subA SMILES, subB name, subB SMILES-or-None, why,
-#    glyph-label-or-None).  When subB SMILES is None the second reactant is a
-#    macromolecule (carrier protein), drawn as the glyph box instead of a mol.
-STOPPED = [
-    ("ATP-grasp (PurT)", "glycinamide ribonucleotide",
-     "C(C1C(C(C(O1)NC(=O)CN)O)O)OP(=O)(O)O", "formate", "C(=O)[O-]",
-     "purine / nucleotide biosynthesis", None),
-    ("RimK / LysW-type ligase", "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
-     "carrier protein", None, "glutamate tethered to LysW carrier — not free",
-     "LysW\ncarrier\nprotein"),
-    ("Aryl-acid adenylation", "2,3-dihydroxybenzoate",
-     "OC(=O)c1cccc(O)c1O", "carrier protein", None,
-     "aryl acid tethered to ACP — not free", "aryl-carrier\nprotein\n(ACP)"),
-    ("Methylamine ligase", "methylamine", "CN",
-     "L-glutamate", "C(CC(=O)O)C(C(=O)O)N",
-     "right chemistry, amine far too small", None),
-]
+N_PER_SIDE = 4          # family cards drawn per column (2x2 grid each side)
 
 
 def _tint(hex_color: str, amount: float) -> str:
@@ -99,18 +73,25 @@ def _tint(hex_color: str, amount: float) -> str:
     return f"#{mix(r):02x}{mix(g):02x}{mix(b):02x}"
 
 
+def _shorten(text: str, limit: int) -> str:
+    """Trim to ``limit`` chars on a word boundary, with an ellipsis."""
+    text = " ".join((text or "").split())
+    if len(text) <= limit:
+        return text
+    return text[:limit].rsplit(" ", 1)[0] + "…"
+
+
 def _short_mech(name: str) -> str:
-    n = name.lower()
-    for key, short in (
-        ("siderophore", "NIS siderophore"), ("nis", "NIS siderophore"),
-        ("atp-grasp", "ATP-grasp"), ("anl", "ANL adenylating"),
-        ("glutamine synthetase", "Glutamine-synthetase"),
-        ("asparagine synthetase", "Asparagine-synthetase B"),
-        ("aminoacyl-trna", "class-II aaRS-like"), ("mur ligase", "Mur-ligase"),
-    ):
-        if key in n:
-            return short
-    return name.split()[0]
+    """Abbreviate a mechanism-family name without assuming any chemistry.
+
+    Drops a trailing generic noun and any parenthetical, so e.g.
+    "Diphosphomevalonate decarboxylase-like N-terminal domain" stays readable
+    while nothing about a particular reaction is baked in.
+    """
+    name = re.sub(r"\s*\([^)]*\)", "", name or "").strip()
+    name = re.sub(r",?\s+(catalytic|N-terminal|C-terminal)?\s*(domain|superfamily|family|fold)\s*$",
+                  "", name, flags=re.I).strip()
+    return _shorten(name, 34) or "unnamed"
 
 
 def _png_to_rgb(png_bytes):
@@ -141,36 +122,116 @@ def mol_img(smiles, size=(220, 150)):
     return _png_to_rgb(d.GetDrawingText())
 
 
-def load(run: Path):
+def _json_or(run: Path, name: str, default):
+    path = run / name
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text())
+    except (ValueError, OSError):
+        return default
+
+
+def load(run: Path) -> dict:
+    """Collect everything the figure draws, entirely from the run directory."""
     evs = [json.loads(l) for l in (run / "events.jsonl").read_text().splitlines() if l.strip()]
     contract = next((e for e in evs if e["type"] == "contract_derived"), {})
     complete = next((e for e in evs if e["type"] == "run_complete"), {})
     screened = [e for e in evs if e["type"] == "candidates_screened"]
-    dec = json.loads((run / "family_decisions.json").read_text())["decisions"]
-    n_expand = sum(1 for v in dec.values() if v["decision"] == "expand")
-    n_stop = sum(1 for v in dec.values() if v["decision"] == "stop")
-    mech = json.loads((run / "mechanism_families.json").read_text())
-    mech_names = [_short_mech(m["name"]) for m in mech]
+
+    # target_reasoning.json is the authoritative record of what was asked for.
+    target = _json_or(run, "target_reasoning.json", {})
+    for field in ("reaction_direction", "bond_types", "reactive_groups", "substrate_topology"):
+        if not contract.get(field) and target.get(field):
+            contract[field] = target[field]
+
+    decisions = _json_or(run, "family_decisions.json", {}).get("decisions", {})
+    mech = _json_or(run, "mechanism_families.json", [])
+    mech_names = [_short_mech(m.get("name", "")) for m in mech if m.get("name")]
+
     rows = {}
     with open(run / "ranked_candidates.csv") as f:
         for r in csv.DictReader(f):
             rows.setdefault(r["accession"], r)
-    n_folds = max((s.get("fold_families", 0) for s in screened), default=0)
-    return contract, complete, n_expand, n_stop, mech_names, rows, n_folds
+
+    return {
+        "contract": contract, "complete": complete, "target": target,
+        "decisions": decisions, "mech_names": mech_names, "rows": rows,
+        "n_expand": sum(1 for v in decisions.values() if v.get("decision") == "expand"),
+        "n_stop": sum(1 for v in decisions.values() if v.get("decision") == "stop"),
+        "n_folds": max((s.get("fold_families", 0) for s in screened), default=0),
+    }
 
 
-def sub_smiles(rows, acc, name):
-    r = rows.get(acc, {})
-    names = [n.strip() for n in (r.get("native_substrates") or "").split(";")]
-    smis = [s.strip() for s in (r.get("native_substrate_smiles") or "").split(";")]
-    for n, s in zip(names, smis):
-        if name.lower() in n.lower():
-            return s
-    return smis[0] if smis else ""
+_STOPWORDS = {"domain", "family", "superfamily", "terminal", "related",
+              "containing", "like", "protein", "subunit", "binding", "putative"}
 
 
-def build(run: Path):
-    contract, complete, n_expand, n_stop, mech_names, rows, n_folds = load(run)
+def _family_rep(family_name: str, ranked: list, taken: set | None = None) -> dict | None:
+    """Best candidate whose InterPro / mechanism family matches ``family_name``.
+
+    Scored on how many informative words the candidate's family strings share
+    with this family name, so sibling families that differ by only one word do
+    not all collapse onto the same representative.  Candidates already shown on
+    another card are only reused when nothing else matches, which keeps the
+    cards distinct without inventing a match.
+    """
+    taken = taken or set()
+    words = {w for w in re.findall(r"[A-Za-z0-9-]{4,}", (family_name or "").lower())
+             if w not in _STOPWORDS}
+    if not words:
+        return None
+    best, best_key = None, (0, 0)
+    for r in ranked:
+        haystack = f"{r.get('interpro_family','')} {r.get('mechanism_family','')}".lower()
+        hits = sum(1 for w in words if w in haystack)
+        if not hits:
+            continue
+        # prefer: more shared words, then an unused candidate, then better rank
+        key = (hits, r.get("accession") not in taken)
+        if key > best_key:
+            best, best_key = r, key
+    return best
+
+
+def family_cards(decisions: dict, ranked: list, decision: str, limit: int) -> list:
+    """(label, reason, representative-row) for families with the given decision.
+
+    Families whose representative can be identified are listed first, since
+    those cards can show a real native reaction.
+    """
+    named = [(info.get("name") or "unnamed family", info.get("reason") or "")
+             for info in decisions.values() if info.get("decision") == decision]
+    items, taken = [], set()
+    for name, reason in named:
+        rep = _family_rep(name, ranked, taken)
+        if rep is not None:
+            taken.add(rep.get("accession"))
+        items.append((name, reason, rep))
+    items.sort(key=lambda t: t[2] is None)
+    return items[:limit]
+
+
+def native_pair(row: dict | None) -> tuple:
+    """Up to two (label, SMILES) native substrates of a candidate row."""
+    if not row:
+        return ()
+    names = [n.strip() for n in (row.get("native_substrates") or "").split(";") if n.strip()]
+    smis = [s.strip() for s in (row.get("native_substrate_smiles") or "").split(";") if s.strip()]
+    pairs = []
+    for name, smi in zip(names, smis):
+        if Chem.MolFromSmiles(smi) is not None:
+            pairs.append((_shorten(name, 24), smi))
+        if len(pairs) == 2:
+            break
+    return tuple(pairs)
+
+
+def build(run: Path, out: Path):
+    data = load(run)
+    contract, complete, target = data["contract"], data["complete"], data["target"]
+    decisions, mech_names, rows = data["decisions"], data["mech_names"], data["rows"]
+    n_expand, n_stop, n_folds = data["n_expand"], data["n_stop"], data["n_folds"]
     leads = list(rows.values())[:5]
 
     fig = plt.figure(figsize=(16.5, 13.6))
@@ -197,30 +258,43 @@ def build(run: Path):
     # ---- title ----
     ax.text(0.5, 0.988, "Enzyme Discovery Agent — reasoning trace along the pipeline",
             ha="center", va="top", fontsize=22, fontweight="bold", color=INK)
-    ax.text(0.5, 0.966, "one run · target: adipic acid + hexamethylenediamine (nylon-6,6 amide ligation)",
+    subtitle = _shorten(target.get("substrate_name") or target.get("query") or "", 120)
+    ax.text(0.5, 0.966, f"one run · target: {subtitle}" if subtitle else "one run",
             ha="center", va="top", fontsize=13.5, color=MUTED, style="italic")
 
-    # ---- 1. INPUT ----
+    # ---- 1. INPUT (target substrates, read from the run) ----
+    smis = [s for s in (target.get("substrate_smiles") or "").split(".") if s.strip()]
+    smis = [s for s in smis if Chem.MolFromSmiles(s) is not None][:3]
+    names = [n.strip() for n in re.split(r"\s*(?:\+|;|,)\s*",
+                                         target.get("substrate_name") or "") if n.strip()]
     card(0.24, 0.862, 0.52, 0.076, "white", BLUE)
     tag(0.253, 0.930, "INPUT  ·  target substrates", BLUE)
-    img_at(mol_img("O=C(O)CCCCC(=O)O", (260, 118)), 0.38, 0.901, 0.58)
-    img_at(mol_img("NCCCCCCN", (260, 118)), 0.62, 0.901, 0.58)
-    ax.text(0.5, 0.901, "+", ha="center", va="center", fontsize=20, color=INK)
-    ax.text(0.38, 0.874, "diacid", ha="center", fontsize=11, color=MUTED)
-    ax.text(0.62, 0.874, "diamine", ha="center", fontsize=11, color=MUTED)
+    if smis:
+        xs = [0.5] if len(smis) == 1 else [0.38, 0.62] if len(smis) == 2 else [0.33, 0.5, 0.67]
+        for i, (sx, smi) in enumerate(zip(xs, smis)):
+            img_at(mol_img(smi, (260, 118)), sx, 0.901, 0.58 if len(smis) < 3 else 0.42)
+            label = _shorten(names[i], 26) if i < len(names) and len(names) == len(smis) else ""
+            if label:
+                ax.text(sx, 0.868, label, ha="center", fontsize=10, color=MUTED)
+        for sx0, sx1 in zip(xs, xs[1:]):
+            ax.text((sx0 + sx1) / 2, 0.901, "+", ha="center", va="center", fontsize=20, color=INK)
+    else:
+        ax.text(0.5, 0.901, _shorten(target.get("query") or "target reaction", 90),
+                ha="center", va="center", fontsize=12, color=INK)
     arrow(0.862, 0.852)
 
     # ---- 2. PARSE (4 columns, each with the why) ----
     card(0.04, 0.752, 0.92, 0.096, _tint(BLUE, 0.94), BLUE)
     tag(0.055, 0.840, "PARSE REACTION  →  contract", BLUE)
-    bt = ", ".join(contract.get("bond_types", []) or [])
-    rd = contract.get("reaction_direction", "")
-    rg = " + ".join(contract.get("reactive_groups", []) or [])
+    bt = ", ".join(contract.get("bond_types", []) or []) or "—"
+    rd = contract.get("reaction_direction", "") or "—"
+    rg = " + ".join(contract.get("reactive_groups", []) or []) or "—"
+    topo = (contract.get("substrate_topology") or "—").replace("_", " ")
     cells = [
-        ("bond", bt, "amide bond to form"),
-        ("direction", rd, "rejects hydrolases\n(wrong-direction gate)"),
+        ("bond", bt, "bond type the\ncandidate must act on"),
+        ("direction", rd, "rejects the opposite\ndirection (gate)"),
         ("reactive groups", rg, "seed search terms\n& substrate match"),
-        ("substrates", "two free\nsmall molecules", "favours small-molecule\nligase folds"),
+        ("substrates", topo, "constrains which\nfolds can bind"),
     ]
     cw = 0.212
     for i, (k, v, why) in enumerate(cells):
@@ -236,8 +310,8 @@ def build(run: Path):
 
     # ---- 3. ENUMERATE ----
     card(0.10, 0.658, 0.80, 0.078, _tint(PURPLE, 0.94), PURPLE)
-    tag(0.115, 0.726, f"ENUMERATE MECHANISMS  ·  {len(mech_names)} distinct folds "
-        f"(acyl-phosphate & acyl-adenylate intermediates)", PURPLE, fs=12.5)
+    tag(0.115, 0.726, f"ENUMERATE MECHANISMS  ·  {len(mech_names)} distinct folds",
+        PURPLE, fs=12.5)
     ax.text(0.5, 0.697, "   ·   ".join(mech_names[:4]), ha="center", va="center",
             fontsize=13, color=INK)
     ax.text(0.5, 0.673, "   ·   ".join(mech_names[4:]), ha="center", va="center",
@@ -274,53 +348,56 @@ def build(run: Path):
                          fc="#e5e7eb", ec=MUTED, lw=1.2, zorder=5))
             ax.text(bx + bw / 2, by + bh / 2, glyph_label, ha="center", va="center",
                     fontsize=9.0, color=MUTED, zorder=6, linespacing=1.1)
-        else:
+        elif mol_arr is not None:
             img_at(mol_arr, cx + cw2 / 2, cy + ch2 * 0.50, 0.46)
+        else:
+            ax.text(cx + cw2 / 2, cy + ch2 * 0.52, "structure\nnot recorded", ha="center",
+                    va="center", fontsize=9.5, color=MUTED, style="italic", zorder=4)
         ax.text(cx + cw2 / 2, cy + 0.026, caption, ha="center", va="center",
                 fontsize=10.5, color=INK)
         if subcaption:
             ax.text(cx + cw2 / 2, cy + 0.011, subcaption, ha="center", va="center",
                     fontsize=9.2, color=MUTED, style="italic")
 
+    def draw_column(x0, accent, heading, decision, badge_for):
+        ax.add_patch(FancyBboxPatch((x0, 0.570), 2 * cw2 + gx, 0.032,
+                     boxstyle="round,pad=0.004", fc=accent, ec="none", zorder=3))
+        ax.text(x0 + cw2 + gx / 2, 0.586, heading, ha="center", va="center",
+                fontsize=12, fontweight="bold", color="white", zorder=4)
+        for i, (fam, reason, rep) in enumerate(
+                family_cards(decisions, ranked, decision, N_PER_SIDE)):
+            cx = x0 + (i % 2) * (cw2 + gx)
+            cy = gtop - ch2 - (i // 2) * (ch2 + gy)
+            pair = native_pair(rep)
+            if len(pair) == 2:
+                arr = pair_img(pair[0][1], pair[1][1], pair[0][0], pair[1][0])
+                caption = f"{pair[0][0]} + {pair[1][0]}"
+            elif len(pair) == 1:
+                arr = mol_img(pair[0][1], (200, 150))
+                caption = pair[0][0]
+            else:
+                arr = None
+                caption = "no native substrate recorded"
+            badge = badge_for(rep)
+            fam_card(cx, cy, _shorten(_short_mech(fam), 30 - len(badge)), badge, accent, arr,
+                     _shorten(caption, 34), accent, subcaption=_shorten(reason, 58))
+
     # pursued (left half) ------------------------------------------------------
     lx = 0.035
-    ax.add_patch(FancyBboxPatch((lx, 0.570), 2 * cw2 + gx, 0.032, boxstyle="round,pad=0.004",
-                 fc=GREEN, ec="none", zorder=3))
-    ax.text(lx + cw2 + gx / 2, 0.586, "PURSUED  —  forms the target amide bond from small substrates",
-            ha="center", va="center", fontsize=12, fontweight="bold", color="white", zorder=4)
-    for i, (fam, substrs, amine_h, amine_l, acid_h, acid_l, subc) in enumerate(PURSUED):
-        rep = next((r for r in ranked
-                    if any(s in (r.get("interpro_family") or "").lower() for s in substrs)), None)
-        if rep is None:
-            continue
-        gene, acc, rank = rep.get("gene", "?"), rep.get("accession", ""), rep.get("rank", "")
-        cx = lx + (i % 2) * (cw2 + gx)
-        cy = gtop - ch2 - (i // 2) * (ch2 + gy)
-        arr = pair_img(sub_smiles(rows, acc, amine_h), sub_smiles(rows, acc, acid_h),
-                       amine_l, acid_l)
-        fam_card(cx, cy, fam, f"{gene} · #{rank}", GREEN, arr,
-                 f"{amine_l} + {acid_l}", GREEN, subcaption=subc)
+    draw_column(lx, GREEN, "PURSUED  —  native chemistry matches the target", "expand",
+                lambda r: (" · ".join(x for x in (r.get("gene") or "",
+                                                   f"#{r.get('rank')}" if r.get("rank") else "")
+                                      if x) or "expand") if r else "expand")
 
     # stopped (right half) -----------------------------------------------------
     rx = lx + 2 * cw2 + gx + 0.036
-    ax.add_patch(FancyBboxPatch((rx, 0.570), 2 * cw2 + gx, 0.032, boxstyle="round,pad=0.004",
-                 fc=RED, ec="none", zorder=3))
-    ax.text(rx + cw2 + gx / 2, 0.586, "STOPPED  —  off-target native chemistry",
-            ha="center", va="center", fontsize=12, fontweight="bold", color="white", zorder=4)
-    for i, (fold, la, sa, lb, sb, why, glyph) in enumerate(STOPPED):
-        cx = rx + (i % 2) * (cw2 + gx)
-        cy = gtop - ch2 - (i // 2) * (ch2 + gy)
-        if sb is None:  # second substrate is a carrier protein, not a small molecule
-            fam_card(cx, cy, fold, "✗ off-target", RED, mol_img(sa, (200, 150)),
-                     f"{la} + {lb}", RED, subcaption=why, glyph_label=glyph)
-        else:
-            fam_card(cx, cy, fold, "✗ off-target", RED, pair_img(sa, sb, la, lb),
-                     f"{la} + {lb}", RED, subcaption=why)
+    draw_column(rx, RED, "STOPPED  —  off-target native chemistry", "stop",
+                lambda r: "✗ off-target")
 
     # full-width decision-rule strip -------------------------------------------
     card(0.035, 0.162, 2 * (2 * cw2 + gx) + 0.036, 0.048, _tint(INK, 0.96), INK, lw=1.2)
     ax.text(0.5, 0.186, "decision rule:  same fold ≠ same substrate — pursue only the members "
-            "whose native reaction matches the target chemistry (free amine + carboxylate)",
+            "whose native reaction matches the target chemistry",
             ha="center", va="center", fontsize=11.5, color=INK)
     arrow(0.150, 0.132)
 
@@ -350,11 +427,24 @@ def build(run: Path):
         ax.text(cx + cwl / 2, 0.012, tier, ha="center", va="center", fontsize=10.5,
                 color=TEAL, fontweight="bold")
 
-    out = FIG_DIR / "reasoning_trace.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=DPI, facecolor="white")
-    print(f"wrote {out}")
+    plt.close(fig)
+    print(f"wrote {out}  (run: {run.name})")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("run_dir", nargs="?", default=None,
+                    help="discovery run directory; default = most recent usable run")
+    ap.add_argument("-o", "--out", default=None, help="output PNG path")
+    args = ap.parse_args(argv)
+    run = Path(args.run_dir).resolve() if args.run_dir else latest_run()
+    missing = [f for f in REQUIRED if not (run / f).exists()]
+    if missing:
+        raise SystemExit(f"{run} is missing required artifact(s): {missing}")
+    build(run, Path(args.out) if args.out else FIG_DIR / "reasoning_trace.png")
 
 
 if __name__ == "__main__":
-    run = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else DEFAULT_RUN
-    build(run)
+    main()
