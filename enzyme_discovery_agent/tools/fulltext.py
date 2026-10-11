@@ -22,6 +22,8 @@ unattended).
 from __future__ import annotations
 
 import json
+import threading
+import hashlib
 import logging
 import re
 import urllib.parse
@@ -37,6 +39,8 @@ from enzyme_discovery_agent.tools.literature import (
     _recover_literature_papers,
     consolidate_pool,
 )
+from enzyme_discovery_agent.run_layout import run_file
+from enzyme_discovery_agent.state_store import atomic_write_json
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -425,8 +429,8 @@ def _resolve_embl_accession(acc: str, cap: int = 50) -> list[str]:
         )
         results = json.loads(raw.decode()).get("results", [])
     except Exception as e:
-        logger.debug("EMBL xref resolve failed for %s: %s", acc, e)
-        return []
+        logger.warning("EMBL xref resolve UNAVAILABLE for %s: %s", acc, e)
+        raise LookupUnavailable(str(e)) from e
     if len(results) > cap:  # genome-scale deposit — too noisy to register
         return []
     return [r.get("primaryAccession") for r in results if r.get("primaryAccession")]
@@ -436,11 +440,37 @@ def _resolve_embl_accession(acc: str, cap: int = 50) -> list[str]:
 # are resolved via protein_name, never gene:.
 _GENE_TOKEN_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{1,20}$")
 # Bound on literature-NAMED enzymes resolved per run, and papers read for them.
+# Leads whose identity lookup could not be COMPLETED (transport failure, not a
+# negative result).  They are re-attempted once at the end of the harvest, by
+# which time a transient outage or rate-limit has usually cleared.  Without this
+# a network blip during harvest permanently deletes a real candidate.
+_RETRYABLE_LEADS: list[dict] = []
+_RETRYABLE_LOCK = threading.Lock()
+
 _MAX_NAMED_ENZYMES = 40
 _MAX_NAMED_PAPERS = 15
 
 
+class LookupUnavailable(Exception):
+    """A lookup could not be completed (transport/transient), as opposed to
+    completing and finding nothing.
+
+    These two outcomes must never be conflated: "the database says this enzyme
+    does not exist" is a scientific finding, while "we could not reach the
+    database" is a missing measurement.  Treating the second as the first
+    silently deletes real candidates, and the deletion is invisible because the
+    lead is simply counted as unresolved.
+    """
+
+
 def _uniprot_search(query: str, size: int = 5, fields: str = "accession") -> list[dict]:
+    """Search UniProt.
+
+    Returns the (possibly empty) result list on a completed query, and raises
+    :class:`LookupUnavailable` when the query could not be completed, so callers
+    can distinguish a true negative from a failed lookup.  Retries/backoff are
+    handled by the pooled session's HTTP adapter.
+    """
     params = {"query": query, "format": "json", "size": str(size), "fields": fields}
     url = "https://rest.uniprot.org/uniprotkb/search?" + urllib.parse.urlencode(params)
     try:
@@ -448,10 +478,14 @@ def _uniprot_search(query: str, size: int = 5, fields: str = "accession") -> lis
             urllib.request.Request(url, headers={"Accept": "application/json"}),
             timeout=20,
         )
+    except Exception as e:  # noqa: BLE001 - transport layer, not a result
+        logger.warning("uniprot search UNAVAILABLE (%s): %s", query[:60], e)
+        raise LookupUnavailable(str(e)) from e
+    try:
         return json.loads(raw.decode()).get("results", [])
-    except Exception as e:  # noqa: BLE001
-        logger.debug("uniprot search failed (%s): %s", query[:60], e)
-        return []
+    except (ValueError, UnicodeDecodeError) as e:
+        logger.warning("uniprot search returned unparseable body (%s): %s", query[:60], e)
+        raise LookupUnavailable(f"unparseable response: {e}") from e
 
 
 def _entry_gene_names(entry: dict) -> list[str]:
@@ -528,7 +562,7 @@ def _direction_consistent(entry: dict, direction: str | None, descriptor: str = 
     an enzyme of the right direction (EC class 6 = formation, 3 = cleavage; else the
     protein-name / paper-descriptor wording).  An unknown target direction is
     permissive (only require that it looks like an enzyme).  ``descriptor`` is the
-    paper's own wording for the enzyme (e.g. "amide bond synthetase"), a strong
+    paper's own catalytic description, a strong
     direction hint the stale DB label may lack.
     """
     ecs = _entry_ecs(entry)
@@ -546,6 +580,11 @@ def _direction_consistent(entry: dict, direction: str | None, descriptor: str = 
     if ec1 == ("3" if direction == "formation" else "6"):
         return False
     return any(w in blob for w in good) and not any(w in blob for w in bad)
+
+
+def _known_organism(organism):
+    value = str(organism or "").strip()
+    return "" if value.lower() in {"not specified", "not explicitly stated", "unknown", "unspecified", "n/a", "none"} else value
 
 
 def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None) -> str | None:
@@ -569,7 +608,7 @@ def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None
     keeps a same-symbol unrelated protein out.  Returns an accession or None.
     """
     raw = (name or "").strip()
-    organism = (organism or "").strip()
+    organism = _known_organism(organism)
     if not raw:
         return None
     # A paper names an enzyme with a descriptive suffix, e.g. "GeneA (characterised
@@ -587,7 +626,7 @@ def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None
         org = organism.replace('"', " ").strip()
         hits = _uniprot_search(f'{name_clause} AND organism_name:"{org}"', size=5, fields=_flds)
         if hits:
-            hits.sort(key=lambda e: 0 if "reviewed" in str(e.get("entryType", "")).lower() else 1)
+            hits.sort(key=lambda e: 0 if "swiss-prot" in str(e.get("entryType", "")).lower() else 1)
             return hits[0].get("primaryAccession")
         # Free-text organism-anchored fallback (direction-gated): recovers a named
         # enzyme whose only record is unreviewed / mis-annotated and so misses the
@@ -595,6 +634,9 @@ def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None
         for e in _uniprot_search(f'{symbol} AND organism_name:"{org}"', size=5, fields=_flds):
             if _direction_consistent(e, direction, descriptor):
                 return e.get("primaryAccession")
+        # A failed organism-anchored lookup is an unresolved identity. Dropping
+        # the organism can substitute an unrelated protein with the same symbol.
+        return None
 
     if is_gene:
         reviewed = _uniprot_search(
@@ -604,6 +646,7 @@ def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None
         exact = [
             r for r in reviewed
             if any(gn.lower() == symbol.lower() for gn in _entry_gene_names(r))
+            and _direction_consistent(r, None)
         ]
         if exact and _functionally_coherent(exact):
             return exact[0].get("primaryAccession")
@@ -612,7 +655,7 @@ def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None
 
 def _register_named_enzymes_from_fulltext(
     run, query: str, dest: Path, manifest: list[dict], llm_client, register_fn,
-    already: set, remaining: int,
+    already: set, remaining: int, stats: dict | None = None,
 ) -> list[str]:
     """Literature-driven discovery channel: harvest enzymes NAMED in the fetched
     papers' body text and register each as a candidate.
@@ -627,8 +670,20 @@ def _register_named_enzymes_from_fulltext(
     """
     if llm_client is None or remaining <= 0:
         return []
+    if stats is None:
+        stats = {}
+    for counter in ("papers_processed", "chunks_processed", "extraction_failures", "named_leads", "unresolved_leads"):
+        stats.setdefault(counter, 0)
     from enzyme_discovery_agent.tools.literature_extraction import extract_from_paper
     from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
+    from enzyme_discovery_agent.models.literature_reading import reading_state, save_reading_state, TERMINAL_EXTRACTIONS
+    from enzyme_discovery_agent.models.literature_leads import sequence_name_leads
+    reading = reading_state(run)
+    to_read = [meta for meta in manifest if meta.get("text_file")
+               and reading["extractions"].get(meta.get("key"), {}).get("status") not in TERMINAL_EXTRACTIONS
+               and reading["extractions"].get(meta.get("key"), {}).get("attempts", 0) < 2]
+    to_read.sort(key=lambda meta: reading["extractions"].get(meta.get("key"), {}).get("chunks_read", 0))
+    to_read = to_read[:config.LITERATURE_DISCOVERY_PAPERS_PER_STEP]
 
     # Target reaction direction disambiguates a named-enzyme resolution past a stale
     # DB label (see _resolve_named_enzyme's direction-gated fallback).  Best-effort.
@@ -651,26 +706,52 @@ def _register_named_enzymes_from_fulltext(
             return (meta, None)
         if not text.strip():
             return (meta, None)
+        if getattr(llm_client, "budget_exhausted", False):
+            return (meta, None)
         try:
-            return (meta, extract_from_paper(text, "", "", llm_client, query=query))
+            previous = reading["extractions"].get(meta.get("key"), {})
+            text_hash = hashlib.sha256(text.encode()).hexdigest()
+            cursor = int(previous.get("cursor", 0)) if previous.get("text_sha256") == text_hash else 0
+            end = min(len(text), cursor + 12000)
+            result = extract_from_paper(text[cursor:end], "", "", llm_client,
+                                        query=query, discovery_only=True) or {}
+            if getattr(llm_client, "budget_exhausted", False):
+                return (meta, None)
+            sequence_leads = sequence_name_leads(text) if cursor == 0 else []
+            if not result and not sequence_leads:
+                return (meta, None)
+            result["sequence_identifier_leads"] = sequence_leads
+            result["_chunk"] = {"start": cursor, "end": end, "total": len(text), "text_sha256": text_hash}
+            return (meta, result)
         except Exception as e:  # noqa: BLE001 - never block mining
             logger.debug("named-enzyme extraction failed for %s: %s", tf, e)
-            return (meta, None)
-
-    with ThreadPoolExecutor(max_workers=config.FULLTEXT_HARVEST_WORKERS) as pool:
-        extracted = list(pool.map(_read_and_extract, manifest[:_MAX_NAMED_PAPERS]))
+            return (meta, {"sequence_identifier_leads": sequence_name_leads(text)})
 
     registered: list[str] = []
-    paper_records: list[dict] = []
-    for meta, obj in extracted:
+    try:
+        paper_records = json.loads((dest / "papers_enzymes.json").read_text())
+    except FileNotFoundError:
+        paper_records = []
+    # Persist each completed paper before starting the next bounded job. This
+    # keeps a quota failure from losing every earlier result in a large batch.
+    for meta in to_read:
+        stats["papers_processed"] += 1
+        meta, obj = _read_and_extract(meta)
         if len(registered) >= remaining:
             break
         if not obj:
+            stats["extraction_failures"] += 1
+            if not getattr(llm_client, "budget_exhausted", False):
+                key = meta.get("key")
+                old = reading["extractions"].get(key, {})
+                reading["extractions"][key] = {**old, "status": "error", "attempts": old.get("attempts", 0) + 1}
             continue
+        if obj.get("_chunk"):
+            stats["chunks_processed"] += 1
         doi = meta.get("doi") or meta.get("key") or (meta.get("text_file") or "")
         enzymes = obj.get("enzymes") or []
         homologs = obj.get("homologs_or_related_enzymes") or []
-        rec = {
+        rec = next((row for row in paper_records if row.get("doi") == doi), None) or {
             "title": meta.get("title", ""), "doi": doi,
             "source": meta.get("source", ""), "format": meta.get("format", ""),
             "enzymes": [], "homologs": [],
@@ -687,16 +768,37 @@ def _register_named_enzymes_from_fulltext(
         # but this paper does not characterise it — its evidence lives in its own
         # primary literature, reached later via its accession).
         def _handle(nm, org, gb, bucket, kind):
+            stats["named_leads"] += 1
             nm = (nm or "").strip()
-            org = org or ""
+            org = _known_organism(org)
+            if not org:
+                # Later text excerpts may omit an identity stated earlier in
+                # this same paper. Carry only an unambiguous recorded organism.
+                previous_organisms = {_known_organism(row.get("organism"))
+                    for row in rec["enzymes"] + rec["homologs"]
+                    if str(row.get("name") or "").casefold() == nm.casefold()}
+                previous_organisms.discard("")
+                if len(previous_organisms) == 1:
+                    org = previous_organisms.pop()
             accs = []
+            lookup_failed = False
             if gb:
-                accs = _resolve_embl_accession(gb)
+                try:
+                    accs = _resolve_embl_accession(gb)
+                except LookupUnavailable:
+                    accs, lookup_failed = [], True
                 for acc in accs:
+                    if acc not in already and len(registered) < remaining:
+                        already.add(acc)
+                        register_fn(acc, f"fulltext_genbank:{gb}", nm)
+                        registered.append(acc)
                     if nm:
                         update_candidate_registry(run, acc, None, {"literature_name": nm})
             elif nm:
-                acc = _resolve_named_enzyme(nm, org, direction=_direction)
+                try:
+                    acc = _resolve_named_enzyme(nm, org, direction=_direction)
+                except LookupUnavailable:
+                    acc, lookup_failed = None, True
                 if acc:
                     accs = [acc]
                     if acc not in already and len(registered) < remaining:
@@ -704,14 +806,99 @@ def _register_named_enzymes_from_fulltext(
                         register_fn(acc, f"fulltext_{kind}:{nm}@{doi}", nm)
                         registered.append(acc)
             bucket.append({"name": nm, "organism": org, "accessions": accs,
-                           "relationship": kind})
+                           "relationship": kind,
+                           "lookup_failed": lookup_failed})
+            if not accs:
+                # A lead we could not look up is NOT evidence of absence; keep it
+                # separate so a network blip is never read as "no such enzyme".
+                stats["unresolved_leads"] += 1
+                if lookup_failed:
+                    stats["lookup_failures"] = stats.get("lookup_failures", 0) + 1
+                    with _RETRYABLE_LOCK:
+                        _RETRYABLE_LEADS.append({"name": nm, "organism": org,
+                                                 "genbank": gb, "kind": kind})
 
         for e in enzymes:
             _handle(e.get("name"), e.get("organism"), (e.get("genbank") or "").strip(),
                     rec["enzymes"], "named")
+            # Only characterized records, never merely cited analogues, can
+            # provide reaction evidence for a sparsely annotated accession.
+            if obj.get("is_characterization_paper") and obj.get("paper_relevant") is not False:
+                from enzyme_discovery_agent.models.literature_evidence import build_literature_evidence
+                for acc in rec["enzymes"][-1]["accessions"]:
+                    try:
+                        evidence = build_literature_evidence(
+                            acc, e, meta, dest / meta["text_file"],
+                            identity_basis="deposited_accession" if e.get("genbank") else "resolved_name_and_organism")
+                        update_candidate_registry(run, acc, None, {"literature_evidence": evidence})
+                    except (OSError, KeyError, TypeError):
+                        continue
         for h in homologs:
             _handle(h.get("name"), h.get("organism"), "", rec["homologs"], "cited")
+        for lead in obj.get("sequence_identifier_leads") or []:
+            _handle(lead["name"], "", lead["genbank"], rec["homologs"], "sequence_identifier_lead")
+            for acc in rec["homologs"][-1]["accessions"]:
+                update_candidate_registry(run, acc, None, {"literature_identifier_lead": {
+                    "doi": doi, "genbank": lead["genbank"], "source_quote": lead["source_quote"],
+                    "activity_validated": False,
+                }})
+        paper_records = [row for row in paper_records if row.get("doi") != doi]
         paper_records.append(rec)
+        key = meta.get("key")
+        old = reading["extractions"].get(key, {})
+        # Empty model extractions remain retryable; explicit identifier leads
+        # can advance discovery even when the weak model produces no names.
+        chunk = obj.get("_chunk") or {}
+        complete = not chunk or chunk["end"] >= chunk["total"]
+        # A negative excerpt is not a negative whole paper. Continue through
+        # unexamined text without requiring another identical model extraction.
+        seen_relevant = old.get("seen_relevant", False) or obj.get("paper_relevant") is True or bool(enzymes or homologs)
+        all_irrelevant = (old.get("all_irrelevant", True) and obj.get("paper_relevant") is False
+                          and not seen_relevant)
+        status = ("partial" if not complete else "done" if seen_relevant or obj.get("sequence_identifier_leads")
+                  else "irrelevant" if all_irrelevant else "empty")
+        reading["extractions"][key] = {"status": status, "attempts": 0 if status == "partial" else old.get("attempts", 0) + 1,
+                                       "cursor": chunk.get("end", 0), "text_sha256": chunk.get("text_sha256"),
+                                       "seen_relevant": seen_relevant, "all_irrelevant": all_irrelevant,
+                                       "chunks_read": old.get("chunks_read", 0) + 1,
+                                       "relevance_reason": obj.get("relevance_reason"),
+                                       "extraction_mode": "discovery"}
+        save_reading_state(run, reading)
+        atomic_write_json(dest / "papers_enzymes.json", paper_records)
+
+    save_reading_state(run, reading)
+
+    # Second pass over leads whose lookup never COMPLETED.  A transient outage
+    # or rate-limit during harvest would otherwise be recorded as "this enzyme
+    # does not exist", which is the one error mode that silently loses a real
+    # candidate with no trace in the candidate set.
+    with _RETRYABLE_LOCK:
+        pending, _RETRYABLE_LEADS[:] = list(_RETRYABLE_LEADS), []
+    if pending:
+        logger.info("Re-attempting %d lead(s) whose identity lookup failed", len(pending))
+        recovered = 0
+        for lead in pending:
+            if len(registered) >= remaining:
+                break
+            try:
+                if lead.get("genbank"):
+                    accs = _resolve_embl_accession(lead["genbank"])
+                else:
+                    acc = _resolve_named_enzyme(lead["name"], lead.get("organism") or "",
+                                                direction=_direction)
+                    accs = [acc] if acc else []
+            except LookupUnavailable:
+                continue        # still unreachable; stays unresolved, not absent
+            for acc in accs:
+                if acc and acc not in already and len(registered) < remaining:
+                    already.add(acc)
+                    register_fn(acc, f"fulltext_retry:{lead['name']}", lead["name"])
+                    registered.append(acc)
+                    recovered += 1
+        if stats is not None:
+            stats["lookup_retry_recovered"] = recovered
+            stats["unresolved_leads"] = max(0, stats.get("unresolved_leads", 0) - recovered)
+        logger.info("Lookup retry recovered %d candidate(s)", recovered)
 
     try:
         (dest / "papers_enzymes.json").write_text(json.dumps(paper_records, indent=2) + "\n")
@@ -722,7 +909,7 @@ def _register_named_enzymes_from_fulltext(
 
 def seed_mechanism_literature(
     run_dir, query: str, substrate_smiles: str = "", llm_client=None,
-    max_families: int = 4, terms_per_family: int = 2, per_source: int = 15,
+    max_families: int | None = None, terms_per_family: int | None = None, per_source: int = 15,
     log_fn=None,
 ) -> int:
     """Run the derived mechanism families' literature search phrases as REAL
@@ -743,7 +930,7 @@ def seed_mechanism_literature(
         from enzyme_discovery_agent.tools.mechanism_families import (
             derive_mechanism_families,
         )
-        mf_path = run / "mechanism_families.json"
+        mf_path = run_file(run, 'mechanism_families.json')
         families: list[dict] = []
         if mf_path.exists():
             try:
@@ -751,7 +938,11 @@ def seed_mechanism_literature(
             except (OSError, json.JSONDecodeError):
                 families = []
         if not families and llm_client is not None:
-            families = derive_mechanism_families(query, substrate_smiles, llm_client)
+            from enzyme_discovery_agent.models.target_reasoning import target_claims
+            direction, _, topology = target_claims(run)
+            families = derive_mechanism_families(
+                query, substrate_smiles, llm_client,
+                target_direction=direction, target_topology=topology)
             if families:
                 try:
                     mf_path.write_text(json.dumps(families, indent=2) + "\n")
@@ -765,8 +956,10 @@ def seed_mechanism_literature(
 
     terms: list[str] = []
     seen_terms: set[str] = set()
-    for fam in families[:max_families]:
-        for t in (fam.get("literature_terms") or fam.get("descriptors") or [])[:terms_per_family]:
+    selected_families = families if max_families is None else families[:max_families]
+    for fam in selected_families:
+        phrases = fam.get("literature_terms") or fam.get("descriptors") or []
+        for t in phrases if terms_per_family is None else phrases[:terms_per_family]:
             t = (t or "").strip()
             if t and t.lower() not in seen_terms:
                 seen_terms.add(t.lower())
@@ -778,14 +971,16 @@ def seed_mechanism_literature(
         search_europepmc,
         search_pubmed,
         search_semantic_scholar,
+        search_openalex,
+        search_crossref,
     )
-    sources = (search_pubmed, search_europepmc, search_semantic_scholar)
+    sources = (search_pubmed, search_europepmc, search_semantic_scholar, search_openalex, search_crossref)
 
     def _search_term(term: str) -> list[dict]:
         hits: list[dict] = []
         for fn in sources:
             try:
-                r = fn(term, max_results=per_source)
+                r = fn(term, max_results=per_source, run_dir=str(run))
                 if r.get("status") != "error":
                     hits.extend(r.get("data") or [])
             except Exception as exc:  # noqa: BLE001 - one source failing is fine
@@ -797,12 +992,14 @@ def seed_mechanism_literature(
     added = 0
     with ThreadPoolExecutor(max_workers=config.FULLTEXT_HARVEST_WORKERS) as pool:
         results = list(pool.map(_search_term, terms))
-    for i, (term, hits) in enumerate(zip(terms, results)):
+    for term, hits in zip(terms, results):
         papers = [p for p in hits if isinstance(p, dict)]
         if not papers:
             continue
         try:
-            (lit_dir / f"mechanism_seed_{i:02d}.json").write_text(
+            import hashlib
+            term_key = hashlib.sha256(term.encode()).hexdigest()[:16]
+            (lit_dir / f"mechanism_seed_{term_key}.json").write_text(
                 json.dumps({"tool": "mechanism_seed", "query": term,
                             "result": {"data": papers}}, indent=2) + "\n"
             )
@@ -833,6 +1030,7 @@ def mine_and_register_fulltext_accessions(
     ``llm_client`` is None (extraction needs it).
     """
     from enzyme_discovery_agent.models.candidate_registry import (
+        load_candidate_registry,
         update_candidate_registry,
     )
 
@@ -852,6 +1050,14 @@ def mine_and_register_fulltext_accessions(
             manifest = []
     done = {m.get("key") for m in manifest}
 
+    # On rolling harvests, select among unread papers. Selecting from the full
+    # pool first lets the same already-read favorites consume every selection,
+    # so a later search never contributes new characterization evidence.
+    from enzyme_discovery_agent.models.literature_reading import reading_state, save_reading_state
+    reading = reading_state(run)
+    papers = [p for p in papers if (key := _fulltext_key(p)) is not None and key not in done
+              and reading["downloads"].get(key, {}).get("attempts", 0) < 2]
+
     # 1. Read the full text of a SMALL number of the most-relevant DOWNLOADABLE
     # papers — the lean "exploration" harvest.  We deliberately DO NOT LLM-relevance-
     # gate the pool or attempt the whole (~10^2, mostly paywalled) list: that spent
@@ -870,7 +1076,14 @@ def mine_and_register_fulltext_accessions(
         rank_papers_by_enzymology,
     )
     workers = config.FULLTEXT_HARVEST_WORKERS
-    target_reads = min(fetch_ceiling, config.FULLTEXT_HARVEST_MAX_PAPERS)
+    target_reads = min(fetch_ceiling, config.FULLTEXT_HARVEST_MAX_PAPERS,
+                       config.LITERATURE_DISCOVERY_PAPERS_PER_STEP)
+    from enzyme_discovery_agent.models.literature_reading import TERMINAL_EXTRACTIONS
+    extraction_backlog = sum(m.get("text_file") is not None
+        and reading["extractions"].get(m.get("key"), {}).get("status") not in TERMINAL_EXTRACTIONS
+        and reading["extractions"].get(m.get("key"), {}).get("attempts", 0) < 2 for m in manifest)
+    if extraction_backlog >= config.LITERATURE_DISCOVERY_PAPERS_PER_STEP:
+        target_reads = 0
     # Let the AGENT REASON over titles+abstracts to pick which papers are most worth
     # reading IN FULL for the DERIVED target reaction: it recognises on-topic primary
     # biology and rejects chemical-synthesis / materials / review / off-topic papers
@@ -883,7 +1096,9 @@ def mine_and_register_fulltext_accessions(
             run, papers,
             fallback=lambda: consolidate_pool(query, papers, max_results=len(papers))["ranked"],
         ),
-    )
+    ) if target_reads else []
+    if getattr(llm_client, "budget_exhausted", False):
+        return []
     candidates = [p for p in _select_harvest_papers(ranked, done, len(ranked))
                   if not _is_non_article(p.get("title", ""))]
     # Only when NO LLM did the reasoned selection above do we fall back to a cheap
@@ -909,27 +1124,35 @@ def mine_and_register_fulltext_accessions(
     attempt_ceiling = min(len(candidates), max(target_reads * 4, 8))
     i = 0
     while fetched < target_reads and i < attempt_ceiling:
-        batch = candidates[i:i + workers]
+        batch = candidates[i:i + min(workers, target_reads - fetched)]
         if not batch:
             break
         i += len(batch)
         plan = []
         for p in batch:
+            key = _fulltext_key(p)
+            attempts = reading["downloads"].get(key, {}).get("attempts", 0) + 1
+            reading["downloads"][key] = {"attempts": attempts, "status": "started"}
             base = _paper_basename(p, _fulltext_key(p), dest, taken=taken)
             taken.add(base)
             plan.append((p, base))
         attempted += len(plan)
+        save_reading_state(run, reading)
         with ThreadPoolExecutor(max_workers=workers) as pool:
             recs = list(pool.map(lambda pb: fetch_one(pb[0], dest, basename=pb[1]), plan))
-        for rec in recs:
+        for (paper, _), rec in zip(plan, recs):
+            reading["downloads"][_fulltext_key(paper)]["status"] = "acquired" if rec else "unavailable"
             if rec and fetched < target_reads:
                 manifest.append(rec)
                 done.add(rec["key"])
                 fetched += 1
+        save_reading_state(run, reading)
     if log_fn:
-        log_fn(f"  Full-text harvest: read {fetched} open-access paper(s) "
-               f"(attempted {attempted} of {len(candidates)}) for named/cited-enzyme "
-               f"discovery")
+        if target_reads == 0 and extraction_backlog:
+            log_fn(f"  Full-text acquisition: deferred downloads; processing {extraction_backlog} cached paper(s) with unread text")
+        else:
+            log_fn(f"  Full-text acquisition: {fetched} new download(s), {attempted} attempted; "
+                   f"{extraction_backlog} cached paper(s) pending extraction")
     if manifest:
         try:
             manifest_path.write_text(json.dumps(manifest, indent=2))
@@ -941,12 +1164,16 @@ def mine_and_register_fulltext_accessions(
     #    scooped wrong-direction / off-target accessions (e.g. an inhibitor paper's
     #    target enzyme) into the candidate set for near-zero unique value.
     registered: list[str] = []
+    existing_before = set(load_candidate_registry(run).get("candidates", {}))
+    step_stats = {"new_downloads": fetched, "download_attempts": attempted,
+                  "cached_papers_pending_before": extraction_backlog}
 
     def _register(acc: str, source: str, lit_name: str = ""):
         meta = {"source_tool": source}
         if lit_name:
             meta["literature_name"] = lit_name
-        update_candidate_registry(run, acc, "discovered", metadata=meta)
+        existing = load_candidate_registry(run).get("candidates", {})
+        update_candidate_registry(run, acc, None if acc in existing else "discovered", metadata=meta)
         registered.append(acc)
 
     # 3. Literature-NAMED / CITED enzymes: a paper names + characterises target-
@@ -961,16 +1188,23 @@ def mine_and_register_fulltext_accessions(
             named = _register_named_enzymes_from_fulltext(
                 run, query, dest, manifest, llm_client, _register,
                 already=set(registered), remaining=max_proteins - len(registered),
+                stats=step_stats,
             )
             n_named = len(named)
         except Exception as exc:  # never let discovery block mining
             logger.warning("named-enzyme discovery failed: %s", exc)
 
+    step_stats.update(new_candidates=len(set(registered) - existing_before),
+                      existing_candidates_refreshed=len(set(registered) & existing_before))
+    atomic_write_json(run / "agent_state" / "literature_harvest_step.json", step_stats)
     if log_fn:
         log_fn(
-            f"  Full-text mining: {fetched} open-access paper(s) read "
-            f"-> {n_named} literature-named/cited enzyme(s) "
-            f"-> {len(registered)} candidate(s) registered"
+            f"  Full-text mining: {step_stats.get('chunks_processed', 0)} text chunk(s) processed "
+            f"from {step_stats.get('papers_processed', 0)} paper(s); "
+            f"{step_stats.get('extraction_failures', 0)} extraction failure(s); "
+            f"{step_stats.get('unresolved_leads', 0)} unresolved name(s); "
+            f"{step_stats['new_candidates']} new candidate(s), "
+            f"{step_stats['existing_candidates_refreshed']} existing candidate(s) refreshed"
         )
     return registered
 
