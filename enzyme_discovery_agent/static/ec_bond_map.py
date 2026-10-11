@@ -44,6 +44,15 @@ EC_BOND_TYPE_MAP: dict[tuple[int, int], dict] = {
     (2, 10): {"bond_type": "molybdenum", "direction": "transfer", "context": "Mo/W transfer"},
     # EC 3 — Hydrolases
     (3, 1): {"bond_type": "ester", "direction": "cleavage", "context": "ester bond hydrolysis"},
+    # EC 3.1 spans two different electrophiles. These sub-subclasses hydrolyse
+    # a bond to PHOSPHORUS, not to a carbonyl carbon, so they must not satisfy a
+    # target whose electrophile is an acyl carbon.
+    (3, 1, 3): {"bond_type": "phosphoester", "direction": "cleavage",
+                "context": "phosphoric monoester hydrolysis"},
+    (3, 1, 4): {"bond_type": "phosphoester", "direction": "cleavage",
+                "context": "phosphoric diester hydrolysis"},
+    (3, 1, 8): {"bond_type": "phosphoester", "direction": "cleavage",
+                "context": "phosphoric triester hydrolysis"},
     (3, 2): {"bond_type": "glycosidic", "direction": "cleavage", "context": "glycosidic bond hydrolysis"},
     (3, 3): {"bond_type": "ether", "direction": "cleavage", "context": "ether bond hydrolysis"},
     (3, 4): {"bond_type": "peptide", "direction": "cleavage", "context": "peptide bond hydrolysis (protease)"},

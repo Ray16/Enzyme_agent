@@ -280,8 +280,19 @@ def classify_reaction_chemistry(
 
         if ec_subclass is None:
             continue
+        try:
+            ec_subsub = int(parts[2]) if len(parts) > 2 and parts[2] else None
+        except ValueError:
+            ec_subsub = None
 
-        key = (ec_class, ec_subclass)
+        # Prefer a sub-subclass entry when one exists. The two-level map is too
+        # coarse where one subclass spans different electrophiles: EC 3.1 is
+        # "ester hydrolase", but 3.1.4/3.1.8 attack a PHOSPHORUS centre while
+        # 3.1.1 attacks a carbonyl carbon. Collapsing them lets a
+        # phosphoesterase match a carbonyl target.
+        key = (ec_class, ec_subclass, ec_subsub) if ec_subsub is not None else None
+        if key not in EC_BOND_TYPE_MAP:
+            key = (ec_class, ec_subclass)
         if key in EC_BOND_TYPE_MAP:
             entry = EC_BOND_TYPE_MAP[key]
             bond_types.add(entry["bond_type"])
