@@ -653,6 +653,47 @@ def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None
     return None
 
 
+def _resolve_named_enzyme_ncbi(name: str, organism: str = "") -> dict | None:
+    """Resolve a paper-named enzyme to a DEPOSITED sequence outside UniProt.
+
+    Recently characterised and metagenome-derived enzymes are routinely
+    deposited in GenBank only, and acquire no UniProt entry -- so neither the
+    name resolver nor the EMBL cross-reference resolver can see them.  Such an
+    enzyme can be named in a paper, found by the harvest, and still never
+    become a candidate.  This is the fallback that makes it reachable.
+
+    Returns a record with the sequence, or None.  Prefers a record whose
+    definition line repeats the queried name over one NCBI merely indexed under
+    it; the distinction is carried through as ``identity_confirmed`` so a
+    weaker identity is never silently presented as a confirmed one.
+    """
+    from enzyme_discovery_agent.tools.database import search_ncbi_protein
+
+    raw = (name or "").strip()
+    if len(re.sub(r"[^A-Za-z0-9]", "", raw)) < 4:
+        return None     # too generic to identify a specific deposit
+    try:
+        result = search_ncbi_protein(raw, organism=organism, max_results=5)
+    except Exception as e:  # noqa: BLE001
+        raise LookupUnavailable(f"NCBI protein search failed: {e}") from e
+    records = result.get("data") or []
+    if not records:
+        return None
+    records.sort(key=lambda r: (not r.get("title_names_query"), -r.get("sequence_length", 0)))
+    best = records[0]
+    if not best.get("sequence"):
+        return None
+    return {
+        "accession": best["accession"],
+        "sequence": best["sequence"],
+        "sequence_length": best.get("sequence_length"),
+        "protein_name": best.get("title") or raw,
+        "organism": best.get("organism") or organism,
+        "identity_confirmed": bool(best.get("title_names_query")),
+        "source": "ncbi_protein",
+    }
+
+
 def _register_named_enzymes_from_fulltext(
     run, query: str, dest: Path, manifest: list[dict], llm_client, register_fn,
     already: set, remaining: int, stats: dict | None = None,
@@ -805,6 +846,41 @@ def _register_named_enzymes_from_fulltext(
                         already.add(acc)
                         register_fn(acc, f"fulltext_{kind}:{nm}@{doi}", nm)
                         registered.append(acc)
+                elif not lookup_failed:
+                    # Absent from UniProt is not absent from the world: the
+                    # sequence may be deposited in GenBank only.  Register it
+                    # with the deposited sequence so it is evaluable without
+                    # inventing UniProt annotation it does not have.
+                    try:
+                        dep = _resolve_named_enzyme_ncbi(nm, org)
+                    except LookupUnavailable:
+                        dep, lookup_failed = None, True
+                    if dep and dep["accession"] not in already and len(registered) < remaining:
+                        acc = dep["accession"]
+                        accs = [acc]
+                        already.add(acc)
+                        register_fn(acc, f"fulltext_deposit:{nm}@{doi}", nm)
+                        registered.append(acc)
+                        update_candidate_registry(run, acc, None, {
+                            "literature_name": nm,
+                            "is_literature_deposit": True,
+                            # Provenance, not the database label, establishes
+                            # identity here.  A deposited sequence is routinely
+                            # annotated with a generic activity (a characterised
+                            # enzyme filed as a plain ligase, say), so the
+                            # paper's naming must outrank the record's label
+                            # rather than be demoted by it.
+                            "identity_basis": ("paper_named_deposit"
+                                               if dep["identity_confirmed"]
+                                               else "database_index_match"),
+                            "annotation_is_authoritative": False,
+                            "identity_confirmed": dep["identity_confirmed"],
+                            "sequence": dep["sequence"],
+                            "sequence_length": dep["sequence_length"],
+                            "protein_name": dep["protein_name"],
+                            "organism": dep["organism"],
+                            "deposit_source": dep["source"],
+                        })
             bucket.append({"name": nm, "organism": org, "accessions": accs,
                            "relationship": kind,
                            "lookup_failed": lookup_failed})

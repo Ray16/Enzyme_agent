@@ -870,3 +870,188 @@ def lookup_genbank_to_uniprot(
             if not entries else []
         ),
     }
+
+
+# ---------------------------------------------------------------------------
+# NCBI Protein — sequences that never reach UniProt
+# ---------------------------------------------------------------------------
+# Many recently characterised enzymes, especially metagenome-derived ones, are
+# deposited only in GenBank and acquire no UniProt entry (and therefore no EMBL
+# cross-reference for ``lookup_genbank_to_uniprot`` to follow).  Without a
+# direct NCBI path such an enzyme is unreachable: it can be named in a paper,
+# found by the literature harvest, and still never become a candidate.
+
+_NCBI_PROTEIN_CAP = 10
+
+
+def _ncbi_params(extra: dict) -> str:
+    params = dict(extra)
+    if config.NCBI_API_KEY:
+        params["api_key"] = config.NCBI_API_KEY
+    return urllib.parse.urlencode(params)
+
+
+def _parse_fasta(text: str) -> list[dict]:
+    """Split a multi-record FASTA into {accession, title, organism, sequence}."""
+    records, acc, title, chunks = [], None, "", []
+
+    def flush():
+        if acc:
+            seq = re.sub(r"[^A-Za-z]", "", "".join(chunks)).upper()
+            org = ""
+            m = re.search(r"\[([^\[\]]+)\]\s*$", title)
+            if m:
+                org = m.group(1)
+            records.append({"accession": acc, "title": title.strip(),
+                            "organism": org, "sequence": seq,
+                            "sequence_length": len(seq)})
+
+    for line in text.splitlines():
+        if line.startswith(">"):
+            flush()
+            header = line[1:].strip()
+            acc = header.split()[0] if header else None
+            title = header[len(acc):].strip() if acc else header
+            chunks = []
+        elif acc:
+            chunks.append(line.strip())
+    flush()
+    return records
+
+
+@tool(
+    description=(
+        "Fetch a protein sequence from NCBI Protein by accession (GenBank, "
+        "RefSeq or PDB chain). Use this when a sequence is deposited but has no "
+        "UniProt entry, which is common for metagenome-derived and very "
+        "recently published enzymes -- lookup_genbank_to_uniprot cannot reach "
+        "those, because it searches UniProt's cross-references rather than NCBI."
+    ),
+    category="database",
+    parallel_safe=True,
+    params={
+        "accession": {
+            "type": "string",
+            "description": "NCBI protein accession (GenBank, RefSeq or PDB chain).",
+        },
+    },
+)
+def fetch_ncbi_protein(accession: str) -> dict:
+    """Fetch a protein sequence from NCBI Protein by accession.
+
+    Use when a sequence is deposited in GenBank/RefSeq but absent from UniProt,
+    which is common for metagenome-derived and very recently published enzymes.
+    """
+    acc = (accession or "").strip()
+    if not acc:
+        return {"status": "error", "summary": "No accession provided", "data": None,
+                "suggestions": ["Provide an NCBI protein accession."]}
+    url = (f"{config.NCBI_EUTILS}/efetch.fcgi?"
+           + _ncbi_params({"db": "protein", "id": acc, "rettype": "fasta", "retmode": "text"}))
+    try:
+        raw = request_with_retry(urllib.request.Request(url), timeout=25)
+    except Exception as e:  # noqa: BLE001
+        return {"status": "error", "summary": f"NCBI fetch failed for {acc}: {e}",
+                "data": None, "suggestions": ["Retry; NCBI rate-limits bursts."]}
+    records = _parse_fasta(raw.decode("utf-8", "replace"))
+    if not records:
+        return {"status": "error", "summary": f"No NCBI protein record for {acc}",
+                "data": None, "suggestions": ["Check the accession."]}
+    rec = records[0]
+    return {"status": "success",
+            "summary": f"{rec['accession']}: {rec['title'][:70]} ({rec['sequence_length']} aa)",
+            "data": rec, "suggestions": []}
+
+
+@tool(
+    description=(
+        "Search NCBI Protein by enzyme NAME and return matching sequences. Use "
+        "when an enzyme named in a paper cannot be resolved in UniProt, so it "
+        "can still become a candidate instead of being dropped. Each result "
+        "reports title_names_query: true means the definition line repeats the "
+        "queried name; false means NCBI indexed the record under that name "
+        "(often via the linked nucleotide/clone entry) without naming it in the "
+        "title, so the identity is a lead that needs confirming against the paper."
+    ),
+    category="database",
+    parallel_safe=True,
+    params={
+        "name": {
+            "type": "string",
+            "description": "Enzyme or clone name as written in the paper.",
+        },
+        "organism": {
+            "type": "string",
+            "description": "Optional organism to disambiguate. Omit for metagenomic enzymes.",
+        },
+        "max_results": {
+            "type": "integer",
+            "description": "Maximum records to retrieve (default 5).",
+        },
+    },
+)
+def search_ncbi_protein(name: str, organism: str = "", max_results: int = 5) -> dict:
+    """Search NCBI Protein by enzyme NAME and return matching sequences.
+
+    Precision-first: a record is only returned when the queried name actually
+    appears in its definition line, so a loose keyword match cannot substitute
+    an unrelated protein for the enzyme the paper named.
+    """
+    term = (name or "").strip()
+    if not term:
+        return {"status": "error", "summary": "No name provided", "data": [],
+                "suggestions": ["Provide an enzyme name."]}
+    query = f"{term}[All Fields]"
+    if organism:
+        query += f" AND {organism}[Organism]"
+    url = (f"{config.NCBI_EUTILS}/esearch.fcgi?"
+           + _ncbi_params({"db": "protein", "term": query,
+                           "retmax": str(min(max_results, _NCBI_PROTEIN_CAP)),
+                           "retmode": "json"}))
+    try:
+        raw = request_with_retry(urllib.request.Request(url), timeout=25)
+        ids = json.loads(raw.decode()).get("esearchresult", {}).get("idlist", [])
+    except Exception as e:  # noqa: BLE001
+        return {"status": "error", "summary": f"NCBI search failed for {term}: {e}",
+                "data": [], "suggestions": ["Retry; NCBI rate-limits bursts."]}
+    if not ids:
+        return {"status": "success", "summary": f"No NCBI protein hits for {term}",
+                "data": [], "suggestions": []}
+    fetch = (f"{config.NCBI_EUTILS}/efetch.fcgi?"
+             + _ncbi_params({"db": "protein", "id": ",".join(ids),
+                             "rettype": "fasta", "retmode": "text"}))
+    try:
+        raw = request_with_retry(urllib.request.Request(fetch), timeout=30)
+    except Exception as e:  # noqa: BLE001
+        return {"status": "error", "summary": f"NCBI fetch failed for {term}: {e}",
+                "data": [], "suggestions": []}
+    records = _parse_fasta(raw.decode("utf-8", "replace"))
+    # The queried name must be present in the definition line.  Compared with
+    # separators stripped, so a hyphenated clone name still matches a record
+    # whose title writes it unhyphenated.
+    def _norm(s: str) -> str:
+        return re.sub(r"[^a-z0-9]", "", s.lower())
+    needle = _norm(term)
+    for rec in records:
+        rec["title_names_query"] = needle in _norm(rec["accession"] + " " + rec["title"])
+    matched = [r for r in records if r["title_names_query"]]
+    if matched:
+        return {"status": "success",
+                "summary": f"{len(matched)} NCBI protein record(s) naming '{term}'"
+                           f" (of {len(records)} retrieved)",
+                "data": matched, "suggestions": []}
+    # No definition line repeats the name, but NCBI's own index tied this
+    # distinctive query to very few records -- typically because the clone or
+    # construct name lives in the linked nucleotide entry rather than in the
+    # protein title, which is typical for a metagenomic clone deposited under a
+    # bare activity label.  That index match is evidence, so surface the records
+    # flagged rather than discarding a true positive for want of a string match.
+    if records and len(records) <= 3 and len(_norm(term)) >= 5:
+        return {"status": "success",
+                "summary": f"{len(records)} NCBI protein record(s) indexed under '{term}' "
+                           f"but not named in the definition line — identity unconfirmed",
+                "data": records,
+                "suggestions": ["Confirm identity against the paper before relying on this."]}
+    return {"status": "success",
+            "summary": f"No NCBI protein record names '{term}' (of {len(records)} retrieved)",
+            "data": [], "suggestions": []}
