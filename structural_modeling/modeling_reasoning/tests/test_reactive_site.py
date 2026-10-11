@@ -135,7 +135,10 @@ class SelectorVocabularyTest(unittest.TestCase):
     def test_every_referenced_selector_exists(self):
         import json
         from reaction import DEFAULT_COORDINATES
-        known = set(self.selectors["ligand_smarts"]) | set(self.selectors["cofactor_ccd_atoms"])
+        known = (set(self.selectors["ligand_smarts"])
+                 | set(self.selectors["cofactor_ccd_atoms"])
+                 | set(self.selectors.get("protein_selectors") or ())
+                 | set(self.selectors.get("solvent_selectors") or ()))
         with open(DEFAULT_COORDINATES) as fh:
             doc = json.load(fh)
         for key, mech in doc["mechanisms"].items():

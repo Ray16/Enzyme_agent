@@ -48,7 +48,7 @@ except ImportError:  # siblings here are written script-style (flat imports, thi
     _sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
     from structural_modeling.proxies import Pose, ReactiveSite
 
-ROLE_KEYS = ("nucleophile", "electrophile", "leaving_group", "charge_centre")
+ROLE_KEYS = ("nucleophile", "electrophile", "leaving_group", "charge_centre", "angle_reference")
 
 
 class RoleResolutionError(RuntimeError):
@@ -75,7 +75,8 @@ def _mol_for_chain(pose_path: str, chain: str, smiles: str):
         return None
 
 
-def _match_chain(pose: Pose, pose_path: str, smiles: str) -> tuple[str, Any] | None:
+def _match_chain(pose: Pose, pose_path: str, smiles: str,
+                 requested_chain: str | None = None) -> tuple[str, Any] | None:
     """Find which ligand chain IS this participant, by composition not by position."""
     if Chem is None:
         return None
@@ -83,17 +84,24 @@ def _match_chain(pose: Pose, pose_path: str, smiles: str) -> tuple[str, Any] | N
     if tpl is None:
         return None
     n = tpl.GetNumAtoms()
+    hits = []
     for chain, atoms in pose.ligands.items():
+        if requested_chain is not None and chain != requested_chain:
+            continue
         if len(atoms) != n:
             continue
         mol = _mol_for_chain(pose_path, chain, smiles)
         if mol is not None:
-            return chain, mol
-    return None
+            hits.append((chain, mol))
+    if len(hits) > 1:
+        raise RoleResolutionError("multiple ligand copies match this participant; "
+                                  "declare the site-specific chain")
+    return hits[0] if hits else None
 
 
-def _ligand_atom(pose: Pose, pose_path: str, smiles: str, smarts: str) -> np.ndarray:
-    hit = _match_chain(pose, pose_path, smiles)
+def _ligand_atom(pose: Pose, pose_path: str, smiles: str, smarts: str,
+                 chain: str | None = None) -> np.ndarray:
+    hit = _match_chain(pose, pose_path, smiles, chain)
     if hit is None:
         raise RoleResolutionError(
             f"no ligand chain matches the participant SMILES {smiles!r}")
@@ -114,12 +122,26 @@ def _ligand_atom(pose: Pose, pose_path: str, smiles: str, smarts: str) -> np.nda
     return np.array([p.x, p.y, p.z])
 
 
-def _cofactor_atom(pose: Pose, atom_name: str) -> np.ndarray:
-    for _chain, atoms in pose.ligands.items():
+def _cofactor_atom(pose: Pose, atom_name: str, chain: str | None = None) -> np.ndarray:
+    hits = []
+    for ch, atoms in pose.ligands.items():
+        if chain is not None and ch != chain:
+            continue
         for name, _elem, xyz in atoms:
             if name == atom_name:
-                return xyz
-    raise RoleResolutionError(f"cofactor atom {atom_name!r} not present in the pose")
+                hits.append(xyz)
+    if len(hits) != 1:
+        raise RoleResolutionError(f"cofactor atom {atom_name!r} has {len(hits)} matches; "
+                                  "declare an unambiguous chain/atom")
+    return hits[0]
+
+
+def _protein_atom(pose: Pose, spec: dict) -> np.ndarray:
+    hits = [a.xyz for a in pose.atoms if a.protein and
+            a.key == (spec.get("chain"), str(spec.get("residue")), spec.get("atom"))]
+    if len(hits) != 1:
+        raise RoleResolutionError("protein role requires one exact chain/residue/atom")
+    return hits[0]
 
 
 def _substrate_smiles(record: dict) -> dict[Any, str]:
@@ -158,14 +180,16 @@ def resolver_from_handoff(record: dict) -> Callable[[Pose], ReactiveSite | None]
                 continue
             try:
                 if spec.get("kind") == "cofactor":
-                    coords[key] = _cofactor_atom(pose, spec.get("atom"))
+                    coords[key] = _cofactor_atom(pose, spec.get("atom"), spec.get("chain"))
+                elif spec.get("kind") == "protein":
+                    coords[key] = _protein_atom(pose, spec)
                 else:
                     smi = smiles_by.get(spec.get("component_index")) or \
                         smiles_by.get(spec.get("role"))
                     if smi is None or path is None:
                         coords[key] = None
                         continue
-                    coords[key] = _ligand_atom(pose, path, smi, spec["smarts"])
+                    coords[key] = _ligand_atom(pose, path, smi, spec["smarts"], spec.get("chain"))
             except RoleResolutionError:
                 coords[key] = None
         if coords.get("nucleophile") is None or coords.get("electrophile") is None:
@@ -180,7 +204,7 @@ def resolver_from_handoff(record: dict) -> Callable[[Pose], ReactiveSite | None]
         return ReactiveSite(
             nucleophile=coords["nucleophile"], electrophile=elec,
             leaving=coords.get("leaving_group"), charge_centre=coords.get("charge_centre"),
-            frame=frame, ideal_angle=ideal)
+            frame=frame, ideal_angle=ideal, angle_reference=coords.get("angle_reference"))
 
     return resolve
 
@@ -195,7 +219,7 @@ def attach_smarts(record: dict, selectors: dict) -> dict:
     lig = selectors.get("ligand_smarts") or {}
     for key in ROLE_KEYS:
         spec = geometry.get(key)
-        if spec and spec.get("kind") != "cofactor":
+        if spec and spec.get("kind") not in ("cofactor", "protein"):
             name = spec.get("atom_selector")
             if name in lig:
                 spec["smarts"] = lig[name]

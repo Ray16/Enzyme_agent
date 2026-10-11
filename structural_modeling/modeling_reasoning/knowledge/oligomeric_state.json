@@ -1,0 +1,95 @@
+{
+  "schema_version": "oligomeric-state-v1",
+  "description": "How to choose the oligomeric unit to cofold, for any enzyme. Separates two questions that are routinely conflated: (Q1) what oligomer does the protein form, and (Q2) does the LIGAND SITE require more than one subunit. Only Q2 determines what must be modeled. A homo-oligomer with N independent intra-subunit sites is correctly and far more cheaply modeled as a single subunit; an oligomer whose site straddles an interface must be modeled assembled. UniProt SUBUNIT answers Q1 only. This file holds the RULE; per-target measurements belong with the campaign that made them, not here.",
+
+  "decision_rule": {
+    "statement": "Model the ANNOTATED ASSEMBLY if and only if the catalytic site lies within the ligand's reach of a neighbouring subunit; otherwise model the FUNCTIONAL UNIT (the minimal unit carrying one complete active site).",
+    "formal": "include_neighbour_subunits  <=>  site_to_nearest_other_chain_distance_A < ligand_reach_A",
+    "rationale": "The chemistry happens at the nucleophile, which is intra-subunit in essentially all hydrolase and transferase folds. What a neighbouring subunit can contribute is the SPECIFICITY CHANNEL accommodating the distal part of the substrate. The question is therefore geometric: can the substrate physically reach the interface from the catalytic centre."
+  },
+
+  "parameters": {
+    "interfacial_contact_fraction_threshold": {
+      "value": 0.15,
+      "units": "fraction",
+      "meaning": "fraction of ligand 5 A contact residues contributed by other chains, above which the site counts as interfacial"
+    },
+    "contact_radius_A": {"value": 5.0, "meaning": "shell around a bound ligand used to define its contact residues"},
+    "neighbourhood_radius_A": {"value": 12.0, "meaning": "shell used to count nearby other-chain residues as a secondary descriptor"},
+    "min_polymer_length": {"value": 50, "meaning": "chains shorter than this are ignored as peptides/tags when mapping"},
+    "min_ligand_heavy_atoms": {"value": 6, "meaning": "a bound non-polymer component must have at least this many heavy atoms to be treated as substrate-like rather than an ion or small additive"},
+    "ortholog_identity_threshold": {
+      "value": 0.5,
+      "meaning": "Minimum pairwise sequence identity for one accession to inherit another's oligomeric verdict as an ortholog. Orthology is a much tighter relation than a shared domain: above this identity the subunit interface itself is typically conserved, so the donor's state transfers. Sits between own-annotation (rank 4) and shared-family transfer (rank 5)."
+    },
+    "transferable_interpro_types": {
+      "value": ["family"],
+      "meaning": "Only a shared InterPro entry of these types licenses a family transfer. A shared homologous_superfamily or a bare signature/domain is far too broad - two enzymes can share an amidase signature or a C-N hydrolase superfamily domain while differing completely in oligomeric behaviour, so transferring an oligomeric verdict across one is unjustified."
+    },
+    "ligand_reach": {
+      "extension_per_heavy_atom_A": {"linear": 1.27, "branched": 0.6, "cyclic": 0.6},
+      "fraction_of_length_from_reacting_atom": 0.5,
+      "meaning": "reach is measured from the reacting atom outward, since the distal end of the substrate is what reaches an interface; linear value is the sp3 chain extension per heavy atom"
+    }
+  },
+
+  "non_substrate_het_codes": {
+    "_comment": "Buffer, cryoprotectant and ion components. They bind crystal-packing interfaces and will manufacture a false interfacial signal if mistaken for substrate analogues. Extend as needed.",
+    "codes": ["HOH", "MES", "GOL", "EDO", "PEG", "PG4", "PGE", "1PE", "ACT", "DMS",
+              "TRS", "EPE", "FMT", "IMD", "BME", "DTT", "MPD", "CIT", "TLA",
+              "SO4", "PO4", "NO3", "CL", "BR", "IOD", "NA", "K", "CA", "MG",
+              "ZN", "MN", "FE", "FE2", "CO", "NI", "CU", "CD", "HG"]
+  },
+
+  "evidence_hierarchy": [
+    {
+      "rank": 1,
+      "source": "liganded_structure",
+      "measurement": "residues within contact_radius_A of a bound substrate/product/inhibitor, split by chain",
+      "strength": "decisive",
+      "note": "The only direct, non-circular readout. Exclude non_substrate_het_codes."
+    },
+    {
+      "rank": 2,
+      "source": "apo_structure_catalytic_constellation",
+      "measurement": "are all catalytic residues (nucleophile, general base, oxyanion stabilisers, metal ligands) contributed by one chain?",
+      "strength": "settles the chemistry, not the specificity channel"
+    },
+    {
+      "rank": 3,
+      "source": "site_to_interface_distance",
+      "measurement": "min distance from the catalytic nucleophile to any atom of another chain, in the LARGEST deposited biological assembly",
+      "strength": "falsifier only",
+      "interpretation": "greater than ligand_reach => assembly cannot matter (strong negative); less than ligand_reach => assembly may matter (weak positive, does not establish that it does)"
+    },
+    {
+      "rank": 4,
+      "source": "uniprot_subunit",
+      "measurement": "SUBUNIT comment",
+      "strength": "answers Q1 only; never on its own a reason to cofold the oligomer"
+    },
+    {
+      "rank": 5,
+      "source": "family_transfer",
+      "measurement": "a liganded relative in the same InterPro family",
+      "strength": "usable, must be recorded as transferred with the donor accession"
+    }
+  ],
+
+  "guards": {
+    "circularity": "Evidence computed FROM poses docked into assembly X can never justify assembly X. Residues of a neighbouring chain can only appear near a ligand if that chain was placed there and the ligand had nowhere else to go. Breaking the circle requires an assembly-independent source: a deposited assembly, solution stoichiometry, or a liganded structure.",
+    "control_first": "Validate any site-interface probe on a case with a known answer BEFORE trusting it elsewhere. A probe returning 0% other-chain for a known interfacial site is measuring the wrong thing - e.g. a 5 A shell around a single nucleophile reports that residue's own buried environment, not the substrate channel.",
+    "chain_counting": "PDB assembly `oligomeric_count` counts CHAINS, not protomers. For a self-processing precursor deposited as one chain per protomer, `tetrameric(4)` means four protomers, not two. Misreading this inverts the conclusion.",
+    "assembly_id": "Assembly 1 is frequently the crystallographic monomer. Enumerate all assemblies and take the largest before concluding anything about oligomeric state.",
+    "numbering": "Map catalytic positions from UniProt numbering onto deposited chains by alignment; PDB author numbering routinely differs, and a silent mis-map produces a confident wrong answer.",
+    "measure_from_the_nucleophile": "An entry often annotates several active-site residues (nucleophile, proton donor, charge-relay). The distance test is only meaningful from the NUCLEOPHILE, where the scissile bond must sit; measuring from a proton donor moves the reference point several angstroms and can flip the verdict. Abstain rather than guess when no residue is annotated as the nucleophile.",
+    "ambiguous_ligands": "Small di/tri-carboxylates and polyols (e.g. malonate MLI, citrate CIT, tartrate TLA, succinate SIN) are both common crystallisation additives AND plausible substrate mimics for carboxylate-binding enzymes. A rank-1 verdict resting on one of these must be reported with its comp_id so a human can judge, not silently treated as a bound substrate.",
+    "reach_is_an_upper_bound": "ligand_reach assumes a fully extended ligand, so 'within reach' is permissive by construction and errs toward including subunits. It is therefore a strong NEGATIVE test (beyond reach => assembly cannot matter) and only a weak positive."
+  },
+
+  "worked_examples": {
+    "_comment": "Illustrations of the rule's two surprising outcomes, kept abstract - no campaign data.",
+    "annotated_oligomer_with_independent_sites": "A liganded homohexamer showing the same ligand bound in all six subunits with 0% other-chain contacts is modeled as ONE subunit; the hexamer costs ~36x more and adds nothing to the pocket.",
+    "small_oligomer_with_shared_site": "A self-processing protomer whose nucleophile sits ~6-7 A from a neighbouring protomer across several independent crystals is modeled ASSEMBLED, even though its catalytic residues are all intra-chain."
+  }
+}

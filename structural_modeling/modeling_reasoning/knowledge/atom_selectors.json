@@ -1,0 +1,89 @@
+{
+  "schema_version": "atom-selectors-v2",
+  "description": "Generic, CHEMISTRY-level (not enzyme-level) selectors that resolve a reaction-coordinate atom role onto a candidate's real atoms. Ligand roles are SMARTS matched with RDKit against a participant's modeling SMILES; the FIRST atom of the SMARTS is the reactive atom. Cofactor roles map to standard PDB CCD atom names.",
+  "scope_note": "A selector is enzyme-agnostic but chemistry-specific. 'phosphate_activated_acyl_carbon' applies to ANY enzyme performing aminolysis of an acyl-phosphate or acyl-adenylate -- characterised or not, annotated or not -- but it does NOT apply to a thioester or a plain amide. This file is therefore a GROWING VOCABULARY, not a general solver: a new activation chemistry needs a new entry, keyed on the chemistry. Coverage today is carboxylate/amine functional groups, phosphate-activated acyl transfer, and nucleoside-triphosphate cofactors. Other cofactors (SAM, NAD, PLP, FAD, CoA) have no entries yet.",
+  "ambiguity_rule": "A selector MUST resolve to one reaction site. The resolver fails closed on multiple matches that are chemically DISTINCT, because picking one arbitrarily scores a different reaction than the one being modelled -- e.g. 'amide_carbonyl_carbon' matches twice on a pantetheine-containing substrate, and the deprecated 'acyl_carbonyl_carbon' matches the reactive acyl carbon AND a distal carbonyl on an acyl-adenylate. Multiple matches are ACCEPTED only when every matched atom falls in one topological symmetry class (symmetry_equivalent), since homotopic sites are the same reaction: a symmetric bifunctional monomer has two interchangeable centres, while an unsymmetrically substituted one does not and is still refused.",
+  "changelog": {
+    "v2": "Added leaving-group and transition-state charge-centre selectors so near-attack geometry is fully specified for addition-elimination steps. Renamed the activated-acyl selectors to name the activating atom explicitly. Deprecated acyl_carbonyl_carbon as ambiguous."
+  },
+  "ligand_smarts": {
+    "carboxylate_oxygen": "[OX1-,OX2H1][CX3]=[OX1]",
+    "amine_nitrogen": "[NX3;H2,H1;!$(NC=O);!$(N=*)]",
+    "phosphate_activated_acyl_carbon": "[CX3](=[OX1])[OX2][PX4]",
+    "phosphate_activated_acyl_carbonyl_oxygen": "[OX1]=[CX3][OX2][PX4]",
+    "phosphate_activated_acyl_leaving_oxygen": "[OX2]([CX3]=[OX1])[PX4]",
+    "thioester_acyl_carbon": "[CX3](=[OX1])[SX2]",
+    "amide_carbonyl_carbon": "[CX3](=[OX1])[NX3]",
+    "acyl_carbonyl_carbon": "[CX3](=[OX1])[#7,#8,#16]",
+    "acyl_carbonyl_oxygen": "[OX1]=[CX3][#7,#8,#16]",
+    "acyl_leaving_heteroatom": "[OX2;$([OX2][CX3]=[OX1])][#6]"
+  },
+  "ligand_smarts_notes": {
+    "carboxylate_oxygen": "General. Any enzyme acting on a carboxylate.",
+    "amine_nitrogen": "General. Primary/secondary amine, excluding amide N and imines.",
+    "phosphate_activated_acyl_carbon": "Electrophile of aminolysis/hydrolysis on an acyl-phosphate or acyl-adenylate. The ester oxygen to phosphorus is what makes this carbon electrophilic and is what distinguishes it from any other carboxyl on the same molecule. Verified unambiguous on both acyl-adenylate and acyl-phosphate intermediates.",
+    "phosphate_activated_acyl_carbonyl_oxygen": "Terminal carbonyl oxygen of that acyl group: the atom accumulating negative charge in the tetrahedral intermediate, i.e. the oxyanion-hole target.",
+    "phosphate_activated_acyl_leaving_oxygen": "Bridging ester oxygen joining the acyl carbon to the activating phosphorus; departs with AMP or phosphate.",
+    "thioester_acyl_carbon": "Vocabulary entry for thioester (CoA/ACP) acyl transfer. Validated unambiguous on a pantetheine thioester. NOT YET referenced by any reaction coordinate.",
+    "amide_carbonyl_carbon": "Vocabulary entry for amide hydrolysis. CAUTION: ambiguous on any substrate containing more than one amide; such a system needs a tighter, substrate-aware SMARTS. NOT YET referenced by any reaction coordinate.",
+    "acyl_carbonyl_carbon": "DEPRECATED, ambiguous -- matches any carbonyl bearing an N/O/S neighbour. Retained only so older handoffs still parse. Use phosphate_activated_acyl_carbon."
+  },
+  "cofactor_ccd_atoms": {
+    "alpha_phosphate": {
+      "ATP": "PA",
+      "GTP": "PA",
+      "CTP": "PA",
+      "UTP": "PA",
+      "ITP": "PA"
+    },
+    "gamma_phosphate": {
+      "ATP": "PG",
+      "GTP": "PG",
+      "CTP": "PG",
+      "UTP": "PG"
+    },
+    "alpha_beta_bridging_oxygen": {
+      "ATP": "O3A",
+      "GTP": "O3A"
+    },
+    "beta_gamma_bridging_oxygen": {
+      "ATP": "O3B",
+      "GTP": "O3B"
+    },
+    "alpha_nonbridging_oxygen": {
+      "ATP": "O1A",
+      "GTP": "O1A",
+      "CTP": "O1A",
+      "UTP": "O1A",
+      "ITP": "O1A"
+    },
+    "gamma_nonbridging_oxygen": {
+      "ATP": "O1G",
+      "GTP": "O1G",
+      "CTP": "O1G",
+      "UTP": "O1G"
+    }
+  },
+  "cofactor_ccd_atoms_notes": {
+    "alpha_nonbridging_oxygen": "Non-bridging oxygen on P-alpha: the charge centre of an in-line substitution at that phosphorus.",
+    "gamma_nonbridging_oxygen": "Non-bridging oxygen on P-gamma, likewise for gamma-phosphoryl transfer."
+  },
+  "protein_selectors": {
+    "protein_nucleophile_atom": {
+      "description": "Side-chain nucleophile atom of the catalytic residue (Ser OG, Thr OG1, Cys SG). Requires a per-candidate chain/residue/atom assignment; it is NOT derivable from the substrate and must not be guessed.",
+      "resolution": "per_candidate_annotation_required",
+      "accepted_atoms": [
+        "OG",
+        "OG1",
+        "SG"
+      ]
+    }
+  },
+  "solvent_selectors": {
+    "water_oxygen": {
+      "description": "Oxygen of the hydrolytic water in the deacylation step.",
+      "resolution": "explicit_or_absent_from_model"
+    }
+  },
+  "protein_selectors_notes": "Protein and solvent roles are resolved from the modelled POSE, not from the substrate SMILES, so a mechanism step referencing them is only executable once the catalytic residue has been assigned for that candidate."
+}

@@ -117,8 +117,8 @@ GENERIC_STEP2_MANIFEST = {
 }
 
 
-def _candidate(accession, activation_mode="acyl_adenylate"):
-    reactive = {"acyl_adenylate": ("PA", "O3A"), "acyl_phosphate": ("PG", "O3B")}[activation_mode]
+def _candidate(accession, activation_mode="acyl_adenylate", family_id=None):
+    reactive = {"acyl_adenylate": ("PA", "O3A"), "acyl_phosphate": ("PG", "O3B")}.get(activation_mode, ("PA", "O3A"))
     substrate = lambda idx, smiles: {  # noqa: E731
         "component_index": idx,
         "source_smiles": smiles,
@@ -130,22 +130,23 @@ def _candidate(accession, activation_mode="acyl_adenylate"):
         "affinity_target": False,
         "review_status": "not_required",
     }
+    evidence = {"identity": {"accession": accession}, "cofactor_annotations": {"names": []}}
+    if family_id:
+        evidence["family_assignment"] = {"interpro_family_id": family_id}
+    activation = {"status": "assigned", "nucleotide": "ATP",
+                  "reactive_atom": reactive[0], "leaving_group_atom": reactive[1]}
+    if activation_mode:
+        activation["activation_mode"] = activation_mode
     return {
         "accession": accession,
-        "evidence": {"identity": {"accession": accession}, "cofactor_annotations": {"names": []}},
+        "evidence": evidence,
         "modeling_input": {
             "schema_version": "2.0",
             "status": "unresolved",
             "method": "cofold",
             "enzyme_state": {"state": "specified", "chains": None},
             "target_substrates": [substrate(1, "CC(=O)O"), substrate(2, "NCCN")],
-            "activation": {
-                "status": "assigned",
-                "activation_mode": activation_mode,
-                "nucleotide": "ATP",
-                "reactive_atom": reactive[0],
-                "leaving_group_atom": reactive[1],
-            },
+            "activation": activation,
             "cofactors": [{"name": "ATP", "ccd": "ATP", "count": 1, "role": "nucleotide_substrate"}],
             "geometry": None,
             "geometry_status": "unresolved",
@@ -270,6 +271,17 @@ class ResolveHandoffTest(unittest.TestCase):
         self.assertEqual(g["step"], 2)
         self.assertEqual(g["nucleophile"]["role"], "amine_substrate")
         self.assertEqual(g["electrophile"]["role"], "acyl_adenylate_intermediate")
+
+    def test_family_transfer_to_unannotated_homolog(self):
+        # No activation mode (unannotated), but a known adenylate family -> the
+        # mechanism transfers via family membership.
+        cand = _candidate("HOMOLOG", activation_mode=None, family_id="IPR037455")
+        handoff, reports = self._resolve(GENERIC_MANIFEST, cand)
+        mi = handoff["candidates"][0]["modeling_input"]
+        self.assertEqual(mi["status"], "ready", reports["HOMOLOG"]["errors"])
+        step = mi["modeled_step"]
+        self.assertEqual(step["mechanism"], "anl_adenylate_amide_ligase")
+        self.assertEqual(step["mechanism_selected_by"], "family")
 
     def test_wrong_step_is_blocked(self):
         # Step-1 participants (carboxylate + ATP) but the agent declares step 2:

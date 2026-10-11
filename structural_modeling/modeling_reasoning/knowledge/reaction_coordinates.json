@@ -1,0 +1,363 @@
+{
+  "schema_version": "reaction-coordinate-v3",
+  "provenance_note": "Mechanism reaction coordinates keyed by mechanism/family -> ordered steps. Mechanism is a FAMILY-level property: a coordinate lists the InterPro families that use it, so it TRANSFERS to any homolog of that family, including unannotated ones. Species and atoms are ROLES (never target-specific). The adenylate amide-ligase coordinate is literature-derived (exact-grounded reaction-step extraction; see step provenance quotes); the acyl-phosphate coordinate remains a seed pending its own extraction. Steps the literature does not support stay absent so the resolver abstains rather than guessing.",
+  "extraction": {
+    "tool": "reasoning/extract_reaction_steps.py",
+    "corpus": "reasoning/data/mechanism_corpus.json",
+    "grouping": "by (paper, mechanism_class), assembled independently"
+  },
+  "species_vocabulary": [
+    "carboxylate_substrate",
+    "amine_substrate",
+    "NTP",
+    "catalytic_metal",
+    "acyl_adenylate_intermediate",
+    "acyl_phosphate_intermediate",
+    "amide_product",
+    "AMP",
+    "ADP",
+    "PPi",
+    "Pi",
+    "acyl_substrate",
+    "acyl_enzyme_intermediate",
+    "catalytic_nucleophile",
+    "water",
+    "alcohol_product",
+    "carboxylic_acid_product"
+  ],
+  "mechanisms": {
+    "anl_adenylate_amide_ligase": {
+      "keys": {
+        "activation_mode": [
+          "acyl_adenylate"
+        ],
+        "families": [
+          "IPR000873",
+          "IPR037455",
+          "IPR048223"
+        ]
+      },
+      "family_transfer_note": "AMP-binding / ANL adenylating amide ligases; the coordinate transfers to unannotated homologs assigned to these families.",
+      "description": "Adenylate-forming amide ligase: carboxylate adenylation, then aminolysis of the acyl-adenylate. Literature-derived.",
+      "provenance": {
+        "status": "literature_extracted",
+        "validation_level": 1,
+        "papers": [
+          "PMID:39833164",
+          "PMID:32337091"
+        ]
+      },
+      "steps": [
+        {
+          "index": 1,
+          "name": "adenylation",
+          "reactive_state": "precursor",
+          "species_present": [
+            "carboxylate_substrate",
+            "NTP",
+            "catalytic_metal"
+          ],
+          "species_consumed": [
+            "NTP"
+          ],
+          "species_produced": [
+            "acyl_adenylate_intermediate",
+            "PPi"
+          ],
+          "bond_change": "carboxylate oxygen attacks the NTP alpha-phosphate; PPi is released",
+          "attack": {
+            "nucleophile": {
+              "role": "carboxylate_substrate",
+              "atom_selector": "carboxylate_oxygen"
+            },
+            "electrophile": {
+              "role": "NTP",
+              "atom_selector": "alpha_phosphate"
+            },
+            "leaving_group": {
+              "role": "NTP",
+              "atom_selector": "alpha_beta_bridging_oxygen"
+            },
+            "charge_centre": {
+              "role": "NTP",
+              "atom_selector": "alpha_nonbridging_oxygen"
+            },
+            "ideal_angle": 180.0
+          },
+          "provenance": {
+            "status": "literature_extracted",
+            "evidence": [
+              {
+                "paper_id": "PMID:39833164",
+                "quote": "Given that the reaction mechanism of McbA first begins with the adenylation of the carboxylic acid, we also noticed several instances where only the acyl-AMP intermediate was observed."
+              },
+              {
+                "paper_id": "PMID:32337091",
+                "quote": "McbA catalyzes the adenylation of 1-acetyl-9 H -\u03b2-carboline-3-carboxylic acid 1 ( ) to give intermediate 2 , followed by amidation with 2-phenylethylamine 3 , provided in equimolar amounts, to give the amide 4"
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "name": "aminolysis",
+          "reactive_state": "intermediate",
+          "species_present": [
+            "acyl_adenylate_intermediate",
+            "amine_substrate",
+            "catalytic_metal"
+          ],
+          "species_consumed": [
+            "acyl_adenylate_intermediate",
+            "amine_substrate"
+          ],
+          "species_produced": [
+            "amide_product",
+            "AMP"
+          ],
+          "bond_change": "amine nitrogen attacks the acyl carbonyl carbon of the acyl-adenylate; AMP is released",
+          "attack": {
+            "nucleophile": {
+              "role": "amine_substrate",
+              "atom_selector": "amine_nitrogen"
+            },
+            "electrophile": {
+              "role": "acyl_adenylate_intermediate",
+              "atom_selector": "phosphate_activated_acyl_carbon"
+            },
+            "leaving_group": {
+              "role": "acyl_adenylate_intermediate",
+              "atom_selector": "phosphate_activated_acyl_leaving_oxygen"
+            },
+            "charge_centre": {
+              "role": "acyl_adenylate_intermediate",
+              "atom_selector": "phosphate_activated_acyl_carbonyl_oxygen"
+            },
+            "ideal_angle": 107.0
+          },
+          "provenance": {
+            "status": "literature_extracted",
+            "evidence": [
+              {
+                "paper_id": "PMID:39833164",
+                "quote": "The engineered enzyme variant can subsequently accept the amine, leading to a large decrease in the observed intermediate."
+              },
+              {
+                "paper_id": "PMID:32337091",
+                "quote": "McbA catalyzes the adenylation of 1-acetyl-9 H -\u03b2-carboline-3-carboxylic acid 1 ( ) to give intermediate 2 , followed by amidation with 2-phenylethylamine 3 , provided in equimolar amounts, to give the amide 4"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "two_metal_acyl_phosphate_ligase": {
+      "keys": {
+        "activation_mode": [
+          "acyl_phosphate"
+        ],
+        "families": [
+          "IPR004809",
+          "IPR011761",
+          "IPR003806"
+        ]
+      },
+      "family_transfer_note": "Glutamine-synthetase / ATP-grasp two-metal ligases; transfers to unannotated homologs of these families.",
+      "description": "Two-metal phosphoryl-transfer amide ligase: carboxylate phosphorylation, then aminolysis of the acyl-phosphate. SEED (not yet literature-extracted).",
+      "provenance": {
+        "status": "seed_unverified",
+        "validation_level": 0,
+        "papers": []
+      },
+      "steps": [
+        {
+          "index": 1,
+          "name": "phosphorylation",
+          "reactive_state": "precursor",
+          "species_present": [
+            "carboxylate_substrate",
+            "NTP",
+            "catalytic_metal"
+          ],
+          "species_consumed": [
+            "NTP"
+          ],
+          "species_produced": [
+            "acyl_phosphate_intermediate",
+            "ADP"
+          ],
+          "bond_change": "carboxylate oxygen attacks the NTP gamma-phosphate; ADP is released",
+          "attack": {
+            "nucleophile": {
+              "role": "carboxylate_substrate",
+              "atom_selector": "carboxylate_oxygen"
+            },
+            "electrophile": {
+              "role": "NTP",
+              "atom_selector": "gamma_phosphate"
+            },
+            "leaving_group": {
+              "role": "NTP",
+              "atom_selector": "beta_gamma_bridging_oxygen"
+            },
+            "charge_centre": {
+              "role": "NTP",
+              "atom_selector": "gamma_nonbridging_oxygen"
+            },
+            "ideal_angle": 180.0
+          },
+          "provenance": {
+            "status": "seed_unverified"
+          }
+        },
+        {
+          "index": 2,
+          "name": "aminolysis",
+          "reactive_state": "intermediate",
+          "species_present": [
+            "acyl_phosphate_intermediate",
+            "amine_substrate",
+            "catalytic_metal"
+          ],
+          "species_consumed": [
+            "acyl_phosphate_intermediate",
+            "amine_substrate"
+          ],
+          "species_produced": [
+            "amide_product",
+            "Pi"
+          ],
+          "bond_change": "amine nitrogen attacks the acyl carbonyl carbon of the acyl-phosphate; Pi is released",
+          "attack": {
+            "nucleophile": {
+              "role": "amine_substrate",
+              "atom_selector": "amine_nitrogen"
+            },
+            "electrophile": {
+              "role": "acyl_phosphate_intermediate",
+              "atom_selector": "phosphate_activated_acyl_carbon"
+            },
+            "leaving_group": {
+              "role": "acyl_phosphate_intermediate",
+              "atom_selector": "phosphate_activated_acyl_leaving_oxygen"
+            },
+            "charge_centre": {
+              "role": "acyl_phosphate_intermediate",
+              "atom_selector": "phosphate_activated_acyl_carbonyl_oxygen"
+            },
+            "ideal_angle": 107.0
+          },
+          "provenance": {
+            "status": "seed_unverified"
+          }
+        }
+      ]
+    },
+    "covalent_nucleophile_acyl_hydrolase": {
+      "keys": {
+        "activation_mode": [
+          "hydrolysis",
+          "acyl_enzyme"
+        ],
+        "families": []
+      },
+      "description": "Two-step covalent (ping-pong) hydrolysis of a carbonyl bonded to O, N or S. A protein-side Ser/Thr/Cys nucleophile attacks the carbonyl carbon to give a tetrahedral intermediate that collapses to an acyl-enzyme, releasing the leaving group; water then hydrolyses the acyl-enzyme. Covers ester, amide and carbamate substrates, which differ in the leaving group, not in the geometry.",
+      "steps": [
+        {
+          "index": 1,
+          "name": "acylation",
+          "reactive_state": "precursor",
+          "species_present": [
+            "acyl_substrate"
+          ],
+          "species_consumed": [
+            "acyl_substrate"
+          ],
+          "species_produced": [
+            "acyl_enzyme_intermediate",
+            "alcohol_product"
+          ],
+          "bond_change": "catalytic nucleophile attacks the substrate carbonyl carbon; the heteroatom-linked leaving group departs, giving the acyl-enzyme",
+          "attack": {
+            "nucleophile": {
+              "role": "catalytic_nucleophile",
+              "atom_selector": "protein_nucleophile_atom"
+            },
+            "electrophile": {
+              "role": "acyl_substrate",
+              "atom_selector": "acyl_carbonyl_carbon"
+            },
+            "leaving_group": {
+              "role": "acyl_substrate",
+              "atom_selector": "acyl_leaving_heteroatom"
+            },
+            "charge_centre": {
+              "role": "acyl_substrate",
+              "atom_selector": "acyl_carbonyl_oxygen"
+            },
+            "ideal_angle": 107.0
+          },
+          "provenance": {
+            "status": "literature_extracted",
+            "evidence": [
+              {
+                "paper_id": "DOI:10.1038/s41589-026-02325-8",
+                "quote": "The polarization of the catalytic Ser initiates the reaction cycle, allowing nucleophilic attack on the carbonyl carbon of the carbamate substrate. Formation of the first tetrahedral intermediate resolves into an acyl-enzyme intermediate, liberating a primary alcohol."
+              },
+              {
+                "paper_id": "DOI:10.1038/s41589-026-02325-8",
+                "quote": "This enables nucleophilic attack on the carbonyl carbon of PA-6 oligomers, yielding the first tetrahedral transition state. The oxyanion is stabilized by an Asn and the backbone of a Tyr. Liberation of the amine yields a stable acyl-enzyme intermediate."
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "name": "deacylation",
+          "reactive_state": "intermediate",
+          "species_present": [
+            "acyl_enzyme_intermediate",
+            "water"
+          ],
+          "species_consumed": [
+            "acyl_enzyme_intermediate",
+            "water"
+          ],
+          "species_produced": [
+            "carboxylic_acid_product"
+          ],
+          "bond_change": "an activated water attacks the acyl-enzyme carbonyl carbon; the catalytic nucleophile departs, releasing the acid and regenerating the enzyme",
+          "attack": {
+            "nucleophile": {
+              "role": "water",
+              "atom_selector": "water_oxygen"
+            },
+            "electrophile": {
+              "role": "acyl_enzyme_intermediate",
+              "atom_selector": "acyl_carbonyl_carbon"
+            },
+            "leaving_group": {
+              "role": "catalytic_nucleophile",
+              "atom_selector": "protein_nucleophile_atom"
+            },
+            "charge_centre": {
+              "role": "acyl_enzyme_intermediate",
+              "atom_selector": "acyl_carbonyl_oxygen"
+            },
+            "ideal_angle": 107.0
+          },
+          "provenance": {
+            "status": "literature_extracted",
+            "evidence": [
+              {
+                "paper_id": "DOI:10.1038/s41589-026-02325-8",
+                "quote": "An activated water molecule attacks the acyl-enzyme intermediate, forming the second tetrahedral intermediate. Liberation of carbamic acid, dissociating into a primary amine and CO2."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "attack_schema_note": "attack declares the near-attack geometry as ROLES: nucleophile, electrophile, leaving_group, charge_centre (the atom accumulating negative charge in the transition state), and ideal_angle (the ideal nucleophile-electrophile-leaving angle in degrees for this geometry: ~180 for in-line displacement, ~107 for Burgi-Dunitz addition to a trigonal carbon). Downstream scoring consumes these so the geometry that is SCORED is the geometry that was MODELLED."
+}

@@ -37,15 +37,37 @@ class ReactionCoordinates:
         with open(path) as handle:
             return cls(json.load(handle), source=os.path.abspath(path))
 
-    def select_mechanism(self, activation_mode: str | None, override: str | None = None) -> tuple[str | None, dict | None]:
-        """Return (mechanism_key, mechanism) for an override name or an activation mode."""
+    def select(
+        self,
+        *,
+        family_ids: tuple[str, ...] | list[str] = (),
+        activation_mode: str | None = None,
+        override: str | None = None,
+    ) -> tuple[str | None, dict | None, str | None]:
+        """Select a coordinate for a candidate; return (key, mechanism, basis).
+
+        FAMILY FIRST: mechanism is a family-level property, so a candidate whose
+        InterPro family is listed by a coordinate inherits it -- this is how the
+        mechanism transfers to unannotated homologs of a known family. Falls back to
+        the activation mode, then abstains. ``basis`` records which rule matched.
+        """
         if override:
-            return override, self.mechanisms.get(override)
+            return override, self.mechanisms.get(override), "override"
+        family_ids = set(family_ids or ())
+        for key, mech in self.mechanisms.items():
+            fams = set(((mech.get("keys") or {}).get("families")) or [])
+            if family_ids & fams:
+                return key, mech, "family"
         for key, mech in self.mechanisms.items():
             modes = ((mech.get("keys") or {}).get("activation_mode")) or []
             if activation_mode in modes:
-                return key, mech
-        return None, None
+                return key, mech, "activation_mode"
+        return None, None, None
+
+    def select_mechanism(self, activation_mode: str | None, override: str | None = None) -> tuple[str | None, dict | None]:
+        """Backward-compatible activation-mode selection."""
+        key, mech, _ = self.select(activation_mode=activation_mode, override=override)
+        return key, mech
 
     @staticmethod
     def step(mechanism: dict, index: int) -> dict | None:

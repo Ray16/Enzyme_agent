@@ -267,7 +267,6 @@ def largest_assembly(pdb_id: str):
 
 
 def _load_assembly(pdb_id, assembly_id, cache_dir=None):
-    gemmi = _require_gemmi()
     cache_dir = cache_dir or os.path.expanduser("~/.cache/modeling_unit_assemblies")
     os.makedirs(cache_dir, exist_ok=True)
     path = os.path.join(cache_dir, f"{pdb_id}-assembly{assembly_id}.cif")
@@ -280,13 +279,11 @@ def _load_assembly(pdb_id, assembly_id, cache_dir=None):
 
 
 def _amino_acid(res):
-    gemmi = _require_gemmi()
     info = gemmi.find_tabulated_residue(res.name)
     return info is not None and info.is_amino_acid()
 
 
 def _chain_sequence(chain):
-    gemmi = _require_gemmi()
     residues, letters = [], []
     for res in chain:
         info = gemmi.find_tabulated_residue(res.name)
@@ -310,7 +307,6 @@ def _map_position(uniprot_sequence, chain_sequence, residues, position):
 
 def measure_ligand_contacts(pdb_id, assembly_id, cache_dir=None, kb=None):
     """Per bound substrate-like ligand, the other-chain fraction of its contacts."""
-    gemmi = _require_gemmi()
     kb = kb or knowledge()
     radius = _param("contact_radius_A", kb=kb)
     min_heavy = _param("min_ligand_heavy_atoms", kb=kb)
@@ -392,7 +388,6 @@ def gather_evidence(accession, catalytic_position=None, cache_dir=None, kb=None)
     assembly; falls back to the catalytic-site-to-interface distance; then to SUBUNIT.
     """
     kb = kb or knowledge()
-    _require_gemmi()  # fail loud now, not inside a swallowed per-PDB handler below
     facts = uniprot_facts(accession)
     ev = UnitEvidence(accession=accession, uniprot_subunit=facts["subunit"])
     if catalytic_position is None:
@@ -466,7 +461,6 @@ def resolve_panel(accessions, ligand_heavy_atoms, ligand_topology="linear",
     donor accession plus the shared family are recorded on the recipient.
     """
     kb = kb or knowledge()
-    _require_gemmi()  # loud dependency check before the per-accession error swallow
     transferable = set(_param("transferable_interpro_types", kb=kb))
     records, families, sequences = {}, {}, {}
     for acc in accessions:

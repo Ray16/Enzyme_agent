@@ -36,6 +36,7 @@ import copy
 import importlib.util
 import json
 import os
+import sys
 from datetime import datetime, timezone
 from typing import Any, Callable
 
@@ -56,6 +57,9 @@ from reaction import (
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)  # structural_modeling/
+REPO_ROOT = os.path.dirname(ROOT)
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 SCRIPTS = os.path.join(ROOT, "scripts")
 
 
@@ -361,6 +365,22 @@ def _resolve_attack_atom(mi: dict, spec: dict, nucleotide_ccd: str | None, selec
     substrate = _find_substrate(mi, role)
     smarts = (selectors.get("ligand_smarts") or {}).get(selector)
     if substrate is None:
+        # A protein-side or solvent role is not a modelled substrate: it is
+        # resolved from the POSE. Say what is actually missing, because
+        # "no modeled substrate" sends the reader looking for a ligand that
+        # should not exist.
+        if selector in (selectors.get("protein_selectors") or {}):
+            return {"kind": "protein", "role": role, "atom_selector": selector,
+                    "match_count": 0, "resolution": "per_candidate_annotation_required"}, [
+                f"role {role!r} is a protein-side nucleophile: assign the catalytic "
+                f"residue for this candidate (chain/residue/atom) before the geometry "
+                f"for step can be measured; it cannot be derived from the substrate"
+            ]
+        if selector in (selectors.get("solvent_selectors") or {}):
+            return {"kind": "solvent", "role": role, "atom_selector": selector,
+                    "match_count": 0}, [
+                f"role {role!r} is solvent and is not modelled explicitly"
+            ]
         return {"kind": "ligand", "role": role, "atom_selector": selector, "match_count": 0}, [
             f"no modeled substrate has role {role!r} for the declared step"
         ]
@@ -373,16 +393,20 @@ def _resolve_attack_atom(mi: dict, spec: dict, nucleotide_ccd: str | None, selec
         "match_count": match["match_count"],
         "reactive_atom_indices": match["reactive_atom_indices"],
     }
+    resolved["symmetry_equivalent"] = match.get("symmetry_equivalent", False)
+    resolved["distinct_atom_indices"] = match.get("distinct_atom_indices", [])
     if not match["match_count"]:
         errors = [f"cannot locate {selector} on {role} ligand"]
-    elif match["match_count"] > 1:
-        # Fail closed on ambiguity. A selector matching several sites means the
-        # downstream consumer silently picks one, and picking the wrong carbonyl
-        # scores a different reaction than the one being modelled.
+    elif len(match.get("distinct_atom_indices") or []) > 1 and not match.get("symmetry_equivalent"):
+        # Fail closed on CHEMICALLY DISTINCT ambiguity. A selector matching
+        # several inequivalent sites means the downstream consumer silently
+        # picks one, and picking the wrong carbonyl scores a different reaction
+        # than the one being modelled.
         errors = [
             f"selector {selector!r} is ambiguous on {role}: {match['match_count']} "
-            f"matches at atoms {match['reactive_atom_indices']}; tighten the SMARTS "
-            f"so it identifies the reacting site uniquely"
+            f"matches at atoms {match['reactive_atom_indices']} in "
+            f"{len(match.get('symmetry_classes') or [])} distinct symmetry classes; "
+            f"tighten the SMARTS so it identifies the reacting site uniquely"
         ]
     else:
         errors = []
@@ -650,13 +674,10 @@ def main(argv: list[str] | None = None) -> int:
 
     reports = resolve_handoff(handoff, manifest, knowledge, step=args.step, fetch=fetch)
 
-    with open(args.out, "w") as handle:
-        json.dump(handoff, handle, indent=2)
-        handle.write("\n")
+    from enzyme_discovery_agent.state_store import atomic_write_json
+    atomic_write_json(args.out, handoff)
     if args.report:
-        with open(args.report, "w") as handle:
-            json.dump(reports, handle, indent=2)
-            handle.write("\n")
+        atomic_write_json(args.report, reports)
 
     ready = sum(1 for r in reports.values() if r["status"] == "ready")
     print(f"resolved {len(reports)} candidates: {ready} ready, {len(reports) - ready} needs_review")

@@ -1,0 +1,503 @@
+{
+  "candidate_rules": [
+    {
+      "applies_when": {
+        "non_protein_participant": true
+      },
+      "decision_point": "substrate-representation",
+      "evidence": [
+        {
+          "claim_id": "claim:0d6d072d66c91309c592",
+          "claim_type": "limitation",
+          "paper_id": "PMID:40320551",
+          "quote": "Chai-1 output models contain small molecule atom names and order that do not match the atom names and order in the CIF files."
+        },
+        {
+          "claim_id": "claim:71c2b877cd4527358399",
+          "claim_type": "limitation",
+          "paper_id": "PMID:40320551",
+          "quote": "RFAA\u2019s and KarmaDock\u2019s output models contain small molecule atom names that do not match the atom names in the original CIF files; however, the order of these atoms remains the same."
+        },
+        {
+          "claim_id": "claim:4977670827206ec7702e",
+          "claim_type": "method",
+          "paper_id": "PMID:40320551",
+          "quote": "SDF files of the chemical group attached as PTMs were manually modified where necessary to handle \u201cleaving groups\u201d, as recommended by the RFAA manual."
+        },
+        {
+          "claim_id": "claim:9abe6275cbadb238f5bd",
+          "claim_type": "method",
+          "paper_id": "PMID:40874547",
+          "quote": "Manual deletion of leaving oxygens in the monosaccharide CCD entry, O2 in SIA ( and ), is necessary to maintain proper valency."
+        },
+        {
+          "claim_id": "claim:c83bfa6d1624846d55ca",
+          "claim_type": "outcome",
+          "paper_id": "PMID:40874547",
+          "quote": "In this configuration, both the O6 atom of GAL and the O2 atom of SIA were retained, generating unrealistic valence states and unfavorable torsion angles at the glycosidic junction ( )."
+        },
+        {
+          "claim_id": "claim:0c46aefa25ab0c3dd07b",
+          "claim_type": "outcome",
+          "paper_id": "PMID:40874547",
+          "quote": "AF3 consistently misassigns \u03b1-xylose as \u03b2, even in contexts where structures of matriglycan-bound proteins exist in the PDB (e.g. laminin ( ), Lassa virus glycoprotein ( ))."
+        }
+      ],
+      "independent_paper_count": 2,
+      "input_effect": {
+        "operation": "require structured chemistry validation",
+        "path": "preflight.ligand_chemistry"
+      },
+      "recommendation": "Validate atom identity and ordering, bond connectivity, stereochemistry, formal charge, and leaving-atom handling before scoring a predicted pose.",
+      "rule_id": "rule:3d2d9eb7a75c83532a03",
+      "schema_version": "decision-rule-v1",
+      "status": "candidate",
+      "support_label": "cross-paper-candidate",
+      "supporting_claim_ids": [
+        "claim:0d6d072d66c91309c592",
+        "claim:71c2b877cd4527358399",
+        "claim:4977670827206ec7702e",
+        "claim:9abe6275cbadb238f5bd",
+        "claim:c83bfa6d1624846d55ca",
+        "claim:0c46aefa25ab0c3dd07b"
+      ],
+      "supporting_paper_ids": [
+        "PMID:40320551",
+        "PMID:40874547"
+      ],
+      "title": "Validate ligand chemistry before interpreting a pose",
+      "valid": true
+    },
+    {
+      "applies_when": {
+        "binding_context_may_be_multicomponent": true
+      },
+      "decision_point": "participants",
+      "evidence": [
+        {
+          "claim_id": "claim:6ee044e73bef05f1dd04",
+          "claim_type": "limitation",
+          "paper_id": "PMID:40320551",
+          "quote": "For example, RFAA did not predict the structure of the C-terminal part of the Aminoimidazole-4-carboxamide ribonucleotide transformylase (PDB: 1PL0), leading to the ligand being incorrectly positioned in the model, bound to another domain."
+        },
+        {
+          "claim_id": "claim:d0e347c2602fa53d5768",
+          "claim_type": "outcome",
+          "paper_id": "PMID:40320551",
+          "quote": "For PTM-modified state all approaches suggested NADP position at the two cofactor binding sites that should be occupied by FAD and FMN (Fig. B)."
+        }
+      ],
+      "independent_paper_count": 1,
+      "input_effect": {
+        "operation": "block on missing structural context",
+        "path": "preflight.required_participants"
+      },
+      "recommendation": "Verify required domains, cofactors, metals, and biological context before interpreting ligand placement.",
+      "rule_id": "rule:753b24c8cd1a5035027a",
+      "schema_version": "decision-rule-v1",
+      "status": "candidate",
+      "support_label": "single-paper-candidate",
+      "supporting_claim_ids": [
+        "claim:6ee044e73bef05f1dd04",
+        "claim:d0e347c2602fa53d5768"
+      ],
+      "supporting_paper_ids": [
+        "PMID:40320551"
+      ],
+      "title": "Check structural and cofactor context before trusting ligand placement",
+      "valid": true
+    },
+    {
+      "applies_when": {
+        "model_is_stochastic": true
+      },
+      "decision_point": "conformational-sampling-strategy",
+      "evidence": [
+        {
+          "claim_id": "claim:7b3175dbec5232963592",
+          "claim_type": "limitation",
+          "paper_id": "PMID:40320551",
+          "quote": "However, in several cases, Chai-1 models exhibited a high standard deviation, indicating inconsistency in predictions for both unmodified and PTM-modified states (Fig. B)."
+        },
+        {
+          "claim_id": "claim:7209cdff19997d7d0b05",
+          "claim_type": "validation",
+          "paper_id": "PMID:41339749",
+          "quote": "A successful backbone has at least one sequence where one of the five Chai-1 diffusion samples has all the atomic side chains within 1.5 \u00c5 when the backbones of the output generation motif residues are aligned to the predicted backbone coordinates and having no ligand clashes with backbone atoms in the prediction."
+        }
+      ],
+      "independent_paper_count": 2,
+      "input_effect": {
+        "operation": "require independent samples and convergence summary",
+        "path": "sampling"
+      },
+      "recommendation": "Generate independent samples and report pose or metric dispersion; do not treat one favorable sample as convergence.",
+      "rule_id": "rule:59e9e38c0355e2c1c09a",
+      "schema_version": "decision-rule-v1",
+      "status": "candidate",
+      "support_label": "cross-paper-candidate",
+      "supporting_claim_ids": [
+        "claim:7b3175dbec5232963592",
+        "claim:7209cdff19997d7d0b05"
+      ],
+      "supporting_paper_ids": [
+        "PMID:40320551",
+        "PMID:41339749"
+      ],
+      "title": "Use replicate consistency as an uncertainty signal",
+      "valid": true
+    },
+    {
+      "applies_when": {
+        "task_has_geometric_success_criteria": true
+      },
+      "decision_point": "pose-or-conformer-selection-criterion",
+      "evidence": [
+        {
+          "claim_id": "claim:cc95391b01ef46a8dd2b",
+          "claim_type": "method",
+          "paper_id": "PMID:42011536",
+          "quote": "The models were then filtered based on active site geometry and sorted by model confidence."
+        },
+        {
+          "claim_id": "claim:4a2551fdcaf2efe08c66",
+          "claim_type": "outcome",
+          "paper_id": "PMID:42343133",
+          "quote": "Maximizing model confidence and agreement was necessary but perhaps not sufficient by themselves."
+        }
+      ],
+      "independent_paper_count": 2,
+      "input_effect": {
+        "operation": "geometry and validity filter before confidence rank",
+        "path": "postprocess.selection"
+      },
+      "recommendation": "Apply predeclared task-relevant geometry and physical-validity checks before using model confidence to rank survivors.",
+      "rule_id": "rule:0ee855d845d965b28d3e",
+      "schema_version": "decision-rule-v1",
+      "status": "candidate",
+      "support_label": "cross-paper-candidate",
+      "supporting_claim_ids": [
+        "claim:cc95391b01ef46a8dd2b",
+        "claim:4a2551fdcaf2efe08c66"
+      ],
+      "supporting_paper_ids": [
+        "PMID:42011536",
+        "PMID:42343133"
+      ],
+      "title": "Filter task-relevant geometry before generic confidence",
+      "valid": true
+    },
+    {
+      "applies_when": {
+        "confidence_metric_used": true
+      },
+      "decision_point": "pose-or-conformer-selection-criterion",
+      "evidence": [
+        {
+          "claim_id": "claim:1cc1390d5dcb0c6fded7",
+          "claim_type": "limitation",
+          "paper_id": "PMID:41857796",
+          "quote": "Cross-docking experiments ( Figure S12 ) demonstrated that mPAE can discriminate when covalent cofolding to different cysteine locations, but not so well within the same location, suggesting it should not be used currently for selectivity predictions."
+        },
+        {
+          "claim_id": "claim:4b489f418bb6978753a4",
+          "claim_type": "validation",
+          "paper_id": "PMID:41857796",
+          "quote": "Cross-docking experiments ( Figure S12 ) demonstrated that mPAE can discriminate when covalent cofolding to different cysteine locations, but not so well within the same location, suggesting it should not be used currently for selectivity predictions."
+        },
+        {
+          "claim_id": "claim:4a2551fdcaf2efe08c66",
+          "claim_type": "outcome",
+          "paper_id": "PMID:42343133",
+          "quote": "Maximizing model confidence and agreement was necessary but perhaps not sufficient by themselves."
+        }
+      ],
+      "independent_paper_count": 2,
+      "input_effect": {
+        "operation": "require endpoint-specific calibration evidence",
+        "path": "postprocess.metric"
+      },
+      "recommendation": "Use a confidence metric only for endpoints where held-out benchmarking shows discrimination; do not transfer it automatically to selectivity.",
+      "rule_id": "rule:466fd6a4077867e9362b",
+      "schema_version": "decision-rule-v1",
+      "status": "candidate",
+      "support_label": "cross-paper-candidate",
+      "supporting_claim_ids": [
+        "claim:1cc1390d5dcb0c6fded7",
+        "claim:4b489f418bb6978753a4",
+        "claim:4a2551fdcaf2efe08c66"
+      ],
+      "supporting_paper_ids": [
+        "PMID:41857796",
+        "PMID:42343133"
+      ],
+      "title": "Calibrate confidence metrics to the intended endpoint",
+      "valid": true
+    },
+    {
+      "applies_when": {
+        "claim_requires_energetics_or_population": true
+      },
+      "decision_point": "validation-strategy",
+      "evidence": [
+        {
+          "claim_id": "claim:2648f01883067f1ec9eb",
+          "claim_type": "limitation",
+          "paper_id": "PMID:40874547",
+          "quote": "Furthermore, the predicted structures should be interpreted only as static snapshots, similar to those obtained from empirical methods such as X-ray crystallography, which contribute substantially to the PDB dataset used in AF3 training."
+        },
+        {
+          "claim_id": "claim:156b936603fa322ce0d9",
+          "claim_type": "limitation",
+          "paper_id": "PMID:40874547",
+          "quote": "AF3 does not incorporate an explicit energy function; therefore, the generated models do not represent thermodynamic equilibria nor do they explicitly represent energetically favored conformations."
+        },
+        {
+          "claim_id": "claim:c2d7fc359780aeed37f3",
+          "claim_type": "limitation",
+          "paper_id": "PMID:41857796",
+          "quote": "Whereas, we model the covalent bound, adduct state, similarly to classical docking tools, AF3 does not explicitly account for the energetics of covalent bond formation, making it challenging to rank hits with different electrophiles, and potentially overemphasizing molecular recognition over covalent bond formation."
+        }
+      ],
+      "independent_paper_count": 2,
+      "input_effect": {
+        "operation": "require an energetic or ensemble method",
+        "path": "validation"
+      },
+      "recommendation": "Do not infer equilibrium populations, binding free energy, or reaction energetics directly from static cofolded structures.",
+      "rule_id": "rule:0ac38d2499088811b15d",
+      "schema_version": "decision-rule-v1",
+      "status": "candidate",
+      "support_label": "cross-paper-candidate",
+      "supporting_claim_ids": [
+        "claim:2648f01883067f1ec9eb",
+        "claim:156b936603fa322ce0d9",
+        "claim:c2d7fc359780aeed37f3"
+      ],
+      "supporting_paper_ids": [
+        "PMID:40874547",
+        "PMID:41857796"
+      ],
+      "title": "Treat static cofolding as structural evidence, not thermodynamics",
+      "valid": true
+    },
+    {
+      "applies_when": {
+        "model_drives_selection_or_mechanistic_claim": true
+      },
+      "decision_point": "validation-strategy",
+      "evidence": [
+        {
+          "claim_id": "claim:021da3303c7843bae06e",
+          "claim_type": "validation",
+          "paper_id": "PMID:42011536",
+          "quote": "The overall agreement between the computed results from the models and experimental observations provides confidence that the models can provide meaningful structural and biochemical insights (see Tables S6\u2013S11 )."
+        },
+        {
+          "claim_id": "claim:ed438cc1b6577eda8ce6",
+          "claim_type": "outcome",
+          "paper_id": "PMID:41857796",
+          "quote": "The fact that we were able to discover novel chemical matter in a prospective manner, clearly indicates that at least for well-studied protein targets with well-defined pockets, such as kinases, AF3-based prospective screening can go beyond any examples it has observed during training."
+        },
+        {
+          "claim_id": "claim:ead6ba59dc62084f82d3",
+          "claim_type": "method",
+          "paper_id": "PMID:41624973",
+          "quote": "Notably, this latter metric, referred to as lDDT-PLI, allows one to evaluate specifically how well each method can model protein\u2013ligand structural interfaces."
+        },
+        {
+          "claim_id": "claim:677244ac04f29571e7da",
+          "claim_type": "method",
+          "paper_id": "PMID:41624973",
+          "quote": "Similarly to the protein\u2013ligand scoring procedure employed in the CASP15 competition , for multiligand targets, we report each method\u2019s (top-1) percentage of \u2018correct\u2019 (binding site-superimposed) ligand conformations (r.m.s.d. \u2264 2 \u00c5) as well as violin plots of the r.m.s.d. and PLI-specific lDDT scores of its protein\u2013ligand conformations across all (fragment) ligands within the benchmark\u2019s multiligand complexes (see Supplementary Appendix for these plots)."
+        }
+      ],
+      "independent_paper_count": 3,
+      "input_effect": {
+        "operation": "require an independent falsification test",
+        "path": "validation"
+      },
+      "recommendation": "Validate selected poses or rankings against held-out structures, physical checks, orthogonal calculations, or experiments.",
+      "rule_id": "rule:0b0abb17247ac5684d30",
+      "schema_version": "decision-rule-v1",
+      "status": "candidate",
+      "support_label": "cross-paper-candidate",
+      "supporting_claim_ids": [
+        "claim:021da3303c7843bae06e",
+        "claim:ed438cc1b6577eda8ce6",
+        "claim:ead6ba59dc62084f82d3",
+        "claim:677244ac04f29571e7da"
+      ],
+      "supporting_paper_ids": [
+        "PMID:41624973",
+        "PMID:41857796",
+        "PMID:42011536"
+      ],
+      "title": "Validate important conclusions with independent evidence",
+      "valid": true
+    }
+  ],
+  "caveat": "Candidate rules are bounded interpretations of exact quotes. They are not reviewed defaults and cannot resolve an agent decision by themselves.",
+  "corpus": {
+    "campaign_count": 24,
+    "claim_count": 307,
+    "claim_types": {
+      "decision": 17,
+      "entity": 43,
+      "limitation": 24,
+      "method": 89,
+      "outcome": 77,
+      "parameter": 32,
+      "rationale": 12,
+      "validation": 13
+    },
+    "paper_count": 8
+  },
+  "coverage": [
+    {
+      "claim_count": 7,
+      "decision_point": "biological-system",
+      "paper_count": 2,
+      "paper_ids": [
+        "PMID:40320551",
+        "PMID:40874547"
+      ],
+      "status": "multi-paper"
+    },
+    {
+      "claim_count": 2,
+      "decision_point": "cofactor-metal-treatment",
+      "paper_count": 2,
+      "paper_ids": [
+        "PMID:40320551",
+        "PMID:40874547"
+      ],
+      "status": "multi-paper"
+    },
+    {
+      "claim_count": 3,
+      "decision_point": "conformational-sampling-strategy",
+      "paper_count": 3,
+      "paper_ids": [
+        "PMID:40320551",
+        "PMID:41339749",
+        "PMID:42011536"
+      ],
+      "status": "multi-paper"
+    },
+    {
+      "claim_count": 8,
+      "decision_point": "input-representation",
+      "paper_count": 2,
+      "paper_ids": [
+        "PMID:40320551",
+        "PMID:40874547"
+      ],
+      "status": "multi-paper"
+    },
+    {
+      "claim_count": 1,
+      "decision_point": "oligomeric-state",
+      "paper_count": 1,
+      "paper_ids": [
+        "PMID:42011536"
+      ],
+      "status": "single-paper"
+    },
+    {
+      "claim_count": 4,
+      "decision_point": "participants",
+      "paper_count": 2,
+      "paper_ids": [
+        "PMID:40320551",
+        "PMID:40874547"
+      ],
+      "status": "multi-paper"
+    },
+    {
+      "claim_count": 12,
+      "decision_point": "pose-or-conformer-selection-criterion",
+      "paper_count": 7,
+      "paper_ids": [
+        "PMID:40320551",
+        "PMID:41339749",
+        "PMID:41624973",
+        "PMID:41857796",
+        "PMID:42011536",
+        "PMID:42343133",
+        "PMID:42686818"
+      ],
+      "status": "multi-paper"
+    },
+    {
+      "claim_count": 3,
+      "decision_point": "protein-construct",
+      "paper_count": 2,
+      "paper_ids": [
+        "PMID:40320551",
+        "PMID:40874547"
+      ],
+      "status": "multi-paper"
+    },
+    {
+      "claim_count": 0,
+      "decision_point": "protonation-charge",
+      "paper_count": 0,
+      "paper_ids": [],
+      "status": "gap"
+    },
+    {
+      "claim_count": 3,
+      "decision_point": "reactive-state-modeled",
+      "paper_count": 2,
+      "paper_ids": [
+        "PMID:41857796",
+        "PMID:42011536"
+      ],
+      "status": "multi-paper"
+    },
+    {
+      "claim_count": 3,
+      "decision_point": "restraints-and-constraints",
+      "paper_count": 1,
+      "paper_ids": [
+        "PMID:42011536"
+      ],
+      "status": "single-paper"
+    },
+    {
+      "claim_count": 1,
+      "decision_point": "stereochemistry",
+      "paper_count": 1,
+      "paper_ids": [
+        "PMID:40874547"
+      ],
+      "status": "single-paper"
+    },
+    {
+      "claim_count": 27,
+      "decision_point": "substrate-representation",
+      "paper_count": 3,
+      "paper_ids": [
+        "PMID:40320551",
+        "PMID:40874547",
+        "PMID:41857796"
+      ],
+      "status": "multi-paper"
+    },
+    {
+      "claim_count": 10,
+      "decision_point": "validation-strategy",
+      "paper_count": 5,
+      "paper_ids": [
+        "PMID:40320551",
+        "PMID:40874547",
+        "PMID:41339749",
+        "PMID:41857796",
+        "PMID:42011536"
+      ],
+      "status": "multi-paper"
+    }
+  ],
+  "schema_version": "cofolding-reasoning-synthesis-v1"
+}

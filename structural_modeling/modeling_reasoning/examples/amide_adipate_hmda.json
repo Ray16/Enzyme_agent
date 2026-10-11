@@ -1,0 +1,70 @@
+{
+  "target_id": "amide-synthetase-adipate-hmda",
+  "task_type": "cofolding",
+  "description": "Adipic acid + hexamethylenediamine amide synthetases (nylon-6,6). Step-1 models the carboxylate-activation half-reaction only.",
+  "step": {
+    "index": 1,
+    "chosen_because": "Modeling the carboxylate-activation half-reaction (adenylation/phosphorylation); the enzyme's mechanism class is selected from its activation mode."
+  },
+  "scoring_policy": "unrestrained",
+  "features": {
+    "non_protein_participant": true,
+    "task_has_geometric_success_criteria": true,
+    "model_is_stochastic": true,
+    "binding_context_may_be_multicomponent": true,
+    "confidence_metric_used": true
+  },
+  "resolutions": {
+    "enzyme_state": {
+      "chains": [{ "source": "full_sequence" }],
+      "copies": 1,
+      "state": "intact",
+      "origin": "source",
+      "decision_point": "participants",
+      "confidence": 0.9,
+      "rationale": "These adenylating amide synthetases are modeled as the intact single-chain enzyme; no autocatalytic maturation or reviewed multichain assembly is annotated.",
+      "evidence_ids": ["uniprot:catalytic_activity", "handoff:activation"]
+    },
+    "substrates": [
+      {
+        "match": { "source_smiles": "O=C(O)CCCCC(=O)O" },
+        "include_in_model": true,
+        "modeling_smiles": "[O-]C(=O)CCCCC(=O)[O-]",
+        "role": "carboxylate_substrate",
+        "affinity_target": true,
+        "review_status": "reviewed",
+        "origin": "experience",
+        "decision_point": "substrate-representation",
+        "confidence": 0.8,
+        "rationale": "Adipate is the carboxylate that is adenylated; modeled as the dianion (RDKit net charge -2) matching its physiological protonation, and set as the single affinity/geometry target.",
+        "evidence_ids": ["rdkit:formal_charge=-2", "reasoning:validate-ligand-chemistry"]
+      },
+      {
+        "match": { "source_smiles": "NCCCCCCN" },
+        "include_in_model": false,
+        "origin": "source",
+        "decision_point": "participants",
+        "confidence": 0.7,
+        "rationale": "Hexamethylenediamine is the amine co-substrate of the second half-reaction; step-1 models only carboxylate activation, so it is omitted to isolate the adenylation geometry.",
+        "evidence_ids": ["mechanism:two-step-ligase"]
+      }
+    ],
+    "catalytic_metal": {
+      "strategy": "family_reason",
+      "uniprot_cross_check": true,
+      "origin": "database",
+      "decision_point": "participants",
+      "confidence": 0.85,
+      "rationale": "Catalytic Mg2+ is reasoned per active site from the candidate's mechanism/family (ANL adenylate -> one Mg, two-metal phosphoryl transfer -> two) and scaled by the modeled oligomeric state. Any UniProt metal tally is a cross-check reference only, since it conflates per-subunit vs per-assembly and binding-site labels.",
+      "evidence_ids": ["mechanism:family-per-site-metal", "uniprot:cofactor_annotation(reference)"]
+    },
+    "geometry": {
+      "attacking_participant": "adipate carboxylate oxygen",
+      "origin": "inference",
+      "decision_point": "pose-or-conformer-selection-criterion",
+      "confidence": 0.7,
+      "rationale": "Near-attack geometry (carboxylate O -> reactive phosphate along the leaving-group axis) is recorded as a post-hoc measurement target for geometry-first ranking; it is never imposed as a restraint.",
+      "evidence_ids": ["reasoning:filter-geometry-before-confidence"]
+    }
+  }
+}

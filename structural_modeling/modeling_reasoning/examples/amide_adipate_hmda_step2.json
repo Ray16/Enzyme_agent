@@ -1,0 +1,63 @@
+{
+  "target_id": "amide-synthetase-adipate-hmda-step2",
+  "task_type": "cofolding",
+  "description": "Step-2 (aminolysis) example: the amine attacks the acyl-adenylate intermediate. ATP is absent (consumed in step 1); the intermediate and the amine are the modeled participants.",
+  "step": {
+    "index": 2,
+    "chosen_because": "Modeling the aminolysis half-reaction: amine nitrogen attacks the acyl carbonyl of the pre-formed acyl-adenylate intermediate."
+  },
+  "scoring_policy": "unrestrained",
+  "features": {
+    "non_protein_participant": true,
+    "task_has_geometric_success_criteria": true,
+    "model_is_stochastic": true,
+    "binding_context_may_be_multicomponent": true
+  },
+  "resolutions": {
+    "enzyme_state": {
+      "chains": [{ "source": "full_sequence" }],
+      "copies": 1,
+      "state": "intact",
+      "origin": "source",
+      "decision_point": "participants",
+      "rationale": "intact single-chain enzyme"
+    },
+    "substrates": [
+      {
+        "match": { "source_smiles": "O=C(O)CCCCC(=O)O" },
+        "include_in_model": true,
+        "modeling_smiles": "[O-]C(=O)CCCCC(=O)OP(=O)([O-])OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1O",
+        "role": "acyl_adenylate_intermediate",
+        "affinity_target": true,
+        "review_status": "reviewed",
+        "origin": "experience",
+        "decision_point": "substrate-representation",
+        "rationale": "The free carboxylate slot is repurposed to carry the adipyl-AMP mixed-anhydride intermediate for step 2.",
+        "evidence_ids": ["reasoning:covalent-adduct-representation"]
+      },
+      {
+        "match": { "source_smiles": "NCCCCCCN" },
+        "include_in_model": true,
+        "modeling_smiles": "NCCCCCC[NH3+]",
+        "role": "amine_substrate",
+        "review_status": "reviewed",
+        "origin": "experience",
+        "decision_point": "participants",
+        "rationale": "Hexamethylenediamine is the attacking amine; the reactive amine is modeled neutral and the distal amine protonated.",
+        "evidence_ids": ["mechanism:two-step-ligase"]
+      }
+    ],
+    "catalytic_metal": {
+      "strategy": "family_reason",
+      "uniprot_cross_check": false,
+      "origin": "database",
+      "decision_point": "participants",
+      "rationale": "per-active-site Mg reasoned from mechanism, scaled by oligomeric state"
+    },
+    "geometry": {
+      "origin": "inference",
+      "decision_point": "pose-or-conformer-selection-criterion",
+      "rationale": "Step-2 near-attack (amine N -> acyl carbonyl C) is derived from the reaction coordinate, not from the activation block."
+    }
+  }
+}
