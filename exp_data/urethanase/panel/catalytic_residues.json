@@ -1,0 +1,247 @@
+{
+  "CpUrethanase": {
+    "position": 248,
+    "residue": "S",
+    "basis": "uniprot:ACT_SITE",
+    "accession": "A0A679EIJ6",
+    "confidence": "annotated"
+  },
+  "NylA": {
+    "position": 174,
+    "residue": "S",
+    "basis": "uniprot:ACT_SITE",
+    "accession": "P13398",
+    "confidence": "annotated"
+  },
+  "NylB": {
+    "position": 112,
+    "residue": "S",
+    "basis": "uniprot:ACT_SITE",
+    "accession": "P07061",
+    "confidence": "annotated"
+  },
+  "NylB_prime": {
+    "position": 112,
+    "residue": "S",
+    "basis": "uniprot:ACT_SITE",
+    "accession": "P07062",
+    "confidence": "annotated"
+  },
+  "NylC": {
+    "position": 267,
+    "residue": "T",
+    "basis": "uniprot:ACT_SITE",
+    "accession": "Q79F77",
+    "confidence": "annotated"
+  },
+  "AMPUR6": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 36.4,
+    "position": 180,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDGGGSIRIPS",
+    "motif_agreement_with_reference": 1
+  },
+  "AXPUR5": {
+    "nearest_reference": "NylC",
+    "reference_identity_pct": 26.8,
+    "position": 438,
+    "residue": "T",
+    "confidence": "low_confidence",
+    "basis": "alignment transfer from nearest reference NylC (Q79F77) T267",
+    "motif_context": "FGITDTPVGQY",
+    "motif_agreement_with_reference": 1,
+    "note": "nearest reference is distant and the local motif does not match it; the residue may be a chance Ser/Thr. Confirm independently before using this site for geometry."
+  },
+  "Aes72": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 27.3,
+    "position": null,
+    "residue": null,
+    "confidence": "unresolved",
+    "basis": "nearest reference NylA transfers to L, not the expected S",
+    "observed_at_aligned_position": "L"
+  },
+  "BLPUR4": {
+    "nearest_reference": "NylC",
+    "reference_identity_pct": 25.9,
+    "position": null,
+    "residue": null,
+    "confidence": "unresolved",
+    "basis": "nearest reference NylC transfers to M, not the expected T",
+    "observed_at_aligned_position": "M"
+  },
+  "CCPUR1": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 32.9,
+    "position": 180,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDLGGSLRWPA",
+    "motif_agreement_with_reference": 1
+  },
+  "CCPUR2": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 30.4,
+    "position": 181,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDLGGSLRWPA",
+    "motif_agreement_with_reference": 1
+  },
+  "CCPUR7": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 39.4,
+    "position": 198,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDGGGSLRIPA",
+    "motif_agreement_with_reference": 1
+  },
+  "MPPUR3": {
+    "nearest_reference": "NylC",
+    "reference_identity_pct": 27.0,
+    "position": 388,
+    "residue": "T",
+    "confidence": "low_confidence",
+    "basis": "alignment transfer from nearest reference NylC (Q79F77) T267",
+    "motif_context": "AEAHSTHAPTY",
+    "motif_agreement_with_reference": 2,
+    "note": "nearest reference is distant and the local motif does not match it; the residue may be a chance Ser/Thr. Confirm independently before using this site for geometry."
+  },
+  "NylBp2_Hyb24_D1_mutant": {
+    "nearest_reference": "NylB_prime",
+    "reference_identity_pct": 98.0,
+    "position": 112,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylB_prime (P07062) S112",
+    "motif_context": "RHLLMSVSKSL",
+    "motif_agreement_with_reference": 10
+  },
+  "NylC-TS_D36A_D122G_H130Y_E263Q": {
+    "nearest_reference": "NylC",
+    "reference_identity_pct": 98.9,
+    "position": 267,
+    "residue": "T",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylC (Q79F77) T267",
+    "motif_context": "TQAGNTTISAI",
+    "motif_agreement_with_reference": 10
+  },
+  "PMGPUR8": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 30.4,
+    "position": 215,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDIGSSLRNPA",
+    "motif_agreement_with_reference": 0
+  },
+  "PMGPUR9": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 28.8,
+    "position": 189,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDIGGSLRVPG",
+    "motif_agreement_with_reference": 1
+  },
+  "PYNYL1": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 37.7,
+    "position": 181,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "NDGGGSLRVPA",
+    "motif_agreement_with_reference": 1
+  },
+  "SaAmd_candidate_unverified": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 34.9,
+    "position": 174,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDIGGSIRVPA",
+    "motif_agreement_with_reference": 1
+  },
+  "TvgC": {
+    "nearest_reference": "NylC",
+    "reference_identity_pct": 30.7,
+    "position": 234,
+    "residue": "T",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylC (Q79F77) T267",
+    "motif_context": "VFIGNTTIGVV",
+    "motif_agreement_with_reference": 5
+  },
+  "UMG-SP1": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 33.8,
+    "position": 176,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDIGGSIRIPA",
+    "motif_agreement_with_reference": 1
+  },
+  "UMG-SP2": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 31.4,
+    "position": 175,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDIGGSIRVPA",
+    "motif_agreement_with_reference": 1
+  },
+  "UMG-SP3": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 33.7,
+    "position": 175,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDIGGSIRVPA",
+    "motif_agreement_with_reference": 1
+  },
+  "pQR3139": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 34.5,
+    "position": 181,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "NDGGGSIRIPA",
+    "motif_agreement_with_reference": 1
+  },
+  "pQR3141": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 39.8,
+    "position": 174,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "SDGGGSIRIPA",
+    "motif_agreement_with_reference": 1
+  },
+  "pQR3144": {
+    "nearest_reference": "NylA",
+    "reference_identity_pct": 37.1,
+    "position": 182,
+    "residue": "S",
+    "confidence": "transferred",
+    "basis": "alignment transfer from nearest reference NylA (P13398) S174",
+    "motif_context": "NDGGGSIRIPA",
+    "motif_agreement_with_reference": 1
+  }
+}
