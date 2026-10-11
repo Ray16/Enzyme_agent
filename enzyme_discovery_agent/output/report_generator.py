@@ -65,6 +65,8 @@ def is_error_text(text: str) -> bool:
 
 def _merge_registry_evidence(run_dir: Path, all_evals: list[dict]) -> list[dict]:
     """Refresh evaluation payloads with evidence extracted after evaluation."""
+    from enzyme_discovery_agent.models.evaluations import current_evaluations
+    all_evals = current_evaluations(run_dir, all_evals)
     try:
         from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
         registry = load_candidate_registry(run_dir).get("candidates", {})
@@ -129,7 +131,7 @@ def _write_deterministic_report(
         ranking = _deterministic_evidence_ranking(query, all_evals)
     # Keep the machine-readable ranking synchronized with the visible report.
     import json as _json
-    (run_dir / ranking_filename).write_text(_json.dumps(ranking, indent=2) + "\n")
+    (run_file(run_dir, ranking_filename)).write_text(_json.dumps(ranking, indent=2) + "\n")
 
     lines = [
         "# Candidate evaluation report",
@@ -180,7 +182,7 @@ def _write_deterministic_report(
             lines.append("- Experimental structures: " + ", ".join(structures))
         lines.append("")
 
-    (run_dir / filename).write_text("\n".join(lines) + "\n")
+    (run_file(run_dir, filename)).write_text("\n".join(lines) + "\n")
 
 
 def _deterministic_evidence_ranking(query: str, all_evals: list[dict]) -> list[dict]:
@@ -192,6 +194,9 @@ def _deterministic_evidence_ranking(query: str, all_evals: list[dict]) -> list[d
     file-order fallback where a cyclic-dimer enzyme could appear first.
     """
     polymer_target = any(word in query.lower() for word in ("polymer", "oligomer"))
+    from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+    target = extract_target_bond_type(query)
+    target_bonds = set(target.get("bond_types") or [])
 
     def classify(data: dict) -> tuple[int, str, str]:
         text = " ".join(
@@ -200,8 +205,9 @@ def _deterministic_evidence_ranking(query: str, all_evals: list[dict]) -> list[d
             + [item.get("name", "") for item in data.get("native_substrates", [])]
         ).lower()
         bond_types = set((data.get("reaction_chemistry") or {}).get("bond_types") or [])
-        amide_cleavage = "amide" in bond_types and (
+        target_cleavage = (not target_bonds or bool(target_bonds & bond_types)) and (
             (data.get("reaction_chemistry") or {}).get("reaction_direction") == "cleavage"
+            and target.get("direction") == "cleavage"
         )
         protein_name = data.get("protein_name", "").lower()
         cyclic = "cyclic" in text or "lactam" in text
@@ -212,15 +218,15 @@ def _deterministic_evidence_ranking(query: str, all_evals: list[dict]) -> list[d
         dimer_specific = "dimer" in protein_name
         oligomer = ("oligomer" in text or "[n" in text) and not dimer_specific
         dimer = "dimer" in text
-        if polymer_target and amide_cleavage and (named_oligomer_hydrolase or oligomer) and not cyclic:
-            return 0, "1", "Direct linear-oligomer amide-hydrolysis precedent."
-        if polymer_target and amide_cleavage and dimer and not cyclic:
-            return 1, "1", "Direct linear-dimer/short-oligomer amide-hydrolysis precedent."
-        if polymer_target and amide_cleavage and cyclic and dimer:
-            return 2, "2", "Cyclic-dimer amide-hydrolysis precedent; weaker for a linear polymer backbone."
-        if amide_cleavage:
-            return 3, "2", "Amide-cleavage chemistry, but without demonstrated linear oligomer scope."
-        return 4, "3", "Mechanistic analogue without native linear-amide-oligomer evidence."
+        if polymer_target and target_cleavage and (named_oligomer_hydrolase or oligomer) and not cyclic:
+            return 0, "1", "Direct linear-oligomer cleavage precedent for the target reaction."
+        if polymer_target and target_cleavage and dimer and not cyclic:
+            return 1, "1", "Direct linear-dimer/short-oligomer cleavage precedent."
+        if polymer_target and target_cleavage and cyclic and dimer:
+            return 2, "2", "Cyclic-dimer cleavage precedent; applicability depends on the target topology."
+        if target_cleavage:
+            return 3, "2", "Target-relevant cleavage chemistry without demonstrated oligomer scope."
+        return 4, "3", "Mechanistic analogue without native target-relevant oligomer evidence."
 
     ranked = []
     for data in (item.get("data", item) for item in all_evals):
@@ -247,6 +253,7 @@ def _deterministic_evidence_ranking(query: str, all_evals: list[dict]) -> list[d
 # eval budget and the final table treat orthologs identically) — one source of
 # truth in models.ortholog.
 from enzyme_discovery_agent.models.ortholog import ortholog_key as _ortholog_key
+from enzyme_discovery_agent.run_layout import run_file
 
 
 def _expression_pref(data: dict) -> int:
@@ -465,6 +472,7 @@ def _candidate_evidence_payload(data: dict) -> dict:
 
 def _llm_focus_rank(
     shortlist: list[dict], query: str, llm_client, token_usage, log_fn=None,
+    target_reasoning: dict | None = None,
 ) -> list[dict] | None:
     """Have the LLM RANK the shortlisted promising candidates by reasoning over
     grounded substrate-accommodation facts.  Returns parsed rows or None.
@@ -478,15 +486,16 @@ def _llm_focus_rank(
         "You are ranking a SHORTLIST of the most promising enzyme candidates for a "
         "target reaction. Reason over the grounded EVIDENCE given per candidate — "
         "never fame or name recognition. Weigh, in this order:\n"
-        "1. SUBSTRATE ACCOMMODATION (primary): can the pocket physically fit BOTH "
-        "target substrates? Compare functional-group types AND counts, aliphatic "
-        "chain length, molecular weight, and aromatic/ring character. A pocket "
-        "evolved for a large, aromatic, cyclic, or phosphorylated native substrate "
-        "CANNOT admit a small linear aliphatic molecule even when one functional-"
-        "group type overlaps. A native matching on group counts AND size AND "
-        "aliphatic character is a genuine lead.\n"
-        "2. REACTION/MECHANISM: it should form (not cleave) the target bond type via "
-        "the target chemistry; a cleavage/hydrolysis direction is a strong negative.\n"
+        "1. SUBSTRATE ACCOMMODATION (primary): assess every target substrate "
+        "actually specified. Compare reactive groups, size, shape, polarity and "
+        "physical form with native scope. Differences are evidence of uncertainty, "
+        "not proof of impossibility or inactivity; distinguish missing evidence "
+        "from demonstrated incompatibility. Do not assume two substrates or a "
+        "particular scaffold.\n"
+        "2. REACTION/MECHANISM: match the target's declared direction and bond "
+        "change, whether formation, cleavage, transfer, redox or another "
+        "transformation. Penalize demonstrated opposite direction, never the "
+        "target's own direction.\n"
         "3. PROVENANCE: Swiss-Prot review, characterization and engineering papers, "
         "and studied mutations increase confidence and engineerability.\n"
         "4. FEASIBILITY: available structure (PDB/AlphaFold) and bacterial/E. coli "
@@ -498,6 +507,9 @@ def _llm_focus_rank(
         "tier 1 = strong lead, 2 = partial, 3 = weak."
     )
     user = (f"Target reaction / substrates: {query}\n\n"
+            + ("Declared target chemistry:\n" + json.dumps(target_reasoning, default=str) + "\n\n"
+               if target_reasoning else "")
+            +
             f"Shortlist ({len(payload)} candidates) with evidence:\n"
             + json.dumps(payload, default=str))
     response = llm_client.call(
@@ -520,6 +532,7 @@ def _deterministic_mechanistic_ranking(
     rankable_evals: list[dict], tier_score: dict[int, float],
     evidence_tiebreak: bool = True,
     family_rank_by_acc: dict[str, int] | None = None,
+    fallback_substrate_fit_by_acc: dict[str, float] | None = None,
 ) -> list[dict]:
     """Rank by mechanistic compatibility deterministically — the reliable spine.
 
@@ -561,7 +574,15 @@ def _deterministic_mechanistic_ranking(
         gated = _candidate_is_gated(d)
         fam_rank = family_rank_by_acc.get(acc, 1)
         fit = _accommodation_score(d)
-        fit_key = -(fit if fit is not None else 0.5)  # None → neutral midpoint
+        if fit is None:
+            fit = (fallback_substrate_fit_by_acc or {}).get(acc)
+        # Missing data must not outrank measured data.  Scoring an unknown as a
+        # neutral 0.5 made it BETTER than any real score below that, so the
+        # candidates we knew least about sorted highest: an enzyme with no
+        # recorded native substrate outranked every candidate whose fit had
+        # actually been measured.  Rank measured candidates first, best fit
+        # first, and place unmeasured ones after them rather than ahead.
+        fit_key = (0, -fit) if fit is not None else (1, 0.0)
         lit = d.get("literature") or {}
         struct = d.get("structural_data") or {}
         struct_rank = 0 if (struct.get("pdb_ids")) else (1 if struct.get("has_alphafold") else 2)
@@ -845,7 +866,7 @@ def _family_relevance_partition(
     # The grounded landscape adds folds whose members natively run the SAME
     # direction as the target even where the agent issued no explicit expand.
     try:
-        budget = json.loads((run_dir / "family_budget.json").read_text())
+        budget = json.loads((run_file(run_dir, 'family_budget.json')).read_text())
         for f in budget if isinstance(budget, list) else []:
             fid = f.get("fold_id")
             if (fid and f.get("direction_vs_target") == "same"
@@ -896,7 +917,7 @@ def _fold_fit_map(run_dir: Path) -> dict[str, float]:
     per-candidate accommodation could not be computed.  Empty when the landscape
     predates the multi-axis survey (older runs) or is absent."""
     try:
-        folds = json.loads((run_dir / "family_landscape.json").read_text())
+        folds = json.loads((run_file(run_dir, 'family_landscape.json')).read_text())
     except (OSError, ValueError):
         return {}
     out: dict[str, float] = {}
@@ -1127,7 +1148,9 @@ def generate_two_pass_report(
     if log_fn:
         log_fn(f"  Focus ranking: LLM reasoning over the {len(shortlist)} most "
                f"promising candidates (of {len(rankable_evals)})")
-    llm_rows = (_llm_focus_rank(shortlist, query, llm_client, token_usage, log_fn)
+    from enzyme_discovery_agent.models.target_reasoning import load_target_reasoning
+    llm_rows = (_llm_focus_rank(shortlist, query, llm_client, token_usage, log_fn,
+                               target_reasoning=load_target_reasoning(run_dir))
                 if shortlist else None)
 
     pass1_ranking = []
@@ -1231,11 +1254,10 @@ def generate_two_pass_report(
 
     # ── Deterministic hard gate: enforce P0 in code, not on the LLM ────────
     # A reaction-direction, bond-type, or severe-size contradiction is a hard
-    # mechanistic disqualifier — an amide *hydrolase* cannot be a top candidate
-    # for an amide-*formation* target, however deep its characterisation.  The
+    # mechanistic disqualifier, regardless of characterization depth. The
     # ranking prompt asks the LLM to bottom these (P0), but a generative ranker
-    # applies that softly and keeps floating "direct amide-chemistry" cleavage
-    # enzymes to the top.  ``critical_warnings`` holds ONLY these three hard
+    # can apply that softly and promote incompatible candidates.
+    # ``critical_warnings`` holds ONLY these three hard
     # contradictions (bond-type / direction / severe-size mismatch), so enforce
     # it deterministically: pin every warned candidate to Tier 3 and sort it
     # below all mechanistically-consistent candidates, preserving the LLM's
@@ -1353,7 +1375,7 @@ def generate_two_pass_report(
     # Persist the durable ranking before asking the provider to write prose.
     # This also makes a report-generation retry/recovery independent of the
     # second provider call.
-    with open(run_dir / "pass1_ranking.json", "w") as f:
+    with open(run_file(run_dir, 'pass1_ranking.json'), "w") as f:
         _json.dump(pass1_ranking, f, indent=2)
 
     # ── Pass 2: full profiles for top candidates ──────────────────────────
@@ -1452,7 +1474,7 @@ def generate_two_pass_explorative(
     # spine (evidence tiebreak KEPT, so it never degenerates to alphabetical) if
     # the explorative report is generated standalone before the confidence one.
     ranking: list[dict] = []
-    p1_path = run_dir / "pass1_ranking.json"
+    p1_path = run_file(run_dir, 'pass1_ranking.json')
     if p1_path.exists():
         try:
             ranking = _json.loads(p1_path.read_text())
