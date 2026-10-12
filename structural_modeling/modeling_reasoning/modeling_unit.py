@@ -503,8 +503,8 @@ def gather_evidence_for_sequence(sequence, catalytic_position=None, identity_cut
     """
     kb = kb or knowledge()
     ortholog = _param("ortholog_identity_threshold", kb=kb)
-    hits = pdb_hits_for_sequence(sequence, identity_cutoff=identity_cutoff, kb_rows=None) \
-        if False else pdb_hits_for_sequence(sequence, identity_cutoff=identity_cutoff)
+    self_id = _param("self_identity_threshold", kb=kb)
+    hits = pdb_hits_for_sequence(sequence, identity_cutoff=identity_cutoff)
     if not hits:
         ev = UnitEvidence(accession="(sequence)")
         ev.notes.append("no deposited structure above the identity cutoff")
