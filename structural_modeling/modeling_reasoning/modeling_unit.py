@@ -517,10 +517,10 @@ def gather_evidence_for_sequence(sequence, catalytic_position=None, identity_cut
             f"{best['identity']:.0%} identical, below the {ortholog:.0%} ortholog "
             f"threshold; REFUSING to transfer an oligomeric verdict across it")
         return ev, best
-    kind = ("own deposited structure" if best["identity"] >= 0.99
+    kind = ("own deposited structure" if best["identity"] >= self_id
             else f"ortholog at {best['identity']:.0%} identity")
     ev.notes.append(f"{best['pdb_id']}: {kind}")
-    if best["identity"] < 0.99:
+    if best["identity"] < self_id:
         ev.transferred_from = best["pdb_id"]
     try:
         assembly_id, count = largest_assembly(best["pdb_id"])
@@ -537,8 +537,35 @@ def gather_evidence_for_sequence(sequence, catalytic_position=None, identity_cut
             ev.liganded_pdb = best["pdb_id"]
             ev.liganded_comp_id = top["comp_id"]
             ev.notes.append(f"{best['pdb_id']}: {top['comp_id']} contacts {top['by_chain']}")
+            return ev, best
     except Exception as exc:
         ev.notes.append(f"{best['pdb_id']}: {type(exc).__name__}: {exc}")
+
+    # Rank 3. Without this a deposited multi-chain assembly yields "undetermined",
+    # and an undetermined verdict is what a caller silently resolves by assuming a
+    # monomer. The chain COUNT answers only "what oligomer exists"; the distance from
+    # the nucleophile to the nearest other chain answers whether the substrate can
+    # reach it, which is the question that decides what to fold. Numbering is mapped
+    # by alignment against the query sequence, never by trusting author numbering.
+    if catalytic_position:
+        try:
+            rows = measure_site_interface(best["pdb_id"], assembly_id, sequence,
+                                          catalytic_position, cache_dir, kb)
+            distances = [r["min_distance_other_chain_A"] for r in rows
+                         if r["min_distance_other_chain_A"] is not None]
+            if distances:
+                ev.site_to_interface_A = min(distances)
+                ev.interface_pdb = best["pdb_id"]
+                ev.notes.append(
+                    f"{best['pdb_id']} assembly {assembly_id} ({count} chains): "
+                    f"catalytic position {catalytic_position} is "
+                    f"{ev.site_to_interface_A} A from another chain")
+        except Exception as exc:
+            ev.notes.append(f"{best['pdb_id']}: {type(exc).__name__}: {exc}")
+    else:
+        ev.notes.append(
+            "no catalytic position supplied: the site-to-interface test was skipped, "
+            "so a multi-chain assembly cannot be ruled in or out")
     return ev, best
 
 
