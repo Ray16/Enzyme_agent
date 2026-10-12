@@ -93,8 +93,31 @@ def _pose_atoms(path: str, nuc_resnum: int):
     return o_nuc, c_carb, o_carb, o_lg, donors
 
 
+def find_poses(name: str, out_root: str) -> list[str]:
+    """Every pose for one enzyme, across all output layouts used by the fleet.
+
+    The fold fleet writes each attempt to its own directory (a retry must not
+    inherit a half-written `processed/` cache), and earlier runs used a shared
+    root. Globbing only one layout silently returns zero poses for an enzyme
+    that is in fact complete, which reads downstream as "not folded yet" --
+    indistinguishable from a real gap. Resolve all layouts, then de-duplicate by
+    pose filename so a re-fold cannot inflate the ensemble past its true size.
+    """
+    pats = [
+        f"{out_root}/boltz_results_{name}/predictions/{name}/*.cif",         # shared
+        f"{out_root}/{name}/boltz_results_{name}/predictions/{name}/*.cif",  # per-enzyme
+        f"{out_root}/{name}/*/boltz_results_{name}/predictions/{name}/*.cif",  # per-attempt
+    ]
+    by_pose: dict[str, str] = {}
+    for p in pats:
+        for f in sorted(glob.glob(p)):
+            # keep the newest attempt's copy of each pose
+            by_pose[Path(f).name] = f
+    return [by_pose[k] for k in sorted(by_pose)]
+
+
 def descriptors_for(name: str, out_root: str, nuc_resnum: int) -> dict:
-    poses = sorted(glob.glob(f"{out_root}/boltz_results_{name}/predictions/{name}/*.cif"))
+    poses = find_poses(name, out_root)
     d_nuc, bd, lg, oxy = [], [], [], []
     for p in poses:
         got = _pose_atoms(p, nuc_resnum)
@@ -138,8 +161,11 @@ def main() -> int:
 
     cat = json.loads(Path(args.residues).read_text())
     rows = []
-    for d in sorted(glob.glob(f"{args.out_root}/boltz_results_*/")):
-        name = Path(d.rstrip("/")).name.replace("boltz_results_", "")
+    # Enumerate from the catalytic-residue table, not from whatever directories
+    # happen to exist: the panel is defined by the enzymes we resolved a
+    # nucleophile for, so an enzyme missing from disk must show up as absent
+    # rather than quietly dropping out of the cohort.
+    for name in sorted(cat):
         info = cat.get(name, {})
         if not info.get("position"):
             print(f"  SKIP {name}: no catalytic residue assigned")
