@@ -1,0 +1,509 @@
+{
+ "AMPUR6": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 30ZO is only 36% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "30ZO",
+   "identity": 0.36200000000000004,
+   "alignment_length": 469
+  }
+ },
+ "AXPUR5": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 8WDM is only 37% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "8WDM",
+   "identity": 0.371,
+   "alignment_length": 479
+  }
+ },
+ "Aes72": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "functional_unit",
+  "rationale": "catalytic site is 18.2 A from the nearest other chain in 9IZT, beyond the ligand's 9.9 A reach - the neighbour cannot contact the substrate",
+  "notes": [
+   "9IZT: own deposited structure",
+   "9IZT largest assembly 1: 2 chain(s)",
+   "9IZT assembly 1 (2 chains): catalytic position 147 is 18.2 A from another chain"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "9IZT",
+   "identity": 1.0,
+   "alignment_length": 297,
+   "assembly_id": "1",
+   "oligomeric_count": 2
+  }
+ },
+ "BLPUR4": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "functional_unit",
+  "rationale": "the largest deposited biological assembly is a single chain, so no neighbouring subunit exists for the substrate to reach",
+  "notes": [
+   "1C7J: ortholog at 60% identity",
+   "1C7J largest assembly 1: 1 chain(s)"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "1C7J",
+   "identity": 0.597,
+   "alignment_length": 485,
+   "assembly_id": "1",
+   "oligomeric_count": 1
+  }
+ },
+ "CCPUR1": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "functional_unit",
+  "rationale": "the largest deposited biological assembly is a single chain, so no neighbouring subunit exists for the substrate to reach",
+  "notes": [
+   "9TW8: own deposited structure",
+   "9TW8 largest assembly 1: 1 chain(s)"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "9TW8",
+   "identity": 1.0,
+   "alignment_length": 480,
+   "assembly_id": "1",
+   "oligomeric_count": 1
+  }
+ },
+ "CCPUR2": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "functional_unit",
+  "rationale": "the largest deposited biological assembly is a single chain, so no neighbouring subunit exists for the substrate to reach",
+  "notes": [
+   "9TW8: ortholog at 89% identity",
+   "9TW8 largest assembly 1: 1 chain(s)"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "9TW8",
+   "identity": 0.8909999999999999,
+   "alignment_length": 480,
+   "assembly_id": "1",
+   "oligomeric_count": 1
+  }
+ },
+ "CCPUR7": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 3A2P is only 38% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "3A2P",
+   "identity": 0.377,
+   "alignment_length": 517
+  }
+ },
+ "CpUrethanase": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "functional_unit",
+  "rationale": "catalytic site is 16.3 A from the nearest other chain in 8WV2, beyond the ligand's 9.9 A reach - the neighbour cannot contact the substrate",
+  "notes": [
+   "8WV2: own deposited structure",
+   "8WV2 largest assembly 1: 8 chain(s)",
+   "8WV2 assembly 1 (8 chains): catalytic position 248 is 16.3 A from another chain"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "8WV2",
+   "identity": 1.0,
+   "alignment_length": 551,
+   "assembly_id": "1",
+   "oligomeric_count": 8
+  }
+ },
+ "MPPUR3": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 1QE3 is only 38% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "1QE3",
+   "identity": 0.38,
+   "alignment_length": 492
+  }
+ },
+ "NylA": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "functional_unit",
+  "rationale": "catalytic site is 18.8 A from the nearest other chain in 3A2P, beyond the ligand's 9.9 A reach - the neighbour cannot contact the substrate",
+  "notes": [
+   "3A2P: own deposited structure",
+   "3A2P largest assembly 2: 2 chain(s)",
+   "3A2P assembly 2 (2 chains): catalytic position 174 is 18.8 A from another chain"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "3A2P",
+   "identity": 1.0,
+   "alignment_length": 493,
+   "assembly_id": "2",
+   "oligomeric_count": 2
+  }
+ },
+ "NylB": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "assembly",
+  "rationale": "catalytic site is 9.3 A from the nearest other chain in 1WYC, within the ligand's 9.9 A reach - the neighbour can line the channel of the substrate",
+  "notes": [
+   "1WYC: ortholog at 90% identity",
+   "1WYC largest assembly 2: 2 chain(s)",
+   "1WYC assembly 2 (2 chains): catalytic position 112 is 9.3 A from another chain"
+  ],
+  "warnings": [
+   "weak positive: proximity shows the assembly MAY matter, not that it does; a liganded structure or a functional-unit/assembly A-B settles it"
+  ],
+  "pdb": {
+   "pdb_id": "1WYC",
+   "identity": 0.9,
+   "alignment_length": 392,
+   "assembly_id": "2",
+   "oligomeric_count": 2
+  }
+ },
+ "NylB_prime": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "assembly",
+  "rationale": "catalytic site is 9.3 A from the nearest other chain in 1WYB, within the ligand's 9.9 A reach - the neighbour can line the channel of the substrate",
+  "notes": [
+   "1WYB: ortholog at 98% identity",
+   "1WYB largest assembly 2: 2 chain(s)",
+   "1WYB assembly 2 (2 chains): catalytic position 112 is 9.3 A from another chain"
+  ],
+  "warnings": [
+   "weak positive: proximity shows the assembly MAY matter, not that it does; a liganded structure or a functional-unit/assembly A-B settles it"
+  ],
+  "pdb": {
+   "pdb_id": "1WYB",
+   "identity": 0.982,
+   "alignment_length": 392,
+   "assembly_id": "2",
+   "oligomeric_count": 2
+  }
+ },
+ "NylBp2_Hyb24_D1_mutant": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "assembly",
+  "rationale": "catalytic site is 9.4 A from the nearest other chain in 2E8I, within the ligand's 9.9 A reach - the neighbour can line the channel of the substrate",
+  "notes": [
+   "2E8I: own deposited structure",
+   "2E8I largest assembly 2: 2 chain(s)",
+   "2E8I assembly 2 (2 chains): catalytic position 112 is 9.4 A from another chain"
+  ],
+  "warnings": [
+   "weak positive: proximity shows the assembly MAY matter, not that it does; a liganded structure or a functional-unit/assembly A-B settles it"
+  ],
+  "pdb": {
+   "pdb_id": "2E8I",
+   "identity": 1.0,
+   "alignment_length": 392,
+   "assembly_id": "2",
+   "oligomeric_count": 2
+  }
+ },
+ "NylC": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "functional_unit",
+  "rationale": "catalytic site is 10.0 A from the nearest other chain in 5XYG, beyond the ligand's 9.9 A reach - the neighbour cannot contact the substrate",
+  "notes": [
+   "5XYG: own deposited structure",
+   "5XYG largest assembly 1: 2 chain(s)",
+   "5XYG assembly 1 (2 chains): catalytic position 267 is 10.0 A from another chain"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "5XYG",
+   "identity": 1.0,
+   "alignment_length": 355,
+   "assembly_id": "1",
+   "oligomeric_count": 2
+  }
+ },
+ "NylC-TS_D36A_D122G_H130Y_E263Q": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "assembly",
+  "rationale": "catalytic site is 6.5 A from the nearest other chain in 5Y0M, within the ligand's 9.9 A reach - the neighbour can line the channel of the substrate",
+  "notes": [
+   "5Y0M: own deposited structure",
+   "5Y0M largest assembly 1: 4 chain(s)",
+   "5Y0M assembly 1 (4 chains): catalytic position 267 is 6.5 A from another chain"
+  ],
+  "warnings": [
+   "weak positive: proximity shows the assembly MAY matter, not that it does; a liganded structure or a functional-unit/assembly A-B settles it"
+  ],
+  "pdb": {
+   "pdb_id": "5Y0M",
+   "identity": 1.0,
+   "alignment_length": 355,
+   "assembly_id": "1",
+   "oligomeric_count": 4
+  }
+ },
+ "PMGPUR8": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 9TW8 is only 43% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "9TW8",
+   "identity": 0.433,
+   "alignment_length": 478
+  }
+ },
+ "PMGPUR9": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 8S7Z is only 44% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "8S7Z",
+   "identity": 0.44299999999999995,
+   "alignment_length": 446
+  }
+ },
+ "PYNYL1": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 3A2P is only 38% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "3A2P",
+   "identity": 0.379,
+   "alignment_length": 479
+  }
+ },
+ "SaAmd_candidate_unverified": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 1,
+  "unit": "functional_unit",
+  "rationale": "PG6 bound in 9FVF: 0% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+  "notes": [
+   "9FVF: ortholog at 61% identity",
+   "9FVF largest assembly 1: 1 chain(s)",
+   "9FVF: PG6 contacts {'A': 18}"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "9FVF",
+   "identity": 0.613,
+   "alignment_length": 435,
+   "assembly_id": "1",
+   "oligomeric_count": 1
+  }
+ },
+ "TvgC": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 9CXR is only 46% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "9CXR",
+   "identity": 0.462,
+   "alignment_length": 305
+  }
+ },
+ "UMG-SP1": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 3,
+  "unit": "functional_unit",
+  "rationale": "catalytic site is 11.6 A from the nearest other chain in 8S7Z, beyond the ligand's 9.9 A reach - the neighbour cannot contact the substrate",
+  "notes": [
+   "8S7Z: own deposited structure",
+   "8S7Z largest assembly 1: 2 chain(s)",
+   "8S7Z assembly 1 (2 chains): catalytic position 176 is 11.6 A from another chain"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "8S7Z",
+   "identity": 1.0,
+   "alignment_length": 438,
+   "assembly_id": "1",
+   "oligomeric_count": 2
+  }
+ },
+ "UMG-SP2": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 1,
+  "unit": "functional_unit",
+  "rationale": "PMS bound in 8WDW: 0% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+  "notes": [
+   "8WDW: own deposited structure",
+   "8WDW largest assembly 1: 1 chain(s)",
+   "8WDW: PMS contacts {'A': 15}"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "8WDW",
+   "identity": 1.0,
+   "alignment_length": 439,
+   "assembly_id": "1",
+   "oligomeric_count": 1
+  }
+ },
+ "UMG-SP3": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "database",
+  "evidence_rank_used": 1,
+  "unit": "functional_unit",
+  "rationale": "PG6 bound in 9FVF: 0% of contact residues come from another chain (threshold 15%) -> site is intra-subunit",
+  "notes": [
+   "9FVF: own deposited structure",
+   "9FVF largest assembly 1: 1 chain(s)",
+   "9FVF: PG6 contacts {'A': 18}"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "9FVF",
+   "identity": 1.0,
+   "alignment_length": 439,
+   "assembly_id": "1",
+   "oligomeric_count": 1
+  }
+ },
+ "pQR3139": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 3A2P is only 33% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "3A2P",
+   "identity": 0.32899999999999996,
+   "alignment_length": 486
+  }
+ },
+ "pQR3141": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 3A2P is only 39% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "3A2P",
+   "identity": 0.387,
+   "alignment_length": 495
+  }
+ },
+ "pQR3144": {
+  "accession": "(sequence)",
+  "ligand_reach_A": 9.9,
+  "origin": "inference",
+  "evidence_rank_used": null,
+  "unit": "undetermined",
+  "rationale": "no evidence available",
+  "notes": [
+   "closest structure 3A2P is only 34% identical, below the 50% ortholog threshold; REFUSING to transfer an oligomeric verdict across it"
+  ],
+  "warnings": [],
+  "pdb": {
+   "pdb_id": "3A2P",
+   "identity": 0.33899999999999997,
+   "alignment_length": 486
+  }
+ }
+}

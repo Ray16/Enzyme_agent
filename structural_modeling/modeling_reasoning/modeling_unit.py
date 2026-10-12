@@ -92,6 +92,10 @@ class UnitEvidence:
     liganded_comp_id: str | None = None
     site_to_interface_A: float | None = None
     interface_pdb: str | None = None
+    # True when the LARGEST deposited biological assembly has a single chain: there is
+    # then no neighbouring subunit for the substrate to reach, so the site is
+    # intra-subunit by construction. Distinct from "no measurement available".
+    deposited_assembly_is_monomeric: bool = False
     uniprot_subunit: str | None = None
     transferred_from: str | None = None
     derived_from_docked_poses: bool = False
@@ -138,6 +142,13 @@ def assess(evidence: UnitEvidence, ligand_heavy_atoms: int,
                        f"{evidence.liganded_pdb}: {frac:.0%} of contact residues come "
                        f"from another chain (threshold {threshold:.0%}) -> site is "
                        f"{'interfacial' if interfacial else 'intra-subunit'}"))
+        return rec
+
+    if evidence.deposited_assembly_is_monomeric:
+        rec.update(
+            origin="database", evidence_rank_used=3, unit="functional_unit",
+            rationale=("the largest deposited biological assembly is a single chain, "
+                       "so no neighbouring subunit exists for the substrate to reach"))
         return rec
 
     if evidence.site_to_interface_A is not None:
@@ -529,6 +540,8 @@ def gather_evidence_for_sequence(sequence, catalytic_position=None, identity_cut
         return ev, best
     best["assembly_id"], best["oligomeric_count"] = assembly_id, count
     ev.notes.append(f"{best['pdb_id']} largest assembly {assembly_id}: {count} chain(s)")
+    if count == 1:
+        ev.deposited_assembly_is_monomeric = True
     try:
         hitlist = measure_ligand_contacts(best["pdb_id"], assembly_id, cache_dir, kb)
         if hitlist:
