@@ -450,6 +450,98 @@ def gather_evidence(accession, catalytic_position=None, cache_dir=None, kb=None)
     return ev, facts
 
 
+def pdb_hits_for_sequence(sequence: str, identity_cutoff: float = 0.3, rows: int = 10):
+    """Structural homologs of a bare SEQUENCE, best identity first.
+
+    The accession-driven path cannot serve a protein that has no UniProt entry --
+    novel metagenomic and engineered sequences routinely have none -- and with no
+    evidence path the caller is left to assume an oligomeric state. Assuming is how a
+    panel gets folded as monomers without anyone deciding to. RCSB's sequence service
+    is the generic way in: it needs only the sequence, and a hit at ~100% identity is
+    the protein's OWN deposited structure, which is direct evidence rather than a
+    transfer.
+
+    Returns [{pdb_id, identity, alignment_length}], highest identity first.
+    """
+    query = {
+        "query": {"type": "terminal", "service": "sequence", "parameters": {
+            "evalue_cutoff": 0.1, "identity_cutoff": identity_cutoff,
+            "sequence_type": "protein", "value": sequence}},
+        "request_options": {"scoring_strategy": "sequence",
+                            "paginate": {"start": 0, "rows": rows},
+                            "results_verbosity": "verbose"},
+        "return_type": "polymer_entity"}
+    url = ("https://search.rcsb.org/rcsbsearch/v2/query?json="
+           + urllib.parse.quote(json.dumps(query)))
+    out = []
+    for hit in _get_json(url).get("result_set", []):
+        try:
+            ctx = hit["services"][0]["nodes"][0]["match_context"][0]
+        except (KeyError, IndexError):
+            continue
+        out.append({"pdb_id": hit["identifier"].split("_")[0],
+                    "identity": float(ctx["sequence_identity"]),
+                    "alignment_length": int(ctx["alignment_length"])})
+    out.sort(key=lambda h: -h["identity"])
+    return out
+
+
+def gather_evidence_for_sequence(sequence, catalytic_position=None, identity_cutoff=0.3,
+                                 cache_dir=None, kb=None):
+    """Evidence for a sequence with no accession, via its closest deposited structure.
+
+    Identity decides what the hit licenses, using the same threshold the knowledge
+    file already defines for orthology:
+
+    * >= ``self_identity`` -- the deposited structure IS this protein. Measure on it
+      directly; this is not a transfer and must not be discounted as one.
+    * >= ``ortholog_identity_threshold`` -- an ortholog, whose subunit interface is
+      typically conserved; measure on it and record the donor.
+    * below that -- refused. A shared fold says nothing about oligomeric behaviour,
+      and a quiet transfer across 30% identity is exactly the kind of unvalidated
+      default this module exists to prevent.
+    """
+    kb = kb or knowledge()
+    ortholog = _param("ortholog_identity_threshold", kb=kb)
+    hits = pdb_hits_for_sequence(sequence, identity_cutoff=identity_cutoff, kb_rows=None) \
+        if False else pdb_hits_for_sequence(sequence, identity_cutoff=identity_cutoff)
+    if not hits:
+        ev = UnitEvidence(accession="(sequence)")
+        ev.notes.append("no deposited structure above the identity cutoff")
+        return ev, None
+    best = hits[0]
+    ev = UnitEvidence(accession="(sequence)")
+    if best["identity"] < ortholog:
+        ev.notes.append(
+            f"closest structure {best['pdb_id']} is only "
+            f"{best['identity']:.0%} identical, below the {ortholog:.0%} ortholog "
+            f"threshold; REFUSING to transfer an oligomeric verdict across it")
+        return ev, best
+    kind = ("own deposited structure" if best["identity"] >= 0.99
+            else f"ortholog at {best['identity']:.0%} identity")
+    ev.notes.append(f"{best['pdb_id']}: {kind}")
+    if best["identity"] < 0.99:
+        ev.transferred_from = best["pdb_id"]
+    try:
+        assembly_id, count = largest_assembly(best["pdb_id"])
+    except Exception as exc:
+        ev.notes.append(f"{best['pdb_id']}: {type(exc).__name__}: {exc}")
+        return ev, best
+    best["assembly_id"], best["oligomeric_count"] = assembly_id, count
+    ev.notes.append(f"{best['pdb_id']} largest assembly {assembly_id}: {count} chain(s)")
+    try:
+        hitlist = measure_ligand_contacts(best["pdb_id"], assembly_id, cache_dir, kb)
+        if hitlist:
+            top = max(hitlist, key=lambda h: h["contact_residues"])
+            ev.liganded_other_chain_fraction = top["other_chain_fraction"]
+            ev.liganded_pdb = best["pdb_id"]
+            ev.liganded_comp_id = top["comp_id"]
+            ev.notes.append(f"{best['pdb_id']}: {top['comp_id']} contacts {top['by_chain']}")
+    except Exception as exc:
+        ev.notes.append(f"{best['pdb_id']}: {type(exc).__name__}: {exc}")
+    return ev, best
+
+
 def resolve_panel(accessions, ligand_heavy_atoms, ligand_topology="linear",
                   cache_dir=None, kb=None):
     """Resolve a set of accessions together, then fill gaps by family transfer.
