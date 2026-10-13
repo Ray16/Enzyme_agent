@@ -121,3 +121,52 @@ question.
   (**AUROC 0.978**, 4 near-attack vs 46 wrong), while `pLDDT` is
   **anti-correlated (AUROC 0.092)** — wrong poses score *higher* pLDDT.
   So select poses on ligand_iptm, never on pLDDT. ⚠ only 4 positives; fragile.
+
+---
+
+## `precursor_not_autocleaved/` — NylC, TvgC (+ NylC-TS, filed under needs_assembly)
+
+Added 2026-10-12 after a second question: "mature" in `build_mature_sequences.py`
+means **expression-tag removal only** (His6, TEV site, cloning linker) — the
+recombinant protein after the purification protocol's protease step. It does
+**not** model autoproteolysis. For this family that distinction is mechanistic,
+not cosmetic.
+
+UniProt **Q79F77** (NylC) states it directly:
+
+```
+Chain       1-266   alpha subunit
+Chain     267-355   beta subunit
+Active site   267   Nucleophile
+[PTM] Expressed as an inactive precursor that is cleaved autocatalytically
+      at Asn266/Thr267 to generate an active enzyme composed of an alpha
+      subunit and a beta subunit
+[SUBUNIT] Heterotetramer composed of 4 alpha/beta heterodimers
+```
+
+The panel folded NylC as a **single uncleaved 355-aa chain** — i.e. the
+*inactive precursor*. Thr267 is then a mid-chain residue whose α-amino group is
+locked in a peptide bond, so it cannot act as the N-terminal nucleophile the
+mechanism requires. Every descriptor measured from it describes a catalytically
+impossible state.
+
+| system | nucleophile | basis | autocleavage site |
+|---|---|---|---|
+| NylC | Thr267 | UniProt annotated | Asn266↓Thr267 (documented) |
+| NylC-TS (D36A/D122G/H130Y/E263Q) | Thr267 | transferred from NylC | same junction |
+| TvgC | Thr234 | transferred from NylC | motif `VFIGN·TTIGVV` — same Asn↓Thr junction |
+
+TvgC's site is inferred from the identical `N↓T` motif, not annotated. All three
+are **unlabelled**, so the proxy test is unaffected.
+
+🔴 **Gate blind spot this exposes:** `modeling_unit_resolution.json` scored NylC
+as `functional_unit` (monomer acceptable) from 5XYG ligand contacts. That check
+asks whether the site spans two *chains*; it never asks whether the chain is the
+**precursor or the processed form**. Quaternary structure and post-translational
+autoprocessing are separate questions and the resolver only covers the first.
+
+**Supersede by:** building NylC/NylC-TS/TvgC as two chains split at the
+autocleavage site, as the nylon-hydrolase panel already does (split site
+verified 96/96 against the authors' own models there). A dimer of αβ suffices —
+that panel measured a dimer capturing 100 % of the catalytic subsite, so the
+heterotetramer is not required.

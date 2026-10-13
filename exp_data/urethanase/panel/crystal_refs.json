@@ -1,0 +1,46 @@
+{
+ "Aes72": {
+  "pdb_id": "9IZT",
+  "identity": 1.0
+ },
+ "CCPUR1": {
+  "pdb_id": "9TW8",
+  "identity": 1.0
+ },
+ "CpUrethanase": {
+  "pdb_id": "8WV2",
+  "identity": 1.0
+ },
+ "NylA": {
+  "pdb_id": "3A2P",
+  "identity": 1.0
+ },
+ "NylB_prime": {
+  "pdb_id": "1WYB",
+  "identity": 0.982
+ },
+ "NylBp2_Hyb24_D1_mutant": {
+  "pdb_id": "2E8I",
+  "identity": 1.0
+ },
+ "NylC": {
+  "pdb_id": "5XYG",
+  "identity": 1.0
+ },
+ "NylC-TS_D36A_D122G_H130Y_E263Q": {
+  "pdb_id": "5Y0M",
+  "identity": 1.0
+ },
+ "UMG-SP1": {
+  "pdb_id": "8S7Z",
+  "identity": 1.0
+ },
+ "UMG-SP2": {
+  "pdb_id": "8WDW",
+  "identity": 1.0
+ },
+ "UMG-SP3": {
+  "pdb_id": "9FVF",
+  "identity": 1.0
+ }
+}
