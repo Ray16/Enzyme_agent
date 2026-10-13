@@ -3,6 +3,32 @@
 Validation set for a structural proxy: these enzymes have published activity
 data, so a proxy can be tested against them BEFORE it is used to rank anything.
 
+## 🔴 2026-10-12 — 15 of the 26 cofold ensembles were ARCHIVED as invalid
+
+See `../archive/20261012_invalid_inputs/README.md` for the per-system reasons.
+Summary of what is wrong and what it costs:
+
+- **10 labelled systems had expression-tag residues left on the C-terminus.**
+  The trim below removed only `QGLEHHHHHH`; TEV cleaves `ENLYFQ↓G`, so `ENLYF`
+  stayed on. Non-uniform across the panel (`ENLYF` ×8, `ENL` ×2, clean ×2).
+  CCPUR1 also carried 3 extra N-term residues vs its own crystal 9TW8.
+- **4 systems need the assembly, not a monomer** (site 6.5–9.4 Å from a
+  neighbouring chain). All unlabelled.
+- **CpUrethanase produced 0 structures** in 3 attempts (silent OOM, exit 0).
+- `descriptors.json` and the `p = 0.0527` pre-registered result derive from the
+  above and are **not results about structural proxies**.
+
+**Consequence: the live labelled set is n = 1.** Only UMG-SP2 and UMG-SP3 are
+clean-sequence *and* crystal-validated, and UMG-SP2 has no activity value.
+
+Before re-folding: fix the trim to cut at `ENLYFQ↓G`, and run the positive
+controls in `control_out/` against the crystal near-attack distances (8XTB
+carbamate C–Ser190 OG **2.87 Å**; 9FZ1 amine N–Ser175 **2.69 Å**). If Boltz
+cannot reproduce a known pose on this chemistry, re-folding buys nothing.
+
+⚠ Do not gate this panel on confidence. UMG-SP2 scores pLDDT 0.938 /
+ligand_iptm 0.881 while its carbamate sits 7.5–13.9 Å from the crystal position.
+
 ## Files
 - `panel_as_published.fasta` — 26 sequences exactly as retrieved (expression
   tags intact), with the source in each header.
