@@ -111,7 +111,13 @@ has **no activity value**, so the live labelled set supporting a correlation is
 not the same as validated-monomer; treat their oligomeric state as an open
 question.
 
-⚠ Confidence does not separate good from bad here. UMG-SP2 sits at pLDDT 0.938 /
-ligand_iptm 0.881 while its carbamate is 7.5–13.9 Å from the position the
-crystal **8XTB** assigns it (2.87 Å from Ser190 OG). Never gate this panel on
-pLDDT or ligand_iptm.
+⚠ Confidence behaves differently ACROSS vs WITHIN enzymes — measured
+2026-10-12 on the positive controls:
+
+- **Across** enzymes it is uninformative: UMG-SP2 sits at pLDDT 0.938 /
+  ligand_iptm 0.881 while its carbamate is far from the position crystal
+  **8XTB** assigns it. Never rank enzymes on confidence.
+- **Within** one enzyme, `ligand_iptm` picks the correct pose well
+  (**AUROC 0.978**, 4 near-attack vs 46 wrong), while `pLDDT` is
+  **anti-correlated (AUROC 0.092)** — wrong poses score *higher* pLDDT.
+  So select poses on ligand_iptm, never on pLDDT. ⚠ only 4 positives; fragile.

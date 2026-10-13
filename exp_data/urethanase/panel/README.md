@@ -26,8 +26,25 @@ controls in `control_out/` against the crystal near-attack distances (8XTB
 carbamate C–Ser190 OG **2.87 Å**; 9FZ1 amine N–Ser175 **2.69 Å**). If Boltz
 cannot reproduce a known pose on this chemistry, re-folding buys nothing.
 
-⚠ Do not gate this panel on confidence. UMG-SP2 scores pLDDT 0.938 /
-ligand_iptm 0.881 while its carbamate sits 7.5–13.9 Å from the crystal position.
+⚠ Do not rank ENZYMES on confidence (UMG-SP2 scores pLDDT 0.938 /
+ligand_iptm 0.881 with the carbamate mispositioned). But WITHIN an enzyme,
+`ligand_iptm` does pick the correct pose (AUROC 0.978) while `pLDDT` is
+anti-correlated (0.092) — see the control result below.
+
+## ✅ 2026-10-12 — positive controls PASS, with a sampling caveat
+
+Measured against the crystals (element+connectivity atom selection, not names):
+
+| control | crystal | min | median | <4 Å |
+|---|---|---|---|---|
+| UMG-SP3 + A1IHK (product) | 2.69 Å | 2.31 | 2.48 | **50/50** |
+| UMG-SP2 + A1D5H (intact carbamate) | 2.87 Å | **2.98** | 8.15 | **4/50** |
+
+Boltz CAN reproduce the crystallographic near-attack geometry on this chemistry.
+For the intact carbamate the correct pose is a **minority basin (8%)**, so
+descriptors must use best-pose or basin-fraction, **never a median over poses**.
+Confirms 8XTB Ser190 ↔ our **S175** (motif `GSDIGGSIRVPAH`), so the nucleophile
+is experimentally anchored for UMG-SP2/SP3.
 
 ## Files
 - `panel_as_published.fasta` — 26 sequences exactly as retrieved (expression
