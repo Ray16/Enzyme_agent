@@ -63,7 +63,7 @@ for step in step1 step2; do
   launched=0
   while read -r host idx; do
     [ -z "$host" ] && continue
-    [ "$launched" -ge 4 ] && break
+    [ "$launched" -ge "${MAXLAUNCH:-10}" ] && break
     # step-1 leftovers are the large-ligand casualties -> V100 hosts only
     if [ "$step" = step1 ] && ! echo "$V100_HOSTS" | grep -qw "$host"; then continue; fi
     ssh -n -o BatchMode=yes -o ConnectTimeout=8 "$host" \
