@@ -149,7 +149,7 @@ def main():
         axb.spines[s].set_color(INK3)
     axb.tick_params(colors=INK2, labelsize=8)
     axb.grid(True, color=INK3, alpha=0.2, ls=(0, (1, 4)), lw=0.7); axb.set_axisbelow(True)
-    fig.text(0.062, 0.398, "b", fontsize=15, fontweight="bold", color=INK)
+    fig.text(0.040, 0.478, "b", fontsize=15, fontweight="bold", color=INK)
 
     # ---------- (c) positive control ------------------------------------------------------
     axc = fig.add_subplot(gs[2, 2:4]); axc.set_facecolor(SURFACE)
@@ -176,7 +176,7 @@ def main():
     for s in ("left", "bottom"):
         axc.spines[s].set_color(INK3)
     axc.tick_params(colors=INK2, labelsize=8)
-    fig.text(0.452, 0.398, "c", fontsize=15, fontweight="bold", color=INK)
+    fig.text(0.437, 0.478, "c", fontsize=15, fontweight="bold", color=INK)
 
     # ---------- (d) pre-registered test summary ------------------------------------------
     axd = fig.add_subplot(gs[3, :]); axd.set_facecolor(SURFACE); axd.axis("off")
@@ -197,7 +197,7 @@ def main():
                      f"{f'{det}/{len(lab)}':<14}{verdict:<26}{ps:<10}{rs:<16}")
     axd.text(0, 1.0, "\n".join(lines), transform=axd.transAxes, va="top", ha="left",
              family="monospace", fontsize=8.3, color=INK2, linespacing=1.52)
-    fig.text(0.062, 0.148, "d", fontsize=15, fontweight="bold", color=INK)
+    fig.text(0.040, 0.203, "d", fontsize=15, fontweight="bold", color=INK)
 
     # ---------- titles & legend ------------------------------------------------------------
     fig.text(0.062, 0.963,
