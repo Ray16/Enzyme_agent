@@ -152,19 +152,26 @@ exp_data/nylon_hydrolase/structural_proxies/attempts/**/pose_cache*.json
 exp_data/nylon_hydrolase/structural_proxies/attempts/**/snapshot.json
 exp_data/nylon_hydrolase/structural_proxies/attempts/**/permutations*.npz
 
-# structural_modeling/cofold: restored discovery-run modeling (5.6 GB).
+# structural_modeling_agent/cofold: restored discovery-run modeling (5.6 GB).
 # Keep the small provenance artifacts (README, candidates/manifest CSVs, analysis JSON);
 # never commit the prediction trees, MSA caches or refold scratch.
-structural_modeling/cofold/*/results/
-structural_modeling/cofold/*/results_*/
-structural_modeling/cofold/*/msa/
-structural_modeling/cofold/*/msa_cache/
-structural_modeling/cofold/*/logs/
-structural_modeling/cofold/*/step1/
-structural_modeling/cofold/*/gs_oligomer_refold/
+structural_modeling_agent/cofold/*/results/
+structural_modeling_agent/cofold/*/results_*/
+structural_modeling_agent/cofold/*/msa/
+structural_modeling_agent/cofold/*/msa_cache/
+structural_modeling_agent/cofold/*/logs/
+structural_modeling_agent/cofold/*/step1/
+structural_modeling_agent/cofold/*/gs_oligomer_refold/
 enzyme_design_agent/campaigns/*/results/
 enzyme_design_agent/campaigns/*/msa/
 enzyme_design_agent/campaigns/*/archive/
 
 # ESMFold2 claim-queue lock files (run artifacts, not data)
 .claim
+
+# campaigns/<name>/cofolds: Boltz prediction trees (148 ensembles x 50 poses here).
+# Same rule as structural_modeling_agent/cofold above -- keep the small provenance artifacts
+# (inputs/*.yaml, job_map.csv, analysis/*.csv), never commit the prediction trees or logs.
+campaigns/*/cofolds/*/results/
+campaigns/*/fleet/logs/
+campaigns/*/fleet/claims/
