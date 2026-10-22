@@ -11,7 +11,6 @@ cofolds/step2/inputs/step2_SfaB__MA_MA.yaml
 cofolds/step2/inputs/step2_SfaB__MA_XA.yaml
 cofolds/step2/inputs/step2_SfaB__XA_MA.yaml
 cofolds/step2/inputs/step2_SfaB__XA_XA.yaml
-cofolds/step2/inputs/step2_AsbA__Z_M.yaml
 cofolds/step2/inputs/step2_AsbA__H_H.yaml
 cofolds/step2/inputs/step2_AsbA__H_M.yaml
 cofolds/step2/inputs/step2_AsbA__G_MA.yaml

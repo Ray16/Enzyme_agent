@@ -1,5 +1,6 @@
 stem,enzyme,donor_code,acceptor_code,BD_deg,dev_from_ideal,D_h_A,n_gated,gated_frac,min_d,median_d,n_poses,n_extract_fail,docked,metric_id,panels
 step2_AsbA__A_X,AsbA,A,X,75.14,29.86,4.899,8,0.16,3.433,4.941,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2A (X+A->XA)
+step2_AsbA__Z_M,AsbA,Z,M,87.83,17.17,5.106,5,0.1,3.278,5.254,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2B (M+Z->MZ)
 step2_DdaG__AMA_M,DdaG,AMA,M,89.62,15.38,5.73,2,0.04,3.618,5.724,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5B (AMA+M->MAMA)
 step2_DdaG__A_MAM,DdaG,A,MAM,110.52,5.52,12.216,0,0.0,6.392,12.66,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
 step2_DdaG__A_X,DdaG,A,X,99.48,5.52,4.002,25,0.5,2.954,4.056,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2A (X+A->XA)

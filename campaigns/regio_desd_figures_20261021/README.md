@@ -11,11 +11,23 @@ Read in this order: **`PREREGISTRATION.md`** (the test, fixed before folding) �
 
 | Track | State |
 |---|---|
-| Step-1 cofolds (58) | folding on 16 lambda GPUs, rolling analysis armed |
-| Step-2 cofolds (90) | inputs built; **blocked on step-1** (pocket restraint derives from a step-1 fold) |
+| Step-1 cofolds (58) | 54 done; remainder auto-retrying on V100s |
+| Step-2 cofolds (90) | 19 done; running |
 | Fig 2 labels | pre-existing, independently re-digitized, verdict ACCEPT |
 | Fig 4 / 5 labels | digitized this session (60 rows each); Fig 6 has no quantitative panel |
-| Positive control | DesD + native HSC vs crystal 7TGM — folding |
+| **Positive control** | **PASSES** — 0.23 Å best ligand placement, 50/50 poses on-site (see caveat) |
+| Driver | `fleet/autodrive.sh` detached: watchdog + full replot every 10 min to completion |
+
+### The positive control, and its limit
+
+DesD + native HSC vs crystal **7TGM**: backbone Cα RMSD **0.38–0.51 Å**, ligand centroid
+displacement **best 0.23 / median 0.69 Å**, contact Jaccard 0.933, **50/50** poses within 3 Å.
+
+This proves the **pipeline is correctly configured** — chains, atom selection, protonation,
+cofactor placement, pocket identity. It does **not** prove predictive ability: 7TGM was released
+2022-07-06 and is very likely inside Boltz-2's training set, so this is plausibly **recall**. The
+campaign's actual inputs (DesD+adipate, DdaG+MA, AcsA+AMA) are certainly not in the PDB — genuine
+predictions, but with **no crystal to check them against**. That is the honest ceiling here.
 
 ## Layout
 
@@ -86,7 +98,15 @@ masquerades as a catalytic signal.
   *identically* (DesD 33 → AsbB 19 → AcsA 7 → AsbA 4 → DdaG 1 → SfaB 0), and docking tracks **fold
   family** (all NIS above both ANL) — the axis on which `A` is already documented as biased.
 
-**Nothing here should be read as a verdict on `A` until the 7TGM positive control reports**, since
-no result so far establishes that the modelled chemistry lands in the right place at all.
+**The control has now reported, and it removes the main alternative explanation.** The poses are
+right (0.23 Å), so `A`'s failure is a statement about the metric and its premise, not about bad
+modelling. Also recorded: DesD occupancy is 50/50 on native HSC, 33/50 on adipate, 1/50 on the AMA
+triad — occupancy may track *how native-like* a substrate is (learnable from the PDB) rather than
+*whether it reacts* (no training signal at all).
+
+Families tried and their status: `A` (failing, see above); **accommodation PARKED** — TA1 not
+evaluable because `buried_frac` saturated at 1.000, and pocket **volume abandoned as ill-posed**
+(grid method did not converge: 454/773/1139 Å³ at box radius 10/14/18 Å, and missed the paper's
+Fig-3B values by non-constant factors). No fold-derived pocket volume is quoted anywhere.
 The design's power ceiling is **p ≈ 0.048** even if `A` were perfect — 6 enzymes per stratum is this
 paper's hard limit, so the deliverable is mechanistic, not a p-value.

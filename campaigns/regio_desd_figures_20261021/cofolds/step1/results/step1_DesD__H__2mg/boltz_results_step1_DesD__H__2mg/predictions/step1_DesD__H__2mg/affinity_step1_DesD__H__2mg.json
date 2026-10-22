@@ -1,8 +1,8 @@
 {
-    "affinity_pred_value": 3.30340576171875,
-    "affinity_probability_binary": 0.33773234486579895,
-    "affinity_pred_value1": 2.956381320953369,
-    "affinity_probability_binary1": 0.22652801871299744,
-    "affinity_pred_value2": 3.65043044090271,
-    "affinity_probability_binary2": 0.44893667101860046
+    "affinity_pred_value": 3.3642420768737793,
+    "affinity_probability_binary": 0.3372226357460022,
+    "affinity_pred_value1": 3.155465602874756,
+    "affinity_probability_binary1": 0.25602656602859497,
+    "affinity_pred_value2": 3.573018789291382,
+    "affinity_probability_binary2": 0.4184187054634094
 }
