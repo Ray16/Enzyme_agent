@@ -166,3 +166,26 @@ not a reason to swap metrics.
 (~7.6×)**, yet `A` currently ranks DesD first. If that ordering holds, `A` does not recover the
 panel's measured ordering, and T5 (the panel-A continuous test) is expected to fail. Writing this
 down before the panel completes so the outcome cannot be reinterpreted afterwards.
+
+### 2026-10-21, amendment 2 — declared sensitivity: tests restricted to docked ensembles
+
+SfaB's adipate contacts **Arg103 in 49/50 poses (98%)** — together with P223/P508/M272/F249 — i.e.
+it docks **reproducibly at a surface-proximal Arg site ~12.6 Å from Pα**, with protein and ATP
+modelled correctly. This independently reproduces a previously characterised SfaB behaviour (ligand
+parking on a conserved Arg, R/K at that aligned column in 42/49 panel members), now seen with a
+different substrate in a different campaign. SfaB's `A` is therefore an angle measured **outside
+the active site** and is not a catalytic quantity at all.
+
+Because SfaB is experimentally **active**, it alone drags the Fig-2A correlation down for a reason
+that has nothing to do with catalysis. The obvious question — "what if the tests are restricted to
+ensembles where `A` is interpretable?" — is therefore **declared now, before being run**:
+
+- **Primary tests stay exactly as pre-specified, over ALL enzymes**, non-dockers included.
+- **Secondary, explicitly labelled:** each test repeated over the subset with `n_gated > 0`,
+  reporting how many enzymes were excluded and which.
+
+This subset analysis is **not** a rescue and must never be quoted as the headline: restricting to
+dockers conditions on the model's own success and is precisely the move that manufactured a false
+signal in the hydrolase campaign. It is reported to separate two distinct failure modes — "`A`
+mis-ranks catalysis" vs "there was no catalytic pose to score" — which is a mechanistic
+distinction worth making, not a p-value to be improved.
