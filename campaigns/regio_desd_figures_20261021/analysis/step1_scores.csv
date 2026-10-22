@@ -36,9 +36,12 @@ step1_DesD__AMA,DesD,AMA,1,True,96.88,9.248,0,0.0,6.253,9.447,173.0,False,50,0,i
 step1_DesD__A__2mg,DesD,A,2,False,147.46,3.759,38,0.76,3.179,3.785,163.1,True,50,0,inverse_distance_attack_angle_v1,Mg sensitivity (pre-registered; MECHANISM.md sec 2)
 step1_DesD__G,DesD,G,1,True,140.23,5.772,9,0.18,3.334,4.684,167.7,True,50,0,inverse_distance_attack_angle_v1,4A (MA+G->GMA)
 step1_DesD__H,DesD,H,1,True,156.95,5.9,0,0.0,4.357,5.773,168.3,False,50,0,inverse_distance_attack_angle_v1,2C (H+H->HH); 2D (M+H->MH); 4C (MA+H->HMA)
+step1_DesD__HSC,DesD,HSC,1,True,156.19,3.502,50,1.0,3.174,3.512,171.7,True,50,0,inverse_distance_attack_angle_v1,POSITIVE CONTROL vs PDB 7TGM (native DesD donor)
+step1_DesD__H__2mg,DesD,H,2,False,151.69,5.787,0,0.0,4.576,5.714,163.0,False,50,0,inverse_distance_attack_angle_v1,Mg sensitivity (pre-registered; MECHANISM.md sec 2)
 step1_DesD__MA,DesD,MA,1,True,139.16,3.743,46,0.92,3.022,3.755,173.3,True,50,0,inverse_distance_attack_angle_v1,4B (MA+X->MAX); 4C (MA+H->MAH); 5C (MA+MA->MAMA)
 step1_DesD__MS,DesD,MS,1,True,153.4,3.776,48,0.96,3.373,3.801,173.6,True,50,0,inverse_distance_attack_angle_v1,"6 (cascade: MS+P->MSP, DesD)"
 step1_DesD__S,DesD,S,1,True,143.5,5.959,15,0.3,3.272,5.583,168.5,True,50,0,inverse_distance_attack_angle_v1,"6 (cascade: S+M->MS, DdaG)"
+step1_DesD__XA,DesD,XA,1,True,131.39,4.054,27,0.54,2.796,3.914,171.1,True,50,0,inverse_distance_attack_angle_v1,7 (XA+MA->XAMA / MAXA)
 step1_DesD__Z__2mg,DesD,Z,2,False,152.54,3.728,48,0.96,3.429,3.711,167.5,True,50,0,inverse_distance_attack_angle_v1,Mg sensitivity (pre-registered; MECHANISM.md sec 2)
 step1_SfaB__A,SfaB,A,1,True,94.81,12.572,0,0.0,4.364,13.685,128.4,False,50,0,inverse_distance_attack_angle_v1,2A (X+A->XA); 5A (MAM+A->MAMA); 5C
 step1_SfaB__AMA,SfaB,AMA,1,True,153.49,7.911,2,0.04,3.745,8.688,169.7,True,50,0,inverse_distance_attack_angle_v1,5B (AMA+M->MAMA)

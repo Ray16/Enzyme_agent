@@ -155,3 +155,49 @@ domain-state check is run first and reported regardless of outcome.
 by every enzyme per Fig 2A, so any enzyme difference there cannot be step 1.
 **Figs 2C/2D are degenerate under step 1 by construction** and are not evidence either way about
 the amine.
+
+---
+
+## 5. Positive control result (2026-10-21) — PASSES, with a training-set caveat
+
+DesD + ATP + Mg + **HSC** (its native donor) vs crystal **7TGM**, 50 poses:
+
+| metric | result |
+|---|---|
+| backbone Cα RMSD to crystal | **0.38 – 0.51 Å** |
+| ligand centroid displacement | **best 0.23 Å, median 0.69 Å** |
+| pocket contact Jaccard | best 0.933, median 0.867 |
+| poses within 3 Å of the crystallographic HSC site | **50/50 (100%)** |
+
+### What this establishes
+
+**The pipeline is correctly configured.** Chain assignment, atom selection, protonation states,
+cofactor placement and pocket identity are all verified end to end — a 0.23 Å ligand placement with
+0.93 contact Jaccard is impossible if any of them were wrong. This was the question the control was
+built to answer, and it is answered.
+
+### What it does NOT establish — read this before citing the control
+
+**7TGM was released 2022-07-06 and is very likely inside Boltz-2's training set** (Boltz-1 used a
+2021-09-30 PDB cutoff; Boltz-2's is later and is not stated in the installed package). If so,
+reproducing it is **recall, not prediction**, and the control says nothing about generalisation to
+the non-native substrates this campaign is actually about.
+
+**The resulting epistemic position, stated plainly:**
+
+- the setup is verified ✓
+- native-complex recall is excellent, and possibly memorised ✓
+- the campaign's real inputs — DesD + adipate, DdaG + MA diad, AcsA + AMA triad — are complexes
+  that are **certainly not in the PDB**, so they are genuine predictions, but **no crystal exists to
+  check any of them against**
+
+That last point is the honest ceiling on this campaign and belongs in any writeup. A 0.23 Å control
+number must not be allowed to imply more than it supports.
+
+### A reading this invites
+
+DesD's step-1 occupancy is **50/50 on its native HSC**, **33/50** on adipate, and **1/50** on the
+AMA triad. Occupancy may therefore be tracking *how native-like the substrate is* — something the
+model plausibly learned from the PDB — rather than *whether the reaction proceeds*, for which it has
+no training signal whatsoever. This is consistent with `A` separating fold families and tracking
+docking quality (ρ(A, n_gated) = +0.42, p = 0.034) while failing to track measured activity.

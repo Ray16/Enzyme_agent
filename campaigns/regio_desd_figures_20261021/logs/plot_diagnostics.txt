@@ -1,2 +1,2 @@
 wrote /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/docking_validity_diagnostic.png
-  n_gated==0: 25/49 this campaign; 14/28 prior campaign
+  n_gated==0: 26/52 this campaign; 14/28 prior campaign

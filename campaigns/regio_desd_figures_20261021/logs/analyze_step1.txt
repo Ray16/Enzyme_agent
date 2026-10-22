@@ -1,11 +1,13 @@
-scored 49 ensembles -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/step1_scores.csv
+scored 52 ensembles -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/step1_scores.csv
 stem                               A    D_h  n_gated  min_d  docked
 step1_AsbA__XA                163.65   7.31        0   4.39  False
 step1_DesD__H                 156.95   5.90        0   4.36  False
+step1_DesD__HSC               156.19   3.50       50   3.17  True
 step1_SfaB__AMA               153.49   7.91        2   3.75  True
 step1_DesD__MS                153.40   3.78       48   3.37  True
 step1_DesD__A                 152.87   3.98       33   3.38  True
 step1_DesD__Z__2mg            152.54   3.73       48   3.43  True
+step1_DesD__H__2mg            151.69   5.79        0   4.58  False
 step1_DdaG__AMA               150.37   7.21        0   6.05  False
 step1_AsbA__MS                148.71   7.92        0   5.70  False
 step1_DdaG__H                 147.56   7.04        0   6.32  False
@@ -25,6 +27,7 @@ step1_AsbB__XA                138.72   8.88        4   3.71  True
 step1_AsbB__AMA               135.00   7.76        4   3.42  True
 step1_SfaB__Z                 132.97   5.48        0   4.23  False
 step1_AsbB__MA                132.02  10.58        0  10.10  False
+step1_DesD__XA                131.39   4.05       27   2.80  True
 step1_AsbB__MS                130.67   9.58        0   4.63  False
 step1_AcsA__A                 122.36   5.01        7   3.33  True
 step1_AcsA__S                 121.83   4.74        6   3.16  True
@@ -50,13 +53,10 @@ step1_AcsA__MA                 80.33  14.45        0   9.72  False
 step1_AcsA__XA                 78.10  14.19        0   9.22  False
 step1_AcsA__H                  74.63   8.55        0   7.42  False
 
-9 not yet scorable:
+6 not yet scorable:
   step1_AcsA__Z: incomplete ensemble (0 poses)
   step1_AsbA__G: incomplete ensemble (0 poses)
   step1_AsbA__H: incomplete ensemble (0 poses)
   step1_AsbB__H: incomplete ensemble (0 poses)
-  step1_DesD__HSC: incomplete ensemble (0 poses)
-  step1_DesD__H__2mg: incomplete ensemble (0 poses)
-  step1_DesD__XA: incomplete ensemble (0 poses)
   step1_DesD__Z: incomplete ensemble (0 poses)
-  ... and 1 more
+  step1_SfaB__H: incomplete ensemble (0 poses)

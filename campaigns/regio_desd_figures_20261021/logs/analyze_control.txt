@@ -1,1 +1,6 @@
-control not ready: 0/50 poses folded
+POSITIVE CONTROL -- DesD + HSC vs crystal 7TGM (n=50 poses)
+  backbone CA RMSD to crystal : 0.38 - 0.51 A  (fold reproduced?)
+  ligand centroid displacement: best 0.23, median 0.69 A
+  pocket contact Jaccard      : best 0.933, median 0.867
+  poses within 3 A of the crystallographic HSC site: 50/50 (100%)
+  -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/control_7tgm_vs_predicted.csv
