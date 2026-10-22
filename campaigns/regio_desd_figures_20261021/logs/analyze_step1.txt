@@ -1,5 +1,6 @@
-scored 43 ensembles -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/step1_scores.csv
+scored 46 ensembles -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/step1_scores.csv
 stem                               A    D_h  n_gated  min_d  docked
+step1_AsbA__XA                163.65   7.31        0   4.39  False
 step1_DesD__H                 156.95   5.90        0   4.36  False
 step1_SfaB__AMA               153.49   7.91        2   3.75  True
 step1_DesD__MS                153.40   3.78       48   3.37  True
@@ -8,6 +9,7 @@ step1_DdaG__AMA               150.37   7.21        0   6.05  False
 step1_AsbA__MS                148.71   7.92        0   5.70  False
 step1_DdaG__H                 147.56   7.04        0   6.32  False
 step1_AsbB__A                 145.94   4.28       19   2.87  True
+step1_AsbB__Z                 145.22   4.52       20   3.26  True
 step1_DdaG__MS                144.97   7.24        0   5.70  False
 step1_AsbA__MA                144.89   7.02        0   4.59  False
 step1_AsbB__G                 143.68   4.45       19   3.00  True
@@ -17,6 +19,7 @@ step1_DdaG__MA                141.78   7.04        0   6.25  False
 step1_DdaG__XA                141.00   7.25        0   6.06  False
 step1_DesD__G                 140.23   5.77        9   3.33  True
 step1_DesD__MA                139.16   3.74       46   3.02  True
+step1_AsbB__XA                138.72   8.88        4   3.71  True
 step1_AsbB__AMA               135.00   7.76        4   3.42  True
 step1_SfaB__Z                 132.97   5.48        0   4.23  False
 step1_AsbB__MA                132.02  10.58        0  10.10  False
@@ -33,8 +36,8 @@ step1_DdaG__G                 105.70   4.51        5   3.76  True
 step1_AcsA__AMA               101.96   8.53        0   5.57  False
 step1_SfaB__G                  99.56  11.71        0   9.90  False
 step1_DdaG__A                  98.80   4.75        1   3.70  True
-step1_DesD__AMA                97.79   8.70        1   3.96  True
 step1_SfaB__MS                 97.37  14.15        0  13.21  False
+step1_DesD__AMA                96.88   9.25        0   6.25  False
 step1_SfaB__S                  96.25  11.97        0  10.19  False
 step1_SfaB__MA                 95.65  15.95        0  15.07  False
 step1_SfaB__A                  94.81  12.57        0   4.36  False
@@ -44,13 +47,13 @@ step1_AsbA__Z                  83.57   4.26       10   3.72  True
 step1_AcsA__MA                 80.33  14.45        0   9.72  False
 step1_AcsA__H                  74.63   8.55        0   7.42  False
 
-15 not yet scorable:
+12 not yet scorable:
   step1_AcsA__XA: incomplete ensemble (0 poses)
   step1_AcsA__Z: incomplete ensemble (0 poses)
   step1_AsbA__G: incomplete ensemble (0 poses)
   step1_AsbA__H: incomplete ensemble (0 poses)
-  step1_AsbA__XA: incomplete ensemble (0 poses)
   step1_AsbB__H: incomplete ensemble (0 poses)
-  step1_AsbB__XA: incomplete ensemble (0 poses)
-  step1_AsbB__Z: incomplete ensemble (0 poses)
-  ... and 7 more
+  step1_DesD__A__2mg: incomplete ensemble (0 poses)
+  step1_DesD__HSC: incomplete ensemble (0 poses)
+  step1_DesD__H__2mg: incomplete ensemble (0 poses)
+  ... and 4 more

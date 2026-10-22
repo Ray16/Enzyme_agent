@@ -1,0 +1,10 @@
+cofolds/step1/inputs/step1_AcsA__Z.yaml
+cofolds/step1/inputs/step1_DesD__Z.yaml
+cofolds/step1/inputs/step1_SfaB__H.yaml
+cofolds/step1/inputs/step1_AsbA__H.yaml
+cofolds/step1/inputs/step1_AsbB__H.yaml
+cofolds/step1/inputs/step1_AsbA__G.yaml
+cofolds/step1/inputs/step1_DesD__XA.yaml
+cofolds/step1/inputs/step1_DesD__HSC.yaml
+cofolds/step1/inputs/step1_DesD__Z__2mg.yaml
+cofolds/step1/inputs/step1_DesD__H__2mg.yaml
