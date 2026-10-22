@@ -1,0 +1,33 @@
+PROVENANCE — regio_fig4_quantified.csv
+======================================
+SOURCE: /homes/rzhu/Enzyme_agent/paper/Regioselective biosynthesis of oligoamides
+  as precursors for sequence-controlled co-polyamides.pdf
+  bioRxiv 2025.11.03.685623, posted 2025-11-03 (CC-BY-NC 4.0).
+FIGURE: Figure 4 (panels A-C quantitative; D = MS2 spectra, NOT digitized). PDF page index 8 (1-based page 9), verified from caption text.
+RENDER: pymupdf Matrix(5,5) -> 3060x3960 px. Panel crops (page px): A (1850,380)-(2700,740); B (1850,790)-(2700,1130); C (1850,1160)-(2700,1500).
+READOUT: all three panels y-axis = "Log10 Relative Signal Intensity" -> readout_type=log10_ms (NOT normalized; no SfaB=1 normalization here).
+ENZYME x-ORDER: Control, DdaG, SfaB, AcsA, DesD (colors white, light gray, gray, pink, green).
+REACTIONS: A) MA+G->GMA; B) MA+X->MAX; C) MA+H->MAH (HMA regioisomer not detected per text/Fig S40).
+SUBSTRATES: SMILES copied verbatim from substrate_reference.csv (charged pH7 forms, differs from fig2's neutral strings): X, H from paper 'regio'; G from 'diads' row (no 'regio' row; meaning confirmed by Fig 4 caption "G: glutaric acid"). Oligomers (MA) have no reference row -> smiles empty.
+  Role assignment: MA is the carboxyl donor in B and C (acid_name) and the amine acceptor in A (G is the acid). Panel C amine H = 6-aminocaproic acid, amine role. Roles inferred from product names (GMA, MAX, MAH), not stated as a table in the paper.
+REPLICATES: N=3 biological replicates; 3 dots + 1 bar-mean row (is_mean=True) per enzyme per panel. Dots sorted descending, so replicate_idx is NOT the experimental replicate identity.
+
+AXIS CALIBRATION (per panel, crop px; tick rows detected from rendered pixels, linear fit, max residual <0.01 units):
+  A: ticks 0@309.5, 2@221, 4@132.5, 6@44 -> 44.25 px/unit (0.02260 units/px)
+  B: ticks 0@243.5, 2.5@168, 5.0@92.5 -> 30.2 px/unit (0.03311 units/px)
+  C: ticks 0@249.5, 2.5@162, 5.0@74 -> 35.1 px/unit (0.02849 units/px)
+  Dots = black connected components (opening 9x9, centroid); bar mean = top outline row of bar.
+
+VALUES (bar mean; dots):
+  A GMA: Control LOD; DdaG 4.89 (5.00,4.94,4.77); SfaB 5.63 (5.75,5.68,5.42); AcsA 4.85 (5.04,4.92,4.57); DesD 4.31 (5.13,4.10,3.69)
+  B MAX: Control/DdaG/SfaB/AcsA LOD; DesD 6.59 (6.64,6.59,6.48)
+  C MAH: Control/DdaG/SfaB/AcsA LOD; DesD 5.77 (6.06,5.67,5.52)
+below_LOD=True: A-Control; B-Control,DdaG,SfaB,AcsA; C-Control,DdaG,SfaB,AcsA. For these, the three dots sit in the LOD band at y ~ -0.3 to -0.5 (below the 0 tick) with no bar above axis; values recorded as floor 0 (not real small numbers). at_cutoff=False throughout (matches fig2 convention).
+TEXT CHECK: body text gives no numeric values for Fig 4 panels (only qualitative: DdaG prefers S, SfaB G/A, AcsA comparable, DesD no higher on G/A, inactive on S; "1.5-fold lower activity with S" refers to supplementary data). No text overrides applied. Chart agrees with text qualitatively: A shows DesD(4.3) < SfaB(5.6) on G, SfaB highest.
+
+UNCERTAIN CELLS:
+  - A SfaB: three dots overlap; clustering ambiguous; individual dots +/-0.1; bar mean (5.63) is solid.
+  - B DesD: dots overlap the bar top; individual values +/-0.05.
+  - A/B/C are log10 of a relative MS signal (axis in log units, not linear yield); means of dots not equal to bar value in general.
+  - Panel A LOD band: the Control bar is absent (flat line only).
+GENERAL UNCERTAINTY: +/- ~0.05-0.1 log10 units for bar tops; +/- ~0.1 for dots.

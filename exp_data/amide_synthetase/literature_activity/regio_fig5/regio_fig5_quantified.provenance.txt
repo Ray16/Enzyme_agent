@@ -1,0 +1,30 @@
+PROVENANCE — regio_fig5_quantified.csv
+======================================
+SOURCE: /homes/rzhu/Enzyme_agent/paper/Regioselective biosynthesis of oligoamides
+  as precursors for sequence-controlled co-polyamides.pdf
+  bioRxiv 2025.11.03.685623, posted 2025-11-03 (CC-BY-NC 4.0).
+FIGURE: Figure 5 (panels A-C, all quantitative). PDF page index 9 (1-based page 10), verified from caption text.
+RENDER: pymupdf Matrix(5,5). Panel crops (page px): A (1750,1930)-(2700,2230); B (1750,2200)-(2700,2500); C (1750,2470)-(2700,2770).
+READOUT: y-axis "Log10 Relative Signal Intensity" -> readout_type=log10_ms. Product in all panels = tetrad MAMA.
+ENZYME x-ORDER: Control, DdaG, SfaB, AcsA, DesD.
+REACTIONS: A) MAM + A -> MAMA; B) AMA + M -> MAMA; C) MA + MA -> MAMA.
+SUBSTRATES: A (adipic acid), M (hexamethylenediamine) from substrate_reference.csv ('diads;regio'). MAM/AMA/MA oligomers: no reference row, smiles empty.
+  Roles: A) acid=A, amine=MAM; B) acid=AMA, amine=M; C) acid=MA(donor), amine=MA(acceptor).
+REPLICATES: N=3; 3 dots + 1 is_mean row per enzyme per panel; dots sorted descending (replicate_idx is not experimental identity).
+
+AXIS CALIBRATION (crop px, ticks detected from pixels):
+  A: 0@217.5, 2@141, 4@64.5 -> 38.25 px/unit (0.02614 units/px); only 0,2,4 labelled (frame top ~5.4)
+  B: 0@223.5, 2@161.5, 4@99, 6@37.5 -> 31.0 px/unit (0.03223 units/px)
+  C: 0@222.5, 2@159, 4@96, 6@32.5 -> 31.6 px/unit (0.03160 units/px)
+
+VALUES (bar mean; dots):
+  A: Control/DdaG LOD; SfaB 4.77 (4.99,4.67,4.67); AcsA 4.93 (5.16,5.00,4.52); DesD 4.80 (5.01,4.92,4.39)
+  B: Control/DdaG/SfaB LOD; AcsA 5.82 (5.88,5.77,5.71); DesD 6.53 (6.56,6.47,6.44)
+  C: Control/DdaG/SfaB/AcsA LOD; DesD 6.23 (6.32,6.26,6.12)
+below_LOD=True: A-Control,DdaG; B-Control,DdaG,SfaB; C-Control,DdaG,SfaB,AcsA. Dots sit in the LOD band (~ -0.4 to -0.5) with no bar; recorded as floor 0. at_cutoff=False.
+TEXT CHECK: text is qualitative and consistent: DdaG/SfaB tetrads from MAM+diacids (but with A only SfaB/AcsA/DesD bars show; DdaG at LOD with A, consistent with DdaG preferring S); AMA+M only DesD and AcsA; MA dimerization only DesD. No numeric text values; none overridden.
+
+UNCERTAIN CELLS:
+  - A SfaB, B AcsA, C DesD, A DesD: overlapping dots; individual values +/-0.1 (means from bar outline are solid, +/-0.05). Overlapping-dot count verified visually = 3 each.
+  - A DesD third dot (4.39) sits on the bar top edge, centroid slightly biased.
+  - Panel C: DesD dots 6.12-6.32 vs bar 6.23.

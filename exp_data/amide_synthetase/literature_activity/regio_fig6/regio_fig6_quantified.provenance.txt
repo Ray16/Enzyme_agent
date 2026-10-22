@@ -1,0 +1,10 @@
+PROVENANCE — regio_fig6_quantified.csv  (HEADER ONLY — no quantitative data exists)
+======================================
+SOURCE: /homes/rzhu/Enzyme_agent/paper/Regioselective biosynthesis of oligoamides
+  as precursors for sequence-controlled co-polyamides.pdf
+  bioRxiv 2025.11.03.685623, posted 2025-11-03 (CC-BY-NC 4.0).
+FIGURE: Figure 6. PDF page index 11 (1-based page 12), NOT index 10 as the brief said (index 10 is body text only; caption verified on index 11).
+CONTENT: A) reaction scheme (S + M + P with DdaG+DesD -> MSP major, MPS minor "minor product", PMS crossed out = not detected); B) MS2 spectra (30 eV) chemical standard vs enzymatic. NO bar/dot chart, no y-axis amounts. Nothing to digitize.
+TEXT: only qualitative — MSP formed (PMS not); side products MS, MP, PS, SMS observed; no numbers.
+NOTE: scheme labels MPS as "minor product" whereas caption/text say only MSP detected and name PMS; MPS (scheme) vs PMS (text) inconsistency in the paper — unresolved. P = 7-aminoheptanoic acid (regio paper, reference letter P_regio).
+CSV therefore contains the header row only, schema identical to fig2.

@@ -61,12 +61,24 @@ def smiles_expectations(smi):
             len(m.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=O)[OX1]"))))
 
 
+def claim_held(stem):
+    """True if a fleet worker still owns this job (atomic mkdir claim not yet released)."""
+    return (CAMP / "fleet/claims" / f"cofolds_step1_inputs_{stem}.yaml").is_dir()
+
+
 def check_ensemble(stem, smi, n_mg_expected, quiet=False):
     pred = RESULTS / stem / f"boltz_results_{stem}" / "predictions" / stem
     pdbs = sorted(pred.glob(f"{stem}_model_*.pdb"))
     fails = []
     if len(pdbs) < 50:
-        return [f"{stem}: only {len(pdbs)} poses (Boltz exits 0 on OOM -- treat as FAILED run)"]
+        # A short ensemble means one of two very different things, and conflating them makes the
+        # gate abort on every in-flight job. Boltz writes poses incrementally, so a worker that
+        # still HOLDS its claim is simply mid-write -> not yet scorable, not a failure. Only a
+        # released claim (the worker gave up, incl. the exit-0 OOM case) is a real failure.
+        if claim_held(stem):
+            return []
+        return [f"{stem}: only {len(pdbs)} poses and the fleet claim was RELEASED "
+                f"(Boltz exits 0 on OOM -- treat as FAILED run)"]
 
     exp = smiles_expectations(smi)
     if exp is None:

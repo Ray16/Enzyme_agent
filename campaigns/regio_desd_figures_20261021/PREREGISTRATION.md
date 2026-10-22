@@ -135,4 +135,34 @@ to fit a V100 in FP32 in this repo (PubC, 629 aa), so it is the run most likely 
 
 ## DEVIATIONS
 
-*(none yet)*
+### 2026-10-21, amendment 1 — added a within-fold stratification (8/58 folds scored)
+
+**Added BEFORE any panel was complete**, on evidence from the docking diagnostic
+(`analysis/docking_validity_diagnostic.png`), not from any test result. No primary test is changed
+or removed; one stratification is **added**, and the original cross-fold tests stay as pre-specified.
+
+**What prompted it.** The first 8 ensembles show docking quality tracking **enzyme family**:
+the three best-docked are all NIS-fold (DesD·A n_gated 33/50 D_h 4.0 Å A 153°; AsbB·A 19/50, 146°;
+AsbA·A 4/50, 110°) while both ANL members sit at the bottom (SfaB·A n_gated 0, D_h 12.6 Å — and
+SfaB+A is the *active* normalisation anchor). `A` and `n_gated` are covarying.
+
+**Why this is a real threat, not a curiosity.** `A` is already documented in this repo as
+**fold-confounded across folds** (GS-fold 148.4 vs 131.1, p=0.0007). Figure 2's enzyme set is
+**cross-fold by construction** — 2 ANL (DdaG, SfaB) vs 4 NIS (AsbA, AsbB, AcsA, DesD) — so the
+pre-registered within-acid tests T1/T2 compare across exactly the axis on which `A` is known to be
+biased. A "win" there could be the fold bias rather than catalysis.
+
+**Amendment.** Each within-acid test is additionally run **within fold family**, and both results
+are reported side by side. Where a stratum has too few members to test (ANL has only 2 enzymes),
+that is stated as *untestable* rather than reported as a null.
+
+**Also pre-declared now, so it cannot be chosen later:** report the correlation between `A` and
+`n_gated` across all scored ensembles. If `A` is largely explained by docking quality, then `A` is
+substantially reporting "did the ligand dock", which is the exact artifact that sank the hydrolase
+campaign. This is reported **whatever it shows**, and it is a property of the metric on this panel,
+not a reason to swap metrics.
+
+**Known tension recorded in advance:** Fig 2A has **all six enzymes active** with **AcsA dominant
+(~7.6×)**, yet `A` currently ranks DesD first. If that ordering holds, `A` does not recover the
+panel's measured ordering, and T5 (the panel-A continuous test) is expected to fail. Writing this
+down before the panel completes so the outcome cannot be reinterpreted afterwards.
