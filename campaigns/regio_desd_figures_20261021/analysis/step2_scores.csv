@@ -1,3 +1,17 @@
 stem,enzyme,donor_code,acceptor_code,BD_deg,dev_from_ideal,D_h_A,n_gated,gated_frac,min_d,median_d,n_poses,n_extract_fail,docked,metric_id,panels
+step2_DdaG__AMA_M,DdaG,AMA,M,89.62,15.38,5.73,2,0.04,3.618,5.724,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5B (AMA+M->MAMA)
+step2_DdaG__A_MAM,DdaG,A,MAM,110.52,5.52,12.216,0,0.0,6.392,12.66,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
 step2_DdaG__A_X,DdaG,A,X,99.48,5.52,4.002,25,0.5,2.954,4.056,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2A (X+A->XA)
+step2_DdaG__G_MA,DdaG,G,MA,66.86,38.14,15.62,0,0.0,14.057,15.781,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,4A (MA+G->GMA)  [clean step-2 test: G is activated by all]
+step2_DdaG__H_H,DdaG,H,H,56.91,48.09,4.512,16,0.32,3.239,4.238,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2C (H+H->HH)
+step2_DdaG__H_M,DdaG,H,M,70.91,34.09,5.189,8,0.16,3.197,5.493,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2D (M+H->MH)
+step2_DdaG__H_MA,DdaG,H,MA,53.37,51.63,16.041,0,0.0,12.839,16.003,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,"4C (H+MA->HMA, the other regiochemistry)"
+step2_DdaG__MA_H,DdaG,MA,H,74.66,30.34,4.719,8,0.16,3.259,4.518,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,4C (MA+H->MAH)
+step2_DdaG__MA_MA,DdaG,MA,MA,61.78,43.22,15.691,0,0.0,13.551,15.718,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5C (MA+MA->MAMA)
+step2_DdaG__MA_X,DdaG,MA,X,68.12,36.88,5.345,12,0.24,3.104,5.934,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,4B (MA+X->MAX)
+step2_DdaG__MA_XA,DdaG,MA,XA,65.22,39.78,13.303,0,0.0,4.499,15.753,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,7 (MA+XA->MAXA)
 step2_DdaG__MS_P,DdaG,MS,P,124.04,19.04,5.826,3,0.06,3.602,5.481,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,6 (cascade MS+P->MSP)
+step2_DdaG__XA_MA,DdaG,XA,MA,88.89,16.11,14.806,0,0.0,9.383,15.577,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,7 (XA+MA->XAMA)
+step2_DdaG__XA_XA,DdaG,XA,XA,109.98,4.98,10.62,0,0.0,6.394,14.769,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,7 (XA+XA->XAXA)
+step2_DdaG__Z_M,DdaG,Z,M,113.78,8.78,5.234,4,0.08,3.327,5.343,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2B (M+Z->MZ)
+step2_SfaB__A_X,SfaB,A,X,92.99,12.01,5.536,2,0.04,3.692,5.567,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2A (X+A->XA)

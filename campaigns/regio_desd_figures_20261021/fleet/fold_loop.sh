@@ -25,6 +25,23 @@ if ! python -c "import sys, torch, boltz; sys.exit(0 if torch.cuda.is_available(
   echo "$H gpu$G PREFLIGHT FAIL -> no-op"; exit 3
 fi
 
+# MEMORY PREFLIGHT -- added after 8 jobs died on 15 GB cards.
+# lambda5 is 20x Tesla T4 (15360 MiB) while lambda1/2 are V100-SXM2-32GB. These 592-647 aa
+# complexes OOM on a T4, and Boltz "skips the batch" and then dies in the affinity stage looking
+# for a .npz the failed structure step never wrote -- leaving 0 poses and a HELD claim, so the job
+# looks pending forever. Worse, the casualties were not random: they were the LARGEST ligands and
+# therefore concentrated in specific panels (acid Z -> Fig 2B, acid H -> Fig 2C/2D), which would
+# have biased the surviving dataset rather than merely thinning it.
+MINMEM=${MINMEM:-20000}
+GPU_MEM=$(python - <<'PY'
+import torch
+print(int(torch.cuda.get_device_properties(0).total_memory / 1024 / 1024) if torch.cuda.is_available() else 0)
+PY
+)
+if [ "${GPU_MEM:-0}" -lt "$MINMEM" ]; then
+  echo "$H gpu$G has ${GPU_MEM} MiB < ${MINMEM} MiB required -> no-op (undersized card)"; exit 5
+fi
+
 done_test(){ # $1 = stem, $2 = outdir -- Boltz exits 0 on OOM, so COUNT the structures
   [ "$(ls "$2/boltz_results_$1/predictions/$1/${1}_model_"*.pdb 2>/dev/null | wc -l)" -ge 50 ]; }
 

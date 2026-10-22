@@ -1,3 +1,0 @@
-
-checked 30 ensembles present on disk
-ALL STRUCTURAL CHECKS PASSED
