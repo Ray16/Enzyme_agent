@@ -96,15 +96,22 @@ def main():
 
         if logy:
             ax.set_yscale("log")
-        for e in sorted(have, key=lambda e: A[e]):
+        _xorder = sorted(have, key=lambda e: A[e])
+        for e in _xorder:
             cens = lab[e]["below_LOD"]
             y = floor if cens else lab[e]["value"]
             col = C_LOD if cens else C_DET
             ax.scatter(A[e], y, s=78, marker="o", zorder=4,
                        facecolor=col if gated[e] > 0 else SURFACE,
                        edgecolor=col, linewidths=1.7)
-            ax.annotate(e, (A[e], y), textcoords="offset points", xytext=(0, 8),
-                        ha="center", fontsize=7.0, color=INK2, zorder=5)
+            # n_gated MUST appear next to the name: without it a reader cannot tell whether a
+            # point's A is interpretable at all (e.g. 4B DdaG reads 141.8 deg from 0/50 docked).
+            _i = _xorder.index(e)
+            _near = min((abs(A[e] - A[o]) for o in have if o != e), default=99)
+            _dy = 8 if (_near > 0.07 * (XLIM[1] - XLIM[0]) or _i % 2 == 0) else -19
+            ax.annotate(f"{e}\n{gated[e]}/50", (A[e], y), textcoords="offset points",
+                        xytext=(0, _dy), ha="center", fontsize=6.6, color=INK2,
+                        linespacing=1.25, zorder=5)
         if floor is not None:
             ax.axhline(floor, color=C_LOD, ls=(0, (2, 3)), lw=1.0, zorder=1)
         ax.set_xlim(*XLIM)          # SHARED across all cells -- enables direct comparison
@@ -124,8 +131,9 @@ def main():
         summary.append((panel, perfect, p_rank, rho, p_rho, True))
 
     fig.text(0.062, 0.922, "a", fontsize=15, fontweight="bold", color=INK)
-    fig.text(0.082, 0.922, "modelled A (x, °) vs measured product signal (y) — one experimental "
-             "panel per cell", fontsize=10.2, color=INK2)
+    fig.text(0.082, 0.922, "modelled A (x, °) vs measured product signal (y) — one experimental panel per "
+             "cell; each point labelled enzyme / $n_{gated}$ out of 50 poses",
+             fontsize=10.2, color=INK2)
 
     # ---------- (b) the confound: A vs n_gated -------------------------------------------
     axb = fig.add_subplot(gs[2, 0:2]); axb.set_facecolor(SURFACE)
@@ -149,7 +157,8 @@ def main():
         axb.spines[s].set_color(INK3)
     axb.tick_params(colors=INK2, labelsize=8)
     axb.grid(True, color=INK3, alpha=0.2, ls=(0, (1, 4)), lw=0.7); axb.set_axisbelow(True)
-    fig.text(0.040, 0.478, "b", fontsize=15, fontweight="bold", color=INK)
+    axb.text(-0.085, 1.16, "b", transform=axb.transAxes, fontsize=15, fontweight="bold",
+             color=INK, va="top")
 
     # ---------- (c) positive control ------------------------------------------------------
     axc = fig.add_subplot(gs[2, 2:4]); axc.set_facecolor(SURFACE)
@@ -176,7 +185,8 @@ def main():
     for s in ("left", "bottom"):
         axc.spines[s].set_color(INK3)
     axc.tick_params(colors=INK2, labelsize=8)
-    fig.text(0.437, 0.478, "c", fontsize=15, fontweight="bold", color=INK)
+    axc.text(-0.055, 1.16, "c", transform=axc.transAxes, fontsize=15, fontweight="bold",
+             color=INK, va="top")
 
     # ---------- (d) pre-registered test summary ------------------------------------------
     axd = fig.add_subplot(gs[3, :]); axd.set_facecolor(SURFACE); axd.axis("off")
@@ -195,9 +205,10 @@ def main():
         rs = f"{rho:+.2f} (p={p_rho:.3f})" if rho is not None else "—"
         lines.append(f"{panel.replace('Figure ', ''):<11}{REACTION.get(panel, ''):<20}"
                      f"{f'{det}/{len(lab)}':<14}{verdict:<26}{ps:<10}{rs:<16}")
+    axd.text(-0.025, 1.30, "d", transform=axd.transAxes, fontsize=15, fontweight="bold",
+             color=INK, va="top")
     axd.text(0, 1.0, "\n".join(lines), transform=axd.transAxes, va="top", ha="left",
              family="monospace", fontsize=8.3, color=INK2, linespacing=1.52)
-    fig.text(0.040, 0.203, "d", fontsize=15, fontweight="bold", color=INK)
 
     # ---------- titles & legend ------------------------------------------------------------
     fig.text(0.062, 0.963,

@@ -256,9 +256,15 @@ def draw(panel, acid, lab, sc, outdir):
 
     if floor is not None:
         ax.axhline(floor, color=C_LOD, ls=(0, (2, 3)), lw=1.3, zorder=1)
-        # right-aligned: a left-aligned caption sat on top of the censored marker
-        ax.text(0.996, floor, "below limit of detection ", color=C_LOD, fontsize=8.2,
-                va="bottom", ha="right", transform=ax.get_yaxis_transform())
+        # Put the caption on whichever side is emptier: right-aligning fixed a collision with a
+        # left-side marker but then hit DdaG on the right in 4B.
+        _mid = (min(A.values()) + max(A.values())) / 2
+        _right_busy = any(A[e] > _mid for e in have if lab[e]["below_LOD"])
+        ax.text(0.004 if _right_busy else 0.996, floor,
+                " below limit of detection" if _right_busy else "below limit of detection ",
+                color=C_LOD, fontsize=8.2, va="bottom",
+                ha="left" if _right_busy else "right",
+                transform=ax.get_yaxis_transform())
 
     ax.set_xlabel("modelled A — proximity-weighted attack angle (°),  step 1 acid side",
                   fontsize=10, color=INK2, labelpad=8)
