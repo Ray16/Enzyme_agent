@@ -1,0 +1,15 @@
+cofolds/step2/inputs/step2_DesD__A_X.yaml
+cofolds/step2/inputs/step2_DesD__Z_M.yaml
+cofolds/step2/inputs/step2_DesD__H_H.yaml
+cofolds/step2/inputs/step2_DesD__H_M.yaml
+cofolds/step2/inputs/step2_DesD__G_MA.yaml
+cofolds/step2/inputs/step2_DesD__MA_X.yaml
+cofolds/step2/inputs/step2_DesD__MA_H.yaml
+cofolds/step2/inputs/step2_DesD__H_MA.yaml
+cofolds/step2/inputs/step2_DesD__A_MAM.yaml
+cofolds/step2/inputs/step2_DesD__AMA_M.yaml
+cofolds/step2/inputs/step2_DesD__MA_MA.yaml
+cofolds/step2/inputs/step2_DesD__MA_XA.yaml
+cofolds/step2/inputs/step2_DesD__XA_MA.yaml
+cofolds/step2/inputs/step2_DesD__XA_XA.yaml
+cofolds/step2/inputs/step2_DesD__MS_P.yaml

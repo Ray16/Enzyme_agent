@@ -1,7 +1,9 @@
-scored 44 step-2 ensembles -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/step2_scores.csv   (46 still folding)
+scored 55 step-2 ensembles -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/step2_scores.csv   (35 still folding)
 stem                                    BD  |dev|    D_h  n_gated  docked
+step2_AsbA__XA_XA                    105.4    0.4   9.81        0  False
 step2_AsbA__AMA_M                    102.4    2.6   4.91        4  True
 step2_SfaB__MA_H                     102.4    2.6   6.24        0  False
+step2_AsbB__AMA_M                    108.0    3.0   4.70        8  True
 step2_AsbA__H_M                      108.3    3.3   4.80        8  True
 step2_DdaG__XA_XA                    110.0    5.0  10.62        0  False
 step2_DdaG__A_MAM                    110.5    5.5  12.22        0  False
@@ -9,8 +11,10 @@ step2_DdaG__A_X                       99.5    5.5   4.00       25  True
 step2_SfaB__H_H                       96.3    8.7   6.35        0  False
 step2_SfaB__MS_P                      96.2    8.8   6.30        0  False
 step2_DdaG__Z_M                      113.8    8.8   5.23        4  True
+step2_AsbB__MA_X                     115.1   10.1   4.47       15  True
 step2_SfaB__G_MA                      94.5   10.5   5.02        8  True
 step2_SfaB__A_X                       93.0   12.0   5.54        2  True
+step2_AsbB__A_X                       91.7   13.3   4.65        4  True
 step2_SfaB__XA_XA                     91.0   14.0   6.13        0  False
 step2_DdaG__AMA_M                     89.6   15.4   5.73        2  True
 step2_DdaG__XA_MA                     88.9   16.1  14.81        0  False
@@ -23,24 +27,31 @@ step2_SfaB__A_MAM                     86.2   18.8   4.75       22  True
 step2_DdaG__MS_P                     124.0   19.0   5.83        3  True
 step2_AsbA__H_MA                      85.9   19.1   6.79        0  False
 step2_AsbA__H_H                       82.9   22.1   6.19        0  False
+step2_AsbB__A_MAM                    127.4   22.4   9.37        0  False
 step2_AsbA__XA_MA                     81.9   23.1   8.67        0  False
 step2_AsbB__H_M                      128.2   23.1   5.70        1  True
+step2_AsbB__Z_M                       81.5   23.5   4.77        8  True
 step2_SfaB__XA_MA                     81.4   23.6   8.78        0  False
 step2_AsbA__MA_X                      81.1   23.9   4.32       18  True
+step2_AsbA__MS_P                      81.0   24.0   5.78        3  True
 step2_SfaB__H_MA                      80.8   24.2   6.32        0  False
 step2_SfaB__MA_MA                     80.5   24.5   5.95        3  True
+step2_AsbB__H_MA                      78.4   26.6   8.76        1  True
 step2_SfaB__H_M                       77.2   27.8   5.92        0  False
 step2_SfaB__AMA_M                     77.1   27.9   6.14        0  False
 step2_AsbA__MA_MA                     76.2   28.8   7.05        2  True
+step2_AsbB__MA_H                     134.1   29.1   6.18        0  False
 step2_AsbA__A_X                       75.1   29.9   4.90        8  True
 step2_DdaG__MA_H                      74.7   30.3   4.72        8  True
 step2_DdaG__H_M                       70.9   34.1   5.19        8  True
 step2_AsbA__G_MA                      68.9   36.1   6.62        0  False
 step2_DdaG__MA_X                      68.1   36.9   5.34       12  True
 step2_DdaG__G_MA                      66.9   38.1  15.62        0  False
+step2_AsbB__G_MA                     144.3   39.3  13.24        1  True
 step2_DdaG__MA_XA                     65.2   39.8  13.30        0  False
 step2_AsbA__A_MAM                     64.1   40.9   6.00        0  False
 step2_AsbA__MA_H                      62.7   42.3   5.58        0  False
 step2_DdaG__MA_MA                     61.8   43.2  15.69        0  False
+step2_AsbB__H_H                      149.0   44.0   5.40        2  True
 step2_DdaG__H_H                       56.9   48.1   4.51       16  True
 step2_DdaG__H_MA                      53.4   51.6  16.04        0  False

@@ -10,9 +10,20 @@ step2_AsbA__MA_H,AsbA,MA,H,62.7,42.3,5.575,0,0.0,4.057,5.453,50,0,False,inverse_
 step2_AsbA__MA_MA,AsbA,MA,MA,76.21,28.79,7.05,2,0.04,3.952,8.38,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5C (MA+MA->MAMA)
 step2_AsbA__MA_X,AsbA,MA,X,81.14,23.86,4.322,18,0.36,3.371,4.202,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,4B (MA+X->MAX)
 step2_AsbA__MA_XA,AsbA,MA,XA,88.83,16.17,10.127,1,0.02,3.759,12.413,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,7 (MA+XA->MAXA)
+step2_AsbA__MS_P,AsbA,MS,P,80.99,24.01,5.78,3,0.06,3.911,5.96,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,6 (cascade MS+P->MSP)
 step2_AsbA__XA_MA,AsbA,XA,MA,81.89,23.11,8.674,0,0.0,5.449,9.025,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,7 (XA+MA->XAMA)
+step2_AsbA__XA_XA,AsbA,XA,XA,105.44,0.44,9.813,0,0.0,4.641,11.66,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,7 (XA+XA->XAXA)
 step2_AsbA__Z_M,AsbA,Z,M,87.83,17.17,5.106,5,0.1,3.278,5.254,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2B (M+Z->MZ)
+step2_AsbB__AMA_M,AsbB,AMA,M,108.05,3.05,4.695,8,0.16,3.487,4.629,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5B (AMA+M->MAMA)
+step2_AsbB__A_MAM,AsbB,A,MAM,127.43,22.43,9.365,0,0.0,6.512,9.428,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
+step2_AsbB__A_X,AsbB,A,X,91.71,13.29,4.652,4,0.08,3.16,4.759,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2A (X+A->XA)
+step2_AsbB__G_MA,AsbB,G,MA,144.27,39.27,13.239,1,0.02,3.113,14.443,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,4A (MA+G->GMA)  [clean step-2 test: G is activated by all]
+step2_AsbB__H_H,AsbB,H,H,149.0,44.0,5.402,2,0.04,3.882,5.551,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2C (H+H->HH)
 step2_AsbB__H_M,AsbB,H,M,128.15,23.15,5.697,1,0.02,3.954,5.982,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2D (M+H->MH)
+step2_AsbB__H_MA,AsbB,H,MA,78.44,26.56,8.76,1,0.02,2.949,10.085,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,"4C (H+MA->HMA, the other regiochemistry)"
+step2_AsbB__MA_H,AsbB,MA,H,134.06,29.06,6.185,0,0.0,4.541,6.295,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,4C (MA+H->MAH)
+step2_AsbB__MA_X,AsbB,MA,X,115.14,10.14,4.472,15,0.3,2.909,4.75,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,4B (MA+X->MAX)
+step2_AsbB__Z_M,AsbB,Z,M,81.51,23.49,4.77,8,0.16,3.451,4.917,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2B (M+Z->MZ)
 step2_DdaG__AMA_M,DdaG,AMA,M,89.62,15.38,5.73,2,0.04,3.618,5.724,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5B (AMA+M->MAMA)
 step2_DdaG__A_MAM,DdaG,A,MAM,110.52,5.52,12.216,0,0.0,6.392,12.66,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
 step2_DdaG__A_X,DdaG,A,X,99.48,5.52,4.002,25,0.5,2.954,4.056,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2A (X+A->XA)
