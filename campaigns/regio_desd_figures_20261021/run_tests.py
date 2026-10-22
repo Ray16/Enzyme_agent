@@ -121,7 +121,12 @@ def main():
                  "but small effect.")]
 
     # ---------- TP2 pooled separation -----------------------------------------------------
-    cells = []
+    # NON-INDEPENDENCE FIX. Several panels share a step-1 acid donor and therefore have
+    # BYTE-IDENTICAL A values: 4B/4C/5C all use donor MA, and 2C/2D both use H. Pooling them as
+    # separate strata would multiply-count one measurement and inflate TP2. So TP2 pools unique
+    # (enzyme, acid donor) cells, with the label = detected in ANY panel using that donor --
+    # which is exactly the labelling rule already fixed in PREREGISTRATION.md section 4 for acid H.
+    per_acid = {}
     for panel in sorted(PANEL_ACID):
         lab, acid = labels.get(panel), PANEL_ACID[panel]
         if not lab:
@@ -130,8 +135,14 @@ def main():
         if len(have) < len(lab):
             continue
         for e in have:
-            cells.append((panel, float(sc[(e, acid)]["A_deg"]), not lab[e]["below_LOD"]))
-    out += ["", "## TP2 — pooled detected-vs-LOD separation, panel-stratified null", ""]
+            key = (acid, e)
+            det = not lab[e]["below_LOD"]
+            if key in per_acid:
+                per_acid[key] = (per_acid[key][0], per_acid[key][1] or det)
+            else:
+                per_acid[key] = (float(sc[(e, acid)]["A_deg"]), det)
+    cells = [(acid, a, d) for (acid, _e), (a, d) in per_acid.items()]
+    out += ["", "## TP2 — pooled detected-vs-LOD separation, acid-stratified null", ""]
     obs = stratified_auroc(cells) if cells else None
     if obs is None:
         out.append("Not evaluable: no panel with both detected and below-LOD cells yet.")
@@ -151,13 +162,17 @@ def main():
                 ge += 1
         p_perm = (ge + 1) / (N_PERM + 1)
         npos = sum(1 for _p, _a, d in cells if d)
-        out += [f"Cells pooled: {len(cells)} ({npos} detected, {len(cells)-npos} below LOD) "
-                f"across {len(by_panel)} panels", "",
-                f"**AUROC = {obs:.3f}, panel-stratified permutation p = {p_perm:.4f}** "
+        out += [f"Cells pooled: {len(cells)} unique (enzyme, acid donor) cells "
+                f"({npos} detected, {len(cells)-npos} below LOD) across {len(by_panel)} acid "
+                f"strata", "",
+                "Pooled over unique (enzyme, ACID DONOR) cells, not per panel: 4B/4C/5C share "
+                "donor MA and 2C/2D share H, so their step-1 A values are identical and "
+                "panel-level pooling would multiply-count one measurement.", "",
+                f"**AUROC = {obs:.3f}, acid-stratified permutation p = {p_perm:.4f}** "
                 f"({N_PERM} draws)", "",
-                "Labels were permuted WITHIN panel only: detection rates differ enormously between "
-                "panels (2A is 6/6, 5C is 1/4), so an unstratified null would be badly "
-                "anticonservative."]
+                "Labels were permuted WITHIN acid stratum only: detection rates differ enormously "
+                "between strata (acid A is 6/6 detected, MA is 1/4), so an unstratified null "
+                "would be badly anticonservative."]
 
     # ---------- mandatory companions ------------------------------------------------------
     allr = list(sc.values())

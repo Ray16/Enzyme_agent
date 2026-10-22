@@ -25,20 +25,22 @@ Panels combined: 2 — Figure 2A rho=+0.09 (n=6), Figure 4A rho=-1.00 (n=4)
 
 **No detectable trend at this n.** Per the pre-registration this is reported as no detectable trend, NOT as a refutation of A: with 4-6 enzymes per stratum the pooled design retains only modest power, and a null is consistent with a real but small effect.
 
-## TP2 — pooled detected-vs-LOD separation, panel-stratified null
+## TP2 — pooled detected-vs-LOD separation, acid-stratified null
 
-Cells pooled: 26 (16 detected, 10 below LOD) across 6 panels
+Cells pooled: 14 unique (enzyme, acid donor) cells (11 detected, 3 below LOD) across 3 acid strata
 
-**AUROC = 0.703, panel-stratified permutation p = 0.0890** (20000 draws)
+Pooled over unique (enzyme, ACID DONOR) cells, not per panel: 4B/4C/5C share donor MA and 2C/2D share H, so their step-1 A values are identical and panel-level pooling would multiply-count one measurement.
 
-Labels were permuted WITHIN panel only: detection rates differ enormously between panels (2A is 6/6, 5C is 1/4), so an unstratified null would be badly anticonservative.
+**AUROC = 0.697, acid-stratified permutation p = 0.5005** (20000 draws)
+
+Labels were permuted WITHIN acid stratum only: detection rates differ enormously between strata (acid A is 6/6 detected, MA is 1/4), so an unstratified null would be badly anticonservative.
 
 ## Reported unconditionally (amendments 1 and 3)
 
-**rho(A, n_gated) = +0.456, p = 0.01479** over 28 ensembles.
+**rho(A, n_gated) = +0.382, p = 0.04059** over 29 ensembles.
 
 A is significantly coupled to docking quality, so it is partly reporting WHETHER THE LIGAND DOCKED rather than how well the enzyme catalyses — the same artifact that invalidated the hydrolase campaign.
 
-**Fold family:** mean A — ANL 111.1 (n=11) vs NIS 123.4 (n=17); AUROC(NIS > ANL) = 0.663.
+**Fold family:** mean A — ANL 113.9 (n=12) vs NIS 123.4 (n=17); AUROC(NIS > ANL) = 0.623.
 
 A separates FOLD FAMILIES. Any apparent activity trend that disappears within fold family is a fold artifact, not a catalytic signal.

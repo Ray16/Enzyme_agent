@@ -35,11 +35,11 @@ Labels were permuted WITHIN panel only: detection rates differ enormously betwee
 
 ## Reported unconditionally (amendments 1 and 3)
 
-**rho(A, n_gated) = +0.456, p = 0.01479** over 28 ensembles.
+**rho(A, n_gated) = +0.382, p = 0.04059** over 29 ensembles.
 
 A is significantly coupled to docking quality, so it is partly reporting WHETHER THE LIGAND DOCKED rather than how well the enzyme catalyses — the same artifact that invalidated the hydrolase campaign.
 
-**Fold family:** mean A — ANL 111.1 (n=11) vs NIS 123.4 (n=17); AUROC(NIS > ANL) = 0.663.
+**Fold family:** mean A — ANL 113.9 (n=12) vs NIS 123.4 (n=17); AUROC(NIS > ANL) = 0.623.
 
 A separates FOLD FAMILIES. Any apparent activity trend that disappears within fold family is a fold artifact, not a catalytic signal.
 

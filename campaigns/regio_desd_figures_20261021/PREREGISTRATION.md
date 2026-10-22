@@ -225,3 +225,22 @@ unstratified null would be badly anticonservative.
 - **Either way, report alongside it:** ρ(`A`, `n_gated`) over all ensembles, and the ANL-vs-NIS
   fold comparison. A positive TP1 that disappears within fold family is a fold artifact, not a
   catalytic signal, and must be reported as such.
+
+### 2026-10-21, amendment 4 — TP2 pooling corrected for non-independence
+
+**A bug, not a choice.** TP2 as first implemented pooled (enzyme, PANEL) cells. But several panels
+share a step-1 acid donor and therefore carry **byte-identical `A` values**: 4B, 4C and 5C all use
+donor **MA**, and 2C/2D both use **H**. Pooling them as separate strata multiply-counts a single
+measurement and inflates the test.
+
+TP2 now pools **unique (enzyme, acid donor) cells**, with the label = detected in *any* panel using
+that donor — which is exactly the labelling rule already fixed in §4 for acid H ("active if active
+in panel C or D"). So this restores the pre-registered intent rather than altering it.
+
+**Direction of the correction, recorded for integrity:** it made the result **worse**, not better —
+AUROC fell from 0.808 to 0.697 and the below-LOD count corrected from 1 to 3. A fix that costs the
+favoured hypothesis is evidence it was a genuine bug rather than motivated analysis.
+
+**Note on what TP1 does and does not cover.** Panels 4B/4C/5C each have only ONE detected enzyme, so
+no within-panel Spearman exists for them and they contribute nothing to TP1 either way. TP1 remains
+driven by the few panels with >=3 detected enzymes.
