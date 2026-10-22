@@ -244,3 +244,106 @@ favoured hypothesis is evidence it was a genuine bug rather than motivated analy
 **Note on what TP1 does and does not cover.** Panels 4B/4C/5C each have only ONE detected enzyme, so
 no within-panel Spearman exists for them and they contribute nothing to TP1 either way. TP1 remains
 driven by the few panels with >=3 detected enzymes.
+
+---
+
+## 2026-10-21, amendment 5 — the ACCOMMODATION hypothesis (new family, declared before computing)
+
+**Status: this is a NEW proxy family, and the multiplicity cost is acknowledged up front.** Six
+families are already null in this repository and `broad_proxy_search_20261008` showed that ~3×
+top-10 enrichment on panels like this carries a selection-corrected **p ≈ 1.0**. Declaring the
+hypothesis and its test before computing is therefore not a formality — it is the only thing that
+makes the result interpretable. No descriptor will be added, dropped, or re-thresholded after the
+numbers are seen.
+
+### Why this is not the already-refuted near-attack test
+
+The near-attack fraction was tested panel-wide and was null (Spearman vs yield = **−0.072,
+p = 0.63**, n = 49). **But that panel fixed the substrate** — amine = HMD, acid = adipate — so it
+measured enzyme *main effects* only. Accommodation predicts an **enzyme × substrate-size
+interaction**, which a fixed-substrate design cannot see. This campaign varies the donor across
+nine substrates spanning 10 to 48 heavy atoms, so the interaction is estimable here and was not
+estimable there. That is the specific gap this amendment addresses.
+
+### The hypothesis
+
+From the paper's own Fig 3: DesD has a larger (2497 Å³ vs 816 Å³ for AcsD) and more hydrophobic
+acyl-binding pocket, and the authors argue pocket volume and polarity jointly govern which
+substrate sizes are accepted. Mechanistically this predicts *accommodation*, not attack geometry:
+a substrate too large for the pocket never reaches the reactive centre at all, so the failure is
+steric, upstream of any angle.
+
+**H_acc:** the probability a cell is active falls with donor size, and that fall is **steeper for
+small-pocket enzymes** — i.e. a negative size × pocket-capacity interaction.
+
+### Pre-specified descriptors (fixed now; no additions later)
+
+Per (enzyme, donor) ensemble, computed on the existing step-1 folds — no new GPU:
+
+1. `donor_heavy_atoms` — substrate size, from the input SMILES (exogenous, not model-derived)
+2. `occupancy` = n_gated / 50 — does the donor reach the reactive centre at all
+3. `D_h` — harmonic mean donor-carboxylate-O to Pα distance
+4. `buried_frac` — fraction of donor heavy atoms with ≥1 protein heavy atom within 4.5 Å,
+   median over 50 poses
+5. `n_contacts` — median count of protein heavy atoms within 4.5 Å of any donor atom
+6. `pocket_apolar_frac` — fraction of residues lining the Pα pocket (any heavy atom within 8 Å of
+   Pα) whose type is in {A,V,L,I,M,F,W,P,G}
+
+### Tests
+
+- **TA1 (primary).** Logistic regression of detected/below-LOD on
+  `donor_heavy_atoms + enzyme_capacity + their interaction`, where `enzyme_capacity` is each
+  enzyme's **mean `buried_frac` on the two monomer diacids (A, G) only** — i.e. capacity estimated
+  on *small* substrates and used to predict behaviour on *large* ones, so the predictor is not
+  fitted on the cells it must explain. Report the interaction term's coefficient, sign and p.
+- **TA2.** Spearman of each descriptor against activity *within* donor (controls size), and
+  against activity *within* enzyme (controls pocket), reported as a matrix so no single cell can
+  be cherry-picked.
+- **TA3 (mandatory, interpretive).** Repeat TA1 **within fold family**. A result that disappears
+  within ANL or within NIS is a fold artifact, exactly as for `A`.
+- **Selection correction.** Because this is family #8, the headline p is reported **alongside** a
+  descriptor-count-corrected threshold (6 descriptors × 2 strata = 12 looks → Bonferroni α = 0.0042)
+  and the honest statement that clearing 0.05 but not 0.0042 is **not** a finding.
+
+### Pre-declared interpretation
+
+- Interaction negative and significant past the corrected threshold → accommodation explains the
+  size-dependent activity pattern that attack geometry could not.
+- Not significant → reported as null, and the accommodation family joins the other seven. It will
+  **not** be followed by a further descriptor search on this panel.
+- **Anticipated confound, stated now:** `occupancy` and `buried_frac` are both expected to
+  correlate with donor size mechanically (a bigger ligand has more atoms to bury and more ways to
+  clash), so size must appear as a covariate in every model, never as the sole predictor.
+
+### 2026-10-21 — amendment 5 PARKED (not withdrawn, not reported as a null)
+
+The accommodation family is **parked before completion**, by decision, with its state recorded so
+it cannot later be revived as a fresh first look:
+
+- **TA1 is NOT EVALUABLE.** `buried_frac` saturated at 1.000 for essentially every ensemble
+  (capacity = 1.000 for 5 of 6 enzymes, AsbB 0.950), because a 4.5 A contact cutoff puts *some*
+  protein atom near nearly every ligand heavy atom — even a surface-parked one. The predictor was
+  effectively constant, the design matrix near-singular, and the fit degenerated (se 119–834,
+  z ~ 0.00, p ~ 0.99). **Those p-values are a collapsed regression, not a null.**
+- **TA2 ran as specified** and is recorded in `analysis/accommodation_descriptors.csv`: occupancy
+  +0.38 / +0.34 (within donor / within enzyme), D_h −0.66 within enzyme, `n_contacts` −0.39 / −0.52
+  (wrong sign), donor size −0.41. The right-signed descriptors are the *docking* family already
+  null at n = 49; `n_contacts` runs backwards.
+- **Awkward for the hypothesis, recorded now:** AcsA is active on AMA (26 heavy atoms) at
+  occupancy 0.00 and DesD is active on AMA at 0.02 — large substrates turned over by enzymes whose
+  modelled ensembles never approach Pa.
+
+**Rules for any future resumption.** Re-running TA1 with a tighter cutoff is a **second look** and
+must be declared and penalised as such; it may not be presented as the first test of accommodation.
+Prerequisites before resuming at all: the 15 outstanding step-1 folds (several are the large-ligand
+cells this test most depends on), and a well-posed capacity descriptor — the obvious candidate is
+the bottleneck radius from the validated in-house `channel_geometry.py`, run on APO folds, since a
+bound substrate plugs its own channel.
+
+**Also recorded: pocket VOLUME was attempted and abandoned as ill-posed.** A grid implementation
+failed to reproduce the paper's Fig-3B values (DesD 783 vs 2497 A^3, AcsD 380 vs 816 — ratios 0.31
+and 0.47, so not a constant factor) and, decisively, **did not converge**: 454 / 773 / 1139 A^3 at
+box radius 10 / 14 / 18 A. With no plateau there is no well-defined volume, so no fold-derived
+pocket volume is quoted anywhere in this campaign. The paper's 816 / 2497 A^3 remain attributed to
+the authors (PyVOL), not reproduced here. PyVOL, fpocket and freesasa are all absent from this
+environment.

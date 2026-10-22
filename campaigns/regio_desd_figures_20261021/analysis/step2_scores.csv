@@ -15,3 +15,4 @@ step2_DdaG__XA_MA,DdaG,XA,MA,88.89,16.11,14.806,0,0.0,9.383,15.577,50,0,False,in
 step2_DdaG__XA_XA,DdaG,XA,XA,109.98,4.98,10.62,0,0.0,6.394,14.769,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,7 (XA+XA->XAXA)
 step2_DdaG__Z_M,DdaG,Z,M,113.78,8.78,5.234,4,0.08,3.327,5.343,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2B (M+Z->MZ)
 step2_SfaB__A_X,SfaB,A,X,92.99,12.01,5.536,2,0.04,3.692,5.567,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2A (X+A->XA)
+step2_SfaB__MS_P,SfaB,MS,P,96.24,8.76,6.304,0,0.0,4.802,6.556,50,0,False,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,6 (cascade MS+P->MSP)

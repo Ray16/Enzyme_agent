@@ -75,6 +75,8 @@ def main():
         for s in ("left", "bottom"):
             ax.spines[s].set_color(INK3); ax.spines[s].set_linewidth(0.8)
         ax.tick_params(colors=INK2, labelsize=7.4)
+        if i // 5 == 1:          # bottom row of the small multiples
+            ax.set_xlabel("A (°)", fontsize=7.8, color=INK3, labelpad=2)
         ax.grid(True, color=INK3, alpha=0.2, ls=(0, (1, 4)), lw=0.7)
         ax.set_axisbelow(True)
 
@@ -141,14 +143,14 @@ def main():
     if allr:
         xs = [int(r["n_gated"]) for r in allr]
         ys = [float(r["A_deg"]) for r in allr]
-        axb.scatter(xs, ys, s=66, facecolor=C_DET, edgecolor=C_DET, alpha=0.62, linewidths=0)
+        axb.scatter(ys, xs, s=66, facecolor=C_DET, edgecolor=C_DET, alpha=0.62, linewidths=0)
         rho, p = spearman(xs, ys) if len(xs) >= 3 else (None, None)
         if rho is not None:
             axb.text(0.98, 0.05, f"Spearman ρ = {rho:+.2f}" + (f"\np = {p:.3g}" if p else ""),
                      transform=axb.transAxes, ha="right", va="bottom",
                      fontsize=9.4, color=INK2)
-    axb.set_xlabel("$n_{gated}$ — poses within 4 Å of Pα (of 50)", fontsize=9.4, color=INK2)
-    axb.set_ylabel("A (°)", fontsize=9.4, color=INK2)
+    axb.set_xlabel("A — proximity-weighted attack angle (°)", fontsize=9.4, color=INK2)
+    axb.set_ylabel("$n_{gated}$ — poses within 4 Å of Pα (of 50)", fontsize=9.4, color=INK2)
     axb.set_title("is A measuring catalysis, or just how well the ligand docked?",
                   fontsize=9.6, color=INK, loc="left", pad=12)
     for s in ("top", "right"):

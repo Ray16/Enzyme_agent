@@ -1,8 +1,9 @@
-scored 16 step-2 ensembles -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/step2_scores.csv   (74 still folding)
+scored 17 step-2 ensembles -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/step2_scores.csv   (73 still folding)
 stem                                    BD  |dev|    D_h  n_gated  docked
 step2_DdaG__XA_XA                    110.0    5.0  10.62        0  False
 step2_DdaG__A_MAM                    110.5    5.5  12.22        0  False
 step2_DdaG__A_X                       99.5    5.5   4.00       25  True
+step2_SfaB__MS_P                      96.2    8.8   6.30        0  False
 step2_DdaG__Z_M                      113.8    8.8   5.23        4  True
 step2_SfaB__A_X                       93.0   12.0   5.54        2  True
 step2_DdaG__AMA_M                     89.6   15.4   5.73        2  True
