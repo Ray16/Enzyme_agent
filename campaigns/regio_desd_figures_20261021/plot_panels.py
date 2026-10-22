@@ -77,16 +77,61 @@ def spearman(x, y):
     if den == 0:
         return None, None
     rho = num / den
-    # exact two-sided permutation p over all 6! orderings is cheap at n<=7
-    from itertools import permutations
-    base = [abs(rho)]
-    cnt = tot = 0
-    for perm in permutations(ry):
-        num2 = sum((a - mx) * (b - my) for a, b in zip(rx, perm))
-        tot += 1
-        if abs(num2 / den) >= base[0] - 1e-12:
-            cnt += 1
-    return rho, cnt / tot
+    # Exact two-sided permutation p enumerates n! orderings -- fine at n<=8 (<=40320), ruinous
+    # beyond it (n=20 never returns). Above the cutoff use the asymptotic t approximation.
+    if n <= 8:
+        from itertools import permutations
+        target = abs(rho) - 1e-12
+        cnt = tot = 0
+        for perm in permutations(ry):
+            num2 = sum((a - mx) * (b - my) for a, b in zip(rx, perm))
+            tot += 1
+            if abs(num2 / den) >= target:
+                cnt += 1
+        return rho, cnt / tot
+    if abs(rho) >= 1.0:
+        return rho, 0.0
+    t = rho * math.sqrt((n - 2) / (1 - rho * rho))
+    # two-sided Student-t survival via the regularised incomplete beta
+    df = n - 2
+    x = df / (df + t * t)
+    return rho, _betainc(df / 2, 0.5, x)
+
+
+def _betainc(a, b, x):
+    """Regularised incomplete beta I_x(a,b) by continued fraction (Lentz).
+
+    The continued fraction only converges well for x below (a+1)/(a+b+2); above it the identity
+    I_x(a,b) = 1 - I_{1-x}(b,a) must be applied by RECURSING on the swapped parameters. An earlier
+    version merely returned `1 - res` from the same (a,b,x) evaluation, which silently returned the
+    complement of the correct p -- caught by validating against scipy (n=12: 0.735 vs 0.265).
+    """
+    if x <= 0:
+        return 0.0
+    if x >= 1:
+        return 1.0
+    if x > (a + 1) / (a + b + 2):
+        return 1.0 - _betainc(b, a, 1.0 - x)
+    lbeta = (math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b))
+    front = math.exp(math.log(x) * a + math.log(1 - x) * b - lbeta) / a
+    f, c, d = 1.0, 1.0, 0.0
+    for i in range(0, 300):
+        m = i // 2
+        if i == 0:
+            num = 1.0
+        elif i % 2 == 0:
+            num = (m * (b - m) * x) / ((a + 2 * m - 1) * (a + 2 * m))
+        else:
+            num = -((a + m) * (a + b + m) * x) / ((a + 2 * m) * (a + 2 * m + 1))
+        d = 1.0 + num * d
+        d = 1e-30 if abs(d) < 1e-30 else d
+        d = 1.0 / d
+        c = 1.0 + num / c
+        c = 1e-30 if abs(c) < 1e-30 else c
+        f *= c * d
+        if abs(1.0 - c * d) < 1e-10:
+            break
+    return front * (f - 1.0)
 
 
 def rank_test(scores, actives):
