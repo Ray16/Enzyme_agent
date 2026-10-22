@@ -37,11 +37,11 @@ Labels were permuted WITHIN acid stratum only: detection rates differ enormously
 
 ## Reported unconditionally (amendments 1 and 3)
 
-**rho(A, n_gated) = +0.266, p = 0.07364** over 46 ensembles.
+**rho(A, n_gated) = +0.287, p = 0.05055** over 47 ensembles.
 
 No significant coupling to docking quality at this n.
 
-**Fold family:** mean A — ANL 118.5 (n=17) vs NIS 127.2 (n=29); AUROC(NIS > ANL) = 0.594.
+**Fold family:** mean A — ANL 118.5 (n=17) vs NIS 125.6 (n=30); AUROC(NIS > ANL) = 0.575.
 
 A separates FOLD FAMILIES. Any apparent activity trend that disappears within fold family is a fold artifact, not a catalytic signal.
 
