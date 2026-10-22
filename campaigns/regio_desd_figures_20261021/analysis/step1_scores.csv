@@ -22,5 +22,6 @@ step1_DesD__H,DesD,H,1,True,156.95,5.9,0,0.0,4.357,5.773,168.3,False,50,0,invers
 step1_DesD__S,DesD,S,1,True,143.5,5.959,15,0.3,3.272,5.583,168.5,True,50,0,inverse_distance_attack_angle_v1,"6 (cascade: S+M->MS, DdaG)"
 step1_SfaB__A,SfaB,A,1,True,94.81,12.572,0,0.0,4.364,13.685,128.4,False,50,0,inverse_distance_attack_angle_v1,2A (X+A->XA); 5A (MAM+A->MAMA); 5C
 step1_SfaB__G,SfaB,G,1,True,99.56,11.706,0,0.0,9.904,11.379,112.1,False,50,0,inverse_distance_attack_angle_v1,4A (MA+G->GMA)
+step1_SfaB__MA,SfaB,MA,1,True,95.65,15.951,0,0.0,15.074,15.953,105.1,False,50,0,inverse_distance_attack_angle_v1,4B (MA+X->MAX); 4C (MA+H->MAH); 5C (MA+MA->MAMA)
 step1_SfaB__S,SfaB,S,1,False,96.25,11.969,0,0.0,10.189,12.01,110.9,False,50,0,inverse_distance_attack_angle_v1,"6 (cascade: S+M->MS, DdaG)"
 step1_SfaB__Z,SfaB,Z,1,True,132.97,5.481,0,0.0,4.226,5.36,153.4,False,50,0,inverse_distance_attack_angle_v1,2B (M+Z->MZ)

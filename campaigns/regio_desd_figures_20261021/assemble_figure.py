@@ -25,7 +25,6 @@ from plot_panels import (CAMP, LIT, SOURCES, REACTION, C_DET, C_LOD, INK, INK2, 
 PANEL_ORDER = ["Figure 2A", "Figure 2B", "Figure 2C", "Figure 2D",
                "Figure 4A", "Figure 4B", "Figure 4C",
                "Figure 5A", "Figure 5B", "Figure 5C"]
-CODE = {"DdaG": "Dd", "SfaB": "Sf", "AsbA": "aA", "AsbB": "aB", "AcsA": "Ac", "DesD": "De"}
 PANEL_ACID = {}
 for _n, (_p, _panels, _o) in SOURCES.items():
     PANEL_ACID.update(_panels)
@@ -67,6 +66,10 @@ def main():
         have = [e for e in (lab or {}) if (e, acid) in sc]
         ax.set_title(f"{panel.replace('Figure ', '')}   {REACTION.get(panel, '')}",
                      fontsize=9.2, color=INK, pad=5, loc="left")
+        _ro = (lab or {}).get(next(iter(lab), ""), {}).get("readout") if lab else None
+        ax.set_ylabel("norm. MS int.\n(SfaB = 1)" if _ro == "norm_ms"
+                      else ("log$_{10}$ rel. MS int." if _ro else ""),
+                      fontsize=7.4, color=INK3, labelpad=3)
         for s in ("top", "right"):
             ax.spines[s].set_visible(False)
         for s in ("left", "bottom"):
@@ -80,7 +83,7 @@ def main():
                     transform=ax.transAxes, ha="center", va="center",
                     fontsize=8.4, color=INK3)
             ax.set_xlim(*XLIM); ax.set_yticks([])
-            summary.append((panel, None, None, None, None))
+            summary.append((panel, None, None, None, None, False))
             continue
 
         A = {e: float(sc[(e, acid)]["A_deg"]) for e in have}
@@ -100,8 +103,8 @@ def main():
             ax.scatter(A[e], y, s=78, marker="o", zorder=4,
                        facecolor=col if gated[e] > 0 else SURFACE,
                        edgecolor=col, linewidths=1.7)
-            ax.annotate(CODE[e], (A[e], y), textcoords="offset points", xytext=(0, 7.5),
-                        ha="center", fontsize=6.6, color=INK3, zorder=5)
+            ax.annotate(e, (A[e], y), textcoords="offset points", xytext=(0, 8),
+                        ha="center", fontsize=7.0, color=INK2, zorder=5)
         if floor is not None:
             ax.axhline(floor, color=C_LOD, ls=(0, (2, 3)), lw=1.0, zorder=1)
         ax.set_xlim(*XLIM)          # SHARED across all cells -- enables direct comparison
@@ -118,7 +121,7 @@ def main():
         ax.text(0.03, 0.03, note, transform=ax.transAxes, fontsize=7.0,
                 va="bottom", ha="left", linespacing=1.45,
                 color=INK2 if (perfect is None or not perfect) else "#1b7a4b")
-        summary.append((panel, perfect, p_rank, rho, p_rho))
+        summary.append((panel, perfect, p_rank, rho, p_rho, True))
 
     fig.text(0.062, 0.922, "a", fontsize=15, fontweight="bold", color=INK)
     fig.text(0.082, 0.922, "modelled A (x, °) vs measured product signal (y) — one experimental "
@@ -179,11 +182,13 @@ def main():
     axd = fig.add_subplot(gs[3, :]); axd.set_facecolor(SURFACE); axd.axis("off")
     hdr = f"{'panel':<11}{'reaction':<20}{'active/total':<14}{'actives top-ranked by A':<26}{'exact p':<10}{'ρ(A, activity)':<16}"
     lines = [hdr, "─" * len(hdr)]
-    for panel, perfect, p_rank, rho, p_rho in summary:
+    for panel, perfect, p_rank, rho, p_rho, has_data in summary:
         lab = labels.get(panel, {})
         det = sum(1 for e in lab if not lab[e]["below_LOD"])
-        if perfect is None and p_rank is None and rho is None:
-            verdict, ps = "pending / no contrast", "—"
+        if not has_data:
+            verdict, ps = "pending", "—"
+        elif perfect is None:
+            verdict, ps = "no contrast (all detected)", "—"
         else:
             verdict = "YES" if perfect else ("NO" if perfect is not None else "no contrast")
             ps = f"{p_rank:.3f}" if p_rank else "—"
@@ -222,7 +227,7 @@ def main():
     fig.savefig(out, dpi=330, facecolor=SURFACE, bbox_inches="tight")
     fig.savefig(out.with_suffix(".pdf"), facecolor=SURFACE, bbox_inches="tight")
     plt.close(fig)
-    done = sum(1 for s in summary if s[1] is not None or s[2] is not None)
+    done = sum(1 for s in summary if s[5])
     print(f"wrote {out}\n      {out.with_suffix('.pdf')}")
     print(f"  panels with data: {done}/{len(PANEL_ORDER)}")
 
