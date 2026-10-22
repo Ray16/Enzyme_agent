@@ -90,36 +90,41 @@ properties:
 
 
 def pocket_residues(enz):
-    """Residues within POCKET_R of the step-1 reactive-centre midpoint (donor carboxyl C <-> PA)."""
+    """Residues with any heavy atom within POCKET_R of ATP's P-alpha in the fixed step-1 fold.
+
+    ANCHOR CHOICE -- this matters. The first version anchored the pocket on the MIDPOINT between
+    the donor carboxyl carbon and PA. That coupled the restraint to docking quality in the wrong
+    direction: a well-docked donor (DesD, D_h 3.98 A) put the midpoint in open space and yielded
+    only 2 pocket residues, while a badly-docked one (SfaB, 12.6 A) put it inside the protein and
+    yielded 11. Restraint strength would then have been inversely related to how well step 1
+    docked, confounding every step-2 comparison exactly as the fold bias confounds step 1.
+
+    Anchoring on PA instead is uniform across the panel (15-22 residues at 8 A for all six
+    enzymes), is independent of whether the DONOR docked, and is mechanistically right: the
+    acyl-adenylate carbonyl that the amine must attack sits adjacent to PA by construction. ATP is
+    reliably placed in every fold -- validate_outputs.py checks its 31 heavy atoms and that an Mg
+    coordinates a phosphate oxygen.
+    """
     stem = f"step1_{enz}__A"
     pdb = S1 / stem / f"boltz_results_{stem}" / "predictions" / stem / f"{stem}_model_0.pdb"
     if not pdb.exists():
         return None, None
-    prot, lig = [], {}
-    pa = None
+    prot, pa = {}, None
     for line in pdb.read_text().splitlines():
         if not line.startswith(("ATOM  ", "HETATM")) or line[16] not in (" ", "A"):
             continue
-        ch, name = line[21], line[12:16].strip()
-        el = line[76:78].strip().upper()
-        xyz = tuple(float(line[a:b]) for a, b in ((30, 38), (38, 46), (46, 54)))
-        if line.startswith("ATOM  ") and ch == "A":
-            if name == "CA":
-                prot.append((int(line[22:26]), xyz))
-        elif ch == "B" and name == "PA":
+        try:
+            xyz = tuple(float(line[a:b]) for a, b in ((30, 38), (38, 46), (46, 54)))
+        except ValueError:
+            continue
+        if line.startswith("ATOM  ") and line[21] == "A":
+            prot.setdefault(int(line[22:26]), []).append(xyz)
+        elif line[21] == "B" and line[12:16].strip() == "PA":
             pa = xyz
-        elif ch == "D":
-            lig.setdefault(el, []).append(xyz)
-    if pa is None or "C" not in lig:
+    if pa is None or not prot:
         return None, None
-    # the donor carboxyl carbon = the C bonded to >=2 O, nearest PA
-    cands = [c for c in lig["C"]
-             if sum(1 for o in lig.get("O", []) if math.dist(o, c) < 1.6) >= 2]
-    if not cands:
-        return None, None
-    cc = min(cands, key=lambda c: math.dist(c, pa))
-    mid = tuple((a + b) / 2 for a, b in zip(cc, pa))
-    res = sorted(i for i, xyz in prot if math.dist(xyz, mid) <= POCKET_R)
+    res = sorted(ri for ri, xs in prot.items()
+                 if any(math.dist(x, pa) <= POCKET_R for x in xs))
     return res, stem
 
 

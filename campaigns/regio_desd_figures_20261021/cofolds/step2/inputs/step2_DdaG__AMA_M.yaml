@@ -1,0 +1,29 @@
+version: 1
+# STEP-2 aminolysis | DdaG (E2JA32) | acyl-AMP(AMA) + amine(M) + 1 MG
+# electrophile = acyl-adenylate carbonyl C; nucleophile = neutral amine N; leaving group = AMP
+# ideal attack = Burgi-Dunitz ~105 deg (NOT step-1's ~180 in-line) -- scored separately
+# Fig panel: 5B (AMA+M->MAMA)
+# pocket from FIXED step-1 fold step1_DdaG__A (not the best-docked one), 17 residues within 8.0 A
+sequences:
+- protein:
+    id: A
+    sequence: MNKGENMNLEMWVQNISATFPWYAQLLRDKQADLSRLESLPLITEELLTQHYYHAENSFPGEHHSYLTSGTTSGKRKRIFYSDNDQRIYLQQRMDIIRDFCGEGHTRACADLGTGHAAATAGEIFQAMGCDVELIDFTRPIEQHIEVLNRFKPDIFFTMPMILDSLIATGKLDFQPKRIILLGDVASLNWQNKVADYFHIQPAQVLDLFGSIEIGSIAFYNHAQKRYQFDSYVRPEVVPVQSLYPGAKYGGDGGILLLTSFAREYFPAVRFVTNDLIEGFAQENVGGRTVYTYQRCLGRFAGEFKHGEKINLSDISDALANNLPYHKYDLADHEGGLVIRIAAKSIPTEVIEAIKHDLLARNPDIAQMISSGLVGDIRIQCVDAQEITGNVSKRRY
+    msa: /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/literature_cofolding/_shared_msa/DdaG_E2JA32.csv
+- ligand:
+    id: B
+    smiles: 'Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCCNC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O'
+- ligand:
+    id: C
+    smiles: 'NCCCCCC[NH3+]'
+- ligand:
+    id: D
+    ccd: MG
+constraints:
+- pocket:
+    binder: C
+    contacts: [["A", 67], ["A", 68], ["A", 69], ["A", 70], ["A", 77], ["A", 79], ["A", 115], ["A", 116], ["A", 159], ["A", 183], ["A", 210], ["A", 211], ["A", 212], ["A", 213], ["A", 299], ["A", 390], ["A", 393]]
+    max_distance: 10.0
+    force: true
+properties:
+- affinity:
+    binder: C

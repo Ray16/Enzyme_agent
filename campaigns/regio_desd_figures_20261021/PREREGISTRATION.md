@@ -189,3 +189,39 @@ dockers conditions on the model's own success and is precisely the move that man
 signal in the hydrolase campaign. It is reported to separate two distinct failure modes — "`A`
 mis-ranks catalysis" vs "there was no catalytic pose to score" — which is a mechanistic
 distinction worth making, not a p-value to be improved.
+
+### 2026-10-21, amendment 3 — the POOLED trend test (added at 19/58, before the panels completed)
+
+**Why.** Every per-panel test here has 4–6 enzymes, so none can demonstrate a trend on its own:
+the best attainable p is 0.048 and most panels cannot even reach that. The question "does `A`
+capture the trend at all?" is therefore **underpowered by construction panel-by-panel** and needs a
+pooled estimator. Declared now, with the data still incomplete, so the pooling rule cannot be
+chosen to suit the answer.
+
+**Why not just pool the raw numbers.** Readouts differ across figures — Fig 2A/2B are
+*normalised* MS intensity (SfaB ≡ 1), everything else is *log₁₀ relative* MS intensity with a
+floor — and an enzyme's `A` is shared across panels using the same acid donor. Pooling raw values
+would mix scales and double-count. So the pooling is on **within-panel ranks**.
+
+**TP1 — stratified rank-correlation (continuous trend).** For each panel with ≥3 detected enzymes,
+compute Spearman ρ(`A`, measured) among the **detected** enzymes only (censored values are not real
+numbers and cannot be ranked against each other). Combine the per-panel ρ across panels by
+**Stouffer's z**, weighting each panel by √(n−3). Pre-specified one-tailed, positive direction.
+Report the combined z, its p, and the per-panel ρ values so the combination is auditable.
+
+**TP2 — stratified binary separation (detected vs below LOD).** Pool all (enzyme, panel) cells and
+compute AUROC of `A` for detected vs below-LOD, with a **panel-stratified permutation null**
+(labels permuted *within* panel only, 20 000 draws). Panel stratification is mandatory: the
+marginal detection rate differs enormously between panels (2A is 6/6, 5C is 1/4), so an
+unstratified null would be badly anticonservative.
+
+**TP3 — the same two tests restricted to `n_gated > 0`**, labelled secondary per amendment 2.
+
+**Pre-specified interpretation, fixed now:**
+- TP1/TP2 significant and positive → `A` captures the trend despite per-panel noise.
+- Not significant → report as **"no detectable trend at this n"**, explicitly NOT as "`A` is
+  refuted". With ~10 strata of 4–6 enzymes the pooled design still has modest power, and a null is
+  consistent with a real-but-small effect.
+- **Either way, report alongside it:** ρ(`A`, `n_gated`) over all ensembles, and the ANL-vs-NIS
+  fold comparison. A positive TP1 that disappears within fold family is a fold artifact, not a
+  catalytic signal, and must be reported as such.

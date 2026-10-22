@@ -1,0 +1,91 @@
+stem,enzyme,donor_code,acceptor_code,acyl_smiles,amine_smiles,n_pocket,pocket_src,panels
+step2_DdaG__A_X,DdaG,A,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,17,step1_DdaG__A,2A (X+A->XA)
+step2_DdaG__Z_M,DdaG,Z,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],17,step1_DdaG__A,2B (M+Z->MZ)
+step2_DdaG__H_H,DdaG,H,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],17,step1_DdaG__A,2C (H+H->HH)
+step2_DdaG__H_M,DdaG,H,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],17,step1_DdaG__A,2D (M+H->MH)
+step2_DdaG__G_MA,DdaG,G,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],17,step1_DdaG__A,4A (MA+G->GMA)  [clean step-2 test: G is activated by all]
+step2_DdaG__MA_X,DdaG,MA,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,17,step1_DdaG__A,4B (MA+X->MAX)
+step2_DdaG__MA_H,DdaG,MA,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],17,step1_DdaG__A,4C (MA+H->MAH)
+step2_DdaG__H_MA,DdaG,H,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],17,step1_DdaG__A,"4C (H+MA->HMA, the other regiochemistry)"
+step2_DdaG__A_MAM,DdaG,A,MAM,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)NCCCCCC[NH3+],17,step1_DdaG__A,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
+step2_DdaG__AMA_M,DdaG,AMA,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCCNC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],17,step1_DdaG__A,5B (AMA+M->MAMA)
+step2_DdaG__MA_MA,DdaG,MA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],17,step1_DdaG__A,5C (MA+MA->MAMA)
+step2_DdaG__MA_XA,DdaG,MA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,17,step1_DdaG__A,7 (MA+XA->MAXA)
+step2_DdaG__XA_MA,DdaG,XA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],17,step1_DdaG__A,7 (XA+MA->XAMA)
+step2_DdaG__XA_XA,DdaG,XA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,17,step1_DdaG__A,7 (XA+XA->XAXA)
+step2_DdaG__MS_P,DdaG,MS,P,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCC(=O)[O-],17,step1_DdaG__A,6 (cascade MS+P->MSP)
+step2_SfaB__A_X,SfaB,A,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,22,step1_SfaB__A,2A (X+A->XA)
+step2_SfaB__Z_M,SfaB,Z,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],22,step1_SfaB__A,2B (M+Z->MZ)
+step2_SfaB__H_H,SfaB,H,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],22,step1_SfaB__A,2C (H+H->HH)
+step2_SfaB__H_M,SfaB,H,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],22,step1_SfaB__A,2D (M+H->MH)
+step2_SfaB__G_MA,SfaB,G,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],22,step1_SfaB__A,4A (MA+G->GMA)  [clean step-2 test: G is activated by all]
+step2_SfaB__MA_X,SfaB,MA,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,22,step1_SfaB__A,4B (MA+X->MAX)
+step2_SfaB__MA_H,SfaB,MA,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],22,step1_SfaB__A,4C (MA+H->MAH)
+step2_SfaB__H_MA,SfaB,H,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],22,step1_SfaB__A,"4C (H+MA->HMA, the other regiochemistry)"
+step2_SfaB__A_MAM,SfaB,A,MAM,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)NCCCCCC[NH3+],22,step1_SfaB__A,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
+step2_SfaB__AMA_M,SfaB,AMA,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCCNC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],22,step1_SfaB__A,5B (AMA+M->MAMA)
+step2_SfaB__MA_MA,SfaB,MA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],22,step1_SfaB__A,5C (MA+MA->MAMA)
+step2_SfaB__MA_XA,SfaB,MA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,22,step1_SfaB__A,7 (MA+XA->MAXA)
+step2_SfaB__XA_MA,SfaB,XA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],22,step1_SfaB__A,7 (XA+MA->XAMA)
+step2_SfaB__XA_XA,SfaB,XA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,22,step1_SfaB__A,7 (XA+XA->XAXA)
+step2_SfaB__MS_P,SfaB,MS,P,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCC(=O)[O-],22,step1_SfaB__A,6 (cascade MS+P->MSP)
+step2_AsbA__A_X,AsbA,A,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,17,step1_AsbA__A,2A (X+A->XA)
+step2_AsbA__Z_M,AsbA,Z,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],17,step1_AsbA__A,2B (M+Z->MZ)
+step2_AsbA__H_H,AsbA,H,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],17,step1_AsbA__A,2C (H+H->HH)
+step2_AsbA__H_M,AsbA,H,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],17,step1_AsbA__A,2D (M+H->MH)
+step2_AsbA__G_MA,AsbA,G,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],17,step1_AsbA__A,4A (MA+G->GMA)  [clean step-2 test: G is activated by all]
+step2_AsbA__MA_X,AsbA,MA,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,17,step1_AsbA__A,4B (MA+X->MAX)
+step2_AsbA__MA_H,AsbA,MA,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],17,step1_AsbA__A,4C (MA+H->MAH)
+step2_AsbA__H_MA,AsbA,H,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],17,step1_AsbA__A,"4C (H+MA->HMA, the other regiochemistry)"
+step2_AsbA__A_MAM,AsbA,A,MAM,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)NCCCCCC[NH3+],17,step1_AsbA__A,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
+step2_AsbA__AMA_M,AsbA,AMA,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCCNC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],17,step1_AsbA__A,5B (AMA+M->MAMA)
+step2_AsbA__MA_MA,AsbA,MA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],17,step1_AsbA__A,5C (MA+MA->MAMA)
+step2_AsbA__MA_XA,AsbA,MA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,17,step1_AsbA__A,7 (MA+XA->MAXA)
+step2_AsbA__XA_MA,AsbA,XA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],17,step1_AsbA__A,7 (XA+MA->XAMA)
+step2_AsbA__XA_XA,AsbA,XA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,17,step1_AsbA__A,7 (XA+XA->XAXA)
+step2_AsbA__MS_P,AsbA,MS,P,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCC(=O)[O-],17,step1_AsbA__A,6 (cascade MS+P->MSP)
+step2_AsbB__A_X,AsbB,A,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,16,step1_AsbB__A,2A (X+A->XA)
+step2_AsbB__Z_M,AsbB,Z,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],16,step1_AsbB__A,2B (M+Z->MZ)
+step2_AsbB__H_H,AsbB,H,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],16,step1_AsbB__A,2C (H+H->HH)
+step2_AsbB__H_M,AsbB,H,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],16,step1_AsbB__A,2D (M+H->MH)
+step2_AsbB__G_MA,AsbB,G,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],16,step1_AsbB__A,4A (MA+G->GMA)  [clean step-2 test: G is activated by all]
+step2_AsbB__MA_X,AsbB,MA,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,16,step1_AsbB__A,4B (MA+X->MAX)
+step2_AsbB__MA_H,AsbB,MA,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],16,step1_AsbB__A,4C (MA+H->MAH)
+step2_AsbB__H_MA,AsbB,H,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],16,step1_AsbB__A,"4C (H+MA->HMA, the other regiochemistry)"
+step2_AsbB__A_MAM,AsbB,A,MAM,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)NCCCCCC[NH3+],16,step1_AsbB__A,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
+step2_AsbB__AMA_M,AsbB,AMA,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCCNC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],16,step1_AsbB__A,5B (AMA+M->MAMA)
+step2_AsbB__MA_MA,AsbB,MA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],16,step1_AsbB__A,5C (MA+MA->MAMA)
+step2_AsbB__MA_XA,AsbB,MA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,16,step1_AsbB__A,7 (MA+XA->MAXA)
+step2_AsbB__XA_MA,AsbB,XA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],16,step1_AsbB__A,7 (XA+MA->XAMA)
+step2_AsbB__XA_XA,AsbB,XA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,16,step1_AsbB__A,7 (XA+XA->XAXA)
+step2_AsbB__MS_P,AsbB,MS,P,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCC(=O)[O-],16,step1_AsbB__A,6 (cascade MS+P->MSP)
+step2_AcsA__A_X,AcsA,A,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,15,step1_AcsA__A,2A (X+A->XA)
+step2_AcsA__Z_M,AcsA,Z,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],15,step1_AcsA__A,2B (M+Z->MZ)
+step2_AcsA__H_H,AcsA,H,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],15,step1_AcsA__A,2C (H+H->HH)
+step2_AcsA__H_M,AcsA,H,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],15,step1_AcsA__A,2D (M+H->MH)
+step2_AcsA__G_MA,AcsA,G,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],15,step1_AcsA__A,4A (MA+G->GMA)  [clean step-2 test: G is activated by all]
+step2_AcsA__MA_X,AcsA,MA,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,15,step1_AcsA__A,4B (MA+X->MAX)
+step2_AcsA__MA_H,AcsA,MA,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],15,step1_AcsA__A,4C (MA+H->MAH)
+step2_AcsA__H_MA,AcsA,H,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],15,step1_AcsA__A,"4C (H+MA->HMA, the other regiochemistry)"
+step2_AcsA__A_MAM,AcsA,A,MAM,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)NCCCCCC[NH3+],15,step1_AcsA__A,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
+step2_AcsA__AMA_M,AcsA,AMA,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCCNC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],15,step1_AcsA__A,5B (AMA+M->MAMA)
+step2_AcsA__MA_MA,AcsA,MA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],15,step1_AcsA__A,5C (MA+MA->MAMA)
+step2_AcsA__MA_XA,AcsA,MA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,15,step1_AcsA__A,7 (MA+XA->MAXA)
+step2_AcsA__XA_MA,AcsA,XA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],15,step1_AcsA__A,7 (XA+MA->XAMA)
+step2_AcsA__XA_XA,AcsA,XA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,15,step1_AcsA__A,7 (XA+XA->XAXA)
+step2_AcsA__MS_P,AcsA,MS,P,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCC(=O)[O-],15,step1_AcsA__A,6 (cascade MS+P->MSP)
+step2_DesD__A_X,DesD,A,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,18,step1_DesD__A,2A (X+A->XA)
+step2_DesD__Z_M,DesD,Z,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],18,step1_DesD__A,2B (M+Z->MZ)
+step2_DesD__H_H,DesD,H,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],18,step1_DesD__A,2C (H+H->HH)
+step2_DesD__H_M,DesD,H,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],18,step1_DesD__A,2D (M+H->MH)
+step2_DesD__G_MA,DesD,G,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],18,step1_DesD__A,4A (MA+G->GMA)  [clean step-2 test: G is activated by all]
+step2_DesD__MA_X,DesD,MA,X,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(C[NH3+])cc1,18,step1_DesD__A,4B (MA+X->MAX)
+step2_DesD__MA_H,DesD,MA,H,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCC(=O)[O-],18,step1_DesD__A,4C (MA+H->MAH)
+step2_DesD__H_MA,DesD,H,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],18,step1_DesD__A,"4C (H+MA->HMA, the other regiochemistry)"
+step2_DesD__A_MAM,DesD,A,MAM,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)NCCCCCC[NH3+],18,step1_DesD__A,5A (MAM+A->MAMA)  [clean step-2 test: A is activated by all]
+step2_DesD__AMA_M,DesD,AMA,M,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCCNC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O,NCCCCCC[NH3+],18,step1_DesD__A,5B (AMA+M->MAMA)
+step2_DesD__MA_MA,DesD,MA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],18,step1_DesD__A,5C (MA+MA->MAMA)
+step2_DesD__MA_XA,DesD,MA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,18,step1_DesD__A,7 (MA+XA->MAXA)
+step2_DesD__XA_MA,DesD,XA,MA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCCCCCCNC(=O)CCCCC(=O)[O-],18,step1_DesD__A,7 (XA+MA->XAMA)
+step2_DesD__XA_XA,DesD,XA,XA,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCc2ccc(C[NH3+])cc2)[C@@H](O)[C@H]1O,NCc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,18,step1_DesD__A,7 (XA+XA->XAXA)
+step2_DesD__MS_P,DesD,MS,P,Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCC(=O)NCCCCCC[NH3+])[C@@H](O)[C@H]1O,NCCCCCCC(=O)[O-],18,step1_DesD__A,6 (cascade MS+P->MSP)

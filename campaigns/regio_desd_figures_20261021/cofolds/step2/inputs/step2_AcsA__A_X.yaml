@@ -1,0 +1,29 @@
+version: 1
+# STEP-2 aminolysis | AcsA (E0SIF5) | acyl-AMP(A) + amine(X) + 1 MG
+# electrophile = acyl-adenylate carbonyl C; nucleophile = neutral amine N; leaving group = AMP
+# ideal attack = Burgi-Dunitz ~105 deg (NOT step-1's ~180 in-line) -- scored separately
+# Fig panel: 2A (X+A->XA)
+# pocket from FIXED step-1 fold step1_AcsA__A (not the best-docked one), 15 residues within 8.0 A
+sequences:
+- protein:
+    id: A
+    sequence: MEGNVMDSNAMKTTSHYKDAGHCVMQDLVDCLLAEEFFGPQLLALYTPDEWRQQYGQPAPFGALDSAARLWRWCSDEREQRHLVVALRPGITQRWEKVPDTLVYAWQQGGNDWRELEPESFMNLVFAGQHGEEGNAGDNNAAENNAKGQALFLDVLNTSVEQTALSREHRIDTDNLLARGNADFFHVMEQWASLRDRPFHPTAKAKQGLNAEEYRRYVAEFAEPVALNWVAVAKDRLQCGDGISATADQYPAGYLLPQAEQVALQQELAARGIADTHIALPVHPWQFDHILETQLGDAFRNGDCHRLDFSAARYLPTSSLRSMTPCFASADYLKLPMAVYSLGASRYLPAVKMINGGLSEALLRQARDKDTVLQERLYLCDEGKWWAFMPPQATLFDEAPRHLSAMVRSYPSALLDDPDYRLMPMAALGTPLPGSRRHFFDDWLAYRGLPTNADSVLTLFAELCHCFFDINFRMFRLGMLGEIHGQNAVLVWKAGQAHGLLLRDHDSLRIHVPTLEQNGMQDPVYRIKKGHANTLYHERLDDLLFWLQTLGIQVNMRAIIETLSLTYEVEAATLWGVMRREINGAIDRAGFAADTQAMLKTRLFDAPNWPQKLLITPMIARAGGPGSMPFGKGEVINPFQSVIVNKQ
+    msa: /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/msa/4895e6d902318c20.csv
+- ligand:
+    id: B
+    smiles: 'Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O'
+- ligand:
+    id: C
+    smiles: 'NCc1ccc(C[NH3+])cc1'
+- ligand:
+    id: D
+    ccd: MG
+constraints:
+- pocket:
+    binder: C
+    contacts: [["A", 318], ["A", 319], ["A", 320], ["A", 321], ["A", 334], ["A", 342], ["A", 346], ["A", 408], ["A", 482], ["A", 484], ["A", 486], ["A", 487], ["A", 504], ["A", 506], ["A", 507]]
+    max_distance: 10.0
+    force: true
+properties:
+- affinity:
+    binder: C

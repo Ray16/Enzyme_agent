@@ -1,0 +1,29 @@
+version: 1
+# STEP-2 aminolysis | SfaB (A0A2H4T912) | acyl-AMP(H) + amine(M) + 1 MG
+# electrophile = acyl-adenylate carbonyl C; nucleophile = neutral amine N; leaving group = AMP
+# ideal attack = Burgi-Dunitz ~105 deg (NOT step-1's ~180 in-line) -- scored separately
+# Fig panel: 2D (M+H->MH)
+# pocket from FIXED step-1 fold step1_SfaB__A (not the best-docked one), 22 residues within 8.0 A
+sequences:
+- protein:
+    id: A
+    sequence: MAEFNEMKTTGDKLYHPELRTLVETARFHAERQPETPAILFEGGTTTYGQLHEESNRIAHAIRAAGAAPGTRVAYLGKESAHYYEILFGCAKSGTVLVPINWRLTAHEVSHILQDSGTELLFLEEEFAPILDRLPDGPPATVVRLGVPEGFAAWKAAHPATEPDVDAGPDTPFAQIYTSGTTGLPKGVVLAHRSCFAIRDALASEGLEWIDWRAGDVALVGIPGFHVGGLWWATQNFNAGVTVVVMRAFAAHAAVELIRDLGVTTACVVPAMLRLMLAEPGITPEHFTTLRKIVYGGSPISEALLEESLAMFGSEFAQIYGLTETGNTACCLPPSAHVPGSPRMKAAGHPYPGIRAKVIDAEGRELPTGSVGEVCLHTPARMVEYWGLPDKTAETLVDGWIHTGDAGYVDEDGYVFISDRIKDAVIVAGENVYPAEIENVLEGHPGVADAVVVGAPDERWGETVHAFVVPAPGHEPTPRDLHRFLVDRLASFKLPAAYEFIDEVPRNPSGKILRRELRERFWSGSDRKVN
+    msa: /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/literature_cofolding/_shared_msa/SfaB_A0A2H4T912.csv
+- ligand:
+    id: B
+    smiles: 'Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O'
+- ligand:
+    id: C
+    smiles: 'NCCCCCC[NH3+]'
+- ligand:
+    id: D
+    ccd: MG
+constraints:
+- pocket:
+    binder: C
+    contacts: [["A", 176], ["A", 177], ["A", 178], ["A", 179], ["A", 180], ["A", 181], ["A", 188], ["A", 226], ["A", 227], ["A", 228], ["A", 297], ["A", 321], ["A", 322], ["A", 323], ["A", 324], ["A", 403], ["A", 405], ["A", 420], ["A", 422], ["A", 507], ["A", 509], ["A", 511]]
+    max_distance: 10.0
+    force: true
+properties:
+- affinity:
+    binder: C

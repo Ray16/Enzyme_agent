@@ -1,0 +1,29 @@
+version: 1
+# STEP-2 aminolysis | AsbB (Q81RQ8) | acyl-AMP(H) + amine(H) + 1 MG
+# electrophile = acyl-adenylate carbonyl C; nucleophile = neutral amine N; leaving group = AMP
+# ideal attack = Burgi-Dunitz ~105 deg (NOT step-1's ~180 in-line) -- scored separately
+# Fig panel: 2C (H+H->HH)
+# pocket from FIXED step-1 fold step1_AsbB__A (not the best-docked one), 16 residues within 8.0 A
+sequences:
+- protein:
+    id: A
+    sequence: MRMDMYHTKILKAIESEDYISVRRRVLRQLVESLIYEGIITPARIEKEEQILFLIQGLDEDNKSVTYECYGRERITFGRISIDSLIVRVQDGKQEIQSVAQFLEEVFRVVNVEQTKLDSFIHELEQTIFKDTIAQYERCNKLKYTQKSYDELENHLIDGHPYHPSYKARIGFQYRDNFRYGYEFMRPIKLIWIAAHKKNATVGYENEVIYDKILKSEVGERKLEAYKERIHSMGCDPKQYLFIPVHPWQWENFIISNYAEDIQDKGIIYLGESADDYCAQQSMRTLRNVTNPKRPYVKVSLNILNTSTLRTLKPYSVASAPAISNWLSNVVSQDSYLRDESRVILLKEFSSVMYDTNKKATYGSLGCIWRESVHHYLGEQEDAVPFNGLYAKEKDGTPIIDAWLNKYGIENWLRLLIQKAIIPVIHLVVEHGIALESHGQNMILVHKEGLPVRIALKDFHEGLEFYRPFLKEMNKCPDFTKMHKTYANGKMNDFFEMDRIECLQEMVLDALFLFNVGELAFVLADKYEWKEESFWMIVVEEIENHFRKYPHLKDRFESIQLYTPTFYAEQLTKRRLYIDVESLVHEVPNPLYRARQLNIQKSVATGGNYANC
+    msa: /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/msa/eed1e8246b7f9800.csv
+- ligand:
+    id: B
+    smiles: 'Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC[NH3+])[C@@H](O)[C@H]1O'
+- ligand:
+    id: C
+    smiles: 'NCCCCCC(=O)[O-]'
+- ligand:
+    id: D
+    ccd: MG
+constraints:
+- pocket:
+    binder: C
+    contacts: [["A", 281], ["A", 282], ["A", 283], ["A", 284], ["A", 285], ["A", 298], ["A", 305], ["A", 306], ["A", 308], ["A", 309], ["A", 310], ["A", 440], ["A", 441], ["A", 457], ["A", 458], ["A", 461]]
+    max_distance: 10.0
+    force: true
+properties:
+- affinity:
+    binder: C

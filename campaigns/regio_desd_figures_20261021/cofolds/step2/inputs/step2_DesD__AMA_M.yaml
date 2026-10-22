@@ -1,0 +1,29 @@
+version: 1
+# STEP-2 aminolysis | DesD (PDB:7TGM) | acyl-AMP(AMA) + amine(M) + 1 MG
+# electrophile = acyl-adenylate carbonyl C; nucleophile = neutral amine N; leaving group = AMP
+# ideal attack = Burgi-Dunitz ~105 deg (NOT step-1's ~180 in-line) -- scored separately
+# Fig panel: 5B (AMA+M->MAMA)
+# pocket from FIXED step-1 fold step1_DesD__A (not the best-docked one), 18 residues within 8.0 A
+sequences:
+- protein:
+    id: A
+    sequence: MSLTDAVAHLSPERWEEANRLLVRKALAEFAHERLFTPEPADGQDGRYVVRSDDGLTSYRFTAVRRALDHWQVDAGSITRTRDGAELPLAALDFFIELRHTLGLSDEILPVYLEEISSTLSGTCYKLTKPQVTAAGLLEGGFQALESGMTEGHPCFVANNGRLGFGVDEYLAYAPETAHPVRLVWLAAHRSRAAFTAGAGIDYASFVRQELGEETVERFDGVLRGRGLDPADYLLIPVHPWQWWNKLSVTFAAEVARQNLVCLGESDDEYLAQQSIRTFFNATHPEKHYVKTALSVLNMGFMRGLSAAYMEATPAINDWLDRLIDNDPVLKSTGLSIIRERAAVGYRHLEYEAATDRYSPYRKMLAALWRESPVPALRDGESLTTMAALVHVDHEGRSVAGELIARSGLAPTAWLRHYLRAYYTPLLHSFYAYDLAFMPHGENTILVLKDGVVQRAVYKDIAEEIVVMDPDAVLPPEVRRVRAEVPEDMKLLSIFTDVFDCFFRFLAAGLATEEVLAEDDFWRTVAEVTREYQEAHPELDDRFRQYDLFAPEFALSCLNRLQLRDNRQMVDLADPSAALQLVGTLRNPLAGL
+    msa: /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/msa/8af268734d6de1b6.csv
+- ligand:
+    id: B
+    smiles: 'Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)NCCCCCCNC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O'
+- ligand:
+    id: C
+    smiles: 'NCCCCCC[NH3+]'
+- ligand:
+    id: D
+    ccd: MG
+constraints:
+- pocket:
+    binder: C
+    contacts: [["A", 153], ["A", 274], ["A", 275], ["A", 277], ["A", 278], ["A", 291], ["A", 299], ["A", 301], ["A", 303], ["A", 370], ["A", 438], ["A", 440], ["A", 442], ["A", 443], ["A", 459], ["A", 460], ["A", 463], ["A", 464]]
+    max_distance: 10.0
+    force: true
+properties:
+- affinity:
+    binder: C
