@@ -1,3 +1,3 @@
 
-checked 26 ensembles present on disk
+checked 28 ensembles present on disk
 ALL STRUCTURAL CHECKS PASSED

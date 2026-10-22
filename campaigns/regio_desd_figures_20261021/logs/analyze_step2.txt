@@ -1,1 +1,3 @@
-no step-2 ensemble complete yet (90 folding)
+scored 1 step-2 ensembles -> /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/step2_scores.csv   (89 still folding)
+stem                                    BD  |dev|    D_h  n_gated  docked
+step2_DdaG__A_X                       99.5    5.5   4.00       25  True

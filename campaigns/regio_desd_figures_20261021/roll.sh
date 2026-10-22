@@ -22,4 +22,6 @@ python3 analyze_step2.py  > logs/analyze_step2.txt 2>&1 || true   # step 2 lags 
 python3 analyze_control.py > logs/analyze_control.txt 2>&1 || true # control may not be folded yet
 python3 plot_panels.py
 python3 plot_diagnostics.py > logs/plot_diagnostics.txt 2>&1
+python3 plot_two_step.py > logs/plot_two_step.txt 2>&1 || true
+python3 run_tests.py > logs/run_tests.txt 2>&1 || true   # regenerates analysis/PREREGISTERED_RESULTS.md
 python3 assemble_figure.py | tail -2

@@ -1,0 +1,2 @@
+stem,enzyme,donor_code,acceptor_code,BD_deg,dev_from_ideal,D_h_A,n_gated,gated_frac,min_d,median_d,n_poses,n_extract_fail,docked,metric_id,panels
+step2_DdaG__A_X,DdaG,A,X,99.48,5.52,4.002,25,0.5,2.954,4.056,50,0,True,inverse_distance_attack_angle_v1|burgi_dunitz_N_C_O,2A (X+A->XA)
