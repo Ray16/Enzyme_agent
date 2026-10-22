@@ -53,6 +53,7 @@ step1_AsbA__XA,AsbA,XA,XA oligomer (donor form),1,[NH3+]Cc1ccc(CNC(=O)CCCCC(=O)[
 step1_AsbB__XA,AsbB,XA,XA oligomer (donor form),1,[NH3+]Cc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,False,7 (XA+MA->XAMA / MAXA)
 step1_AcsA__XA,AcsA,XA,XA oligomer (donor form),1,[NH3+]Cc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,False,7 (XA+MA->XAMA / MAXA)
 step1_DesD__XA,DesD,XA,XA oligomer (donor form),1,[NH3+]Cc1ccc(CNC(=O)CCCCC(=O)[O-])cc1,True,7 (XA+MA->XAMA / MAXA)
+step1_DesD__HSC,DesD,HSC,HSC oligomer (donor form),1,[O-]C(=O)CCC(=O)N(O)CCCCC[NH3+],True,POSITIVE CONTROL vs PDB 7TGM (native DesD donor)
 step1_DesD__A__2mg,DesD,A,adipic acid,2,[O-]C(=O)CCCCC(=O)[O-],False,Mg sensitivity (pre-registered; MECHANISM.md sec 2)
 step1_DesD__Z__2mg,DesD,Z,azelaic acid,2,[O-]C(=O)CCCCCCCC(=O)[O-],False,Mg sensitivity (pre-registered; MECHANISM.md sec 2)
 step1_DesD__H__2mg,DesD,H,6-aminohexanoic acid,2,[NH3+]CCCCCC(=O)[O-],False,Mg sensitivity (pre-registered; MECHANISM.md sec 2)

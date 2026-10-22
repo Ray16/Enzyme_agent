@@ -34,6 +34,17 @@ MONOMER_DONOR_OVERRIDE = {
     "P": "[NH3+]CCCCCCC(=O)[O-]",  # 7-aminoheptanoic acid (regio paper letter P)
 }
 
+# --- POSITIVE CONTROL -------------------------------------------------------------------------
+# HSC = hydroxy-N-succinyl-cadaverine, DesD's NATIVE donor, and the exact ligand `I3U` resolved in
+# PDB 7TGM alongside the acyl-adenylate mimic AMS (`LMS`). Folding DesD + ATP + Mg + HSC lets us ask
+# whether Boltz reproduces the CRYSTALLOGRAPHIC binding mode -- the one thing the rest of the
+# campaign's validation cannot establish (it checks inputs, not whether the chemistry lands in the
+# right place). Verified: C9H18N2O4, charge 0, matches I3U exactly.
+CONTROL_DONOR = {
+    "HSC": "[O-]C(=O)CCC(=O)N(O)CCCCC[NH3+]",
+}
+EXPECT_CONTROL = {"HSC": ("C9H18N2O4", 0)}
+
 # --- donor forms: the reacting carboxylate is deprotonated, distal amines are [NH3+] -----------
 DONOR = {
     # diads
@@ -80,7 +91,8 @@ def verify():
     bad = []
     for label, table, expect in (("donor", DONOR, EXPECT_DONOR),
                                  ("acceptor", ACCEPTOR, EXPECT_ACCEPTOR),
-                                 ("mono-ovr", MONOMER_DONOR_OVERRIDE, EXPECT_MONOMER_OVERRIDE)):
+                                 ("mono-ovr", MONOMER_DONOR_OVERRIDE, EXPECT_MONOMER_OVERRIDE),
+                                 ("control", CONTROL_DONOR, EXPECT_CONTROL)):
         for code, smi in table.items():
             m = Chem.MolFromSmiles(smi)
             if m is None:

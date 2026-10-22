@@ -42,6 +42,9 @@ STEP1_JOBS = [
     ("MS",  "6 (cascade: MS+P->MSP, DesD)", ["DesD"]),
     ("AMA", "5B (AMA+M->MAMA)", ["DdaG", "SfaB", "AcsA", "DesD"]),
     ("XA",  "7 (XA+MA->XAMA / MAXA)", ["DesD"]),
+    # POSITIVE CONTROL: DesD + its native donor HSC, the ligand resolved in PDB 7TGM. Scored
+    # against the crystal pose, not against an activity label. See MECHANISM.md.
+    ("HSC", "POSITIVE CONTROL vs PDB 7TGM (native DesD donor)", ["DesD"]),
 ]
 # pre-registered Mg sensitivity: DesD only, 2 Mg, on the three Fig-2 donors
 MG_SENSITIVITY = [("DesD", code, 2) for code in ("A", "Z", "H")]
@@ -77,7 +80,7 @@ properties:
 def acid_smiles():
     """Monomers from the canonical reference; oligomers from the verified builder."""
     sys.path.insert(0, str(CAMP))
-    from substrates_oligomer import DONOR, MONOMER_DONOR_OVERRIDE
+    from substrates_oligomer import DONOR, MONOMER_DONOR_OVERRIDE, CONTROL_DONOR
     smi, name = {}, {}
     for row in csv.DictReader(REF.open()):
         if "regio" in row["paper"] or row["letter_code"] == "G":
@@ -89,7 +92,7 @@ def acid_smiles():
     for code, s in MONOMER_DONOR_OVERRIDE.items():
         if code in smi:
             smi[code] = s
-    for code, s in DONOR.items():
+    for code, s in {**DONOR, **CONTROL_DONOR}.items():
         smi[code] = s
         name[code] = f"{code} oligomer (donor form)"
     return smi, name
@@ -112,7 +115,8 @@ def main():
 
     # fold every donor against all six enzymes; `assayed` records which cells the paper labelled
     jobs = [(e, code, 1, panel, e in assayed)
-            for code, panel, assayed in STEP1_JOBS for e in ALL6]
+            for code, panel, assayed in STEP1_JOBS
+            for e in (assayed if code == "HSC" else ALL6)]
     jobs += [(e, c, n, "Mg sensitivity (pre-registered; MECHANISM.md sec 2)", False)
              for e, c, n in MG_SENSITIVITY]
 
@@ -147,7 +151,8 @@ def main():
     print(f"  {n_lab} labelled (enter the confirmatory tests), "
           f"{len(rows) - n_lab} unlabelled predictions / controls")
     for code, _panel, assayed in STEP1_JOBS:
-        print(f"  acid {code:4s} x 6 enzymes   (paper assayed {len(assayed)}: {','.join(assayed)})")
+        n = len(assayed) if code == "HSC" else 6
+        print(f"  acid {code:4s} x {n} enzyme(s)   (paper assayed {len(assayed)}: {','.join(assayed)})")
     print(f"  + {len(MG_SENSITIVITY)} DesD 2-Mg sensitivity folds")
 
 

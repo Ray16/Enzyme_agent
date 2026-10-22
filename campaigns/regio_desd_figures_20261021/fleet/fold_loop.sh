@@ -18,7 +18,10 @@ export OMP_NUM_THREADS=4 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_TH
 export TOKENIZERS_PARALLELISM=false
 
 # PREFLIGHT: a node that can't run the real import chain must NOT claim anything.
-if ! python -c "import sys, torch, mpi4py.MPI, boltz; sys.exit(0 if torch.cuda.is_available() else 1)" >/dev/null 2>&1; then
+# NOTE: the inherited version of this check also required `mpi4py.MPI`. The current boltz-2 env
+# (torch 2.10.0+cu128) has no mpi4py at all and `import boltz` succeeds without it, so that clause
+# rejected EVERY node in the fleet. Check only what boltz actually needs to run.
+if ! python -c "import sys, torch, boltz; sys.exit(0 if torch.cuda.is_available() else 1)" >/dev/null 2>&1; then
   echo "$H gpu$G PREFLIGHT FAIL -> no-op"; exit 3
 fi
 

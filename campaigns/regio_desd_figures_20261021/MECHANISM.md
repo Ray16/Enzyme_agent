@@ -85,9 +85,41 @@ sensitivity check with a fixed threshold**, not a search for a better-scoring se
 
 Step 2 is where mechanism matters most, because the electrophile changes identity:
 
-- Nucleophile: the acceptor **amine nitrogen, neutral `-NH2`** (the protonated ammonium is not
-  nucleophilic). Distal functional groups are kept in their pH-7 state: a second amine as `[NH3+]`,
-  an ω-acid as `[O-]`.
+- Nucleophile: the acceptor **amine nitrogen, neutral `-NH2`**. Distal functional groups are kept
+  in their pH-7 state: a second amine as `[NH3+]`, an ω-acid as `[O-]`.
+
+### The protonation rule (this governs every ligand in the campaign)
+
+The convention is **not** "dominant species at pH 7". It is:
+
+> **The reacting group is modelled in its REACTIVE form; every spectator group is modelled in its
+> DOMINANT form at pH 7.**
+
+A primary alkylamine has pKa ≈ 10.5, so at pH 7 it is >99.9% `[NH3+]`. But `[NH3+]` has no lone
+pair and **cannot attack a carbonyl** — deprotonation to neutral `-NH2` is a *prerequisite for
+nucleophilicity*. So the attacking nitrogen is modelled neutral even though that is a minor
+microspecies: it is the only kinetically competent one. The equilibrium population is irrelevant to
+the geometric question being asked.
+
+The same molecule therefore takes different protonation states in different roles, and the two
+forms must never share a SMILES string:
+
+| Molecule | Role | Reacting group | Modelled as | Why |
+|---|---|---|---|---|
+| H (6-aminohexanoic acid) | step-1 **donor** | the carboxylate | `[NH3+]CCCCCC(=O)[O-]` | amine is a **spectator** → dominant form, and a neutral `-NH2` here would be a *second nucleophile competing for Pα* |
+| H | step-2 **acceptor** | the amine | `NCCCCCC(=O)[O-]` | amine is the **nucleophile** → reactive form |
+| MAM triad | step-2 **acceptor** | *one* terminal amine | `NCCCCCCNC(=O)CCCCC(=O)NCCCCCC[NH3+]` | only one N reacts; the distal N is a spectator → stays `[NH3+]` |
+
+**Accepted consequence:** an acceptor's net formal charge is then the *reactive-microspecies*
+charge, not the pH-7 equilibrium charge (e.g. acceptor MA is −1, donor MA is 0). This is
+deliberate. `substrates_oligomer.py` verifies each form against its own expected formula and charge
+so the asymmetry is explicit and cannot drift.
+
+**Residual risk, recorded:** neutralising the attacking amine removes a salt bridge / cation-π
+contact that may be part of how these enzymes *select* their amine substrate, so a step-2 pose
+could under-rate electrostatically-driven recognition. For the diamine and triad acceptors this is
+partly mitigated — the distal nitrogen stays cationic — but for a mono-amine acceptor it is not.
+Flagged as a setup limitation, not corrected, since the alternative breaks nucleophilicity.
 - Electrophile: the **carbonyl carbon of the acyl-adenylate** (not a phosphorus).
 - Leaving group: **AMP** (the ester oxygen).
 - Geometry: attack is along the **Bürgi–Dunitz** trajectory, N→C=O ideally ≈ **105°**, *not* the

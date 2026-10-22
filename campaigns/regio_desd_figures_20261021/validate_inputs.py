@@ -51,7 +51,7 @@ def msa_query(path):
 def main():
     sys.path.insert(0, str(CAMP))
     from rdkit import Chem
-    from substrates_oligomer import DONOR, MONOMER_DONOR_OVERRIDE
+    from substrates_oligomer import DONOR, MONOMER_DONOR_OVERRIDE, CONTROL_DONOR
 
     ent = json.loads((CAMP / "sequences/enzymes_provenance.json").read_text())
 
@@ -62,6 +62,7 @@ def main():
         truth[row["letter_code"]] = row["smiles"]
     truth.update({k: v for k, v in MONOMER_DONOR_OVERRIDE.items() if k in truth})
     truth.update(DONOR)
+    truth.update(CONTROL_DONOR)
 
     jm = list(csv.DictReader((CAMP / "cofolds/step1/job_map.csv").open()))
     yamls = sorted((CAMP / "cofolds/step1/inputs").glob("*.yaml"))

@@ -52,6 +52,7 @@ cofolds/step1/inputs/step1_AsbA__XA.yaml
 cofolds/step1/inputs/step1_AsbB__XA.yaml
 cofolds/step1/inputs/step1_AcsA__XA.yaml
 cofolds/step1/inputs/step1_DesD__XA.yaml
+cofolds/step1/inputs/step1_DesD__HSC.yaml
 cofolds/step1/inputs/step1_DesD__A__2mg.yaml
 cofolds/step1/inputs/step1_DesD__Z__2mg.yaml
 cofolds/step1/inputs/step1_DesD__H__2mg.yaml
