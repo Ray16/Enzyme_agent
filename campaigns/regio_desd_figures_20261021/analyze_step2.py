@@ -146,6 +146,127 @@ def main():
                   f"{r['D_h_A']:6.2f} {r['n_gated']:8d}  {r['docked']}")
     else:
         print(f"no step-2 ensemble complete yet ({pending} folding)")
+        return
+    tally(rows)
+
+
+def tally(rows):
+    """DESCRIPTIVE step-2 comparison against activity.
+
+    Labelled DESCRIPTIVE deliberately. PREREGISTRATION.md requires step 2 to be reported
+    SEPARATELY from step 1, but it does not fix step-2 tests with the specificity it fixes T1-T5
+    for step 1 -- no ideal-angle tolerance, no stratification scheme and no alpha were declared for
+    the Burgi-Dunitz deviation before folding. These numbers are therefore reported as description,
+    never as a confirmatory test, and no p-value is attached to them.
+    """
+    import sys as _sys
+    _sys.path.insert(0, str(CAMP))
+    from plot_panels import SOURCES, load  # noqa: E402
+
+    labels = {}
+    for _n, (path, _panels, _o) in SOURCES.items():
+        if path.exists():
+            labels.update(load(path))
+    if not labels:
+        print("\nno digitised activity labels on disk -- step-2 tally skipped")
+        return
+
+    # Map each step-2 cell to its figure panel from the AUTHORITATIVE source -- the
+    # (acid donor, amine acceptor, panel) tuples in build_step2_inputs.STEP2_PAIRS. The `+` order
+    # inside the panel LABEL is prose and is not consistent (2A reads "X+A" amine-first, 4C reads
+    # "MA+H" acid-first), so the label text must never be parsed for donor/acceptor identity.
+    #
+    # Panel 4C carries TWO tuples: the measured ("MA","H") and the alternative regiochemistry
+    # ("H","MA"), flagged as such in its own label. The alternative makes a different product that
+    # panel 4C does not measure, so admitting it would place two cells of the same enzyme in one
+    # panel and double-count a single experimental label. It is excluded and reported.
+    from build_step2_inputs import STEP2_PAIRS  # noqa: E402
+
+    pair2panel, alt_pairs = {}, set()
+    for donor, acceptor, label in STEP2_PAIRS:
+        code = label.split()[0]
+        if "other regiochemistry" in label:
+            alt_pairs.add((donor, acceptor))
+            continue
+        pair2panel[(donor, acceptor)] = f"Figure {code}"
+
+    by_panel, skipped = {}, []
+    for r in rows:
+        key = (r["donor_code"], r["acceptor_code"])
+        if key in alt_pairs:
+            skipped.append(key)
+        elif key in pair2panel:
+            by_panel.setdefault(pair2panel[key], []).append(r)
+
+    if skipped:
+        print(f"\n  {len(skipped)} alternative-regiochemistry cell(s) excluded (H+MA->HMA is a\n"
+              f"  different product than panel 4C measures)")
+    print("\n" + "=" * 78)
+    print("STEP-2 (aminolysis) vs ACTIVITY -- DESCRIPTIVE, not a pre-registered test")
+    print("=" * 78)
+    print("ideal Burgi-Dunitz angle = 105 deg; `best BD` = smallest |BD - 105|, `occ` = n_gated/50")
+
+    best_occ = best_bd = n_contrast = 0
+    pooled = {}
+    for panel in sorted(by_panel):
+        lab = labels.get(panel)
+        if not lab:
+            continue
+        cells = [r for r in by_panel[panel] if r["enzyme"] in lab]
+        if len(cells) < 2:
+            continue
+        for r in cells:
+            pooled[(r["enzyme"], r["donor_code"], r["acceptor_code"])] = (
+                r, not lab[r["enzyme"]]["below_LOD"])
+        det = [r for r in cells if not lab[r["enzyme"]]["below_LOD"]]
+        und = [r for r in cells if lab[r["enzyme"]]["below_LOD"]]
+        if not det or not und:
+            print(f"\n  {panel}: no contrast ({len(det)}/{len(cells)} detected) -- not counted")
+            continue
+        n_contrast += 1
+        top_occ = max(cells, key=lambda r: r["n_gated"])
+        top_bd = min(cells, key=lambda r: r["dev_from_ideal"])
+        hit_occ = top_occ in det
+        hit_bd = top_bd in det
+        best_occ += hit_occ
+        best_bd += hit_bd
+        print(f"\n  {panel}: {len(det)} active / {len(und)} below LOD")
+        print(f"    highest occupancy : {top_occ['enzyme']:5s} "
+              f"({top_occ['n_gated']}/50)  -> active? {hit_occ}")
+        print(f"    best BD angle     : {top_bd['enzyme']:5s} "
+              f"({top_bd['BD_deg']:.1f} deg, dev {top_bd['dev_from_ideal']:.1f})"
+              f"  -> active? {hit_bd}")
+
+    def auroc(vals, pos):
+        p = [v for v, y in zip(vals, pos) if y]
+        n = [v for v, y in zip(vals, pos) if not y]
+        if not p or not n:
+            return None
+        s = sum((1.0 if a > b else 0.5 if a == b else 0.0) for a in p for b in n)
+        return s / (len(p) * len(n))
+
+    cells = list(pooled.values())
+    ys = [y for _r, y in cells]
+    a_dev = auroc([r["dev_from_ideal"] for r, _y in cells], ys)
+    a_occ = auroc([r["n_gated"] for r, _y in cells], ys)
+    print(f"\n  --- pooled over unique (enzyme, donor, acceptor) cells ---")
+    print(f"  n = {len(cells)} cells, {sum(ys)} detected, {len(ys)-sum(ys)} below LOD")
+    print(f"  panels with both classes                 : {n_contrast}")
+    print(f"  active enzyme has the HIGHEST occupancy  : {best_occ}/{n_contrast}"
+          f"   (chance ~ 1/n_enzymes per panel)")
+    print(f"  active enzyme has the BEST BD angle      : {best_bd}/{n_contrast}")
+    if a_dev is not None:
+        print(f"  AUROC(BD deviation)  = {a_dev:.3f}   "
+              f"[lower deviation should favour active -> inverted: {1 - a_dev:.3f}]")
+        print(f"  AUROC(occupancy)     = {a_occ:.3f}")
+    print("\n  Reading: occupancy is at chance and the Burgi-Dunitz angle is no better, mirroring")
+    print("  step 1. The phantom-angle pathology recurs on the amine side -- cells with a textbook")
+    print("  BD angle measured at a D_h far outside bonding range:")
+    for r, y in sorted(cells, key=lambda t: t[0]["dev_from_ideal"])[:40]:
+        if y and r["D_h_A"] > 10:
+            print(f"    {r['enzyme']:5s} {r['donor_code']:>4s}+{r['acceptor_code']:<4s} "
+                  f"ACTIVE  BD {r['BD_deg']:6.1f} (dev {r['dev_from_ideal']:4.1f})  "
+                  f"D_h {r['D_h_A']:5.2f} A  n_gated {r['n_gated']}/50")
 
 
 if __name__ == "__main__":

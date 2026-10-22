@@ -347,3 +347,192 @@ box radius 10 / 14 / 18 A. With no plateau there is no well-defined volume, so n
 pocket volume is quoted anywhere in this campaign. The paper's 816 / 2497 A^3 remain attributed to
 the authors (PyVOL), not reproduced here. PyVOL, fpocket and freesasa are all absent from this
 environment.
+
+---
+
+# Amendment 6 — declared descriptor search over BOTH steps (2026-10-22)
+
+**Status: declared BEFORE any descriptor was computed or any AUROC seen.** Cofolding is complete
+(58/58 step 1, 90/90 step 2) and both frozen metrics are null, so the question becomes whether a
+*different* pair of geometric descriptors — one per half-reaction — separates active from inactive.
+
+This amendment exists because this is the single most dangerous thing this project does. Two prior
+findings in this repo died exactly here: a "3.1x top-10 enrichment, p = 0.02" that was **cutoff
+shopping** across nine cutoffs, and `thermo_packing_density` (rho = +0.77 on six members),
+**retracted the same day** as a length artifact. A battery searched without a selection-corrected
+null will always produce a winner. The null is therefore declared first, and the battery is frozen
+here.
+
+## 6.1 The battery — frozen, and no descriptor may be added after results are seen
+
+Every descriptor is computed from the EXISTING folds; no new GPU work, so there is no opportunity
+to re-fold toward a better score. All are per-ensemble summaries over the 50 poses.
+
+**Step 1 (adenylation), 13 descriptors** — measured on donor carboxylate O -> ATP Pa:
+
+| # | name | what it measures |
+|---|---|---|
+| 1 | `s1_A` | the frozen proximity-weighted attack angle (incumbent) |
+| 2 | `s1_Dh` | harmonic-mean attack distance |
+| 3 | `s1_occupancy` | fraction of poses with d < 4 A (the validity precondition, now AS a descriptor) |
+| 4 | `s1_min_d` | closest approach over the ensemble |
+| 5 | `s1_nac_frac` | fraction of poses that are near-attack: d < 4 A **and** angle > 150 deg |
+| 6 | `s1_best_angle_gated` | best in-line angle among gated poses only (0 if none) |
+| 7 | `s1_mg_carboxylate` | min Mg2+ -> donor carboxylate O distance (Mg bridging the nucleophile) |
+| 8 | `s1_mg_phosphate` | min Mg2+ -> ATP phosphate O distance (cofactor placement integrity) |
+| 9 | `s1_carboxylate_hbonds` | protein N/O within 3.5 A of a donor carboxylate O |
+| 10 | `s1_cation_contacts` | Arg/Lys side-chain N within 4.0 A of a donor carboxylate O |
+| 11 | `s1_donor_contacts` | protein heavy atoms within 4.5 A of any donor atom |
+| 12 | `s1_centroid_spread` | SD of donor centroid across poses (docking convergence) |
+| 13 | `s1_pocket_apolar` | apolar fraction of residues lining Pa |
+
+**Step 2 (aminolysis), 13 descriptors** — measured on amine N -> acyl-adenylate carbonyl C:
+
+| # | name | what it measures |
+|---|---|---|
+| 14 | `s2_BD_dev` | \|Burgi-Dunitz angle - 105\| (incumbent) |
+| 15 | `s2_Dh` | harmonic-mean N...C distance |
+| 16 | `s2_occupancy` | fraction of poses with d < 4 A |
+| 17 | `s2_min_d` | closest approach |
+| 18 | `s2_nac_frac` | near-attack fraction: d < 4 A **and** BD in [95, 115] |
+| 19 | `s2_best_bd_gated` | best \|BD - 105\| among gated poses only |
+| 20 | `s2_oxyanion_hbonds` | protein N/O within 3.5 A of the carbonyl O (oxyanion-hole occupancy) |
+| 21 | `s2_leaving_anti` | N-C-O(AMP ester) angle — nucleophile anti-periplanar to the leaving group |
+| 22 | `s2_n_burial` | protein heavy atoms within 4.5 A of the attacking N |
+| 23 | `s2_acceptor_contacts` | protein heavy atoms within 4.5 A of any acceptor atom |
+| 24 | `s2_distal_charge` | min attacking-N-distal cationic N -> Asp/Glu carboxylate O distance |
+| 25 | `s2_centroid_spread` | SD of acceptor centroid across poses |
+| 26 | `s2_acyl_intact` | fraction of poses where the acyl-adenylate anhydride is resolvable |
+
+**26 single descriptors + 13 x 13 = 169 cross-step pairs = 195 declared looks.**
+
+## 6.2 Endpoint, unit of analysis, and the pairing rule
+
+- **Endpoint:** detected vs below LOD, from the digitised panels. Binary — the readouts are not
+  comparable across figures, so no continuous pooling.
+- **Unit:** one (enzyme, acid donor, amine acceptor) cell = one reaction. n = 48 labelled cells.
+- **Statistic:** AUROC, oriented so that the mechanistically favourable direction is the positive
+  one, fixed per descriptor in the code BEFORE running (an unoriented AUROC lets a sign flip count
+  as a hit and silently doubles the battery).
+- **Pairing rule — deliberately fit-free.** A pair is combined as the **minimum of the two
+  within-acid-stratum percentile ranks**: a cell scores well only if it is good at BOTH steps.
+  There are **no fitted weights and no tuned thresholds**, so this is not a composite score in the
+  sense the project's standing rule forbids; it is the conjunction the two-step mechanism implies.
+  Logistic regression on the pair is explicitly NOT run — 48 cells and 195 looks cannot support it.
+
+## 6.3 The null — selection-corrected over the WHOLE battery
+
+A per-descriptor p-value is meaningless with 195 looks. The declared primary null is:
+
+> Permute the detected/below-LOD labels **within acid stratum** (detection rates differ enormously
+> between strata: acid A is 6/6 detected, MA is 1/4, so an unstratified null is badly
+> anticonservative). For each of 20 000 draws, recompute the AUROC of **every one of the 195
+> descriptors and pairs** and retain only the **maximum**. `p_sel` = fraction of draws whose
+> maximum AUROC >= the observed best.
+
+**Decision rule, fixed now:** a descriptor or pair is reported as a finding only if
+**`p_sel` < 0.05**. A descriptor that clears an unadjusted 0.05 but not `p_sel` is reported as
+**not a finding**, in those words. The best observed AUROC will be reported either way, together
+with the null's own 95th percentile, so the reader can see how much of it is selection.
+
+## 6.4 Mandatory confound controls — reported for the winner whatever `p_sel` says
+
+Both are known live confounds in this repo, not hypotheticals:
+
+1. **Docking quality.** Report `rho(descriptor, s1_occupancy)` and `rho(descriptor, s2_occupancy)`.
+   A descriptor that is a repackaging of "did the ligand dock" is reported as such. `A` already
+   fails this: rho(A, n_gated) = +0.314, p = 0.020.
+2. **Fold family.** Recompute the winner's AUROC **within** ANL (DdaG, SfaB) and **within** NIS
+   (AsbA, AsbB, AcsA, DesD). `A` separates families (NIS 127.1 vs ANL 117.3), so any descriptor
+   whose signal vanishes within family is a fold artifact.
+
+Additionally: because the same step-1 ensemble is reused across cells that share an acid donor
+(DesD+MA serves 4B, 4C and 5C), the winner is re-evaluated on **unique step-1 ensembles only** as a
+non-independence sensitivity check.
+
+## 6.5 What this search cannot do
+
+The power ceiling of amendment 0 still binds: six enzymes per stratum. A null here is **"no
+detectable signal in 195 declared looks"**, not a proof that no geometric descriptor exists. And
+nothing in this battery can see transition-state stabilisation or domain dynamics — it is 26 ways
+of measuring a ground-state pose.
+
+## Amendment 6 — RESULT (2026-10-22): clears the primary test, fails both sensitivity checks
+
+**Verdict: NOT safe to cite as predictive.** The primary test passed and the declared robustness
+checks then dismantled it. Both outcomes are recorded because the amendment required it.
+
+### What the search found
+
+Battery actually searched: **167 looks** (13 step-1 + 11 step-2 singles + 143 pairs). Two declared
+descriptors were not evaluable on the common cell set — a recorded deviation from the declared 195:
+
+| descriptor | why | searched separately? |
+|---|---|---|
+| `s2_acyl_intact` | **DEGENERATE — constant at 1.000.** The anhydride resolves in every pose of every ensemble, so it carries no information (the same failure mode as `buried_frac` in amendment 5) | not searchable |
+| `s2_distal_charge` | missing for 18/48 cells — structurally, since a mono-amine acceptor has no distal nitrogen | yes: AUROC 0.634, single-look p = 0.074 |
+
+**Primary result (n = 48 cells, 23 detected):**
+
+| look | AUROC |
+|---|---|
+| **`s1_min_d`** — closest donor-carboxylate-O -> Pa approach over 50 poses | **0.877** |
+| `s1_Dh` | 0.811 |
+| `s1_mg_carboxylate` | 0.799 |
+| `s1_best_angle_gated` | 0.778 |
+| `s1_occupancy` | 0.766 |
+| best PAIR: `s1_cation_contacts + s2_n_burial` | 0.747 |
+
+Selection-corrected null, 20 000 draws, labels permuted within acid stratum, max taken over all
+167 looks: null max median 0.723, **95th percentile 0.797**, p_sel = **0.0003**. By the decision
+rule in 6.3 this is a FINDING. For contrast, 54/167 looks clear an unadjusted p < 0.05 against
+~8 expected — which is exactly why the unadjusted numbers are unusable.
+
+**No pair beats the best single descriptor.** The best cross-step pair reaches 0.747 against
+`s1_min_d`'s 0.877, and every pair in the top 15 pairs a step-1 descriptor with `s2_n_burial`.
+Requiring both half-reactions to be good does not add information here.
+
+### Why it does not survive — the three declared controls
+
+1. **It is docking.** rho(`s1_min_d`, `s1_occupancy`) = **+0.864**, p < 1e-4. `min_d` and the
+   validity gate are near-duplicates by construction (min_d < 4 A iff occupancy > 0). The campaign
+   has always treated occupancy as a validity precondition rather than a ranking input; this says
+   proximity is the only thing with signal, and the attack ANGLE adds nothing.
+2. **Non-independence (declared in 6.4).** Re-run on unique step-1 ensembles only — cells sharing
+   an acid donor reuse one step-1 fold, so DesD+MA was counted three times — gives AUROC 0.805 and
+   **p_sel = 0.195. Not significant.** Most of p_sel = 0.0003 was duplicate counting.
+3. **It is ONE enzyme, and it is the one in the training set.** Leave-one-enzyme-out:
+
+   | dropped | AUROC | within-stratum p |
+   |---|---|---|
+   | AcsA / AsbA / AsbB / DdaG / SfaB | 0.84–0.91 | 0.000–0.003 |
+   | **DesD** | 0.845 | **0.676** |
+
+   The decisive statistic is the **within-acid AUROC**, which is what the stratified null actually
+   tests: **0.848 with DesD, 0.500 — exactly chance — without it.** The reason is visible in the
+   raw numbers: in acids **H** and **MA**, DesD is the *only* active enzyme and also has the
+   shortest approach (H: DesD 4.36 A vs 6.1–10.9 for the five inactives; MA: DesD 3.02 vs
+   6.25–15.07). Those two strata supply 54 of the 69 informative active/inactive pairs. Remove
+   DesD and three of six strata lose all contrast, leaving 15 pairs and no signal.
+
+   In the two strata where a genuine multi-enzyme contrast exists and DesD is not the sole active,
+   `min_d` runs **backwards**: acid Z's closest approach is AsbB at 3.26 A (below LOD) while active
+   SfaB sits at 4.23 A; acid AMA's closest is SfaB at 3.75 A (below LOD) while active AcsA sits at
+   5.57 A.
+
+**Full battery re-searched on the DesD-excluded cells** (38 cells, 13 active, same 167 looks):
+best is still `s1_min_d` at 0.845, but the null's max has median **0.855** — *above* the observed
+value — and **p_sel = 0.665**. Nothing works without DesD.
+
+### Reading
+
+DesD's native complex (PDB 7TGM, released 2022-07-06) is very likely inside Boltz-2's training
+set, and the positive control shows near-perfect recall of it (0.23 A ligand placement). A
+proximity descriptor whose entire discriminating power is DesD, in the strata where DesD is the
+only active enzyme, is most parsimoniously read as **recall of one memorised complex, not
+prediction**. It is recorded here as a non-finding and must not be cited as a predictive
+descriptor.
+
+**No descriptor and no cross-step pair in 167 declared looks separates active from inactive
+once DesD is removed.** Combined with the null results for the frozen step-1 and step-2 metrics,
+the conclusion of this campaign is unchanged and is now substantially better supported.

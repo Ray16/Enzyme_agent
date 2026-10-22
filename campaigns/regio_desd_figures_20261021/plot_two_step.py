@@ -28,6 +28,10 @@ from matplotlib.colors import LinearSegmentedColormap
 CAMP = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(CAMP))
 from plot_panels import SOURCES, REACTION, load, INK, INK2, INK3, SURFACE  # noqa: E402
+from declutter import place_labels  # noqa: E402
+
+# fixed facet order: ANL fold first, then NIS -- identity never depends on the data
+ENZ_ORDER = ["DdaG", "SfaB", "AsbA", "AsbB", "AcsA", "DesD"]
 
 C_LOD = "#eb6834"
 # sequential ramp, one hue light->dark (magnitude); NOT a rainbow
@@ -84,70 +88,100 @@ def main():
         print("no cell has BOTH steps scored yet -- two-step figure not drawn")
         return
 
-    fig, ax = plt.subplots(figsize=(8.6, 6.8))
-    fig.patch.set_facecolor(SURFACE); ax.set_facecolor(SURFACE)
+    # ---- FACET BY ENZYME -------------------------------------------------------------------
+    # One axes per enzyme instead of one axes for everything. This is the fix for the overlap:
+    # the enzyme name moves into the facet title, so each point needs only its 2-character panel
+    # tag, and each facet holds <=10 points instead of 48. Shared axes keep every facet directly
+    # comparable -- the whole point of a small-multiple.
+    enzymes = [e for e in ENZ_ORDER if any(p["enz"] == e for p in pts)]
+    ncol = 3
+    nrow = -(-len(enzymes) // ncol)
+    fig, axes = plt.subplots(nrow, ncol, figsize=(4.15 * ncol, 3.75 * nrow),
+                             sharex=True, sharey=True)
+    fig.patch.set_facecolor(SURFACE)
+    axes = axes.ravel() if hasattr(axes, "ravel") else [axes]
 
-    # ideal bands: step 1 wants ~180 (in-line), step 2 wants ~105 (Burgi-Dunitz)
-    ax.axvspan(150, 185, color="#2a78d6", alpha=0.06, zorder=0)
-    ax.axhspan(95, 115, color="#2a78d6", alpha=0.06, zorder=0)
-    ax.text(0.995, 0.012, "step-1 in-line band 150–180°", transform=ax.transAxes,
-            ha="right", fontsize=7.8, color=INK3)
-    ax.text(0.012, 0.985, "step-2 Bürgi–Dunitz band 95–115°", transform=ax.transAxes,
-            va="top", fontsize=7.8, color=INK3)
+    xs = [p["x"] for p in pts]; ys = [p["y"] for p in pts]
+    xlo, xhi = min(xs) - 9, max(xs) + 9
+    ylo, yhi = min(ys) - 9, max(ys) + 9
 
-    for p in pts:
-        col = C_LOD if p["lod"] else RAMP(0.18 + 0.82 * p["frac"])
-        interp = p["x_ok"] and p["y_ok"]
-        ax.scatter(p["x"], p["y"], s=215, marker="o", zorder=4,
-                   facecolor=col if interp else SURFACE, edgecolor=col, linewidths=2.5)
-        if not interp:
-            bad = "step 1" if not p["x_ok"] else ("step 2" if not p["y_ok"] else "")
-            ax.annotate(f"{p['enz']}\n{p['panel'].replace('Figure ','')}  ($n_{{gated}}$=0, {bad})",
-                        (p["x"], p["y"]), textcoords="offset points", xytext=(0, 15),
-                        ha="center", fontsize=7.4, color=INK2, linespacing=1.3, zorder=5)
-        else:
-            ax.annotate(f"{p['enz']}\n{p['panel'].replace('Figure ','')}", (p["x"], p["y"]),
-                        textcoords="offset points", xytext=(0, 15), ha="center",
-                        fontsize=7.6, color=INK2, linespacing=1.3, zorder=5)
+    for ax, enz in zip(axes, enzymes):
+        ax.set_facecolor(SURFACE)
+        ax.set_xlim(xlo, xhi); ax.set_ylim(ylo, yhi)
+        # ideal bands: step 1 wants ~180 (in-line), step 2 wants ~105 (Burgi-Dunitz)
+        ax.axvspan(150, max(185, xhi), color="#2a78d6", alpha=0.06, zorder=0)
+        ax.axhspan(95, 115, color="#2a78d6", alpha=0.06, zorder=0)
 
-    ax.set_xlabel("step 1 — A, proximity-weighted attack angle (°)\n"
+        mine = [p for p in pts if p["enz"] == enz]
+        n_act = sum(1 for p in mine if not p["lod"])
+        for p in mine:
+            col = C_LOD if p["lod"] else RAMP(0.18 + 0.82 * p["frac"])
+            interp = p["x_ok"] and p["y_ok"]
+            ax.scatter(p["x"], p["y"], s=150, marker="o", zorder=4,
+                       facecolor=col if interp else SURFACE, edgecolor=col, linewidths=2.2)
+        place_labels(ax, [(p["x"], p["y"], p["panel"].replace("Figure ", ""),
+                           C_LOD if p["lod"] else "#1d4e8f") for p in mine],
+                     fontsize=7.8, marker_pad=6.5)
+
+        ax.set_title(f"{enz}   ·   {n_act}/{len(mine)} active",
+                     fontsize=10.5, color=INK, pad=7, loc="left")
+        ax.grid(True, color=INK3, alpha=0.22, ls=(0, (1, 4)), lw=0.8); ax.set_axisbelow(True)
+        for sp in ("top", "right"):
+            ax.spines[sp].set_visible(False)
+        for sp in ("left", "bottom"):
+            ax.spines[sp].set_color(INK3)
+        ax.tick_params(colors=INK2, labelsize=8.5)
+
+    for ax in axes[len(enzymes):]:
+        ax.set_visible(False)
+
+    # band annotations once, on the first facet only -- repeating them 6x is noise
+    axes[0].text(0.03, 0.97, "Bürgi–Dunitz band 95–115°", transform=axes[0].transAxes,
+                 va="top", fontsize=7.4, color=INK3)
+    axes[0].text(0.97, 0.03, "in-line band\n150–180°", transform=axes[0].transAxes,
+                 ha="right", fontsize=7.4, color=INK3, linespacing=1.3)
+
+    fig.supxlabel("step 1 — A, proximity-weighted attack angle (°)\n"
                   "donor carboxylate O → ATP Pα   ·   ideal ≈ 180° (in-line)",
-                  fontsize=10, color=INK2, labelpad=9)
-    ax.set_ylabel("step 2 — Bürgi–Dunitz angle (°)\n"
+                  fontsize=10.5, color=INK2, y=0.055)
+    fig.supylabel("step 2 — Bürgi–Dunitz angle (°)\n"
                   "amine N → acyl-adenylate carbonyl C   ·   ideal ≈ 105°",
-                  fontsize=10, color=INK2, labelpad=9)
+                  fontsize=10.5, color=INK2, x=0.022)
+
     n_done = len(pts)
-    ax.text(0, 1.085, "Both half-reactions modelled; measured activity as hue",
-            transform=ax.transAxes, fontsize=12.5, color=INK, va="bottom", fontweight="medium")
-    ax.text(0, 1.028,
-            f"{n_done} (enzyme × reaction) cells with BOTH steps scored. Activity is ranked within "
-            f"its own panel —\nreadouts are not comparable across figures. Hollow = $n_{{gated}}$ = 0, "
-            f"that step's angle measured outside the gate.",
-            transform=ax.transAxes, fontsize=8.8, color=INK2, va="bottom", linespacing=1.45)
+    fig.text(0.072, 0.985, "Both half-reactions modelled; measured activity as hue",
+             fontsize=14.5, color=INK, va="top", fontweight="medium")
+    fig.text(0.072, 0.949,
+             f"{n_done} (enzyme × reaction) cells with BOTH steps scored · one facet per enzyme · "
+             f"point labels are the figure panel\n"
+             f"Activity is ranked within its own panel (readouts are not comparable across "
+             f"figures). Hollow = that step's $n_{{gated}}$ = 0 — angle measured outside the "
+             f"4 Å gate, in empty space.",
+             fontsize=9.2, color=INK2, va="top", linespacing=1.6)
 
-    ax.grid(True, color=INK3, alpha=0.22, ls=(0, (1, 4)), lw=0.8); ax.set_axisbelow(True)
-    for s in ("top", "right"):
-        ax.spines[s].set_visible(False)
-    for s in ("left", "bottom"):
-        ax.spines[s].set_color(INK3)
-    ax.tick_params(colors=INK2, labelsize=9)
+    fig.subplots_adjust(top=0.855, bottom=0.145, left=0.085, right=0.885,
+                        hspace=0.33, wspace=0.11)
 
+    # colorbar on its OWN axes, outside the facet grid. Letting matplotlib steal space from a
+    # shared-axes grid put the bar on top of two facets.
+    cax = fig.add_axes([0.915, 0.30, 0.0125, 0.40])
     sm = plt.cm.ScalarMappable(cmap=RAMP, norm=plt.Normalize(0, 1))
-    cb = fig.colorbar(sm, ax=ax, pad=0.02, fraction=0.045)
-    cb.set_label("measured activity (rank within panel: low → high)", fontsize=8.8, color=INK2)
+    cb = fig.colorbar(sm, cax=cax)
+    cb.set_label("measured activity\n(rank within panel: low → high)", fontsize=9, color=INK2,
+                 labelpad=10)
     cb.ax.tick_params(labelsize=0, length=0)
     cb.outline.set_visible(False)
 
-    ax.legend(handles=[
+    fig.legend(handles=[
         Line2D([], [], marker="o", ls="", mfc=C_LOD, mec=C_LOD, ms=9, label="below LOD"),
         Line2D([], [], marker="o", ls="", mfc=SURFACE, mec=INK3, ms=9, mew=2.2,
-               label="hollow: that step's $n_{gated}$ = 0"),
-    ], loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=2, frameon=False,
-        fontsize=8.6, labelcolor=INK2)
+               label="hollow: that step's $n_{gated}$ = 0 (angle measured outside the gate)"),
+    ], loc="lower center", bbox_to_anchor=(0.49, 0.005), ncol=2, frameon=False,
+        fontsize=9.2, labelcolor=INK2)
 
     out = CAMP / "analysis/FIGURE_two_step_activity.png"
-    fig.savefig(out, dpi=330, facecolor=SURFACE, bbox_inches="tight")
-    fig.savefig(out.with_suffix(".pdf"), facecolor=SURFACE, bbox_inches="tight")
+    fig.savefig(out, dpi=330, facecolor=SURFACE)
+    fig.savefig(out.with_suffix(".pdf"), facecolor=SURFACE)
     plt.close(fig)
     print(f"wrote {out}  ({n_done} cells with both steps)")
 

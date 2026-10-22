@@ -1,0 +1,10 @@
+computing the amendment-6 battery over 148 ensembles (58 step-1, 90 step-2) x 50 poses
+  20/148
+  40/148
+  60/148
+  80/148
+  100/148
+  120/148
+  140/148
+wrote /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/descriptors_step1.csv  (58 ensembles)
+wrote /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/descriptors_step2.csv  (90 ensembles)

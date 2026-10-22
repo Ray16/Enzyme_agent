@@ -1,0 +1,63 @@
+n = 48 labelled (enzyme, donor, acceptor) cells; 23 detected, 25 below LOD
+acid strata: A:10, AMA:4, G:4, H:12, MA:12, Z:6
+
+Declared descriptors NOT evaluable on the common cell set (amendment 6 declared 26; this is a recorded deviation):
+  s2_distal_charge         missing for 18/48 cells
+  s2_acyl_intact           DEGENERATE -- constant at 1.0
+  Excluding them SHRINKS the battery, which makes p_sel slightly less conservative,
+  so each is additionally searched on its own subset at the end.
+
+battery actually searched: 13 step-1 + 11 step-2 singles + 143 pairs = 167 looks
+
+Top 15 by observed AUROC (UNADJUSTED -- these are not p-values yet):
+    # descriptor / pair                                      AUROC
+    1 s1_min_d                                               0.877
+    2 s1_Dh                                                  0.811
+    3 s1_mg_carboxylate                                      0.799
+    4 s1_best_angle_gated                                    0.778
+    5 s1_occupancy                                           0.766
+    6 s1_cation_contacts + s2_n_burial                       0.747
+    7 s1_cation_contacts                                     0.732
+    8 s1_A + s2_n_burial                                     0.720
+    9 s1_mg_phosphate + s2_n_burial                          0.710
+   10 s1_nac_frac                                            0.710
+   11 s2_nac_frac                                            0.704
+   12 s2_best_bd_gated                                       0.704
+   13 s1_mg_carboxylate + s2_n_burial                        0.696
+   14 s1_pocket_apolar + s2_min_d                            0.694
+   15 s1_Dh + s2_n_burial                                    0.688
+
+--- SELECTION-CORRECTED NULL (20000 draws, labels permuted within acid stratum) ---
+  best observed AUROC            = 0.877   (s1_min_d)
+  null distribution of the MAX   : median 0.723, 95th pct 0.797, max 0.907
+  p_sel = 0.0006
+  DECISION (amendment 6.3): FINDING
+
+  For contrast: 56/167 looks clear an UNADJUSTED p < 0.05 (expected by chance alone: ~8).
+
+--- MANDATORY CONFOUND CONTROLS on the best look (amendment 6.4) ---
+  rho(best, s1_occupancy  ) = +0.864  (p = 0.0000)   <-- tracks docking, not catalysis
+  rho(best, s2_occupancy  ) = +0.279  (p = 0.0548)
+  AUROC within ANL only (20 cells, 6 active) = 0.792
+  AUROC within NIS only (28 cells, 17 active) = 0.893
+  AUROC on unique step-1 ensembles only (30 cells, 17 active) = 0.805
+
+--- ROBUSTNESS: leave one enzyme out (winner only) ---
+  without AcsA : 38 cells, 18 active, AUROC = 0.843, single-look within-stratum p = 0.0018
+  without AsbA : 44 cells, 22 active, AUROC = 0.885, single-look within-stratum p = 0.0006
+  without AsbB : 44 cells, 22 active, AUROC = 0.902, single-look within-stratum p = 0.0000
+  without DdaG : 38 cells, 21 active, AUROC = 0.871, single-look within-stratum p = 0.0034
+  without DesD : 38 cells, 13 active, AUROC = 0.845, single-look within-stratum p = 0.6760
+  without SfaB : 38 cells, 19 active, AUROC = 0.910, single-look within-stratum p = 0.0004
+
+--- p_sel recomputed over the WHOLE battery on unique step-1 ensembles only ---
+  best on this subset = s1_min_d at AUROC 0.805
+  the overall winner (s1_min_d) scores 0.805 here
+  null max: median 0.765, 95th 0.842
+  p_sel (best on subset) = 0.1953
+
+wrote /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/campaigns/regio_desd_figures_20261021/analysis/descriptor_search.csv
+
+s2_distal_charge on its own subset (30 cells, 16 active): AUROC = 0.634, within-stratum p = 0.0738 (single look, NOT selection-corrected)
+
+s2_acyl_intact: not searchable -- DEGENERATE -- constant at 1.0

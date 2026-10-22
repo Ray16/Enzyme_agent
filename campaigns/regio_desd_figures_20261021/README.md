@@ -7,16 +7,17 @@ co-polyamides.pdf` (bioRxiv 2025.11.03.685623).
 Read in this order: **`PREREGISTRATION.md`** (the test, fixed before folding) →
 **`MECHANISM.md`** (why the setup is what it is) → `analysis/`.
 
-## Status (2026-10-21)
+## Status (2026-10-22) — COFOLDING COMPLETE
 
 | Track | State |
 |---|---|
-| Step-1 cofolds (58) | 54 done; remainder auto-retrying on V100s |
-| Step-2 cofolds (90) | 19 done; running |
+| Step-1 cofolds (58) | **58/58 done**, output gate passes |
+| Step-2 cofolds (90) | **90/90 done**, output gate passes |
 | Fig 2 labels | pre-existing, independently re-digitized, verdict ACCEPT |
 | Fig 4 / 5 labels | digitized this session (60 rows each); Fig 6 has no quantitative panel |
 | **Positive control** | **PASSES** — 0.23 Å best ligand placement, 50/50 poses on-site (see caveat) |
-| Driver | `fleet/autodrive.sh` detached: watchdog + full replot every 10 min to completion |
+| Driver | finished and exited; `roll.sh` re-runs the whole analysis idempotently |
+| Descriptor search | amendment 6: 167 declared looks, **no finding survives its controls** |
 
 ### The positive control, and its limit
 
@@ -108,5 +109,16 @@ Families tried and their status: `A` (failing, see above); **accommodation PARKE
 evaluable because `buried_frac` saturated at 1.000, and pocket **volume abandoned as ill-posed**
 (grid method did not converge: 454/773/1139 Å³ at box radius 10/14/18 Å, and missed the paper's
 Fig-3B values by non-constant factors). No fold-derived pocket volume is quoted anywhere.
+**The declared 167-look descriptor search (amendment 6) also comes back negative.** The best
+descriptor is `s1_min_d` — the closest donor-carboxylate-to-Pα approach — at AUROC 0.877 with a
+selection-corrected p_sel = 0.0003, and *no cross-step pair beats it* (best pair 0.747). But it
+fails all three declared controls: ρ with docking occupancy = +0.864 (it IS docking, not angle);
+on unique step-1 ensembles p_sel = 0.195; and the within-acid AUROC is 0.848 with DesD and
+**0.500 — exactly chance — without it**. In acids H and MA, DesD is the only active enzyme and
+also the closest-docking one, and those two strata supply 54 of 69 informative pairs. Where a real
+multi-enzyme contrast exists (acids Z, AMA) `min_d` runs backwards. Re-searching the full battery
+without DesD: p_sel = 0.665. Since 7TGM is very likely in Boltz-2's training set, this reads as
+recall of one memorised complex.
+
 The design's power ceiling is **p ≈ 0.048** even if `A` were perfect — 6 enzymes per stratum is this
 paper's hard limit, so the deliverable is mechanistic, not a p-value.
