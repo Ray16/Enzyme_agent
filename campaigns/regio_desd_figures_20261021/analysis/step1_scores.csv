@@ -1,3 +1,4 @@
 stem,enzyme,acid_code,n_mg,has_label,A_deg,D_h_A,n_gated,gated_frac,min_d,median_d,max_angle,docked,n_poses,n_extract_fail,metric_id,panels
 step1_DdaG__A,DdaG,A,1,True,98.8,4.748,1,0.02,3.7,4.716,141.9,True,50,0,inverse_distance_attack_angle_v1,2A (X+A->XA); 5A (MAM+A->MAMA); 5C
 step1_DdaG__Z,DdaG,Z,1,True,88.9,6.002,0,0.0,4.641,6.19,162.1,False,50,0,inverse_distance_attack_angle_v1,2B (M+Z->MZ)
+step1_SfaB__A,SfaB,A,1,True,94.81,12.572,0,0.0,4.364,13.685,128.4,False,50,0,inverse_distance_attack_angle_v1,2A (X+A->XA); 5A (MAM+A->MAMA); 5C
