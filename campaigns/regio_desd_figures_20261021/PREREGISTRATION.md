@@ -536,3 +536,244 @@ descriptor.
 **No descriptor and no cross-step pair in 167 declared looks separates active from inactive
 once DesD is removed.** Combined with the null results for the frozen step-1 and step-2 metrics,
 the conclusion of this campaign is unchanged and is now substantially better supported.
+
+---
+
+## Amendment 7 — the enzyme x substrate INTERACTION (declared 2026-10-23, BEFORE computing)
+
+Every test so far stratified by **acid donor**. That removes the substrate main effect but leaves
+the **enzyme main effect** intact, so every contrast was between-enzyme -- and in the two largest
+strata (H, MA) "between-enzyme" means DesD against five inactives. Amendment 6 established that
+the enzyme main effect is confounded with training-set membership. We have therefore never tested
+the component a structural model should actually predict.
+
+Activity in this 6-enzyme x 10-substrate-pair layout decomposes into three parts:
+
+| component | magnitude in these data |
+| --- | --- |
+| enzyme main effect | DesD 10/10, AcsA 5/10, SfaB 4/10, DdaG 2/10, AsbA 1/4, AsbB 1/4 |
+| substrate main effect | acid A 6/6, G 4/4 vs H 1/6, MA 1/4 |
+| **enzyme x substrate interaction** | **the untested component -- the endpoint of this amendment** |
+
+### 7.1 Design (the mirror of every previous test)
+
+Stratify by **enzyme**: compare each enzyme's accepted substrates against its own rejected ones.
+DesD is 10/10 active and therefore contributes **zero** informative pairs *by construction* --
+the memorisation confound is structurally absent, not controlled for after the fact.
+
+```
+DdaG 2x8=16 | SfaB 4x6=24 | AcsA 5x5=25 | AsbA 1x3=3 | AsbB 1x3=3 | DesD 10x0=0   -> 71 pairs
+```
+
+Endpoint is unchanged: binary detected / below-LOD. Binary detection is comparable across panels
+even though the MS readouts are not, so this design does not require pooling incommensurable
+yields.
+
+### 7.2 Primary statistic
+
+Within-enzyme concordance C = fraction of (active, inactive) pairs drawn from the SAME enzyme that
+the descriptor orders correctly; ties score 0.5. Orientation of every descriptor is fixed by the
+`ORIENT` table already frozen in `search_descriptors.py` and is not revisited.
+
+### 7.3 Battery — 26 looks, fixed now
+
+The 13 step-1 and 11 step-2 evaluable singles from amendment 6, plus `A` and `S`. **Cross-step
+pairs are excluded a priori**, because amendment 6 established that no pair beats the best single
+(0.747 vs 0.877); excluding 143 looks that a prior result already ruled out preserves power and is
+a restriction made on a previous finding, not on these labels.
+
+### 7.4 Null — both margins preserved
+
+Permuting labels within enzyme would preserve the enzyme main effect but destroy the substrate
+main effect, leaving a descriptor that merely tracks "acid A is easy for everyone" free to score.
+The null must therefore hold **both** margins:
+
+- permute the observed activity matrix by **checkerboard swaps** (curveball / swap randomisation,
+  standard for presence-absence matrices): pick two enzymes and two substrate pairs, all four cells
+  observed; if the 2x2 reads [[1,0],[0,1]] or [[0,1],[1,0]], flip it. Row sums (enzyme promiscuity)
+  and column sums (substrate difficulty) are invariant under this move.
+- 20000 draws, burn-in 20000 swaps, 2000 swaps between retained draws, seed 20261023.
+- for each draw retain the **MAXIMUM** C over all 26 looks -> selection-corrected null.
+
+`p_sel` = fraction of draws whose maximum C is >= the best observed C.
+
+### 7.5 Decision rule
+
+`p_sel < 0.05` is required. Declared in advance, a finding must additionally survive all three:
+
+1. rho(best descriptor, `s1_occupancy`) -- a descriptor that is merely docking propensity is
+   reported as docking, not catalysis;
+2. leave-one-enzyme-out on the remaining five contributing enzymes;
+3. restriction to unique step-1 ensembles.
+
+### 7.6 What this cannot do
+
+Seventy-one pairs come from 38 non-DesD cells with 13 actives and shared step-1 folds; the
+effective sample size is far below 71. A null result is consistent with "no signal" and with
+"underpowered", and will be reported as the latter where the margin-preserving null's own spread
+is wide. A positive result establishes that ground-state geometry tracks substrate specificity
+within an enzyme -- it would say nothing about ranking enzymes against each other.
+
+---
+
+## Amendment 7 — RESULT (2026-10-23, written before amendment 8)
+
+**The declared test could not be run. The reason is the finding.**
+
+Deviation from §7.3: the completeness filter admitted **27** looks, not the declared 26 — it kept
+`s2_acyl_intact`, which is degenerate (scores exactly 0.5000). Recorded rather than dropped; an
+extra look can only make `p_sel` more conservative.
+
+Observed within-enzyme concordance over 71 pairs (DesD contributing zero by construction):
+`s1_Dh` and `s1_mg_carboxylate` 0.9366 · `s1_carboxylate_hbonds` 0.9225 · `s1_min_d` 0.9085 ·
+`s1_S_frozen` 0.8873 · … · `s1_A` 0.5986 (frozen primary, near chance) · `s2_BD_dev` 0.4789.
+
+The null returned **median = 95th percentile = max = 0.9366**, exactly the observed value, giving
+`p_sel = 1.0000`. **This is a point mass, not a statistical test, and must never be cited as one.**
+
+Diagnosis: the activity matrix contains **0 swappable checkerboards in 324 fully observed 2x2
+blocks**. The accepted-substrate sets form a strict chain with zero violations —
+`AsbA = AsbB {2A} ⊂ DdaG {2A,4A} ⊂ SfaB {2A,2B,4A,5A} ⊂ AcsA {+5B} ⊂ DesD {all 10}` — so the
+observed matrix is the *unique* binary matrix with its margins and the swap chain cannot move.
+A two-parameter nested model (enzyme promiscuity rank x substrate difficulty threshold) reproduces
+**48/48 cells with zero residual interaction**.
+
+The nestedness is not an artifact of the margins: under free permutation of the 23 labels across
+the 48 observed cells (20000 draws, seed 20261023), **0/20000** draws were perfectly nested
+(median 42 checkerboards, minimum 3) -> **p ~ 5e-5**.
+
+**Consequences, binding on all later analysis.**
+1. There is no enzyme x substrate interaction in this panel. Not "undetectable" — absent.
+2. The high within-enzyme concordances recover the substrate-difficulty **margin**, which the
+   two-parameter model already explains; they are not specificity prediction.
+3. The effective sample size is **6 + 10 = 16 rank positions, not 48 cells**. Every p-value in this
+   campaign, including the quoted p ~ 0.048 power ceiling, was computed against an inflated n.
+4. A nested matrix admits validation of **margin-level** predictors only. A cell-level predictor
+   cannot be scored here at all.
+
+**Post hoc observation (hypothesis-generating, not a declared test):** the five DesD-exclusive
+panels are exactly the five whose adenylated donor carries a free ammonium (6-aminohexanoate, MA);
+the five shared panels are exactly the five with a pure dicarboxylate donor (adipate, glutarate,
+azelate, AMA). 5/5 vs 5/5, one-sided Fisher p = 0.004. Donor **size runs backwards** to difficulty
+(smallest donor H, 9 heavy atoms, is DesD-only; largest AMA, 26, is not), so the substrate axis is
+not steric capacity. DesD's native donor HSC is itself a bifunctional omega-amino-acid donor.
+This observation was made on these labels and is **not** evidence; amendment 8 tests a prediction
+it makes on an independent axis.
+
+---
+
+## Amendment 8 — the G<->H matched donor-class swap (declared 2026-10-24, BEFORE computation)
+
+### 8.1 Why this design
+
+Amendment 7's observation says the substrate margin is set by donor functional class. That makes a
+**directional, within-enzyme, matched-pair** prediction about step-1 adenylation geometry, testable
+on folds already in hand. The contrast is a single functional group at constant size:
+
+| donor | class | heavy atoms | SMILES |
+|---|---|---|---|
+| `G` glutarate | dicarboxylate | 9 | `[O-]C(=O)CCCC(=O)[O-]` |
+| `H` 6-aminohexanoate | omega-amino acid | 9 | `[NH3+]CCCCCC(=O)[O-]` |
+
+All six enzymes have both ensembles (12 of 58 step-1 folds). No new compute. This design controls
+the confound that destroyed `s1_min_d` in amendment 6: docking propensity cannot drive a *paired
+within-enzyme difference* the way it drove a cross-enzyme ranking. DesD is the predicted **positive**
+here, so training-set recall of 7TGM argues against the hypothesis rather than manufacturing it.
+
+### 8.2 Carboxylate-count confound — controlled by construction
+
+A dicarboxylate presents **two** carboxylate groups and a mono-acid **one**, so a nearest-oxygen
+statistic favours the diacid by chance alone. The primary statistic is therefore the **mean over
+carboxylate groups** of each group's closest-oxygen distance to ATP P-alpha, which is unbiased with
+respect to group count. Nearest-group is reported as secondary only.
+
+### 8.3 Descriptors — fixed now
+
+Per pose, donor = chain `D`, nucleotide = chain `B`, anchors `PA` / `O3A` as in the frozen
+`pdb_geometry`. Carboxylate group = a carbon with >= 2 oxygens within 1.6 A. Basic nitrogen = an N
+whose bonded carbons bear no oxygen within 1.6 A (excludes amide N).
+
+1. `d_grpmean` — mean over carboxylate groups of (closest O of that group -> `PA`).  **PRIMARY**
+2. `d_nearest` — closest carboxylate O over all groups -> `PA`.  secondary
+3. `n_gated` — poses with `d_nearest` < 4.0 A.
+4. `f_inverted` — fraction of poses in which a basic N is closer to `PA` than any carboxylate O
+   (donor bound backwards). Defined only for `H`; `G` has no basic N and scores 0 by construction.
+5. `N_contact` — for `H`, the nearest protein residue to the basic N, with distance.
+
+### 8.4 Prediction, stated before measurement
+
+In the five dicarboxylate specialists (DdaG, SfaB, AsbA, AsbB, AcsA), donor `H` is **worse
+registered** on P-alpha than donor `G`: `delta = d_grpmean(H) - d_grpmean(G) > 0`.
+In DesD, `H` is **not** degraded relative to `G`.
+
+### 8.5 Primary test
+
+One-sided **sign test** over the 5 paired specialists on the sign of `delta`. With n = 5 the
+minimum attainable p is `1/32 = 0.031`, so **5/5 concordant signs are required** at alpha = 0.05.
+DesD is an out-of-sample directional check and is **not** part of the test.
+
+### 8.6 Mandatory specificity control — the S<->G swap
+
+`S` succinate (`[O-]C(=O)CCC(=O)[O-]`, 7 heavy atoms) vs `G` glutarate: a one-CH2 **size** change
+with **no class** change, folded for all six enzymes. If `delta` merely reflects "any donor swap
+perturbs the fold", S<->G must show an effect of comparable magnitude. The donor-class claim
+requires `|delta(G->H)| > |delta(S->G)|` in the specialists. A failure here falsifies the
+interpretation even if 8.5 passes.
+
+### 8.7 What this cannot do
+
+n = 5 paired enzymes. A pass establishes a reproducible directional geometric consequence of donor
+class in ground-state folds; it does **not** establish that this causes the activity difference,
+and it cannot, because amendment 7 showed the activity matrix has no interaction term to explain.
+`f_inverted` and `N_contact` are descriptive and were not powered for.
+
+### Amendment 8 — RESULT (2026-10-24)
+
+**The pre-registered test PASSES, at the minimum p its own design admits.** Full output:
+`analysis/swap_donor_class.txt`; code `swap_donor_class.py`.
+
+Primary (§8.5), `delta = d_grpmean(H) - d_grpmean(G)`, predicted > 0:
+DdaG +1.446 · SfaB +0.870 · AsbA +2.191 · AsbB +3.448 · AcsA +1.528 —
+**5/5 concordant, one-sided sign test p = 0.0312.**
+
+Out-of-sample directional check, DesD: **delta = -4.010**, i.e. the one enzyme whose native donor is
+a bifunctional omega-amino acid registers `H` *better* than `G`. Specialist deltas span
+[+0.870, +3.448]; **DesD does not overlap them.**
+
+Specificity control (§8.6) **holds**: mean |delta| for the class swap G->H is **1.897 A** versus
+**0.454 A** for the size swap S->G — a **4.18x** ratio. The effect is not "any donor swap perturbs
+the fold".
+
+The declared group-mean form is confirmed **conservative**, as §8.2 intended: the biased
+nearest-oxygen form gives a mean delta of +3.586 A against the group-mean's +1.897 A, so
+controlling the carboxylate-count confound shrank the effect rather than creating it.
+
+Mechanism (§8.3 items 4-5, descriptive): donor `H` binds **backwards** — a basic nitrogen closer to
+P-alpha than any carboxylate oxygen — in **1.00 / 0.96 / 1.00 / 1.00** of poses for DdaG, SfaB,
+AsbA, AcsA, and 0.22 for AsbB, against **0.04 for DesD**. The ammonium is captured by an acidic
+residue in every case (AsbA Glu444 50/50 · AcsA Glu482 45/50 · AsbB Glu569/Glu436/Asp509 46/50 ·
+DesD Asp497 46/50). The discriminating feature is therefore not *whether* the omega-amine is
+anchored but whether anchoring it is **compatible with the carboxylate reaching P-alpha** — in DesD
+it is; in the specialists it is not.
+
+#### Limitations, binding on any citation of this result
+
+1. 🔴 **Donor `H` has `n_gated` = 0/50 in ALL SIX enzymes, DesD included.** No ensemble here is a
+   catalysis-competent complex. The result is strictly about *relative* registration of a
+   non-productive ground state. It must never be stated as "DesD binds H productively".
+2. 🔴 **p = 0.0312 is the floor of this design**, not a measurement; n = 5 admits nothing smaller.
+3. **Leave-one-enzyme-out is uninformative at this n** — a 4/4 sign test gives p = 0.0625, so all
+   five drops "fail" mechanically. The *direction* is unanimous and the magnitudes are
+   well-separated from DesD; only the p-value is fragile. Reported as power, not as instability.
+4. ⚠ **SfaB never docks** (all three donors 12-15 A, `n_gated` 0/50 throughout), so its +0.870 is a
+   difference between two unphysical ensembles. DdaG and AcsA are marginal (5/50 on the diacids).
+   Only AsbA and AsbB dock the diacids well.
+5. 🔴 **The DesD check is confounded with training-set recall.** 7TGM is very likely in Boltz-2's
+   training set and DesD's native HSC is itself a bifunctional omega-amino-acid donor, so DesD's
+   correct placement of `H` may be memorised geometry generalising from HSC. This cuts against the
+   check, not for it.
+6. Boltz-2 has no energy function and no explicit charges; a "salt bridge" in these poses is a
+   learned packing preference, not an electrostatic calculation.
+7. **Amendment 7 still applies**: the activity matrix has zero interaction term, so even a real
+   geometric consequence of donor class does not explain the activity data. This is a mechanistic
+   observation about ground-state registration, not a validated activity predictor.

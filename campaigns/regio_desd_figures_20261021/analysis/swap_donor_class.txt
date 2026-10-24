@@ -1,0 +1,58 @@
+==============================================================================
+PER-ENSEMBLE GEOMETRY  (d in A, averaged over poses; n_gated = poses with d_nearest<4)
+==============================================================================
+enzyme  donor  n    d_grpmean   d_nearest   min_d    n_gated  f_inv
+DdaG    S      50   5.609       4.455       3.917    5        0.00
+DdaG    G      50   5.613       4.541       3.761    5        0.00
+DdaG    H      50   7.059       7.059       6.315    0        1.00
+SfaB    S      50   13.847      12.188      10.189   0        0.00
+SfaB    G      50   14.089      11.878      9.904    0        0.00
+SfaB    H      50   14.959      14.959      10.877   0        0.96
+AsbA    S      50   5.845       4.130       3.480    20       0.00
+AsbA    G      50   6.302       4.200       3.722    16       0.00
+AsbA    H      50   8.493       8.493       8.062    0        1.00
+AsbB    S      50   5.608       4.533       2.945    19       0.00
+AsbB    G      50   6.545       4.739       2.999    19       0.00
+AsbB    H      50   9.993       9.993       6.075    0        0.22
+AcsA    S      50   6.419       5.162       3.157    6        0.00
+AcsA    G      50   7.048       5.793       3.425    5        0.00
+AcsA    H      50   8.576       8.576       7.420    0        1.00
+DesD    S      50   10.566      8.861       3.272    15       0.00
+DesD    G      50   10.788      8.600       3.334    9        0.00
+DesD    H      50   6.777       6.777       4.357    0        0.04
+
+==============================================================================
+PRIMARY (8.5): delta = d_grpmean(H) - d_grpmean(G); predicted > 0 in specialists
+==============================================================================
+  DdaG     H   7.059  G   5.613   delta =  +1.446   as predicted
+  SfaB     H  14.959  G  14.089   delta =  +0.870   as predicted
+  AsbA     H   8.493  G   6.302   delta =  +2.191   as predicted
+  AsbB     H   9.993  G   6.545   delta =  +3.448   as predicted
+  AcsA     H   8.576  G   7.048   delta =  +1.528   as predicted
+
+  sign test: 5/5 concordant, one-sided p = 0.0312   DECISION: PASS  (alpha = 0.05, 5/5 required)
+
+  out-of-sample check (NOT in the test) -- DesD: delta = -4.010  -> predicted NOT degraded; consistent
+
+==============================================================================
+SPECIFICITY CONTROL (8.6): S -> G is a size change with NO class change
+==============================================================================
+  DdaG     G   5.613  S   5.609   delta =  +0.004
+  SfaB     G  14.089  S  13.847   delta =  +0.242
+  AsbA     G   6.302  S   5.845   delta =  +0.458
+  AsbB     G   6.545  S   5.608   delta =  +0.937
+  AcsA     G   7.048  S   6.419   delta =  +0.629
+
+  mean |delta| class swap G->H = 1.897 A
+  mean |delta| size  swap S->G = 0.454 A
+  class/size ratio = 4.18x   -> interpretation SURVIVES
+
+==============================================================================
+DESCRIPTIVE (8.3 items 4-5): the free ammonium of donor H
+==============================================================================
+  DdaG     f_inverted = 1.00   nearest residues: LYS393 15/50, SER69 15/50, MET159 10/50
+  SfaB     f_inverted = 0.96   nearest residues: HIS226 36/50, SER509 5/50, PRO508 3/50
+  AsbA     f_inverted = 1.00   nearest residues: GLU444 50/50
+  AsbB     f_inverted = 0.22   nearest residues: GLU569 29/50, GLU436 11/50, ASP509 6/50
+  AcsA     f_inverted = 1.00   nearest residues: GLU482 45/50, ASP506 3/50, SER507 2/50
+  DesD     f_inverted = 0.04   nearest residues: ASP497 46/50, ASP321 2/50, ASN326 1/50
