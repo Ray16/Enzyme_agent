@@ -1,0 +1,50 @@
+[
+  {
+    "job": "AS9_diad_pose0_fixed_cap_r2",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_q2_20261027/cofold_inputs/AS9_diad_pose0_fixed_cap_r2.yaml",
+    "yaml_sha256": "01a53998a25ee5d59ffa88fefa26c093ffd77d292c5588d07c02a61cf2971c92",
+    "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O",
+    "HMDA": "NCCCCCC[NH3+]",
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/fbb642c1544485a8.csv"
+  },
+  {
+    "job": "AS9_diad_pose0_internal_cap_r2",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_q2_20261027/cofold_inputs/AS9_diad_pose0_internal_cap_r2.yaml",
+    "yaml_sha256": "8e3b7d3293a3ecb43bb87e698a12ee6e14c61c5b70ed3d768dcc54468209e40d",
+    "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O",
+    "HMDA": "NCCCCCC[NH3+]",
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/46eca453c9505cd8.csv"
+  },
+  {
+    "job": "AS9_diad_pose3_internal_cap_r2",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_q2_20261027/cofold_inputs/AS9_diad_pose3_internal_cap_r2.yaml",
+    "yaml_sha256": "fb7dbf51418a8bf82bc860002fb21dda892074868c717438d727807862d171fb",
+    "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O",
+    "HMDA": "NCCCCCC[NH3+]",
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/59349f8b3a40a04b.csv"
+  },
+  {
+    "job": "WT_AS1",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_q2_20261027/cofold_inputs/WT_AS1.yaml",
+    "yaml_sha256": "93a61035a3e4f86a4e05708c3ec58ab918d88a3623d6672bb29cb252763d9785",
+    "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O",
+    "HMDA": "NCCCCCC[NH3+]",
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/d2196f9f0ccf0ae3.csv"
+  },
+  {
+    "job": "WT_AS9",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_q2_20261027/cofold_inputs/WT_AS9.yaml",
+    "yaml_sha256": "b274d3b458673059e39d4abdf1d3c996f8c7092a6ffe786f7ba68f9f1f530fc4",
+    "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O",
+    "HMDA": "NCCCCCC[NH3+]",
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/ce34a44fb902d7f4.csv"
+  },
+  {
+    "job": "WT_AS9_rep2",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_q2_20261027/cofold_inputs/WT_AS9_rep2.yaml",
+    "yaml_sha256": "b274d3b458673059e39d4abdf1d3c996f8c7092a6ffe786f7ba68f9f1f530fc4",
+    "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)([O-])OC(=O)CCCCC(=O)[O-])[C@@H](O)[C@H]1O",
+    "HMDA": "NCCCCCC[NH3+]",
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/ce34a44fb902d7f4.csv"
+  }
+]
