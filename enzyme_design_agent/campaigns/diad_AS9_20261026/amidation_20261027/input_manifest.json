@@ -1,0 +1,104 @@
+[
+  {
+    "job": "WT_AS1",
+    "role": "second WT reference",
+    "seed": 20261027,
+    "sequence_sha256": "9a7f3fdd308355458a454467b26dae9c8cb123f615a7a8cf8adf3fd983896a73",
+    "sequence_length": 523,
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/d2196f9f0ccf0ae3.csv",
+    "msa_sha256": "92084836f13d2bf175cb3721b3a42e5623eeaa76045e707235f91ca5db2e815a",
+    "msa_reused_from": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/cofold_inputs/WT_AS1.yaml",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_20261027/cofold_inputs/WT_AS1.yaml",
+    "yaml_sha256": "1ba60c17428ad84591c4b240fb1763b35f45f37a5284fc9531279d9784bab62f",
+    "ligands": {
+      "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)(O)OC(=O)CCCCC(=O)O)[C@@H](O)[C@H]1O",
+      "MG": "ccd",
+      "HMDA_monoprotonated": "NCCCCCC[NH3+]"
+    }
+  },
+  {
+    "job": "WT_AS9",
+    "role": "parent / primary control",
+    "seed": 20261027,
+    "sequence_sha256": "0d86b9dcc3f55440a1d8822b5e5fcf77aba4560637488a754a453417d9651022",
+    "sequence_length": 516,
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/ce34a44fb902d7f4.csv",
+    "msa_sha256": "3186cc3ec4deee334e1acd3064b76a4234e7313bffc2c4c09df4f2f5189cfd30",
+    "msa_reused_from": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/cofold_inputs/WT_AS9.yaml",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_20261027/cofold_inputs/WT_AS9.yaml",
+    "yaml_sha256": "fa00461985fd2952e69cfa207f794fcd1710c2aba971a11ecf66bd2fe46e9203",
+    "ligands": {
+      "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)(O)OC(=O)CCCCC(=O)O)[C@@H](O)[C@H]1O",
+      "MG": "ccd",
+      "HMDA_monoprotonated": "NCCCCCC[NH3+]"
+    }
+  },
+  {
+    "job": "WT_AS9_rep2",
+    "role": "step-2 noise floor replicate",
+    "seed": 20261028,
+    "sequence_sha256": "0d86b9dcc3f55440a1d8822b5e5fcf77aba4560637488a754a453417d9651022",
+    "sequence_length": 516,
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/ce34a44fb902d7f4.csv",
+    "msa_sha256": "3186cc3ec4deee334e1acd3064b76a4234e7313bffc2c4c09df4f2f5189cfd30",
+    "msa_reused_from": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/cofold_inputs/WT_AS9.yaml",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_20261027/cofold_inputs/WT_AS9_rep2.yaml",
+    "yaml_sha256": "fa00461985fd2952e69cfa207f794fcd1710c2aba971a11ecf66bd2fe46e9203",
+    "ligands": {
+      "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)(O)OC(=O)CCCCC(=O)O)[C@@H](O)[C@H]1O",
+      "MG": "ccd",
+      "HMDA_monoprotonated": "NCCCCCC[NH3+]"
+    }
+  },
+  {
+    "job": "AS9_diad_pose0_fixed_cap_r2",
+    "role": "design",
+    "seed": 20261027,
+    "sequence_sha256": "3b1a51fc35e3ec5d79a5360e62815bdfb8ce66ddcaaafe24236d2bf2c4010599",
+    "sequence_length": 516,
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/fbb642c1544485a8.csv",
+    "msa_sha256": "e7ed8ec746cbb62d1c23aa82204cea46fe51d9eb1a20b87c61e3c919a91312cd",
+    "msa_reused_from": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/cofold_inputs/AS9_diad_pose0_fixed_cap_r2.yaml",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_20261027/cofold_inputs/AS9_diad_pose0_fixed_cap_r2.yaml",
+    "yaml_sha256": "f96ebcac8ce307c64f763b8ec2877a4c7a80ded1d602c526bca100802b037269",
+    "ligands": {
+      "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)(O)OC(=O)CCCCC(=O)O)[C@@H](O)[C@H]1O",
+      "MG": "ccd",
+      "HMDA_monoprotonated": "NCCCCCC[NH3+]"
+    }
+  },
+  {
+    "job": "AS9_diad_pose0_internal_cap_r2",
+    "role": "design",
+    "seed": 20261027,
+    "sequence_sha256": "21fd42ad3318cb37e9c397dc5d4a3bfd4816ee4e4b79a6799130a2fc7d730786",
+    "sequence_length": 516,
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/46eca453c9505cd8.csv",
+    "msa_sha256": "97183fc864d7df038c453cc03542ed31ce6bd7efafc4b5d0c7b19c933ee500f8",
+    "msa_reused_from": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/cofold_inputs/AS9_diad_pose0_internal_cap_r2.yaml",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_20261027/cofold_inputs/AS9_diad_pose0_internal_cap_r2.yaml",
+    "yaml_sha256": "3cc8c80738334c8b1a0ac2baacab80ebab98deb385c2365b91a5396f205d7636",
+    "ligands": {
+      "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)(O)OC(=O)CCCCC(=O)O)[C@@H](O)[C@H]1O",
+      "MG": "ccd",
+      "HMDA_monoprotonated": "NCCCCCC[NH3+]"
+    }
+  },
+  {
+    "job": "AS9_diad_pose3_internal_cap_r2",
+    "role": "design",
+    "seed": 20261027,
+    "sequence_sha256": "1a178581709020c75181871ead765776906a2362d5ddebd6cb055e4dcc0e7a82",
+    "sequence_length": 516,
+    "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/msa/59349f8b3a40a04b.csv",
+    "msa_sha256": "be64188c3781e06ef10d36668227d6d246eff6479447529a12ad6d16876634bc",
+    "msa_reused_from": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/review_20261027/cofold_inputs/AS9_diad_pose3_internal_cap_r2.yaml",
+    "yaml": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/campaigns/diad_AS9_20261026/amidation_20261027/cofold_inputs/AS9_diad_pose3_internal_cap_r2.yaml",
+    "yaml_sha256": "1ff718569f245a79e7b819c93c9f37b34126486f830dedebd5be557c6caf2402",
+    "ligands": {
+      "adipoyl_AMP": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(=O)(O)OC(=O)CCCCC(=O)O)[C@@H](O)[C@H]1O",
+      "MG": "ccd",
+      "HMDA_monoprotonated": "NCCCCCC[NH3+]"
+    }
+  }
+]
