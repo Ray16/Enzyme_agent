@@ -1394,7 +1394,11 @@ class EnzymeAgent:
                     'Native mismatch, retrieval failure and a weak structural proxy have different meanings; none alone establishes target inactivity. '
                     'assess_next_batch gathers a bounded native-evidence batch. set_family_focus can defer a reported family or annotation scope reversibly. '
                     'Check actual test coverage: an unsampled mechanism remains unresolved, not refuted. '
-                    'Choose an evidence action rather than a narrative-only answer or a repeated completed query.'
+                    'Choose an evidence action rather than a narrative-only answer or a repeated completed query. '
+                    'Deliberation is the expensive step and retrieval is the cheap one: having reasoned a mechanism '
+                    'family in or out, spend the next actions retrieving its sequence-database members rather than '
+                    'restating the reasoning. A family judged relevant and never searched is an untested family, and '
+                    'a named protein without a retrieved sequence cannot be assessed or modelled.'
                 )})
             if reconnaissance:
                 available_tools=[tool for tool in self.tools if tool['function']['name'] in literature_bootstrap['available_tools']]

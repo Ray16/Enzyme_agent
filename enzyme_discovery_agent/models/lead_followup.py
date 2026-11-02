@@ -138,8 +138,15 @@ def service_leads(run_dir,limit=None,lead_ids=None):
                 content=path.read_bytes()
                 if re.search(r'(?<!\w)'+re.escape(m['literature_name'])+r'(?!\w)',content.decode(errors='replace'),re.I):
                     extra.append((str(path),hashlib.sha256(content).hexdigest()))
+        # The taxon and any deposited identifier are what resolution actually turns on, and
+        # they often arrive after the first attempt. Including them means a lead reopens with
+        # a full budget the moment the thing it was waiting for exists, instead of staying
+        # 'pending: retrieve a source linking this name to a taxon' while that taxon sits in
+        # its own metadata.
+        hints=[m.get('organism') or sibling_organism(registry,accession,m),
+               (m.get('literature_lead') or {}).get('deposited_identifier')]
         basis=hashlib.sha256(json.dumps({'source':m.get('literature_lead'),
-            'retrieved_sources':sorted(extra),
+            'retrieved_sources':sorted(extra),'identity_hints':hints,
             'implementation':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()},sort_keys=True).encode()).hexdigest()
         previous=ledger.get(lead_key(m),{})
         if previous.get('basis')==basis and (previous.get('stage') not in RETRYABLE_STAGES or

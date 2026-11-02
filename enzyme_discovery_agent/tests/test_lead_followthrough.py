@@ -165,3 +165,21 @@ def test_disagreeing_taxa_are_left_unresolved_rather_than_guessed(tmp_path,monke
     registry=load_candidate_registry(tmp_path,strict=True)['candidates']
     meta=registry[lead]['metadata']
     assert sibling_organism(registry,lead,meta) is None
+
+
+def test_a_taxon_arriving_later_reopens_the_lead_with_a_fresh_budget(tmp_path,monkeypatch):
+    """The thing resolution waits for usually arrives after the first attempt."""
+    source=setup(tmp_path)
+    lead=register_literature_lead(tmp_path,{'name':'SynJoin'},{'doi':'10.test/source'},source)
+    _pending_mocks(monkeypatch)
+    service_leads(tmp_path,lead_ids=[lead])
+    first=json.loads((tmp_path/'agent_state/lead_followup.json').read_text())
+    assert next(iter(first.values()))['stage']=='identity_pending'
+    # Still inside the cooldown, so nothing would normally be retried...
+    assert not service_leads(tmp_path,lead_ids=[lead])['attempted']
+    # ...but learning the organism is new evidence, not a repeat of the same question.
+    update_candidate_registry(tmp_path,lead,None,{'organism':'Synthetica exempla'})
+    assert lead in service_leads(tmp_path,lead_ids=[lead])['attempted']
+    ledger=json.loads((tmp_path/'agent_state/lead_followup.json').read_text())
+    assert len(ledger)==1, 'still one lead, not a duplicate row'
+    assert next(iter(ledger.values()))['attempts']==1, 'new evidence restores the attempt budget'

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 
 
@@ -33,34 +34,122 @@ _load_dotenv()
 # --- LLM ---
 ARGO_BASE_URL = os.environ.get("ARGO_BASE_URL", "https://apps-dev.inside.anl.gov/argoapi/v1")
 ARGO_API_KEY = os.environ.get("ARGO_API_KEY", os.environ.get("USER", "rzhu"))
-DEFAULT_MODEL = "argo:claude-5-sonnet"
+ARGO_MODEL = "argo:claude-5-sonnet"
+ARGO_HIGH_REASONING_OUTPUT_RESERVE = 24576
+ARGO_HIGH_REASONING_MIN_TIMEOUT = 300
 
 # --- Fallback LLM backend (availability failover) ---
 # The agent speaks the OpenAI chat-completions protocol, so any OpenAI-compatible
 # endpoint can serve it.  When the primary (argo) is down, quota-revoked, or
 # rate-limited, the client fails over (sticky per run) to the next configured
 # backend.  Keys come from the ENVIRONMENT ONLY -- never commit a key to the tree.
+GEMINI_BASE_URL = os.environ.get(
+    "GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+# gemini-3.5-flash-lite free-tier pacing (15 RPM); lower it for other/stricter models.
+GEMINI_REQUESTS_PER_MINUTE = float(os.environ.get("GEMINI_REQUESTS_PER_MINUTE", "15"))
+GEMINI_INPUT_TOKENS_PER_MINUTE = int(os.environ.get("GEMINI_INPUT_TOKENS_PER_MINUTE", "0"))
+# Capability priority for text/tool models with nonzero free project quotas.
+# This is a routing policy, not a guarantee of ranking on every scientific task.
+GEMINI_FREE_MODEL_PRIORITY = (
+    "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3-flash-preview",
+    "gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
+    "gemini-2.5-flash", "gemini-2.5-flash-lite",
+)
+
+
+def ordered_gemini_models(value: str | None = None) -> tuple[str, ...]:
+    """Select a free-model subset while retaining capability priority."""
+    selected = set(GEMINI_FREE_MODEL_PRIORITY if value is None else
+                   (item.strip() for item in value.split(",") if item.strip()))
+    unknown = selected.difference(GEMINI_FREE_MODEL_PRIORITY)
+    if unknown:
+        raise ValueError("GEMINI_CASCADE_MODELS contains models outside the free ladder: "
+                         + ", ".join(sorted(unknown)))
+    if not selected:
+        raise ValueError("GEMINI_CASCADE_MODELS must contain at least one free model")
+    return tuple(model for model in GEMINI_FREE_MODEL_PRIORITY if model in selected)
+
+
+GEMINI_CASCADE_MODELS = ordered_gemini_models(os.environ.get("GEMINI_CASCADE_MODELS"))
+# Unknown account quotas use a conservative rate, then learn from QuotaFailure.
+GEMINI_CASCADE_REQUESTS_PER_MINUTE = float(os.environ.get("GEMINI_CASCADE_REQUESTS_PER_MINUTE", "2"))
+GEMINI_MODEL_LIMITS = json.loads(os.environ.get("GEMINI_MODEL_LIMITS", "{}"))
+# Leave answer capacity after the high thinking allowance used by Gemini 2.5.
+# For newer models this is output headroom, not a fixed thinking-budget request.
+GEMINI_HIGH_REASONING_OUTPUT_RESERVE = 24576
+GEMINI_HIGH_REASONING_MIN_TIMEOUT = 300
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+GROQ_MODEL = "openai/gpt-oss-120b"
+GROQ_FALLBACK_ENABLED = os.environ.get("ENZYME_AGENT_GROQ_FALLBACK", "1").strip().lower() not in {"0", "false", "no"}
+# Published free-plan limits; keep project credentials outside this package.
+GROQ_REQUESTS_PER_MINUTE = int(os.environ.get("GROQ_REQUESTS_PER_MINUTE", "30"))
+GROQ_TOKENS_PER_MINUTE = int(os.environ.get("GROQ_TOKENS_PER_MINUTE", "8000"))
+GROQ_REQUESTS_PER_DAY = int(os.environ.get("GROQ_REQUESTS_PER_DAY", "1000"))
+GROQ_TOKENS_PER_DAY = int(os.environ.get("GROQ_TOKENS_PER_DAY", "200000"))
+GROQ_MAX_COMPLETION_TOKENS = int(os.environ.get("GROQ_MAX_COMPLETION_TOKENS", "4096"))
+DEFAULT_MODEL = os.environ.get("ENZYME_AGENT_MODEL") or "claude-code:claude-sonnet-5-5"
+ADAPTIVE_REASONING = os.environ.get("ENZYME_AGENT_ADAPTIVE_REASONING", "1") == "1"
+ADAPTIVE_REVIEW_MIN_ASSESSED = 20
+# Deliberation is the expensive part of an agentic run and retrieval is the cheap part, so
+# a review should wrap a substantial batch of evidence work rather than a handful of actions.
+# At four actions per cycle a production run spent 19 of 34 calls on review bookkeeping
+# (conclude_research_review, interpret_research_outcome, get_exploration_state,
+# get_decision_context) against a single database search, and every one of those turns
+# re-sends the full context. Overridable per campaign without a code change.
+RESEARCH_REVIEW_MAX_INSPECTIONS = int(os.environ.get("ENZYME_REVIEW_MAX_INSPECTIONS", "3"))
+RESEARCH_REVIEW_MAX_ACTIONS = int(os.environ.get("ENZYME_REVIEW_MAX_ACTIONS", "12"))
+# Google AI Studio replaces the default OpenRouter fallback. The older backend
+# remains available only when explicitly selected for an existing workflow.
+FALLBACK_PROVIDER = os.environ.get("ENZYME_AGENT_FALLBACK_PROVIDER", "gemini").strip().lower()
 OPENROUTER_BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.environ.get(
     # Free, tool-calling-capable, Western-hosted (smoke-tested 2026-10-04). Switch to
     # "anthropic/claude-sonnet-5-5" once OpenRouter credits are added for best quality.
     "OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
+# Optional reasoning allowance for short, non-tool structured extraction calls.
+# Leave disabled unless the selected provider/model supports reasoning budgets.
+OPENROUTER_STRUCTURED_REASONING_TOKENS = int(os.environ.get(
+    "OPENROUTER_STRUCTURED_REASONING_TOKENS", "0"))
+
+
+def free_model_backends() -> list[dict]:
+    """Free text/tool ladder, with optional Groq before the final Google tier."""
+    backends = []
+    for model in GEMINI_CASCADE_MODELS:
+        if model == "gemini-2.5-flash-lite" and GROQ_API_KEY and GROQ_FALLBACK_ENABLED:
+            backends.append({"name": "groq", "base_url": GROQ_BASE_URL,
+                             "api_key": GROQ_API_KEY, "model": GROQ_MODEL})
+        if GEMINI_API_KEY:
+            backends.append({"name": "gemini", "base_url": GEMINI_BASE_URL,
+                             "api_key": GEMINI_API_KEY, "model": model})
+    if (GROQ_API_KEY and GROQ_FALLBACK_ENABLED
+            and not any(row["name"] == "groq" for row in backends)):
+        backends.append({"name": "groq", "base_url": GROQ_BASE_URL,
+                         "api_key": GROQ_API_KEY, "model": GROQ_MODEL})
+    return backends
 
 
 def llm_backends() -> list[dict]:
     """Ordered LLM backends for availability failover (first = primary).
 
     A backend is included only when configured (endpoint + key present), so an
-    unset OpenRouter key simply means argo-only with no failover.
+    unset key omits that provider from automatic routing.
     """
     backends = [{
         "name": "argo",
         "base_url": ARGO_BASE_URL,
         "api_key": ARGO_API_KEY,
-        "model": DEFAULT_MODEL,
+        "model": ARGO_MODEL,
     }]
-    if OPENROUTER_API_KEY:
+    if FALLBACK_PROVIDER not in {"gemini", "openrouter", "none"}:
+        raise ValueError("ENZYME_AGENT_FALLBACK_PROVIDER must be gemini, openrouter, or none")
+    if FALLBACK_PROVIDER == "gemini":
+        backends.extend(free_model_backends())
+    if FALLBACK_PROVIDER == "openrouter" and OPENROUTER_API_KEY:
         backends.append({
             "name": "openrouter",
             "base_url": OPENROUTER_BASE_URL,
@@ -74,11 +163,16 @@ LLM_TIMEOUT = 120  # seconds per LLM call
 LLM_TEMPERATURE = None
 
 # --- Agent defaults ---
-MAX_ITERATIONS = 100
+MAX_ITERATIONS = 100  # legacy planning hint; campaign resource budgets control stopping
 REFLECTION_INTERVAL = 5  # reflect every N iterations
-# Reserve the final portion of every campaign for deterministic evaluation and
-# LLM report generation.  Discovery is valuable only if it reaches deliverables.
-FINALIZATION_RESERVE_ITERATIONS = 8
+MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION = 4  # bounded evidence tranche before a model decision; never a scientific stopping rule
+DISCOVERY_RESEARCH_INTERVAL = 10
+LITERATURE_DISCOVERY_PAPERS_PER_STEP = 2
+EVALUATIONS_PER_STEP = 20
+EXPANSION_SEEDS_PER_STEP = 2
+ENABLE_EXPANSION_FEEDBACK = True
+DISCOVERY_EXTRACTION_TIMEOUT = 90
+FINALIZATION_RESERVE_ITERATIONS = 8  # retained for compatibility; no turn-based cutoff
 
 # --- Tool execution ---
 TOOL_THREAD_POOL_WORKERS = 4
@@ -96,13 +190,15 @@ FULLTEXT_HARVEST_WORKERS = 6
 # family-survey gate already runs folds ~6-wide, so keep this modest to stay polite
 # to the EBI/UniProt REST endpoints (total in-flight ~= folds x this).
 FAMILY_SURVEY_MEMBER_WORKERS = 6
-# Cache mechanism-family derivation across runs, keyed on the reaction contract
+# Optional cache of mechanism-family derivation across runs, keyed on the target,
+# retrieved evidence and serving model. Disabled by default for cold discovery.
+# The derivation is keyed on the reaction contract
 # (bonds + direction + substrate SMILES).  The derivation samples the LLM to
 # convergence over the literature (~7 min in the canonical-run profile) and its
 # result is contract-stable, so a repeat run of the same target reuses it.  Cache
 # lives under ~/.cache/enzyme_agent (override: ENZYME_AGENT_CACHE_DIR).
 ENABLE_MECHANISM_FAMILY_CACHE = os.environ.get(
-    "ENZYME_AGENT_MECHANISM_FAMILY_CACHE", "1") == "1"
+    "ENZYME_AGENT_MECHANISM_FAMILY_CACHE", "0") == "1"
 # How many times to RETRY a thin/empty LLM report with the compact prompt before
 # writing the deterministic ranking.  Profiling showed this argo model reliably
 # returns unparseable long-form reports and the retries (each a full ~4k-token
@@ -127,8 +223,8 @@ REPORT_COMPACT_RETRIES = int(os.environ.get("ENZYME_AGENT_REPORT_COMPACT_RETRIES
 FULLTEXT_HARVEST_MAX_PAPERS = 3
 MAX_RESULT_CHARS = 20_000
 # Screening allocates a RELEVANCE BUDGET across fold families, it does not blindly
-# cap.  auto_screen collapses orthologs to one representative per distinct gene,
-# groups those representatives by their fold family, and then spends a bounded
+# cap.  auto_screen groups only exact known sequences, preserves unknown identities,
+# groups candidates by their fold family, and then spends a bounded
 # evaluation budget where the grounded signal is: EVERY fold keeps at least
 # FAMILY_EVAL_FLOOR_PER_FOLD representative (no family is dropped before
 # evaluation — the earlier concern that a flat cap discarded whole families, and
@@ -137,20 +233,13 @@ MAX_RESULT_CHARS = 20_000
 # the target (same reaction direction, closer substrate).  A blind per-gene screen
 # instead spent budget evenly and let one large off-target fold crowd out the
 # on-target ones.  The floor guarantees breadth; the budget concentrates depth.
-# Budgets count DISTINCT enzymes: orthologs are collapsed before selection (see
-# gates/family_relevance), so a high cap evaluates the whole distinct annotated
-# tail of each relevant family (comprehensive coverage) without re-evaluating
-# copies of one enzyme.  Raised from 40/6 for candidate-coverage breadth.
-FAMILY_EVAL_BUDGET = 500          # target number of DISTINCT enzymes to evaluate
+# Budgets count representatives; exact-sequence grouping is possible only when
+# sequences are available, and does not establish functional equivalence.
+FAMILY_EVAL_BUDGET = 100          # rolling screening tranche, not a campaign cap
 FAMILY_EVAL_FLOOR_PER_FOLD = 1    # always evaluate at least this many per fold
-FAMILY_EVAL_MAX_PER_FOLD = 500    # ceiling per fold (distinct enzymes)
-# Ortholog fan-out cap at DISCOVERY.  A broad family search returns dozens of
-# orthologs of the SAME enzyme (one run registered 66 copies of a single gene),
-# which crowds out family diversity — the pool re-discovers one enzyme in many
-# organisms instead of reaching the next distinct family.  Register only the best
-# few representatives per distinct enzyme (family_key); the rest are surplus
-# orthologs, trivially re-queried later once an enzyme proves interesting.  The
-# goal is efficient exploration of DIFFERENT families, not ortholog breadth.
+FAMILY_EVAL_MAX_PER_FOLD = 20     # depth per fold in this tranche; retain the rest
+# The survey may use this bound when promoting representatives. Discovery itself
+# retains all eligible search accessions; a name alone cannot prove redundancy.
 MAX_REPRESENTATIVES_PER_FAMILY = 2
 EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
 # Substrate-fit member promotion + gated TrEMBL deepening.
@@ -216,6 +305,10 @@ RESULTS_LIST_CAP = 10
 # prompt, which is ~97% of loop token spend.  Generous by default so the model
 # always sees several recent evidence turns in full.
 HISTORY_KEEP_RECENT_TOOL_MSGS = 16
+MODEL_CONTEXT_MAX_CHARS = 16_000
+MODEL_CONTEXT_RECENT_ASSISTANTS = 2
+MODEL_CONTEXT_TOOL_RESULT_CHARS = 2000
+COMPACT_SYSTEM_PROMPT = True
 HISTORY_STUB_OVER_CHARS = 1_000
 
 # --- Ranking ---
@@ -439,3 +532,54 @@ APNOVO_EVAL_SUITES = (
 # -- so folding/evaluation need lambda13 (H100, sm90), while generation (stage 1)
 # and the CPU stages run fine on lambda0-6 (V100 sm70 / T4 sm75).
 APNOVO_MIN_FOLDING_CAPABILITY = 8.0
+
+# ---------------------------------------------------------------------------
+# DISCO -- ligand-conditioned sequence-structure co-design (the motif-free
+# generative backend; complements AP Novo's motif scaffolding).
+# ---------------------------------------------------------------------------
+# DISCO (DIffusion for Sequence-structure CO-design) jointly generates a protein
+# SEQUENCE and 3D BACKBONE conditioned on a small molecule / nucleic acid, with
+# NO pre-specified catalytic motif -- you hand it only the ligand(s) and a chain
+# length.  Where AP Novo needs a 3D arrangement of catalytic sidechain atoms,
+# DISCO needs only the species the pocket should complement, so it covers the
+# case where the chemistry is known but a trustworthy catalytic geometry is not.
+#
+# As with AP Novo the heavy torch/CUDA stack lives in its OWN uv venv outside
+# this git tree and is invoked as a subprocess through the cluster reservation
+# gate, so a normal agent run never imports torch or touches a GPU.
+#
+# Install layout (code + weights deliberately out of the git tree):
+#   $DISCO_DIR/.venv                     uv env: torch(cu13) + deepspeed + disco
+#   $DISCO_DIR/models/DISCO.pt           model checkpoint (auto-downloads from HF
+#                                        DISCO-Design/DISCO if left unset)
+DISCO_DIR = os.environ.get(
+    "ENZYME_AGENT_DISCO_DIR", "/nfs/lambda_stor_01/homes/rzhu/Software/DISCO"
+)
+DISCO_PYTHON = os.environ.get(
+    "ENZYME_AGENT_DISCO_PYTHON", str(Path(DISCO_DIR) / ".venv" / "bin" / "python")
+)
+# Explicit checkpoint path.  Empty string -> let the runner pull it from the
+# HuggingFace Hub (DISCO-Design/DISCO) into its cache on first use.
+DISCO_CHECKPOINT = os.environ.get(
+    "ENZYME_AGENT_DISCO_CHECKPOINT", str(Path(DISCO_DIR) / "models" / "DISCO.pt")
+)
+# DeepSpeed EvoformerAttention is memory-efficient but compiles CUTLASS kernels
+# that need nvcc + a CUTLASS checkout AND an Ampere+ GPU.  Set this to a CUTLASS
+# source dir to enable it; left empty, DISCO runs with naive attention (correct,
+# but materialises the full attention matrix -> much more memory, so keep lengths
+# modest on a 32 GB V100).
+DISCO_CUTLASS_PATH = os.environ.get(
+    "ENZYME_AGENT_DISCO_CUTLASS_PATH", "/nfs/lambda_stor_01/homes/rzhu/Software/cutlass"
+)
+# Fallback DEFAULTS only -- the agent overrides these per call via tool params.
+DISCO_NUM_SEEDS = 4                 # samples generated per job (one per seed)
+DISCO_EXPERIMENT = "diverse"        # the paper's ligand-conditioned preset
+DISCO_EFFORT = "max"                # README: conditional generation needs effort=max
+DISCO_DEFAULT_LENGTHS = (150, 200, 250)   # exploratory sizes; explicit caller lengths take precedence
+DISCO_MAX_GPUS = 1                  # the runner's Fabric is single-process here; 1 GPU/call
+DISCO_TIMEOUT = int(os.environ.get("ENZYME_AGENT_DISCO_TIMEOUT", str(12 * 3600)))
+DISCO_THREADS_PER_WORKER = 4
+# EvoformerAttention/CUTLASS kernels need compute capability >= 8.0 (Ampere).
+# Below that DISCO must run with use_deepspeed_evo_attention=false; the tool
+# auto-selects based on the host's GPUs and whether DISCO_CUTLASS_PATH is set.
+DISCO_MIN_DS_ATTENTION_CAPABILITY = 8.0
