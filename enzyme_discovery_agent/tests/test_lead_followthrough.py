@@ -131,3 +131,37 @@ def test_an_unresolved_lead_is_reported_as_unresolved_even_when_relevance_is_unr
     rows=list(csv.DictReader((tmp_path/'unresolved_literature_leads.csv').open()))
     assert rows, 'the identity gap must not be hidden by the relevance label'
     assert rows[0]['relevance_status']=='needs_relevance_review'
+
+
+def test_a_taxon_already_known_elsewhere_is_used_to_resolve_the_lead(tmp_path,monkeypatch):
+    """Both facts were already in the registry; nothing joined them, so retries re-asked."""
+    source=setup(tmp_path)
+    lead=register_literature_lead(tmp_path,{'name':'SynJoin'},{'doi':'10.test/source'},source)
+    # A separate entry for the same enzyme already records where it comes from.
+    update_candidate_registry(tmp_path,'SynJoin','evidence_pending',
+                              {'protein_name':'SynJoin','organism':'Synthetica exempla'})
+    queries=[]
+    def search(query,**kwargs):
+        queries.append(query)
+        return {'status':'success','data':[]}
+    monkeypatch.setattr('enzyme_discovery_agent.tools.literature.search_pubmed',search)
+    monkeypatch.setattr('enzyme_discovery_agent.tools.identity_resolution.resolve_literature_lead',
+                        lambda *a,**k:{'status':'partial','data':{'status':'pending','reason':'x'}})
+    service_leads(tmp_path,lead_ids=[lead])
+    assert queries and 'Synthetica exempla' in queries[0], queries
+    carried=load_candidate_registry(tmp_path,strict=True)['candidates'][lead]['metadata']
+    assert carried['organism']=='Synthetica exempla'
+    assert 'narrows identity lookup' in carried['organism_basis']
+
+
+def test_disagreeing_taxa_are_left_unresolved_rather_than_guessed(tmp_path,monkeypatch):
+    from enzyme_discovery_agent.models.lead_followup import sibling_organism
+    source=setup(tmp_path)
+    lead=register_literature_lead(tmp_path,{'name':'SynJoin'},{'doi':'10.test/source'},source)
+    update_candidate_registry(tmp_path,'SynJoin','evidence_pending',
+                              {'protein_name':'SynJoin','organism':'Synthetica exempla'})
+    update_candidate_registry(tmp_path,'SynJoin_b','evidence_pending',
+                              {'literature_name':'SynJoin','organism':'Alia exempla'})
+    registry=load_candidate_registry(tmp_path,strict=True)['candidates']
+    meta=registry[lead]['metadata']
+    assert sibling_organism(registry,lead,meta) is None

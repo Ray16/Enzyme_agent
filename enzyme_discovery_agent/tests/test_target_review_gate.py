@@ -55,11 +55,33 @@ def test_source_refs_all_partners_and_actual_exclusion_basis_are_required(tmp_pa
     with pytest.raises(ValueError,match='speculation'):review.save_assessment(tmp_path,packet,bad)
 
 
-def test_exploratory_comparator_can_be_modeled_but_is_not_a_priority_shortlist_entry(tmp_path):
+def test_a_transfer_hypothesis_ranks_but_is_not_in_the_strict_shortlist(tmp_path):
+    """Non-native engineering: the requested reaction is undocumented by definition.
+
+    Requiring an observation on the requested substrates to rank left the list empty
+    however strong the mechanistic case was, so transfer hypotheses now rank, while the
+    prioritize-only view stays available for the stricter question.
+    """
     packet=setup(tmp_path);review.save_assessment(tmp_path,packet,assessment())
     meta=load_candidate_registry(tmp_path)['candidates']['SYNTH1']['metadata']
     assert review.eligible(tmp_path,'SYNTH1',meta,purpose='modeling')
+    assert review.eligible(tmp_path,'SYNTH1',meta)
+    assert not review.eligible(tmp_path,'SYNTH1',meta,purpose='shortlist')
+    assert len(refresh_ranked_candidates(tmp_path))==1
+
+
+def test_a_speculative_assessment_still_never_ranks(tmp_path):
+    """Leniency about documentation is not leniency about having any case at all."""
+    packet=setup(tmp_path)
+    meta=load_candidate_registry(tmp_path)['candidates']['SYNTH1']['metadata']
+    saved=dict(meta.get('target_assessment') or {})
+    speculative={**assessment(),'evidence_level':'speculative'}
+    with pytest.raises(ValueError):
+        review.save_assessment(tmp_path,packet,speculative)
+    update_candidate_registry(tmp_path,'SYNTH1',None,{'target_assessment':{**saved,'evidence_level':'speculative'}})
+    meta=load_candidate_registry(tmp_path)['candidates']['SYNTH1']['metadata']
     assert not review.eligible(tmp_path,'SYNTH1',meta)
+    assert not review.eligible(tmp_path,'SYNTH1',meta,purpose='modeling')
 
 
 def test_major_observed_conflict_is_not_hidden_by_a_positive_transfer_label(tmp_path):

@@ -66,10 +66,18 @@ def identity_verified(root,accession,metadata):
 
 
 def eligible(root,accession,metadata,purpose='ranking'):
-    """A persisted current target assessment is mandatory for the scientific shortlist."""
+    """A persisted current target assessment is mandatory for the scientific shortlist.
+
+    ``ranking`` admits source-grounded transfer hypotheses, not only candidates with an
+    observation on the requested substrates. For non-native engineering the requested
+    reaction is by definition undocumented, so requiring direct observation to rank left
+    the list empty however good the mechanistic case was. ``speculative`` is still refused,
+    and the saved evidence_level travels with every row so a transfer hypothesis is never
+    presented as a measured activity. ``shortlist`` keeps the stricter prioritize-only view.
+    """
     assessment=metadata.get('target_assessment') or {}
     if assessment.get('decision') not in {'prioritize','investigate'} or assessment.get('evidence_level')=='speculative':return False
-    if purpose=='ranking' and assessment.get('decision')!='prioritize':return False
+    if purpose=='shortlist' and assessment.get('decision')!='prioritize':return False
     if assessment.get('target_sha256')!=digest(target_contract(root)):return False
     if assessment.get('record_sha256')!=digest(scientific_record(metadata)):return False
     path=(Path(root)/(metadata.get('target_assessment_artifact') or '')).resolve()
@@ -191,7 +199,10 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
         'Defer when no defensible target-specific hypothesis can be formed; exclude only on observed incompatibility. '
         'Structural activation geometry is separate from the complete requested reaction and is not an activity measurement. '
         'Do not invent numerical geometry thresholds or apply a criterion to a different reacting center. Use only the declared site criteria. '
-        'Prioritize only defensible starting points for this target. Investigate denotes an exploratory comparator or unresolved hypothesis and is kept outside the priority shortlist. '
+        'Prioritize defensible starting points for this target. The requested reaction may have no documented activity for any enzyme; '
+        'that absence is the premise of the work and is not by itself a reason to withhold priority. Judge a candidate on its own '
+        'mechanistic case and on evidence that substrate recognition could transfer, such as relevant promiscuity, native scaffold '
+        'tolerance, or native partners resembling the requested ones. Investigate denotes a weaker or unresolved hypothesis. '
         'Decide on absolute evidence, not which candidate is best within this batch. Zero prioritized candidates is a valid result. '
         'Matching native reacting atom classes alone is insufficient for priority: explain candidate-specific evidence supporting transfer of substrate recognition, such as relevant promiscuity, native scaffold tolerance or architecture. '
         'Use one record_target_assessment call per candidate. Cite its short source ID. Map every T-indexed target participant, including any nonreacting spectator. Preserve unknowns and state a discriminating reopening condition. '

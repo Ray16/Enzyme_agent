@@ -89,6 +89,30 @@ def lead_key(meta):
     return 'lead:'+hashlib.sha256(seed.encode()).hexdigest()[:20]
 
 
+def sibling_organism(registry,accession,meta):
+    """A taxon for this lead already recorded on another entry for the same enzyme.
+
+    Resolution stalls on 'ambiguous identity' or 'retrieve a source linking this name to
+    a taxon', yet the run often already holds the organism on a separate registry entry
+    carrying the same name. Both facts sat in the same registry, unjoined, so every retry
+    re-asked the same under-specified question. Only an unambiguous match is used: two
+    entries disagreeing about the taxon is exactly the conflict that must stay unresolved.
+    """
+    name=(meta.get('literature_name') or '').casefold()
+    if not name:return None
+    found={}
+    for other,entry in registry.items():
+        if other==accession:continue
+        data=entry.get('metadata') or {}
+        organism=data.get('organism') or ((data.get('evaluation_data') or {}).get('organism'))
+        if not organism:continue
+        for label in (data.get('literature_name'),data.get('protein_name'),other):
+            if label and str(label).casefold()==name:
+                found[str(organism).strip().casefold()]=str(organism).strip()
+                break
+    return next(iter(found.values())) if len(found)==1 else None
+
+
 def service_leads(run_dir,limit=None,lead_ids=None):
     """Give newly discovered and older leads bounded, source-grounded follow-through.
 
@@ -131,11 +155,21 @@ def service_leads(run_dir,limit=None,lead_ids=None):
         limit=max(2,min(MAX_LEADS_PER_CALL,-(-len(ordered)//4)))
     for accession,entry,basis,extra in ordered[:limit]:
         meta=entry['metadata'];folder=root/'artifacts/identity_followup'/accession.replace(':','_');folder.mkdir(parents=True,exist_ok=True)
-        query=meta['literature_name']+' enzyme characterization'
-        result=search_pubmed(query,max_results=8)
-        if result.get('status') in {'success','partial'} and not result.get('data'):
-            query=meta['literature_name']
+        taxon=meta.get('organism') or sibling_organism(registry,accession,meta)
+        if taxon and not meta.get('organism'):
+            # Give the resolver the taxon it keeps asking for, recorded as a derived link
+            # rather than as an observation: it narrows the lookup, it is not evidence.
+            update_candidate_registry(root,accession,None,{'organism':taxon,
+                'organism_basis':'Taxon carried from another registry entry for the same enzyme name; narrows identity lookup only.'})
+            meta={**meta,'organism':taxon}
+        attempts=[' '.join(filter(None,[meta['literature_name'],taxon,'enzyme'])) if taxon else None,
+                  meta['literature_name']+' enzyme characterization',
+                  meta['literature_name']]
+        result=None
+        for query in [q for q in attempts if q]:
             result=search_pubmed(query,max_results=8)
+            if result.get('status') not in {'success','partial'} or result.get('data'):
+                break
         path=folder/(basis+'.json');atomic_write_json(path,{'tool_name':'search_pubmed','args':{'query':query},'result':result})
         # JSON retains the exact retrieved title/abstract and its source identifiers.
         try:
