@@ -1421,15 +1421,25 @@ class EnzymeAgent:
                 "sent_characters": len(json.dumps(model_messages, default=str))})
             from enzyme_discovery_agent.models.research_decisions import inspection_completed
             from enzyme_discovery_agent.context import strategic_tool_definitions
-            model_tools = (strategic_tool_definitions(available_tools,include_inspections=not inspection_completed(self.run_dir))
-                           if adaptive_review else compact_tool_definitions(available_tools))
+            permitted = (strategic_tool_definitions(available_tools,include_inspections=not inspection_completed(self.run_dir))
+                         if adaptive_review else compact_tool_definitions(available_tools))
             from enzyme_discovery_agent.models.research_decisions import review_action_allowed
             if not review_action_allowed(self.run_dir,'interpret_research_outcome'):
-                model_tools=[tool for tool in model_tools if tool['function']['name']!='interpret_research_outcome']
+                permitted=[tool for tool in permitted if tool['function']['name']!='interpret_research_outcome']
             if getattr(self,'_research_repair_only',False):
-                model_tools=[tool for tool in model_tools if tool['function']['name'] in
-                             {'interpret_research_outcome','conclude_research_review'}]
-            self._offered_direct_tools={tool['function']['name'] for tool in model_tools}
+                permitted=[tool for tool in permitted if tool['function']['name'] in
+                           {'interpret_research_outcome','conclude_research_review'}]
+            # The allowlist still decides what may run; it no longer decides what schemas
+            # are sent. Varying the schemas rewrote the provider's cache prefix every turn.
+            self._offered_direct_tools={tool['function']['name'] for tool in permitted}
+            from enzyme_discovery_agent.context import stable_tool_definitions
+            model_tools = stable_tool_definitions(self.tools,
+                                                  include_inspections=not inspection_completed(self.run_dir))
+            # Volatile, so it goes last in the payload and is never written to the durable
+            # history: anything placed earlier would invalidate the cache behind it.
+            model_messages = model_messages + [{'role': 'user', 'content': 'PERMITTED THIS TURN: '
+                + ', '.join(sorted(self._offered_direct_tools))
+                + '. Other listed tools are unavailable this turn and will be refused; choose from these.'}]
             from contextlib import nullcontext
             validation_context=self.llm.controller_tool_validation() if isinstance(self.llm,LLMClient) else nullcontext()
             with validation_context:
