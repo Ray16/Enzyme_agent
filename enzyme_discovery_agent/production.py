@@ -164,6 +164,31 @@ def candidate_sources(value, run):
     return sources
 
 
+def compact_other_target_match(match, lookup_path):
+    """Describe a model built for a DIFFERENT target without carrying its bulk.
+
+    A model of this sequence against another target is not evidence here, so the
+    modeling agent only needs to know it exists and what it was. The full match --
+    per-pose coordinate, confidence and artifact lists, tens of thousands of
+    characters of it -- stays on disk in the pool lookup, where it would otherwise
+    crowd the candidate's own record out of every turn of context.
+    """
+    execution = match.get('execution') or {}
+    setup = match.get('setup') or {}
+    declared = setup.get('declared_modeling_input') or {}
+    return {key: value for key, value in {
+        'identity_match': match.get('identity_match'), 'input_integrity': match.get('input_integrity'),
+        'target_applicability': match.get('target_applicability'),
+        'execution_id': execution.get('execution_id'), 'producer_run_id': execution.get('producer_run_id'),
+        'scientific_status': execution.get('scientific_status'), 'pose_qc_status': execution.get('pose_qc_status'),
+        'expected_poses': execution.get('expected_poses'),
+        'setup_id': setup.get('setup_id'), 'target_id': setup.get('target_id'),
+        'modeled_step': declared.get('modeled_step'), 'target_substrates': declared.get('target_substrates'),
+        'cofactors': declared.get('cofactors'),
+        'full_record': str(lookup_path),
+    }.items() if value is not None}
+
+
 def prepare_tasks(settings, run, rows, directory):
     """Resolve sequence sources, check the shared pool, batch MSAs and emit task data."""
     import requests
@@ -231,7 +256,8 @@ def prepare_tasks(settings, run, rows, directory):
                 'priority_hypothesis': row['data']['priority_assessment'],
                 'native_substrates_resolved': row['native_substrates_resolved'],
                 'existing_cofolds': lookup['matches'], 'do_not_recofold': bool(lookup['matches']),
-                'other_target_cofolds': lookup.get('other_target_matches', []),
+                'other_target_cofolds': [compact_other_target_match(match, slot / 'pool_lookup.json')
+                                         for match in lookup.get('other_target_matches', [])],
                 'evidence_paths': sorted(evidence_paths)}}
             resolved.append((row, slot, candidate))
         except Exception as exc:

@@ -170,3 +170,35 @@ def test_an_exited_worker_is_recorded_before_its_backend_jobs_settle(tmp_path, m
     status = json.loads((root / 'campaign_status.json').read_text())
     assert status['modeling_live'] is False and status['awaiting_backend_jobs'] == 1
     assert [entry['status'] for entry in status['queue']] == ['awaiting_backend_jobs']
+
+
+def test_a_model_of_another_target_is_described_without_carrying_its_bulk():
+    """The other-target index must not crowd the candidate's own record out of context."""
+    from enzyme_discovery_agent.production import compact_other_target_match
+    match = {'identity_match': 'accession', 'input_integrity': 'verified',
+             'target_applicability': 'required_molecular_input_absent',
+             'execution': {'execution_id': 'execution:abc', 'producer_run_id': 'run-1',
+                           'scientific_status': 'requires_interpretation_or_revision',
+                           'pose_qc_status': 'pass', 'expected_poses': 50,
+                           'coordinate_files': [f'/pose/{i}.cif' for i in range(50)],
+                           'confidence_files': [f'/pose/{i}.json' for i in range(50)],
+                           'artifacts': [{'path': f'/pose/{i}.cif', 'sha256': 'f' * 64} for i in range(50)]},
+             'setup': {'setup_id': 'setup:abc', 'target_id': 'other-target',
+                       'declared_modeling_input': {'modeled_step': {'index': 1},
+                                                   'target_substrates': [{'name': 'other substrate'}],
+                                                   'cofactors': [{'ccd': 'ATP'}]},
+                       'input_source': {'path': '/big', 'sha256': 'e' * 64}}}
+    compact = compact_other_target_match(match, Path('/pool/lookup.json'))
+    assert len(json.dumps(compact)) < len(json.dumps(match)) / 5
+    # What it was, and why it does not apply here, must survive.
+    assert compact['target_applicability'] == 'required_molecular_input_absent'
+    assert compact['target_id'] == 'other-target' and compact['execution_id'] == 'execution:abc'
+    assert compact['target_substrates'] == [{'name': 'other substrate'}]
+    assert compact['full_record'] == '/pool/lookup.json'
+    # The per-pose bulk must be gone, reachable only through the on-disk record.
+    assert 'coordinate_files' not in json.dumps(compact) and '/pose/0.cif' not in json.dumps(compact)
+
+
+def test_an_absent_other_target_index_stays_absent():
+    from enzyme_discovery_agent.production import compact_other_target_match
+    assert compact_other_target_match({}, Path('/pool/lookup.json')) == {'full_record': '/pool/lookup.json'}
