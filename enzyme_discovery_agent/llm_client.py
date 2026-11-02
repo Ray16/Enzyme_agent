@@ -141,6 +141,14 @@ class TokenUsage:
                 "completion_tokens": ct,
                 "total_tokens": pt + ct,
             }
+            # Preserve the prompt breakdown when the backend reports one. The collapsed
+            # total charges a cache read the same as fresh input, so without this the
+            # ledger cannot show whether a budget was really consumed.
+            for name in ("input_tokens", "cache_creation_tokens", "cache_read_tokens"):
+                value = getattr(usage, name, None)
+                if isinstance(value, int):
+                    call[name] = value
+                    setattr(self, "total_" + name, getattr(self, "total_" + name, 0) + value)
             self.calls.append(call)
             self.total_prompt_tokens += pt
             self.total_completion_tokens += ct
@@ -149,7 +157,7 @@ class TokenUsage:
 
     def to_dict(self) -> dict:
         with self._lock:
-            return {
+            payload = {
                 "model": self.model,
                 "calls": [dict(call) for call in self.calls],
                 "total_prompt_tokens": self.total_prompt_tokens,
@@ -159,6 +167,13 @@ class TokenUsage:
                 "legacy_accounting": self.legacy_accounting,
                 "accounting_complete": self.unmetered_calls == 0 and not self.legacy_accounting,
             }
+            for name in ("total_input_tokens", "total_cache_creation_tokens", "total_cache_read_tokens"):
+                if getattr(self, name, None) is not None:
+                    payload[name] = getattr(self, name)
+            if "total_cache_read_tokens" in payload and self.total_prompt_tokens:
+                payload["cache_read_fraction_of_prompt"] = round(
+                    payload["total_cache_read_tokens"] / self.total_prompt_tokens, 4)
+            return payload
 
 
 @dataclass

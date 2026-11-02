@@ -1491,7 +1491,8 @@ class ModelingAgent:
                         before_proposal=not any(c['revisions'] for c in self.state['candidates'].values())
                         cached_only=all((candidate.get('evidence') or {}).get('do_not_recofold')
                                         and (candidate.get('evidence') or {}).get('existing_cofolds') for candidate in self.task['candidates'])
-                        if before_proposal and not cached_only and self.state['turn']>self.task.get('setup_turn_limit',8):
+                        setup_limit=self.task.get('setup_turn_limit',8)
+                        if before_proposal and not cached_only and self.state['turn']>setup_limit:
                             self.state.update(status='setup_stalled',checkpoint_reason='No source-linked proposal within the bounded setup stage; preserve missing evidence and advance the research queue.')
                             break
                         setup_tools={'inspect_candidate','read_candidate_section','inspect_investigation_lead',
@@ -1511,6 +1512,20 @@ class ModelingAgent:
                         if cached_only:
                             setup_tools={'inspect_candidate','read_candidate_section','read_evidence','retrieve_reference',
                                          'review_existing_predictions','finish_task','inspect_result_locations'}
+                        if before_proposal and not cached_only and self.state['turn']>=setup_limit:
+                            # Final setup turn. Left free, the stage spends its last turns
+                            # paginating sources and then stalls with nothing saved at all.
+                            # A provisional proposal is revisable; a stall is not.
+                            setup_tools={'propose_model','finish_task'}
+                            if not self.state.get('setup_closing_notice'):
+                                self.state['setup_closing_notice']=True
+                                self.messages.append({'role':'user','content':
+                                    'This is the last setup turn. Save a provisional proposal now from the evidence '
+                                    'you already hold, recording unresolved choices and their missing evidence in the '
+                                    'proposal itself; it is revisable afterwards. If the evidence cannot support any '
+                                    'defensible proposal, finish the task as inconclusive and state what is missing. '
+                                    'Do not retrieve or read further.'})
+                                self._event('setup_closing_turn',turn=self.state['turn'],setup_turn_limit=setup_limit)
                         offered=[tool for tool in offered if tool['function']['name'] in setup_tools]
                     if self.state.get('repeated_inspections',0)>=3:
                         readers={'inspect_candidate','inspect_validation_contract','inspect_workflow_policy',
