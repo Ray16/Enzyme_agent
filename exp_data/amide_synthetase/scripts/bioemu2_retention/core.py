@@ -24,6 +24,16 @@ def write_json(path, value):
     os.replace(temp, path)
 
 
+def rank_starting_geometry(rows):
+    """Closest physically checked candidate will be taken from this ordering.
+
+    A close substrate with a wrong attack direction must not outrank an aligned
+    pose. Distance takes priority over angle differences within the good screen.
+    """
+    return sorted(rows,key=lambda r:(r['geometry_screen_passed'],r['angle_deg']>=150,
+        -r['distance_A'],r['angle_deg'],-r['pose']),reverse=True)
+
+
 def align_to(reference, mobile, selection):
     """Least-squares rigid alignment; row-vector coordinates, no outlier removal."""
     a, b = reference[selection], mobile[selection]

@@ -87,7 +87,7 @@ def summarize(root,manifest,results):
     for r in results:
         metric={k:v for k,v in r['metrics'].items() if not isinstance(v,list)}
         metric.update(id=r['task']['enzyme'],pose=r['task']['pose'],lag_ns=r['task']['lag_ns'],
-            seed=r['task']['seed'],task_id=r['task']['id'],
+            seed=r['task']['seed'],replicate=r['task'].get('replicate',0),task_id=r['task']['id'],
             generation_seconds=r['timing']['generation_entrypoint_seconds'])
         frames.append(metric)
     rows=[]
@@ -95,8 +95,12 @@ def summarize(root,manifest,results):
         'substrate_ATP_PA_distance_A','substrate_ATP_attack_angle_deg']
     for n in range(1,49):
         e=f'AS{n}'
-        baselines=[json.loads((root/f'inputs/{e}/pose_{pose}/mapping.json').read_text())['baseline'] for pose in [0,25]]
+        enzyme_tasks=[t for t in manifest['tasks'] if t['enzyme']==e]
+        poses=sorted({t['pose'] for t in enzyme_tasks})
+        baselines=[json.loads((root/f'inputs/{e}/pose_{pose}/mapping.json').read_text())['baseline'] for pose in poses]
+        good_start=all(t.get('good_start') is not False for t in enzyme_tasks)
         row=dict(id=e,activity_ugml=float(assay[e]['activity_N66L1_ugml_avg']),
+            selected_start_poses=';'.join(map(str,poses)),good_start=good_start,
             strong_producer=static[e]['strong_producer']=='True',
             static_weighted_attack_angle_deg=float(static[e]['step1_angle_deg']),
             baseline_contact_count=float(np.mean([b['native_contact_count'] for b in baselines])),
@@ -112,11 +116,13 @@ def summarize(root,manifest,results):
         rows.append(row)
     save_csv(root/'endpoint_metrics.csv',frames)
     save_csv(root/'per_enzyme.csv',rows)
-    eligible=[r for r in rows if r['n_geometry_eligible_10ns']==2]
+    eligible=[r for r in rows if r['n_geometry_eligible_10ns']==2 and r['good_start']]
     raw=[r for r in rows if r['n_endpoints_10ns']==2]
     stats=dict(completed_endpoints=len(results),expected_endpoints=len(manifest['tasks']),
         panel_complete=len(results)==len(manifest['tasks']),
-        primary_definition='Mean starting-residue contact retention across the two 10 ns endpoints per enzyme.',
+        starting_geometry_qualified_n=sum(r['good_start'] for r in rows),
+        unqualified_start_enzymes=[r['id'] for r in rows if not r['good_start']],
+        primary_definition='Mean starting-residue contact retention across two 10 ns endpoints per enzyme, with a qualifying starting geometry.',
         primary_geometry_eligible_n=len(eligible),geometry_exclusions='Protein physicality failed or any substrate/protein heavy atom pair below 1.5 A.',
         primary=None,all_saved_frames_sensitivity=None,secondary={},incremental_prediction=None,
         limitations=manifest['protocol']['limitations'])
@@ -138,7 +144,7 @@ def summarize(root,manifest,results):
             [r['activity_ugml'] for r in raw])
     # Secondary metrics remain exploratory; do not select the best and call it primary.
     for lag in [1,10]:
-        selected=[r for r in rows if r[f'n_geometry_eligible_{lag}ns']==2]
+        selected=[r for r in rows if r[f'n_geometry_eligible_{lag}ns']==2 and r['good_start']]
         for feature,sign in [('native_contact_retention',1),('pocket_centroid_displacement_A',-1),('pocket_retained',1)]:
             if len(selected)>=5:
                 stats['secondary'][f'{feature}_{lag}ns']=dict(n_enzymes=len(selected),
@@ -158,7 +164,7 @@ def make_report(root,rows,stats):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    selected=[r for r in rows if r['n_geometry_eligible_10ns']==2]
+    selected=[r for r in rows if r['n_geometry_eligible_10ns']==2 and r['good_start']]
     if selected:
         fig,axes=plt.subplots(1,2,figsize=(11,4.5),layout='constrained')
         for ax,key,label in [(axes[0],'native_contact_retention_eligible_10ns','Starting contacts retained at 10 ns'),
@@ -182,7 +188,7 @@ def make_report(root,rows,stats):
             statement='A positive exploratory retention–yield association was observed; independent validation is still required.'
         else:
             statement='This pilot did not establish the hypothesized positive retention–yield association.'
-    columns=['id','activity_ugml','n_geometry_eligible_10ns','native_contact_retention_eligible_10ns',
+    columns=['id','activity_ugml','selected_start_poses','good_start','n_geometry_eligible_10ns','native_contact_retention_eligible_10ns',
              'pocket_centroid_displacement_A_eligible_10ns','static_weighted_attack_angle_deg']
     table='<tr>'+''.join('<th>'+html.escape(c)+'</th>' for c in columns)+'</tr>'
     for r in rows:
@@ -190,7 +196,7 @@ def make_report(root,rows,stats):
     content='''<!doctype html><html><meta charset="utf-8"><title>BioEmu2 retention pilot</title>
 <style>body{font:16px system-ui;max-width:1100px;margin:40px auto;padding:0 20px;color:#24323c}table{border-collapse:collapse;font-size:13px}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left}pre{white-space:pre-wrap}img{width:100%}</style>'''
     content+='<h1>BioEmu2 substrate-retention pilot</h1><p>'+html.escape(statement)+'</p>'
-    content+=f'<p>{stats["completed_endpoints"]}/{stats["expected_endpoints"]} endpoints; two starting poses per enzyme, 1 ns and 10 ns independent endpoints, no contact conditioning.</p>'
+    content+=f'<p>{stats["completed_endpoints"]}/{stats["expected_endpoints"]} endpoints; selected starting cofolds, 1 ns and 10 ns independent endpoints, no contact conditioning.</p>'
     if selected:content+='<img src="retention_vs_yield.png" alt="Enzyme-level substrate retention and measured yield">'
     content+='<h2>Fixed primary analysis</h2><pre>'+html.escape(json.dumps(primary,indent=2))+'</pre>'
     content+='<h2>Limitations</h2><ul>'+''.join('<li>'+html.escape(x)+'</li>' for x in stats['limitations'])+'</ul>'

@@ -1,7 +1,7 @@
 """Check rigid-motion invariance and sensitivity to ligand departure."""
 import unittest
 import numpy as np
-from core import measure
+from core import measure, rank_starting_geometry
 
 
 class RetentionTests(unittest.TestCase):
@@ -25,6 +25,12 @@ class RetentionTests(unittest.TestCase):
         self.assertEqual(r['native_contact_retention'],0)
         self.assertGreater(r['pocket_centroid_displacement_A'],30)
         self.assertFalse(r['pocket_retained'])
+
+    def test_shortest_aligned_pose_wins_over_wrong_direction_or_longer_pose(self):
+        rows=[dict(pose=0,distance_A=2.5,angle_deg=90,geometry_screen_passed=False),
+              dict(pose=1,distance_A=3.5,angle_deg=155,geometry_screen_passed=True),
+              dict(pose=2,distance_A=3.8,angle_deg=179,geometry_screen_passed=True)]
+        self.assertEqual([r['pose'] for r in rank_starting_geometry(rows)],[1,2,0])
 
 
 if __name__=='__main__':

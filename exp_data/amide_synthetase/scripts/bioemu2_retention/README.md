@@ -5,15 +5,26 @@ N66L1 product concentration across AS1–AS48. It reuses the historical one-Mg
 step-1 complexes (protein, ATP, Mg and adipate), without generating sequences or
 changing the established static ranking metric.
 
-The fixed protocol uses Boltz pose indices 0 and 25 for every enzyme, selected
-without inspecting activity or geometry. Each starting structure is propagated
-independently to 1 ns and 10 ns, one endpoint per start and lag: 192 endpoints.
+The default protocol measures attack geometry in all 50 existing Boltz cofolds
+per enzyme. It selects the shortest substrate carboxylate O–ATP PA distance among
+poses with an O–PA–O3A angle of at least 150 degrees and a distance at most 4.5 Å,
+subject to protein physicality and absence of severe substrate/protein clashes.
+Larger angles and lower pose indices break distance ties. These are operational
+starting-pose criteria, not proof of catalysis. Selection never uses activity.
+If no pose qualifies, the best physically valid available pose is flagged and
+excluded from the primary good-start analysis; such endpoints are retained as
+descriptive controls. Fallback ordering prefers angle at least 150 degrees and
+then shortest distance. Every pose's measured geometry and selection outcome is
+recorded in `inputs/<enzyme>/selection.json`.
+
+Each enzyme's selected starting structure is propagated independently to 1 ns
+and 10 ns, two seeds per lag: 192 endpoints across AS1–AS48.
 The runtime is BioEmu2 preview at the recorded local checkpoint, FP32, batch size
 one, default EDM propagation and up to 128 rows of the existing MSA. No contact
 conditioning or steering forces the substrate to remain bound.
 
 The primary measurement is mean retention of starting substrate-contacting
-protein residues at 10 ns. A contact means any substrate/protein heavy-atom pair
+protein residues at 10 ns among enzymes with qualifying starts. A contact means any substrate/protein heavy-atom pair
 within 4.5 Å. Starting residues within 6 Å define the pocket for C-alpha rigid
 alignment; a recorded 10 Å fallback is used only when fewer than three C-alpha
 atoms are available. Centroid displacement and contact retention are separate
@@ -38,7 +49,10 @@ distance, and established 50-pose weighted attack angle. Scaling is fitted only
 on training enzymes. This is retrospective internal assessment; related homologs
 may appear in both training and test sets. Sample frequencies are not calibrated
 binding probabilities, residence times, or rate constants. Four endpoint samples
-per enzyme provide a pilot, not a converged dynamic ensemble.
+from one best starting pose per enzyme provide a pilot, not a converged dynamic
+ensemble. Selecting the best among 50 poses is an optimistic starting condition;
+the analysis tests persistence after that selection and does not establish how
+frequently the protein reaches that condition naturally.
 
 Use the dedicated interpreter:
 
@@ -46,12 +60,12 @@ Use the dedicated interpreter:
 BIOEMU_PYTHON=/nfs/lambda_stor_01/homes/rzhu/Tool/envs/bioemu2/bin/python
 ```
 
-Run `prepare.py --out <new NFS result directory>` once. It verifies sequences,
+Run `prepare.py --selection best_geometry --out <new NFS result directory>` once. It verifies sequences,
 molecular composition, local MSAs and substrate atom mapping, hashes dependencies,
 and writes immutable starting inputs and a manifest. `audit_existing.py --out
 <JSON path>` measures the earlier AS9 run without changing its outputs.
 
-`launch.py --root <result directory> --count 1 --only AS9_pose0_lag1` is the technical
+`launch.py --root <result directory> --count 1 --only <task ID from manifest>` is the technical
 GPU check. After verifying its saved output and memory footprint, use
 `launch.py --root <result directory> --count 12` for the bounded panel fleet.
 The launcher preflights dependencies and CPU capacity, selects available GPUs
@@ -75,4 +89,10 @@ The final analysis can be rerun safely after additional tasks finish.
 
 `python -m unittest discover -s <this directory> -p test_core.py` verifies that
 rigid protein/ligand motion does not look like substrate departure and that an
-actual ligand displacement is detected.
+actual ligand displacement is detected. It also verifies selection of the
+shortest aligned pose rather than a closer, wrongly oriented substrate.
+
+The original fixed-index run in `bioemu2_retention_20261103` was stopped at the
+user's request and its 24 completed endpoints preserved. Its outputs must not be
+pooled with the corrected `bioemu2_best_geometry_20261103` experiment. The legacy
+preparation mode remains available as `--selection fixed` for reproduction only.
