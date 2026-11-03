@@ -1,0 +1,19 @@
+{
+  "status": "complete",
+  "completed_endpoints": 180,
+  "submitted_enzymes": 45,
+  "excluded_enzymes": [
+    "AS13",
+    "AS28",
+    "AS36"
+  ],
+  "all_saved_output_hashes_verified": true,
+  "failed_attempts": 0,
+  "protein_physicality_passed": 180,
+  "severe_substrate_protein_clashes": 0,
+  "workers_and_scope_controller_exited": true,
+  "gpus_released": true,
+  "first_output_epoch": 1793737279.0950243,
+  "last_output_epoch": 1793739752.2767403,
+  "verified_epoch": 1793741188.364765
+}

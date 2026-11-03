@@ -1,0 +1,19 @@
+{
+  "package_path": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/bioemu2/lib/python3.12/site-packages/bioemu2",
+  "versions": {
+    "bioemu2": "0.1.0rc0",
+    "torch": "2.13.0+cu126",
+    "mdtraj": "1.11.2",
+    "rdkit": "2026.9.1",
+    "scipy": "1.18.1",
+    "numpy": "2.4.6",
+    "matplotlib": "3.11.2"
+  },
+  "repository_revision": "621fbe4d4338548ec8d0c74f4f16ea9e1d779232",
+  "files": {
+    "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/bioemu2/lib/python3.12/site-packages/bioemu2/__init__.py": "4f4b0bfbc4910078a91bcb48d478dd6c40e00498822ca66bda5554042c47f0c1",
+    "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/bioemu2/lib/python3.12/site-packages/bioemu2/model.py": "ef968afba5aa9c559adeae1efbcb9fac4c487954e5472899561203f02e01d516",
+    "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/bioemu2/lib/python3.12/site-packages/bioemu2/inference.py": "2185b3edbab72d52c489ec2f53ace4ae1b05cbadf66f6c28e8ff58c0ea8bf907",
+    "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/bioemu2/lib/python3.12/site-packages/bioemu2/propagation.py": "f25a0c5df5dcac080987fe114858ae5d9645ffcf1f021e85d43cb306dbf38188"
+  }
+}

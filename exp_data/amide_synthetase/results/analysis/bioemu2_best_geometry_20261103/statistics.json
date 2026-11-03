@@ -1,0 +1,211 @@
+{
+  "completed_endpoints": 180,
+  "expected_endpoints": 180,
+  "panel_complete": true,
+  "submitted_enzymes": 45,
+  "starting_geometry_qualified_n": 45,
+  "unqualified_start_enzymes": [
+    "AS13",
+    "AS28",
+    "AS36"
+  ],
+  "primary_definition": "Mean starting-residue contact retention across two 10 ns endpoints per enzyme, with a qualifying starting geometry.",
+  "primary_geometry_eligible_n": 45,
+  "geometry_exclusions": "Protein physicality failed or any substrate/protein heavy atom pair below 1.5 A.",
+  "primary": {
+    "rho": 0.11329524421934774,
+    "ci95": [
+      -0.1825688101597127,
+      0.38910718215141826
+    ],
+    "permutation_p_two_sided": 0.46315368463153683,
+    "n_enzymes": 45,
+    "bootstrap_replicates": 5000,
+    "permutations": 10000,
+    "limitation": "Nominal enzyme-level uncertainty; evolutionary dependence not accounted for."
+  },
+  "all_saved_frames_sensitivity": {
+    "rho": 0.11329524421934774,
+    "ci95": [
+      -0.1825688101597127,
+      0.38910718215141826
+    ],
+    "permutation_p_two_sided": 0.46315368463153683,
+    "n_enzymes": 45,
+    "bootstrap_replicates": 5000,
+    "permutations": 10000,
+    "limitation": "Nominal enzyme-level uncertainty; evolutionary dependence not accounted for."
+  },
+  "secondary": {
+    "native_contact_retention_1ns": {
+      "n_enzymes": 45,
+      "oriented_spearman_rho": 0.009701706111056162,
+      "direction": 1
+    },
+    "pocket_centroid_displacement_A_1ns": {
+      "n_enzymes": 45,
+      "oriented_spearman_rho": -0.19341238471673253,
+      "direction": -1
+    },
+    "pocket_retained_1ns": {
+      "n_enzymes": 45,
+      "oriented_spearman_rho": null,
+      "direction": 1
+    },
+    "native_contact_retention_10ns": {
+      "n_enzymes": 45,
+      "oriented_spearman_rho": 0.11329524421934774,
+      "direction": 1
+    },
+    "pocket_centroid_displacement_A_10ns": {
+      "n_enzymes": 45,
+      "oriented_spearman_rho": 0.15994729907773386,
+      "direction": -1
+    },
+    "pocket_retained_10ns": {
+      "n_enzymes": 45,
+      "oriented_spearman_rho": null,
+      "direction": 1
+    }
+  },
+  "incremental_prediction": {
+    "baseline_features": [
+      "static_weighted_attack_angle_deg",
+      "baseline_contact_count",
+      "baseline_selected_pose_attack_distance_A"
+    ],
+    "added_feature": "native_contact_retention_eligible_10ns",
+    "baseline": {
+      "mean_squared_error_log1p": 0.1616802103407051,
+      "spearman_rho": 0.21080368906455862,
+      "predictions_log1p": [
+        -0.030137105898388347,
+        -0.008526248943445364,
+        0.21764715990138872,
+        0.31060160299269135,
+        0.17204769732130148,
+        0.21797873029258125,
+        0.04815817959435453,
+        0.3058045501326439,
+        0.12362680555079841,
+        0.12701100285990022,
+        0.330344651709938,
+        0.08840861967954405,
+        0.009510310725378501,
+        0.18812077174187244,
+        0.0856839627942241,
+        0.18358163647136116,
+        0.26861504288966753,
+        0.1890907322465243,
+        0.07868296365309958,
+        -0.3752002123650564,
+        0.23573510207413667,
+        0.21237317542540177,
+        0.16217226647031519,
+        -0.010042968651742243,
+        0.044606200818795794,
+        0.06252625321453756,
+        0.2136406763266928,
+        -0.033384013670388624,
+        0.08098240704056935,
+        0.20177862943964614,
+        -0.09982813370129645,
+        0.05431471308564626,
+        -0.12332461065757415,
+        0.10677779130271856,
+        0.2773592184027995,
+        -0.0172463106450724,
+        0.28475067460249903,
+        0.11544983101283572,
+        0.30735621620048964,
+        0.16272706207671545,
+        0.0993212761865214,
+        0.07888014757334735,
+        -0.03643408117839113,
+        0.23665740750204256,
+        -0.07485204100473193
+      ],
+      "method": "Leave one enzyme out; alpha=1 ridge; standardization fitted on training enzymes only.",
+      "limitation": "Retrospective internal validation; homologs can occur in both training and test sets."
+    },
+    "augmented": {
+      "mean_squared_error_log1p": 0.15894225979308577,
+      "spearman_rho": 0.2797101449275362,
+      "predictions_log1p": [
+        0.007190084399395183,
+        0.11060365290997741,
+        0.21574263409669903,
+        0.35615035507047865,
+        0.18528079096375374,
+        0.1729400706498974,
+        0.058791514029204406,
+        0.2584134972048577,
+        0.13642668928972024,
+        0.15774353403384422,
+        0.25234964105044555,
+        0.13021111980823577,
+        -0.07283163171933338,
+        0.12813463730040553,
+        0.1663136310259703,
+        0.2587130304578985,
+        0.4037267370264098,
+        0.1614125862580154,
+        0.08054352008879913,
+        -0.3197301992047921,
+        0.004027307159846519,
+        0.23902971933954048,
+        0.16400417649891624,
+        -0.1085185306772586,
+        0.12353394933597688,
+        0.02243163480982216,
+        0.31854358471836075,
+        -0.03097222050995646,
+        0.17632427015861477,
+        0.1442031086693204,
+        -0.10559793945384549,
+        -0.10856588282265027,
+        -0.07126606749321095,
+        0.09912873475735837,
+        0.2813955702977794,
+        0.02703719389439084,
+        0.18798106908836276,
+        0.20785194354791997,
+        0.3740198835100569,
+        0.1205476654392213,
+        0.06540780413531701,
+        0.07411638953719078,
+        -0.04731565774450579,
+        0.23440475781062564,
+        -0.24645736179784528
+      ],
+      "method": "Leave one enzyme out; alpha=1 ridge; standardization fitted on training enzymes only.",
+      "limitation": "Retrospective internal validation; homologs can occur in both training and test sets."
+    },
+    "mse_improvement": 0.0027379505476193278
+  },
+  "limitations": [
+    "Retrospective exploratory panel; labels have been examined previously.",
+    "Four endpoints per enzyme provide a small pilot, not a residence-time estimate.",
+    "Historical one-Mg step-1 setup; outcome reflects complete assay and expression.",
+    "Protein physicality does not validate ligand chemistry; extra clash diagnostics are descriptive.",
+    "No calibrated equilibrium probabilities, rate constants, or binding free energies.",
+    "Enzymes without qualifying starts are excluded from BioEmu2, not labeled experimentally inactive."
+  ],
+  "strong_producer_secondary": {
+    "auroc": 0.6190476190476191,
+    "ci95": [
+      0.4165674603174604,
+      0.8214285714285714
+    ],
+    "positives": 3,
+    "negatives": 42,
+    "limitation": "Stratified bootstrap conditional on the existing strong-producer set; exploratory."
+  },
+  "performance": {
+    "generation_seconds_sum": 29858.59969014488,
+    "median_entrypoint_seconds": 121.6399345472455,
+    "max_peak_allocated_bytes": 8068790272,
+    "max_peak_reserved_bytes": 10192158720,
+    "note": "Entrypoint durations include embedding on first use; sums are GPU-worker time, not elapsed wall time."
+  }
+}

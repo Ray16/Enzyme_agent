@@ -1,0 +1,18 @@
+{
+  "recorded_epoch": 1793736941.291938,
+  "analysis_source_sha256": "7a0c9520de8e0c0905b1b946f57c1db2149b5354b36a6d362086511ed92c16bc",
+  "selection": "Shortest attack distance among physically acceptable cofolds passing angle >=150 degrees and distance <=4.5 A; all 50 cofolds inspected per enzyme; no activity labels used.",
+  "primary": "Mean native-contact retention at 10 ns, two independent endpoints per selected starting pose, only qualifying starts and geometry-eligible endpoints.",
+  "fallback_controls": [
+    "AS13",
+    "AS28",
+    "AS36"
+  ],
+  "inference": "192 independent endpoints, 48 enzymes, two seeds at each of 1 and 10 ns; no contact conditioning.",
+  "statistics": "Enzyme-level Spearman association and fixed-alpha LOO ridge incremental prediction; exploratory retrospective panel.",
+  "baseline_features": [
+    "50-pose weighted attack angle",
+    "selected-start contact count",
+    "selected-start substrate-ATP distance"
+  ]
+}

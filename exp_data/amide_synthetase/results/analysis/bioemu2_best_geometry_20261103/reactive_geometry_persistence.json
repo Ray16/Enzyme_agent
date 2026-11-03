@@ -1,0 +1,152 @@
+{
+  "status": "Exploratory supplementary analysis; not the fixed primary retention test.",
+  "criterion": "Endpoint substrate O\u2013ATP PA distance <=4.5 A and O\u2013PA\u2013O3A angle >=150 degrees; same thresholds as starting-pose selection, no threshold tuning.",
+  "lags": {
+    "1": {
+      "qualifying_endpoints": 40,
+      "total_endpoints": 90,
+      "yield_association": {
+        "rho": 0.0028338342799586747,
+        "ci95": [
+          -0.3133966521827592,
+          0.3190664624077823
+        ],
+        "permutation_p_two_sided": 0.9857014298570143,
+        "n_enzymes": 45,
+        "bootstrap_replicates": 5000,
+        "permutations": 10000,
+        "limitation": "Nominal enzyme-level uncertainty; evolutionary dependence not accounted for."
+      },
+      "strong_producer_auc": {
+        "auroc": 0.5396825396825397,
+        "ci95": [
+          0.20228174603174606,
+          0.8809523809523809
+        ],
+        "positives": 3,
+        "negatives": 42,
+        "limitation": "Stratified bootstrap conditional on the existing strong-producer set; exploratory."
+      },
+      "per_enzyme_fraction": {
+        "AS1": 1.0,
+        "AS2": 0.0,
+        "AS3": 1.0,
+        "AS4": 0.5,
+        "AS5": 0.5,
+        "AS6": 0.0,
+        "AS7": 0.5,
+        "AS8": 0.0,
+        "AS9": 0.0,
+        "AS10": 1.0,
+        "AS11": 0.5,
+        "AS12": 0.5,
+        "AS14": 0.5,
+        "AS15": 1.0,
+        "AS16": 1.0,
+        "AS17": 0.5,
+        "AS18": 0.0,
+        "AS19": 0.5,
+        "AS20": 0.5,
+        "AS21": 0.5,
+        "AS22": 0.0,
+        "AS23": 1.0,
+        "AS24": 0.5,
+        "AS25": 1.0,
+        "AS26": 0.0,
+        "AS27": 0.5,
+        "AS29": 0.0,
+        "AS30": 1.0,
+        "AS31": 0.5,
+        "AS32": 0.5,
+        "AS33": 0.5,
+        "AS34": 0.5,
+        "AS35": 0.5,
+        "AS37": 0.5,
+        "AS38": 0.5,
+        "AS39": 0.5,
+        "AS40": 0.0,
+        "AS41": 1.0,
+        "AS42": 0.0,
+        "AS43": 0.0,
+        "AS44": 0.0,
+        "AS45": 0.0,
+        "AS46": 0.0,
+        "AS47": 1.0,
+        "AS48": 0.0
+      }
+    },
+    "10": {
+      "qualifying_endpoints": 36,
+      "total_endpoints": 90,
+      "yield_association": {
+        "rho": 0.17447763375730824,
+        "ci95": [
+          -0.09384291505943468,
+          0.4198014604624353
+        ],
+        "permutation_p_two_sided": 0.25177482251774824,
+        "n_enzymes": 45,
+        "bootstrap_replicates": 5000,
+        "permutations": 10000,
+        "limitation": "Nominal enzyme-level uncertainty; evolutionary dependence not accounted for."
+      },
+      "strong_producer_auc": {
+        "auroc": 0.7222222222222222,
+        "ci95": [
+          0.5476190476190477,
+          0.9166666666666666
+        ],
+        "positives": 3,
+        "negatives": 42,
+        "limitation": "Stratified bootstrap conditional on the existing strong-producer set; exploratory."
+      },
+      "per_enzyme_fraction": {
+        "AS1": 0.0,
+        "AS2": 0.5,
+        "AS3": 1.0,
+        "AS4": 0.5,
+        "AS5": 0.5,
+        "AS6": 0.5,
+        "AS7": 1.0,
+        "AS8": 0.0,
+        "AS9": 0.5,
+        "AS10": 1.0,
+        "AS11": 0.0,
+        "AS12": 0.0,
+        "AS14": 0.0,
+        "AS15": 0.5,
+        "AS16": 0.5,
+        "AS17": 0.5,
+        "AS18": 0.5,
+        "AS19": 1.0,
+        "AS20": 0.0,
+        "AS21": 0.0,
+        "AS22": 0.5,
+        "AS23": 1.0,
+        "AS24": 0.5,
+        "AS25": 0.0,
+        "AS26": 0.5,
+        "AS27": 1.0,
+        "AS29": 0.0,
+        "AS30": 0.5,
+        "AS31": 0.5,
+        "AS32": 0.0,
+        "AS33": 0.5,
+        "AS34": 0.0,
+        "AS35": 1.0,
+        "AS37": 0.0,
+        "AS38": 0.5,
+        "AS39": 0.0,
+        "AS40": 0.0,
+        "AS41": 0.5,
+        "AS42": 0.5,
+        "AS43": 0.5,
+        "AS44": 0.5,
+        "AS45": 0.0,
+        "AS46": 0.0,
+        "AS47": 0.5,
+        "AS48": 0.5
+      }
+    }
+  }
+}

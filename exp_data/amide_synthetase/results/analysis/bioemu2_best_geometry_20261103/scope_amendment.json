@@ -1,0 +1,400 @@
+{
+  "identity": {
+    "host": "lambda2",
+    "pid": 1019462,
+    "process_start": "1453786054",
+    "cpu_affinity": [
+      79
+    ],
+    "kind": "user_scope_exclusion",
+    "owns_gpu": false
+  },
+  "status": "legacy_workers_drained",
+  "excluded_enzymes": [
+    "AS13",
+    "AS28",
+    "AS36"
+  ],
+  "removed_tasks": [
+    {
+      "id": "AS13_pose44_lag1_rep0",
+      "enzyme": "AS13",
+      "pose": 44,
+      "lag_ns": 1,
+      "seed": 2026111689,
+      "replicate": 0,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/pose_44/topology.cif",
+      "sequence_length": 513,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS13_pose44_lag1_rep1",
+      "enzyme": "AS13",
+      "pose": 44,
+      "lag_ns": 1,
+      "seed": 2026211689,
+      "replicate": 1,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/pose_44/topology.cif",
+      "sequence_length": 513,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS13_pose44_lag10_rep0",
+      "enzyme": "AS13",
+      "pose": 44,
+      "lag_ns": 10,
+      "seed": 2026111698,
+      "replicate": 0,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/pose_44/topology.cif",
+      "sequence_length": 513,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS13_pose44_lag10_rep1",
+      "enzyme": "AS13",
+      "pose": 44,
+      "lag_ns": 10,
+      "seed": 2026211698,
+      "replicate": 1,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS13/pose_44/topology.cif",
+      "sequence_length": 513,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS28_pose5_lag1_rep0",
+      "enzyme": "AS28",
+      "pose": 5,
+      "lag_ns": 1,
+      "seed": 2026113111,
+      "replicate": 0,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/pose_5/topology.cif",
+      "sequence_length": 539,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS28_pose5_lag1_rep1",
+      "enzyme": "AS28",
+      "pose": 5,
+      "lag_ns": 1,
+      "seed": 2026213111,
+      "replicate": 1,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/pose_5/topology.cif",
+      "sequence_length": 539,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS28_pose5_lag10_rep0",
+      "enzyme": "AS28",
+      "pose": 5,
+      "lag_ns": 10,
+      "seed": 2026113120,
+      "replicate": 0,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/pose_5/topology.cif",
+      "sequence_length": 539,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS28_pose5_lag10_rep1",
+      "enzyme": "AS28",
+      "pose": 5,
+      "lag_ns": 10,
+      "seed": 2026213120,
+      "replicate": 1,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS28/pose_5/topology.cif",
+      "sequence_length": 539,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS36_pose28_lag1_rep0",
+      "enzyme": "AS36",
+      "pose": 28,
+      "lag_ns": 1,
+      "seed": 2026113957,
+      "replicate": 0,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/pose_28/topology.cif",
+      "sequence_length": 501,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS36_pose28_lag1_rep1",
+      "enzyme": "AS36",
+      "pose": 28,
+      "lag_ns": 1,
+      "seed": 2026213957,
+      "replicate": 1,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/pose_28/topology.cif",
+      "sequence_length": 501,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS36_pose28_lag10_rep0",
+      "enzyme": "AS36",
+      "pose": 28,
+      "lag_ns": 10,
+      "seed": 2026113966,
+      "replicate": 0,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/pose_28/topology.cif",
+      "sequence_length": 501,
+      "expected_frames": 1
+    },
+    {
+      "id": "AS36_pose28_lag10_rep1",
+      "enzyme": "AS36",
+      "pose": 28,
+      "lag_ns": 10,
+      "seed": 2026213966,
+      "replicate": 1,
+      "good_start": false,
+      "system": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/system.yaml",
+      "msa": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/msa.a3m",
+      "initial": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/exp_data/amide_synthetase/results/analysis/bioemu2_best_geometry_20261103/inputs/AS36/pose_28/topology.cif",
+      "sequence_length": 501,
+      "expected_frames": 1
+    }
+  ],
+  "parent_manifest_sha256": "02f08278382bcc65bc2bb8434b8624406dc40202a9134c723ba6d26b98c043cf",
+  "manifest_sha256": "16b7aeaa075f944464360c9dad7c5f415fdc242203ee350605bc63b035ab6374",
+  "legacy_workers": [
+    {
+      "host": "lambda5",
+      "pid": 2434089,
+      "process_start": "761754279",
+      "cpu_affinity": [
+        0,
+        1
+      ],
+      "gpu_visibility": "0",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2434897,
+      "process_start": "761754364",
+      "cpu_affinity": [
+        2,
+        3
+      ],
+      "gpu_visibility": "1",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2435781,
+      "process_start": "761754451",
+      "cpu_affinity": [
+        8,
+        9
+      ],
+      "gpu_visibility": "4",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2435681,
+      "process_start": "761754444",
+      "cpu_affinity": [
+        4,
+        5
+      ],
+      "gpu_visibility": "2",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2436143,
+      "process_start": "761754484",
+      "cpu_affinity": [
+        10,
+        11
+      ],
+      "gpu_visibility": "5",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2436213,
+      "process_start": "761754487",
+      "cpu_affinity": [
+        12,
+        13
+      ],
+      "gpu_visibility": "6",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2436289,
+      "process_start": "761754493",
+      "cpu_affinity": [
+        6,
+        7
+      ],
+      "gpu_visibility": "3",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2436479,
+      "process_start": "761754689",
+      "cpu_affinity": [
+        14,
+        15
+      ],
+      "gpu_visibility": "7",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2436936,
+      "process_start": "761754788",
+      "cpu_affinity": [
+        16,
+        17
+      ],
+      "gpu_visibility": "8",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2437247,
+      "process_start": "761754822",
+      "cpu_affinity": [
+        18,
+        19
+      ],
+      "gpu_visibility": "9",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2437237,
+      "process_start": "761754821",
+      "cpu_affinity": [
+        20,
+        21
+      ],
+      "gpu_visibility": "10",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    },
+    {
+      "host": "lambda5",
+      "pid": 2437400,
+      "process_start": "761754845",
+      "cpu_affinity": [
+        22,
+        23
+      ],
+      "gpu_visibility": "11",
+      "thread_caps": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      }
+    }
+  ],
+  "remaining_tasks": 180,
+  "applied_epoch": 1793737241.2949953,
+  "reason": "User requested BioEmu2 only for enzymes with at least one good geometry.",
+  "finished_epoch": 1793739769.6878595
+}
