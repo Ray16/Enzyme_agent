@@ -37,7 +37,7 @@ pre{overflow:auto;max-height:460px;padding:14px;background:#f1f5f8;font:12px/1.5
 'use strict';
 const sourcePrefix=/*SOURCE_PREFIX*/;
 const trace=JSON.parse(document.getElementById('trace-data').textContent), events=trace.events||[], ns='http://www.w3.org/2000/svg';
-const titles={prediction_registered:'Prediction before action',observation_recorded:'Observed result',review_concluded:'Provisional conclusion',participant_roles_recorded:'Participant roles',reaction_step_recorded:'Mapped reaction step'};
+const titles={prediction_registered:'Prediction before action',observation_recorded:'Observed result',review_concluded:'Provisional conclusion',participant_roles_recorded:'Participant roles',reaction_step_recorded:'Mapped reaction step',outcome_interpreted:'Outcome interpretation',mechanism_hypotheses_recorded:'Mechanism hypotheses',target_assessment_recorded:'Candidate assessment',target_review_batch_recorded:'Assessment attempt'};
 const colors={prediction_registered:'#2563aa',observation_recorded:'#347a65',review_concluded:'#986225',participant_roles_recorded:'#7652a1',reaction_step_recorded:'#7652a1'};
 const byId=new Map(events.map(e=>[e.id,e]));
 function element(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
@@ -57,6 +57,10 @@ function render(){const query=document.getElementById('query').value.toLowerCase
   if(event.capture_mode!=='live')card.append(element('p','Reconstructed from saved artifacts; this is not proof of prospective capture.','notice'));
   for(const [key,label] of [['scope','Scope'],['hypothesis','Hypothesis'],['alternative','Competing explanation'],['prediction','Prediction'],['contrasting_prediction','Contrasting prediction'],['why_this_test','Why this test'],['tool_name','Action'],['arguments','Action arguments'],['status','Execution status'],['summary','Observed summary'],['conclusion','Provisional conclusion'],['belief_update','Belief update'],['revision_trigger','Revisit when']])field(card,label,r[key]);
   if(r.outcome){field(card,'Observed outcome',r.outcome.summary);field(card,'Outcome status',r.outcome.status)}
+  if(event.type==='target_assessment_recorded'){for(const [key,label] of [['accession','Candidate'],['decision','Decision'],['reason','Rationale'],['mechanism_and_step','Mechanism and step'],['target_roles','Participant roles'],['strengths','Support'],['constraints','Constraints'],['unknowns','Unknowns'],['revisit_when','Reopen when']])field(card,label,r[key])}
+  if(event.type==='target_review_batch_recorded'){field(card,'Assessment results',r.result);field(card,'Unresolved attempts and correction feedback',r.attempts)}
+  if(event.type==='mechanism_hypotheses_recorded')field(card,'Provisional search hypotheses',r.families);
+  if(typeof r.interpretation==='string')field(card,'Interpretation',r.interpretation);
   if(r.interpretation&&typeof r.interpretation==='object'){const step=r.interpretation;field(card,'Local bond changes correspond',step.local_bond_changes_match);field(card,'Interpretation',step.interpretation||step.participants);field(card,'Native mapped reaction',step.native_reaction);field(card,'Proposed target reaction',step.target_reaction);field(card,'Activation and site-access assessment',step.activation_assessment);field(card,'Remaining ends and continuation limits',step.continuation_assessment);field(card,'Verification scope',step.validation_scope)}
   if(r.revises){const ref=byId.get('prediction_registered:'+r.revises);const link=element('a','Revises decision '+r.revises.slice(0,8));if(ref)link.href='#event-'+ref.sequence;card.append(link)}
   const links=element('div',undefined,'links');for(const path of paths(r)){const a=element('a',path);a.href=sourcePrefix+path;links.append(a)}card.append(links);

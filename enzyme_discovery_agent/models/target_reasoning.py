@@ -492,13 +492,28 @@ def derive_target_reasoning(
     direction = _prefer(extra.get("reaction_direction"), fields["reaction_direction"])
     topology = _prefer(extra.get("substrate_topology"), fields["substrate_topology"])
     bond_types = fields["bond_types"] or extra.get("bond_types") or []
+    extraction_disagreements = []
     for name, llm_v, det_v in (
         ("reaction_direction", extra.get("reaction_direction"), fields["reaction_direction"]),
         ("substrate_topology", extra.get("substrate_topology"), fields["substrate_topology"]),
     ):
         if llm_v and det_v and llm_v != det_v:
+            extraction_disagreements.append({'field':name,'keyword_extraction':det_v,
+                                             'semantic_interpretation':llm_v,'selected':llm_v})
             logger.warning("target-reasoning %s disagreement: llm=%s deterministic=%s "
                            "(using llm)", name, llm_v, det_v)
+    # Prose evidence must agree with the machine-readable contract. Preserve the
+    # superseded extraction as a diagnostic, not a contradictory target requirement.
+    for claim in det_claims:
+        for old, new in (
+            (f"The required reaction direction is {fields['reaction_direction']}.",
+             f"The required reaction direction is {direction}."),
+            (f"The target inputs have {fields['substrate_topology']} topology.",
+             f"The target inputs have {topology} topology."),
+        ):
+            if old != new and claim['claim'] == old:
+                claim.update(claim=new,basis='semantic interpretation of the supplied target',
+                             uncertainty='medium')
 
     contract = {
         "schema_version": SCHEMA_VERSION,
@@ -507,6 +522,7 @@ def derive_target_reasoning(
         "substrate_smiles": substrate_smiles,
         "substrate_name": substrate_name,
         "claims": det_claims + llm_claims,
+        "extraction_disagreements": extraction_disagreements,
         # Machine-readable fields the guards consume: LLM-authoritative for
         # direction/topology, deterministic fallback (see above).
         "reaction_direction": direction,

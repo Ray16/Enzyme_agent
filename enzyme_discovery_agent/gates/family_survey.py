@@ -120,7 +120,11 @@ class FamilySurveyGate:
                 "substrate_fit": m.get("substrate_fit"),
                 "survey_functional_group_similarity": m.get("functional_group_similarity"),
                 "fit_method": method,
+                "screening_family_id": fold_id,
             }
+            annotation = m.get('screening_annotation')
+            if isinstance(annotation, dict) and annotation.get('accession') == acc:
+                meta['screening_annotation'] = annotation
             if validation:
                 meta["survey_claim_validation"] = validation
                 if discovery_status(existing.get(acc, {})) in {None, "discovered"}:
@@ -324,14 +328,16 @@ class FamilySurveyGate:
             "For each fold below are recorded numbers describing how its reviewed members' "
             "native reactions compare to the target: direction vs target, and how "
             "closely their native substrates resemble the target (functional-group "
-            "overlap, size ratio). No cutoff or label is applied — YOU reason over "
-            "the numbers. CONCENTRATE follow-up expansion and full-text reading on "
-            "the fold(s) whose members most resemble the target (higher functional-"
-            "group similarity, closer size, same reaction direction), and set aside "
-            "folds whose native reactions run the opposite direction or whose "
-            "substrates are far larger / decorated with extra groups. Prefer reading "
-            "the resembling members' OWN characterizing papers over broad keyword "
-            "search.\n"
+            "overlap, size ratio). These are analogue descriptors, not activity tests. "
+            "Prioritize members with a plausible target-specific transformation: assign "
+            "every input a reacting role, compare local bond changes within one native "
+            "reaction, and assess activation, acceptance and product release. Different "
+            "whole-molecule group inventories can provide complementary reacting ends. "
+            "Do not prune a family solely for low group overlap, extra groups or a "
+            "different archetypal substrate. Use size and shape as accommodation "
+            "questions; distinguish observed conflicts from missing transfer evidence. "
+            "Read source-resolved members' characterizing papers and preserve useful "
+            "alternatives across families.\n"
             f"{landscape_block}\n\n"
             "THEN ACT ON THIS: call set_family_focus(stop=[...], expand=[...], "
             "reasons={fold_id: why}) using the InterPro fold ids listed above — "

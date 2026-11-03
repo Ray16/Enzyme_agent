@@ -13,6 +13,34 @@ def select_modeling_portfolio(run_dir, *, max_candidates, protected_unannotated_
             or not 0 <= protected_unannotated_slots <= max_candidates):
         raise ValueError('Require a positive capacity and protected slots within that capacity')
     root = Path(run_dir).resolve()
+    from enzyme_discovery_agent import config
+    from enzyme_discovery_agent.run_layout import run_file
+    if (not config.AUTO_TARGET_REVIEW and
+            (run_file(root,'family_landscape.json').exists() or
+             (root/'agent_state/discovery_nominations.json').exists())):
+        from enzyme_discovery_agent.output.discovery_portfolio import write_discovery_portfolio
+        proposals=write_discovery_portfolio(root,limit=max(config.DISCOVERY_PORTFOLIO_SIZE,max_candidates))
+        rows=[]
+        for row in proposals['candidates']:
+            source=json.loads((root/row['proposal_source']).read_text())
+            data=source['source_record']
+            rows.append({'accession':row['accession'],'data':data,
+                         'native_substrates_resolved':bool(data.get('native_substrates') or data.get('catalytic_activities')),
+                         'priority':'explore','family':row['mechanism_family'] or row['family_id'],
+                         'proposal_source':row['proposal_source'],
+                         'modeling_setup_status':row['modeling_setup_status']})
+        available=len(rows)
+        unannotated=[row for row in rows if not row['native_substrates_resolved']]
+        protected=unannotated[:protected_unannotated_slots]
+        protected_ids={row['accession'] for row in protected}
+        rows=(protected+[row for row in rows if row['accession'] not in protected_ids])[:max_candidates]
+        atomic_write_json(root/'modeling_portfolio.json',{
+            'policy':'Source-backed discovery proposals. No target-activity review is required for exploration. '
+                'Validate identity, reacting roles, molecular setup and reuse before compute.',
+            'selection':[{key:row[key] for key in ('accession','native_substrates_resolved','priority','family','proposal_source','modeling_setup_status')} for row in rows],
+            'discovery_candidates':available,'unannotated_available':len(unannotated),
+            'skipped_artifacts':[]})
+        return rows
     registry = load_candidate_registry(root, strict=True)['candidates']
     rows = []
     skipped_artifacts = []

@@ -483,6 +483,12 @@ def _llm_focus_rank(
         "never fame or name recognition. Assess the evidence holistically; a "
         "serious observed conflict must not be averaged away by favorable metrics. "
         "Missing evidence remains unknown. Consider:\n"
+        "TARGET TRANSFORMATION: prioritize whether the supplied reacting ends can perform "
+        "the required local bond changes with a plausible activation route and product release. "
+        "A shared mechanism label alone is insufficient. Different whole-molecule group "
+        "inventories can provide equivalent reacting roles; never demand identical "
+        "functional-group counts or distributions. Matching a net step remains a "
+        "hypothesis about enzyme acceptance, not proof of activity.\n"
         "SUBSTRATE ACCOMMODATION: assess every target substrate "
         "actually specified. Compare reactive groups, size, shape, polarity and "
         "physical form with native scope. Differences are evidence of uncertainty, "
@@ -536,7 +542,7 @@ def _priority_axes(data, *, evidence_tiebreak=True, fallback=None):
     for index,pair in enumerate((data.get('substrate_similarity') or {}).get('property_comparisons') or []):
         target=str(pair.get('target_smiles') or index)
         for metric in ('mw_similarity','volume_similarity','chain_length_similarity',
-                       'functional_group_similarity','logP_similarity','tpsa_similarity'):
+                       'logP_similarity','tpsa_similarity'):
             value=pair.get(metric)
             if isinstance(value,(int,float)) and not isinstance(value,bool) and math.isfinite(value) and 0<=value<=1:
                 key=(target,metric)
@@ -595,8 +601,10 @@ def _deterministic_mechanistic_ranking(
         roles=role_transfer_summary(data)
         fallback=None if roles['review_required'] else (fallback_substrate_fit_by_acc or {}).get(accession)
         row={'accession':accession,'data':data,'tier':tier,'concerns':concerns,
-             'axes':{} if roles['review_required'] else _priority_axes(data,evidence_tiebreak=evidence_tiebreak,fallback=fallback)}
-        key=(tier!=1,tier==3,family_rank_by_acc.get(accession,1))
+             'axes':{} if roles['review_required'] else _priority_axes(data,evidence_tiebreak=False,fallback=fallback)}
+        # Target-specific reaction hypotheses precede analogue ordering. Whole-molecule
+        # group overlap cannot demote a source-checked complementary-role hypothesis.
+        key=(tier==3,tier!=1)
         groups.setdefault(key,[]).append(row)
     ordered=[]
     for key,rows in sorted(groups.items()):
@@ -604,7 +612,9 @@ def _deterministic_mechanistic_ranking(
         from enzyme_discovery_agent.models.candidate_registry import family_label
         strata={}
         for row in sorted(rows,key=lambda row:row['accession']):
-            evidence_order=(row['front'],_mechanism_evidence_rank(row['data']) if evidence_tiebreak else 0)
+            evidence_order=(row['front'],row['tier'] != 1,
+                            family_rank_by_acc.get(row['accession'],1),
+                            _mechanism_evidence_rank(row['data']) if evidence_tiebreak else 0)
             family=family_label(row['data'],row['accession'])
             strata.setdefault(evidence_order,{}).setdefault(family,[]).append(row)
         # Incomparable alternatives share attention across families. Preserve

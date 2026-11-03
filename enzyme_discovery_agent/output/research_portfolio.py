@@ -9,6 +9,9 @@ from enzyme_discovery_agent.state_store import atomic_write_text
 
 
 def write_research_portfolio(run_dir):
+    from enzyme_discovery_agent.output.discovery_portfolio import write_discovery_portfolio
+    from enzyme_discovery_agent import config
+    discovery=write_discovery_portfolio(run_dir,limit=config.DISCOVERY_PORTFOLIO_SIZE)
     root=Path(run_dir);registry=load_candidate_registry(root,strict=True)['candidates']
     hypotheses=[];unresolved=[];mentions=[]
     for accession,entry in registry.items():
@@ -49,4 +52,5 @@ def write_research_portfolio(run_dir):
     lead_fields=['lead_id','name','paper','identity_status','relevance_status','scope']
     save('unresolved_literature_leads.csv',unresolved,lead_fields)
     save('literature_mentions.csv',mentions,lead_fields)
-    return {'source_cited_hypotheses':len(hypotheses),'unresolved_paper_leads':len(unresolved)}
+    return {'source_cited_hypotheses':len(hypotheses),'unresolved_paper_leads':len(unresolved),
+            'discovery_proposals':discovery['selected']}

@@ -324,6 +324,10 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
             return []
         out: list[tuple[str, int, str]] = []
         for e in (res.get("data") if isinstance(res, dict) else res) or []:
+            if isinstance(res,dict) and res.get('used_query',term).casefold()!=term.casefold():
+                name_tokens=set(re.findall(r'[a-z][a-z0-9]{2,}',str(e.get('name') or e.get('short_name') or '').lower()))
+                if family_tokens and not family_tokens & name_tokens:
+                    continue
             acc = str(e.get("accession") or e.get("id") or "")
             if not acc.upper().startswith("IPR"):
                 continue
@@ -359,7 +363,11 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
         scored.sort(key=lambda t: (-t[0], -t[1]))
         return [acc for _, _, acc in scored][:max_folds]
 
-    # --- Fallback: original name-first, descriptor-supplement resolution.
+    # Search services can relax a query to generic words. Without a matching
+    # distinctive term, their hits are unresolved leads, not this family's
+    # identity. Do not silently attach an unrelated fold to the hypothesis.
+    # Unrelaxed queries retain the limited fallback; relaxed, unrelated hits
+    # were removed above and cannot silently substitute a different family.
     picked: dict[str, int] = {}
     for acc, c, _ in sorted(_surveyable(fam.get("name", "")), key=lambda kv: -kv[1]):
         picked.setdefault(acc, c)

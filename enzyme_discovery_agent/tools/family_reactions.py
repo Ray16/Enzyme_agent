@@ -290,6 +290,7 @@ def select_relevant_members(
             "fit_method": fit_method,
             "functional_group_similarity": (m.get("substrate") or {}).get("functional_group_similarity"),
             "claim_validation": validation,
+            "screening_annotation": m.get("screening_annotation"),
         })
     # Highest fit first; a reviewed member wins ties over an unreviewed one (curated
     # annotation is more trustworthy), then a stable accession tiebreak.
@@ -587,7 +588,7 @@ def _reviewed_member_count(fold_id: str) -> int:
 
 
 _MEMBER_FIELDS = (
-    "accession,id,reviewed,protein_name,ec,cc_catalytic_activity,xref_interpro"
+    "accession,id,reviewed,protein_name,ec,cc_catalytic_activity,xref_interpro,organism_name,gene_names,length,cc_function"
 )
 
 
@@ -896,7 +897,9 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             accommodation=annotate_indirect_donor_roles(entry,
                 [{'name':get_chebi_name(cid),'smiles':chebi_cache.get(cid)} for cid in (chosen or {}).get('chebi_ids',[])],
                 accommodation)
+        from enzyme_discovery_agent.tools.reasoning import _screening_annotation
         return {
+            "screening_annotation": _screening_annotation(entry, acc),
             "accession": acc,
             "name": _member_name(entry),
             "ec": ec,

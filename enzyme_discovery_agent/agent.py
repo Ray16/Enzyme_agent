@@ -1171,8 +1171,15 @@ class EnzymeAgent:
             from enzyme_discovery_agent.models.target_review import review_queue,run_review
             from enzyme_discovery_agent.models.research_decisions import _root as decision_root,_read as read_decision_state
             pending_interpretation=read_decision_state(decision_root(self.run_dir)/'state.json',{}).get('awaiting_interpretation')
-            if not pending_interpretation and review_queue(self.run_dir,limit=4):
-                review=run_review(self.run_dir,self.llm,limit=4)
+            # Candidate assessment is itself a source-bound scientific interpretation.
+            # A pending search-review closure must not leave retrieved candidates
+            # unranked. Bound the tranche so strategy review still gets a turn.
+            if (config.AUTO_TARGET_REVIEW
+                    and self._automatic_evidence_batches < config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION
+                    and review_queue(self.run_dir,limit=config.TARGET_REVIEW_BATCH_SIZE)):
+                review=run_review(self.run_dir,self.llm,limit=config.TARGET_REVIEW_BATCH_SIZE)
+                self._automatic_evidence_batches += 1
+                self._last_automatic_action = 'target_review'
                 if review['assessed']:
                     from enzyme_discovery_agent.output.csv_generator import refresh_ranked_candidates
                     refresh_ranked_candidates(self.run_dir)
@@ -1181,19 +1188,37 @@ class EnzymeAgent:
                     return self._finish_budget_checkpoint(messages,iteration,token_usage,self._budget_reason())
                 if review['errors'] or review['unassessed']:
                     self.log('Target review checkpoint: '+json.dumps(review))
-                else:
-                    continue
+                # Re-enter scheduling after partial batches too. Falling through
+                # evaluated more native records ahead of already-ready target
+                # assessments whenever any response was invalid or missing.
+                continue
             from enzyme_discovery_agent.models.literature_bootstrap import bootstrap_status
             literature_bootstrap=bootstrap_status(self.run_dir,{tool['function']['name'] for tool in self.tools},
                 mechanisms_derived=self._gate_state.mechanism_families_done)
             reconnaissance=literature_bootstrap['required']
             if not self._gate_state.mechanism_families_done:
                 atomic_write_json(self.run_dir/'agent_state/literature_bootstrap.json',literature_bootstrap)
-            from enzyme_discovery_agent.models.rolling import fresh_evaluation_backlog
+            from enzyme_discovery_agent.models.rolling import fresh_evaluation_backlog, new_evaluation_work
             backlog = fresh_evaluation_backlog(self.run_dir)
             from enzyme_discovery_agent.models.research_decisions import review_due
             adaptive_review = (config.ADAPTIVE_REASONING and review_due(
                 self.run_dir, minimum_assessed=config.ADAPTIVE_REVIEW_MIN_ASSESSED))
+            source_reviewed = read_decision_state(
+                decision_root(self.run_dir)/'state.json', {}).get('initial_sources_reviewed')
+            # A survey registers discoveries before they are screened. Include
+            # that work in the bounded tranche, even while an earlier search
+            # outcome awaits interpretation. Never close that review implicitly.
+            candidate_work = bool(backlog) or (source_reviewed and new_evaluation_work(self.run_dir))
+            if (candidate_work and not reconnaissance and not user_reflection
+                    and (source_reviewed or not adaptive_review)
+                    and self._automatic_evidence_batches < config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION):
+                ready_gate = self._gate_pipeline.gates[2]
+                if ready_gate.should_fire(self._gate_state, False, messages):
+                    result = ready_gate.execute(self._gate_state, messages)
+                    iteration, intercepted = self._apply_gate_result(
+                        "evaluation_backlog", result, iteration, messages, discard_assistant=False)
+                    if intercepted:
+                        continue
             if getattr(self, '_invalid_research_decisions', 0) >= 2:
                 if backlog:
                     from enzyme_discovery_agent.models.research_decisions import defer_ungrounded_review
@@ -1218,13 +1243,6 @@ class EnzymeAgent:
                 else:
                     return self._finish_budget_checkpoint(messages, iteration - 1, token_usage,
                         'Adaptive decision could not be grounded after two attempts; review the preserved evidence and proposals.', status='discovery_incomplete')
-            if backlog and not adaptive_review and not reconnaissance:
-                ready_gate = self._gate_pipeline.gates[2]
-                result = ready_gate.execute(self._gate_state, messages)
-                iteration, intercepted = self._apply_gate_result(
-                    "evaluation_backlog", result, iteration, messages, discard_assistant=False)
-                if intercepted:
-                    continue
             forced_reflection = user_reflection or self._automatic_reflection_due()
             # A productive automatic queue still yields periodically to a
             # normal model decision, without injecting a reflection request.
@@ -1262,7 +1280,23 @@ class EnzymeAgent:
                 ("mechanism_family", self._mechanism_family_gate),
                 ("family_survey", self._family_survey_gate),
             )
-            for name, gate in (() if skip_automation else foundation_gates):
+            # Synthesis of hypotheses from retrieved sources is not a new evidence
+            # acquisition. It must precede the review that needs this search map.
+            # The broader survey still waits for interpretation of pending results.
+            decision_state = read_decision_state(decision_root(self.run_dir)/'state.json', {})
+            source_reviewed = (decision_state.get('initial_sources_reviewed')
+                               or decision_state.get('last_interpretation'))
+            initial_foundation = (source_reviewed and not reconnaissance and not pending_interpretation
+                                  and not user_reflection and bool(self._accumulated_papers)
+                                  and self._candidate_count < config.ADAPTIVE_REVIEW_MIN_ASSESSED)
+            for name, gate in foundation_gates:
+                synthesize_initial_map = (name == 'mechanism_family'
+                    and not self._gate_state.mechanism_families_done
+                    and not reconnaissance and not user_reflection and bool(self._accumulated_papers))
+                initial_survey = (initial_foundation and name == 'family_survey'
+                    and self._gate_state.mechanism_families_done and getattr(gate, '_attempts', 0) == 0)
+                if skip_automation and not (synthesize_initial_map or initial_survey):
+                    continue
                 from enzyme_discovery_agent.steering import has_pending
                 if has_pending(self.run_dir) or self._budget_reason():
                     intercepted = True
@@ -1358,28 +1392,19 @@ class EnzymeAgent:
                     "Take an evidence-gathering action in an unresolved family or candidate, "
                     "or explain that the remaining searches are exhausted."
                 )})
-            # A hypothesis tested only against written reports yields names, not records.
-            # When recent retrieval has gone entirely to reports, withhold those sources
-            # for one turn so the same hypothesis is put to the sequence archives, which
-            # are the only sources that can return something modellable.
-            from enzyme_discovery_agent.models.event_log import retrieval_balance, report_search_tools
+            # Source counts are a diagnostic, not a reason to hide a useful route.
+            from enzyme_discovery_agent.models.event_log import retrieval_balance
             balance = retrieval_balance(self.run_dir)
             if balance['reports_crowding_out_records']:
-                # Only the sources that go looking for more reports are withheld.
-                # Reading and extracting from a report already retrieved stays open,
-                # because that is how a lead becomes something to search an archive for.
-                reports = report_search_tools()
-                available_tools = [tool for tool in available_tools
-                                   if tool['function']['name'] not in reports]
-                self._log_event('retrieval_rebalanced', {'iteration': iteration, **balance})
+                self._log_event('retrieval_balance_advisory', {'iteration': iteration, **balance})
                 messages.append({'role': 'user', 'content': (
-                    f"RETRIEVAL BALANCE: {balance['report_searches']} of the last "
-                    f"{balance['retrievals_in_window']} retrievals searched written reports and "
-                    f"{balance['record_searches']} searched sequence archives. Report sources are "
-                    "withheld this turn. Put the scope you are currently reasoning about to the "
-                    "sequence archives directly -- by family, domain, catalytic activity or "
-                    "reaction, not by an individual name you read in a paper -- and use one plan's "
-                    "additional_actions to cover every scope you judged relevant, not just one.")})
+                    f"RETRIEVAL BALANCE: {balance['report_searches']} recent literature searches and "
+                    f"{balance['record_searches']} sequence-archive searches. Choose the next route "
+                    "by the unresolved question: resolve retrieved identities or reaction/family "
+                    "cross-references to sequences; read or follow citations when chemistry remains "
+                    "unclear. A low-yield query needs relaxed constraints or another evidence axis. "
+                    "Do not repeat completed searches without a changed scope. Keep complementary "
+                    "unexplored reaction hypotheses visible. All evidence sources remain available.")})
             # Early turns must establish chemistry and retrieve evidence.
             # Delaying optional notebook writes avoids provider-generated
             # section-only calls before there is any evidence to summarize.

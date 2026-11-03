@@ -59,6 +59,17 @@ def test_review_closes_and_resumes_work_without_closing_scientific_uncertainty(t
     assert json.loads((decisions._root(tmp_path)/'state.json').read_text())['initial_sources_reviewed']
 
 
+def test_source_interpretation_releases_routine_work_without_an_extra_closure_turn(tmp_path):
+    source(tmp_path)
+    identifier=decisions.start_decision(tmp_path,proposal(tmp_path),{'search_pubmed'})
+    outcome=decisions.finish_decision(tmp_path,identifier,{'status':'success','summary':'Source evidence retrieved.'})
+    decisions.interpret_outcome(tmp_path,decision_id=identifier,evidence_refs=[outcome],
+        interpretation='The retrieved source concerns precursor production; the direct reaction remains unresolved.',
+        belief_update='suspend')
+    assert not decisions.review_due(tmp_path)
+    assert json.loads((decisions._root(tmp_path)/'state.json').read_text())['initial_sources_reviewed']
+
+
 def test_controller_saves_a_prediction_before_early_automation(tmp_path):
     from enzyme_discovery_agent.agent import EnzymeAgent
     from enzyme_discovery_agent.tool_registry import get_tool_info
@@ -85,7 +96,10 @@ def test_controller_saves_a_prediction_before_early_automation(tmp_path):
         def execute(*args,**kwargs):
             assert read_scientific_trace(agent.run_dir)[0]['type']=='prediction_registered'
             return {'status':'success','summary':'Synthetic new source retrieved','data':[]}
-        for gate in (agent._literature_harvest_gate,agent._mechanism_family_gate,agent._family_survey_gate):
+        # Source-grounded hypothesis synthesis is permitted; fresh acquisition
+        # and family expansion still require the initial evidence decision.
+        agent._mechanism_family_gate.should_fire=Mock(return_value=False)
+        for gate in (agent._literature_harvest_gate,agent._family_survey_gate):
             gate.should_fire=Mock(side_effect=AssertionError('Automation ran before initial source review'))
         with patch.object(agent.llm,'call',side_effect=respond), \
              patch('enzyme_discovery_agent.agent.execute_tool',side_effect=execute) as performed, \

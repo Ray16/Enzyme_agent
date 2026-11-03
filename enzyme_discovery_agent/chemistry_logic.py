@@ -549,7 +549,7 @@ def extract_target_bond_type(target_reaction_type: str) -> dict:
         ("c-s bond", ("C-S",)),
     ]
     for keyword, bond_types in bond_keywords:
-        if keyword in target_lower:
+        if re.search(r"(?<![a-z])(?:poly)?" + re.escape(keyword) + r"(?![a-z])", target_lower):
             target_bonds.update(bond_types)
 
     _DIRECTION_KEYWORDS = {

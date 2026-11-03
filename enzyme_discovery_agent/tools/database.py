@@ -748,6 +748,8 @@ def search_interpro(query: str, max_results: int = 20) -> dict:
         "status": "success" if results else "partial",
         "summary": f"Found {len(results)} InterPro entries for '{tried_query}'",
         "data": results,
+        "requested_query": query,
+        "used_query": tried_query,
         "count": len(results),
         "lookup_status": "found" if results else "empty",
         "search_completed": True,

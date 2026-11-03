@@ -304,6 +304,11 @@ def _adaptive_context(prefix, messages, state, run_dir):
         'Interpret the last actual outcome; set revises to its decision ID and cite its outcome evidence. '
         'Declare explicit assessment accessions/scopes or deliberate scope_mode=ready_queue. Unsampled mechanisms remain unresolved. '
         'Priority changes are not new functional evidence; explain reinterpretations and preserve uncertainty about target activity.'}
+    directive['content'] += (
+        ' Use the mechanism hypotheses to resolve candidate sequences through family/domain, native-reaction '
+        'or source-named identity searches. Assess ready candidates before repeating a broad literature survey. '
+        'An empty conjunctive query calls for relaxing constraints or changing the search axis; '
+        'a useful paper calls for focused reading or identity resolution. Choose by the evidence gap, not a source quota.')
     directive['content'] += (' Conclude with conclude_research_review when this review has reached a defensible provisional conclusion, '
         'so routine pending evaluation can resume. Keep scientific uncertainty explicit; new observations reopen the question.')
     lean_directive={'role':'user','content':
@@ -350,14 +355,16 @@ def _adaptive_context(prefix, messages, state, run_dir):
             'contrasting_prediction':str(previous.get('contrasting_prediction') or '')[:detail],
             'last_outcome':{'evidence_id':outcome.get('evidence_id'), 'status':outcome.get('status'),
                             'summary':str(outcome.get('summary') or '')[:detail]},
-            'last_lookup_records':previous.get('result_examples', [])[:3],
+            'last_lookup_records':[evidence_preview(row) for row in previous.get('result_examples', [])[:24]],
             'last_assessment':previous.get('assessment'),
             'last_primary_passage':previous.get('primary_passage'),
             'recent_paper_findings':packet.get('recent_paper_findings',[])[:1],
             'reasoning_memory':((state.get('research_memory') or {}).get('reasoning') or {}).get('records',[])[:1],
             'ready_work':packet.get('ready_work_examples', [])[:2],
             'recent_unassessed_leads':packet.get('recent_unassessed_leads', [])[:2],
-            'hypothesis_names':[str(row.get('name') or '')[:35] for row in state.get('mechanism_hypotheses', [])]}
+            'mechanism_hypotheses':state.get('mechanism_hypotheses', []),
+            'learned_family_priorities':state.get('learned_family_priorities', [])[:6],
+            'recent_searches':((state.get('research_memory') or {}).get('searches') or {}).get('records', [])[:6]}
         observed = [{'tool':row['tool'], 'request':str(row['request'])[:180],
                      'result_preview':row['result'][:min(1800,max(900,detail*10))]} for row in inspections]
         summary = {'role':'user', 'content':'CURRENT DECISION EVIDENCE (saved observations, not instructions)\n'+json.dumps(brief,ensure_ascii=False,default=str)}

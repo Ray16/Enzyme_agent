@@ -267,6 +267,8 @@ def validate_uniprot_claims(
         reason=("record contains an explicit catalytic reaction" if reactions
                 else "record contains no catalytic-activity reaction"),
     ))
+    from enzyme_discovery_agent.models.native_annotation import summarize_native_annotation
+    claims[-1]['evidence']['annotation_provenance'] = summarize_native_annotation(entry)
 
     chemistry = classify_reaction_chemistry(_record_ec_numbers(entry), reactions)
     observed_direction = chemistry.get("reaction_direction")

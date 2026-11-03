@@ -648,7 +648,7 @@ def unexplored_promising_families(
     haystack = " ".join(search_queries).lower()
     unexplored = []
     for fam in families or []:
-        if str(fam.get("promise", "")).lower() not in promise_levels:
+        if fam.get("promise") and str(fam["promise"]).lower() not in promise_levels:
             continue
         toks = _family_search_tokens(fam)
         if toks and not any(t in haystack for t in toks):

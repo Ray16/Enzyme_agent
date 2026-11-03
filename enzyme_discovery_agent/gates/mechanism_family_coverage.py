@@ -47,7 +47,6 @@ class MechanismFamilyGate:
     def execute(self, state: AgentState, messages: list[dict] | None = None) -> GateResult:
         from enzyme_discovery_agent.tools.mechanism_families import (
             derive_mechanism_families,
-            rank_families_by_substrate_resemblance,
         )
 
         ctx_path = run_file(state.run_dir, 'target_context.json')
@@ -66,15 +65,8 @@ class MechanismFamilyGate:
         families = derive_mechanism_families(
             query, substrate, self.llm, target_direction=target_direction,
             target_topology=target_topology,
-            retrieved_papers=state.accumulated_papers,
+            retrieved_papers=state.accumulated_papers, max_attempts=2, reflect=False,
         )
-        if families:
-            # Order families by how closely their native substrates resemble the
-            # target substrates, so guidance can steer search DEPTH into the most
-            # promising family instead of spreading budget thinly across all.
-            families = rank_families_by_substrate_resemblance(
-                families, query, substrate, self.llm
-            )
         if not families:
             if getattr(self.llm, "budget_exhausted", False):
                 return GateResult(intercept=False)
@@ -102,46 +94,44 @@ class MechanismFamilyGate:
             details={"Families": "; ".join(f["name"] for f in families)},
         )
 
-        lines = []
-        for i, f in enumerate(families):
-            terms = "; ".join(f.get("literature_terms") or f["descriptors"])
-            marker = " [MOST PROMISING — substrate match]" if i == 0 else ""
-            reason = f.get("promise_reason")
-            reason_txt = f" (why: {reason})" if reason and i == 0 else ""
-            lines.append(f"- {f['name']}{marker}: {terms}{reason_txt}")
-        families_block = "\n".join(lines)
-
+        from datetime import datetime, timezone
+        import uuid
+        from enzyme_discovery_agent.models.reasoning_trace import capture_scientific_record
+        identifier = uuid.uuid4().hex
+        snapshot = state.run_dir / 'artifacts' / 'mechanism_hypotheses' / (identifier + '.json')
+        atomic_write_json(snapshot, {
+            'id':identifier, 'created_at':datetime.now(timezone.utc).isoformat(),
+            'query':query, 'substrate_smiles':substrate,
+            'retrieved_papers':state.accumulated_papers, 'families':families,
+            'model':getattr(self.llm, 'active_label', None),
+            'scope':'Provisional source-informed search hypotheses; neither exhaustive coverage nor established target activity.'})
+        capture_scientific_record(state.run_dir, 'mechanism_hypotheses_recorded', snapshot)
+        # This source-informed synthesis is the initial evidence review. Release
+        # routine retrieval without requiring a second model turn to close it.
+        # An existing pending outcome remains pending and still needs interpretation.
+        from enzyme_discovery_agent.models.research_decisions import _root, _read
+        from enzyme_discovery_agent.state_store import state_lock
+        review_path = _root(state.run_dir) / 'state.json'
+        with state_lock(review_path):
+            review = _read(review_path, {})
+            review.update(initial_sources_reviewed=True, initial_hypothesis_snapshot=str(snapshot.relative_to(state.run_dir)))
+            atomic_write_json(review_path, review)
+        lines = [f"- {f['name']}: " + '; '.join(f.get('literature_terms') or f['descriptors']) for f in families]
         guidance = (
-            "MECHANISM-FAMILY WORKFLOW. The target transformation can be "
-            "catalysed by several DISTINCT enzyme families/folds, listed below in "
-            "DESCENDING order of how closely each family's native substrates "
-            "resemble the target substrates. Work them in THIS ORDER — do NOT keep "
-            "running broad keyword literature searches yet:\n"
-            f"{families_block}\n"
-            "\nSTEP 1 — SEED (mostly done): your initial literature search gave you "
-            "candidate enzymes and the families above. You need only ONE grounded "
-            "seed candidate per plausible family before moving on — don't over-mine "
-            "the literature here.\n"
-            "\nSTEP 2 — SURVEY & PRUNE (do this NEXT, before any deep reading). For "
-            "EACH promising family call survey_family_reactions — on a seed "
-            "candidate you already found, or on an InterPro fold id from "
-            "search_interpro. It enumerates the fold's reviewed members with their "
-            "NATIVE REACTIONS and reports GROUNDED NUMBERS (reaction direction vs "
-            "the target; how closely members' native substrates resemble the target "
-            "— functional-group overlap, size ratio), with NO cutoff or label. "
-            "COMPARE the families' distributions and KEEP the families whose members "
-            "most resemble the target (their native substrates share the target's "
-            "functional groups at a similar size); SET ASIDE families whose native "
-            "reactions run the opposite direction or whose substrates are far "
-            "larger / aromatic / decorated with extra groups. This prunes where to "
-            "spend effort BEFORE expensive full-text reading — the surveyed numbers, "
-            "not a family label, decide.\n"
-            "\nSTEP 3 — DEEP LITERATURE on the SURVIVORS only. For the families you "
-            "kept, now read full text and expand members + close homologs — but "
-            "prefer the surveyed members' OWN characterizing papers (their UniProt "
-            "entries link to them) over broad keyword searches, which pull in "
-            "off-topic and wrong-direction papers. Do not spend deep-reading budget "
-            "on families STEP 2 set aside."
+            "INITIAL MECHANISM SEARCH MAP (provisional, not exhaustive). These are hypotheses "
+            "derived from the target and retrieved sources, not validated enzyme activities.\n"
+            + "\n".join(lines) +
+            "\nUse this map now for focused retrieval across distinct plausible families. "
+            "Resolve family/domain or native-reaction records to candidate sequences, and follow "
+            "retrieved identities to their own functional evidence. Use independent retrievals in "
+            "one planned batch. Obtain a source-supported representative before deepening one family. "
+            "Assign each target participant a role and compare its reacting end with an occurrence "
+            "in ONE native reaction. Distinct native occurrences can supply complementary roles "
+            "despite different whole-molecule functional-group inventories. Substrate resemblance "
+            "alone cannot establish feasibility or rule out a transfer hypothesis. "
+            "Use evidence to revise priorities, broaden an empty query or explore an overlooked "
+            "route. Keep unknowns distinct from observed conflicts; a proposed map is not a "
+            "coverage certificate. Preserve alternative hypotheses and reopening conditions."
         )
         return GateResult(
             intercept=True,

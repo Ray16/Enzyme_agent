@@ -27,7 +27,10 @@ def pending(root):
     return identifier,outcome
 
 
-def test_interpretation_releases_pending_outcome_without_another_action(tmp_path):
+@pytest.mark.parametrize('action_limit', [1, 4])
+def test_interpretation_releases_pending_outcome_without_another_action(tmp_path, monkeypatch, action_limit):
+    from enzyme_discovery_agent import config
+    monkeypatch.setattr(config, 'RESEARCH_REVIEW_MAX_ACTIONS', action_limit)
     identifier,outcome=pending(tmp_path)
     before=decisions.review_limits(tmp_path)
     result=decisions.interpret_outcome(tmp_path,decision_id=identifier,evidence_refs=[outcome],

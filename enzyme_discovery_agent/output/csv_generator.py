@@ -32,6 +32,10 @@ def refresh_ranked_candidates(run_dir):
         evaluations=current_evaluations(root,[{'data':seed_evidence(acc,entry)} for acc,entry in registry.items()
                                             if discovery_status(entry) in {'evaluated','ranked'} or
                                             registered_hypothesis(root,acc,entry.get('metadata') or {})])
+        # Fill missing comparisons from source-resolved occurrences in one native
+        # reaction. Reporting does not initiate compound lookups or pool activities.
+        from enzyme_discovery_agent.models.native_substrate_fit import add_property_comparisons
+        add_property_comparisons(root,evaluations)
         from enzyme_discovery_agent.models.target_review import admitted_evaluations
         rankable=admitted_evaluations(root,evaluations)
         stopped,supported,_=_family_relevance_partition(root,evaluations)
@@ -150,7 +154,8 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
         "catalytic_activities", "function_comments",
         "strengths", "weaknesses", "requires_polymer_substrate",
         "tier_label", "priority_rationale",
-        "native_annotation_status", "ranking_basis",
+        "native_annotation_status", "ranking_basis", "native_activity_evidence",
+        "native_activity_sources", "target_assessment_decision", "target_activity_evidence",
     ]
 
     try:
@@ -161,6 +166,9 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
             for ev in all_evals:
                 d = ev.get("data", ev)
                 acc = d.get("accession", "")
+                from enzyme_discovery_agent.models.native_annotation import native_annotation_for_report
+                annotation = native_annotation_for_report(run_dir, acc, d)
+                assessment = d.get('target_assessment') or {}
                 genes = d.get("gene_names", [])
                 ec_list = d.get("ec_numbers", [])
                 lit = d.get("literature", {})
@@ -222,6 +230,13 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
                     "priority_rationale":rank_info.get("rationale", ""),
                     "native_annotation_status":"annotated_reaction" if cat_acts else "native_reaction_unknown",
                     "ranking_basis":"source_cited_hypothesis" if d.get('priority_assessment') else "provisional_native_analogue",
+                    "native_activity_evidence":annotation['native_activity_evidence'],
+                    "native_activity_sources":"; ".join(sorted({
+                        str(item.get('source',''))+':'+str(item.get('id',''))
+                        for reaction in annotation['reactions'] for item in reaction['evidences']
+                        if item.get('source') and item.get('id')})),
+                    "target_assessment_decision":assessment.get('decision',''),
+                    "target_activity_evidence":assessment.get('evidence_level','unresolved'),
                 })
 
             content=f.getvalue()

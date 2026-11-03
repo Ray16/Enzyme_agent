@@ -36,6 +36,17 @@ def synchronize_saved_records(run_dir):
         if f'outcome_interpreted:{path.stem}' not in known:
             value=json.loads(path.read_text())
             sources.append((value['created_at'],'outcome_interpreted',path))
+    for path in (root/'artifacts/mechanism_hypotheses').glob('*.json'):
+        if f'mechanism_hypotheses_recorded:{path.stem}' not in known:
+            value=json.loads(path.read_text())
+            sources.append((value['created_at'],'mechanism_hypotheses_recorded',path))
+    for path in (root/'artifacts/target_reviews').glob('*.json'):
+        kind='target_review_batch_recorded' if path.stem.startswith('batch_') else 'target_assessment_recorded'
+        if path.stem.endswith('_priority') or f'{kind}:{path.stem}' in known:
+            continue
+        value=json.loads(path.read_text())
+        if value.get('id') and value.get('created_at'):
+            sources.append((value['created_at'],kind,path))
     for folder,kind in [('reaction_roles','participant_roles_recorded'),('reaction_steps','reaction_step_recorded')]:
         for path in (root/'artifacts'/folder).glob('*/*.json'):
             if f'{kind}:{path.stem}' not in known:
@@ -132,6 +143,37 @@ def export_trace(run_dir, *, reconstruct_missing=True):
         for conclusion in result['conclusions']:
             if conclusion.get('revises')==case['decision_id']:
                 lines.extend([f"**Provisional conclusion:** {conclusion['conclusion']}",''])
+    hypotheses=[event for event in events if event['type']=='mechanism_hypotheses_recorded']
+    if hypotheses:
+        lines.extend(['## Mechanism search hypotheses','',
+            'Provisional source-informed search maps; neither exhaustive coverage nor established target activity.',''])
+        for event in hypotheses:
+            record=event['record']
+            lines.extend([f"Recorded: {event['occurred_at']} · Capture: {event['capture_mode']}",''])
+            for family in record.get('families',[]):
+                lines.append('- '+family['name']+': '+str(family.get('required_catalytic_capability') or 'Unresolved catalytic capability.'))
+            lines.extend(['',f"[Saved hypotheses and source inputs](../{record['source']['path']})",''])
+    assessments=[event for event in events if event['type']=='target_assessment_recorded']
+    if assessments:
+        lines.extend(['## Target-specific candidate assessments',''])
+        for event in assessments:
+            record=event['record']
+            lines.extend([f"### {record['accession']} · {record['decision']}",'',
+                record['reason'],'',record['mechanism_and_step'],'',
+                '**Participant roles:**','',json.dumps(record['target_roles'],ensure_ascii=False),'',
+                '**Reopen when:** '+record['revisit_when'],'',
+                f"[Complete assessment and source evidence](../{record['source']['path']})",''])
+    batches=[event for event in events if event['type']=='target_review_batch_recorded']
+    if batches:
+        lines.extend(['## Assessment attempts','',
+            'Incomplete or invalid responses are unresolved work, not negative scientific results.',''])
+        for event in batches:
+            record=event['record'];batch_result=record['result']
+            lines.extend([f"Recorded: {event['occurred_at']} · Capture: {event['capture_mode']}",'',
+                '**Assessed:** '+', '.join(batch_result['assessed']),
+                '**Unassessed:** '+', '.join(batch_result['unassessed']),
+                '**Errors:** '+json.dumps(batch_result['errors']+batch_result.get('provider_faults',[])), '',
+                f"[Complete attempt, feedback and source inputs](../{record['source']['path']})",''])
     interpretations=[event for event in events if event['type'] in {'participant_roles_recorded','reaction_step_recorded'}]
     if interpretations:
         lines.extend(['## Participant and reaction-step interpretations','',

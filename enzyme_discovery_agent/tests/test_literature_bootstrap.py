@@ -2,6 +2,7 @@
 import json
 from types import SimpleNamespace
 from unittest.mock import Mock,patch
+import pytest
 
 from enzyme_discovery_agent.models.literature_bootstrap import bootstrap_status
 from enzyme_discovery_agent.models.event_log import append_event
@@ -32,7 +33,8 @@ def test_explicit_same_campaign_derivation_survives_gate_state_reconstruction(tm
     assert bootstrap_status(cold, {'search_pubmed'})['required']
 
 
-def test_controller_retrieves_before_firing_mechanism_gate(tmp_path):
+@pytest.mark.parametrize('review_due', [False, True])
+def test_controller_retrieves_before_firing_mechanism_gate(tmp_path, review_due):
     from openai.types.chat import ChatCompletion
     from enzyme_discovery_agent.agent import EnzymeAgent
     from enzyme_discovery_agent.gates import GateResult
@@ -43,7 +45,8 @@ def test_controller_retrieves_before_firing_mechanism_gate(tmp_path):
     with patch('enzyme_discovery_agent.agent.register_builtin_tools'), \
          patch('enzyme_discovery_agent.agent.get_all_tools',return_value=[source_tool,other_tool]), \
          patch('enzyme_discovery_agent.models.target_reasoning.derive_target_reasoning',return_value={}), \
-         patch('enzyme_discovery_agent.models.research_decisions.review_due',return_value=False), \
+         patch('enzyme_discovery_agent.models.research_decisions.review_due',
+               side_effect=lambda root, **kw: review_due and not bootstrap_status(root, {'search_pubmed'})['required']), \
          patch('enzyme_discovery_agent.models.recovery.next_recovery_action',return_value=None):
         agent=EnzymeAgent(output_dir=tmp_path,token_budget=100)
         selected=[]

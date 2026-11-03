@@ -122,7 +122,8 @@ def capture_scientific_record(run_dir,kind,path,*,capture_mode='live'):
             record['assessment']={key:data.get(key) for key in ('attempted','supported','evidence_pending',
                 'rejected','failed','actual_sample','scope_limit','existing_assessments','new_evidence') if key in data}
         occurred=value['completed_at']
-    elif kind in {'review_concluded','outcome_interpreted'}:
+    elif kind in {'review_concluded','outcome_interpreted','mechanism_hypotheses_recorded',
+                  'target_assessment_recorded','target_review_batch_recorded'}:
         record={**value,'source':source}
         identifier,occurred=value['id'],value['created_at']
     elif kind in {'participant_roles_recorded','reaction_step_recorded'}:

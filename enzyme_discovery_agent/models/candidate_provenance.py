@@ -289,22 +289,28 @@ def _accommodation_facts(target_smiles: str, native_smiles: list[str]) -> list[d
         return []
     try:
         from enzyme_discovery_agent.chemistry_logic import compare_substrate_properties
-        from enzyme_discovery_agent.tools.chemistry import compute_fingerprint_similarity
         from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
     except Exception:
         return []
-    facts = []
-    for t in [s for s in target_smiles.split(".") if s.strip()]:
-        best, bn = 0.0, ""
-        for n in native_smiles:
-            sim = compute_fingerprint_similarity(t, n).get("data", {}).get("similarity", 0.0)
-            if sim > best:
-                best, bn = sim, n
-        if bn:
-            p = compare_substrate_properties(t, bn, compute_substrate_properties)
-            if p:
-                facts.append(p)
-    return facts
+    from enzyme_discovery_agent.substrate_fit import assign_one_to_one
+    from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+    targets = [s for s in target_smiles.split('.') if s.strip()]
+    if len(native_smiles) < len(targets):
+        return []  # A partial comparison cannot stand in for every target role.
+    comparisons = {}
+    def compare(target, native):
+        key = (target, native)
+        if key not in comparisons:
+            comparisons[key] = compare_substrate_properties(target, native, compute_substrate_properties)
+        return comparisons[key]
+    def score(target, native):
+        fit = whole_package_pair_fit(compare(target, native))
+        return fit if fit is not None else -1.0
+    assigned = assign_one_to_one(targets, native_smiles, score)
+    if any(native is None or fit < 0 for _, native, fit in assigned):
+        return []
+    return [compare(target, native) for target, native, _ in assigned]
+
 
 
 def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, log_fn=None):

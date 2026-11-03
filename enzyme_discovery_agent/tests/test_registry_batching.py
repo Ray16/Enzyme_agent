@@ -106,6 +106,25 @@ def test_screening_passes_saved_member_fit_to_allocator(tmp_path, monkeypatch):
     assert observed[0][1]['substrate_fit'] == .8
 
 
+def test_survey_annotations_reach_screening_without_a_duplicate_request(tmp_path):
+    from enzyme_discovery_agent.gates.family_survey import FamilySurveyGate
+    from enzyme_discovery_agent.gates.ec_triage import auto_screen_candidates
+    from enzyme_discovery_agent.tools.family_reactions import select_relevant_members
+    member={'accession':'SYNTH_CACHED','name':'Synthetic catalyst','direction_vs_target':'same',
+            'substrate':{'dimensions':{'functional_group_similarity':.8}},
+            'claim_validation':{'promotion_eligible':True},
+            'screening_annotation':{'accession':'SYNTH_CACHED','protein_name':'Synthetic catalyst',
+                'seq_length':200,'interpro_ids':['SYNTH_FOLD'],'catalytic_activities':['Synthetic recorded reaction']}}
+    selected=select_relevant_members([member])
+    FamilySurveyGate()._promote_relevant(tmp_path,'SYNTH_FOLD',selected)
+    with patch('enzyme_discovery_agent.tools.reasoning._fetch_uniprot_entry_light',side_effect=AssertionError('Duplicate request')), \
+         patch('enzyme_discovery_agent.gates.family_relevance.build_relevance_and_allocate',return_value=({'SYNTH_CACHED'},[])):
+        auto_screen_candidates(tmp_path)
+    saved=registry.load_candidate_registry(tmp_path)['candidates']['SYNTH_CACHED']
+    assert registry.discovery_status(saved)=='screened'
+    assert saved['metadata']['catalytic_activities']==['Synthetic recorded reaction']
+
+
 def test_equal_evidence_prefers_member_fit_over_length_without_dropping_unknowns(tmp_path, monkeypatch):
     from enzyme_discovery_agent.gates import family_relevance as relevance
     monkeypatch.setattr(relevance, '_target_profile_for_run', lambda root: ('formation', set()))

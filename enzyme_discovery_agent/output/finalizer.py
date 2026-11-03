@@ -154,6 +154,9 @@ class RunFinalizer:
             "evaluated_records": len(evaluations), "pending_records": pending})
         (self.run_dir / "report.md").write_text(text)
         generate_candidates_csv(self.run_dir, evaluations, log_fn=self.log)
+        discovery_file=self.run_dir/'discovery_candidates.csv'
+        if discovery_file.exists():
+            self.log(f"  Discovery modeling candidates: {discovery_file}")
         try:
             target = json.loads(run_file(self.run_dir, 'target_context.json').read_text())
         except (OSError, ValueError):
@@ -163,7 +166,10 @@ class RunFinalizer:
             discovery_status_value='incomplete', coverage={'status': 'incomplete', 'reason': reason})
         from enzyme_discovery_agent.export_reasoning_trace import export_trace
         trace=export_trace(self.run_dir)
-        self.log(f"  Scientific reasoning trace: {len(trace['examples'])} decisions; source integrity {trace['source_files_intact']}")
+        assessments=sum(event['type']=='target_assessment_recorded' for event in trace['events'])
+        self.log(f"  Scientific reasoning trace: {len(trace['events'])} events, "
+                 f"{len(trace['examples'])} planned tests, {assessments} candidate assessments; "
+                 f"source integrity {trace['source_files_intact']}")
         return text, len(evaluations)
 
     def _verify_confidence_report(self, report_path: Path) -> None:

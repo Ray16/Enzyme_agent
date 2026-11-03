@@ -96,8 +96,6 @@ def get_research_memory(topic: str, query: str = "", offset: int = 0, limit: int
 
 def _fetch_uniprot_entry_light(accession: str) -> dict | None:
     """Fetch minimal UniProt data for screening (single API call)."""
-    from enzyme_discovery_agent.tools.database import _parse_uniprot_json
-
     url = (
         f"https://rest.uniprot.org/uniprotkb/{accession}.json"
         f"?fields=accession,protein_name,ec,organism_name,gene_names,cc_catalytic_activity,xref_interpro,length"
@@ -108,6 +106,13 @@ def _fetch_uniprot_entry_light(accession: str) -> dict | None:
     except Exception as e:
         logger.warning("Screen fetch failed for %s: %s", accession, e)
         return None
+
+    return _screening_annotation(data, accession)
+
+
+def _screening_annotation(data: dict, accession: str) -> dict:
+    """Project a retrieved UniProt record for screening without another request."""
+    from enzyme_discovery_agent.tools.database import _parse_uniprot_json
 
     parsed = _parse_uniprot_json(data)
     from enzyme_discovery_agent.models.claim_validation import validate_uniprot_claims
@@ -960,7 +965,14 @@ def evaluate_candidate(
         group['native_substrates']=[{'chebi_id':cid,'name':get_chebi_name(cid),
             'smiles':resolve_chebi_smiles(cid)} for cid in group['chebi_ids']]
         group['native_substrates']=substrate_occurrences(group['reaction'],group['native_substrates'])
-    target_chemistry=extract_target_bond_type(target_reaction_type)
+    # Use the same campaign contract for reaction selection and final validation.
+    from enzyme_discovery_agent.models.target_reasoning import load_target_reasoning
+    contract = load_target_reasoning(run_dir)
+    if contract is not None:
+        target_chemistry = {'direction': contract.get('reaction_direction'),
+                            'bond_types': contract.get('bond_types') or []}
+    else:
+        target_chemistry = extract_target_bond_type(target_reaction_type)
     target_parts=[part.strip() for part in target_substrate_smiles.split('.') if part.strip()]
     def _group_fit(group):
         from enzyme_discovery_agent.tools.family_reactions import _substrate_facts
@@ -1282,7 +1294,7 @@ def evaluate_candidate(
     # (it may require a primer), but it is positive scope evidence for a
     # hydrolysis target.  Do not apply a synthesis-specific warning before
     # inspecting the target direction.
-    target_direction = extract_target_bond_type(target_reaction_type).get("direction")
+    target_direction = target_chemistry.get("direction")
     requires_polymer = native_polymer_substrate and target_direction == "formation"
     if requires_polymer:
         weaknesses.append(
@@ -1298,9 +1310,9 @@ def evaluate_candidate(
     critical_warnings = []
     enzyme_chem = {}
 
-    if target_reaction_type:
+    if target_reaction_type or contract is not None:
         enzyme_chem = classify_reaction_chemistry(ec_numbers, catalytic_activities)
-        target_chem = extract_target_bond_type(target_reaction_type)
+        target_chem = target_chemistry
         bond_warnings = check_bond_type_mismatch(enzyme_chem, target_chem)
         for w in bond_warnings:
             if "BOND TYPE MISMATCH" in w or "REACTION DIRECTION MISMATCH" in w:

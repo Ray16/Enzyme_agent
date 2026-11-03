@@ -76,7 +76,7 @@ def review_limits(run_dir):
 
 def review_action_allowed(run_dir, tool_name):
     limits=review_limits(run_dir)
-    if tool_name=='interpret_research_outcome':
+    if tool_name in {'interpret_research_outcome', 'interpret_saved_outcome'}:
         return bool(_read(_root(run_dir)/'state.json',{}).get('awaiting_interpretation'))
     if tool_name=='conclude_research_review':
         return True
@@ -279,20 +279,31 @@ def decision_context(run_dir, limit=6):
         examples = []
         assessment = None
         if isinstance(payload, list):
-            for hit in payload[:10]:
+            hits = []
+            for hit in payload:
+                if isinstance(hit, dict) and 'tool_name' in hit and isinstance(hit.get('data'), list):
+                    hits.extend({**record, 'source_tool':hit['tool_name']}
+                                for record in hit['data'][:3] if isinstance(record, dict))
+                else:
+                    hits.append(hit)
+            for hit in hits[:24]:
                 if isinstance(hit, dict):
                     examples.append({key:hit.get(key) for key in
                         ('accession','protein_name','name','gene_names','ec_numbers','organism','reviewed','is_swissprot',
-                         'pmid','doi','title','year','url') if hit.get(key) is not None})
+                         'pmid','doi','title','year','url','source_tool','abstract') if hit.get(key) is not None})
         elif isinstance(payload, dict) and 'actual_sample' in payload:
             registry = load_candidate_registry(Path(run_dir))['candidates']
             records = []
-            for item in payload.get('actual_sample', [])[:3]:
+            for item in payload.get('actual_sample', []):
                 metadata = (registry.get(item.get('accession')) or {}).get('metadata') or {}
-                validation = metadata.get('claim_validation') or {}
+                data = {**metadata, **(metadata.get('evaluation_data') or {})}
+                validation = data.get('claim_validation') or {}
                 records.append({'accession':item.get('accession'), 'status':item.get('status'),
+                                'protein_name':data.get('protein_name'),
+                                'native_reactions':data.get('catalytic_activities') or [],
+                                'contradicted_claims':validation.get('contradicted_claims') or [],
                                 'missing_required_claims':validation.get('blocking_claims') or [],
-                                'native_reaction_available':bool(metadata.get('catalytic_activities'))})
+                                'native_reaction_available':bool(data.get('catalytic_activities'))})
             assessment = {key:payload.get(key) for key in ('attempted','supported','evidence_pending','rejected','failed','sampled_family_groups')}
             assessment['records'] = records
             assessment['limit'] = 'Missing annotation is not evidence of inactivity; untested mechanisms remain unresolved.'
@@ -460,12 +471,16 @@ def interpret_outcome(run_dir, *, decision_id, evidence_refs, interpretation, be
             'interpretation':interpretation,'decision_id':decision_id,
             'scope_limit':'Interpretation of a saved observation; no new experiment or activity validation.'}
     path=base/'interpretations'/(record['id']+'.json')
+    initial_source_interpreted = any(row['kind']=='retrieved_literature_evidence'
+                                     for row in observations(run_dir)[0])
     with state_lock(base/'state.json'):
         current=_read(base/'state.json',{})
         if current.get('last_decision')!=decision_id or not current.get('awaiting_interpretation'):
             raise ValueError('Pending decision changed during interpretation')
         atomic_write_json(path,record)
         current.update(awaiting_interpretation=False,last_interpretation=record['id'])
+        if initial_source_interpreted:
+            current['initial_sources_reviewed']=True
         atomic_write_json(base/'state.json',current)
     from enzyme_discovery_agent.models.reasoning_trace import capture_scientific_record
     capture_scientific_record(run_dir,'outcome_interpreted',path)
