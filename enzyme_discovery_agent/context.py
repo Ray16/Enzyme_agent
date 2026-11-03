@@ -98,9 +98,16 @@ def strategic_tool_definitions(tools, *, include_inspections=False):
     actions = [tool['function'] for tool in small if tool['function']['name'] not in controls]
     properties = planner['function']['parameters']['properties']
     properties['tool_name']['enum'] = [action['name'] for action in actions]
-    properties['arguments'] = {'type':'object', 'anyOf':[
-        {**action['parameters'], 'title':action['name']+' — '+str(action.get('description') or '')[:80]}
-        for action in actions]}
+    # Every action's full schema is already carried once in this same toolset, as its
+    # own definition. Repeating all of them here as an anyOf branch list doubled the
+    # tool block: measured on a production run it was 6.4k tokens of every 32k prompt,
+    # resent each turn, for schemas the model can already read a few hundred tokens
+    # away. The planned arguments are still validated against the selected tool's
+    # schema before anything executes, so the contract is unchanged -- only the
+    # duplicate copy of it is gone.
+    properties['arguments'] = {'type':'object',
+        'description':'Arguments for the tool named in tool_name, matching that '
+                      "tool's own schema as listed in this toolset."}
     conclusion = [tool for tool in small if tool['function']['name'] in {'conclude_research_review','interpret_research_outcome'}]
     if include_inspections:
         from enzyme_discovery_agent.models.research_decisions import INSPECTION_TOOLS

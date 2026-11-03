@@ -329,7 +329,14 @@ def test_strategic_interface_retains_all_action_contracts():
     assert len(selected) == 1 and selected[0]['function']['name'] == 'plan_research_step'
     properties = selected[0]['function']['parameters']['properties']
     assert set(properties['tool_name']['enum']) == {'get_decision_context','assess_next_batch'}
-    assert len(properties['arguments']['anyOf']) == 2
+    # The arguments contract is carried once, by each action's own definition in the
+    # payload the model receives, rather than copied a second time into the planner.
+    assert 'anyOf' not in properties['arguments']
+    from enzyme_discovery_agent.context import stable_tool_definitions
+    sent = {tool['function']['name']: tool['function'].get('parameters') or {}
+            for tool in stable_tool_definitions(tools)}
+    for name in properties['tool_name']['enum']:
+        assert (sent[name].get('properties') or {}), f'{name} is offered with no schema sent'
 
 
 def test_unreviewed_source_is_not_a_biological_contradiction(tmp_path):

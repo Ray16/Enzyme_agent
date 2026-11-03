@@ -1358,6 +1358,28 @@ class EnzymeAgent:
                     "Take an evidence-gathering action in an unresolved family or candidate, "
                     "or explain that the remaining searches are exhausted."
                 )})
+            # A hypothesis tested only against written reports yields names, not records.
+            # When recent retrieval has gone entirely to reports, withhold those sources
+            # for one turn so the same hypothesis is put to the sequence archives, which
+            # are the only sources that can return something modellable.
+            from enzyme_discovery_agent.models.event_log import retrieval_balance, report_search_tools
+            balance = retrieval_balance(self.run_dir)
+            if balance['reports_crowding_out_records']:
+                # Only the sources that go looking for more reports are withheld.
+                # Reading and extracting from a report already retrieved stays open,
+                # because that is how a lead becomes something to search an archive for.
+                reports = report_search_tools()
+                available_tools = [tool for tool in available_tools
+                                   if tool['function']['name'] not in reports]
+                self._log_event('retrieval_rebalanced', {'iteration': iteration, **balance})
+                messages.append({'role': 'user', 'content': (
+                    f"RETRIEVAL BALANCE: {balance['report_searches']} of the last "
+                    f"{balance['retrievals_in_window']} retrievals searched written reports and "
+                    f"{balance['record_searches']} searched sequence archives. Report sources are "
+                    "withheld this turn. Put the scope you are currently reasoning about to the "
+                    "sequence archives directly -- by family, domain, catalytic activity or "
+                    "reaction, not by an individual name you read in a paper -- and use one plan's "
+                    "additional_actions to cover every scope you judged relevant, not just one.")})
             # Early turns must establish chemistry and retrieve evidence.
             # Delaying optional notebook writes avoids provider-generated
             # section-only calls before there is any evidence to summarize.

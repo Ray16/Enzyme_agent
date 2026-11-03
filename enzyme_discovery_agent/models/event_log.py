@@ -169,6 +169,53 @@ def read_events(run_dir: str | Path) -> list[dict]:
     return out
 
 
+def report_search_tools() -> frozenset:
+    """Literature tools that go looking for new reports, not ones that read a known one.
+
+    Fetching, reading and extracting from a report already retrieved is how evidence
+    gets used; only the query-and-list sources add more reports to work through. The
+    split is grammatical -- a search names itself -- so it needs no list of which
+    sources matter for a given target.
+    """
+    from enzyme_discovery_agent.bootstrap import register_builtin_tools
+    from enzyme_discovery_agent.tool_registry import get_tools_by_category
+    register_builtin_tools()
+    return frozenset(name for name in (get_tools_by_category().get('literature') or ())
+                     if name.startswith('search_') or name.endswith('_search'))
+
+
+def retrieval_balance(run_dir: str | Path, *, window: int = 8, ratio: int = 3) -> dict:
+    """How the recent retrieval spend split between written reports and sequence records.
+
+    Published reports name enzymes; only the sequence archives return the records a
+    candidate can actually be built from. A campaign that spends every retrieval on
+    reports therefore accumulates names it can never resolve, and the imbalance is
+    invisible from inside any single step -- each paper search looks locally reasonable.
+
+    The split is read from the tool registry's own categories rather than a list kept
+    here, so a newly registered source is classified by its own declaration and this
+    signal carries no assumption about which sources a given target makes relevant.
+    """
+    from enzyme_discovery_agent.bootstrap import register_builtin_tools
+    from enzyme_discovery_agent.tool_registry import get_tools_by_category
+    register_builtin_tools()
+    reports = report_search_tools()
+    records = set(get_tools_by_category().get('database') or ())
+    recent = [event.get('tool') for event in read_events(run_dir)
+              if event.get('type') == 'tool_call' and event.get('tool') in reports | records][-window:]
+    from_reports = sum(name in reports for name in recent)
+    from_records = sum(name in records for name in recent)
+    return {
+        'window': window,
+        'retrievals_in_window': len(recent),
+        'report_searches': from_reports,
+        'record_searches': from_records,
+        # Fires only once enough retrieval has happened to call it a pattern rather
+        # than an opening move, and clears as soon as one record search lands.
+        'reports_crowding_out_records': from_reports >= ratio and from_reports >= ratio * max(from_records, 1),
+    }
+
+
 def exploration_saturation(run_dir: str | Path, *, window: int = 4) -> dict:
     """Read-only signal: has recent OUTWARD search stopped surfacing new families?
 
