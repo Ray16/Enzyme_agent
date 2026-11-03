@@ -11,7 +11,7 @@ _OPTIONAL_BRIEF = {'type':'string','maxLength':BRIEF_FIELD_LIMIT,'default':''}
       category='reasoning',parallel_safe=False,injected_params=['run_dir'],params={
           'run_dir':{'type':'string'},'decision_id':{'type':'string'},
           'evidence_refs':{'type':'array','items':{'type':'string'}},
-          'interpretation':{'type':'string'},
+          'interpretation':{**_BRIEF,'minLength':20},
           'belief_update':{'type':'string','enum':['retain','revise','suspend']}})
 def interpret_research_outcome(run_dir, **kwargs):
     from enzyme_discovery_agent.models.research_decisions import interpret_outcome,proposal_repair_context

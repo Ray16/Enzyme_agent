@@ -320,7 +320,8 @@ def register_completed_models(settings, run, model_report=None):
 def evidence_basis(row):
     data = row['data']
     evidence = {key: data.get(key) for key in ('sequence', 'identity_resolution',
-                'mechanism_evidence', 'catalytic_activities', 'structural_data', 'literature_evidence')}
+                'mechanism_evidence', 'catalytic_activities', 'structural_data', 'literature_evidence',
+                'discovery_proposal')}
     return hashlib.sha256(json.dumps(evidence, sort_keys=True).encode()).hexdigest()
 
 

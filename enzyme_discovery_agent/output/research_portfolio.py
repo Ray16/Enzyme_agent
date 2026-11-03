@@ -9,6 +9,8 @@ from enzyme_discovery_agent.state_store import atomic_write_text
 
 
 def write_research_portfolio(run_dir):
+    from enzyme_discovery_agent.tools.discovery_proposals import write_primary_portfolio
+    primary=write_primary_portfolio(run_dir)
     from enzyme_discovery_agent.output.discovery_portfolio import write_discovery_portfolio
     from enzyme_discovery_agent import config
     discovery=write_discovery_portfolio(run_dir,limit=config.DISCOVERY_PORTFOLIO_SIZE)
@@ -53,4 +55,4 @@ def write_research_portfolio(run_dir):
     save('unresolved_literature_leads.csv',unresolved,lead_fields)
     save('literature_mentions.csv',mentions,lead_fields)
     return {'source_cited_hypotheses':len(hypotheses),'unresolved_paper_leads':len(unresolved),
-            'discovery_proposals':discovery['selected']}
+            'discovery_proposals':discovery['selected'],'primary_candidates':primary['selected']}

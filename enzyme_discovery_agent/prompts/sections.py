@@ -36,6 +36,16 @@ Preserve complementary mechanisms and unresolved identities. Avoid repeated
 searches, evaluations and near-duplicate expansions without changed evidence.
 EC annotations constrain chemistry; they do not authorize bulk candidate retrieval.
 Candidate counts and completed task lists do not establish scientific coverage.
+Use record_discovery_proposals to save compact group-level catalytic hypotheses
+as evidence arrives. Primary candidates must explain every target partner's role,
+the immediate reaction step, the evidence supporting transfer and recognition
+changes that structural investigation can test. Separate later-stage, auxiliary
+and family-only hypotheses. A matching fold alone is a retrieval lead. Preserve
+promising unannotated candidates when specific catalytic-architecture evidence
+supports their proposal; missing annotation is not a negative result. Share one
+proposal across justified sequence variants and explain what each adds. Related
+sequences must not inflate a weak hypothesis to fill a requested panel capacity.
+Retrieve complementary reaction scopes before expanding another easy family.
 
 P4. REASON THROUGH THE REACTION: Compare participants within one recorded native
 reaction; separate activities cannot supply a fictional joint reaction. Identify

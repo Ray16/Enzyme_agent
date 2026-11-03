@@ -23,6 +23,7 @@ _BUILTIN_TOOL_MODULES = (
     "enzyme_discovery_agent.tools.candidate_inputs",
     "enzyme_discovery_agent.tools.reasoning",
     "enzyme_discovery_agent.tools.research_decisions",
+    "enzyme_discovery_agent.tools.discovery_proposals",
     "enzyme_discovery_agent.tools.primary_paper",
     "enzyme_discovery_agent.tools.reaction_roles",
     "enzyme_discovery_agent.tools.family_reactions",

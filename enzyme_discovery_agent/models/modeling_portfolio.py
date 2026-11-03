@@ -13,6 +13,30 @@ def select_modeling_portfolio(run_dir, *, max_candidates, protected_unannotated_
             or not 0 <= protected_unannotated_slots <= max_candidates):
         raise ValueError('Require a positive capacity and protected slots within that capacity')
     root = Path(run_dir).resolve()
+    quality_policy=root/'agent_state/discovery_quality_policy.json'
+    if quality_policy.exists() and json.loads(quality_policy.read_text()).get('primary_only'):
+        from enzyme_discovery_agent.tools.discovery_proposals import write_primary_portfolio
+        summary=write_primary_portfolio(root); registry=load_candidate_registry(root,strict=True)['candidates']
+        grouped={}
+        for row in summary['candidates']:
+            grouped.setdefault(row['family'],[]).append(row)
+        ordered=[group[i] for i in range(max((len(g) for g in grouped.values()),default=0))
+                 for group in grouped.values() if i<len(group)]
+        rows=[]
+        for row in ordered[:max_candidates]:
+            meta=registry[row['accession']].get('metadata') or {}
+            proposal=json.loads((root/row['proposal_source']).read_text())
+            data={**(meta.get('evaluation_data') or {}),**meta,'discovery_proposal':proposal}
+            data['priority_assessment']={'decision':'investigate','reason':proposal['hypothesis'],
+                'strengths':[proposal['support_basis']],'unknowns':proposal['unknowns'],
+                'source':'agent_recorded_discovery_proposal','evidence_refs':[e['path'] for e in proposal['evidence']]}
+            rows.append({'accession':row['accession'],'data':data,'priority':'investigate',
+                'family':row['family'],'proposal_source':row['proposal_source'],
+                'native_substrates_resolved':bool(data.get('native_substrates') or data.get('catalytic_activities')),
+                'modeling_setup_status':'requires_step_partner_cofactor_and_assembly_validation'})
+        atomic_write_json(root/'modeling_portfolio.json',{'selection':rows,
+            'policy':'Primary source-linked catalytic proposals selected by the discovery agent. Other exploration hypotheses remain separate.'})
+        return rows
     from enzyme_discovery_agent import config
     from enzyme_discovery_agent.run_layout import run_file
     if (not config.AUTO_TARGET_REVIEW and
