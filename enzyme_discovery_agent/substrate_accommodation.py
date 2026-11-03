@@ -65,7 +65,7 @@ def _carbon_atoms(smiles: str) -> int | None:
 def accommodation_facts(
     target_smiles: list[str], native_smiles: list[str],
 ) -> dict | None:
-    """Role-aware accommodation facts for one enzyme vs the target substrates.
+    """Structural comparison of source-supported native reactant occurrences.
 
     For EACH target substrate, assign its best DISTINCT native counterpart
     (one-to-one maximin by functional-group overlap — the shared assignment the
@@ -168,6 +168,7 @@ def accommodation_facts(
     matched_fg = [p["functional_group_similarity"] for p in per_target
                   if isinstance(p.get("functional_group_similarity"), (int, float))]
     return {
+        'scope':'Structural resemblance only. Whole-molecule functional-group counts do not establish reacting roles or target activity.',
         "per_target": per_target,
         "n_target_substrates": len(targets),
         "unaccommodated_targets": unaccommodated,

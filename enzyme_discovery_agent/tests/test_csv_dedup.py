@@ -24,6 +24,11 @@ def _eval(acc, name):
 
 
 class TestCsvDedup(unittest.TestCase):
+    def setUp(self):
+        # This fixture supplies an already admitted pool to test row deduplication.
+        from unittest.mock import patch
+        guard=patch('enzyme_discovery_agent.models.target_review.admitted_evaluations',side_effect=lambda root,rows:rows)
+        guard.start();self.addCleanup(guard.stop)
     def test_same_accession_collapses_to_one_row(self):
         with tempfile.TemporaryDirectory() as td:
             run_dir = Path(td)

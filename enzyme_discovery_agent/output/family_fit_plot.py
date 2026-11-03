@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -36,7 +37,7 @@ def _target_chain_length(run_dir: Path) -> int | None:
     """Main-chain length of the target substrate(s), for the size-range bar's
     reference marker.  None when it cannot be computed."""
     try:
-        ctx = json.loads((run_dir / "target_context.json").read_text())
+        ctx = json.loads((run_file(run_dir, 'target_context.json')).read_text())
         smi = ctx.get("substrate_smiles")
         if not smi:
             return None
@@ -71,7 +72,7 @@ def render_family_fit_plot(
     families to ``family_substrate_fit.png``.  Returns the path, or None if it
     could not be produced (no landscape, no plottable folds, matplotlib absent)."""
     run_dir = Path(run_dir)
-    landscape_path = run_dir / "family_landscape.json"
+    landscape_path = run_file(run_dir, 'family_landscape.json')
     if not landscape_path.exists():
         return None
     try:

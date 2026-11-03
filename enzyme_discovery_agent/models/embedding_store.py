@@ -28,6 +28,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
+from enzyme_discovery_agent.run_layout import run_file
 
 
 def seq_sha1(sequence: str) -> str:
@@ -36,7 +37,7 @@ def seq_sha1(sequence: str) -> str:
 
 
 def _store_dir(run_dir: Path) -> Path:
-    return Path(run_dir) / "embedding_store"
+    return run_file(Path(run_dir), 'embedding_store')
 
 
 @dataclass
@@ -129,6 +130,8 @@ def append_vectors(run_dir: Path, model: str, rows: list[tuple[str, str, np.ndar
     sdir = _store_dir(run_dir)
     sdir.mkdir(parents=True, exist_ok=True)
     store = load_store(run_dir)
+    if store.model and model and store.model != model:
+        raise ValueError(f"embedding model mismatch: store={store.model} new={model}")
     have = set(store.accessions)
 
     new_accs, new_hashes, new_vecs = [], [], []

@@ -1,0 +1,682 @@
+{
+  "schema_version": "reaction-coordinate-cache-v1",
+  "families": {
+    "IPR037455": {
+      "mechanism_class": "acyl_transfer",
+      "steps": [
+        {
+          "index": 1,
+          "name": "Deprotonation of substrate lysine",
+          "reactive_state": "precursor",
+          "species_present": [
+            "enzyme",
+            "substrate",
+            "acetyl-CoA"
+          ],
+          "species_consumed": [],
+          "species_produced": [],
+          "nucleophile": "Lys \u03b5-amino group",
+          "electrophile": "Acetyl-CoA carbonyl carbon",
+          "evidence": "residues D567 and E491 are general bases that deprotonate the \u03b5-amino group of lysine substrate, via two nearby serine residues - S566 and S527- that possess a proton relay function."
+        }
+      ],
+      "provenance": {
+        "source_enzyme": "A0A0F7RJ52",
+        "paper": {
+          "pmcid": "",
+          "doi": "10.1038/s41598-020-66795-z",
+          "title": "Alternative catalytic residues in the active site of Esco acetyltransferases."
+        },
+        "schema_version": "1.1"
+      },
+      "grounding_score": 8.5,
+      "updated_at": "2026-10-10T05:56:56.694889+00:00",
+      "version": 2,
+      "history": [
+        {
+          "mechanism_class": "addition_elimination",
+          "steps": [
+            {
+              "index": 1,
+              "name": "Dimerization",
+              "reactive_state": "intermediate",
+              "species_present": [
+                "HSC",
+                "ATP"
+              ],
+              "species_consumed": [
+                "HSC",
+                "ATP"
+              ],
+              "species_produced": [
+                "linear dimer 29"
+              ],
+              "nucleophile": "amino group",
+              "electrophile": "activated carboxyl",
+              "evidence": "The activated carboxyl group of the first molecule of HSC underwent a base-promoted addition\u2013elimination reaction with the protonated amino group of the second molecule of HSC to yield the linear dimer 29."
+            },
+            {
+              "index": 2,
+              "name": "Macrocyclization",
+              "reactive_state": "product",
+              "species_present": [
+                "linear dimer 29"
+              ],
+              "species_consumed": [
+                "linear dimer 29"
+              ],
+              "species_produced": [
+                "bisucaberin 26"
+              ],
+              "nucleophile": "amino group",
+              "electrophile": "activated carboxyl",
+              "evidence": "The activated carboxyl group and protonated amino group of 29 could further undergo an intramolecular base-promoted condensation to generate 26"
+            }
+          ],
+          "provenance": {
+            "source_enzyme": "asbB",
+            "paper": {
+              "pmcid": "PMC6836290",
+              "doi": "10.3390/md17100562",
+              "title": "Chemistry and Biology of Siderophores from Marine Microbes"
+            },
+            "schema_version": "1.1"
+          },
+          "grounding_score": 7.5,
+          "updated_at": "2026-10-10T05:49:51.149450+00:00",
+          "version": 1
+        }
+      ]
+    },
+    "IPR000873": {
+      "mechanism_class": "addition_elimination",
+      "steps": [
+        {
+          "index": 1,
+          "name": "Adenylation",
+          "reactive_state": "intermediate",
+          "species_present": [
+            "carboxylic acid",
+            "ATP"
+          ],
+          "species_consumed": [
+            "carboxylic acid",
+            "ATP"
+          ],
+          "species_produced": [
+            "acyl-adenylate",
+            "PPi"
+          ],
+          "nucleophile": null,
+          "electrophile": "carboxylic acid",
+          "evidence": "ABSs actively catalyze both the ATP-dependent adenylation of carboxylic acid substrates"
+        },
+        {
+          "index": 2,
+          "name": "Amidation",
+          "reactive_state": "product",
+          "species_present": [
+            "acyl-adenylate",
+            "amine"
+          ],
+          "species_consumed": [
+            "acyl-adenylate",
+            "amine"
+          ],
+          "species_produced": [
+            "amide",
+            "AMP"
+          ],
+          "nucleophile": "amine",
+          "electrophile": "acyl-adenylate",
+          "evidence": "and their subsequent amidation using an amine nucleophile"
+        }
+      ],
+      "provenance": {
+        "source_enzyme": "novL",
+        "paper": {
+          "pmcid": "",
+          "doi": "10.1021/acscatal.3c05656",
+          "title": "Broad Spectrum Enantioselective Amide Bond Synthetase from Streptoalloteichus hindustanus"
+        },
+        "schema_version": "1.1"
+      },
+      "grounding_score": 8.5,
+      "updated_at": "2026-10-10T06:22:01.729140+00:00",
+      "version": 2,
+      "history": [
+        {
+          "mechanism_class": "addition_elimination",
+          "steps": [
+            {
+              "index": 1,
+              "name": "adenylation",
+              "reactive_state": "intermediate",
+              "species_present": [
+                "carboxylic acid",
+                "ATP"
+              ],
+              "species_consumed": [
+                "carboxylic acid",
+                "ATP"
+              ],
+              "species_produced": [
+                "acyl-adenylate",
+                "PPi"
+              ],
+              "nucleophile": "carboxylic acid oxygen",
+              "electrophile": "alpha-phosphorus of ATP",
+              "evidence": "ABSs actively catalyze both the ATP-dependent adenylation of carboxylic acid substrates"
+            },
+            {
+              "index": 2,
+              "name": "amidation",
+              "reactive_state": "product",
+              "species_present": [
+                "acyl-adenylate",
+                "amine"
+              ],
+              "species_consumed": [
+                "acyl-adenylate",
+                "amine"
+              ],
+              "species_produced": [
+                "amide",
+                "AMP"
+              ],
+              "nucleophile": "amine",
+              "electrophile": "acyl-adenylate carbonyl",
+              "evidence": "subsequent amidation using an amine nucleophile"
+            }
+          ],
+          "provenance": {
+            "source_enzyme": "novL",
+            "paper": {
+              "pmcid": "",
+              "doi": "10.1021/acscatal.3c05656",
+              "title": "Broad Spectrum Enantioselective Amide Bond Synthetase from Streptoalloteichus hindustanus"
+            },
+            "schema_version": "1.1"
+          },
+          "grounding_score": 8.5,
+          "updated_at": "2026-10-10T06:09:27.209841+00:00",
+          "version": 1
+        }
+      ]
+    },
+    "IPR048223": {
+      "mechanism_class": "acyl_transfer",
+      "steps": [
+        {
+          "index": 1,
+          "name": "Proton abstraction and nucleophilic attack",
+          "reactive_state": "transition-state",
+          "species_present": [
+            "Esco2",
+            "AcCoA",
+            "Smc3-Lys"
+          ],
+          "species_consumed": [
+            "AcCoA",
+            "Smc3-Lys"
+          ],
+          "species_produced": [
+            "CoA",
+            "Acetylated-Smc3-Lys"
+          ],
+          "nucleophile": "Lys-epsilon-NH2",
+          "electrophile": "AcCoA-carbonyl-C",
+          "evidence": "D567 and E491 are general bases that deprotonate the epsilon-amino group of lysine substrate, via two nearby serine residues - S566 and S527- that possess a proton relay function."
+        }
+      ],
+      "provenance": {
+        "source_enzyme": "E2JA32",
+        "paper": {
+          "pmcid": "",
+          "doi": "10.1038/s41598-020-66795-z",
+          "title": "Alternative catalytic residues in the active site of Esco acetyltransferases."
+        },
+        "schema_version": "1.1"
+      },
+      "grounding_score": 9.5,
+      "updated_at": "2026-10-10T06:16:28.947760+00:00",
+      "version": 1
+    },
+    "IPR000120": {
+      "mechanism_class": "hydrolysis",
+      "steps": [
+        {
+          "index": 1,
+          "name": "acylation",
+          "reactive_state": "intermediate",
+          "species_present": [
+            "enzyme",
+            "substrate"
+          ],
+          "species_consumed": [
+            "substrate"
+          ],
+          "species_produced": [
+            "acyl-enzyme intermediate"
+          ],
+          "nucleophile": "Ser174",
+          "electrophile": "substrate carbonyl C",
+          "evidence": "defined by a conserved GGSS\u2010(S/G)GS motif and a Ser\u2010cis-Ser\u2010Lys catalytic triad"
+        },
+        {
+          "index": 2,
+          "name": "deacylation",
+          "reactive_state": "product",
+          "species_present": [
+            "acyl-enzyme intermediate",
+            "water"
+          ],
+          "species_consumed": [
+            "water"
+          ],
+          "species_produced": [
+            "linear product"
+          ],
+          "nucleophile": "water",
+          "electrophile": "acyl-enzyme intermediate",
+          "evidence": "hydrolysis of the resulting acyl-enzyme intermediate"
+        }
+      ],
+      "provenance": {
+        "source_enzyme": "P13397",
+        "paper": {
+          "pmcid": "PMC12767561",
+          "doi": "10.1002/cssc.202501964",
+          "title": "Toward the Bioremediation of Nylon Waste Materials: Genome Mining Leads to the Identification of a Thermostable Laurolactamase From Thermopolyspora flexuosa."
+        },
+        "schema_version": "1.1"
+      },
+      "grounding_score": 9.0,
+      "updated_at": "2026-10-11T19:48:42.898851+00:00",
+      "version": 3,
+      "history": [
+        {
+          "mechanism_class": "hydrolysis",
+          "steps": [
+            {
+              "index": 1,
+              "name": "acylation",
+              "reactive_state": "intermediate",
+              "species_present": [
+                "substrate",
+                "enzyme"
+              ],
+              "species_consumed": [
+                "substrate"
+              ],
+              "species_produced": [
+                "acyl-enzyme intermediate"
+              ],
+              "nucleophile": "Ser174",
+              "electrophile": "Carbonyl C",
+              "evidence": "defined by a conserved GGSS-(S/G)GS motif and a Ser-cis-Ser-Lys catalytic triad"
+            },
+            {
+              "index": 2,
+              "name": "deacylation",
+              "reactive_state": "product",
+              "species_present": [
+                "acyl-enzyme intermediate",
+                "water"
+              ],
+              "species_consumed": [
+                "acyl-enzyme intermediate",
+                "water"
+              ],
+              "species_produced": [
+                "linear product"
+              ],
+              "nucleophile": "water",
+              "electrophile": "Carbonyl C",
+              "evidence": "hydrolytic activity... catalyzed by NylA enzymes"
+            }
+          ],
+          "provenance": {
+            "source_enzyme": "P13397",
+            "paper": {
+              "pmcid": "PMC12767561",
+              "doi": "10.1002/cssc.202501964",
+              "title": "Toward the Bioremediation of Nylon Waste Materials: Genome Mining Leads to the Identification of a Thermostable Laurolactamase From Thermopolyspora flexuosa."
+            },
+            "schema_version": "1.1"
+          },
+          "grounding_score": 9.0,
+          "updated_at": "2026-10-11T18:14:54.678509+00:00",
+          "version": 1
+        },
+        {
+          "mechanism_class": "hydrolysis",
+          "steps": [
+            {
+              "index": 1,
+              "name": "Acylation",
+              "reactive_state": "intermediate",
+              "species_present": [
+                "substrate",
+                "enzyme"
+              ],
+              "species_consumed": [
+                "substrate"
+              ],
+              "species_produced": [
+                "acyl-enzyme",
+                "amine product"
+              ],
+              "nucleophile": "Ser174",
+              "electrophile": "carbonyl carbon",
+              "evidence": "defined by a conserved GGSS-(S/G)GS motif and a Ser-cis-Ser-Lys catalytic triad"
+            },
+            {
+              "index": 2,
+              "name": "Deacylation",
+              "reactive_state": "product",
+              "species_present": [
+                "acyl-enzyme",
+                "water"
+              ],
+              "species_consumed": [
+                "water"
+              ],
+              "species_produced": [
+                "linear product"
+              ],
+              "nucleophile": "water",
+              "electrophile": "acyl-enzyme",
+              "evidence": "NylAs catalyze the hydrolysis of cyclic nylon oligomers"
+            }
+          ],
+          "provenance": {
+            "source_enzyme": "P13397",
+            "paper": {
+              "pmcid": "PMC12767561",
+              "doi": "10.1002/cssc.202501964",
+              "title": "Toward the Bioremediation of Nylon Waste Materials: Genome Mining Leads to the Identification of a Thermostable Laurolactamase From Thermopolyspora flexuosa."
+            },
+            "schema_version": "1.1"
+          },
+          "grounding_score": 9.0,
+          "updated_at": "2026-10-11T18:23:55.776105+00:00",
+          "version": 2
+        }
+      ]
+    },
+    "IPR019916": {
+      "mechanism_class": "addition_elimination",
+      "steps": [
+        {
+          "index": 1,
+          "name": "Reduction/Binding",
+          "reactive_state": "precursor",
+          "species_present": [
+            "UbiX",
+            "FMN",
+            "DMAP"
+          ],
+          "species_consumed": [
+            "dithionite"
+          ],
+          "species_produced": [
+            "UbiX-FMNH2-DMAP"
+          ],
+          "nucleophile": null,
+          "electrophile": null,
+          "evidence": "Each of these structures formed sequentially when UbiX\u22c5FMN ox \u22c5DMAP was incubated with sodium dithionite"
+        },
+        {
+          "index": 2,
+          "name": "Adduct formation",
+          "reactive_state": "intermediate",
+          "species_present": [
+            "UbiX-FMNH2-DMAP"
+          ],
+          "species_consumed": null,
+          "species_produced": [
+            "N5-C1' alkyl adduct"
+          ],
+          "nucleophile": "N5",
+          "electrophile": "C1' of DMAP",
+          "evidence": "capture the initial N5-C1\u2019 alkyl adduct (PDB CODE 4ZAV, 1.4 \u00c5)"
+        }
+      ],
+      "provenance": {
+        "source_enzyme": "rutB",
+        "paper": {
+          "pmcid": "PMC7662398",
+          "doi": "10.3389/fmolb.2020.598912",
+          "title": "N5 Is the New C4a: Biochemical Functionalization of Reduced Flavins at the N5 Position"
+        },
+        "schema_version": "1.1"
+      },
+      "grounding_score": 9.5,
+      "updated_at": "2026-10-11T19:42:03.790760+00:00",
+      "version": 1
+    },
+    "IPR005321": {
+      "mechanism_class": "hydrolysis",
+      "steps": [
+        {
+          "index": 1,
+          "name": "Acylation",
+          "reactive_state": "intermediate",
+          "species_present": [
+            "enzyme",
+            "substrate"
+          ],
+          "species_consumed": [
+            "substrate"
+          ],
+          "species_produced": [
+            "acyl-enzyme intermediate"
+          ],
+          "nucleophile": "N-terminal residue",
+          "electrophile": "carbonyl carbon",
+          "evidence": "NylC p2, an N-terminal nucleophile (Ntn) hydrolase... catalyze hydrolysis of oligomers"
+        },
+        {
+          "index": 2,
+          "name": "Deacylation",
+          "reactive_state": "product",
+          "species_present": [
+            "acyl-enzyme intermediate",
+            "water"
+          ],
+          "species_consumed": [
+            "water"
+          ],
+          "species_produced": [
+            "hydrolyzed product",
+            "enzyme"
+          ],
+          "nucleophile": "water",
+          "electrophile": "acyl-enzyme",
+          "evidence": "hydrolysis... amide bond-hydrolyzing enzymes"
+        }
+      ],
+      "provenance": {
+        "source_enzyme": "nylC",
+        "paper": {
+          "pmcid": "PMC10858056",
+          "doi": "10.1038/s41467-024-45523-5",
+          "title": "Natural diversity screening, assay development, and characterization of nylon-6 enzymatic depolymerization"
+        },
+        "schema_version": "1.1"
+      },
+      "grounding_score": 8.0,
+      "updated_at": "2026-10-11T19:43:33.751639+00:00",
+      "version": 1
+    },
+    "IPR050272": {
+      "mechanism_class": "hydrolysis",
+      "steps": [
+        {
+          "index": 1,
+          "name": "Acylation",
+          "reactive_state": "intermediate",
+          "species_present": [
+            "biuret",
+            "Cys175"
+          ],
+          "species_consumed": [
+            "biuret"
+          ],
+          "species_produced": [
+            "thioacyl-enzyme intermediate",
+            "NH3"
+          ],
+          "nucleophile": "Cys175",
+          "electrophile": "biuret carbonyl C",
+          "evidence": "mechanism closely resembles that of other cysteine hydrolases"
+        },
+        {
+          "index": 2,
+          "name": "Deacylation",
+          "reactive_state": "product",
+          "species_present": [
+            "water",
+            "thioacyl-enzyme intermediate"
+          ],
+          "species_consumed": [
+            "water"
+          ],
+          "species_produced": [
+            "allophanate",
+            "Cys175"
+          ],
+          "nucleophile": "water",
+          "electrophile": "thioacyl-enzyme intermediate",
+          "evidence": "hydrolysis of the thioacyl-enzyme intermediate by water"
+        }
+      ],
+      "provenance": {
+        "source_enzyme": "Q1M7F4",
+        "paper": {
+          "pmcid": "PMC5806882",
+          "doi": "10.1371/journal.pone.0192736",
+          "title": "Structural and biochemical characterization of the biuret hydrolase (BiuH) from the cyanuric acid catabolism pathway of Rhizobium leguminasorum bv. viciae 3841"
+        },
+        "schema_version": "1.1"
+      },
+      "grounding_score": 9.0,
+      "updated_at": "2026-10-11T20:00:28.447219+00:00",
+      "version": 3,
+      "history": [
+        {
+          "mechanism_class": "hydrolysis",
+          "steps": [
+            {
+              "index": 1,
+              "name": "Acylation",
+              "reactive_state": "intermediate",
+              "species_present": [
+                "biuret",
+                "Cys175"
+              ],
+              "species_consumed": [
+                "biuret"
+              ],
+              "species_produced": [
+                "ammonia",
+                "thioacyl-enzyme"
+              ],
+              "nucleophile": "Cys175",
+              "electrophile": "biuret carbonyl C",
+              "evidence": "proposed catalytic mechanism for BiuH, which closely resembles that of other cysteine hydrolases."
+            },
+            {
+              "index": 2,
+              "name": "Deacylation",
+              "reactive_state": "product",
+              "species_present": [
+                "thioacyl-enzyme",
+                "water"
+              ],
+              "species_consumed": [
+                "water"
+              ],
+              "species_produced": [
+                "allophanate",
+                "Cys175"
+              ],
+              "nucleophile": "water",
+              "electrophile": "thioacyl-enzyme carbonyl C",
+              "evidence": "proposed catalytic mechanism for BiuH, which closely resembles that of other cysteine hydrolases."
+            }
+          ],
+          "provenance": {
+            "source_enzyme": "Q1M7F4",
+            "paper": {
+              "pmcid": "PMC5806882",
+              "doi": "10.1371/journal.pone.0192736",
+              "title": "Structural and biochemical characterization of the biuret hydrolase (BiuH) from the cyanuric acid catabolism pathway of Rhizobium leguminasorum bv. viciae 3841"
+            },
+            "schema_version": "1.1"
+          },
+          "grounding_score": 9.0,
+          "updated_at": "2026-10-11T19:47:12.516473+00:00",
+          "version": 1
+        },
+        {
+          "mechanism_class": "hydrolysis",
+          "steps": [
+            {
+              "index": 1,
+              "name": "Acylation",
+              "reactive_state": "intermediate",
+              "species_present": [
+                "biuret",
+                "Cys175"
+              ],
+              "species_consumed": [
+                "biuret"
+              ],
+              "species_produced": [
+                "ammonia",
+                "thioester intermediate"
+              ],
+              "nucleophile": "Cys175",
+              "electrophile": "biuret carbonyl carbon",
+              "evidence": "proposed catalytic mechanism closely resembles that of other cysteine hydrolases"
+            },
+            {
+              "index": 2,
+              "name": "Deacylation",
+              "reactive_state": "product",
+              "species_present": [
+                "thioester intermediate",
+                "water"
+              ],
+              "species_consumed": [
+                "thioester intermediate",
+                "water"
+              ],
+              "species_produced": [
+                "allophanate",
+                "Cys175"
+              ],
+              "nucleophile": "water",
+              "electrophile": "thioester carbonyl carbon",
+              "evidence": "hydrolysis of the acyl-enzyme intermediate by water"
+            }
+          ],
+          "provenance": {
+            "source_enzyme": "Q1M7F4",
+            "paper": {
+              "pmcid": "PMC5806882",
+              "doi": "10.1371/journal.pone.0192736",
+              "title": "Structural and biochemical characterization of the biuret hydrolase (BiuH) from the cyanuric acid catabolism pathway of Rhizobium leguminasorum bv. viciae 3841"
+            },
+            "schema_version": "1.1"
+          },
+          "grounding_score": 9.0,
+          "updated_at": "2026-10-11T19:52:14.516995+00:00",
+          "version": 2
+        }
+      ]
+    }
+  }
+}

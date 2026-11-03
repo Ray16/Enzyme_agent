@@ -21,9 +21,12 @@ class TestMechanismFamilyCache(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self._env = mock.patch.dict(os.environ, {"ENZYME_AGENT_CACHE_DIR": self.tmp})
         self._env.start()
+        self._cache = mock.patch.object(mf.config, "ENABLE_MECHANISM_FAMILY_CACHE", True)
+        self._cache.start()
 
     def tearDown(self):
         self._env.stop()
+        self._cache.stop()
 
     def _derive(self, query, smiles, calls):
         def fake_once(*a, **k):
@@ -59,6 +62,21 @@ class TestMechanismFamilyCache(unittest.TestCase):
             n_after_first = calls["n"]
             self._derive("form a bond in a molecule", "CCO", calls)
             self.assertGreater(calls["n"], n_after_first)  # no caching -> derived twice
+
+    def test_changed_retrieved_evidence_invalidates_an_opted_in_cache(self):
+        calls = []
+        def derive(query, *args, **kwargs):
+            calls.append(query)
+            return [{"name": "Family A"}]
+        with mock.patch.object(mf, "_derive_once", side_effect=derive), \
+             mock.patch.object(mf, "family_passes_constraints", return_value=(True, "")):
+            mf.derive_mechanism_families("target", "CCO", object(), reflect=False, max_attempts=1,
+                                         retrieved_papers=[{"title": "First evidence", "abstract": "Observed activity"}])
+            first_count = len(calls)
+            mf.derive_mechanism_families("target", "CCO", object(), reflect=False, max_attempts=1,
+                                         retrieved_papers=[{"title": "Revised evidence", "abstract": "Different activity"}])
+        self.assertGreater(len(calls), first_count)
+        self.assertIn("Revised evidence", calls[-1])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,711 @@
+{
+  "schema_version": "1.0",
+  "categories": [
+    "prediction_confidence",
+    "reactive_geometry",
+    "substrate_accommodation",
+    "catalytic_environment",
+    "prediction_consistency"
+  ],
+  "descriptors": [
+    {
+      "id": "complex_plddt",
+      "category": "prediction_confidence",
+      "determinant": "model_confidence",
+      "requirements": [
+        "confidence_sidecars"
+      ],
+      "units": "0..1",
+      "hypothesis_question": "How confident is the local structure on average?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "baseline",
+      "evidence_status": "confidence_baseline",
+      "limitations": "Confidence is not binding energy or evidence of turnover; all-ligand aggregation may include cofactors."
+    },
+    {
+      "id": "complex_iptm",
+      "category": "prediction_confidence",
+      "determinant": "model_confidence",
+      "requirements": [
+        "confidence_sidecars"
+      ],
+      "units": "0..1",
+      "hypothesis_question": "How confident are interfaces across the full modeled complex?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "baseline",
+      "evidence_status": "confidence_baseline",
+      "limitations": "Confidence is not binding energy or evidence of turnover; all-ligand aggregation may include cofactors."
+    },
+    {
+      "id": "ligand_iptm",
+      "category": "prediction_confidence",
+      "determinant": "model_confidence",
+      "requirements": [
+        "confidence_sidecars"
+      ],
+      "units": "0..1",
+      "hypothesis_question": "How confident are protein interfaces involving all modeled ligands?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "baseline",
+      "evidence_status": "confidence_baseline",
+      "limitations": "Confidence is not binding energy or evidence of turnover; all-ligand aggregation may include cofactors."
+    },
+    {
+      "id": "protein_substrate_iptm",
+      "category": "prediction_confidence",
+      "determinant": "model_confidence",
+      "requirements": [
+        "confidence_sidecars",
+        "confidence_chain_map",
+        "confidence_pairs"
+      ],
+      "units": "0..1",
+      "hypothesis_question": "How confident is this specific protein--substrate interface in the declared anchoring direction?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "baseline",
+      "evidence_status": "confidence_baseline",
+      "limitations": "Pair scores can be asymmetric; preserve both directions and identify entities explicitly."
+    },
+    {
+      "id": "substrate_protein_iptm",
+      "category": "prediction_confidence",
+      "determinant": "model_confidence",
+      "requirements": [
+        "confidence_sidecars",
+        "confidence_chain_map",
+        "confidence_pairs"
+      ],
+      "units": "0..1",
+      "hypothesis_question": "How confident is this specific protein--substrate interface in the declared anchoring direction?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "baseline",
+      "evidence_status": "confidence_baseline",
+      "limitations": "Pair scores can be asymmetric; preserve both directions and identify entities explicitly."
+    },
+    {
+      "id": "approach_distance",
+      "category": "reactive_geometry",
+      "determinant": "ground_state_binding",
+      "requirements": [
+        "reactive_roles"
+      ],
+      "units": "A",
+      "hypothesis_question": "Does the reacting group reach the electrophile?",
+      "expected_direction_prior": "-",
+      "execution": "builtin",
+      "priority": "core",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Short contact alone is not reactive competence."
+    },
+    {
+      "id": "near_attack_fraction",
+      "category": "reactive_geometry",
+      "determinant": "reactive_conformation",
+      "requirements": [
+        "reactive_roles",
+        "attack_angle_reference"
+      ],
+      "units": "fraction",
+      "hypothesis_question": "How often is the declared distance and attack-angle criterion recovered?",
+      "expected_direction_prior": "+",
+      "execution": "builtin",
+      "priority": "core",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Prediction frequencies are not equilibrium populations."
+    },
+    {
+      "id": "trajectory_angle_deviation",
+      "category": "reactive_geometry",
+      "determinant": "reactive_conformation",
+      "requirements": [
+        "reactive_roles",
+        "attack_angle_reference"
+      ],
+      "units": "degree",
+      "hypothesis_question": "Is the attack angle close to the mechanism-specific ideal?",
+      "expected_direction_prior": "-",
+      "execution": "builtin",
+      "priority": "core",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Conditional on the distance gate; retain the gated count and missing results."
+    },
+    {
+      "id": "trajectory_alignment",
+      "category": "reactive_geometry",
+      "determinant": "reactive_conformation",
+      "requirements": [
+        "reactive_roles",
+        "electrophile_frame"
+      ],
+      "units": "degree",
+      "hypothesis_question": "Does the approach have the orientation required by this electrophile?",
+      "expected_direction_prior": "+",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "An out-of-plane trajectory is not appropriate for every mechanism."
+    },
+    {
+      "id": "nucleophile_burial",
+      "category": "substrate_accommodation",
+      "determinant": "ground_state_binding",
+      "requirements": [
+        "reactive_roles"
+      ],
+      "units": "atom_count",
+      "hypothesis_question": "Is the nucleophile enclosed in a mechanistically appropriate environment?",
+      "expected_direction_prior": "+",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Heavy-atom density is a burial surrogate, not SASA. Enclosure can stabilize a site or obstruct substrate/water access; justify the favorable direction for the modeled state."
+    },
+    {
+      "id": "ts_charge_stabilisation",
+      "category": "catalytic_environment",
+      "determinant": "transition_state_electrostatics",
+      "requirements": [
+        "reactive_roles",
+        "charge_centre"
+      ],
+      "units": "donor_count",
+      "hypothesis_question": "Are potential donors near the atom expected to accumulate charge?",
+      "expected_direction_prior": "+",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Donor proximity alone omits hydrogen orientation and protonation."
+    },
+    {
+      "id": "base_proximity",
+      "category": "catalytic_environment",
+      "determinant": "nucleophile_base_activation",
+      "requirements": [
+        "reactive_roles"
+      ],
+      "units": "A",
+      "hypothesis_question": "Are ionizable groups near the nucleophile?",
+      "expected_direction_prior": "-",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Nonspecific proximity does not identify a catalytic base; prefer annotated_base_distance."
+    },
+    {
+      "id": "leaving_group_stabilisation",
+      "category": "catalytic_environment",
+      "determinant": "leaving_group_metal_stabilization",
+      "requirements": [
+        "reactive_roles",
+        "leaving_group"
+      ],
+      "units": "donor_count",
+      "hypothesis_question": "Are potential donors positioned near the leaving atom?",
+      "expected_direction_prior": "+",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "This measures donor proximity and does not validate metal coordination."
+    },
+    {
+      "id": "reactive_preorganisation",
+      "category": "prediction_consistency",
+      "determinant": "dynamic_preorganization",
+      "requirements": [
+        "reactive_roles",
+        "protein_alignment"
+      ],
+      "units": "A",
+      "hypothesis_question": "Is the reactive atom positioned reproducibly in the protein frame?",
+      "expected_direction_prior": "-",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Model confidence can drive low dispersion; this is not molecular dynamics."
+    },
+    {
+      "id": "approach_consistency",
+      "definition_version": "2.0",
+      "definition": "degrees(acos(norm(mean(unit attack vectors)))): zero for aligned vectors, 90 for a vanishing resultant",
+      "category": "prediction_consistency",
+      "determinant": "dynamic_preorganization",
+      "requirements": [
+        "reactive_roles",
+        "protein_alignment"
+      ],
+      "units": "degree",
+      "hypothesis_question": "Is the attack direction recovered consistently?",
+      "expected_direction_prior": "-",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Model sampling is not a thermodynamic ensemble. Version 2 replaces the historical angle-to-mean standard deviation; prior fitted models require review and recalibration."
+    },
+    {
+      "id": "distance_stability",
+      "category": "prediction_consistency",
+      "determinant": "dynamic_preorganization",
+      "requirements": [
+        "reactive_roles"
+      ],
+      "units": "A",
+      "hypothesis_question": "Is the attack distance stable across predictions?",
+      "expected_direction_prior": "-",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Consistently wrong geometry can also have low dispersion."
+    },
+    {
+      "id": "ligand_contact_fraction",
+      "category": "substrate_accommodation",
+      "determinant": "ground_state_binding",
+      "requirements": [
+        "substrate_chains"
+      ],
+      "units": "fraction",
+      "hypothesis_question": "Does the target substrate engage the protein?",
+      "expected_direction_prior": "+",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "More contacts can indicate accommodation or nonproductive trapping. Distinguish substrate binding from product release; contact fraction is not affinity or turnover."
+    },
+    {
+      "id": "ligand_contact_residues",
+      "category": "substrate_accommodation",
+      "determinant": "ground_state_binding",
+      "requirements": [
+        "substrate_chains"
+      ],
+      "units": "residue_count",
+      "hypothesis_question": "Which protein residues engage the target substrate?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Requires explicit, site-specific atom/entity assignments; availability and activity association are separate judgments."
+    },
+    {
+      "id": "reactive_group_sasa",
+      "category": "substrate_accommodation",
+      "determinant": "ground_state_binding",
+      "requirements": [
+        "reactive_group_atoms"
+      ],
+      "units": "A^2",
+      "hypothesis_question": "Should the reacting group be buried or exposed for this step?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Requires explicit, site-specific atom/entity assignments; availability and activity association are separate judgments."
+    },
+    {
+      "id": "distal_group_sasa",
+      "category": "substrate_accommodation",
+      "determinant": "ground_state_binding",
+      "requirements": [
+        "distal_group_atoms"
+      ],
+      "units": "A^2",
+      "hypothesis_question": "Which distal groups should face solvent rather than the pocket?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Requires explicit, site-specific atom/entity assignments; availability and activity association are separate judgments."
+    },
+    {
+      "id": "annotated_base_distance",
+      "category": "catalytic_environment",
+      "determinant": "nucleophile_base_activation",
+      "requirements": [
+        "reactive_roles",
+        "catalytic_base_atoms"
+      ],
+      "units": "A",
+      "hypothesis_question": "Is a mechanism-supported acid/base positioned to activate the nucleophile?",
+      "expected_direction_prior": "-",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Proximity requires mechanism-supported atom assignments, plausible protonation and donor geometry. Arbitrarily shorter or clashing contacts are not better."
+    },
+    {
+      "id": "annotated_donor_contacts",
+      "category": "catalytic_environment",
+      "determinant": "transition_state_electrostatics",
+      "requirements": [
+        "reactive_roles",
+        "charge_centre",
+        "catalytic_donor_atoms"
+      ],
+      "units": "donor_count",
+      "hypothesis_question": "Are annotated donors positioned near the charge-accumulating atom?",
+      "expected_direction_prior": "+",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Requires explicit, site-specific atom/entity assignments; availability and activity association are separate judgments."
+    },
+    {
+      "id": "reactive_site_potential",
+      "category": "catalytic_environment",
+      "determinant": "transition_state_electrostatics",
+      "requirements": [
+        "reactive_roles",
+        "charges",
+        "potential_target"
+      ],
+      "units": "e/A",
+      "hypothesis_question": "What is the signed protein-charge potential at the declared atom?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Requires explicit, site-specific atom/entity assignments; availability and activity association are separate judgments."
+    },
+    {
+      "id": "projected_electric_field",
+      "category": "catalytic_environment",
+      "determinant": "transition_state_electrostatics",
+      "requirements": [
+        "reactive_roles",
+        "charges",
+        "field_axis"
+      ],
+      "units": "e/A^2",
+      "hypothesis_question": "Is the protein electric field oriented to support the proposed charge redistribution?",
+      "expected_direction_prior": null,
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Requires explicit, site-specific atom/entity assignments; availability and activity association are separate judgments."
+    },
+    {
+      "id": "electric_field_variability",
+      "category": "prediction_consistency",
+      "determinant": "transition_state_electrostatics",
+      "requirements": [
+        "reactive_roles",
+        "charges",
+        "field_axis"
+      ],
+      "units": "e/A^2",
+      "hypothesis_question": "Is the projected field reproducible across predictions?",
+      "expected_direction_prior": "-",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Requires explicit, site-specific atom/entity assignments; availability and activity association are separate judgments."
+    },
+    {
+      "id": "contact_consistency",
+      "category": "prediction_consistency",
+      "determinant": "dynamic_preorganization",
+      "requirements": [
+        "substrate_chains"
+      ],
+      "units": "Jaccard",
+      "hypothesis_question": "Are the same protein--substrate residue contacts recovered?",
+      "expected_direction_prior": "+",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Requires explicit, site-specific atom/entity assignments; availability and activity association are separate judgments."
+    },
+    {
+      "id": "ligand_positional_dispersion",
+      "category": "prediction_consistency",
+      "determinant": "dynamic_preorganization",
+      "requirements": [
+        "substrate_chains",
+        "protein_alignment"
+      ],
+      "units": "A",
+      "hypothesis_question": "Is the atom-corresponded substrate position reproducible?",
+      "expected_direction_prior": "-",
+      "execution": "builtin",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Requires explicit, site-specific atom/entity assignments; availability and activity association are separate judgments."
+    },
+    {
+      "id": "access_channel_geometry",
+      "category": "substrate_accommodation",
+      "determinant": "ground_state_binding",
+      "requirements": [
+        "complete_assembly",
+        "channel_start",
+        "probe_definition"
+      ],
+      "units": "A",
+      "hypothesis_question": "Does the full assembly provide an access route appropriate for the substrate?",
+      "expected_direction_prior": null,
+      "execution": "targeted",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Declare the channel algorithm, probe, start position and apo/holo occlusion; validate against a structural reference."
+    },
+    {
+      "id": "metal_coordination",
+      "category": "catalytic_environment",
+      "determinant": "leaving_group_metal_stabilization",
+      "requirements": [
+        "metal_annotation",
+        "coordination_reference"
+      ],
+      "units": "A/degree",
+      "hypothesis_question": "Does the annotated ion coordinate the required groups with sufficient modeling fidelity?",
+      "expected_direction_prior": null,
+      "execution": "targeted",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "A chemically motivated metric is uninformative if the predictor cannot resolve the metal geometry."
+    },
+    {
+      "id": "maturation_compatibility",
+      "category": "catalytic_environment",
+      "determinant": "molecular_state_readiness",
+      "requirements": [
+        "precursor_state",
+        "maturation_annotation"
+      ],
+      "units": "method_specific",
+      "hypothesis_question": "Can the candidate reach the modeled active molecular state?",
+      "expected_direction_prior": null,
+      "execution": "targeted",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "A mature-state complex cannot establish precursor processing or expression."
+    },
+    {
+      "id": "surface_adsorption_geometry",
+      "category": "substrate_accommodation",
+      "determinant": "surface_adsorption",
+      "requirements": [
+        "complete_assembly",
+        "surface_annotation",
+        "substrate_material_context"
+      ],
+      "units": "area/contact_geometry",
+      "hypothesis_question": "Which chemically appropriate exposed surface can engage the assayed material?",
+      "expected_direction_prior": null,
+      "execution": "targeted",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Surface chemistry is a contact/adsorption hypothesis, not adsorption free energy. Residue-class SASA includes polar backbone atoms; distinguish sidechain apolar atoms and retain units."
+    },
+    {
+      "id": "assembly_contact_support",
+      "category": "catalytic_environment",
+      "determinant": "functional_assembly",
+      "requirements": [
+        "assembly_annotation",
+        "complete_assembly",
+        "interface_roles"
+      ],
+      "units": "area/contact_geometry",
+      "hypothesis_question": "Do the declared partner subunits support the functional site without clashes?",
+      "expected_direction_prior": null,
+      "execution": "targeted",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Model every participating subunit; crystallographic packing, predicted contacts and interface confidence do not measure solution oligomerization equilibrium."
+    },
+    {
+      "id": "structural_stability_surrogates",
+      "category": "catalytic_environment",
+      "determinant": "structural_persistence",
+      "requirements": [
+        "assay_conditions",
+        "complete_assembly",
+        "stability_reference"
+      ],
+      "units": "method_specific",
+      "hypothesis_question": "Is the modeled active state plausibly maintained under the assay conditions?",
+      "expected_direction_prior": null,
+      "execution": "targeted",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Packing and ion pairs are structural hypotheses; they do not measure melting temperature, kinetic lifetime, expression or aggregation. Control for size and confidence."
+    },
+    {
+      "id": "product_release_access",
+      "category": "substrate_accommodation",
+      "determinant": "product_release",
+      "requirements": [
+        "product_annotation",
+        "complete_assembly",
+        "release_path_definition"
+      ],
+      "units": "method_specific",
+      "hypothesis_question": "Can the product leave the modeled site through an appropriate route?",
+      "expected_direction_prior": null,
+      "execution": "targeted",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Substrate binding and product release have different requirements; stronger binding or a wider channel is not universally better. Ground-state structures do not provide release kinetics."
+    },
+    {
+      "id": "substrate_ground_state_strain",
+      "category": "catalytic_environment",
+      "determinant": "substrate_activation",
+      "requirements": [
+        "substrate_bond_annotation",
+        "geometry_reference",
+        "ligand_atom_correspondence"
+      ],
+      "units": "degree/geometry_deviation",
+      "hypothesis_question": "Is the bound reacting bond distorted in a way that could favor this chemical reaction?",
+      "expected_direction_prior": null,
+      "execution": "targeted",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Predictor geometry restraints can generate strain artifacts. A torsion/deformation is not a substrate activation energy; use chemically valid bonds and a reference."
+    },
+    {
+      "id": "reaction_barrier",
+      "category": "catalytic_environment",
+      "determinant": "integrated_barrier",
+      "requirements": [
+        "reactive_path_sampling"
+      ],
+      "units": "energy",
+      "hypothesis_question": "What is the barrier for the relevant chemical step?",
+      "expected_direction_prior": null,
+      "execution": "unavailable",
+      "priority": "targeted",
+      "evidence_status": "candidate_descriptor",
+      "limitations": "Unavailable in this static/cofold runner; requires a separately validated reactive-path method. Static geometry cannot supply an activation barrier."
+    }
+  ],
+  "principles": [
+    "Select physical processes from explicitly declared mechanism, molecular states, assay substrate and measured endpoint; do not infer a bottleneck from a family name.",
+    "Input readiness, physical relevance, prediction fidelity and activity validation are separate judgments.",
+    "Start with confidence baselines and a small mechanism-informed set; an explicitly declared broad discovery search must record all attempted features,parameters,combinations and failed hypotheses.",
+    "Expected-direction priors are hypotheses, not experimentally validated laws; do not flip a physical interpretation to match observed activity.",
+    "Report missing roles,states and assembly partners explicitly; missing physical measurements are not zero or inactivity.",
+    "Separate atom/sequence integrity from heuristic assembly or confidence gates; retain coverage and compare reasonable QC policies rather than requiring all poses to pass by default.",
+    "Use enzyme-construct-level validation with training-only feature selection and transformations; repeat the entire search in the selection null. Poses/sites are dependent predictions.",
+    "Control confidence,length,composition and assay normalization; retrospective homolog interpolation is not external or out-of-distribution validation.",
+    "Keep component physical evidence decomposed. A small physical combination needs a stated coupling rationale,formula,units and its own selection-aware validation.",
+    "Preserve feature/extractor versions,exact parameters,role mappings,source hashes,negative outcomes and reproducible run commands; check CPU/GPU capacity and pin parallel workers."
+  ],
+  "plan_schema": {
+    "required": [
+      "schema_version",
+      "mechanism",
+      "reaction_step",
+      "assay_endpoint",
+      "hypotheses",
+      "context"
+    ],
+    "hypothesis_required": [
+      "proxy_id",
+      "rationale",
+      "expected_direction",
+      "evidence_ids"
+    ],
+    "context_note": "Atom selectors contain chain, residue (including insertion code) and atom. Confidence maps explicitly relate PDB chains to JSON matrix indices. Charges require a named charge model and provenance.",
+    "optional": [
+      "assay_context",
+      "search_design"
+    ],
+    "assay_context_note": "Optional explicit substrate_state,measurement_basis,modeled_state,requires_processing,assembly_status,limiting_processes,substrate_representation,substrate_is_assayed and assay conditions. Limiting processes are hypotheses, not established causes.",
+    "search_design_note": "Optional discovery/confirmatory search scope,objective,biological_unit,budgets,validation,selection_correction,combination_policy,combination_rationale,record_negative_results and qc_policy. This declaration does not execute or validate the search."
+  },
+  "physical_processes": [
+    {
+      "id": "substrate_access",
+      "question": "Can the assayed substrate physically reach the site?",
+      "candidate_descriptors": [
+        "access_channel_geometry",
+        "distal_group_sasa"
+      ],
+      "reasoning": "Check substrate dimensions, phase, channel probe and all obstructing subunits. A soluble oligomer pose need not represent access from a solid polymer."
+    },
+    {
+      "id": "surface_adsorption",
+      "question": "Can the enzyme productively engage the assayed surface/material?",
+      "candidate_descriptors": [
+        "surface_adsorption_geometry"
+      ],
+      "reasoning": "Declare substrate chemistry and exposed atom groups; test adsorption hypotheses without assuming hydrophobicity always improves activity."
+    },
+    {
+      "id": "maturation",
+      "question": "Can the precursor reach the active molecular state?",
+      "candidate_descriptors": [
+        "maturation_compatibility"
+      ],
+      "reasoning": "A pre-cleaved mature cofold assumes processing; it cannot establish processing rate or fraction."
+    },
+    {
+      "id": "assembly",
+      "question": "Do the functional partners form and support the site?",
+      "candidate_descriptors": [
+        "assembly_contact_support",
+        "complex_iptm"
+      ],
+      "reasoning": "Separate full biological assembly, modeled stoichiometry and interface confidence; inspect omitted partners and clashes."
+    },
+    {
+      "id": "stability",
+      "question": "Does the active structure persist at the assay temperature,pH and duration?",
+      "candidate_descriptors": [
+        "structural_stability_surrogates"
+      ],
+      "reasoning": "Use empirical stability references where available. Packing surrogates and predicted confidence cannot establish thermal lifetime."
+    },
+    {
+      "id": "substrate_positioning",
+      "question": "Is the correct reactive group presented in the correct site and register?",
+      "candidate_descriptors": [
+        "approach_distance",
+        "ligand_contact_fraction",
+        "reactive_group_sasa",
+        "distal_group_sasa"
+      ],
+      "reasoning": "Define substrate versus product, internal versus cap bond, atom correspondence and stable ensemble register."
+    },
+    {
+      "id": "chemistry",
+      "question": "Is the declared bond-making/breaking step physically supported?",
+      "candidate_descriptors": [
+        "near_attack_fraction",
+        "trajectory_alignment",
+        "annotated_base_distance",
+        "annotated_donor_contacts",
+        "projected_electric_field",
+        "metal_coordination",
+        "substrate_ground_state_strain"
+      ],
+      "reasoning": "Require mechanism-supported roles; include donor orientation, protonation/cofactor state and steric plausibility. Ground-state geometry is not a reaction barrier."
+    },
+    {
+      "id": "product_release",
+      "question": "Can the product leave after the relevant step?",
+      "candidate_descriptors": [
+        "product_release_access"
+      ],
+      "reasoning": "A binding-oriented descriptor cannot establish product expulsion; report missing product state or exit pathway."
+    },
+    {
+      "id": "prediction_consistency",
+      "question": "Is the measured structural hypothesis reproducible across generated poses?",
+      "candidate_descriptors": [
+        "contact_consistency",
+        "ligand_positional_dispersion",
+        "distance_stability"
+      ],
+      "reasoning": "Measure comparable atoms/sites in an aligned frame. Diffusion variability is not molecular dynamics or an equilibrium population."
+    }
+  ]
+}

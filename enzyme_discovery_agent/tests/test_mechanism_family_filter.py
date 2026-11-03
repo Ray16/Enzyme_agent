@@ -62,7 +62,7 @@ class TestFamilyPassesConstraints(unittest.TestCase):
     def test_drops_non_free_substrate(self):
         ok, reason = family_passes_constraints(
             _fam("cofactor-acid + ATP + protein-lysine -> amide", "formation", False),
-            "formation")
+            "formation", target_topology="free_small_molecule")
         self.assertFalse(ok)
         self.assertIn("free", reason)
 

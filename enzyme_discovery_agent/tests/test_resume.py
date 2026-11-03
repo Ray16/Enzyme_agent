@@ -63,6 +63,32 @@ class TestResumeCheckpoint(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "cannot be resumed"):
                 self._agent(root)._load_resume_payload()
 
+    def test_legacy_failed_run_can_resume_with_valid_checkpoint(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "agent_state").mkdir()
+            (root / "manifest.json").write_text(json.dumps({"status": "failed", "query": "target"}))
+            (root / "target_context.json").write_text(json.dumps({"query": "target", "target_profile": {}}))
+            (root / "agent_state" / "transcript.json").write_text(json.dumps({
+                "iteration": 3, "messages": [{"role": "user", "content": "target"}],
+            }))
+            self.assertEqual(self._agent(root)._load_resume_payload()["iteration"], 3)
+
+    def test_resume_resets_terminal_idle_streak_but_keeps_evidence_signature(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "agent_state").mkdir()
+            (root / "manifest.json").write_text(json.dumps({"status": "failed", "query": "target"}))
+            (root / "target_context.json").write_text(json.dumps({"query": "target", "target_profile": {}}))
+            (root / "agent_state" / "transcript.json").write_text(json.dumps({
+                "iteration": 17, "messages": [],
+                "research_progress": {"idle_turns": 3, "signature": "saved-evidence"},
+            }))
+            agent = self._agent(root)
+            agent._load_resume_payload()
+            self.assertEqual(agent._consecutive_no_progress_turns, 0)
+            self.assertEqual(agent._last_research_signature, "saved-evidence")
+
     def test_resume_keeps_valid_events_before_a_truncated_tail(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -109,7 +135,53 @@ class TestResumeCheckpoint(unittest.TestCase):
             self.assertEqual(iteration, 3)
             self.assertEqual(saved["iteration"], 3)
             self.assertEqual(saved["messages"][-1]["content"], "gate guidance")
+            self.assertEqual(saved["research_progress"]["automatic_evidence_batches"], 1)
+
+    def test_resume_preserves_reflection_due_after_automated_batches(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "agent_state").mkdir()
+            (root / "manifest.json").write_text(json.dumps({"status": "budget_exhausted"}))
+            (root / "target_context.json").write_text(json.dumps({"target_profile": {}}))
+            transcript = {"iteration": 7, "messages": [],
+                          "research_progress": {"automatic_evidence_batches": 10}}
+            path = root / "agent_state/transcript.json"
+            path.write_text(json.dumps(transcript))
+            agent = self._agent(root)
+            agent._load_resume_payload()
+            self.assertFalse(agent._automatic_reflection_due())
+            agent._consecutive_no_progress_turns = 2
+            self.assertTrue(agent._automatic_reflection_due())
+            # Legacy checkpoints recover the same debt from the event stream.
+            transcript.pop("research_progress")
+            path.write_text(json.dumps(transcript))
+            events = [{"type": "gate", "intercept": True}, {"type": "assistant_decision"},
+                      *[{"type": "gate", "intercept": True} for _ in range(3)]]
+            (root / "events.jsonl").write_text("\n".join(json.dumps(e) for e in events))
+            agent._load_resume_payload()
+            self.assertEqual(agent._automatic_evidence_batches, 3)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_resume_recovers_only_proven_empty_uniprot_searches(tmp_path):
+    from enzyme_discovery_agent.bootstrap import register_builtin_tools
+    from enzyme_discovery_agent.tool_registry import check_search_duplicate
+    register_builtin_tools()
+    (tmp_path / 'agent_state').mkdir()
+    (tmp_path / 'manifest.json').write_text(json.dumps({'status': 'running'}))
+    (tmp_path / 'target_context.json').write_text(json.dumps({'target_profile': {}}))
+    (tmp_path / 'agent_state/transcript.json').write_text(json.dumps({'iteration': 1, 'messages': []}))
+    folder = tmp_path / 'artifacts/database'; folder.mkdir(parents=True)
+    args = {'gene_name': 'exampleQ', 'function_filter': 'synthetic enzyme', 'max_results': 5}
+    (folder / 'search_uniprot_001.json').write_text(json.dumps({'tool_name': 'search_uniprot', 'args': args,
+        'result': {'status': 'partial', 'summary': 'Found 0 UniProt entries for query: gene:exampleQ', 'data': [], 'count': 0}}))
+    other = {**args, 'gene_name': 'anotherQ'}
+    (folder / 'search_uniprot_002.json').write_text(json.dumps({'tool_name': 'search_uniprot', 'args': other,
+        'result': {'status': 'error', 'summary': 'Request failed', 'data': [], 'count': 0}}))
+    agent = TestResumeCheckpoint()._agent(tmp_path)
+    agent._load_resume_payload()
+    assert check_search_duplicate('search_uniprot', {**args, 'function_filter': 'synthetic enzyme extra'}, history=agent._search_history)
+    assert check_search_duplicate('search_uniprot', other, history=agent._search_history) is None

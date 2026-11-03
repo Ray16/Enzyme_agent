@@ -31,7 +31,17 @@ def inspect_discovery_source(source_path, find="", start_line=1, max_lines=SOURC
     path = Path(source_path)
     path = (root / path).resolve() if not path.is_absolute() else path.resolve()
     if not path.is_relative_to(root / "artifacts") or not path.is_file():
-        return {"status": "error", "summary": "Expected a retrieved source under this run's artifacts directory", "data": None}
+        # Naming what exists turns a guessed path into one corrected call. Without it the
+        # same wrong path is retried blind, and every retry costs a whole context resend.
+        available = sorted(
+            (str(p.relative_to(root)) for p in (root / "artifacts").rglob("*")
+             if p.is_file() and p.suffix.lower() in {".txt", ".json", ".md", ".xml", ".fasta", ".fa"}),
+            key=lambda name: (not name.startswith("artifacts/fulltext"), name))
+        return {"status": "error",
+                "summary": ("No readable source at that path. Choose one of the retrieved sources listed in "
+                            f"data.available_sources ({len(available)} available)."),
+                "data": {"requested_path": source_path, "available_sources": available[:60],
+                         "total_available": len(available)}}
     if path.suffix.lower() not in {".txt", ".json", ".md", ".xml", ".fasta", ".fa"}:
         return {"status": "error", "summary": "Inspect a text extraction rather than a binary source", "data": None}
     raw = path.read_bytes()

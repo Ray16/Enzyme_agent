@@ -17,6 +17,8 @@ from pathlib import Path
 from enzyme_discovery_agent.models.family_hypothesis import normalize_family_hypothesis
 
 
+from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+
 SCHEMA_VERSION = "1.0"
 TERMINAL_STATES = frozenset({"supported", "contradicted"})
 _lock = threading.Lock()
@@ -46,15 +48,13 @@ def load_family_ledger(run_dir: str | Path) -> dict:
 
 def _write(run_dir: Path, ledger: dict) -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "family_hypothesis_ledger.json").write_text(
-        json.dumps(ledger, indent=2, default=str) + "\n"
-    )
+    atomic_write_json(run_dir / "family_hypothesis_ledger.json", ledger)
 
 
 def initialize_family_ledger(run_dir: str | Path, families: list[dict]) -> dict:
     """Merge newly proposed hypotheses without erasing accumulated evidence."""
     run_dir = Path(run_dir)
-    with _lock:
+    with _lock, state_lock(run_dir / "family_hypothesis_ledger.json"):
         ledger = load_family_ledger(run_dir)
         records = ledger["families"]
         now = _now()
@@ -82,7 +82,7 @@ def record_family_resolution(
 ) -> dict:
     """Persist all plausible InterPro mappings, including an empty resolution."""
     run_dir = Path(run_dir)
-    with _lock:
+    with _lock, state_lock(run_dir / "family_hypothesis_ledger.json"):
         ledger = load_family_ledger(run_dir)
         fid = family_hypothesis_id(family)
         rec = ledger["families"].setdefault(fid, {
@@ -114,7 +114,7 @@ def record_survey_attempt(
 ) -> None:
     """Attach one retryable survey result to every matching family hypothesis."""
     run_dir = Path(run_dir)
-    with _lock:
+    with _lock, state_lock(run_dir / "family_hypothesis_ledger.json"):
         ledger = load_family_ledger(run_dir)
         now = _now()
         family_id = family_hypothesis_id(family) if family else None

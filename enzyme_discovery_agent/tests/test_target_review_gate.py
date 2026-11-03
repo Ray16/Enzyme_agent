@@ -162,3 +162,41 @@ def test_a_validation_failure_is_the_reviewers_answer_and_is_not_retried(tmp_pat
     attempt=load_candidate_registry(tmp_path)['candidates']['SYNTH1']['metadata']['target_review_attempt']
     assert attempt['fault']=='scientific'
     assert review.review_queue(tmp_path)==[]
+
+
+def test_modeling_evidence_arriving_later_does_not_void_the_review(tmp_path):
+    """Modeling runs after the review and writes onto the same record.
+
+    Hashing that field into the eligibility check meant an assessment survived only
+    until its candidate was modelled, which silently emptied the decision list.
+    """
+    packet=setup(tmp_path);review.save_assessment(tmp_path,packet,assessment())
+    assert len(refresh_ranked_candidates(tmp_path))==1
+    update_candidate_registry(tmp_path,'SYNTH1',None,{'modeling_validation_evidence':{
+        'accession':'SYNTH1','status':'incomplete','review_errors':['pose validator identity is missing']}})
+    meta=load_candidate_registry(tmp_path)['candidates']['SYNTH1']['metadata']
+    admitted,reason=review.eligibility_verdict(tmp_path,'SYNTH1',meta)
+    assert admitted,reason
+    assert len(refresh_ranked_candidates(tmp_path))==1
+
+
+def test_discovery_side_changes_still_invalidate_the_review_and_say_so(tmp_path):
+    """Narrowing the digest must not stop real evidence changes from forcing a re-review."""
+    packet=setup(tmp_path);review.save_assessment(tmp_path,packet,assessment())
+    update_candidate_registry(tmp_path,'SYNTH1',None,{'catalytic_activities':['A different native reaction']})
+    meta=load_candidate_registry(tmp_path)['candidates']['SYNTH1']['metadata']
+    admitted,reason=review.eligibility_verdict(tmp_path,'SYNTH1',meta)
+    assert not admitted
+    assert reason=='candidate record changed since the review'
+    assert refresh_ranked_candidates(tmp_path)==[]
+
+
+def test_every_refusal_names_itself(tmp_path):
+    """The filter once emptied the shortlist with nothing recording why."""
+    packet=setup(tmp_path)
+    meta=load_candidate_registry(tmp_path)['candidates']['SYNTH1']['metadata']
+    assert review.eligibility_verdict(tmp_path,'SYNTH1',meta)[1]=='no target assessment recorded'
+    review.save_assessment(tmp_path,packet,{**assessment('defer'),'evidence_level':'speculative',
+                                            'strengths':[],'constraints':[]})
+    meta=load_candidate_registry(tmp_path)['candidates']['SYNTH1']['metadata']
+    assert review.eligibility_verdict(tmp_path,'SYNTH1',meta)[1]=="review decision is 'defer'"

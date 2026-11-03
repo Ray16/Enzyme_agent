@@ -106,9 +106,9 @@ def build_target_substrates(target: dict) -> tuple[list[dict], list[str]]:
                 "derivation_rule": "target_bond_change_and_participant_roles",
                 "confidence": proposal.get("confidence", "unknown"),
             },
-            "review_status": (
-                "reviewed" if review else "required" if changed else "not_required"
-            ),
+            # A supplied review is an assertion. The receiver must verify its
+            # provenance before clearing a molecular-state change.
+            "review_status": "required" if changed else "not_required",
         }
         if changed:
             record["state_change"] = {
@@ -379,6 +379,11 @@ def validate_modeling_input(modeling_input: dict) -> list[str]:
             "stereochemistry", {},
         ).get("status") == "unspecified":
             errors.append("modeling substrate has unspecified stereochemistry")
+        if "carbonyl" in str(substrate.get("reactive_atom") or "").lower():
+            from rdkit import Chem
+            molecule = Chem.MolFromSmiles(substrate.get("modeling_smiles") or "")
+            if molecule is not None and not molecule.HasSubstructMatch(Chem.MolFromSmarts("[#6]=[#8]")):
+                errors.append("modeling representation lacks its declared carbonyl reactive group")
     geometry = modeling_input.get("geometry") or {}
     if geometry and not any(
         geometry.get(key)

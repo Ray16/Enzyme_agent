@@ -36,10 +36,9 @@ from enzyme_discovery_agent.models.candidate_registry import (
     update_candidate_registry,
 )
 from enzyme_discovery_agent.models import embedding_store as store_mod
+from enzyme_discovery_agent.models.expansion import require_evaluated_seed, select_expansion_seeds
 from enzyme_discovery_agent.tool_registry import execute_tool, tool
-
-_ACTIVE_STATUSES = {"evaluated", "ranked"}
-
+from enzyme_discovery_agent.run_layout import run_file
 
 def _substrate_fit(meta: dict) -> float:
     try:
@@ -48,35 +47,9 @@ def _substrate_fit(meta: dict) -> float:
         return 0.0
 
 
-def _select_promising(candidates: dict, n: int) -> list[str]:
-    """Highest-scoring candidates, using existing scores only (no new scoring).
-
-    Primary: candidates that reached ``evaluated``/``ranked``, not rejected, with
-    ``claim_validation.promotion_eligible`` not False -- ordered by ``substrate_fit``
-    desc (accession tiebreak). Fallback (nothing evaluated yet): the
-    substrate-fit-promoted set (``source_tool`` starting ``family_substrate_fit``).
-    """
-    primary: list[tuple[str, float]] = []
-    for acc, info in candidates.items():
-        status = current_candidate_status(info)
-        if status not in _ACTIVE_STATUSES:
-            continue
-        meta = info.get("metadata", {})
-        validation = meta.get("claim_validation") or {}
-        if validation and validation.get("promotion_eligible") is False:
-            continue
-        primary.append((acc, _substrate_fit(meta)))
-    if primary:
-        primary.sort(key=lambda x: (-x[1], x[0]))
-        return [acc for acc, _ in primary[:n]]
-
-    promoted = [
-        (acc, _substrate_fit(info.get("metadata", {})))
-        for acc, info in candidates.items()
-        if str(info.get("metadata", {}).get("source_tool") or "").startswith("family_substrate_fit")
-    ]
-    promoted.sort(key=lambda x: (-x[1], x[0]))
-    return [acc for acc, _ in promoted[:n]]
+def _select_promising(candidates: dict, n: int, run_dir=None) -> list[str]:
+    """Share evaluated-seed priority with structural and literature expansion."""
+    return select_expansion_seeds(candidates, n, run_dir)
 
 
 def _fetch_sequences(run_dir: Path, accessions: list[str]) -> dict[str, str]:
@@ -127,7 +100,7 @@ def _run_embed_subprocess(run_dir: Path, items: list[dict], model: str):
         return None, "no free GPU on this host; deferred embedding"
     idx = free[0]
 
-    work = Path(run_dir) / "embedding_store" / "_work"
+    work = run_file(Path(run_dir), 'embedding_store') / "_work"
     work.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=str(work)) as tmp:
         pending_json = str(Path(tmp) / "pending.json")
@@ -200,7 +173,7 @@ def embed_sequences(run_dir: Path, items: list[dict], model: str, max_gpus: int 
 
     n = len(gpus)
     shards = [items[i::n] for i in range(n)]
-    workdir = Path(run_dir) / "embedding_store" / "_work"
+    workdir = run_file(Path(run_dir), 'embedding_store') / "_work"
     workdir.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     env.update({"OMP_NUM_THREADS": "4", "MKL_NUM_THREADS": "4",
@@ -250,8 +223,8 @@ def embed_sequences(run_dir: Path, items: list[dict], model: str, max_gpus: int 
         "language-model representation space and return, for the highest-scoring "
         "candidates (or a candidate you name), their nearest neighbors among the "
         "discovered pool. Neighbors are registered as new leads to expand or to "
-        "advance to structural modeling. Call this once several promising "
-        "candidates have accumulated; you choose how many candidates and how many "
+        "advance to structural modeling. Call this after candidates have been "
+        "evaluated; you choose how many top evaluated candidates and how many "
         "neighbors to retrieve."
     ),
     category="database",
@@ -302,6 +275,17 @@ def map_candidate_neighbors(
     if not candidates:
         return {"status": "partial", "summary": "No candidates to map yet.", "data": None, "count": 0}
 
+    if accession:
+        blocked = require_evaluated_seed(run_path, accession)
+        if blocked:
+            return blocked
+        selected = [accession]
+    else:
+        selected = select_expansion_seeds(candidates, n_promising, run_path, method="embedding_map")
+    if not selected:
+        return {"status": "skipped", "summary": "Evaluate candidates before embedding expansion.",
+                "data": None, "count": 0}
+
     # 1) Embed candidates that are not embedded yet (GPU subprocess).
     pending = store_mod.pending_accessions(run_path, list(candidates.keys()))
     note = "no new candidates to embed"
@@ -326,10 +310,7 @@ def map_candidate_neighbors(
             "count": 0,
         }
 
-    if accession:
-        promising = [accession] if accession in store.acc_to_row else []
-    else:
-        promising = [a for a in _select_promising(candidates, n_promising) if a in store.acc_to_row]
+    promising = [a for a in selected if a in store.acc_to_row]
     if not promising:
         return {
             "status": "partial",
@@ -359,7 +340,7 @@ def map_candidate_neighbors(
             })
             try:
                 update_candidate_registry(
-                    run_path, nbr_acc, "discovered",
+                    run_path, nbr_acc, None,
                     metadata={"source_tool": f"esm_neighbor:{prom}", "esm_distance": round(float(dist), 4)},
                 )
                 registered += 1
@@ -380,7 +361,7 @@ def map_candidate_neighbors(
         "promising": promising_out,
     }
     try:
-        (run_path / "candidate_map.json").write_text(json.dumps(map_payload, indent=2))
+        (run_file(run_path, 'candidate_map.json')).write_text(json.dumps(map_payload, indent=2))
     except Exception:  # noqa: BLE001
         pass
 

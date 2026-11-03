@@ -32,6 +32,8 @@ import logging
 import threading
 from datetime import datetime
 from pathlib import Path
+from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -82,18 +84,31 @@ def _next_seq(run_dir: Path, run_key: str) -> int:
     truncated tail from the previous process is repaired.
     Caller holds ``_event_lock``.
     """
+    counter_path = run_dir / "agent_state" / "event_sequence.json"
+    try:
+        _seq_counters[run_key] = max(_seq_counters.get(run_key, 0),
+                                     int(json.loads(counter_path.read_text())["seq"]))
+    except FileNotFoundError:
+        pass
     if run_key not in _seq_counters:
         existing = 0
-        path = run_dir / "events.jsonl"
+        path = run_file(run_dir, 'events.jsonl')
         if path.exists():
             _terminate_truncated_tail(path)
             try:
                 with path.open() as f:
-                    existing = sum(1 for _ in f)
+                    lines = list(f)
+                    existing = len(lines)
+                    for line in lines:
+                        try:
+                            existing = max(existing, int(json.loads(line).get("seq", 0)))
+                        except (ValueError, TypeError, AttributeError):
+                            continue
             except OSError:
                 existing = 0
         _seq_counters[run_key] = existing
     _seq_counters[run_key] += 1
+    atomic_write_json(counter_path, {"seq": _seq_counters[run_key]})
     return _seq_counters[run_key]
 
 
@@ -107,9 +122,10 @@ def append_event(run_dir: str | Path, event_type: str, **fields) -> None:
     """
     run_dir = Path(run_dir)
     run_key = str(run_dir.resolve())
-    path = run_dir / "events.jsonl"
+    path = run_file(run_dir, 'events.jsonl')
     try:
-        with _event_lock:
+        with _event_lock, state_lock(path):
+            _terminate_truncated_tail(path)
             event = {
                 "seq": _next_seq(run_dir, run_key),
                 "ts": datetime.now().astimezone().isoformat(),
@@ -119,6 +135,9 @@ def append_event(run_dir: str | Path, event_type: str, **fields) -> None:
             run_dir.mkdir(parents=True, exist_ok=True)
             with open(path, "a") as f:
                 f.write(json.dumps(event, default=str) + "\n")
+                f.flush()
+                import os
+                os.fsync(f.fileno())
     except Exception as e:  # never break the loop on a logging failure
         logger.warning("Failed to append event %s: %s", event_type, e)
 
@@ -129,7 +148,7 @@ def read_events(run_dir: str | Path) -> list[dict]:
     Malformed lines are skipped rather than raising, so a partially-written tail
     (e.g. from an interrupted run) never breaks a reader.
     """
-    path = Path(run_dir) / "events.jsonl"
+    path = run_file(Path(run_dir), 'events.jsonl')
     if not path.exists():
         return []
     out: list[dict] = []

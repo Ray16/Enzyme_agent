@@ -110,6 +110,14 @@ def _relax_uniprot_query(query: str) -> list[str]:
     identity, so drop terms from the END one at a time, down to the first two.
     Returns the full query first, then the relaxations, de-duplicated.
     """
+    # Fielded, quoted and Boolean expressions must not be token-truncated:
+    # doing so can remove a clause while leaving a dangling operator or quote.
+    # Preserve the user's full structured query and let callers explicitly
+    # choose any relaxation with an auditable change of search scope.
+    if (re.search(r"\b[A-Za-z_][A-Za-z0-9_]*\s*:", query)
+            or re.search(r"\b(?:AND|OR|NOT)\b", query)
+            or any(mark in query for mark in ('"', '(', ')'))):
+        return [query]
     terms = query.split()
     variants = [query]
     for k in range(len(terms) - 1, 1, -1):
@@ -300,6 +308,7 @@ def search_uniprot(
                     f"{used_query[:60]}{_relaxed_note}"),
         "data": entries,
         "count": len(entries),
+        "search_completed": True,
         "suggestions": (
             ["Try searching by gene_name for more precise results.",
              "Try broader keywords or partial EC numbers."]
@@ -616,7 +625,11 @@ def _fetch_kegg_single(ec_number: str) -> dict | None:
 # InterPro
 # ---------------------------------------------------------------------------
 
-def _interpro_fetch(urls_to_try: list[str], context: str = "InterPro") -> dict | None:
+class InterProUnavailable(RuntimeError):
+    """The lookup did not produce a confirmed result or confirmed empty response."""
+
+
+def _interpro_fetch(urls_to_try: list[str], context: str = "InterPro") -> dict:
     """Try multiple InterPro URLs, return first valid JSON response."""
     for url in urls_to_try:
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
@@ -624,14 +637,16 @@ def _interpro_fetch(urls_to_try: list[str], context: str = "InterPro") -> dict |
             raw = request_with_retry(req, timeout=30)
             stripped = raw.decode().strip()
             if not stripped:
-                # 204 No Content — try next URL
-                continue
+                return {"results": [], "count": 0}
             if stripped[0] not in ('{', '['):
                 continue
-            return json.loads(stripped)
+            result = json.loads(stripped)
+            if not isinstance(result, dict) or not isinstance(result.get("results"), list):
+                continue
+            return result
         except Exception:
             continue
-    return None
+    raise InterProUnavailable(f"{context} unavailable; no confirmed response")
 
 
 def _simplify_interpro_query(query: str) -> list[str]:
@@ -689,6 +704,7 @@ def search_interpro(query: str, max_results: int = 20) -> dict:
     data = None
     tried_query = query
     for variant in query_variants:
+        tried_query = variant
         params_base = {
             "search": variant,
             "page_size": str(min(max_results, config.INTERPRO_PAGE_SIZE_CAP)),
@@ -697,7 +713,13 @@ def search_interpro(query: str, max_results: int = 20) -> dict:
             f"https://www.ebi.ac.uk/interpro/api/entry/interpro?"
             f"{urllib.parse.urlencode(params_base)}"
         )
-        data = _interpro_fetch([url], context="InterPro search")
+        try:
+            data = _interpro_fetch([url], context="InterPro search")
+        except InterProUnavailable:
+            return {"status": "error", "lookup_status": "unavailable", "search_completed": False,
+                    "summary": "InterPro unavailable; search scope was not relaxed.", "data": [],
+                    "requested_query": query, "used_query": variant,
+                    "suggestions": ["Retry the same query when the service recovers."]}
         if data is not None and data.get("results"):
             tried_query = variant
             break
@@ -727,6 +749,11 @@ def search_interpro(query: str, max_results: int = 20) -> dict:
         "summary": f"Found {len(results)} InterPro entries for '{tried_query}'",
         "data": results,
         "count": len(results),
+        "lookup_status": "found" if results else "empty",
+        "search_completed": True,
+        "requested_query": query,
+        "used_query": tried_query,
+        "query_relaxed": tried_query != query,
     }
 
 
@@ -753,7 +780,11 @@ def get_protein_domains(uniprot_accession: str) -> dict:
         f"{uniprot_accession}",
     ]
 
-    data = _interpro_fetch(urls, context=f"InterPro domains ({uniprot_accession})")
+    try:
+        data = _interpro_fetch(urls, context=f"InterPro domains ({uniprot_accession})")
+    except InterProUnavailable:
+        return {"status": "error", "lookup_status": "unavailable", "search_completed": False,
+                "summary": f"InterPro domain lookup unavailable for {uniprot_accession}", "data": []}
     if data is None:
         return {
             "status": "error",
@@ -791,8 +822,7 @@ def get_protein_domains(uniprot_accession: str) -> dict:
 @tool(
     description=(
         "Look up UniProt entries by GenBank/EMBL accession. Use this when a "
-        "paper references a specific GenBank protein accession (e.g., "
-        "ATY72527.1) to find the exact UniProt entry, avoiding gene-name "
+        "paper references a specific GenBank protein accession to find the exact UniProt entry, avoiding gene-name "
         "ambiguity. This is the most precise way to identify a protein when "
         "a sequence database accession is available."
     ),
@@ -802,7 +832,7 @@ def get_protein_domains(uniprot_accession: str) -> dict:
         "genbank_accession": {
             "type": "string",
             "description": (
-                "GenBank or EMBL accession ID (e.g., 'ATY72527' or 'ATY72527.1'). "
+                "GenBank or EMBL accession ID, optionally including its version suffix. "
                 "Version suffix (.1) is stripped automatically."
             ),
         },
@@ -821,23 +851,35 @@ def lookup_genbank_to_uniprot(
             "suggestions": ["Provide a GenBank/EMBL accession ID."],
         }
 
-    query = f"xref:embl-{acc}"
-    params = {
-        "query": query,
-        "format": "json",
-        "size": "10",
-        "fields": "accession,protein_name,organism_name,ec,gene_names,cc_function,cc_catalytic_activity",
-    }
-    url = f"https://rest.uniprot.org/uniprotkb/search?{urllib.parse.urlencode(params)}"
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    # A deposited identifier is the only route from a paper-coined enzyme name to a
+    # sequence, so the lookup must follow whichever cross-reference matches the
+    # accession style it was given. Searching only the EMBL xref silently returns
+    # nothing for the RefSeq (WP_/NP_/YP_) identifiers papers most often cite.
+    refseq = bool(re.match(r"^(?:WP|NP|YP|XP|AP)_", acc, re.I))
+    queries = ([f"xref:refseq-{acc}", acc, f"xref:embl-{acc}"] if refseq
+               else [f"xref:embl-{acc}", f"xref:refseq-{acc}", acc])
 
-    try:
-        raw = request_with_retry(req, timeout=20)
-        data = json.loads(raw.decode())
-    except Exception as e:
+    data, errors = {}, []
+    for query in queries:
+        params = {
+            "query": query,
+            "format": "json",
+            "size": "10",
+            "fields": "accession,protein_name,organism_name,ec,gene_names,cc_function,cc_catalytic_activity",
+        }
+        url = f"https://rest.uniprot.org/uniprotkb/search?{urllib.parse.urlencode(params)}"
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        try:
+            data = json.loads(request_with_retry(req, timeout=20).decode())
+        except Exception as e:
+            errors.append(f"{query}: {e}")
+            continue
+        if data.get("results"):
+            break
+    if not data.get("results") and errors and len(errors) == len(queries):
         return {
             "status": "error",
-            "summary": f"UniProt xref lookup failed for {acc}: {e}",
+            "summary": f"UniProt xref lookup failed for {acc}: {errors[0]}",
             "data": [],
             "suggestions": ["Check that the GenBank accession is correct."],
         }

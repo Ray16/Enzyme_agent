@@ -12,6 +12,7 @@ import glob
 import json
 from collections import Counter
 from pathlib import Path
+from enzyme_discovery_agent.run_layout import run_file
 
 _LIT_TOOLS = {
     "search_pubmed", "search_openalex", "search_europepmc",
@@ -20,7 +21,7 @@ _LIT_TOOLS = {
 
 
 def _load_events(run: Path) -> list[dict]:
-    path = run / "events.jsonl"
+    path = run_file(run, "events.jsonl")
     if not path.exists():
         return []
     out = []
@@ -38,69 +39,68 @@ def _recover_literature_papers(run: Path) -> list[dict]:
     papers: list[dict] = []
     for p in sorted(glob.glob(str(run / "artifacts" / "literature" / "*.json"))):
         try:
-            data = json.loads(Path(p).read_text()).get("result", {}).get("data", [])
+            result = json.loads(Path(p).read_text()).get("result", {})
+            if result.get("status") in {"error", "skipped"}:
+                continue
+            data = result.get("data", [])
         except (OSError, json.JSONDecodeError, AttributeError):
             continue
         if isinstance(data, list):
             papers.extend(x for x in data if isinstance(x, dict))
+        elif isinstance(data, dict):
+            for name in ("seed_papers", "reference_papers"):
+                papers.extend(x for x in data.get(name, []) if isinstance(x, dict))
     return papers
 
 
 def _dedup(papers: list[dict]) -> list[dict]:
     # Use the SAME identity key the agent's consolidation uses (DOI -> PMID ->
     # normalized title), so papers_unique matches real pipeline behavior.
-    from enzyme_discovery_agent.tools.literature import _paper_key
-    seen, out = set(), []
-    for p in papers:
-        key = _paper_key(p)
-        if key is None:
-            out.append(p)  # unkeyable: keep (can't dedup safely)
-            continue
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append(p)
-    return out
+    from enzyme_discovery_agent.tools.literature import dedupe_and_merge
+    return dedupe_and_merge(papers)[0]
 
 
 def _all_artifact_text(run: Path) -> str:
-    """Lowercased concatenation of every artifact JSON (recall search space)."""
+    """Search only data returned by nonfailed tools, never arguments or errors."""
+    excluded = {"args", "query", "queries", "search_query", "rerank_query",
+                "target_query", "error", "errors", "suggestions", "summary"}
+
+    def evidence_only(value):
+        if isinstance(value, dict):
+            return {key: evidence_only(item) for key, item in value.items()
+                    if str(key).lower() not in excluded}
+        if isinstance(value, list):
+            return [evidence_only(item) for item in value]
+        return value
+
     chunks = []
     for p in glob.glob(str(run / "artifacts" / "**" / "*.json"), recursive=True):
         try:
-            chunks.append(Path(p).read_text())
-        except OSError:
+            payload = json.loads(Path(p).read_text())
+            result = payload.get("result") if isinstance(payload, dict) else None
+            if isinstance(result, dict) and result.get("status") not in {"error", "skipped"}:
+                chunks.append(json.dumps(evidence_only(result.get("data")), default=str))
+        except (OSError, ValueError):
             continue
-    nb = run / "artifacts" / "notebook.json"
-    if nb.exists():
-        try:
-            chunks.append(nb.read_text())
-        except OSError:
-            pass
     return " ".join(chunks).lower()
 
 
 def _candidate_text(run: Path) -> str:
-    """Lowercased text of the SELECTED candidates (genes + rationales + registry).
-
-    This is what survived into evaluation/ranking — distinct from what was merely
-    searched — so coverage over it measures the kept set, not the search breadth.
-    """
-    chunks = []
-    for name in ("pass1_ranking.json", "candidate_registry.json",
-                 "exploration_summary.json", "ranked_candidates.csv"):
-        p = run / name
-        if p.exists():
-            try:
-                chunks.append(p.read_text())
-            except OSError:
-                continue
-    for p in glob.glob(str(run / "artifacts" / "candidates" / "*.json")):
-        try:
-            chunks.append(Path(p).read_text())
-        except OSError:
-            continue
-    return " ".join(chunks).lower()
+    """Lowercased metadata of candidates currently eligible after evaluation."""
+    from enzyme_discovery_agent.models.candidate_registry import discovery_status, load_candidate_registry
+    try:
+        candidates = load_candidate_registry(run, strict=True).get("candidates", {})
+    except (OSError, ValueError):
+        return ""
+    eligible = []
+    for accession, entry in candidates.items():
+        metadata = entry.get("metadata") or {}
+        validation = metadata.get("claim_validation") or {}
+        if (discovery_status(entry) in {"evaluated", "ranked"}
+                and validation.get("promotion_eligible") is True
+                and metadata.get("is_enzyme") is not False):
+            eligible.append({"accession": accession, "metadata": metadata})
+    return json.dumps(eligible, default=str).lower()
 
 
 def _fulltext_manifest(run: Path) -> list[dict]:
@@ -116,7 +116,7 @@ def _fulltext_manifest(run: Path) -> list[dict]:
 
 def _tokens(run: Path) -> int | None:
     """Total tokens for the run, from token_usage.json (the agent writes it)."""
-    path = run / "token_usage.json"
+    path = run_file(run, "token_usage.json")
     if not path.exists():
         return None
     try:
@@ -128,19 +128,29 @@ def _tokens(run: Path) -> int | None:
 
 def _stage_metrics(run: Path, benchmark: dict) -> dict:
     """Measure candidate retention and known-positive rank at each durable stage."""
+    from enzyme_discovery_agent.models.candidate_registry import discovery_status
     try:
-        registry = json.loads((run / "candidate_registry.json").read_text())
+        registry = json.loads((run_file(run, "candidate_registry.json")).read_text())
     except (OSError, json.JSONDecodeError):
         registry = {}
     entries = list((registry.get("candidates") or {}).values())
-    stages = ("discovered", "screened", "evaluated", "ranked")
+    stages = ("discovered", "screened", "evaluated", "eligible", "ranked")
     stage_sets = {stage: set() for stage in stages}
     for entry in entries:
         accession = str(entry.get("accession") or "").casefold()
         seen = {s.get("status") for s in entry.get("statuses") or []}
-        for stage in stages:
+        for stage in ("discovered", "screened", "evaluated"):
             if stage in seen:
                 stage_sets[stage].add(accession)
+        metadata = entry.get("metadata") or {}
+        validation = metadata.get("claim_validation") or {}
+        current = discovery_status(entry)
+        if (current in {"evaluated", "ranked"} and
+                validation.get("promotion_eligible") is True and
+                metadata.get("is_enzyme") is not False):
+            stage_sets["eligible"].add(accession)
+            if current == "ranked":
+                stage_sets["ranked"].add(accession)
 
     positives = {
         str(value).casefold()
@@ -163,12 +173,12 @@ def _stage_metrics(run: Path, benchmark: dict) -> dict:
 
     ranks = {}
     try:
-        ranking = json.loads((run / "pass1_ranking.json").read_text())
+        ranking = json.loads((run_file(run, "pass1_ranking.json")).read_text())
     except (OSError, json.JSONDecodeError):
         ranking = []
     for position, item in enumerate(ranking, 1):
         accession = str(item.get("accession") or "").casefold()
-        if accession in positives:
+        if accession in positives and accession in stage_sets["eligible"]:
             ranks[accession] = int(item.get("rank") or position)
     return {
         "retention": retention,

@@ -21,6 +21,7 @@ import difflib
 import functools
 import json
 import logging
+import re
 import threading
 from typing import Any, Callable
 
@@ -64,16 +65,13 @@ def tool(
         for pname, pschema in func_params.items():
             if pname in injected:
                 continue
-            prop = {"type": pschema.get("type", "string")}
-            if "description" in pschema:
-                prop["description"] = pschema["description"]
-            if "enum" in pschema:
-                prop["enum"] = pschema["enum"]
-            if "items" in pschema:
-                prop["items"] = pschema["items"]
-            if "default" in pschema:
-                prop["default"] = pschema["default"]
-            else:
+            # Preserve nested object contracts and validation constraints. A
+            # shallow whitelist silently turned grounded source objects into
+            # arbitrary dictionaries before they reached the serving model.
+            import copy
+            prop = copy.deepcopy(pschema)
+            prop.setdefault('type','string')
+            if "default" not in pschema:
                 required.append(pname)
             properties[pname] = prop
 
@@ -187,6 +185,9 @@ def execute_tool(name: str, args: dict, injected_args: dict | None = None) -> di
     Returns:
         Standardized result dict with status/summary/data/count/suggestions.
     """
+    if not isinstance(args, dict):
+        return {"status": "error", "summary": "Tool arguments must be a JSON object.",
+                "data": None, "suggestions": ["Retry with an object of named arguments."]}
     # Handle args that failed JSON parsing in the agent loop
     if "_parse_error" in args:
         return {
@@ -240,11 +241,13 @@ def execute_tool(name: str, args: dict, injected_args: dict | None = None) -> di
     # a declared array/object means a bare string reaches a tool that then iterates it
     # character-by-character ('str' has no attribute 'get').  There is no "normal error
     # path" downstream for these, so reject here with a corrective message instead.
-    _EXPECTED = {"array": (list, tuple), "object": (dict,)}
+    _EXPECTED = {"array": (list, tuple), "object": (dict,), "string": (str,),
+                 "integer": (int,), "number": (int, float), "boolean": (bool,)}
     for key, value in args.items():
         declared = (properties.get(key) or {}).get("type")
         expected = _EXPECTED.get(declared)
-        if expected and not isinstance(value, expected):
+        if expected and (not isinstance(value, expected) or
+                         (declared in {"integer", "number"} and isinstance(value, bool))):
             return {
                 "status": "error",
                 "summary": (
@@ -257,6 +260,10 @@ def execute_tool(name: str, args: dict, injected_args: dict | None = None) -> di
                     f"Omit '{key}' to let {name} use the data already collected in this run.",
                 ],
             }
+        enum = (properties.get(key) or {}).get("enum")
+        if enum is not None and value not in enum:
+            return {"status": "error", "summary": f"Argument '{key}' of {name} must be one of {enum}.",
+                    "data": None, "suggestions": ["Retry with a permitted value."]}
 
     # Merge injected args
     merged_args = dict(args)
@@ -348,32 +355,27 @@ def _suggest_recovery(tool_name: str, error_msg: str) -> str:
 # Search deduplication
 # ---------------------------------------------------------------------------
 
-def check_search_duplicate(tool_name: str, args: dict, threshold: float = 0.90) -> dict | None:
-    """Check if a semantically similar search was already executed.
-
-    Returns the cached result if a duplicate is found, else None.
-    """
+def _search_key(tool_name: str, args: dict) -> str | None:
     info = _TOOLS.get(tool_name)
-    if info is None or info["category"] not in _SEARCHABLE_CATEGORIES:
+    if info is None or info["category"] not in _SEARCHABLE_CATEGORIES or not isinstance(args, dict):
         return None
+    props = info["schema"]["function"]["parameters"].get("properties", {})
+    canonical = {key: schema["default"] for key, schema in props.items() if "default" in schema}
+    canonical.update(_coerce_arg_types(args, props))
+    return json.dumps(canonical, sort_keys=True, separators=(",", ":"), default=str)
 
-    # Build a normalized query string from the args
-    query_str = _normalize_query(args)
-    if not query_str:
+
+def check_search_duplicate(tool_name: str, args: dict, threshold: float = 0.90, *, history=None) -> dict | None:
+    """Recognize an identical successful request; ``threshold`` is legacy."""
+    key = _search_key(tool_name, args)
+    if key is None:
         return None
-
     with _SEARCH_HISTORY_LOCK:
-        for entry in _SEARCH_HISTORY:
-            if entry["tool"] != tool_name:
-                continue
-            similarity = _query_similarity(query_str, entry["query"])
-            if similarity >= threshold:
+        for entry in (_SEARCH_HISTORY if history is None else history):
+            if entry["tool"] == tool_name and entry.get("key") == key:
                 return {
                     "status": "partial",
-                    "summary": (
-                        f"Similar search already executed (similarity={similarity:.0%}). "
-                        f"Previous query: '{entry['query']}'. Try a different strategy."
-                    ),
+                    "summary": "Identical completed search already executed in this run.",
                     "data": entry.get("result_summary"),
                     "suggestions": [
                         "Use different keywords or a different search axis.",
@@ -381,36 +383,57 @@ def check_search_duplicate(tool_name: str, args: dict, threshold: float = 0.90) 
                     ],
                     "deduplicated": True,
                 }
+            if tool_name == "search_uniprot" and entry.get("tool") == tool_name:
+                prior = entry.get("args") or {}
+                prior_result = entry.get("result_summary") or {}
+                gene = str(args.get("gene_name") or "").strip().casefold()
+                old_gene = str(prior.get("gene_name") or "").strip().casefold()
+                def terms(value):
+                    value = str(value or "").strip()
+                    if not value:
+                        return set()
+                    if not re.fullmatch(r"[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)*", value):
+                        return None
+                    words = value.casefold().split()
+                    return None if any(w in {"and", "or", "not"} for w in words) else set(words)
+                old, new = terms(prior.get("function_filter")), terms(args.get("function_filter"))
+                if (gene and gene == old_gene and prior_result.get("search_completed") is True
+                        and prior_result.get("count") == 0 and old is not None and new is not None
+                        and old.issubset(new)):
+                    return {"status": "partial", "data": None, "deduplicated": True,
+                            "summary": "A completed search for this gene with the same or fewer filter terms returned no records.",
+                            "suggestions": ["Broaden the filter or search another source; a zero result does not prove biological absence."]}
     return None
 
 
-def record_search(tool_name: str, args: dict, result_summary: Any = None) -> None:
+def record_search(tool_name: str, args: dict, result_summary: Any = None, *, history=None) -> None:
     """Record a search execution for future deduplication checks."""
-    info = _TOOLS.get(tool_name)
-    if info is None or info["category"] not in _SEARCHABLE_CATEGORIES:
+    key = _search_key(tool_name, args)
+    completed_empty_uniprot = (tool_name == "search_uniprot" and isinstance(result_summary, dict)
+                               and result_summary.get("search_completed") is True
+                               and result_summary.get("status") in {"success", "partial"}
+                               and result_summary.get("count") == 0)
+    if key is None or not isinstance(result_summary, dict) or (result_summary.get("status") != "success" and not completed_empty_uniprot):
         return
-
-    query_str = _normalize_query(args)
-    if query_str:
-        with _SEARCH_HISTORY_LOCK:
-            _SEARCH_HISTORY.append({
-                "tool": tool_name,
-                "query": query_str,
-                "args": args,
-                "result_summary": _compact_summary(result_summary),
-            })
+    with _SEARCH_HISTORY_LOCK:
+        (_SEARCH_HISTORY if history is None else history).append({
+            "tool": tool_name,
+            "key": key,
+            "args": args,
+            "result_summary": _compact_summary(result_summary),
+        })
 
 
-def clear_search_history() -> None:
+def clear_search_history(*, history=None) -> None:
     """Reset the search deduplication history."""
     with _SEARCH_HISTORY_LOCK:
-        _SEARCH_HISTORY.clear()
+        (_SEARCH_HISTORY if history is None else history).clear()
 
 
 def _normalize_query(args: dict) -> str:
     """Extract and normalize the query string from tool arguments."""
     # Try common query parameter names
-    for key in ("query", "ec_number", "uniprot_accession", "doi", "substrate_smiles"):
+    for key in ("doi", "pmid", "query", "ec_number", "uniprot_accession", "substrate_smiles"):
         if key in args and args[key]:
             val = str(args[key]).lower().strip()
             # Remove extra whitespace
@@ -442,6 +465,7 @@ def _compact_summary(result: Any) -> Any:
             "status": result.get("status"),
             "count": result.get("count"),
             "summary": result.get("summary"),
+            "search_completed": result.get("search_completed"),
         }
     if isinstance(result, list):
         return {"count": len(result)}

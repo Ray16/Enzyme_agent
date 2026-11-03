@@ -60,6 +60,7 @@ _MEMBER_CAP = 120
 from enzyme_discovery_agent.models.target_profile import (  # noqa: E402
     OPPOSITE_DIRECTIONS as _OPPOSITE_DIRECTIONS,
 )
+from enzyme_discovery_agent.run_layout import run_file
 
 
 # --------------------------------------------------------------------------
@@ -231,8 +232,10 @@ def select_relevant_members(
 
     Grounded and answer-agnostic: it reads the per-member substrate-fit numbers the
     survey already computed (functional groups, MW, volume, main-chain length,
-    polarity — the whole vector, equal-weighted via :func:`_holistic_fit`) and the
-    member's direction vs the target.  It selects on RESEMBLANCE, not identity: a
+    polarity), its distinct substrate-role assignments and the
+    member's direction vs the target. Selection uses the same weakest-required-
+    role accommodation as final ranking; the descriptive profile mean never
+    substitutes for a missing role. It selects on resemblance, not identity: a
     non-natural target is never anyone's exact native substrate (enzymes are
     promiscuous), so there is no match requirement.
 
@@ -246,10 +249,10 @@ def select_relevant_members(
     merely 'unknown': an unclassified member (no EC / unparseable reaction) is the
     channel through which off-target folds — hydrolases, esterases, oxidoreductases
     that happen to share a size/FG profile — leak into promotion and double the eval
-    cost (observed 20260816 run).  Every genuine on-target ligase carries a 6.3.x
-    (or equivalent) annotation, so it classifies as 'same'; requiring that keeps them
-    and drops the leak.  Members whose reaction is OPPOSITE/UNRELATED/UNKNOWN, or
-    whose substrate never resolved, are excluded.  Highest fit first.  Pure.
+    cost. Members with unknown direction or unresolved substrates remain in the
+    survey evidence, but are not promoted as supported candidates through this
+    channel. Independent retrieval and later evidence can recover them. Highest
+    fit first. Pure.
     """
     scored: list[dict] = []
     for m in members:
@@ -261,7 +264,19 @@ def select_relevant_members(
         acc = m.get("accession")
         if not acc:
             continue
-        fit = _holistic_fit(m.get("substrate"))
+        substrate = m.get("substrate") or {}
+        if "property_comparisons" in substrate or m.get("accommodation") is not None:
+            from enzyme_discovery_agent.substrate_fit import accommodation_score
+            fit = accommodation_score({
+                "property_comparisons": substrate.get("property_comparisons"),
+                "accommodation": m.get("accommodation"),
+            })
+            fit_method = "role_aware_accommodation_v1"
+        else:
+            # Legacy summary-only callers lack the per-role evidence. Preserve
+            # their available ordering and explicitly identify its weaker basis.
+            fit = _holistic_fit(substrate)
+            fit_method = "legacy_scalar_summary"
         if fit is None:
             continue
         scored.append({
@@ -272,6 +287,8 @@ def select_relevant_members(
             "direction_vs_target": m.get("direction_vs_target"),
             "native_reaction": m.get("native_reaction", ""),
             "substrate_fit": fit,
+            "fit_method": fit_method,
+            "functional_group_similarity": (m.get("substrate") or {}).get("functional_group_similarity"),
             "claim_validation": validation,
         })
     # Highest fit first; a reviewed member wins ties over an unreviewed one (curated
@@ -383,9 +400,10 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
         native_character = {
             "aromatic": arom,
             "aliphatic": aliph,
-            # Broad specificity: acts on both aromatic and aliphatic natives (e.g.
-            # a permissive pocket) — a positive signal, not a mismatch.
+            # Composition across reactants is not evidence that one binding
+            # pocket accepts alternative substrates; distinct sites may bind them.
             "spans_aromatic_and_aliphatic": arom and aliph,
+            "interpretation": "native reactant-set composition; substrate promiscuity and shared-pocket breadth are unestablished",
             "native_chain_length_range": [min(chains), max(chains)],
             "native_mw_range": [round(min(mws)), round(max(mws))],
         }
@@ -445,6 +463,7 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
             "functional_group_similarity",
             "mw_target", "mw_native", "mw_similarity",
             "volume_similarity",
+            "volume_method_target", "volume_method_native",
             "chain_length_target", "chain_length_native", "chain_length_similarity",
             "rotatable_bonds_target", "rotatable_bonds_native", "rotatable_bonds_diff",
             "hbd_diff", "hba_diff", "tpsa_similarity", "logp_similarity",
@@ -454,6 +473,9 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
     }
     return {
         # Headline axes (kept flat for the ordering + budget-allocation spine).
+        "property_comparisons": [p["cmp"] for p in per_target],
+        "n_target_molecules": len(target_smiles),
+        "n_matched_targets": len(per_target),
         "functional_group_similarity": round(min(p["fg"] for p in per_target), 3),
         "size_ratio": _worst("mw_similarity"),
         "chain_length_similarity": _worst("chain_length_similarity"),
@@ -491,7 +513,7 @@ def _target_profile_for_run(run_dir: Path) -> tuple[str | None, set[str]]:
     if direction is not None or bonds:
         return direction, bonds
     try:
-        context = json.loads((run_dir / "target_context.json").read_text())
+        context = json.loads((run_file(run_dir, 'target_context.json')).read_text())
         reaction = (context.get("target_profile") or {}).get("reaction") or {}
         target_text = " ".join(filter(None, [
             str(reaction.get("class", "")),
@@ -520,7 +542,7 @@ def _target_topology_for_run(run_dir: Path) -> str | None:
     if topology is not None:
         return topology
     try:
-        context = json.loads((run_dir / "target_context.json").read_text())
+        context = json.loads((run_file(run_dir, 'target_context.json')).read_text())
     except (OSError, json.JSONDecodeError):
         return None
     substrate = (context.get("target_profile") or {}).get("substrate") or {}
@@ -804,7 +826,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     # Target substrate structures — enable the substrate-resemblance dimension so
     # a member that makes the target bond on the WRONG substrate is only tepid.
     try:
-        ctx = json.loads((run_dir / "target_context.json").read_text())
+        ctx = json.loads((run_file(run_dir, 'target_context.json')).read_text())
         target_smiles = [s.strip() for s in (ctx.get("substrate_smiles") or "").split(".")
                          if s.strip()]
     except (OSError, json.JSONDecodeError):
@@ -845,12 +867,35 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
                         chebi_cache[cid] = None
                 return get_chebi_name(cid)
             smiles = []
-            for cid in _reactant_side_chebi_ids(entry, _name_of):
-                if chebi_cache.get(cid):
-                    smiles.append(chebi_cache[cid])
+            from enzyme_discovery_agent.tools.native_reactions import reaction_groups,select_reaction_group,substrate_occurrences
+            groups=reaction_groups(entry,lambda one:_reactant_side_chebi_ids(one,_name_of))
+            for group in groups:
+                group['native_substrates']=substrate_occurrences(group['reaction'],[
+                    {'name':get_chebi_name(cid),'smiles':chebi_cache[cid]} for cid in group['chebi_ids'] if chebi_cache.get(cid)])
+                group['smiles']=[item['smiles'] for item in group['native_substrates']]
+            def _fit(group):
+                from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+                from enzyme_discovery_agent.substrate_fit import accommodation_score
+                try:
+                    facts=_substrate_facts(group['smiles'],target_smiles) or {}
+                    from enzyme_discovery_agent.tools.native_reactions import annotate_indirect_donor_roles
+                    roles=annotate_indirect_donor_roles(entry,
+                        [{'name':get_chebi_name(cid),'smiles':chebi_cache.get(cid)} for cid in group['chebi_ids']],
+                        accommodation_facts(target_smiles,group['smiles']))
+                    return accommodation_score({'property_comparisons':facts.get('property_comparisons'),
+                        'accommodation':roles}) if group['smiles'] else None
+                except (ValueError,TypeError,RuntimeError):
+                    return None
+            chosen=select_reaction_group(groups,target_direction,target_bonds,_fit)
+            if chosen:
+                smiles=chosen['smiles']
             substrate = _substrate_facts(smiles, target_smiles)
             from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
             accommodation = accommodation_facts(target_smiles, smiles)
+            from enzyme_discovery_agent.tools.native_reactions import annotate_indirect_donor_roles
+            accommodation=annotate_indirect_donor_roles(entry,
+                [{'name':get_chebi_name(cid),'smiles':chebi_cache.get(cid)} for cid in (chosen or {}).get('chebi_ids',[])],
+                accommodation)
         return {
             "accession": acc,
             "name": _member_name(entry),
@@ -958,7 +1003,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     if clr:
         fit_parts.append(f"native main-chain length {clr[0]}-{clr[1]}")
     if n_span:
-        fit_parts.append(f"{n_span}/{n_mem} members act on both aromatic & aliphatic natives")
+        fit_parts.append(f"{n_span}/{n_mem} members have both aromatic and non-aromatic native reactants; promiscuity unestablished")
     fit_txt = "; ".join(fit_parts) if fit_parts else "substrate fit unavailable"
     logger.info(
         "Family survey: %s (fold %s, %d members); direction %s; %s",
@@ -972,9 +1017,10 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             f"Substrate fit ({fit_txt}). Reason HOLISTICALLY over the full per-member "
             f"dimension vector (functional groups, MW, main-chain length, volume, "
             f"flexibility, polarity, aromatic/ring character) TOGETHER with the bond "
-            f"change — no single axis decides. Native breadth matters: a pocket that "
-            f"spans aromatic+aliphatic or a wide size range may accept a different "
-            f"substrate class. Compare families and expand the best-fitting."
+            f"change — no single axis decides. Native reactant-set composition "
+            f"does not establish alternative-substrate acceptance or a shared "
+            f"binding pocket. Compare role-matched substrates and expand the "
+            f"best-supported compatible leads."
         ),
         "data": {
             "seed_accession": seed_accession or None,
@@ -996,12 +1042,14 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
         "Act on the family landscape: decide which fold families to EXPAND "
         "(keep pursuing / evaluate in depth) and which to STOP (set aside, not "
         "worth evaluation budget). Call this AFTER reasoning over the surveyed "
-        "family landscape. Pass InterPro fold ids exactly as shown in the "
-        "landscape (e.g. IPR011810). STOP a fold when its reviewed members' "
-        "native reactions do not resemble the target — e.g. the native substrate "
-        "is a peptide, amino acid, nucleotide, sugar, or cofactor while the target "
-        "is a small aliphatic substrate, or the reaction runs the opposite "
-        "direction. A stopped fold is then waived from the evaluation floor, so "
+        "family landscape. Use reported InterPro IDs or annotation scopes from "
+        "get_decision_context. Annotation scopes are reversible scheduling hints, "
+        "not biological families: use defer rather than stop for them. "
+        "Base a STOP decision on documented incompatibility with the "
+        "target: observed reaction direction, role-matched substrate dimensions, "
+        "and their uncertainties. Missing evidence or substrate dissimilarity "
+        "alone does not establish inactivity. A stopped fold is then waived "
+        "from the evaluation floor, so "
         "the budget concentrates on the folds you judged relevant instead of the "
         "framework forcing coverage of an off-target family. Decisions are "
         "revisitable: call again to resume a fold if later evidence warrants. "
@@ -1024,6 +1072,8 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
                 "InterPro fold ids to keep EXPANDING (native reactions resemble the target)."
             ),
         },
+        "defer": {"type": "array", "items": {"type": "string"}, "default": [],
+                  "description": "Reversibly defer family work while evidence or opportunity costs are unresolved; this is not an inactivity verdict."},
         "reasons": {
             "type": "object", "default": {},
             "description": (
@@ -1035,7 +1085,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
     },
 )
 def set_family_focus(run_dir: Path | str, stop: list | None = None,
-                     expand: list | None = None, reasons: dict | None = None) -> dict:
+                     expand: list | None = None, reasons: dict | None = None, defer: list | None = None) -> dict:
     """Record the agent's expand/stop decisions over surveyed fold families.
 
     Persists to ``family_decisions.json`` (revisitable) and emits ``family_decision``
@@ -1047,8 +1097,9 @@ def set_family_focus(run_dir: Path | str, stop: list | None = None,
 
     stop = stop or []
     expand = expand or []
+    defer = defer or []
     reasons = reasons or {}
-    if not stop and not expand:
+    if not stop and not expand and not defer:
         return {
             "status": "partial",
             "summary": "No fold ids given; pass stop=[...] and/or expand=[...] from the landscape.",
@@ -1058,7 +1109,11 @@ def set_family_focus(run_dir: Path | str, stop: list | None = None,
     # family_decisions trail explains WHY each fold was kept or set aside. Reject the
     # call (record nothing) when any id lacks a reason, rather than silently storing
     # an empty one — the agent re-calls with a reason per id.
-    missing = [k for k in (list(expand) + list(stop))
+    if len(set(expand + stop + defer)) != len(expand + stop + defer):
+        return {'status': 'error', 'summary': 'Each family must have exactly one current decision.'}
+    if any(key.startswith('annotation:') for key in stop):
+        return {'status': 'error', 'summary': 'Annotation scopes cannot establish inactivity; use reversible defer instead.'}
+    missing = [k for k in (list(expand) + list(stop) + list(defer))
                if not str(reasons.get(k, "")).strip()]
     if missing:
         return {
@@ -1068,23 +1123,25 @@ def set_family_focus(run_dir: Path | str, stop: list | None = None,
             "data": None,
             "suggestions": [
                 "Re-call set_family_focus with a `reasons` entry (fold id -> why) for "
-                "every id in expand and stop, e.g. reasons={\"IPR000675\": \"serine "
-                "hydrolase fold; native ester/amide cleavage resembles the target bond\"}.",
+                "every id in expand and stop, using the retrieved evidence for that fold.",
             ],
         }
     # Resolve human-readable InterPro names so the decision trail is auditable
     # without an id lookup (best-effort, cached; falls back to the id).
-    names = {fid: interpro_name(fid) for fid in (list(expand) + list(stop))}
+    names = {fid: (fid.removeprefix('annotation:') + ' (annotation scheduling group)'
+                   if fid.startswith('annotation:') else interpro_name(fid))
+             for fid in (list(expand) + list(stop) + list(defer))}
     decisions = record_family_decisions(
-        run_dir, expand=expand, stop=stop, reasons=reasons, names=names)
+        run_dir, expand=expand, stop=stop, defer=defer, reasons=reasons, names=names)
     stopped_now = sorted(k for k, v in decisions.items() if v.get("decision") == "stop")
     return {
         "status": "success",
         "summary": (
-            f"Family focus recorded: {len(expand)} expand, {len(stop)} stop. "
+            f"Family focus recorded: {len(expand)} expand, {len(stop)} stop, {len(defer)} defer. "
             f"{len(stopped_now)} fold(s) now set aside from the evaluation budget."
         ),
         "data": {"stopped": stopped_now,
+                 "deferred": sorted(k for k, v in decisions.items() if v.get('decision') == 'defer'),
                  "expanded": sorted(k for k, v in decisions.items()
                                     if v.get("decision") == "expand")},
     }

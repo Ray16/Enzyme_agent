@@ -560,11 +560,30 @@ class EnzymeAgent:
                 return {'status': 'error', 'summary': str(exc), 'decision_executed': False,
                         'repair_context':repair}
             self._invalid_research_decisions = 0
-            try:
-                result = self._execute_single_tool(proposal['tool_name'], proposal['arguments'], iteration,
-                                                   _planned_decision=identifier)
-            except Exception as exc:
-                result = {'status': 'error', 'summary': f'Research action failed: {type(exc).__name__}: {exc}'}
+            from enzyme_discovery_agent.models.research_decisions import planned_actions
+            actions = planned_actions(proposal)
+            outcomes = []
+            for action in actions:
+                try:
+                    outcomes.append(self._execute_single_tool(action['tool_name'], action['arguments'], iteration,
+                                                              _planned_decision=identifier))
+                except Exception as exc:
+                    outcomes.append({'status': 'error',
+                                     'summary': f'Research action failed: {type(exc).__name__}: {exc}'})
+            result = outcomes[0]
+            if len(outcomes) > 1:
+                # One hypothesis, several retrievals: report them as one outcome so the
+                # registered prediction is judged against everything it asked for, while
+                # each action keeps its own status for interpretation.
+                succeeded = [row for row in outcomes if row.get('status') in {'success', 'ok', 'partial'}]
+                result = {'status': 'success' if succeeded else 'error',
+                          'summary': (f'{len(succeeded)}/{len(outcomes)} planned retrievals returned results: '
+                                      + '; '.join(f"{action['tool_name']}: {str(row.get('summary') or '')[:120]}"
+                                                  for action, row in zip(actions, outcomes))),
+                          'data': [{'tool_name': action['tool_name'], 'arguments': action['arguments'],
+                                    'status': row.get('status'), 'summary': row.get('summary'),
+                                    'data': row.get('data')}
+                                   for action, row in zip(actions, outcomes)]}
             evidence_id = finish_decision(self.run_dir, identifier, result)
             return {**result, 'research_decision': identifier, 'outcome_evidence': evidence_id,
                     'interpretation_required': 'Compare this observation with the registered competing predictions before choosing the next test.'}

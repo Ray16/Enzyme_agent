@@ -1,4 +1,4 @@
-"""Coverage gate that prevents premature evaluation of a narrow candidate pool."""
+"""Coverage guidance that broadens discovery without blocking rolling evaluation."""
 
 from __future__ import annotations
 
@@ -8,16 +8,18 @@ from pathlib import Path
 from enzyme_discovery_agent.gates import AgentState, GateResult
 from enzyme_discovery_agent.models.candidate_registry import (
     current_candidate_status,
+    discovery_status,
     family_label,
     load_candidate_registry,
 )
 from enzyme_discovery_agent.models.exploration_log import append_exploration_log
 from enzyme_discovery_agent.models.target_profile import normalize_target_profile
+from enzyme_discovery_agent.run_layout import run_file
 
 
 def _coverage_contract(run_dir: Path) -> dict:
     try:
-        context = json.loads((run_dir / "target_context.json").read_text())
+        context = json.loads((run_file(run_dir, 'target_context.json')).read_text())
     except (OSError, json.JSONDecodeError):
         context = {}
     return normalize_target_profile(context.get("target_profile")).get("discovery_coverage", {})
@@ -29,7 +31,7 @@ def assess_discovery_coverage(run_dir: Path) -> dict:
     candidates = load_candidate_registry(run_dir).get("candidates", {})
     screened = {
         accession: entry for accession, entry in candidates.items()
-        if current_candidate_status(entry) in {"screened", "evaluated", "ranked"}
+        if discovery_status(entry) in {"screened", "evaluated", "ranked"}
     }
     families = {family_label(entry.get("metadata", {}), accession)
                 for accession, entry in screened.items()}
@@ -65,6 +67,7 @@ def assess_discovery_coverage(run_dir: Path) -> dict:
             )
     return {
         "covered": not missing,
+        "enforcement": "advisory",
         "screened_candidates": len(screened),
         "distinct_families": len(families),
         "canonical_families": len(canonical_families),
@@ -76,7 +79,7 @@ def assess_discovery_coverage(run_dir: Path) -> dict:
 
 
 class DiscoveryCoverageGate:
-    """Require target-defined evidence coverage before automatic evaluation."""
+    """Report target-defined evidence coverage alongside rolling evaluation."""
 
     def should_fire(self, state: AgentState, has_eval_calls: bool, messages: list[dict]) -> bool:
         return state.candidate_count > 0 and not state.eval_gate_fired
@@ -90,11 +93,11 @@ class DiscoveryCoverageGate:
             })
 
         # Redirect only once.  Subsequent turns must be allowed to execute
-        # screening/retrieval calls that close the recorded gaps; evaluation
-        # remains unavailable in the agent loop until coverage becomes true.
+        # screening/retrieval calls that close the recorded gaps. Coverage is
+        # advisory: it does not disable rolling evaluation.
         if state.discovery_coverage_redirected:
             return GateResult(intercept=False, state_updates={
-                "discovery_coverage_incomplete": True,
+                "discovery_coverage_incomplete": False,
             })
 
         missing = "\n".join(f"- {item}" for item in coverage["missing"])
@@ -113,7 +116,7 @@ class DiscoveryCoverageGate:
         append_exploration_log(
             state.run_dir,
             entry_type="COVERAGE",
-            title="Discovery coverage incomplete; evaluation deferred",
+            title="Discovery coverage incomplete; continue evaluation and broaden discovery",
             details={"Missing": "; ".join(coverage["missing"]),
                      "Screened candidates": coverage["screened_candidates"],
                      "Distinct families": coverage["distinct_families"]},
@@ -123,8 +126,8 @@ class DiscoveryCoverageGate:
             new_messages=[{
                 "role": "user",
                 "content": (
-                    "DISCOVERY COVERAGE CHECKPOINT: do not evaluate or rank candidates yet. "
-                    "The current screened set is too narrow for a defensible comparison. "
+                    "DISCOVERY COVERAGE CHECKPOINT: continue evaluating the available candidates. "
+                    "The current screened set needs broader evidence for a defensible comparison. "
                     "Search targeted primary literature and resolve concrete accessions for the missing "
                     "evidence types, then screen only evidence-backed accessions. EC class may be used "
                     "as a compatibility filter, but not as the source of a broad candidate expansion.\n"
@@ -133,9 +136,9 @@ class DiscoveryCoverageGate:
                     "curated reaction annotation supplies a substrate/mechanism rationale."
                 ),
             }],
-            log_message="Discovery coverage incomplete; deferred auto-evaluation",
+            log_message="Discovery coverage incomplete; rolling evaluation remains available",
             state_updates={
-                "discovery_coverage_incomplete": True,
+                "discovery_coverage_incomplete": False,
                 "discovery_coverage_redirected": True,
             },
         )

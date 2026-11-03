@@ -36,6 +36,7 @@ from enzyme_discovery_agent.models.candidate_registry import (
     family_display, load_candidate_registry,
 )
 from enzyme_discovery_agent.tools.embedding_map import embed_sequences
+from enzyme_discovery_agent.run_layout import run_file
 
 
 # --------------------------------------------------------------------------- #
@@ -114,7 +115,7 @@ def embed_all_candidates(run_dir: Path, model: str) -> str:
 def top_candidates(run_dir: Path, registry: dict, n: int) -> list[str]:
     """Top-ranked accessions: pass1_ranking.json order if present, else the
     evaluated set ordered by substrate_fit."""
-    p1 = run_dir / "pass1_ranking.json"
+    p1 = run_file(run_dir, "pass1_ranking.json")
     if p1.exists():
         try:
             ranking = json.loads(p1.read_text())

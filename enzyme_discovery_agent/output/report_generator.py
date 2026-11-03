@@ -123,6 +123,12 @@ def _write_deterministic_report(
     explorative fallback persists its own chemistry ranking without clobbering
     the confidence report's ``pass1_ranking.json``.
     """
+    from enzyme_discovery_agent.models.target_review import admitted_evaluations
+    all_evals=admitted_evaluations(run_dir,all_evals)
+    admitted={ev.get('data',ev).get('accession') for ev in all_evals}
+    if ranking is not None:
+        ranking=[{**row,'rank':i} for i,row in enumerate(
+            (row for row in ranking if row.get('accession') in admitted),1)]
     by_accession = {
         item.get("data", item).get("accession", ""): item.get("data", item)
         for item in all_evals
@@ -257,24 +263,9 @@ from enzyme_discovery_agent.run_layout import run_file
 
 
 def _expression_pref(data: dict) -> int:
-    """Rank an ortholog by how readily it is likely to express heterologously.
-
-    When several orthologs of one enzyme survive, the representative shown to an
-    experimentalist should be the one most likely to express.  The preference is
-    not tied to a single organism: E. coli is the default preferred host, but any
-    bacterial host counts as favourable (documented expression in other bacteria,
-    e.g. a Pseudomonad, is still good evidence).  Documented expression in the
-    preferred host ranks first, any bacterial expression next, an unknown origin
-    neutral, and a eukaryotic origin least favourable.  This decides only WHICH
-    member represents the group, not whether the group is included."""
-    expr = data.get("expression_data") or {}
-    if expr.get("ecoli_expression"):
-        return 3
-    if expr.get("bacterial_expression"):
-        return 2
-    if expr.get("is_eukaryote"):
-        return 0
-    return 1
+    """Prefer documented host expression within a group; origin stays neutral."""
+    from enzyme_discovery_agent.models.expression import expression_preference
+    return expression_preference(data)
 
 
 def _collapse_orthologs(
@@ -384,20 +375,11 @@ def _accommodation_score(data: dict) -> float | None:
     not a blind gate.  Grounded facts, no tuned weights.  None when substrate SMILES
     were unavailable, so callers treat it as neutral.
     """
-    sim = data.get("substrate_similarity") or {}
-    accom = sim.get("accommodation")
-    # A target substrate with no genuine native partner (its counterpart is
-    # cofactor-scale or absent) means the enzyme cannot host the WHOLE reaction:
-    # that is an accommodation FAILURE (score 0), not "unknown" (None).  Without
-    # this, an unresolvable partner (a one-atom donor) is scored as a neutral
-    # midpoint and can outrank a real, moderate both-substrate fit.
-    if accom and accom.get("unaccommodated_targets"):
-        return 0.0
-    comps = sim.get("property_comparisons") or []
-    if not comps:
+    from enzyme_discovery_agent.substrate_fit import accommodation_score
+    from enzyme_discovery_agent.models.reaction_roles import role_transfer_summary
+    if role_transfer_summary(data)['review_required']:
         return None
-    per_substrate = [f for f in (whole_package_pair_fit(c) for c in comps) if f is not None]
-    return min(per_substrate) if per_substrate else None
+    return accommodation_score(data.get("substrate_similarity") or {})
 
 
 def _accommodation_facts_payload(data: dict) -> list[dict]:
@@ -413,6 +395,8 @@ def _accommodation_facts_payload(data: dict) -> list[dict]:
     subs = []
     for c in comps:
         subs.append({
+            "target_smiles":c.get('target_smiles'),
+            "native_smiles":c.get('native_smiles'),
             "target_fg_counts": {k: v for k, v in (c.get("functional_group_counts_target") or {}).items() if v},
             "native_fg_counts": {k: v for k, v in (c.get("functional_group_counts_native") or {}).items() if v},
             "target_aliphatic_chain": c.get("chain_length_target"),
@@ -429,10 +413,11 @@ def _candidate_evidence_payload(data: dict) -> dict:
     """The full grounded evidence the LLM ranks a promising candidate on.
 
     Four groups, so promise = accommodates the substrate AND is the right
-    reaction AND is actually usable: substrate-accommodation facts (primary),
+    reaction AND is actually usable: substrate-accommodation facts,
     reaction/mechanism, experimental provenance, and structure/expression
     feasibility.  All are facts pulled from the evaluation; no scoring here.
     """
+    from enzyme_discovery_agent.models.reaction_roles import role_transfer_summary
     lit = data.get("literature") or {}
     struct = data.get("structural_data") or {}
     mut = data.get("mutagenesis") or {}
@@ -446,14 +431,24 @@ def _candidate_evidence_payload(data: dict) -> dict:
         "organism": data.get("organism", ""),
         "ec": data.get("ec_numbers") or [],
         "family": data.get("interpro_family", ""),
-        "native_substrates": [n.get("name") for n in data.get("native_substrates", []) if n.get("name")][:6],
+        "native_claim_validation":{'is_enzyme':data.get('is_enzyme'),
+            'promotion_eligible':(data.get('claim_validation') or {}).get('promotion_eligible'),
+            'missing_claims':(data.get('claim_validation') or {}).get('blocking_claims') or [],
+            'critical_warnings':data.get('critical_warnings') or []},
         "reaction": {
-            "native_reaction": (cats[0][:160] if cats else ""),
+            "native_reaction":(data.get('native_substrate_reaction_scope') or {}).get('reaction') or (cats[0] if cats else ''),
             "bond_types": chem.get("bond_types"),
             "direction": chem.get("reaction_direction"),
         },
-        "mechanism_evidence": data.get("mechanism_evidence"),
+        "function_comments":data.get('function_comments') or [],
+        "reactant_occurrences":[{key:item.get(key) for key in ('name','smiles','occurrence_id','stoichiometry_status')}
+                                 for item in data.get('native_substrates') or []],
+        "native_substrates": [n.get("name") for n in data.get("native_substrates", []) if n.get("name")][:6],
         "substrate_accommodation": _accommodation_facts_payload(data),
+        "priority_assessment": data.get("priority_assessment"),
+        "participant_roles": role_transfer_summary(data),
+        "other_recorded_activities":[activity for activity in cats if activity!=(data.get('native_substrate_reaction_scope') or {}).get('reaction')][:3],
+        "mechanism_evidence": data.get("mechanism_evidence"),
         "provenance": {
             "swissprot_reviewed": bool(data.get("is_swissprot")),
             "characterization_papers": lit.get("characterization_papers", 0),
@@ -485,21 +480,27 @@ def _llm_focus_rank(
     system = (
         "You are ranking a SHORTLIST of the most promising enzyme candidates for a "
         "target reaction. Reason over the grounded EVIDENCE given per candidate — "
-        "never fame or name recognition. Weigh, in this order:\n"
-        "1. SUBSTRATE ACCOMMODATION (primary): assess every target substrate "
+        "never fame or name recognition. Assess the evidence holistically; a "
+        "serious observed conflict must not be averaged away by favorable metrics. "
+        "Missing evidence remains unknown. Consider:\n"
+        "SUBSTRATE ACCOMMODATION: assess every target substrate "
         "actually specified. Compare reactive groups, size, shape, polarity and "
         "physical form with native scope. Differences are evidence of uncertainty, "
         "not proof of impossibility or inactivity; distinguish missing evidence "
         "from demonstrated incompatibility. Do not assume two substrates or a "
         "particular scaffold.\n"
-        "2. REACTION/MECHANISM: match the target's declared direction and bond "
+        "REACTION/MECHANISM: match the target's declared direction and bond "
         "change, whether formation, cleavage, transfer, redox or another "
         "transformation. Penalize demonstrated opposite direction, never the "
         "target's own direction.\n"
-        "3. PROVENANCE: Swiss-Prot review, characterization and engineering papers, "
-        "and studied mutations increase confidence and engineerability.\n"
-        "4. FEASIBILITY: available structure (PDB/AlphaFold) and bacterial/E. coli "
-        "expression ease downstream work.\n\n"
+        "Compare reacting roles and source-resolved native steps; multiple native "
+        "occurrences may provide complementary roles. Whole-molecule resemblance "
+        "does not establish reacting-end compatibility.\n"
+        "PROVENANCE AND FEASIBILITY: measured native scope, primary-source mechanism, "
+        "structures and expression help evaluate confidence and next experiments. "
+        "Paper counts and curation cannot rescue an unrelated native reaction. "
+        "Keep complementary relevant families visible and explain useful next "
+        "investigations. Tier flags do not determine scientific relevance.\n\n"
         "Rank the most promising first. Return ONLY a JSON array, one object per "
         "line:\n"
         '[{"accession":"..","rank":1,"tier":1,"reason":"<=20 words citing the '
@@ -528,118 +529,113 @@ def _llm_focus_rank(
     return parsed
 
 
+def _priority_axes(data, *, evidence_tiebreak=True, fallback=None):
+    """Observed context only; missing dimensions receive no invented value."""
+    import math
+    axes={}
+    for index,pair in enumerate((data.get('substrate_similarity') or {}).get('property_comparisons') or []):
+        target=str(pair.get('target_smiles') or index)
+        for metric in ('mw_similarity','volume_similarity','chain_length_similarity',
+                       'functional_group_similarity','logP_similarity','tpsa_similarity'):
+            value=pair.get(metric)
+            if isinstance(value,(int,float)) and not isinstance(value,bool) and math.isfinite(value) and 0<=value<=1:
+                key=(target,metric)
+                axes[key]=min(axes.get(key,value),value)
+    if not axes and isinstance(fallback,(int,float)) and math.isfinite(fallback) and 0<=fallback<=1:
+        axes[('legacy','resemblance')]=fallback
+    if evidence_tiebreak and _mechanism_evidence_level(data)!='unknown':
+        axes[('mechanism','source_support')]=3-_mechanism_evidence_rank(data)
+    return axes
+
+
+def _priority_fronts(rows):
+    """Noncompensatory fronts; unequal evidence coverage stays incomparable."""
+    remaining=list(rows)
+    front=0
+    while remaining:
+        def dominates(left,right):
+            a,b=left['axes'],right['axes']
+            return bool(a) and a.keys()==b.keys() and all(a[k]>=b[k] for k in a) and any(a[k]>b[k] for k in a)
+        current=[row for row in remaining if not any(dominates(other,row) for other in remaining)]
+        for row in current:
+            row['front']=front
+        members={row['accession'] for row in current}
+        remaining=[row for row in remaining if row['accession'] not in members]
+        front+=1
+
+
 def _deterministic_mechanistic_ranking(
     rankable_evals: list[dict], tier_score: dict[int, float],
     evidence_tiebreak: bool = True,
     family_rank_by_acc: dict[str, int] | None = None,
     fallback_substrate_fit_by_acc: dict[str, float] | None = None,
 ) -> list[dict]:
-    """Rank by mechanistic compatibility deterministically — the reliable spine.
+    """Known conflicts first, then source-backed priorities and observed tradeoffs.
 
-    A single LLM call cannot reliably rank 100+ candidates (a thinking model
-    exhausts the completion budget on reasoning tokens and returns empty), so
-    the LLM ranking is best-effort only; THIS is the fallback that must never
-    mis-order.  It applies the P0–P5 framework as a strict lexicographic
-    priority over GROUNDED FACTS (no weighted composite):
-
-      P0 hard gate  — any critical_warning → bottom, Tier 3.
-      PF family     — the agent's grounded fold decision: an on-target fold
-                      (expanded / direction == same) ranks above a neutral fold,
-                      which ranks above a stopped (off-target) fold.  This makes
-                      the run's own family navigation authoritative over ranking,
-                      ahead of the fame signals below (neutral when no family
-                      landscape exists, so a plain run is unaffected).
-      P1 substrate  — higher functional-group similarity ranks higher
-                      (neutral when substrate SMILES were unavailable).
-      P2 mechanism  — experimentally grounded > supported > tentative > unknown.
-      P3 curation   — Swiss-Prot reviewed ranks higher.
-      P4 depth      — more characterisation papers ranks higher.
-      P5 structure  — experimental PDB > AlphaFold > none.
-      P6 engineering— more engineering papers ranks higher.
-
-    ``evidence_tiebreak`` controls P2–P5: when False the order is decided by
-    the hard gate, family relevance, and substrate chemistry alone (evidence
-    ignored), which is the suitability-only spine the explorative report ranks
-    on — a curation/citation-agnostic view of which native chemistry is closest
-    to the target.  ``family_rank_by_acc`` maps accession → {0 on-target,
-    1 neutral, 2 stopped}; absent accessions default to neutral.
+    No fixed fraction is promoted to the highest tier. Missing evidence is not
+    scored as zero or ranked below measured evidence automatically. Among otherwise
+    comparable candidates, Pareto fronts retain tradeoffs rather than averaging a
+    weak dimension away. Explicit candidate assessments supply scientific judgment;
+    unassessed records remain provisional investigation candidates.
     """
-    family_rank_by_acc = family_rank_by_acc or {}
-    scored = []
-    for ev in rankable_evals:
-        d = ev.get("data", ev)
-        acc = d.get("accession", "")
-        if not acc:
+    from enzyme_discovery_agent.models.evaluations import priority_concerns,prioritized_hypothesis,shortlist_eligible
+    from enzyme_discovery_agent.models.reaction_roles import role_transfer_summary
+    family_rank_by_acc=family_rank_by_acc or {}
+    groups={}
+    for evaluation in rankable_evals:
+        data=evaluation.get('data',evaluation)
+        accession=data.get('accession')
+        if not accession or not shortlist_eligible(data):
             continue
-        gated = _candidate_is_gated(d)
-        fam_rank = family_rank_by_acc.get(acc, 1)
-        fit = _accommodation_score(d)
-        if fit is None:
-            fit = (fallback_substrate_fit_by_acc or {}).get(acc)
-        # Missing data must not outrank measured data.  Scoring an unknown as a
-        # neutral 0.5 made it BETTER than any real score below that, so the
-        # candidates we knew least about sorted highest: an enzyme with no
-        # recorded native substrate outranked every candidate whose fit had
-        # actually been measured.  Rank measured candidates first, best fit
-        # first, and place unmeasured ones after them rather than ahead.
-        fit_key = (0, -fit) if fit is not None else (1, 0.0)
-        lit = d.get("literature") or {}
-        struct = d.get("structural_data") or {}
-        struct_rank = 0 if (struct.get("pdb_ids")) else (1 if struct.get("has_alphafold") else 2)
-        if evidence_tiebreak:
-            key = (
-                1 if gated else 0,
-                fam_rank,
-                fit_key,
-                _mechanism_evidence_rank(d),
-                0 if d.get("is_swissprot") else 1,
-                -int(lit.get("characterization_papers") or 0),
-                struct_rank,
-                -int(lit.get("engineering_papers") or 0),
-                acc,
-            )
-        else:
-            # Suitability-only: hard gate, family relevance, then substrate
-            # chemistry, then a stable accession tiebreak.  No curation signal.
-            key = (1 if gated else 0, fam_rank, fit_key, acc)
-        scored.append((key, acc, d, gated))
-    scored.sort(key=lambda x: x[0])
-
-    clean = [s for s in scored if not s[3]]
-    n_clean = len(clean)
-    t1 = max(1, int(round(n_clean * 0.2)))
-    t2 = max(t1, int(round(n_clean * 0.7)))
-
-    ranking = []
-    clean_seen = 0
-    for i, (_, acc, d, gated) in enumerate(scored, start=1):
-        if gated:
-            tier = 3
-        else:
-            tier = 1 if clean_seen < t1 else (2 if clean_seen < t2 else 3)
-            clean_seen += 1
-        fit = _accommodation_score(d)
-        bits = []
-        if gated:
-            bits.append("HARD-GATED: " + "; ".join(d.get("critical_warnings", []))[:120])
+        assessment=data.get('priority_assessment') or {}
+        concerns=priority_concerns(data)
+        weak=bool(concerns) or assessment.get('decision')=='deprioritize'
+        strong=not weak and prioritized_hypothesis(data)
+        tier=3 if weak else 1 if strong else 2
+        roles=role_transfer_summary(data)
+        fallback=None if roles['review_required'] else (fallback_substrate_fit_by_acc or {}).get(accession)
+        row={'accession':accession,'data':data,'tier':tier,'concerns':concerns,
+             'axes':{} if roles['review_required'] else _priority_axes(data,evidence_tiebreak=evidence_tiebreak,fallback=fallback)}
+        key=(tier!=1,tier==3,family_rank_by_acc.get(accession,1))
+        groups.setdefault(key,[]).append(row)
+    ordered=[]
+    for key,rows in sorted(groups.items()):
+        _priority_fronts(rows)
+        from enzyme_discovery_agent.models.candidate_registry import family_label
+        strata={}
+        for row in sorted(rows,key=lambda row:row['accession']):
+            evidence_order=(row['front'],_mechanism_evidence_rank(row['data']) if evidence_tiebreak else 0)
+            family=family_label(row['data'],row['accession'])
+            strata.setdefault(evidence_order,{}).setdefault(family,[]).append(row)
+        # Incomparable alternatives share attention across families. Preserve
+        # scientific priority and observed dominance before applying breadth.
+        for _,families in sorted(strata.items()):
+            for index in range(max(map(len,families.values()))):
+                ordered.extend(members[index] for members in families.values() if index<len(members))
+    ranking=[]
+    for rank,row in enumerate(ordered,1):
+        data=row['data'];tier=row['tier'];assessment=data.get('priority_assessment') or {}
+        bits=[]
+        if row['concerns']:
+            bits.append('Known concern: '+row['concerns'][0])
+        if assessment.get('reason'):
+            bits.append(assessment['reason'])
+        fit=_accommodation_score(data)
         if fit is not None:
-            bits.append(f"accommodation={fit:.2f}")
-        if d.get("is_swissprot"):
-            bits.append("Swiss-Prot")
-        mechanism_level = _mechanism_evidence_level(d)
-        if mechanism_level != "unknown":
-            bits.append(f"mechanism={mechanism_level}")
-        cp = (d.get("literature") or {}).get("characterization_papers")
-        if cp:
-            bits.append(f"{cp} char papers")
-        ranking.append({
-            "rank": i,
-            "accession": acc,
-            "gene": (d.get("gene_names") or [""])[0],
-            "score": tier_score.get(tier, 5.0),
-            "tier": tier,
-            "rationale": " | ".join(bits) or "mechanistic analogue",
-        })
+            bits.append(f'accommodation context={fit:.2f}')
+        mechanism=_mechanism_evidence_level(data)
+        if mechanism!='unknown':
+            bits.append('mechanism='+mechanism)
+        if not assessment and not prioritized_hypothesis(data):
+            bits.append('Provisional analogue; holistic priority assessment is pending')
+        if role_transfer_summary(data)['review_required']:
+            bits.append('Participant-role transfer remains unresolved')
+        ranking.append({'rank':rank,'accession':row['accession'],
+            'gene':(data.get('gene_names') or [''])[0],'tier':tier,'tier_label':_TIER_LABEL[tier],
+            'score':tier_score.get(tier,5.0),'rationale':' | '.join(bits),
+            'substrate_fit':fit,'evidence_level':_evidence_level(data),
+            'family_relevance':{0:'on-target',1:'neutral',2:'off-target(stopped)'}.get(family_rank_by_acc.get(row['accession'],1),'neutral'),
+            'direction':_reaction_direction(data),'priority_assessment':assessment or None})
     return ranking
 
 
@@ -683,7 +679,7 @@ def _retry_compact_llm_report(
     """
     import json as _json
 
-    ranking = ranking or _deterministic_evidence_ranking(query, all_evals)
+    if ranking is None:ranking = _deterministic_evidence_ranking(query, all_evals)
     facts = []
     for item in all_evals:
         data = item.get("data", item)
@@ -932,7 +928,7 @@ def _fold_fit_map(run_dir: Path) -> dict[str, float]:
     return out
 
 
-_TIER_LABEL = {1: "strong lead", 2: "worth testing", 3: "weak / gated"}
+_TIER_LABEL = {1: "prioritized hypothesis", 2: "candidate to investigate", 3: "deprioritized analogue"}
 
 
 def _evidence_level(d: dict) -> str:
@@ -984,27 +980,10 @@ def _annotate_reasoned_tiers(
     ranking: list[dict], acc_to_eval: dict, ontarget: set[str], stopped: set[str],
     fold_fit: dict[str, float], sink: set[str] | None = None,
 ) -> None:
-    """Attach a tier LABEL (contiguous bands over the reasoned rank) and the
-    grounded facts behind it to each ranking entry, in place.
-
-    Bands, walking the rank order:
-      * ``weak / gated`` - a mechanistic contradiction (direction / bond / size)
-        or an off-target (agent-stopped) family.
-      * ``strong lead`` - the LEADING contiguous run of on-target, evidence-backed
-        candidates; the band closes at the first that fails either test.
-      * ``worth testing`` - every other direction-correct candidate.
-    No single collapsed score: the ``score`` field is dropped in favour of the
-    grounded columns (substrate fit, evidence level, family relevance, direction).
-
-    ``sink`` — accessions whose fold ended the run STOPPED (minus the
-    literature-named carve-out): retroactive stop-fold exclusion.  A stop verdict
-    reached AFTER these members were already screened/evaluated leaves them in the
-    pool; here they are demoted to Tier 3 and flagged ``excluded_stopped_fold`` so
-    the CSV decision list drops them below the reporting line while they remain in
-    ``pass1_ranking.json`` for provenance.
-    """
+    """Label source-backed priorities and known concerns without percentile quotas."""
     sink = sink or set()
-    in_strong_band = True
+    from enzyme_discovery_agent.models.reaction_roles import role_transfer_summary
+    from enzyme_discovery_agent.models.evaluations import priority_concerns,prioritized_hypothesis
     for entry in ranking:
         acc = entry.get("accession", "")
         ev = acc_to_eval.get(acc)
@@ -1015,30 +994,29 @@ def _annotate_reasoned_tiers(
         # below — consistent with the deterministic spine.)
         gated = bool(d.get("critical_warnings"))
         sunk = acc in sink
-        on_target = acc in ontarget
-        lit = d.get("literature") or {}
-        has_evidence = bool(d.get("is_swissprot")) and int(lit.get("characterization_papers") or 0) > 0
+        roles = role_transfer_summary(d)
 
-        if gated or sunk:
+        if gated or sunk or priority_concerns(d) or (d.get('priority_assessment') or {}).get('decision')=='deprioritize':
             tier = 3
             if sunk:
                 entry["excluded_stopped_fold"] = True
-        elif in_strong_band and on_target and has_evidence:
+        elif prioritized_hypothesis(d):
             tier = 1
         else:
-            in_strong_band = False
             tier = 2
 
         fit = _accommodation_score(d)
-        if fit is None:
+        if fit is None and not roles['review_required']:
             fit = fold_fit.get(acc)
         entry["tier"] = tier
         entry["tier_label"] = _TIER_LABEL.get(tier, "")
         entry["substrate_fit"] = round(fit, 2) if isinstance(fit, (int, float)) else None
+        entry['participant_role_status'] = roles['status']
+        entry['priority_assessment'] = d.get('priority_assessment')
         entry["evidence_level"] = _evidence_level(d)
         entry["family_relevance"] = (
             "off-target(stopped)" if acc in stopped
-            else ("on-target" if on_target else "neutral")
+            else ("on-target" if acc in ontarget else "neutral")
         )
         entry["direction"] = _reaction_direction(d)
         entry.pop("score", None)  # the collapsed 8/5/2 number is gone by design
@@ -1079,8 +1057,11 @@ def generate_two_pass_report(
     all_evals = _merge_registry_evidence(run_dir, [e for e in (all_evals or [])
                  if isinstance(e, dict) and isinstance(e.get("data", e), dict)]
     )
+    from enzyme_discovery_agent.models.target_review import admitted_evaluations
+    all_evals=admitted_evaluations(run_dir,all_evals)
     if not all_evals:
-        raise ValueError("No successful candidate evaluations are available for reporting")
+        _write_deterministic_report(run_dir,'report.md',query,[],ranking=[])
+        return
 
     # ── Hard filter: separate polymer candidates ──────────────────────────
     polymer_evals = [
@@ -1459,6 +1440,8 @@ def generate_two_pass_explorative(
     import json as _json
 
     notebook_text = get_notebook_text_for_report(run_dir)
+    from enzyme_discovery_agent.models.target_review import admitted_evaluations
+    all_evals=admitted_evaluations(run_dir,all_evals or [])
     all_evals = [e for e in (all_evals or [])
                  if isinstance(e, dict) and isinstance(e.get("data", e), dict)]
     if not all_evals:

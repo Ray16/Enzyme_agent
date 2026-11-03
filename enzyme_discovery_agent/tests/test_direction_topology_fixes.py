@@ -92,8 +92,8 @@ class TestTargetReasoningLLMAuthoritative(unittest.TestCase):
 
 class TestTopologyCompatibility(unittest.TestCase):
     def test_polymer_native_enzyme_accommodates_small_proxy_target(self):
-        # A polymer-native hydrolase vs a small-molecule PROXY target must be
-        # compatible (topology supported), not rejected -- this is the NylC case.
+        # A polymer-native enzyme may accommodate a smaller proxy, but the
+        # native topology alone does not establish acceptance of that target.
         entry = _entry("a peptidoglycan polymer + H2O = shorter polymer + amino acid",
                        ec="3.5.1.28")
         v = validate_uniprot_claims(
@@ -101,7 +101,8 @@ class TestTopologyCompatibility(unittest.TestCase):
             target_topology="free_small_molecule",
         )
         topo = [c for c in v["claims"] if c["claim_type"] == "substrate_topology"]
-        self.assertTrue(topo and topo[0]["verdict"] == "supported")
+        self.assertTrue(topo and topo[0]["verdict"] == "insufficient_evidence")
+        self.assertNotIn("substrate_topology", v["blocking_claims"])
         self.assertNotIn("substrate_topology", v["blocking_claims"])
 
     def test_monomer_only_enzyme_blocked_for_polymer_target(self):

@@ -15,13 +15,34 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
+from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+
 logger = logging.getLogger("enzyme_agent")
 
-_registry_lock = threading.Lock()
+_registry_lock = threading.RLock()
 
 UNIPROT_ACC_RE = re.compile(
     r"\b([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})\b"
 )
+
+
+def defer_non_uniprot_deposit(run_dir: Path, accession: str, entry: dict) -> bool:
+    """Keep an unverified deposited identifier pending instead of querying UniProt."""
+    metadata = entry.get("metadata") or {}
+    if not metadata.get("is_literature_deposit") or UNIPROT_ACC_RE.fullmatch(accession):
+        return False
+    if discovery_status(entry) == "rejected":
+        return True
+    if discovery_status(entry) != "evidence_pending":
+        reason = "Deposited identifier requires source-scoped identity resolution before UniProt evaluation."
+        update_candidate_registry(run_dir, accession, "evidence_pending", {
+            "identity_resolution_status": "pending", "identity_issue": reason,
+            "literature_recovery_attempted": True,
+        })
+        from enzyme_discovery_agent.models.event_log import append_event
+        append_event(run_dir, "candidate_identity_deferred", accession=accession,
+                     reason=reason, retained_original_identifier=True)
+    return True
 
 # ---- Candidate lifecycle vocabulary (single source of truth) ---------------
 # A candidate advances discovered -> screened -> evaluated -> ranked, or is
@@ -32,7 +53,7 @@ UNIPROT_ACC_RE = re.compile(
 # evidence lands it is attached under ``structurally_evaluated``.
 DISCOVERY_STATUSES = ("discovered", "screened", "evaluated", "ranked")
 MODELING_STATUSES = ("modeling_queued", "structurally_evaluated")
-LIFECYCLE_STATUSES = DISCOVERY_STATUSES + ("rejected", "reopened") + MODELING_STATUSES
+LIFECYCLE_STATUSES = DISCOVERY_STATUSES + ("rejected", "reopened", "evidence_pending") + MODELING_STATUSES
 
 # Categorical structural-modeling verdicts -- a TIER, never a fused/composite
 # score.  A ``validated`` verdict is strong enough to contradict a prior
@@ -97,6 +118,17 @@ def current_candidate_status(entry: dict) -> str | None:
     return statuses[-1].get("status") if statuses else None
 
 
+def discovery_status(entry: dict) -> str | None:
+    """Preserve discovery progress when a modeling update changes lifecycle state."""
+    current = current_candidate_status(entry)
+    if current not in MODELING_STATUSES:
+        return current
+    for transition in reversed(entry.get("statuses") or []):
+        if transition.get("status") in DISCOVERY_STATUSES + ("rejected", "reopened", "evidence_pending"):
+            return transition["status"]
+    return current
+
+
 def evidence_fingerprint(metadata: dict | None) -> str:
     """Return a stable fingerprint for evidence behind a lifecycle decision."""
     encoded = json.dumps(metadata or {}, sort_keys=True, separators=(",", ":"), default=str)
@@ -139,7 +171,7 @@ def build_families_index(candidates: dict) -> dict:
 
 def load_families(run_dir: Path) -> dict:
     """Return the family index from the on-disk registry (current as of last write)."""
-    path = Path(run_dir) / "candidate_registry.json"
+    path = run_file(Path(run_dir), 'candidate_registry.json')
     if path.exists():
         try:
             with open(path) as f:
@@ -223,18 +255,19 @@ def _to_file_view(registry: dict) -> dict:
     return {**registry, "candidates": out, "families": families}
 
 
-def load_candidate_registry(run_dir: Path) -> dict:
+def load_candidate_registry(run_dir: Path, *, strict: bool = False) -> dict:
     """Load or initialize the candidate registry from run_dir/candidate_registry.json.
 
     The file is keyed by enzyme name for readability; this returns it re-keyed by
     accession (the functional identity every caller expects)."""
-    path = run_dir / "candidate_registry.json"
+    path = run_file(Path(run_dir), 'candidate_registry.json')
     if path.exists():
         try:
             with open(path) as f:
                 return _rekey_by_accession(_normalize_registry(json.load(f)))
         except (json.JSONDecodeError, OSError):
-            pass
+            if strict:
+                raise
     return {"candidates": {}}
 
 
@@ -245,12 +278,11 @@ def normalize_candidate_registry_file(run_dir: Path) -> dict:
     candidate nor appends a lifecycle transition.
     """
     run_dir = Path(run_dir)
-    with _registry_lock:
-        registry = load_candidate_registry(run_dir)
-        path = run_dir / "candidate_registry.json"
+    with _registry_lock, state_lock(run_file(run_dir, 'candidate_registry.json')):
+        registry = load_candidate_registry(run_dir, strict=True)
+        path = run_file(run_dir, 'candidate_registry.json')
         if path.exists():
-            with open(path, "w") as f:
-                json.dump(_to_file_view(registry), f, indent=2, default=str)
+            atomic_write_json(path, _to_file_view(registry))
         return registry
 
 
@@ -270,46 +302,65 @@ def update_candidate_registry(
     Pass ``status=None`` for a metadata-only update (e.g. attaching the paper's
     enzyme name to an already-registered candidate) without appending a status.
     """
+    update_candidate_registry_batch(run_dir, [(accession, status, metadata)])
+
+
+def update_candidate_registry_batch(run_dir: Path, updates) -> None:
+    """Commit ordered (accession, status, metadata) updates in one transaction.
+
+    Uses the same lifecycle rules as single updates. A failed commit propagates
+    to the caller, leaving the prior atomic snapshot intact and retryable.
+    Network work belongs outside this transaction.
+    """
+    updates = list(updates)
+    if not updates:
+        return
     now = datetime.now().astimezone().isoformat()
-
-    with _registry_lock:
+    run_dir = Path(run_dir)
+    with _registry_lock, state_lock(run_file(run_dir, 'candidate_registry.json')):
         run_dir.mkdir(parents=True, exist_ok=True)
-        registry = load_candidate_registry(run_dir)
+        registry = load_candidate_registry(run_dir, strict=True)
+        for accession, status, metadata in updates:
+            _apply_candidate_update(registry, accession, status, metadata, now)
+        atomic_write_json(run_file(run_dir, 'candidate_registry.json'), _to_file_view(registry))
 
-        if accession not in registry["candidates"]:
-            registry["candidates"][accession] = {
-                "accession": accession,
-                "statuses": [],
-                "first_seen": now,
-                "last_updated": now,
-                "metadata": {},
-            }
 
-        entry = registry["candidates"][accession]
-        entry["accession"] = accession
-        if status:
-            current = current_candidate_status(entry)
-            if current == "rejected" and status not in {"rejected", "reopened"}:
-                logger.info(
-                    "Ignoring %s transition for rejected candidate %s; reopen explicitly first",
-                    status, accession,
-                )
-                status = None
-        if status:
-            transition = {"status": status, "timestamp": now}
-            if status in {"rejected", "reopened"}:
-                transition["evidence_fingerprint"] = evidence_fingerprint(metadata)
-            entry["statuses"].append(transition)
-        entry["last_updated"] = now
-        if metadata:
-            entry["metadata"].update(metadata)
-        entry["enzyme_name"] = _enzyme_name(entry["metadata"])
+def _apply_candidate_update(registry, accession, status, metadata, now):
+    """Apply one lifecycle update to a registry owned by the current transaction."""
+    if accession not in registry["candidates"]:
+        registry["candidates"][accession] = {
+            "accession": accession,
+            "statuses": [],
+            "first_seen": now,
+            "last_updated": now,
+            "metadata": {},
+        }
 
-        try:
-            with open(run_dir / "candidate_registry.json", "w") as f:
-                json.dump(_to_file_view(registry), f, indent=2, default=str)
-        except Exception as e:
-            logger.warning("Failed to write candidate registry: %s", e)
+    entry = registry["candidates"][accession]
+    entry["accession"] = accession
+    if status:
+        current = current_candidate_status(entry)
+        # Rediscovery is new provenance, not a lifecycle reset. This check
+        # occurs under the registry lock so simultaneous searches cannot
+        # demote screened, evaluated or identity-pending candidates.
+        if status == "discovered" and current is not None:
+            status = None
+        if current == "rejected" and status not in {"rejected", "reopened"}:
+            logger.info(
+                "Ignoring %s transition for rejected candidate %s; reopen explicitly first",
+                status, accession,
+            )
+            status = None
+    if status:
+        transition = {"status": status, "timestamp": now}
+        if status in {"rejected", "reopened"}:
+            transition["evidence_fingerprint"] = evidence_fingerprint(metadata)
+        entry["statuses"].append(transition)
+    entry["last_updated"] = now
+    if metadata:
+        entry["metadata"].update(metadata)
+    entry["enzyme_name"] = _enzyme_name(entry["metadata"])
+
 
 
 def reopen_candidate(
@@ -380,25 +431,27 @@ def record_modeling_result(
     if extra_metadata:
         metadata.update(extra_metadata)
 
-    entry = load_candidate_registry(run_dir).get("candidates", {}).get(accession, {})
-    if current_candidate_status(entry) == "rejected":
-        if verdict == "validated":
-            reopen_candidate(
-                run_dir, accession,
-                reason="structural modeling validated a previously rejected candidate",
-                evidence={"verdict": verdict, "source": source, "proxy_version": proxy_version},
+    run_dir = Path(run_dir)
+    with _registry_lock, state_lock(run_file(run_dir, 'candidate_registry.json')):
+        entry = load_candidate_registry(run_dir).get("candidates", {}).get(accession, {})
+        if current_candidate_status(entry) == "rejected":
+            if verdict == "validated":
+                reopen_candidate(
+                    run_dir, accession,
+                    reason="structural modeling validated a previously rejected candidate",
+                    evidence={"verdict": verdict, "source": source, "proxy_version": proxy_version},
+                )
+                update_candidate_registry(run_dir, accession, "structurally_evaluated", metadata=metadata)
+                return "structurally_evaluated"
+            update_candidate_registry(run_dir, accession, None, metadata=metadata)
+            logger.info(
+                "Attached modeling evidence to rejected candidate %s (verdict=%s); "
+                "stays rejected until explicitly reopened", accession, verdict,
             )
-            update_candidate_registry(run_dir, accession, "structurally_evaluated", metadata=metadata)
-            return "structurally_evaluated"
-        update_candidate_registry(run_dir, accession, None, metadata=metadata)
-        logger.info(
-            "Attached modeling evidence to rejected candidate %s (verdict=%s); "
-            "stays rejected until explicitly reopened", accession, verdict,
-        )
-        return "rejected"
+            return "rejected"
 
-    update_candidate_registry(run_dir, accession, "structurally_evaluated", metadata=metadata)
-    return "structurally_evaluated"
+        update_candidate_registry(run_dir, accession, "structurally_evaluated", metadata=metadata)
+        return "structurally_evaluated"
 
 
 def candidates_for_modeling(run_dir: Path) -> list[str]:
@@ -435,6 +488,7 @@ def modeling_validated(run_dir: Path, *, verdicts: tuple[str, ...] = ("validated
 from enzyme_discovery_agent.models.target_profile import (  # noqa: E402
     is_opposite_direction as _is_opposite_direction,
 )
+from enzyme_discovery_agent.run_layout import run_file
 
 
 def _target_direction(run_dir: Path) -> str | None:
@@ -449,7 +503,7 @@ def _target_direction(run_dir: Path) -> str | None:
         return direction
     try:
         from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
-        ctx = json.loads((run_dir / "target_context.json").read_text())
+        ctx = json.loads((run_file(run_dir, 'target_context.json')).read_text())
         reaction = (ctx.get("target_profile") or {}).get("reaction") or {}
         text = " ".join(filter(None, [
             str(reaction.get("class", "")),
@@ -499,21 +553,9 @@ def extract_and_register_from_search(
 
     ortholog_capped = 0
     if tool_name == "search_uniprot" and isinstance(data, list):
-        from enzyme_discovery_agent import config
         from enzyme_discovery_agent.chemistry_logic import classify_reaction_chemistry
         target_direction = _target_direction(run_dir)
-
-        # Existing representatives already registered per distinct enzyme
-        # (family_key), so the ortholog cap is GLOBAL across the run — a family
-        # that already has its quota gains no more orthologs from a later search.
-        _fam_counts: dict[str, int] = {}
-        for _acc, _info in _prior.items():
-            _fam_counts[family_key(_info.get("metadata", {}), _acc)] = \
-                _fam_counts.get(family_key(_info.get("metadata", {}), _acc), 0) + 1
-
-        # Collect direction-eligible hits, grouped by enzyme family, so we can
-        # keep only the best few representatives per family instead of every
-        # ortholog the search returned.
+        # Group by coarse label for novelty reporting, not identity filtering.
         eligible: dict[str, list[dict]] = {}
         for entry in data:
             acc = entry.get("accession", "")
@@ -538,7 +580,6 @@ def extract_and_register_from_search(
                  "protein_name": entry.get("name", "")}, acc)
             eligible.setdefault(fk, []).append(entry)
 
-        cap = getattr(config, "MAX_REPRESENTATIVES_PER_FAMILY", 2)
         for fk, entries in eligible.items():
             # Best representatives first: characterised (catalytic activity), then
             # annotated (EC), then a Swiss-Prot-style accession, then longer chain.
@@ -548,7 +589,9 @@ def extract_and_register_from_search(
                 1 if re.match(r"^[OPQ][0-9][A-Z0-9]{3}[0-9]$", e.get("accession", "")) else 0,
                 e.get("seq_length") or 0,
             ), reverse=True)
-            slots = max(0, cap - _fam_counts.get(fk, 0))
+            # Coarse labels do not establish sequence identity; preserve every
+            # eligible accession and apply evaluation budgets downstream.
+            slots = len(entries)
             for entry in entries[:slots]:
                 acc = entry.get("accession", "")
                 update_candidate_registry(run_dir, acc, "discovered", metadata={
@@ -603,6 +646,7 @@ def extract_and_register_from_search(
         # Surplus orthologs the family cap DROPPED (not registered): budget saved
         # for exploring different families rather than re-importing one enzyme.
         "dropped_orthologs": ortholog_capped,
+        "grouping_basis": "tentative label; not verified sequence identity",
     }
     if isinstance(result, dict):
         result["novelty"] = novelty
@@ -655,6 +699,7 @@ def register_structural_homologs(run_dir: Path, result: dict) -> list[str]:
     data = result.get("data") or {}
     seed_accession = data.get("seed_accession", "")
     registered = []
+    existing = load_candidate_registry(run_dir).get("candidates", {})
     for hit in data.get("homologs", []):
         accession = hit.get("accession", "")
         if not accession or not UNIPROT_ACC_RE.match(accession):
@@ -666,7 +711,7 @@ def register_structural_homologs(run_dir: Path, result: dict) -> list[str]:
             "sequence_identity": hit.get("sequence_identity"),
             "source_database": hit.get("source_database"),
         }
-        update_candidate_registry(run_dir, accession, "discovered", metadata={
+        update_candidate_registry(run_dir, accession, None if accession in existing else "discovered", metadata={
             "source_tool": "search_structural_homologs",
             "structural_homology": provenance,
         })
@@ -696,6 +741,7 @@ def register_atlas_homologs(run_dir: Path, result: dict) -> list[str]:
         or seed_meta.get("screening_family_id")
     )
     registered = []
+    existing = load_candidate_registry(run_dir).get("candidates", {})
     for hit in data.get("homologs", []):
         mgnify_id = (hit.get("mgnify_id") or "").upper()
         if not _MGNIFY_ID_RE.match(mgnify_id):
@@ -720,6 +766,6 @@ def register_atlas_homologs(run_dir: Path, result: dict) -> list[str]:
             metadata["family_assignment_basis"] = "structural_homology_to_seed"
         if hit.get("sequence"):
             metadata["sequence"] = hit["sequence"]
-        update_candidate_registry(run_dir, mgnify_id, "discovered", metadata=metadata)
+        update_candidate_registry(run_dir, mgnify_id, None if mgnify_id in existing else "discovered", metadata=metadata)
         registered.append(mgnify_id)
     return registered

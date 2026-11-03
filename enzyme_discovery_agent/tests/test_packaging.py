@@ -13,6 +13,7 @@ the tree, rather than shelling out a real build.
 from __future__ import annotations
 
 import unittest
+import os
 from pathlib import Path
 
 try:  # tomllib is stdlib on 3.11+; requires-python allows 3.10
@@ -54,11 +55,14 @@ class PackagingConfigTest(unittest.TestCase):
         """Import paths for every directory under a package root holding __init__.py."""
         found = set()
         for import_name, src_dir in self.src_dirs.items():
-            for init in src_dir.rglob("__init__.py"):
-                rel = init.parent.relative_to(src_dir)
-                parts = [p for p in rel.parts if p]
-                if any(p in {"runs", "archive", "__pycache__", "tests"} for p in parts):
+            for folder, dirs, files in os.walk(src_dir):
+                # Prune before traversal: run archives can contain millions of
+                # files and are not importable packages for this test.
+                dirs[:] = [d for d in dirs if d not in {"runs", "archive", "analysis", "__pycache__", "tests"}]
+                if "__init__.py" not in files:
                     continue
+                rel = Path(folder).relative_to(src_dir)
+                parts = [p for p in rel.parts if p]
                 found.add(".".join([import_name, *parts]) if parts else import_name)
         return found
 

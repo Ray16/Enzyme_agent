@@ -25,16 +25,19 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
+from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+from enzyme_discovery_agent.run_layout import run_file
+
 logger = logging.getLogger("enzyme_agent")
 
 _decisions_lock = threading.Lock()
 
-_VALID = {"expand", "stop"}
+_VALID = {"expand", "stop", "defer"}
 
 
 def load_family_decisions(run_dir: str | Path) -> dict:
     """Return ``{fold_id: {"decision", "reason", "ts"}}`` (empty if none)."""
-    path = Path(run_dir) / "family_decisions.json"
+    path = run_file(Path(run_dir), 'family_decisions.json')
     if path.exists():
         try:
             data = json.loads(path.read_text())
@@ -54,12 +57,19 @@ def stopped_folds(run_dir: str | Path) -> set[str]:
     }
 
 
+def paused_folds(run_dir: str | Path) -> set[str]:
+    """Reversible work deferrals; these do not establish biological inactivity."""
+    return {key for key, value in load_family_decisions(run_dir).items()
+            if isinstance(value, dict) and value.get('decision') in {'stop', 'defer'}}
+
+
 def record_family_decisions(
     run_dir: str | Path,
     expand: list[str] | None = None,
     stop: list[str] | None = None,
     reasons: dict[str, str] | None = None,
     names: dict[str, str] | None = None,
+    defer: list[str] | None = None,
 ) -> dict:
     """Record expand/stop decisions; latest call wins per fold (revisitable).
 
@@ -78,8 +88,10 @@ def record_family_decisions(
         updates.append((key, "expand", str(reasons.get(key, "")), str(names.get(key, ""))))
     for key in (stop or []):
         updates.append((key, "stop", str(reasons.get(key, "")), str(names.get(key, ""))))
+    for key in (defer or []):
+        updates.append((key, "defer", str(reasons.get(key, "")), str(names.get(key, ""))))
 
-    with _decisions_lock:
+    with _decisions_lock, state_lock(run_file(run_dir, 'family_decisions.json')):
         decisions = load_family_decisions(run_dir)
         for key, decision, reason, name in updates:
             if decision not in _VALID or not key:
@@ -90,9 +102,7 @@ def record_family_decisions(
             decisions[key] = entry
         try:
             run_dir.mkdir(parents=True, exist_ok=True)
-            (run_dir / "family_decisions.json").write_text(
-                json.dumps({"decisions": decisions}, indent=2) + "\n"
-            )
+            atomic_write_json(run_file(run_dir, 'family_decisions.json'), {"decisions": decisions})
         except OSError as e:
             logger.warning("Failed to write family_decisions: %s", e)
 

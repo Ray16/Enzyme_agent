@@ -25,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import platform
 import socket
 import subprocess
@@ -32,6 +33,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -45,7 +49,7 @@ _REPO_ROOT = _PACKAGE_DIR.parent
 _SECRET_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 
 # Packages worth pinning in provenance: their versions change agent behaviour.
-_TRACKED_PACKAGES = ("openai", "rdkit", "pandas", "numpy", "requests", "Bio")
+_TRACKED_PACKAGES = ("openai", "rdkit", "pandas", "numpy", "requests", "Bio", "scipy", "gemmi", "matplotlib")
 
 
 def _run_git(*args: str) -> str | None:
@@ -90,7 +94,7 @@ def _capture_package_diff(run_dir: Path | None) -> dict[str, Any]:
         info["package_diff_bytes"] = len(diff.encode())
         if run_dir is not None:
             try:
-                (run_dir / "code_changes.patch").write_text(diff)
+                (run_file(run_dir, 'code_changes.patch')).write_text(diff)
                 info["patch_file"] = "code_changes.patch"
             except OSError as e:
                 logger.warning("Failed to write code_changes.patch: %s", e)
@@ -98,53 +102,59 @@ def _capture_package_diff(run_dir: Path | None) -> dict[str, Any]:
 
 
 def snapshot_source_code(run_dir: Path) -> dict[str, Any]:
-    """Copy the agent's actual source (.py) into ``run_dir/scripts/``.
+    """Snapshot shared runtime code and resources without overwriting history.
 
-    The git commit + ``code_changes.patch`` already make a run reconstructible in
-    principle, but only if the repo is present at that revision.  A verbatim copy
-    of the code that ran, laid out under ``scripts/`` mirroring the package tree,
-    makes every run self-contained and directly diffable against any other run --
-    the honest answer to "was the code actually the same?".  Also records an
-    aggregate ``sha256`` over (relative path, file bytes) so two runs can be
-    compared with a single string.  Best-effort: never raises into the run.
+    Legacy discovery paths remain at the snapshot root. Sibling packages live
+    under ``_dependencies``. Directory pruning happens before traversal, so
+    generated predictions and campaigns are never walked or copied.
     """
-    import shutil
-
-    dest = run_dir / "scripts"
-    src_files: list[Path] = []
-    for p in sorted(_PACKAGE_DIR.rglob("*.py")):
-        rel = p.relative_to(_PACKAGE_DIR)
-        # Never copy the runs tree (self-referential and huge) or bytecode.
-        if rel.parts and rel.parts[0] == "runs":
+    payloads = {}
+    excluded = {"runs", "archive", "campaigns", "cofold", "results", "figures",
+                "analysis", "integrated_campaigns", "__pycache__", "tests", "build", "dist", "predictions"}
+    for package in (_PACKAGE_DIR.name, "enzyme_design_agent", "structural_modeling_agent", "campaign_catalog"):
+        root = _REPO_ROOT / package
+        if not root.is_dir():
             continue
-        if "__pycache__" in rel.parts:
-            continue
-        src_files.append(p)
-
+        for folder, dirs, files in os.walk(root, followlinks=False):
+            dirs[:] = sorted(d for d in dirs if d not in excluded and not d.startswith(".")
+                             and not (Path(folder) / d).resolve().is_relative_to(Path(run_dir).resolve()))
+            for filename in sorted(files):
+                path = Path(folder) / filename
+                if path.suffix not in {".py", ".json"}:
+                    continue
+                relative = path.relative_to(root)
+                # Mutable caches are evidence, not executable package assets.
+                if relative.parts[0] == "data":
+                    continue
+                label = relative if root == _PACKAGE_DIR else Path("_dependencies") / package / relative
+                payloads[str(label)] = path.read_bytes()
+    for name in ("pyproject.toml", "uv.lock"):
+        path = _REPO_ROOT / name
+        if path.is_file():
+            payloads[str(Path("_dependencies") / name)] = path.read_bytes()
     agg = hashlib.sha256()
-    n_copied = 0
-    for p in src_files:
-        rel = p.relative_to(_PACKAGE_DIR)
-        try:
-            data = p.read_bytes()
-        except OSError:
-            continue
-        agg.update(str(rel).encode())
-        agg.update(b"\0")
-        agg.update(hashlib.sha256(data).digest())
-        try:
-            target = dest / rel
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(p, target)
-            n_copied += 1
-        except OSError as e:
-            logger.warning("Failed to copy source file %s into scripts/: %s", rel, e)
-
-    return {
-        "source_snapshot_dir": "scripts",
-        "source_files": n_copied,
-        "source_sha256": agg.hexdigest(),
-    }
+    rows = []
+    for label, data in sorted(payloads.items()):
+        checksum = hashlib.sha256(data).hexdigest()
+        agg.update(label.encode() + b"\0" + bytes.fromhex(checksum))
+        rows.append({"path": label, "sha256": checksum, "bytes": len(data)})
+    checksum = agg.hexdigest()
+    dest = run_file(run_dir, "scripts")
+    index = dest / "source_manifest.json"
+    if (index.exists() and json.loads(index.read_text()).get("sha256") != checksum) or (
+            dest.exists() and not index.exists() and any(dest.iterdir())):
+        dest = dest.parent / "source_snapshots" / checksum
+    complete = (dest / "source_manifest.json").exists()
+    for label, data in sorted(payloads.items()):
+        target = dest / label
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if complete and target.exists() and target.read_bytes() != data:
+            raise RuntimeError(f"source snapshot collision: {target}")
+        if not target.exists() or (not complete and target.read_bytes() != data):
+            target.write_bytes(data)
+    atomic_write_json(dest / "source_manifest.json", {"sha256": checksum, "files": rows})
+    return {"source_snapshot_dir": str(dest.relative_to(run_dir)),
+            "source_files": len(rows), "source_sha256": checksum, "source_snapshot_complete": True}
 
 
 def capture_code_provenance(run_dir: Path | None = None) -> dict[str, Any]:
@@ -179,6 +189,8 @@ def capture_code_provenance(run_dir: Path | None = None) -> dict[str, Any]:
 
 
 def _package_version(name: str) -> str | None:
+    if name == "Bio":
+        name = "biopython"
     try:
         from importlib.metadata import PackageNotFoundError, version
         try:
@@ -229,7 +241,7 @@ def _target_reasoning_summary(run_dir: Path) -> dict[str, Any] | None:
     derived facts plus a content hash (so a run is tied to the exact reasoning it
     used), not the full claim list (that lives in its own file).
     """
-    path = run_dir / "target_reasoning.json"
+    path = run_file(run_dir, 'target_reasoning.json')
     try:
         raw = path.read_text()
         contract = json.loads(raw)
@@ -358,7 +370,7 @@ def _read_run_outcome(run_dir: Path) -> str | None:
     best-effort: a missing/unreadable file just means we fall back to the caller's
     free-text outcome.
     """
-    path = run_dir / "finalization_status.json"
+    path = run_file(run_dir, 'finalization_status.json')
     if not path.exists():
         return None
     try:
@@ -382,9 +394,7 @@ def _wall_clock_seconds(started: str | None, finished: str) -> float | None:
 
 def _write_manifest(run_dir: Path, manifest: dict[str, Any]) -> None:
     try:
-        (run_dir / "manifest.json").write_text(
-            json.dumps(manifest, indent=2, default=str) + "\n"
-        )
+        atomic_write_json(run_dir / "manifest.json", manifest)
     except OSError as e:
         logger.warning("Failed to write manifest.json: %s", e)
 

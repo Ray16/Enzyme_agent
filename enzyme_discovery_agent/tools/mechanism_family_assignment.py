@@ -31,6 +31,7 @@ from enzyme_discovery_agent.tools.mechanism_families import (
     _GENERIC_FAMILY_TOKENS,
     _family_search_tokens,
 )
+from enzyme_discovery_agent.run_layout import run_file
 
 # Structural-rank words the model uses in a family NAME to say how broad the
 # class is.  Generic taxonomy vocabulary (already in the shared stopword set),
@@ -43,7 +44,7 @@ _PROMISE_RANK = {"high": 3, "medium": 2, "low": 1}
 def load_mechanism_families(run_dir: Path) -> list[dict]:
     """Return the run's derived mechanism families (empty list if none)."""
     try:
-        data = json.loads((Path(run_dir) / "mechanism_families.json").read_text())
+        data = json.loads((run_file(Path(run_dir), 'mechanism_families.json')).read_text())
     except (OSError, json.JSONDecodeError):
         return []
     if isinstance(data, list):

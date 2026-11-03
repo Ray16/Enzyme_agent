@@ -152,6 +152,28 @@ class TestLeanHarvest(unittest.TestCase):
     """The rescoped harvest reads only a few DOWNLOADABLE papers (paywalls skipped)
     and does NO regex deposit-mining — its sole channel is named/cited extraction."""
 
+    def test_rolling_selection_sees_unread_papers_and_preserves_evaluated_candidates(self):
+        from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry, load_candidate_registry, discovery_status
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            lit = root / "artifacts" / "literature"
+            lit.mkdir(parents=True)
+            papers = [{"doi": "10.test/read", "title": "Earlier characterization"},
+                      {"doi": "10.test/new", "title": "New characterization"}]
+            (lit / "search.json").write_text(json.dumps({"result": {"data": papers}}))
+            dest = root / "artifacts" / "fulltext"
+            dest.mkdir(parents=True)
+            (dest / "manifest.json").write_text(json.dumps([{"key": "10.test/read"}]))
+            update_candidate_registry(root, "P12345", "evaluated", {"protein_name": "Evaluated seed"})
+            def named(run, query, dest, manifest, llm, register_fn, already, remaining, stats=None):
+                register_fn("P12345", "fulltext_named")
+                return ["P12345"]
+            with mock.patch("enzyme_discovery_agent.tools.literature_extraction.select_papers_to_read", return_value=[]) as selection, \
+                 mock.patch.object(FT, "_register_named_enzymes_from_fulltext", side_effect=named):
+                FT.mine_and_register_fulltext_accessions(root, "target", llm_client=object())
+            self.assertEqual(selection.call_args.args[1], [papers[1]])
+            self.assertEqual(discovery_status(load_candidate_registry(root)["candidates"]["P12345"]), "evaluated")
+
     def _run(self, tmp, papers, fetch_map, target):
         lit = Path(tmp) / "artifacts" / "literature"
         lit.mkdir(parents=True)
@@ -166,7 +188,7 @@ class TestLeanHarvest(unittest.TestCase):
             return {"key": key, "title": paper.get("title", ""), "source": "europepmc",
                     "format": "xml", "text_file": None}
 
-        def fake_named(run, query, dest, manifest, llm, register_fn, already, remaining):
+        def fake_named(run, query, dest, manifest, llm, register_fn, already, remaining, stats=None):
             named_seen["n"] = len(manifest)    # how many papers reached extraction
             return []
 

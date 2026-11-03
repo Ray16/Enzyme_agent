@@ -118,16 +118,16 @@ class TestAtomicClaimVerdicts(unittest.TestCase):
         self.assertEqual(_claim(result, "substrate_topology")["verdict"], "contradicted")
         self.assertFalse(result["promotion_eligible"])
 
-        # A polymer-native enzyme CAN accommodate a smaller (proxy) free-small-molecule
-        # target -> compatible/supported (this is the NylC-vs-tetramer-proxy case that
-        # was previously mis-rejected).
+        # A different native topology is not proof of accepting the target;
+        # retain it as an unblocked possibility rather than claiming support.
         polymer = "polymer(n) + monomer + ATP = polymer(n+1) + ADP + phosphate"
         self.assertEqual(reaction_topology([polymer]), "polymer")
         result_poly = validate_uniprot_claims(
             _entry(reaction=polymer), expected_accession="P00001",
             target_topology="free_small_molecule",
         )
-        self.assertEqual(_claim(result_poly, "substrate_topology")["verdict"], "supported")
+        self.assertEqual(_claim(result_poly, "substrate_topology")["verdict"], "insufficient_evidence")
+        self.assertNotIn("substrate_topology", result_poly["blocking_claims"])
 
         # ...but a monomer-only (free) enzyme CANNOT act on a genuine polymer target.
         monomer = "an amide + H2O = a carboxylate + an amine"  # free small-molecule
@@ -151,6 +151,19 @@ class TestAtomicClaimVerdicts(unittest.TestCase):
         # ...and insufficient topology evidence is ADVISORY: it must not hard-block
         # promotion (only a definite contradiction does). A native reaction whose
         # topology cannot be parsed should not be rejected on that basis.
+        self.assertNotIn("substrate_topology", result["blocking_claims"])
+
+    def test_literature_topology_does_not_overstate_cross_topology_transfer(self):
+        evidence = {"evidence_quote": "Example enzyme forms a polymer(n) product.",
+                    "mechanism": {"direction": "formation", "bond_types": ["amide"]},
+                    "paper": {"doi": "10.test/example"}, "text_sha256": "test"}
+        with mock.patch("enzyme_discovery_agent.models.literature_evidence.verify_literature_evidence", return_value=True), \
+             mock.patch("enzyme_discovery_agent.models.claim_validation._quote_reaction_support", return_value=True):
+            result = validate_uniprot_claims(
+                _entry(reaction=None, ec=None), expected_accession="P00001",
+                target_direction="formation", target_bond_types={"amide"},
+                target_topology="free_small_molecule", literature_evidence=evidence)
+        self.assertEqual(_claim(result, "substrate_topology")["verdict"], "insufficient_evidence")
         self.assertNotIn("substrate_topology", result["blocking_claims"])
 
 

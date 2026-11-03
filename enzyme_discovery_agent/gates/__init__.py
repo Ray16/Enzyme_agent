@@ -20,6 +20,7 @@ class AgentState:
     """Snapshot of agent state passed to gates (avoids coupling to EnzymeAgent)."""
     run_dir: Path
     candidate_count: int = 0
+    pending_evaluation_count: int = 0
     lit_search_count: int = 0
     entity_extraction_done: bool = False
     literature_harvest_done: bool = False

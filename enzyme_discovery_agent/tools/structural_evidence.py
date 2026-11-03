@@ -54,8 +54,9 @@ def _find_analysis_results(cofold_results_dir: str) -> str:
 
 @tool(
     description=(
-        "Retrieve structural evaluation data for a candidate enzyme from the "
-        "co-folding pipeline results. Returns binding quality (iPTM, SASA "
+        "Retrieve structural evaluation data or frozen experimentally assessed "
+        "proxy applications for a candidate enzyme. Current manifests retain "
+        "calibration provenance, units and transfer scope. Legacy tables return binding quality (iPTM, SASA "
         "burial), pocket chemistry (charged/hydrophobic/polar fractions), "
         "apo-holo comparison (residue Jaccard, volume change), and pocket "
         "geometry. Use this after co-folding data is available to add "
@@ -73,7 +74,7 @@ def _find_analysis_results(cofold_results_dir: str) -> str:
         "cofold_results_dir": {
             "type": "string",
             "description": (
-                "Path to the directory containing co-folding analysis "
+                "Path to candidate_proxy_evidence.json or its directory, or a directory containing legacy co-folding analysis "
                 "results. Should contain CSV files like "
                 "cofolding_metrics.csv, holo_pocket_chemistry.csv, etc. "
                 "Can be the analysis_results/ directory itself or its "
@@ -97,6 +98,22 @@ def get_structural_evaluation(
             "suggestions": [],
         }
 
+    supplied = Path(cofold_results_dir)
+    unified = supplied if supplied.is_file() else supplied / "candidate_proxy_evidence.json"
+    if unified.is_file():
+        try:
+            manifest = json.loads(unified.read_text())
+            if manifest.get("schema_version") == "2.0":
+                evidence = next((r for r in manifest.get("candidates", []) if r.get("accession") == accession), None)
+                if evidence is None:
+                    return {"status": "error", "summary": "Candidate absent from proxy evidence manifest.", "data": None, "count": 0, "suggestions": []}
+                return {"status": "success", "summary": "Frozen experimentally assessed proxy application; inspect scope and validation status.",
+                        "data": {"candidate": evidence, "calibration": manifest.get("bundle", {}).get("calibration"),
+                                 "definition": manifest.get("bundle", {}).get("definition"),
+                                 "sources": manifest.get("bundle", {}).get("sources", [])}, "count": 1,
+                        "suggestions": ["Retain discovery evidence and distinguish calibration scope from unvalidated transfer."]}
+        except (OSError, ValueError, TypeError) as exc:
+            return {"status": "error", "summary": f"Could not read proxy evidence: {exc}", "data": None, "count": 0, "suggestions": []}
     results_dir = _find_analysis_results(cofold_results_dir)
     if not os.path.isdir(results_dir):
         return {
@@ -166,7 +183,7 @@ def get_structural_evaluation(
 
     binding_quality = {
         "substrate_iptm": substrate_iptm,
-        "sasa_burial_pct": round(sasa_burial * 100, 1) if sasa_burial else None,
+        "sasa_burial_pct": round(sasa_burial * 100, 1) if sasa_burial is not None else None,
         "confidence_score": _safe_float(cofold.get("confidence_score")),
         "complex_plddt": _safe_float(cofold.get("complex_plddt")),
         "cofactor_sasa_burial": _safe_float(cofold.get("cofactor_sasa_burial")),

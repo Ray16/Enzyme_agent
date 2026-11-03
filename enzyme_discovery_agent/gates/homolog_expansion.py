@@ -3,66 +3,81 @@
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.gates import AgentState, GateResult
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
 from enzyme_discovery_agent.models.candidate_registry import register_structural_homologs
+from enzyme_discovery_agent.models.expansion import (
+    select_expansion_seeds, searched_seeds, record_seed_search,
+)
 from enzyme_discovery_agent.tools.structural_homolog_search import search_structural_homologs
 
 logger = logging.getLogger("enzyme_agent")
 
-_CRITICAL_WARNINGS = (
-    "BOND TYPE MISMATCH", "SEVERE SIZE MISMATCH",
-    "REACTION DIRECTION MISMATCH",
-)
-
+# Each search is a remote queue wait on the shared public Foldseek server (~40 s);
+# a small pool overlaps them without hammering it.
+_FOLDSEEK_WORKERS = 3
 
 class HomologExpansionGate:
     """Expand qualified seeds structurally; similarity remains candidate generation only."""
 
+    def __init__(self, llm_client=None):
+        self.llm = llm_client
+
     def should_fire(self, state: AgentState, has_eval_calls: bool, messages: list[dict]) -> bool:
-        if state.homolog_expansion_done or not state.critique_injected or has_eval_calls:
+        if not state.critique_injected or has_eval_calls:
             return False
         # ECTriageGate may auto-evaluate candidates and replace the triggering
         # tool call with a compact summary, so message-history inspection is
         # not reliable.  The gate state is the durable completion signal.
-        return True
+        return bool(self._seeds(state.run_dir)) or not state.homolog_expansion_done
+
+    def _seeds(self, run_dir, *, record_selection=False):
+        candidates = load_candidate_registry(run_dir).get("candidates", {})
+        top = select_expansion_seeds(candidates, config.MAX_STRUCTURAL_EXPANSION_SEEDS,
+                                     run_dir, method="foldseek", record_decision=record_selection)
+        searched = searched_seeds(run_dir, "foldseek")
+        return [(acc, candidates[acc].get("metadata", {}).get("protein_name", acc))
+                for acc in top if acc not in searched]
 
     def execute(self, state: AgentState, messages: list[dict]) -> GateResult:
-        registry = load_candidate_registry(state.run_dir)
-
-        qualified: list[tuple[str, str]] = []
-        for acc, info in registry.get("candidates", {}).items():
-            statuses = [s["status"] for s in info.get("statuses", [])]
-            if "evaluated" not in statuses or (statuses and statuses[-1] == "rejected"):
-                continue
-            meta = info.get("metadata", {})
-            validation = meta.get("claim_validation")
-            if validation and validation.get("promotion_eligible") is not True:
-                continue
-            weaknesses = meta.get("weaknesses", [])
-            has_critical = any(
-                any(cw in w for cw in _CRITICAL_WARNINGS)
-                for w in weaknesses
-            )
-            if not has_critical:
-                qualified.append((acc, meta.get("protein_name", acc)))
-
-        # A bounded cap keeps Foldseek a within-family expansion, not a broad
-        # search, while still seeding from more than the top couple of families.
-        seeds = qualified[:config.MAX_STRUCTURAL_EXPANSION_SEEDS]
+        # Rank first, then remove searched seeds. Lower-ranked candidates do not
+        # consume searches merely because the current leaders were already tried.
+        seeds = self._seeds(state.run_dir, record_selection=True)[:config.EXPANSION_SEEDS_PER_STEP]
         if not seeds:
             return GateResult(
                 intercept=False,
                 state_updates={"homolog_expansion_done": True},
             )
 
+        def _search(seed: tuple[str, str]) -> dict:
+            check = getattr(self.llm, "budget_check", None)
+            reason = check() if callable(check) else None
+            if isinstance(reason, str):
+                return {"status": "skipped", "count": 0, "summary": reason,
+                        "deferred_for_budget": True}
+            try:
+                return search_structural_homologs(seed[0], max_hits=10, min_tm_score=0.5,
+                                                  run_dir=str(state.run_dir))
+            except Exception as exc:
+                logger.warning("Structural expansion failed for %s: %s", seed[0], exc)
+                return {"status": "error", "count": 0, "summary": str(exc)}
+
+        with ThreadPoolExecutor(max_workers=_FOLDSEEK_WORKERS) as pool:
+            search_results = list(pool.map(_search, seeds))
+
+        # Registry writes stay serial and in seed order.
         results = []
-        for accession, name in seeds:
-            result = search_structural_homologs(accession, max_hits=10, min_tm_score=0.5)
+        known = set(load_candidate_registry(state.run_dir).get("candidates", {}))
+        for (accession, name), result in zip(seeds, search_results):
             if result.get("status") in {"success", "partial"}:
-                register_structural_homologs(state.run_dir, result)
+                returned = register_structural_homologs(state.run_dir, result)
+                result["new_accessions"] = [acc for acc in returned if acc not in known]
+                known.update(returned)
+            if not result.get("deferred_for_budget"):
+                record_seed_search(state.run_dir, "foldseek", accession, result)
             results.append((accession, name, result.get("count", 0), result.get("summary", "")))
         lines = "\n".join(f"  - {name} ({acc}): {count} Foldseek homologs — {summary}" for acc, name, count, summary in results)
         logger.info("Structural homolog expansion completed for %d seeds", len(seeds))

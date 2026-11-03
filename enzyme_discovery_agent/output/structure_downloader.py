@@ -11,6 +11,7 @@ from pathlib import Path
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.models.candidate_registry import UNIPROT_ACC_RE
 from enzyme_discovery_agent.tools._http import _get_session
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -59,7 +60,7 @@ def download_candidate_structures(
     seen: set[str] = set()
     ranked_accessions: list[str] = []
     try:
-        ranking = json.loads((run_dir / "pass1_ranking.json").read_text())
+        ranking = json.loads((run_file(run_dir, 'pass1_ranking.json')).read_text())
         for entry in ranking:
             acc = entry.get("accession", "")
             if acc in eval_lookup and acc not in seen:

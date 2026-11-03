@@ -310,10 +310,16 @@ class TestTargetProjection(unittest.TestCase):
 
 
 class TestHandoffWriter(unittest.TestCase):
+    def setUp(self):
+        # Isolate target/structure serialization from the separate admission tests.
+        from unittest.mock import patch
+        guard=patch('enzyme_discovery_agent.models.target_review.eligible',return_value=True)
+        guard.start();self.addCleanup(guard.stop)
     def test_registry_mechanism_wins_and_neighbor_is_unresolved(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
             update_candidate_registry(run_dir, "P12345", "evaluated", metadata={
+                "claim_validation": {"promotion_eligible": True, "claims": [{"claim_type": "accession_identity", "subject": "P12345", "verdict": "supported", "evidence": {"source": "UniProtKB"}}]},
                 "catalytic_activities": [
                     "acid + ATP + amine = amide + AMP + diphosphate",
                 ],
@@ -321,7 +327,7 @@ class TestHandoffWriter(unittest.TestCase):
             })
             path = write_structural_modeling_handoff(
                 run_dir,
-                [{"data": {
+                [{"status": "success", "data": {
                     "accession": "P12345",
                     "mechanism_evidence": {"status": "stale"},
                 }}],
@@ -333,19 +339,20 @@ class TestHandoffWriter(unittest.TestCase):
             )
             document = json.loads(path.read_text())
 
-        self.assertEqual(document["schema_version"], "2.0")
+        self.assertEqual(document["schema_version"], "3.0")
         self.assertEqual(
             document["candidates"][0]["evidence"]["mechanism"]["status"], "ok",
         )
         self.assertEqual(
-            document["candidates"][1]["selection"]["source"], "esm_neighbor",
+            document["unresolved_leads"][0]["neighbor_of"], "P12345",
         )
-        self.assertEqual(document["candidates"][1]["modeling_input"]["status"], "unresolved")
+        self.assertEqual(document["unresolved_leads"][0]["accession"], "Q99999")
 
     def test_handoff_preserves_target_context_for_execution_review(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
             update_candidate_registry(run_dir, "P12345", "evaluated", metadata={
+                "claim_validation": {"promotion_eligible": True, "claims": [{"claim_type": "accession_identity", "subject": "P12345", "verdict": "supported", "evidence": {"source": "UniProtKB"}}]},
                 "catalytic_activities": [
                     "acid + ATP + amine = amide + AMP + diphosphate",
                 ],
@@ -357,7 +364,7 @@ class TestHandoffWriter(unittest.TestCase):
             })
             path = write_structural_modeling_handoff(
                 run_dir,
-                [{"data": {"accession": "P12345"}}],
+                [{"status": "success", "data": {"accession": "P12345"}}],
                 TARGET,
             )
             document = json.loads(path.read_text())
@@ -366,7 +373,7 @@ class TestHandoffWriter(unittest.TestCase):
         candidate = document["candidates"][0]
         self.assertEqual(
             set(candidate),
-            {"accession", "evidence", "modeling_input", "selection"},
+            {"accession", "identity", "sequence", "sequence_identity", "input_availability", "evidence", "modeling_input", "selection"},
         )
         self.assertEqual(
             candidate["evidence"]["identity"]["accession"],

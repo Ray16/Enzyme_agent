@@ -89,3 +89,42 @@ class TestBudgetCaps(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_fold_fg_cache_is_run_and_target_scoped_and_does_not_cache_failures(tmp_path):
+    from unittest.mock import patch
+    from enzyme_discovery_agent.gates.family_relevance import _fold_fg_max
+    first, second = tmp_path / 'first', tmp_path / 'second'
+    for root in (first, second):
+        root.mkdir()
+        (root / 'target_context.json').write_text('{"substrate_smiles": "CC"}')
+        (root / 'target_reasoning.json').write_text('{"reaction_direction": "formation"}')
+    good = {"status": "success", "data": {"family_reaction_profile": {"functional_group_similarity": {"max": 0.71}}}}
+    with patch('enzyme_discovery_agent.tools.family_reactions.survey_family_reactions', return_value=good) as survey:
+        assert _fold_fg_max(first, 'IPR000001', {}) == 0.71
+        assert _fold_fg_max(first, 'IPR000001', {}) == 0.71
+        assert survey.call_count == 1
+        assert _fold_fg_max(second, 'IPR000001', {}) == 0.71
+        assert survey.call_count == 2
+        (first / 'target_context.json').write_text('{"substrate_smiles": "CO"}')
+        assert _fold_fg_max(first, 'IPR000001', {}) == 0.71
+        assert survey.call_count == 3
+    with patch('enzyme_discovery_agent.tools.family_reactions.survey_family_reactions', return_value={"status": "error"}) as survey:
+        assert _fold_fg_max(first, 'IPR000002', {}) is None
+        assert _fold_fg_max(first, 'IPR000002', {}) is None
+        assert survey.call_count == 2
+
+
+def test_fold_fg_cache_invalidates_when_worker_source_signature_changes(tmp_path):
+    from unittest.mock import patch
+    from enzyme_discovery_agent.gates.family_relevance import _fold_fg_max
+    (tmp_path / 'target_context.json').write_text('{}')
+    (tmp_path / 'target_reasoning.json').write_text('{}')
+    result = {'status': 'success', 'data': {'family_reaction_profile': {'functional_group_similarity': {'max': 0.4}}}}
+    with patch('enzyme_discovery_agent.tools.family_reactions.survey_family_reactions', return_value=result) as survey:
+        with patch('enzyme_discovery_agent.gates.family_relevance._SURVEY_SOURCE_SIGNATURE', 'worker-one'):
+            assert _fold_fg_max(tmp_path, 'IPR000001', {}) == 0.4
+            assert _fold_fg_max(tmp_path, 'IPR000001', {}) == 0.4
+        with patch('enzyme_discovery_agent.gates.family_relevance._SURVEY_SOURCE_SIGNATURE', 'worker-two'):
+            assert _fold_fg_max(tmp_path, 'IPR000001', {}) == 0.4
+        assert survey.call_count == 2

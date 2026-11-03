@@ -48,6 +48,25 @@ def scientific_record(metadata):
     return result
 
 
+# Structural modeling runs after the discovery review and writes its findings back onto
+# the same record. Hashing that field into the eligibility check meant a review stayed
+# valid only until the candidate was modelled: the modeling result landed, the digest
+# moved, and a sound assessment silently vanished from the shortlist with nothing
+# recorded. The reviewer still SEES this evidence, and a change to it still schedules a
+# fresh review -- it just no longer voids the verdict it postdates.
+DOWNSTREAM_REVIEW_FIELDS = ('modeling_validation_evidence',)
+
+
+def eligibility_record(metadata):
+    """The discovery-side record a target assessment is a verdict on.
+
+    The field is blanked rather than dropped so the digest matches what a review
+    written before any modeling evidence existed already hashed.
+    """
+    return {k:(None if k in DOWNSTREAM_REVIEW_FIELDS else v)
+            for k,v in scientific_record(metadata).items()}
+
+
 def identity_verified(root,accession,metadata):
     claims=(metadata.get('claim_validation') or {}).get('claims') or []
     if any(c.get('claim_type') in {'accession_identity','record_active'} and c.get('verdict')=='contradicted' for c in claims):return False
@@ -75,22 +94,59 @@ def eligible(root,accession,metadata,purpose='ranking'):
     and the saved evidence_level travels with every row so a transfer hypothesis is never
     presented as a measured activity. ``shortlist`` keeps the stricter prioritize-only view.
     """
+    verdict,_=eligibility_verdict(root,accession,metadata,purpose)
+    return verdict
+
+
+def eligibility_verdict(root,accession,metadata,purpose='ranking'):
+    """Return (admitted, reason). Every refusal names itself so none is silent."""
     assessment=metadata.get('target_assessment') or {}
-    if assessment.get('decision') not in {'prioritize','investigate'} or assessment.get('evidence_level')=='speculative':return False
-    if purpose=='shortlist' and assessment.get('decision')!='prioritize':return False
-    if assessment.get('target_sha256')!=digest(target_contract(root)):return False
-    if assessment.get('record_sha256')!=digest(scientific_record(metadata)):return False
+    if not assessment:return False,'no target assessment recorded'
+    if assessment.get('decision') not in {'prioritize','investigate'}:
+        return False,f"review decision is {assessment.get('decision')!r}"
+    if assessment.get('evidence_level')=='speculative':return False,'evidence level is speculative'
+    if purpose=='shortlist' and assessment.get('decision')!='prioritize':
+        return False,'shortlist admits prioritize only'
+    if assessment.get('target_sha256')!=digest(target_contract(root)):
+        return False,'assessment predates the current target contract'
+    # Accept the discovery-side digest; fall back to the whole-record digest for
+    # assessments written before the split so existing runs keep their verdicts.
+    expected=assessment.get('eligibility_sha256')
+    if expected is not None:
+        if expected!=digest(eligibility_record(metadata)):
+            return False,'candidate record changed since the review'
+    elif assessment.get('record_sha256') not in {digest(scientific_record(metadata)),
+                                                 digest(eligibility_record(metadata))}:
+        return False,'candidate record changed since the review'
     path=(Path(root)/(metadata.get('target_assessment_artifact') or '')).resolve()
-    if not path.is_relative_to(Path(root).resolve()) or not path.is_file():return False
-    try:return json.loads(path.read_text())==assessment and assessment.get('accession')==accession
-    except (ValueError,OSError):return False
+    if not path.is_relative_to(Path(root).resolve()) or not path.is_file():
+        return False,'saved assessment artifact is missing'
+    try:
+        if json.loads(path.read_text())!=assessment:return False,'assessment differs from its saved artifact'
+    except (ValueError,OSError):return False,'saved assessment artifact is unreadable'
+    if assessment.get('accession')!=accession:return False,'assessment is filed under another accession'
+    return True,'admitted'
 
 
 def admitted_evaluations(root,evaluations):
     registry=load_candidate_registry(Path(root),strict=True)['candidates']
-    return [ev for ev in evaluations if discovery_status(registry.get(ev.get('data',ev).get('accession'),{}))!='rejected'
-            and eligible(root,ev.get('data',ev).get('accession'),
-                         (registry.get(ev.get('data',ev).get('accession')) or {}).get('metadata') or {})]
+    admitted,refused=[],[]
+    for ev in evaluations:
+        accession=ev.get('data',ev).get('accession')
+        entry=registry.get(accession) or {}
+        if discovery_status(registry.get(accession,{}))=='rejected':
+            refused.append({'accession':accession,'reason':'registry status is rejected'});continue
+        verdict,reason=eligibility_verdict(root,accession,entry.get('metadata') or {})
+        (admitted if verdict else refused).append(ev if verdict else {'accession':accession,'reason':reason})
+    if refused:
+        # A candidate that drops out of the shortlist must leave a trace; this filter
+        # once emptied the decision list with nothing anywhere saying why.
+        try:
+            from enzyme_discovery_agent.models.event_log import append_event
+            append_event(root,'shortlist_admission_filtered',admitted=len(admitted),refused=refused[:40])
+        except Exception:
+            pass
+    return admitted
 
 
 PROVIDER_FAULT_ATTEMPTS=2
@@ -125,7 +181,7 @@ def review_queue(root,limit=4,accessions=None,force=False):
         if (not force and attempt.get('target_sha256')==target_hash and attempt.get('record_sha256')==digest(scientific_record(meta))
                 and not retryable_attempt(attempt)):continue
         rows.append({'accession':accession,'record':compact_record(record),'record_sha256':digest(scientific_record(meta)),
-                     'target_sha256':target_hash})
+                     'eligibility_sha256':digest(eligibility_record(meta)),'target_sha256':target_hash})
     rows.sort(key=lambda row:(not bool((registry[row['accession']]['metadata'].get('priority_assessment') or {})),
                               not bool(registry[row['accession']]['metadata'].get('resolved_literature_leads')),row['accession']))
     return rows[:limit]
@@ -162,6 +218,7 @@ def save_assessment(root,packet,result):
             admission_note='Transfer-only support with a major observed conflict remains exploratory until the conflict is resolved.')
         decision='investigate'
     record={**result,'target_sha256':row['target_sha256'],'record_sha256':row['record_sha256'],
+            'eligibility_sha256':row['eligibility_sha256'],
             'sources':{row['source_id']:row['record']},'scope':'Source-bound agent interpretation; entailment and target activity are not automatically verified.'}
     path=root/'artifacts/target_reviews'/(uuid.uuid4().hex+'.json');atomic_write_json(path,record)
     priority={'accession':accession,'decision':decision if decision!='defer' else 'defer',

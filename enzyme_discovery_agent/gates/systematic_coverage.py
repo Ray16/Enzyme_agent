@@ -1,36 +1,43 @@
 """Evidence-led post-evaluation expansion.
 
-EC annotations are useful compatibility metadata, but are too coarse and
-incomplete to generate a candidate pool for challenging reactions.  This gate
-therefore never performs EC-to-UniProt expansion.  It only follows literature
-links from already evaluated, evidence-backed families.
-
-The EC/ModelSEED enumeration path that used to live here was removed: it was
-unreachable, and re-enabling it would contradict the evidence-first retrieval
-contract enforced by the system prompt and the discovery coverage gate.  The
-bond-type rejection filter it used survives as
-``chemistry_logic.filter_ec_prefixes_by_bond_type``.
+This gate follows literature links from evaluated family representatives.
+Reaction-to-enzyme discovery is available through the reaction database tools
+and recorded scientific decisions, where native chemistry can justify a small
+mapping set. Broad EC membership alone does not authorize automatic expansion.
 """
 
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from enzyme_discovery_agent.gates import AgentState, GateResult
+from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
+from enzyme_discovery_agent.models.expansion import select_expansion_seeds, searched_seeds, record_seed_search
 
 logger = logging.getLogger("enzyme_agent")
 
 
 class SystematicCoverageGate:
-    """Follow literature links out of evaluated families, once per run."""
+    """Follow literature links as promising evaluated family representatives change."""
 
-    def __init__(self):
+    def __init__(self, llm_client=None):
         self._expansion_done = False
+        self.llm = llm_client
 
     def should_fire(self, state: AgentState, has_eval_calls: bool, messages: list[dict]) -> bool:
-        if self._expansion_done:
-            return False
-        return state.homolog_expansion_done
+        return state.homolog_expansion_done and bool(self._families(state.run_dir))
+
+    def _families(self, run_dir):
+        candidates = load_candidate_registry(run_dir).get("candidates", {})
+        ranked = select_expansion_seeds(candidates, len(candidates), run_dir)
+        representatives = {}
+        for acc in ranked:
+            fid = candidates[acc].get("metadata", {}).get("interpro_family_id")
+            if fid:
+                representatives.setdefault(fid, acc)
+        searched = searched_seeds(run_dir, "sequence_literature")
+        return [(fid, acc) for fid, acc in list(representatives.items())[:8] if acc not in searched]
 
     def execute(self, state: AgentState, messages: list[dict]) -> GateResult:
         return self._execute_expansion(state)
@@ -38,52 +45,44 @@ class SystematicCoverageGate:
     def _execute_expansion(self, state: AgentState) -> GateResult:
         """Run sequence_literature_search for evaluated families."""
         from enzyme_discovery_agent.tools.literature import sequence_literature_search
-        from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
-
-        registry = load_candidate_registry(state.run_dir)
-        candidates = registry.get("candidates", {})
-
-        family_reps: dict[str, str] = {}
-        for acc, info in candidates.items():
-            statuses = [s["status"] for s in info.get("statuses", [])]
-            if "evaluated" not in statuses or (statuses and statuses[-1] == "rejected"):
-                continue
-            meta = info.get("metadata", {})
-            validation = meta.get("claim_validation")
-            if validation and validation.get("promotion_eligible") is not True:
-                continue
-            fam_id = meta.get("interpro_family_id", "")
-            if fam_id and fam_id not in family_reps:
-                family_reps[fam_id] = acc
-
-        if not family_reps:
+        families = self._families(state.run_dir)
+        if not families:
             self._expansion_done = True
             return GateResult(intercept=False)
 
-        logger.info("Sequence literature expansion: %d families", len(family_reps))
+        logger.info("Sequence literature expansion: %d families", len(families))
 
         all_new_genes = []
         family_results = []
 
-        for fam_id, rep_acc in list(family_reps.items())[:8]:
+        def _search(rep_acc: str) -> dict | None:
+            check = getattr(self.llm, "budget_check", None)
+            reason = check() if callable(check) else None
+            if isinstance(reason, str):
+                return {"status": "skipped", "count": 0, "deferred_for_budget": True}
             try:
-                result = sequence_literature_search(
-                    accession=rep_acc,
-                    max_homologs=10,
-                )
-                if result.get("status") == "success":
-                    data = result.get("data", {})
-                    entities = data.get("extracted_entities", {})
-                    genes = entities.get("gene_names", [])
-                    fam_name = data.get("family_name", fam_id)
-                    n_pubs = result.get("count", 0)
-                    all_new_genes.extend(genes)
-                    family_results.append(
-                        f"  - {fam_name}: {n_pubs} papers, genes: "
-                        f"{', '.join(g['name'] for g in genes[:5])}"
-                    )
+                return sequence_literature_search(accession=rep_acc, max_homologs=10)
             except Exception as e:
                 logger.warning("Sequence literature search failed for %s: %s", rep_acc, e)
+                return None
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(_search, [rep for _, rep in families]))
+
+        for (fam_id, accession), result in zip(families, results):
+            if not (result or {}).get("deferred_for_budget"):
+                record_seed_search(state.run_dir, "sequence_literature", accession, result or {"status": "error"})
+            if result and result.get("status") == "success":
+                data = result.get("data", {})
+                entities = data.get("extracted_entities", {})
+                genes = entities.get("gene_names", [])
+                fam_name = data.get("family_name", fam_id)
+                n_pubs = result.get("count", 0)
+                all_new_genes.extend(genes)
+                family_results.append(
+                    f"  - {fam_name}: {n_pubs} papers, genes: "
+                    f"{', '.join(g['name'] for g in genes[:5])}"
+                )
 
         self._expansion_done = True
 

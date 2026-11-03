@@ -39,7 +39,7 @@ class TestDiscoveryCoverage(unittest.TestCase):
         })
         (run_dir / "target_context.json").write_text(json.dumps({"target_profile": profile}))
 
-    def test_defers_evaluation_until_profile_coverage_is_represented(self):
+    def test_reports_coverage_gaps_without_blocking_rolling_evaluation(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
             self._write_context(run_dir)
@@ -51,8 +51,8 @@ class TestDiscoveryCoverage(unittest.TestCase):
             self.assertIn("more screened candidates", " ".join(assessment["missing"]))
             result = DiscoveryCoverageGate().execute(AgentState(run_dir=run_dir, candidate_count=1), [])
             self.assertTrue(result.intercept)
-            self.assertIn("do not evaluate", result.new_messages[0]["content"])
-            self.assertTrue(result.state_updates["discovery_coverage_incomplete"])
+            self.assertIn("continue evaluating", result.new_messages[0]["content"])
+            self.assertFalse(result.state_updates["discovery_coverage_incomplete"])
             self.assertTrue(result.state_updates["discovery_coverage_redirected"])
 
             redirected = AgentState(
@@ -61,7 +61,7 @@ class TestDiscoveryCoverage(unittest.TestCase):
             )
             follow_up = DiscoveryCoverageGate().execute(redirected, [])
             self.assertFalse(follow_up.intercept)
-            self.assertTrue(follow_up.state_updates["discovery_coverage_incomplete"])
+            self.assertFalse(follow_up.state_updates["discovery_coverage_incomplete"])
 
     def test_accepts_distinct_families_with_required_annotation_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -11,6 +11,8 @@ target reaction DIRECTION, so a same-symbol unrelated protein is not admitted.
 from __future__ import annotations
 
 import unittest
+import json
+import urllib.parse
 from unittest import mock
 
 from enzyme_discovery_agent.tools import fulltext as ft
@@ -54,6 +56,39 @@ class TestDirectionConsistent(unittest.TestCase):
 
 
 class TestResolveNamedEnzyme(unittest.TestCase):
+    def test_lookup_requests_valid_return_fields_and_keeps_review_status(self):
+        entries = [_entry("Q12345", "Synthetic enzyme", reviewed=False),
+                   _entry("P12345", "Synthetic enzyme", reviewed=True)]
+        with mock.patch.object(ft, "request_with_retry", return_value=json.dumps({"results": entries}).encode()) as request:
+            accession = ft._resolve_named_enzyme("ZyxQ", "Synthetic species")
+        fields = urllib.parse.parse_qs(urllib.parse.urlsplit(request.call_args.args[0].full_url).query)["fields"][0].split(",")
+        self.assertIn("reviewed", fields)
+        self.assertNotIn("entryType", fields)
+        self.assertEqual(accession, "P12345")
+
+    def test_organism_constraint_is_never_dropped_to_take_a_symbol_collision(self):
+        collision = _entry("P00001", "Some synthetase", reviewed=True)
+        collision["genes"] = [{"geneName": {"value": "SynQ"}}]
+        def search(query, **kwargs):
+            return [] if 'organism_name:' in query else [collision]
+        with mock.patch.object(ft, "_uniprot_search", side_effect=search) as query:
+            self.assertIsNone(ft._resolve_named_enzyme("SynQ", "Source species"))
+        self.assertTrue(all('organism_name:' in call.args[0] for call in query.call_args_list))
+
+    def test_unknown_organism_symbol_does_not_resolve_to_a_noncatalytic_protein(self):
+        collision = _entry("P00001", "Membrane scaffold protein", reviewed=True)
+        collision["genes"] = [{"geneName": {"value": "SynQ"}}]
+        with mock.patch.object(ft, "_uniprot_search", return_value=[collision]) as query:
+            self.assertIsNone(ft._resolve_named_enzyme("SynQ", "not specified"))
+        self.assertTrue(all('organism_name:' not in call.args[0] for call in query.call_args_list))
+
+    def test_reviewed_gene_match_without_organism_is_not_sequence_identity(self):
+        collision = _entry("P00001", "Unrelated synthetic ligase", ec="6.3.1.1", reviewed=True)
+        collision["genes"] = [{"geneName": {"value": "SynQ"}}]
+        with mock.patch.object(ft, "_uniprot_search", return_value=[collision]) as query:
+            self.assertIsNone(ft._resolve_named_enzyme("SynQ", "", direction="formation"))
+        query.assert_not_called()
+
     def test_mcba_resolves_via_freetext_direction_gate(self):
         # Fielded (gene/protein_name) organism query returns nothing; the free-text
         # organism query returns the misannotated unreviewed ligase; the formation

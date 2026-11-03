@@ -38,7 +38,7 @@ def _write_run(root: Path):
     (root / "artifacts" / "fulltext" / "manifest.json").write_text(
         json.dumps([{"source": "europepmc", "format": "xml"}]))
     (root / "candidate_registry.json").write_text(json.dumps({"candidates": {
-        "answer": {"accession": "E2JA32", "statuses": [
+        "answer": {"accession": "E2JA32", "metadata": {"claim_validation": {"promotion_eligible": True}}, "statuses": [
             {"status": "discovered"}, {"status": "screened"},
             {"status": "evaluated"}, {"status": "ranked"},
         ]},

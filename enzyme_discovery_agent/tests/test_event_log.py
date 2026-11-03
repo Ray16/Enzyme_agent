@@ -81,12 +81,10 @@ class TestSearchNovelty(unittest.TestCase):
     def _uniprot_result(self, entries):
         return {"status": "success", "summary": "search", "data": entries}
 
-    def test_ortholog_flood_is_capped_to_family_quota(self):
+    def test_shared_label_does_not_discard_distinct_accessions(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            # 4 accessions, all the same gene (murE) = one family, 4 orthologs.
-            # The family cap (2) keeps only the best representatives and drops the
-            # surplus so discovery budget is not spent re-importing one enzyme.
+            # Shared labels are hints, not evidence of interchangeable sequences.
             entries = [
                 {"accession": acc, "gene_names": ["murE"], "name": "Mur ligase",
                  "ec_numbers": [], "seq_length": 450}
@@ -96,17 +94,17 @@ class TestSearchNovelty(unittest.TestCase):
             extract_and_register_from_search(root, "search_uniprot", result)
 
             nov = result["novelty"]
-            self.assertEqual(nov["registered"], 2)          # capped at the quota
-            self.assertEqual(nov["dropped_orthologs"], 2)   # surplus dropped
+            self.assertEqual(nov["registered"], 4)
+            self.assertEqual(nov["dropped_orthologs"], 0)
             self.assertEqual(nov["distinct_families"], 1)
             self.assertEqual(nov["new_families"], 1)
             # The honest signal is surfaced to the agent, not just the raw count.
             self.assertIn("1 distinct family", result["summary"])
-            self.assertIn("dropped", result["summary"])
+            self.assertIn("tentative label", nov["grouping_basis"])
             # And a structured event was recorded.
             reg = [e for e in read_events(root) if e["type"] == "candidates_registered"]
             self.assertEqual(len(reg), 1)
-            self.assertEqual(reg[0]["dropped_orthologs"], 2)
+            self.assertEqual(reg[0]["dropped_orthologs"], 0)
 
     def test_second_search_sees_family_as_known(self):
         with tempfile.TemporaryDirectory() as tmp:

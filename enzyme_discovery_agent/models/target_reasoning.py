@@ -26,6 +26,7 @@ from pathlib import Path
 
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -50,7 +51,7 @@ _LLM_SYSTEM = (
     '  "reaction_direction": "cleavage|formation|transfer|redox|other — the direction '
     'the TARGET reaction runs (e.g. hydrolysis/degradation/depolymerization = cleavage; '
     'ligation/synthesis/condensation = formation)",\n'
-    '  "bond_types": ["the bond(s) made or broken, e.g. amide, ester, thioester, C-N"],\n'
+    '  "bond_types": ["the bond type(s) made, broken or transformed in the supplied reaction"],\n'
     '  "substrate_topology": "free_small_molecule|carrier_protein_tethered|polymer|'
     'macromolecule|mixed — the physical form of the target substrate INPUT as described '
     '(if the input is a discrete small-molecule fragment used to stand in for a polymer, '
@@ -572,7 +573,7 @@ def normalize_target_reasoning(contract: dict | None) -> dict:
 
 def load_target_reasoning(run_dir: str | Path) -> dict | None:
     """Load a run's persisted chemistry contract, or None if absent/unreadable."""
-    path = Path(run_dir) / "target_reasoning.json"
+    path = run_file(Path(run_dir), 'target_reasoning.json')
     try:
         return normalize_target_reasoning(json.loads(path.read_text()))
     except (OSError, json.JSONDecodeError, ValueError):

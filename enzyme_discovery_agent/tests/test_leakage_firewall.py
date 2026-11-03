@@ -44,6 +44,25 @@ def _runtime_files():
 
 
 class TestLeakageFirewall(unittest.TestCase):
+    def test_runtime_search_policy_has_no_benchmark_chemistry_defaults(self):
+        import ast
+        policy_files = ["models/literature_strategy.py", "models/recovery.py", "models/family_learning.py"]
+        # Generic classification vocabularies elsewhere are deliberately not
+        # search defaults. This guard covers the actual policy's literals.
+        forbidden = {"nylon", "adipic", "hexamethylenediamine", "diacid", "diamine", "polyamide",
+                     "amide", "acyl-phosphate", "ATP-grasp", "siderophore"}
+        for name in policy_files:
+            tree = ast.parse((_PKG / name).read_text())
+            literals = [n.value.lower() for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+            for term in forbidden:
+                with self.subTest(file=name, term=term):
+                    self.assertFalse(any(re.search(r"\b" + re.escape(term.lower()) + r"\b", text) for text in literals))
+
+    def test_data_leakage_audit_is_not_imported_by_runtime(self):
+        offenders = [p.name for p in _runtime_files()
+                     if "audit_discovery_leakage" in p.read_text()]
+        self.assertEqual(offenders, [])
+
     def test_no_answer_terms_in_agent_runtime(self):
         forbidden = _forbidden_terms()
         self.assertTrue(forbidden, "no forbidden terms resolved — check benchmarks")

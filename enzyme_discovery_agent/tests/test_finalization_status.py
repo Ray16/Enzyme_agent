@@ -164,3 +164,28 @@ class TestEmptyRunOutcome(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_checkpoint_report_discloses_unranked_queue(tmp_path, monkeypatch):
+    from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
+    from enzyme_discovery_agent.output import finalizer as module
+    from enzyme_discovery_agent.output import report_generator
+    from enzyme_discovery_agent.run_layout import run_file
+    update_candidate_registry(tmp_path, 'P10000', 'evaluated')
+    update_candidate_registry(tmp_path, 'Q10000', 'screened')
+    update_candidate_registry(tmp_path, 'R10000', 'evidence_pending')
+    runner = RunFinalizer(tmp_path, _NullLLM(), lambda *args, **kwargs: None)
+    monkeypatch.setattr(runner, '_load_evaluations', lambda: [{'data': {'accession': 'P10000'}}])
+    monkeypatch.setattr(report_generator, '_family_relevance_partition', lambda *_: (set(), set(), {}))
+    monkeypatch.setattr(report_generator, '_family_rank_map', lambda *_: {})
+    monkeypatch.setattr(report_generator, '_deterministic_mechanistic_ranking', lambda *_args, **_kw: [])
+    def write_report(root, name, query, evaluations, ranking):
+        run_file(root, name).write_text('# Report\n\n## Ranked candidates\n\nExisting content\n')
+    monkeypatch.setattr(report_generator, '_write_deterministic_report', write_report)
+    monkeypatch.setattr(module, 'generate_candidates_csv', lambda *_args, **_kw: None)
+    monkeypatch.setattr(module, 'write_structural_modeling_handoff', lambda *_args, **_kw: None)
+    text, count = runner.snapshot(query='synthetic', reason='budget reached')
+    assert count == 1
+    assert '1 evaluated record(s) available for assessment' in text
+    assert '2 discovered, screened, or evidence-pending records' in text
+    assert 'do not establish activity on the target' in text

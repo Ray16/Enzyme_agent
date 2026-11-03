@@ -25,6 +25,7 @@ import json
 import logging
 import re
 from pathlib import Path
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -32,7 +33,7 @@ logger = logging.getLogger("enzyme_agent")
 _ENZYME_GATE = (
     "enzym", "synthetase", "synthase", "ligase", "hydrolase", "transferase",
     "oxidoreductase", "lyase", "isomerase", "biocataly", "catalyz", "catalytic",
-    "biosynthe", "adenylat", "active site", "crystal structure",
+    "biosynthe", "active site", "crystal structure",
 )
 # Off-domain noise any enzyme-discovery run wants to avoid reading deeply.
 # Generic materials-science / biomedical markers only — NO target-product terms
@@ -50,7 +51,7 @@ _TETHERED_CONTEXT = (
     "carrier protein", "acyl carrier", "peptidyl carrier", "coenzyme a",
     "acyl-coa", "acyl coa", "coa thioester", "coa synthetase",
 )
-_STOP = {"fold", "type", "like", "amine", "amide", "bond", "acid", "free",
+_STOP = {"fold", "type", "like", "bond", "free",
          "small", "molecule", "the", "and", "with", "via", "for"}
 
 
@@ -74,19 +75,25 @@ def build_enzymology_profile(target_reasoning: dict, mechanism_families=None) ->
         if is_cleavage:
             strong.update({f"{b} hydrolase", f"{b} bond cleavage",
                            f"{b} hydrolysis", f"{b} bond hydrolysis"})
-        else:  # default to formation
+        elif is_formation:
             strong.update({f"{b} bond synthetase", f"{b} synthetase",
                            f"{b} ligase", f"{b} bond formation",
                            f"{b} bond synthesis", f"{b} bond forming"})
+        else:
+            strong.update({f"{b} {direction or 'transformation'}", f"{b} enzyme"})
+
+    direct_reaction = sorted(strong)
 
     # Direction verbs.
     if is_cleavage:
         weak.update(["hydrolysis", "hydrolase", "hydrolyz", "cleavage",
                      "degradation", "depolymeriz"])
-    else:
+    elif is_formation:
         weak.update(["synthesis", "synthetase", "synthase", "ligase", "ligation",
                      "forming", "formation", "biosynthesis", "condensation",
-                     "conjugat", "amidation"])
+                     "conjugat"])
+    elif direction:
+        weak.add(direction)
 
     # Activation-mechanism tokens, from the contract's free-text categories.
     cat_text = " ".join(str(c).lower() for c in (tr.get("activation_categories") or []))
@@ -100,19 +107,10 @@ def build_enzymology_profile(target_reasoning: dict, mechanism_families=None) ->
     for tok in re.findall(r"[a-z]{4,}(?:-[a-z]{2,})+", blob):
         if tok not in _STOP:
             strong.add(tok)
-    for cof in ("atp", "gtp", "adenylate", "adenosine triphosphate", "coa",
-                "nucleoside triphosphate", "magnesium"):
-        if cof in blob:
-            weak.add(cof)
+    weak.update(str(c).lower().strip() for c in (tr.get("cofactor_requirements") or []) if str(c).strip())
 
     # Reactive-group tokens.
-    rg = {str(g).lower() for g in (tr.get("reactive_groups") or [])}
-    if "carboxyl" in rg:
-        weak.update(["carboxyl", "carboxylic acid", "carboxylate"])
-    if any("amine" in g for g in rg):
-        weak.update(["amine", "amino"])
-    if "carbonyl" in rg:
-        weak.add("carbonyl")
+    weak.update(str(g).lower().replace("_", " ").strip() for g in (tr.get("reactive_groups") or []) if str(g).strip())
 
     # Enzyme-class tokens the AGENT hypothesized (answer-agnostic mechanism families).
     fams = mechanism_families if isinstance(mechanism_families, list) else \
@@ -134,6 +132,7 @@ def build_enzymology_profile(target_reasoning: dict, mechanism_families=None) ->
 
     return {
         "strong": sorted(strong),
+        "direct_reaction": direct_reaction,
         "weak": sorted(weak - set(negative)),
         "negative_dir": negative,
         "offdomain": list(_OFFDOMAIN),
@@ -155,14 +154,11 @@ def score_paper(paper: dict, profile: dict) -> float:
         return float("-inf")
     if profile.get("free_small_molecule"):
         tethered = any(tok in title or tok in abstract for tok in _TETHERED_CONTEXT)
-        direct_amidation = any(
+        direct_target_reaction = any(
             phrase in title or phrase in abstract
-            for phrase in (
-                "amide bond formation", "amide synthesis", "amidation",
-                "carboxylate-amine", "free amine",
-            )
+            for phrase in profile.get("direct_reaction", profile["strong"])
         )
-        if tethered and not direct_amidation:
+        if tethered and not direct_target_reaction:
             return float("-inf")
     s = 0.0
     for ph in profile["strong"]:
@@ -335,10 +331,10 @@ def rank_papers_by_enzymology(run_dir, papers: list[dict], fallback):
     """
     if not papers:
         return []
-    tr = _load_json(Path(run_dir) / "target_reasoning.json")
+    tr = _load_json(run_file(Path(run_dir), 'target_reasoning.json'))
     if not tr:
         return fallback()
-    mf = _load_json(Path(run_dir) / "mechanism_families.json")
+    mf = _load_json(run_file(Path(run_dir), 'mechanism_families.json'))
     profile = build_enzymology_profile(tr, mf)
     if not profile["usable"]:
         return fallback()

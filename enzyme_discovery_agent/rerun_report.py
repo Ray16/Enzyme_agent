@@ -20,6 +20,8 @@ from enzyme_discovery_agent.output.structure_downloader import download_candidat
 from enzyme_discovery_agent.output.structural_modeling_handoff import write_structural_modeling_handoff
 from enzyme_discovery_agent.output.report_generator import is_error_text
 from enzyme_discovery_agent.gates.ec_triage import _auto_evaluate_all, auto_screen_candidates
+from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_discovery_agent.run_layout import run_file
 
 
 def main():
@@ -36,6 +38,13 @@ def main():
         print(f"Error: run directory not found: {run_dir}")
         sys.exit(1)
 
+    llm_client = LLMClient(model=args.model)
+    try:
+        token_usage = TokenUsage.from_dict(json.loads((run_file(run_dir, 'token_usage.json')).read_text()))
+    except FileNotFoundError:
+        token_usage = TokenUsage(model=args.model, legacy_accounting=True)
+    llm_client.attach_usage(token_usage, run_dir)
+
     all_evals_path = run_dir / "artifacts" / "candidates" / "all_evaluations.json"
     if not all_evals_path.exists():
         # Older runs may have screened candidates in their final iteration,
@@ -44,14 +53,14 @@ def main():
         # work or generating an empty report.
         print("No evaluation bundle found; recovering screened candidates...")
         auto_screen_candidates(run_dir, log_fn=print)
-        _auto_evaluate_all(run_dir, log_fn=print)
+        _auto_evaluate_all(run_dir, log_fn=print, llm_client=llm_client)
         recovery_finalizer = RunFinalizer(run_dir, llm=None, log=print)
         recovered = recovery_finalizer._load_evaluations()
         if not recovered:
             print(f"Error: no evaluations could be recovered from {run_dir}")
             sys.exit(1)
         all_evals_path.parent.mkdir(parents=True, exist_ok=True)
-        all_evals_path.write_text(json.dumps(recovered, indent=2, default=str))
+        atomic_write_json(all_evals_path, recovered)
         print(f"Recovered {len(recovered)} evaluations")
 
     with open(all_evals_path) as f:
@@ -60,7 +69,7 @@ def main():
 
     # Prefer the exact persisted query over the lossy directory-name suffix.
     query = run_dir.name.split("_", 3)[-1].replace("_", " ")
-    events_path = run_dir / "events.jsonl"
+    events_path = run_file(run_dir, 'events.jsonl')
     try:
         for line in events_path.read_text().splitlines():
             event = json.loads(line)
@@ -71,12 +80,9 @@ def main():
         pass
     print(f"Query: {query}")
     try:
-        target_context = json.loads((run_dir / "target_context.json").read_text())
+        target_context = json.loads((run_file(run_dir, 'target_context.json')).read_text())
     except (OSError, json.JSONDecodeError):
         target_context = {"query": query}
-
-    llm_client = LLMClient(model=args.model)
-    token_usage = TokenUsage()
 
     def log(msg, **_):
         print(msg)
@@ -129,9 +135,12 @@ def main():
     )
 
     usage = token_usage.to_dict()
+    atomic_write_json(run_file(run_dir, 'token_usage.json'), {
+        **usage, "request_counts": llm_client.request_counts,
+    })
     print(f"\nToken usage: {usage.get('total_tokens', 0):,} total tokens")
     print(f"Report written to: {run_dir / 'report_confidence.md'}")
-    print(f"Ranking written to: {run_dir / 'pass1_ranking.json'}")
+    print(f"Ranking written to: {run_file(run_dir, 'pass1_ranking.json')}")
 
 
 if __name__ == "__main__":

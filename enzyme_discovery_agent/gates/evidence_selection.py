@@ -19,7 +19,6 @@ class EvidenceSelectionGate:
             not state.evidence_selection_prompted
             and state.candidate_count == 0
             and len(state.accumulated_papers) >= config.EVIDENCE_SELECTION_SEARCH_THRESHOLD
-            and state.lit_search_count >= config.MIN_LITERATURE_SEARCH_ROUNDS
         )
 
     def execute(self, state: AgentState, messages: list[dict] | None = None) -> GateResult:

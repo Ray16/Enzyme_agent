@@ -24,8 +24,11 @@ nothing here encodes an answer.  It also PERSISTS the grounded family landscape
 from __future__ import annotations
 
 import json
+import hashlib
 import logging
+import math
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -41,8 +44,26 @@ from enzyme_discovery_agent.tools.mechanism_families import (
     _GENERIC_FAMILY_TOKENS,
     _family_search_tokens,
 )
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
+
+
+def _survey_source_signature():
+    """Capture source versions once when this controller imports the module."""
+    project = Path(__file__).resolve().parents[1]
+    files = (Path(__file__).resolve(), project / "tools" / "family_reactions.py",
+             project / "tools" / "substrate.py", project / "tools" / "chemistry.py",
+             project / "chemistry_logic.py", project / "models" / "target_reasoning.py",
+             project / "substrate_fit.py", project / "substrate_accommodation.py",
+             project / "models" / "target_profile.py", project / "models" / "claim_validation.py")
+    try:
+        return hashlib.sha256(b"family-survey-cache-v2\0" + b"\0".join(p.read_bytes() for p in files)).hexdigest()
+    except OSError:
+        return None
+
+
+_SURVEY_SOURCE_SIGNATURE = _survey_source_signature()
 
 # Reaction direction relative to the target, ranked from most to least worth
 # pursuing.  "opposite" (a cleavage fold for a formation target, or vice versa)
@@ -58,6 +79,7 @@ _OPPOSITE_RANK = _DIR_RANK["opposite"]
 def allocate_evaluation_budget(
     folds: list[dict], budget: int, floor: int, cap: int,
     stopped: set[str] | None = None,
+    learning_priority: dict | None = None,
 ) -> dict[str, int]:
     """Return {fold_id: n_to_evaluate} spending ``budget`` by relevance.
 
@@ -89,13 +111,16 @@ def allocate_evaluation_budget(
     # Eligible for extra depth: any non-opposite, non-stopped fold with room to
     # grow.  Order by direction (same > unknown > unrelated), then substrate
     # resemblance (fg_max desc), then fold_id for determinism.
+    learning_priority = learning_priority or {}
     eligible = [
         f for f in folds
         if f["fold_id"] not in stopped
         and f["dir_rank"] < _OPPOSITE_RANK
+        and learning_priority.get(f["fold_id"], (1, 0))[0] < 2
         and min(cap, f["n_members"]) > targets[f["fold_id"]]
     ]
     eligible.sort(key=lambda f: (
+        learning_priority.get(f["fold_id"], (1, 0)),
         f["dir_rank"],
         -(f["fg_max"] if f.get("fg_max") is not None else -1.0),
         f["fold_id"],
@@ -345,11 +370,77 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
     return list(picked)[:max_folds]
 
 
+def _family_fit_signature(run_dir):
+    root = Path(run_dir)
+    signature = None
+    try:
+        context = run_file(root, "target_context.json").read_bytes()
+        reasoning = run_file(root, "target_reasoning.json").read_bytes()
+        if not _SURVEY_SOURCE_SIGNATURE:
+            raise ValueError("Survey source signature unavailable")
+        material = context + b"\0" + reasoning + b"\0" + _SURVEY_SOURCE_SIGNATURE.encode()
+        material += json.dumps({"include_trembl": config.FAMILY_INCLUDE_TREMBL,
+                                "representatives": config.MAX_REPRESENTATIVES_PER_FAMILY},
+                               sort_keys=True).encode()
+        signature = hashlib.sha256(material).hexdigest()
+    except (OSError, TypeError, ValueError):
+        pass
+    return signature
+
+
+def remember_family_fit(run_dir, fold_id, val):
+    """Reuse a successful same-run survey in later screening allocation.
+
+    Call only with the numeric fit from a successful survey. Unknown values and
+    unavailable target/source identities do not become persistent cache entries.
+    """
+    from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+    cache_path = Path(run_dir) / "agent_state" / "family_fg_run_cache.json"
+    signature = _family_fit_signature(run_dir)
+    if (signature and isinstance(val, (int, float)) and not isinstance(val, bool)
+            and math.isfinite(val) and 0 <= val <= 1):
+        try:
+            with state_lock(cache_path):
+                try:
+                    payload = json.loads(cache_path.read_text())
+                    if not isinstance(payload, dict):
+                        payload = {}
+                except (OSError, ValueError):
+                    payload = {}
+                entries = payload.setdefault("entries", {})
+                if isinstance(entries, dict):
+                    entries[fold_id] = {"value": val, "signature": signature, "created_at": time.time()}
+                    atomic_write_json(cache_path, payload)
+        except (OSError, ValueError, TypeError):
+            logger.debug("Could not checkpoint run-scoped family survey cache")
+
+
 def _fold_fg_max(run_dir: Path, fold_id: str, fg_cache: dict[str, float | None]) -> float | None:
     """Max functional-group resemblance of a fold's members to the target, via
     the family-reaction survey (cached per fold).  None when unavailable."""
     if fold_id in fg_cache:
         return fg_cache[fold_id]
+    # The gate can revisit a fold many times during a run. Reuse only a recent,
+    # successful numeric result from this same run and exact target/source code;
+    # no historical campaign data or failed lookups enter the cache.
+    from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+    root = Path(run_dir)
+    cache_path = root / "agent_state" / "family_fg_run_cache.json"
+    signature = _family_fit_signature(root)
+    if signature:
+        try:
+            with state_lock(cache_path):
+                payload = json.loads(cache_path.read_text())
+                item = (payload.get("entries") or {}).get(fold_id) or {}
+                cached = item.get("value")
+                age = time.time() - float(item.get("created_at", 0))
+                if (item.get("signature") == signature and 0 <= age < 1800
+                        and isinstance(cached, (int, float)) and not isinstance(cached, bool)
+                        and math.isfinite(cached) and 0 <= cached <= 1):
+                    fg_cache[fold_id] = float(cached)
+                    return float(cached)
+        except (OSError, ValueError, TypeError, AttributeError):
+            pass
     val: float | None = None
     try:
         from enzyme_discovery_agent.tools.family_reactions import survey_family_reactions
@@ -361,6 +452,7 @@ def _fold_fg_max(run_dir: Path, fold_id: str, fg_cache: dict[str, float | None])
                 val = fg.get("max")
     except Exception as e:  # noqa: BLE001
         logger.debug("Fold fg survey failed for %s: %s", fold_id, e)
+    remember_family_fit(run_dir, fold_id, val)
     fg_cache[fold_id] = val
     return val
 
@@ -381,8 +473,9 @@ def collect_survey_folds(
         pool — so a discovered-but-unscreened family (a highly target-like ligase
         that never got screened) is surveyed rather than missed.
 
-    Returns ``[{"fold_id": str, "source": str}]``, de-duplicated, derived-family
-    folds first.  ``fold_cache`` (accession -> fold) and ``count_cache`` persist
+    Returns de-duplicated folds interleaved across candidate evidence and each
+    resolved hypothesis before applying the total limit. ``fold_cache`` and
+    ``count_cache`` persist
     across gate firings so re-runs only resolve NEW accessions."""
     from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
 
@@ -397,19 +490,23 @@ def collect_survey_folds(
             if hypothesis:
                 existing = next((item for item in ordered if item["fold_id"] == fid), None)
                 if existing is not None:
-                    existing["derived_family_hypothesis"] = normalize_family_hypothesis(
-                        hypothesis)
+                    normalized = normalize_family_hypothesis(hypothesis)
+                    existing.setdefault("derived_family_hypothesis", normalized)
+                    hypotheses = existing.setdefault("derived_family_hypotheses", [])
+                    if normalized not in hypotheses:
+                        hypotheses.append(normalized)
             return
         if fid and str(fid).upper().startswith("IPR"):
             seen.add(fid)
             item = {"fold_id": fid, "source": source}
             if hypothesis:
                 item["derived_family_hypothesis"] = normalize_family_hypothesis(hypothesis)
+                item["derived_family_hypotheses"] = [item["derived_family_hypothesis"]]
             ordered.append(item)
 
-    # (B, first) distinct discovered genes -> most-specific folds.  These are
-    # GROUNDED in real candidates (so a discovered-but-unscreened family like a
-    # target-like ligase is surveyed), and are prioritised over derived folds.
+    # Candidate annotations provide a complementary grounded source. A large
+    # sequence tail must not consume the annotation-fetch bound before other
+    # retrieved groups receive any attention.
     reg = load_candidate_registry(run_dir).get("candidates", {})
     genes_seen: set[str] = set()
     accs: list[str] = []
@@ -427,31 +524,45 @@ def collect_survey_folds(
             continue
         genes_seen.add(gene)
         accs.append(acc)
-    accs = accs[:max_genes]
+    from enzyme_discovery_agent.models.rolling import diversify_evaluation_batch
+    accs = diversify_evaluation_batch(reg, accs, max_genes)
 
     def _fold_of(acc):
         if acc in fold_cache:
             return fold_cache[acc]
-        fold = _most_relevant_fold(_interpro_ids(acc, {}), count_cache)
+        meta = (reg.get(acc) or {}).get("metadata") or {}
+        cached = meta.get("screening_annotation") or {}
+        annotation = {**cached, **meta}
+        fold = meta.get("screening_family_id") or _most_relevant_fold(
+            _interpro_ids(acc, annotation), count_cache)
         fold_cache[acc] = fold
         return fold
 
+    discovered_folds = []
     with ThreadPoolExecutor(max_workers=8) as pool:
         for acc, fid in zip(accs, pool.map(_fold_of, accs)):
-            _add(fid, "discovered")
+            if fid and fid not in discovered_folds:
+                discovered_folds.append(fid)
 
     # (A, second) derived mechanism families -> InterPro folds, to cover a family
     # with no discovered candidate yet.  Resolve each family to its BROADEST
     # surveyable functional entries (per-descriptor, superfamily-filtered) and
     # survey SEVERAL, so a single noisy fold-keyword resolution cannot lose the
     # family whose members carry the target chemistry.
-    try:
-        from enzyme_discovery_agent.tools.database import search_interpro
-        for fam in (derived_families or [])[:8]:
-            for fid in resolve_family_folds(fam, count_cache, search_interpro):
-                _add(fid, f"derived:{fam.get('name','')[:40]}", hypothesis=fam)
-    except Exception as e:  # noqa: BLE001 - derived-family resolution is best-effort
-        logger.debug("derived-family InterPro resolution failed: %s", e)
+    from enzyme_discovery_agent.tools.database import search_interpro
+    sources = [(discovered_folds, "discovered", None)]
+    for fam in derived_families or []:
+        try:
+            folds = resolve_family_folds(fam, count_cache, search_interpro)
+            sources.append((folds, f"derived:{fam.get('name','')[:40]}", fam))
+        except Exception as e:  # noqa: BLE001 - one outage must not hide later hypotheses
+            logger.debug("derived-family InterPro resolution failed: %s", e)
+    # Take one result from each source before deepening any source. Applying the
+    # cap after flattening let a broad hypothesis occupy the whole first batch.
+    for depth in range(max((len(folds) for folds, _, _ in sources), default=0)):
+        for folds, source, hypothesis in sources:
+            if depth < len(folds):
+                _add(folds[depth], source, hypothesis=hypothesis)
 
     return ordered[:max_folds]
 
@@ -494,6 +605,10 @@ def build_relevance_and_allocate(
     dropped before evaluation on the strength of the fold's generic annotation,
     never on its own evidence."""
     protected = protected or set()
+    from enzyme_discovery_agent.models.family_decisions import paused_folds
+    from enzyme_discovery_agent.models.rolling import work_deferred
+    paused = paused_folds(run_dir)
+    reps = [(acc, metadata) for acc, metadata in reps if acc in protected or not work_deferred(metadata, paused)]
     budget = config.FAMILY_EVAL_BUDGET if budget is None else budget
     floor = config.FAMILY_EVAL_FLOOR_PER_FOLD if floor is None else floor
     cap = config.FAMILY_EVAL_MAX_PER_FOLD if cap is None else cap
@@ -531,14 +646,26 @@ def build_relevance_and_allocate(
     for fold_id, members in fold_members.items():
         dir_rank = min(_DIR_RANK.get(dir_by_acc[a], 1) for a in members)
         fg_max = None
+        fit_basis = "unavailable"
         if dir_rank < _OPPOSITE_RANK and not fold_id.startswith("unresolved:"):
-            fg_max = _fold_fg_max(run_dir, fold_id, fg_cache)
+            # Reuse actual member-level survey facts already attached to this
+            # run. Re-surveying a whole family just to select these same members
+            # adds latency without improving their measured fit.
+            known_fit = [meta_by_acc[a].get("survey_functional_group_similarity") for a in members]
+            known_fit = [v for v in known_fit if isinstance(v, (int, float))
+                         and not isinstance(v, bool) and math.isfinite(v) and 0 <= v <= 1]
+            if known_fit:
+                fg_max, fit_basis = max(known_fit), "registered_member_surveys"
+            else:
+                fg_max = _fold_fg_max(run_dir, fold_id, fg_cache)
+                fit_basis = "family_survey" if fg_max is not None else "unavailable"
         folds.append({
             "fold_id": fold_id,
             "members": members,
             "n_members": len(members),
             "dir_rank": dir_rank,
             "fg_max": fg_max,
+            "fit_basis": fit_basis,
         })
 
     # 4. Allocate the budget, then pick the best representatives within each fold.
@@ -548,28 +675,44 @@ def build_relevance_and_allocate(
     #    forcing an off-target evaluation.
     from enzyme_discovery_agent.models.family_decisions import stopped_folds as _stopped_folds
     stopped = _stopped_folds(run_dir)
+    from enzyme_discovery_agent.models.family_decisions import paused_folds
+    paused = paused_folds(run_dir) | stopped
     if stopped:
         logger.info("Family decisions: %d fold(s) stopped by the agent", len(stopped))
-    targets = allocate_evaluation_budget(folds, budget, floor, cap, stopped=stopped)
+    from enzyme_discovery_agent.models.family_learning import refresh_family_learning
+    learning = refresh_family_learning(run_dir)
+    learning_priority = {
+        fid.removeprefix("ipr:"): (
+            {"supported": 0, "unresolved": 1, "deprioritized": 2}[row["state"]],
+            -(row["best_supported_fit"] if row["best_supported_fit"] is not None else -1),
+        ) for fid, row in learning["families"].items()
+    }
+    targets = allocate_evaluation_budget(folds, budget, floor, cap, stopped=paused,
+                                         learning_priority=learning_priority)
     from enzyme_discovery_agent.gates.ec_triage import _evidence_tier
     from enzyme_discovery_agent.models.ortholog import ortholog_key
 
     selected: set[str] = set()
+    def member_fit_order(accession):
+        # Unknown fit is an explicit uncertainty, never a measured zero. This
+        # orders work only; it neither rejects nor deletes any unknown member.
+        value = meta_by_acc[accession].get("substrate_fit")
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value):
+            return (0, -value)
+        return (1, 0)
+
     for f in folds:
         members = sorted(
             f["members"],
             key=lambda a: (
                 _evidence_tier(meta_by_acc[a]),
+                member_fit_order(a),
                 -(meta_by_acc[a].get("seq_length") or 0),
                 a,
             ),
         )
-        # Collapse orthologs (the SAME enzyme across organisms) BEFORE spending the
-        # per-fold budget, so the budget buys DISTINCT enzymes rather than many
-        # copies of one — comprehensive coverage of the distinct space without
-        # wasting evaluation on redundant orthologs.  Members are sorted
-        # best-evidence-first, so each ortholog group is represented by its
-        # strongest member.
+        # Group exact known sequences; absent sequence evidence leaves each
+        # accession independent for allocation. Retain all raw members in state.
         distinct: list[str] = []
         seen_ortho: set[str] = set()
         for a in members:
@@ -598,9 +741,12 @@ def build_relevance_and_allocate(
             "fold_id": f["fold_id"] if not f["fold_id"].startswith("unresolved:") else None,
             "direction_vs_target": _rank_name.get(f["dir_rank"], "unknown"),
             "functional_group_similarity_max": f["fg_max"],
+            "fit_basis": f["fit_basis"],
             "n_representatives": f["n_members"],
             "n_selected_for_evaluation": len(f["selected"]),
             "agent_stopped": f["fold_id"] in stopped,
+            "agent_deferred": f["fold_id"] in paused and f["fold_id"] not in stopped,
+            "learned_priority": learning_priority.get(f["fold_id"]),
             "members": f["members"],
         }
         for f in landscape
@@ -608,7 +754,7 @@ def build_relevance_and_allocate(
     # Written to a SEPARATE file so it does not clobber the survey gate's richer
     # discovery-time family_landscape.json (native reactions + top members).
     try:
-        (run_dir / "family_budget.json").write_text(
+        (run_file(run_dir, 'family_budget.json')).write_text(
             json.dumps(landscape_out, indent=2) + "\n"
         )
     except OSError:

@@ -6,6 +6,8 @@ import logging
 import threading
 from datetime import datetime
 from pathlib import Path
+from enzyme_discovery_agent.state_store import state_lock
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -23,7 +25,7 @@ def append_exploration_log(
     Entry types: SEARCH, CANDIDATE_DISCOVERED, SCREEN, EVALUATION,
     DECISION, NOTEBOOK_ARCHIVE
     """
-    log_path = run_dir / "exploration_log.md"
+    log_path = run_file(run_dir, 'exploration_log.md')
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
     lines = [f"### [{now}] {entry_type} — {title}\n"]
@@ -36,7 +38,7 @@ def append_exploration_log(
 
     entry = "".join(lines)
 
-    with _exploration_log_lock:
+    with _exploration_log_lock, state_lock(log_path):
         try:
             with open(log_path, "a") as f:
                 f.write(entry)

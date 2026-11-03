@@ -156,6 +156,39 @@ def _record_interpro_ids(entry: dict) -> list[str]:
     ]
 
 
+def _quote_reaction_support(evidence: dict, direction: str | None, bonds: set[str]) -> bool:
+    """Require an explicit, unqualified candidate-specific reaction statement.
+
+    This deliberately narrow lexical check is not a general entailment model.
+    Ambiguous wording remains pending for independent review.
+    """
+    from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+
+    quote = str(evidence.get("evidence_quote") or "")
+    anchors = [str(evidence.get(key) or "").strip() for key in
+               ("enzyme_name", "deposited_accession", "accession")]
+    uncertain = re.compile(r"\b(?:not|no|never|neither|nor|unable|failed|fails|lack(?:s|ed)?|"
+                           r"may|might|could|possibly|hypothesized|hypothesis|hypothetical|"
+                           r"predicted|prediction|putative|proposed|suggested|simulation|simulated|"
+                           r"whether|compared|unlike|whereas|although)\b", re.I)
+    if uncertain.search(quote):
+        return False
+    for sentence in re.split(r"(?<=[.!?])\s+|\n+", quote):
+        if not any(anchor and re.search(
+            r"(?<!\w)" + re.escape(anchor) + r"(?!\w)\s+"
+            r"(?:directly\s+)?(?:cataly[sz]\w*|hydroly[sz]\w*|cleav\w*|"
+            r"degrad\w*|ligat\w*|form\w*|synthesi[sz]\w*|transfer\w*|"
+            r"oxidi[sz]\w*|reduc\w*)\b", sentence, re.I) for anchor in anchors):
+            continue
+        parsed = extract_target_bond_type(sentence)
+        if direction and parsed.get("direction") != direction:
+            continue
+        if bonds and not (set(parsed.get("bond_types") or []) & bonds):
+            continue
+        return True
+    return False
+
+
 def validate_uniprot_claims(
     entry: dict,
     *,
@@ -166,6 +199,7 @@ def validate_uniprot_claims(
     target_topology: str | None = None,
     require_reviewed: bool = False,
     require_native_reaction: bool = True,
+    literature_evidence: dict | None = None,
 ) -> dict:
     """Validate promotion-relevant claims against one retrieved UniProt record.
 
@@ -266,10 +300,12 @@ def validate_uniprot_claims(
 
     observed_topology = reaction_topology(reactions)
     if target_topology:
-        if observed_topology and topology_compatible(observed_topology, target_topology):
-            verdict, reason = "supported", (
-                "recorded reaction's substrate topology can accommodate the target "
-                "(equal, or the native substrate is at least as complex)")
+        if observed_topology == target_topology:
+            verdict, reason = "supported", "recorded reaction and target share the same broad topology category"
+        elif observed_topology and topology_compatible(observed_topology, target_topology):
+            verdict, reason = "insufficient_evidence", (
+                "native and target topologies differ; broad compatibility is possible but "
+                "native topology alone does not establish target acceptance")
         elif observed_topology:
             verdict, reason = "contradicted", (
                 "recorded reaction's substrate topology cannot accommodate the target "
@@ -281,6 +317,62 @@ def validate_uniprot_claims(
             source=source, locator="comments[CATALYTIC ACTIVITY].reaction.name",
             observed_value=observed_topology, reason=reason,
         ))
+
+    # Primary literature can fill absent function annotations, but cannot erase
+    # a contradictory native reaction in the authoritative database record.
+    if not reactions and literature_evidence:
+        from enzyme_discovery_agent.models.literature_evidence import verify_literature_evidence
+        from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+        if verify_literature_evidence(literature_evidence, subject, entry):
+            mechanism = literature_evidence.get("mechanism") or {}
+            quote = literature_evidence["evidence_quote"]
+            extracted = extract_target_bond_type(quote)
+            raw_direction = str(mechanism.get("direction") or "")
+            direction = (raw_direction if raw_direction in {"formation", "cleavage", "transfer", "redox"}
+                         else extract_target_bond_type(raw_direction).get("direction"))
+            raw_bonds = mechanism.get("bond_types") or [mechanism.get("bond_formed")]
+            bonds = set()
+            for value in raw_bonds if isinstance(raw_bonds, list) else [raw_bonds]:
+                if value:
+                    bonds.update(extract_target_bond_type(str(value)).get("bond_types") or [])
+            # A quote contradicting the extraction invalidates that extraction.
+            quote_direction = extracted.get("direction")
+            quote_bonds = set(extracted.get("bond_types") or [])
+            consistent = not (quote_direction and direction and quote_direction != direction)
+            consistent = consistent and not (quote_bonds and bonds and not quote_bonds & bonds)
+            consistent = consistent and _quote_reaction_support(literature_evidence, direction, bonds)
+            if consistent:
+                native_topology = reaction_topology([quote])
+                replacements = {
+                    "native_reaction": ("supported", quote),
+                    "reaction_direction": (
+                        "supported" if direction == target_direction else
+                        "contradicted" if is_opposite_direction(direction, target_direction) else
+                        "insufficient_evidence", direction),
+                    "bond_type": (
+                        "supported" if bonds & wanted_bonds else
+                        "contradicted" if bonds else "insufficient_evidence", sorted(bonds)),
+                }
+                if native_topology and target_topology:
+                    replacements["substrate_topology"] = (
+                        "supported" if native_topology == target_topology else
+                        "insufficient_evidence" if topology_compatible(native_topology, target_topology)
+                        else "contradicted", native_topology)
+                for index, claim in enumerate(claims):
+                    kind = claim["claim_type"]
+                    if kind in replacements and claim["verdict"] == "insufficient_evidence":
+                        verdict, observed = replacements[kind]
+                        claims[index] = _claim(
+                            kind, subject, claim["asserted_value"], verdict,
+                            source="primary_literature", locator="evidence_quote",
+                            observed_value=observed,
+                            reason="candidate-linked source passed a narrow lexical check; expert entailment is not established",
+                        )
+                        claims[index]["evidence"].update({
+                            "paper": literature_evidence["paper"],
+                            "text_sha256": literature_evidence["text_sha256"],
+                            "quote": quote,
+                        })
 
     required = {"accession_identity", "record_active"}
     if require_native_reaction:

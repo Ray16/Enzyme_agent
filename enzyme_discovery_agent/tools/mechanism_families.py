@@ -23,6 +23,7 @@ import re
 from pathlib import Path
 
 from enzyme_discovery_agent import config
+from enzyme_discovery_agent.state_store import atomic_write_json
 from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
 
 logger = logging.getLogger("enzyme_agent")
@@ -36,7 +37,7 @@ logger = logging.getLogger("enzyme_agent")
 # Schema 2: cache key now includes the SERVING model -- a weaker fallback model
 # (e.g. Nemotron) enumerates far fewer families than Claude, and a model-agnostic key
 # let that weak result poison a later strong-model run on the same target.
-_MECH_FAMILY_CACHE_SCHEMA = 2
+_MECH_FAMILY_CACHE_SCHEMA = 5
 
 
 def _mech_family_cache_dir() -> Path:
@@ -75,13 +76,9 @@ def _save_mech_family_cache(key: str, families: list[dict], meta: dict) -> None:
     cache_dir = _mech_family_cache_dir()
     try:
         cache_dir.mkdir(parents=True, exist_ok=True)
-        tmp = cache_dir / f".{key}.tmp"
-        tmp.write_text(json.dumps({
-            "schema": _MECH_FAMILY_CACHE_SCHEMA,
-            "meta": meta,
-            "families": families,
-        }, indent=2, default=str))
-        os.replace(tmp, cache_dir / f"{key}.json")
+        atomic_write_json(cache_dir / f"{key}.json", {
+            "schema": _MECH_FAMILY_CACHE_SCHEMA, "meta": meta, "families": families,
+        })
     except OSError as exc:
         logger.debug("mechanism-family cache write failed: %s", exc)
 
@@ -101,6 +98,9 @@ def _family_native_direction(fam: dict) -> str | None:
     CONSUMES water (H2O left of the arrow) is a hydrolysis => cleavage, whatever
     the model labelled it; (2) else the model's stated ``native_direction``; (3)
     else a keyword parse of the reaction text.  None when nothing resolves."""
+    stated = str(fam.get("native_direction") or "").strip().lower()
+    if stated in {"transfer", "redox", "isomerization", "rearrangement", "other"}:
+        return stated
     rxn = str(fam.get("native_reaction") or "")
     left = _ARROW.split(rxn, maxsplit=1)[0].lower() if rxn else ""
     if _HYDROLYSIS_TERMS.search(left):
@@ -113,99 +113,58 @@ def _family_native_direction(fam: dict) -> str | None:
     return extract_target_bond_type(rxn).get("direction")
 
 
-def family_passes_constraints(fam: dict, target_direction: str | None) -> tuple[bool, str]:
-    """Deterministic hard-constraint filter for a derived family: return
-    ``(ok, reason_if_dropped)``.
+def family_passes_constraints(fam: dict, target_direction: str | None,
+                              target_topology: str | None = None) -> tuple[bool, str]:
+    """Reject known direction/topology incompatibility with the declared target.
 
-    Enforces in CODE the two constraints the prompt states but the model does not
-    reliably self-apply: (a) native direction must not be the OPPOSITE of the
-    target's (drops native-cleavage families for a formation target — proteases,
-    hydrolases, esterases — however the model labelled them); (b) native donor and
-    acceptor must be FREE substrates (drops carrier-/protein-bound families).
-    ``target_direction`` None => the direction check is skipped (unknown target),
-    so an undetermined target never silently empties the list."""
-    if fam.get("substrates_free") is False:
-        return False, "native donor/acceptor is not a free small molecule"
+    Missing topology stays unresolved. A carrier-dependent family is permissible
+    for a carrier-bound target; free-input constraints apply only to free targets.
+    """
+    from enzyme_discovery_agent.models.claim_validation import reaction_topology, topology_compatible
+    topology = fam.get("predicted_substrate_topology")
+    if topology not in {"free_small_molecule", "carrier_protein_tethered", "polymer", "macromolecule", "mixed"}:
+        topology = reaction_topology([str(fam.get("native_reaction") or "")])
+    if fam.get("substrates_free") is True and not topology:
+        topology = "free_small_molecule"
+    if target_topology == "free_small_molecule" and fam.get("substrates_free") is False:
+        return False, "native substrates are incompatible with the target's free inputs"
+    if target_topology and topology and not topology_compatible(topology, target_topology):
+        return False, f"native topology '{topology}' is incompatible with target '{target_topology}'"
     fam_dir = _family_native_direction(fam)
     if target_direction and fam_dir and (fam_dir, target_direction) in _OPPOSITE_DIRECTIONS:
         return False, f"native direction '{fam_dir}' is opposite the target '{target_direction}'"
     return True, ""
 
 
-
-
 # The enumeration and the completeness-audit prompts share ONE constraints +
 # schema tail so the two passes judge families by identical rules; only the
 # framing intro differs.  Splitting here keeps them from drifting apart.
 _ENUM_INTRO = (
-    "You are an enzymology strategist. Given a target reaction, enumerate the "
-    "DISTINCT enzyme MECHANISM families / structural folds known to catalyse "
-    "that BOND-FORMING chemistry. Reason from the reaction TYPE — the bond "
-    "formed, the reacting chemical groups, and the cofactor — NOT from any "
-    "specific target molecule or product.\n"
-    "List the DISTINCT valid mechanism families — different structural folds or "
-    "activation chemistries (a different activated intermediate, cofactor, or "
-    "catalytic-domain fold) that EACH, judged on their OWN native reaction, "
-    "satisfy EVERY constraint below. Genuinely distinct QUALIFYING folds are "
-    "separate families and must each be listed; do not collapse distinct "
-    "qualifying folds into one umbrella entry.\n"
-    "PRECISION OVER BREADTH: there is NO target count and NO minimum. List ONLY "
-    "families that actually qualify, however few — a SHORT, precise list is far "
-    "better than a padded one. Do NOT add a marginal, wrong-direction, or "
-    "wrong-substrate family to reach a number: a wrong family wastes the search "
-    "and is worse than omitting it. When unsure whether a family qualifies, leave "
-    "it out.\n"
+    "You are an enzymology strategist. Enumerate DISTINCT enzyme mechanism families "
+    "and structural folds capable of the TARGET TRANSFORMATION. Reason from the "
+    "declared direction, bond changes, chemical groups, cofactors, and substrate "
+    "topology. Formation, cleavage, transfer, redox and rearrangement targets are "
+    "all supported. Do not assume a substrate count or physical form. "
+    "List only plausible routes; distinguish different folds and activation "
+    "chemistries without padding the list. Unknown evidence must stay uncertain.\n"
 )
 
-# Completeness AUDIT framing.  DELIBERATELY AGNOSTIC to the target's direction and
-# substrate: it does not restate the direction / same-bond / free-substrate
-# constraints (those are enforced deterministically in CODE by
-# ``family_passes_constraints`` AFTER this pass — one source of truth), so the audit
-# casts the WIDEST net and never re-imposes the same first-pass narrowing that made
-# the overlooked fold get missed.  It names no specific family, substrate, product,
-# or direction — it only WIDENS the region of fold space the model reasons over,
-# which is generic guidance equally valid for ANY reaction.
 _AUDIT_INTRO = (
-    "You are an enzymology strategist performing a COMPLETENESS AUDIT of a "
-    "partial list of enzyme MECHANISM families for a target reaction. You are "
-    "given the target reaction and the families ALREADY listed. Your job: find "
-    "the DISTINCT catalytic folds / mechanism families that are MISSING from that "
-    "list — the ones a first pass overlooks.\n"
-    "A first enumeration leans on the TEXTBOOK, central-/primary-metabolism folds "
-    "for the chemistry and routinely OMITS folds that perform the SAME kind of "
-    "transformation but sit in OTHER regions of biology — e.g. dedicated "
-    "secondary-metabolite / natural-product biosynthetic enzymes, standalone "
-    "(non-modular) biosynthetic synthetases, and other specialised-pathway "
-    "catalysts. Deliberately reason across ALL domains of metabolism, not just "
-    "the central-metabolism folds, and surface any such fold NOT already listed.\n"
-    "Reason ONLY from the reaction TYPE and its general chemistry — never from a "
-    "specific target molecule, product, or organism. List ONLY genuinely DISTINCT "
-    "folds NOT already present; if the list is already complete, return an EMPTY "
-    "list and never pad it.\n"
+    "You are an enzymology strategist performing a COMPLETENESS AUDIT of enzyme "
+    "mechanism families for a target reaction. Find distinct catalytic routes "
+    "missing from the existing list across all regions of biology. Use the "
+    "declared target chemistry and topology; never assume an enzyme identity. "
+    "If no additional plausible route exists, return an empty list.\n"
 )
 
-# The direction + chemistry-match constraints narrow the ENUMERATION pass only.
-# The audit deliberately omits them (see above): code, not this prompt, filters.
 _CONSTRAINTS = (
-    "DIRECTION CONSTRAINT (strict): include ONLY families whose NATIVE reaction "
-    "proceeds in the SAME direction as the target reaction (the direction named "
-    "or implied by the query). EXCLUDE any family whose native reaction runs the "
-    "OPPOSITE direction to the target — do NOT list a family that natively "
-    "catalyses the REVERSE transformation, even if it is theoretically reversible "
-    "or could be pushed 'in reverse' under engineered conditions. Native "
-    "direction must match the target direction; a family that natively undoes the "
-    "target transformation is not a valid family and must be omitted.\n"
-    "CHEMISTRY-MATCH CONSTRAINT (strict): every family must natively make the "
-    "SAME bond/linkage as the target, acting DIRECTLY on FREE substrates of the "
-    "same chemical class as the target inputs. EXCLUDE a family if (a) its native "
-    "product is a DIFFERENT bond/linkage than the target's, or (b) it requires "
-    "its donor to be pre-activated as a carrier-bound or otherwise chemically "
-    "activated form instead of the free substrate class the target starts from, "
-    "or (c) its native product is only an intermediate en route to — not — the "
-    "target's finished bond. Mechanistic adjacency ('a step on the way', 'could "
-    "be diverted to the target', 'shares an activation step') is NOT sufficient: "
-    "the family's OWN native transformation must itself be the target's bond on "
-    "the target's kind of free substrates, or omit it.\n"
+    "Match the target's declared reaction direction and bond change. A known "
+    "opposite native direction does not support direct catalysis of the target. "
+    "Match the INPUT topology: free, carrier-bound, polymeric, macromolecular, "
+    "or mixed substrates as actually specified. Do not require free substrates "
+    "when the target is carrier-bound or macromolecular. Do not impose formation "
+    "on cleavage or redox targets. Describe uncertainty explicitly when native "
+    "reaction scope is unknown.\n"
 )
 
 # Output schema shared by BOTH passes (identical fields, no drift).  It describes
@@ -230,21 +189,23 @@ _SCHEMA_TAIL = (
     "cofactor/co-substrate the native reaction uses, and put H2O on the correct "
     "side — a family that natively HYDROLYSES/cleaves consumes water as a "
     "REACTANT (left of the arrow);\n"
-    "  - native_direction: exactly 'formation' or 'cleavage' — whether the "
-    "family's NATIVE physiological reaction MAKES or BREAKS the bond. Judge the "
+    "  - native_direction: 'formation', 'cleavage', 'transfer', 'redox', 'other', or 'unknown' — how the "
+    "family's native physiological transformation proceeds. Judge the "
     "native role, NOT whether it could be run in reverse in vitro;\n"
-    "  - substrates_free: true ONLY if BOTH the native donor AND the native "
-    "acceptor are FREE small molecules of the target's substrate class; false if "
-    "either is carrier-bound, protein-tethered, or a fixed cofactor;\n"
+    "  - substrates_free: true only when all transformed native substrate inputs are free; "
+    "exclude bound cofactors, metals and catalytic protein residues from this test. Describe the native "
+    "physical form in predicted_substrate_topology; false if "
+    "a transformed substrate is carrier-bound or protein-tethered;\n"
+    "  - predicted_substrate_topology: free_small_molecule|carrier_protein_tethered|polymer|macromolecule|mixed|unknown;\n"
     "  - archetypal_native_substrates: the SPECIFIC representative compounds the "
-    "family's ARCHETYPE natively transforms — name the actual donor AND acceptor "
+    "family's ARCHETYPE natively transforms — name each actual native input substrate "
     "as concrete, resolvable compound names (each naming ONE molecule with a "
     "definite structure), NOT a generic class word. When a native partner is "
     "genuinely a single small molecule, name that exact molecule. These are the "
     "family's OWN native substrates, used only to judge how far the family's "
     "chemistry sits from the target — do NOT substitute the target's molecules.\n"
     "  - required_catalytic_capability: the catalytic capability a genuine member "
-    "must have to make the target's bond (generic chemistry, no enzyme name);\n"
+    "must have to catalyse the target transformation (generic chemistry, no enzyme name);\n"
     "  - proposed_activation_strategy: how this family activates/couples the "
     "reaction to overcome the barrier (the generic activated intermediate or "
     "coupled favorable process);\n"
@@ -258,7 +219,8 @@ _SCHEMA_TAIL = (
     "chemical class from the query. "
     'Return ONLY JSON: {"families":[{"name":"..","descriptors":["..",".."],'
     '"literature_terms":["..",".."],"native_reaction":"reactants -> products",'
-    '"native_direction":"formation|cleavage","substrates_free":true,'
+    '"native_direction":"formation|cleavage|transfer|redox|other|unknown","substrates_free":true,'
+    '"predicted_substrate_topology":"unknown",'
     '"archetypal_native_substrates":["..",".."],'
     '"required_catalytic_capability":"..","proposed_activation_strategy":"..",'
     '"disqualifying_observations":["..",".."]}]}'
@@ -291,7 +253,7 @@ def _clean_terms(terms) -> list[str]:
 
 def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: int,
                  exclude: list[str] | None = None, system: str | None = None,
-                 audit: bool = False) -> list[dict]:
+                 audit: bool = False, target_direction=None, target_topology=None) -> list[dict]:
     """A single derivation call -> parsed family dicts (may be empty).
 
     ``exclude`` names families already found on prior attempts; the model is
@@ -304,6 +266,7 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
     from enzyme_discovery_agent import config
 
     user = f"Target reaction / query: {query}"
+    user += f"\nDeclared direction: {target_direction or 'unknown'}; input topology: {target_topology or 'unknown'}"
     if substrate_smiles:
         user += f"\nSubstrate SMILES: {substrate_smiles}"
     if exclude:
@@ -375,6 +338,7 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
             "native_reaction": str(fam.get("native_reaction") or "").strip(),
             "native_direction": str(fam.get("native_direction") or "").strip(),
             "substrates_free": fam.get("substrates_free"),
+            "predicted_substrate_topology": fam.get("predicted_substrate_topology"),
             "archetypal_native_substrates": _clean_terms(
                 fam.get("archetypal_native_substrates")),
             # Falsifiable-hypothesis fields: the causal chain + what would rule
@@ -394,6 +358,8 @@ def derive_mechanism_families(
     query: str, substrate_smiles: str, llm_client, max_families: int = 10,
     min_families: int = 4, max_attempts: int = 6,
     target_direction: str | None = None, reflect: bool = True,
+    target_topology: str | None = None,
+    retrieved_papers: list[dict] | None = None,
 ) -> list[dict]:
     """Derive the distinct mechanism families that can catalyse the reaction.
 
@@ -420,6 +386,16 @@ def derive_mechanism_families(
     if target_direction is None:
         target_direction = contract.get("direction")
 
+    contract.update({"direction": target_direction, "topology": target_topology,
+                     "query": query, "max_attempts": max_attempts})
+    evidence_query = query
+    if retrieved_papers:
+        from enzyme_discovery_agent.tools.literature import _paper_key
+        evidence = [{"id": str(_paper_key(p)), "title": p.get("title"),
+                     "abstract": str(p.get("abstract") or "")[:900]} for p in retrieved_papers[:8]]
+        evidence_text = json.dumps(evidence, sort_keys=True)
+        contract["retrieved_evidence_hash"] = hashlib.sha256(evidence_text.encode()).hexdigest()
+        evidence_query += "\nRetrieved literature to inform (not limit) mechanism coverage:\n" + evidence_text
     cache_key = None
     if getattr(config, "ENABLE_MECHANISM_FAMILY_CACHE", True):
         # Key on the SERVING model so a weak fallback's enumeration never feeds a
@@ -443,8 +419,9 @@ def derive_mechanism_families(
         # umbrella family, or re-proposing a family already ruled out.
         exclude = sorted(seen) or None
         added = 0
-        for fam in _derive_once(query, substrate_smiles, llm_client, max_families,
-                                exclude=exclude):
+        for fam in _derive_once(evidence_query, substrate_smiles, llm_client, max_families,
+                                exclude=exclude, target_direction=target_direction,
+                                target_topology=target_topology):
             key = fam["name"].casefold()
             if key in seen:
                 continue
@@ -453,7 +430,7 @@ def derive_mechanism_families(
             # families in CODE (the model states these constraints but does not
             # reliably self-apply them), so the survey/coverage budget is never
             # spent on a family whose own native reaction disqualifies it.
-            ok, reason = family_passes_constraints(fam, target_direction)
+            ok, reason = family_passes_constraints(fam, target_direction, target_topology)
             if not ok:
                 dropped += 1
                 logger.info("mechanism family dropped: %s (%s)", fam["name"], reason)
@@ -495,8 +472,9 @@ def derive_mechanism_families(
         audit_attempt += 1
         try:
             audited = _derive_once(
-                query, substrate_smiles, llm_client, max_families,
-                exclude=sorted(seen), system=_COMPLETENESS_SYSTEM, audit=True)
+                evidence_query, substrate_smiles, llm_client, max_families,
+                exclude=sorted(seen), system=_COMPLETENESS_SYSTEM, audit=True,
+                target_direction=target_direction, target_topology=target_topology)
         except Exception as exc:  # noqa: BLE001 - reflection must never sink derivation
             logger.warning("mechanism-family completeness audit failed: %s", exc)
             break
@@ -506,7 +484,7 @@ def derive_mechanism_families(
             if key in seen:
                 continue
             seen.add(key)
-            ok, reason = family_passes_constraints(fam, target_direction)
+            ok, reason = family_passes_constraints(fam, target_direction, target_topology)
             if not ok:
                 dropped += 1
                 logger.info("audit family dropped: %s (%s)", fam["name"], reason)
@@ -540,9 +518,12 @@ def derive_mechanism_families(
     result = families[:max_families]
     # Cache only a non-empty result: an empty derivation is usually a transient LLM
     # failure that should be retried next run, not frozen in.
-    if cache_key is not None and result:
+    serving_model = getattr(llm_client, "active_label", None) or getattr(llm_client, "model", "") or ""
+    # A derivation can combine several calls. Provider failover makes that a
+    # mixed-model result; it must not populate either single-model cache.
+    if cache_key is not None and result and serving_model == _model:
         _save_mech_family_cache(cache_key, result,
-                                {"direction": target_direction, "n": len(result)})
+                                {"direction": target_direction, "n": len(result), "model": serving_model})
     return result
 
 
@@ -550,12 +531,13 @@ _RANK_SYSTEM = (
     "You are an enzymology strategist. You are given the TARGET reaction's "
     "substrates and a list of candidate enzyme MECHANISM families (folds). Rank "
     "the families by how closely each family's ARCHETYPAL native substrates "
-    "resemble the TARGET substrates — judged ONLY on chemistry: the reactive "
-    "functional groups involved in the bond, how many of each are present, the "
-    "carbon-chain size, and saturation/aromaticity. A family whose members "
-    "natively act on substrates bearing the same reactive groups, in the same "
-    "count and a similar size, ranks HIGHER. Reason from substrate shape, not "
-    "from any known enzyme.\n"
+    "resemble the TARGET substrates. First consider plausible correspondence "
+    "of reacting roles within a coherent reaction; then use size, shape and "
+    "chemical properties as context. Different whole-molecule group counts "
+    "can preserve complementary reacting ends across separate source-supported "
+    "molecular occurrences. Do not assume an identical group inventory is "
+    "required. Archetypal resemblance does not establish member substrate "
+    "acceptance or target activity; retain uncertain families for investigation.\n"
     "STRICT: do NOT name any specific enzyme, gene, protein, natural product, or "
     "organism. Refer to families only by the names given to you, and describe "
     "substrates only by their chemical class/groups/size.\n"

@@ -13,7 +13,6 @@ from enzyme_discovery_agent.prompts.sections import (
     MODELSEED_GUIDANCE,
     NOTEBOOK_GUIDANCE,
     PRINCIPLES,
-    REPORT_FORMAT,
     ROLE,
     SEARCH_GUIDANCE,
     SEQUENCE_LITERATURE_GUIDANCE,
@@ -36,6 +35,16 @@ def build_system_prompt(
 ) -> str:
     """Build the full system prompt for the enzyme discovery agent."""
     caps = capabilities or {}
+    from enzyme_discovery_agent import config
+    if config.COMPACT_SYSTEM_PROMPT:
+        return "\n\n".join([ROLE, PRINCIPLES, ANTI_PATTERNS, SMILES_RULES,
+            "Use retrieved primary evidence to guide discovery. Establish the target chemistry, "
+            "inspect complementary hypotheses, retrieve sources and exact sequence identities, "
+            "then screen and evaluate before expanding the pool. Tool schemas define their arguments. "
+            "CURRENT RESEARCH STATE summarizes saved work; inspect artifacts with the evidence and memory tools. "
+            "Names and annotations are leads, not proof of target activity. Record uncertainty and source links. "
+            "Take concrete tool actions; avoid repeating searches or drafting full reports during discovery. "
+            "Controller checkpoints preserve incomplete work. Structural predictions do not prove activity."])
     sections = [
         ROLE,
         PRINCIPLES,
@@ -48,7 +57,6 @@ def build_system_prompt(
         CANDIDATE_EVALUATION_GUIDANCE,
         NOTEBOOK_GUIDANCE,
         SMILES_RULES,
-        REPORT_FORMAT,
         STRUCTURAL_EVIDENCE_GUIDANCE,
     ]
     if caps.get("pocket_analysis"):
@@ -69,7 +77,7 @@ def build_state_header(
     searches_str = ", ".join(searches_done[-8:]) if searches_done else "none"
     gaps_str = ", ".join(gaps[:5]) if gaps else "none identified"
     return (
-        f"[STATE: iter={iteration}/{max_iterations}, "
+        f"[STATE: turn={iteration}, discovery=rolling, "
         f"candidates={candidate_count}, "
         f"recent_searches=[{searches_str}], "
         f"coverage_gaps=[{gaps_str}], "
@@ -83,12 +91,12 @@ def build_reflection_prompt(iteration: int, candidate_count: int = 0) -> str:
     if candidate_count < 3:
         coverage_warning = (
             f"\nWARNING: You have only {candidate_count} distinct candidate families. "
-            "Find a small number of mechanistically distinct representatives before evaluation.\n"
+            "Evaluate available candidates while seeking additional mechanistically distinct representatives.\n"
         )
     return (
         f"REFLECTION CHECKPOINT (iteration {iteration}):\n"
         "You MUST now reflect before continuing. Do the following:\n"
-        "1. Call get_notebook() to review your accumulated analysis.\n"
+        "1. Review CURRENT RESEARCH STATE and distinguish retrieved evidence from your prior notes.\n"
         "2. List the direct-evidence families and mechanistically distinct analogue families you identified "
         "in reaction_analysis and enzyme_landscape.\n"
         "3. Check whether direct evidence is covered and whether any missing family would add a distinct mechanism. "
@@ -98,9 +106,8 @@ def build_reflection_prompt(iteration: int, candidate_count: int = 0) -> str:
         "way — switch source, reformulate with shorter 3-5 word queries, run "
         "consolidate_literature to work from one deduplicated pool, or chase "
         "citations (deep_literature_search) instead of more keyword search.\n"
-        "5. Think about what other biological contexts use the same bond type that "
-        "you haven't explored yet (cell wall biosynthesis, biopolymers, storage "
-        "compounds, post-translational modifications, secondary metabolites).\n"
+        "5. Consider other biological contexts supported by retrieved literature that "
+        "could provide an unexplored mechanism for the target reaction.\n"
         "6. Take the next evidence-gathering action directly; only write a notebook note "
         "when it preserves concise, evidence-backed conclusions.\n"
         f"{coverage_warning}"

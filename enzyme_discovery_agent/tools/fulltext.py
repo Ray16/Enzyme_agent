@@ -678,14 +678,14 @@ def _resolve_named_enzyme(name: str, organism: str, direction: str | None = None
         stale DB label ONLY when it is an enzyme consistent with the target reaction
         DIRECTION (``_direction_consistent``) — this is what recovers a characterised
         enzyme annotated generically (e.g. a synthetase recorded as a generic ligase);
-      * organism absent -> reviewed entries carrying the symbol, only when
-        functionally coherent (one enzyme spanning taxa), else left for the above.
+      * organism absent -> retain the paper-scoped lead until an independent
+        source links its name to a taxon or deposited sequence.
     The paper's characterisation is trusted over the DB label, but the direction gate
     keeps a same-symbol unrelated protein out.  Returns an accession or None.
     """
     raw = (name or "").strip()
     organism = _known_organism(organism)
-    if not raw:
+    if not raw or not organism:
         return None
     # The full string stays the direction hint for the consistency gate, while
     # each identifier guess is tried in turn as the DB query.
@@ -703,12 +703,15 @@ def _resolve_symbol(symbol: str, descriptor: str, organism: str,
     is_gene = bool(_GENE_TOKEN_RE.match(symbol))
     esc = symbol.replace('"', " ")
     name_clause = f'(gene:{symbol} OR protein_name:"{esc}")' if is_gene else f'protein_name:"{esc}"'
-    _flds = "accession,protein_name,ec,gene_names,entryType"
+    _flds = "accession,protein_name,ec,gene_names,reviewed,sequence,organism_name"
 
     if organism:
         org = organism.replace('"', " ").strip()
         hits = _uniprot_search(f'{name_clause} AND organism_name:"{org}"', size=5, fields=_flds)
         if hits:
+            sequences = {e["sequence"]["value"] for e in hits if (e.get("sequence") or {}).get("value")}
+            if len(hits) >= 5 or len(sequences) > 1:
+                return None
             hits.sort(key=lambda e: 0 if "swiss-prot" in str(e.get("entryType", "")).lower() else 1)
             return hits[0].get("primaryAccession")
         # Free-text organism-anchored fallback (direction-gated): recovers a named
@@ -721,18 +724,8 @@ def _resolve_symbol(symbol: str, descriptor: str, organism: str,
         # the organism can substitute an unrelated protein with the same symbol.
         return None
 
-    if is_gene:
-        reviewed = _uniprot_search(
-            f"gene:{symbol} AND reviewed:true", size=10,
-            fields="accession,gene_names,protein_name,ec",
-        )
-        exact = [
-            r for r in reviewed
-            if any(gn.lower() == symbol.lower() for gn in _entry_gene_names(r))
-            and _direction_consistent(r, None)
-        ]
-        if exact and _functionally_coherent(exact):
-            return exact[0].get("primaryAccession")
+    # Even one reviewed hit can be an unrelated enzyme sharing this symbol.
+    # A paper-scoped name without taxon is not sufficient identity evidence.
     return None
 
 
@@ -765,10 +758,21 @@ def _resolve_named_enzyme_ncbi(name: str, organism: str = "") -> dict | None:
             result = search_ncbi_protein(cand, organism=organism, max_results=5)
         except Exception as e:  # noqa: BLE001
             raise LookupUnavailable(f"NCBI protein search failed: {e}") from e
+        if result.get("status") == "error":
+            raise LookupUnavailable(result.get("summary") or "NCBI protein search unavailable")
         records = result.get("data") or []
         if records:
             break
     if not records:
+        return None
+    # A common symbol alone cannot establish which deposited sequence the
+    # paper characterized. Keep it as a source-scoped lead for identity work.
+    if not _known_organism(organism) and len(raw) <= 8 and _GENE_TOKEN_RE.match(raw):
+        return None
+    named_records = [r for r in records if r.get("title_names_query")]
+    if named_records:
+        records = named_records
+    if len({r.get("sequence") for r in records if r.get("sequence")}) != 1:
         return None
     records.sort(key=lambda r: (not r.get("title_names_query"), -r.get("sequence_length", 0)))
     best = records[0]
@@ -867,6 +871,11 @@ def _register_named_enzymes_from_fulltext(
     # Persist each completed paper before starting the next bounded job. This
     # keeps a quota failure from losing every earlier result in a large batch.
     for meta in to_read:
+        # A pause or new instruction can arrive during a slow model call. Do
+        # not launch another paper extraction before the controller sees it.
+        from enzyme_discovery_agent.steering import has_pending
+        if has_pending(run):
+            break
         stats["papers_processed"] += 1
         meta, obj = _read_and_extract(meta)
         if len(registered) >= remaining:
@@ -899,7 +908,7 @@ def _register_named_enzymes_from_fulltext(
         # CITED / named as a related analogue ("cited": a valid discovery LEAD,
         # but this paper does not characterise it — its evidence lives in its own
         # primary literature, reached later via its accession).
-        def _handle(nm, org, gb, bucket, kind):
+        def _handle(nm, org, gb, bucket, kind, functional_record=None):
             stats["named_leads"] += 1
             nm = (nm or "").strip()
             org = _known_organism(org)
@@ -937,7 +946,7 @@ def _register_named_enzymes_from_fulltext(
                         already.add(acc)
                         register_fn(acc, f"fulltext_{kind}:{nm}@{doi}", nm)
                         registered.append(acc)
-                elif not lookup_failed:
+                elif not lookup_failed and org:
                     # Absent from UniProt is not absent from the world: the
                     # sequence may be deposited in GenBank only.  Register it
                     # with the deposited sequence so it is evaluable without
@@ -973,12 +982,19 @@ def _register_named_enzymes_from_fulltext(
                             "deposit_source": dep["source"],
                         })
             bucket.append({"name": nm, "organism": org, "accessions": accs,
+                           "genbank": gb,
                            "relationship": kind,
                            "lookup_failed": lookup_failed})
+            for accession in accs:
+                if nm:
+                    update_candidate_registry(run, accession, None, {"literature_name": nm})
             if not accs:
                 # A lead we could not look up is NOT evidence of absence; keep it
                 # separate so a network blip is never read as "no such enzyme".
                 stats["unresolved_leads"] += 1
+                from enzyme_discovery_agent.models.literature_leads import register_literature_lead
+                register_literature_lead(run, {**(functional_record or {}),"name": nm, "organism": org, "genbank": gb, "relationship": kind},
+                                         meta, dest / meta["text_file"])
                 if lookup_failed:
                     stats["lookup_failures"] = stats.get("lookup_failures", 0) + 1
                     with _RETRYABLE_LOCK:
@@ -987,7 +1003,7 @@ def _register_named_enzymes_from_fulltext(
 
         for e in enzymes:
             _handle(e.get("name"), e.get("organism"), (e.get("genbank") or "").strip(),
-                    rec["enzymes"], "named")
+                    rec["enzymes"], "named",e)
             # Only characterized records, never merely cited analogues, can
             # provide reaction evidence for a sparsely annotated accession.
             if obj.get("is_characterization_paper") and obj.get("paper_relevant") is not False:
@@ -1001,7 +1017,7 @@ def _register_named_enzymes_from_fulltext(
                     except (OSError, KeyError, TypeError):
                         continue
         for h in homologs:
-            _handle(h.get("name"), h.get("organism"), "", rec["homologs"], "cited")
+            _handle(h.get("name"), h.get("organism"), "", rec["homologs"], "cited",h)
         for lead in obj.get("sequence_identifier_leads") or []:
             _handle(lead["name"], "", lead["genbank"], rec["homologs"], "sequence_identifier_lead")
             for acc in rec["homologs"][-1]["accessions"]:

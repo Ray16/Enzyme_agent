@@ -45,6 +45,10 @@ class TestAnnotateSink(unittest.TestCase):
                    {"accession": "STOPLATE", "rank": 2}]
         acc_to_eval = {"ON1": _eval("ON1"),
                        "STOPLATE": _eval("STOPLATE")}
+        acc_to_eval['ON1']['data']['priority_assessment']={'decision':'prioritize',
+            'reason':'Source-grounded role correspondence supports this investigation.',
+            'strengths':['The native reacting roles correspond to the target hypothesis.'],
+            'weaknesses':[],'unknowns':['Target activity is untested.']}
         self._annotate(ranking, acc_to_eval, ontarget={"ON1"},
                        stopped={"STOPLATE"}, sink={"STOPLATE"})
         by = {e["accession"]: e for e in ranking}

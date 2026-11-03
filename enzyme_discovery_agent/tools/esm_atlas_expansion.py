@@ -22,6 +22,7 @@ import requests
 
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.tool_registry import tool
+from enzyme_discovery_agent.models.expansion import require_evaluated_seed
 from enzyme_discovery_agent.tools.structural_homolog_search import _fetch_alphafold_structure
 
 _FOLDSEEK_API = "https://search.foldseek.com/api"
@@ -78,19 +79,25 @@ def _parse_atlas_results(payload: dict, seed_accession: str) -> list[dict]:
     ),
     category="database",
     parallel_safe=False,
+    injected_params=["run_dir"],
     params={
         "accession": {"type": "string", "description": "UniProt accession of the supported seed enzyme."},
         "max_hits": {"type": "integer", "description": "Maximum homologs to return.", "default": 30},
         "min_probability": {"type": "number", "description": "Minimum Foldseek match probability (0–1).", "default": 0.5},
     },
 )
-def search_esm_atlas_homologs(accession: str, max_hits: int = 30, min_probability: float = 0.5) -> dict:
+def search_esm_atlas_homologs(accession: str, max_hits: int = 30, min_probability: float = 0.5,
+                            run_dir: str = "") -> dict:
     """Submit a Foldseek Atlas search and return provenance-rich metagenomic homologs."""
     seed_accession = (accession or "").strip().upper()
     if not seed_accession:
         return {"status": "error", "summary": "A seed UniProt accession is required.", "data": None}
     if max_hits < 1 or not 0.0 <= min_probability <= 1.0:
         return {"status": "error", "summary": "max_hits must be positive and min_probability must be between 0 and 1.", "data": None}
+
+    blocked = require_evaluated_seed(run_dir, seed_accession)
+    if blocked:
+        return blocked
 
     structure = _fetch_alphafold_structure(seed_accession)
     if not structure:

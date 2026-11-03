@@ -169,22 +169,49 @@ def service_leads(run_dir,limit=None,lead_ids=None):
             update_candidate_registry(root,accession,None,{'organism':taxon,
                 'organism_basis':'Taxon carried from another registry entry for the same enzyme name; narrows identity lookup only.'})
             meta={**meta,'organism':taxon}
-        attempts=[' '.join(filter(None,[meta['literature_name'],taxon,'enzyme'])) if taxon else None,
-                  meta['literature_name']+' enzyme characterization',
-                  meta['literature_name']]
-        result=None
-        for query in [q for q in attempts if q]:
-            result=search_pubmed(query,max_results=8)
-            if result.get('status') not in {'success','partial'} or result.get('data'):
-                break
-        path=folder/(basis+'.json');atomic_write_json(path,{'tool_name':'search_pubmed','args':{'query':query},'result':result})
-        # JSON retains the exact retrieved title/abstract and its source identifiers.
-        try:
-            outcome=resolve_literature_lead(accession,source_paths=list(dict.fromkeys([str(path)]+[p for p,_ in extra])),run_dir=root)
-        except (OSError,ValueError,KeyError,TypeError) as exc:
-            outcome={'status':'partial','summary':'Identity source is unavailable; retain the lead for retry.',
-                     'data':{'status':'unavailable','reason':str(exc)}}
-        identity=outcome.get('data') or {};canonical=identity.get('resolved_accession')
+        # An author-coined name exists only in its own paper, so no name query can ever
+        # retrieve it; the identifier the paper deposited is the only route to a sequence.
+        # Follow that first and skip the name ladder entirely when it succeeds.
+        deposited=(meta.get('literature_lead') or {}).get('deposited_identifier')
+        canonical=None;outcome=None;path=None
+        if deposited:
+            from enzyme_discovery_agent.tools.database import lookup_genbank_to_uniprot
+            try:
+                lookup=lookup_genbank_to_uniprot(deposited)
+            except Exception as exc:
+                lookup={'status':'error','summary':f'Deposited identifier lookup failed: {exc}','data':[]}
+            path=folder/(basis+'.deposited.json')
+            atomic_write_json(path,{'tool_name':'lookup_genbank_to_uniprot',
+                                    'args':{'genbank_accession':deposited},'result':lookup})
+            hits=lookup.get('data') or []
+            if len(hits)==1 and hits[0].get('accession'):
+                canonical=hits[0]['accession']
+                outcome={'status':'success',
+                         'summary':f"Resolved from the deposited identifier {deposited} cited for this name.",
+                         'data':{'status':'resolved','resolved_accession':canonical,
+                                 'basis':'deposited_identifier','deposited_identifier':deposited}}
+                update_candidate_registry(root,accession,None,{
+                    'identity_resolution_status':'resolved','resolved_accession':canonical,
+                    'identity_resolution':{'status':'resolved','basis':'deposited_identifier',
+                                           'deposited_identifier':deposited,'source':str(path.relative_to(root))}})
+        if canonical is None:
+            attempts=[' '.join(filter(None,[meta['literature_name'],taxon,'enzyme'])) if taxon else None,
+                      meta['literature_name']+' enzyme characterization',
+                      meta['literature_name']]
+            result=None;query=None
+            for query in [q for q in attempts if q]:
+                result=search_pubmed(query,max_results=8)
+                if result.get('status') not in {'success','partial'} or result.get('data'):
+                    break
+            path=folder/(basis+'.json');atomic_write_json(path,{'tool_name':'search_pubmed','args':{'query':query},'result':result})
+            # JSON retains the exact retrieved title/abstract and its source identifiers.
+            try:
+                outcome=resolve_literature_lead(accession,source_paths=list(dict.fromkeys([str(path)]+[p for p,_ in extra])),run_dir=root)
+            except (OSError,ValueError,KeyError,TypeError) as exc:
+                outcome={'status':'partial','summary':'Identity source is unavailable; retain the lead for retry.',
+                         'data':{'status':'unavailable','reason':str(exc)}}
+            identity=outcome.get('data') or {};canonical=identity.get('resolved_accession')
+        identity=outcome.get('data') or {}
         key=lead_key(meta);previous=ledger.get(key,{})
         ledger[key]={'basis':basis,'source':str(path),'identity_outcome':outcome,'registry_key':accession,
             'literature_name':meta.get('literature_name'),

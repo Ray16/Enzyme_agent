@@ -125,6 +125,10 @@ class TestEvidenceLedCoverage(unittest.TestCase):
             gate = SystematicCoverageGate()
             state = AgentState(run_dir=Path(tmp), homolog_expansion_done=True)
 
+            self.assertFalse(gate.should_fire(state, has_eval_calls=False, messages=[]))
+            from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
+            update_candidate_registry(Path(tmp), "P12345", "evaluated",
+                                      {"interpro_family_id": "IPR000001"})
             self.assertTrue(gate.should_fire(state, has_eval_calls=False, messages=[]))
 
 

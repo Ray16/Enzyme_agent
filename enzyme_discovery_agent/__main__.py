@@ -1,8 +1,8 @@
 """CLI entry point for the enzyme discovery agent.
 
 Usage:
-    python -m enzyme_discovery_agent "find hydrolases for a target bond-cleavage reaction"
-    python -m enzyme_discovery_agent --substrate "CC(=O)N" "find enzymes for acetamide hydrolysis"
+    python -m enzyme_discovery_agent "find enzymes for a target transformation"
+    python -m enzyme_discovery_agent --substrate "CCO" "find enzymes for this substrate"
     python -m enzyme_discovery_agent --structure-file substrate.mol "find enzymes for this substrate"
 """
 
@@ -46,15 +46,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
-            '  python -m enzyme_discovery_agent "find hydrolases for a target bond-cleavage reaction"\n'
-            '  python -m enzyme_discovery_agent --substrate "CC(=O)N" "find enzymes for acetamide hydrolysis"\n'
+            '  python -m enzyme_discovery_agent "find enzymes for a target transformation"\n'
+            '  python -m enzyme_discovery_agent --substrate "CCO" "find enzymes for this substrate"\n'
             '  python -m enzyme_discovery_agent --structure-file substrate.mol "find enzymes"\n'
             '  python -m enzyme_discovery_agent --resume-run runs/20260101_120000_query\n'
         ),
     )
     parser.add_argument("query", nargs="?", help="Natural language query describing what enzymes to find")
     parser.add_argument("--resume-run", type=str, default=None,
-                        help="Resume an interrupted run directory from its transcript checkpoint")
+                        help="Resume an interrupted or budget-limited run with a fresh resource allowance")
 
     substrate_group = parser.add_mutually_exclusive_group()
     substrate_group.add_argument("--substrate", type=str, default=None, help="Substrate SMILES string")
@@ -63,10 +63,15 @@ def main():
     substrate_group.add_argument("--sketch", action="store_true", default=False,
                                 help="Open PubChem Sketch to draw a molecule")
 
-    parser.add_argument("--model", type=str, default=config.DEFAULT_MODEL, help="Model to use via Argo")
+    parser.add_argument("--model", type=str, default=None,
+                        help="Default Claude Code Sonnet 5.5; argo:<id>, gemini:<id>, groq:<id>, or claude-code:<id> selects a backend")
     parser.add_argument("--output-dir", type=str, default=None, help="Base directory for run outputs")
     parser.add_argument("--max-iterations", type=int, default=config.MAX_ITERATIONS,
-                        help=f"Maximum agent iterations (default: {config.MAX_ITERATIONS})")
+                        help="Legacy turn-planning hint; discovery continues beyond this count")
+    parser.add_argument("--token-budget", type=int, default=200000,
+                        help="LLM token allowance for this invocation, including internal calls (default 200000)")
+    parser.add_argument("--runtime-budget-seconds", type=float, default=3600,
+                        help="Elapsed-time allowance for this invocation (default 3600 seconds)")
     parser.add_argument("--llm-timeout", type=int, default=120, help="Timeout in seconds per LLM API call")
     parser.add_argument("--target-profile", type=str, default=None,
                         help=("Path to a JSON target profile with generic evidence requirements and "
@@ -101,8 +106,10 @@ def main():
             llm_timeout=args.llm_timeout,
             query=args.query,
             resume_run_dir=args.resume_run,
+            token_budget=args.token_budget,
+            runtime_budget_seconds=args.runtime_budget_seconds,
         )
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError) as exc:
         parser.error(str(exc))
 
     report = agent.run(

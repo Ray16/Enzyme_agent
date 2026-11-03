@@ -13,6 +13,9 @@ from pathlib import Path
 
 from enzyme_discovery_agent.tool_registry import tool
 
+from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+from enzyme_discovery_agent.run_layout import run_file
+
 logger = logging.getLogger("enzyme_agent")
 
 NOTEBOOK_SECTIONS = [
@@ -30,7 +33,7 @@ _DECISION_SECTIONS = frozenset({"decisions", "candidates", "final_ranking"})
 
 def load_notebook(run_dir: Path) -> dict:
     """Load or initialize the notebook from run_dir/notebook.json."""
-    path = run_dir / "notebook.json"
+    path = run_file(run_dir, 'notebook.json')
     if path.exists():
         with open(path) as f:
             return json.load(f)
@@ -46,8 +49,7 @@ def load_notebook(run_dir: Path) -> dict:
 def save_notebook(run_dir: Path, notebook: dict) -> None:
     """Persist the notebook to run_dir/notebook.json."""
     run_dir.mkdir(parents=True, exist_ok=True)
-    with open(run_dir / "notebook.json", "w") as f:
-        json.dump(notebook, f, indent=2)
+    atomic_write_json(run_file(run_dir, 'notebook.json'), notebook)
 
 
 def get_notebook_text_for_report(run_dir: Path) -> str:
@@ -56,7 +58,7 @@ def get_notebook_text_for_report(run_dir: Path) -> str:
     This consolidates the duplicated notebook-loading logic that was
     in both _generate_explorative_report and _generate_confidence_report.
     """
-    notebook_path = run_dir / "notebook.json"
+    notebook_path = run_file(run_dir, 'notebook.json')
     if not notebook_path.exists():
         return ""
     try:
@@ -131,31 +133,32 @@ def update_notebook(
             "data": {"section": section, "written": False},
         }
 
-    notebook = load_notebook(run_dir)
-    now = datetime.now().astimezone().isoformat()
+    with state_lock(run_file(run_dir, 'notebook.json')):
+        notebook = load_notebook(run_dir)
+        now = datetime.now().astimezone().isoformat()
 
-    if not append and notebook["sections"][section]:
-        old_content = notebook["sections"][section]
-        append_exploration_log(
-            run_dir,
-            entry_type="NOTEBOOK_ARCHIVE",
-            title=f"Section '{section}' replaced",
-            details={"archived_chars": len(old_content), "preview": old_content[:300]},
-        )
+        if not append and notebook["sections"][section]:
+            old_content = notebook["sections"][section]
+            append_exploration_log(
+                run_dir,
+                entry_type="NOTEBOOK_ARCHIVE",
+                title=f"Section '{section}' replaced",
+                details={"archived_chars": len(old_content), "preview": old_content[:300]},
+            )
 
-    if append and notebook["sections"][section]:
-        notebook["sections"][section] += f"\n\n---\n*[{now}]*\n\n{content}"
-    else:
-        notebook["sections"][section] = content
+        if append and notebook["sections"][section]:
+            notebook["sections"][section] += f"\n\n---\n*[{now}]*\n\n{content}"
+        else:
+            notebook["sections"][section] = content
 
-    notebook["last_updated"] = now
-    notebook["revision_log"].append({
-        "timestamp": now,
-        "section": section,
-        "action": "append" if append else "replace",
-    })
+        notebook["last_updated"] = now
+        notebook["revision_log"].append({
+            "timestamp": now,
+            "section": section,
+            "action": "append" if append else "replace",
+        })
 
-    save_notebook(run_dir, notebook)
+        save_notebook(run_dir, notebook)
 
     if section in _DECISION_SECTIONS:
         record_trace_event(

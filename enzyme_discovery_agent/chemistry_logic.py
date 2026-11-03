@@ -56,8 +56,9 @@ def resolve_chebi_smiles(chebi_id: str) -> str | None:
                 _chebi_name_cache[chebi_id] = name
     except Exception as e:
         logger.debug("ChEBI SMILES lookup failed for %s: %s", chebi_id, e)
+        return None  # Transport failure is retryable, never a cached negative.
 
-    logger.warning("ChEBI SMILES not found for %s, caching as unavailable", chebi_id)
+    logger.info("ChEBI response contains no SMILES for %s", chebi_id)
     _chebi_smiles_cache[chebi_id] = None
     return None
 
@@ -539,6 +540,7 @@ def extract_target_bond_type(target_reaction_type: str) -> dict:
         ("carbamate", ("ester", "amide", "C-N")),
         ("urethane", ("ester", "amide", "C-N")),
         ("amide", ("amide",)),
+        ("amidation", ("amide",)),
         ("ester", ("ester",)),
         ("ether", ("ether",)),
         ("c-c bond", ("C-C",)),
@@ -572,7 +574,7 @@ def extract_target_bond_type(target_reaction_type: str) -> dict:
         "lysis": "cleavage", "decarboxylation": "cleavage",
         "deamination": "cleavage", "desulfurization": "cleavage",
         "dephosphorylation": "cleavage",
-        "formation": "formation", "synthesis": "formation",
+        "formation": "formation", "synthesis": "formation", "amidation": "formation",
         "ligation": "formation", "condensation": "formation",
         "ligase": "formation",
         "synthetase": "formation", "synthetases": "formation",
@@ -787,7 +789,10 @@ def compare_substrate_properties(
     logp_sim = max(0.0, 1.0 - logp_diff / config.LOGP_PENALTY_DIVISOR)
 
     vol_t, vol_n = t_props.molecular_volume, n_props.molecular_volume
-    vol_sim = min(vol_t, vol_n) / max(vol_t, vol_n) if max(vol_t, vol_n) > 0 else 0.0
+    vol_method_t = getattr(t_props, "molecular_volume_method", "unknown")
+    vol_method_n = getattr(n_props, "molecular_volume_method", "unknown")
+    vol_sim = (min(vol_t, vol_n) / max(vol_t, vol_n)
+               if vol_method_t == vol_method_n == "3d_conformer" and max(vol_t, vol_n) > 0 else None)
 
     hbd_diff = abs(t_props.num_hbd - n_props.num_hbd)
     hba_diff = abs(t_props.num_hba - n_props.num_hba)
@@ -812,7 +817,9 @@ def compare_substrate_properties(
         "mw_similarity": round(mw_sim, 3),
         "volume_target": round(vol_t, 1),
         "volume_native": round(vol_n, 1),
-        "volume_similarity": round(vol_sim, 3),
+        "volume_similarity": round(vol_sim, 3) if vol_sim is not None else None,
+        "volume_method_target": vol_method_t,
+        "volume_method_native": vol_method_n,
         "chain_length_target": cl_t,
         "chain_length_native": cl_n,
         "chain_length_similarity": round(cl_sim, 3),

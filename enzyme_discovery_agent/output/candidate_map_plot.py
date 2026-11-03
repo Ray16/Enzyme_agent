@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -90,7 +91,7 @@ def render_candidate_map(run_dir, log_fn=None, reference_accessions=None):
     promising: set[str] = set()
     neighbors: set[str] = set()
     try:
-        cmap_data = json.loads((run_dir / "candidate_map.json").read_text())
+        cmap_data = json.loads((run_file(run_dir, 'candidate_map.json')).read_text())
         for p in cmap_data.get("promising", []):
             promising.add(p.get("accession"))
             for nbr in p.get("neighbors", []):

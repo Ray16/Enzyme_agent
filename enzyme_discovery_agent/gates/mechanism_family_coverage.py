@@ -16,25 +16,32 @@ import json
 import logging
 
 from enzyme_discovery_agent import config
+from enzyme_discovery_agent.state_store import atomic_write_json
 from enzyme_discovery_agent.gates import AgentState, GateResult
 from enzyme_discovery_agent.models.exploration_log import append_exploration_log
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
 
 class MechanismFamilyGate:
-    """Derive the reaction's mechanism families and make each a coverage
-    requirement, searched from the literature before evaluation."""
+    """Start mechanism-led discovery when target chemistry is available."""
 
     def __init__(self, llm_client=None, log_fn=None):
         self.llm = llm_client
         self.log = log_fn or (lambda *a, **k: None)
 
     def should_fire(self, state: AgentState, has_eval_calls: bool = False, messages: list[dict] | None = None) -> bool:
+        try:
+            chemistry = json.loads((run_file(state.run_dir, 'target_reasoning.json')).read_text())
+        except (OSError, ValueError):
+            chemistry = {}
+        chemistry_ready = bool(chemistry.get("bond_types") or chemistry.get("activation_categories"))
         return (
             not state.mechanism_families_done
             and self.llm is not None
-            and state.lit_search_count >= config.MIN_LITERATURE_SEARCH_ROUNDS
+            and (chemistry_ready or state.candidate_count > 0 or has_eval_calls
+                 or state.lit_search_count >= config.MIN_LITERATURE_SEARCH_ROUNDS)
         )
 
     def execute(self, state: AgentState, messages: list[dict] | None = None) -> GateResult:
@@ -43,7 +50,7 @@ class MechanismFamilyGate:
             rank_families_by_substrate_resemblance,
         )
 
-        ctx_path = state.run_dir / "target_context.json"
+        ctx_path = run_file(state.run_dir, 'target_context.json')
         try:
             ctx = json.loads(ctx_path.read_text())
         except (OSError, json.JSONDecodeError):
@@ -54,10 +61,12 @@ class MechanismFamilyGate:
         # Take the reaction direction from the shared chemistry contract so the
         # inverse-direction family filter agrees with every other stage.
         from enzyme_discovery_agent.models.target_reasoning import target_claims
-        target_direction, _, _ = target_claims(state.run_dir)
+        target_direction, _, target_topology = target_claims(state.run_dir)
 
         families = derive_mechanism_families(
-            query, substrate, self.llm, target_direction=target_direction
+            query, substrate, self.llm, target_direction=target_direction,
+            target_topology=target_topology,
+            retrieved_papers=state.accumulated_papers,
         )
         if families:
             # Order families by how closely their native substrates resemble the
@@ -67,15 +76,15 @@ class MechanismFamilyGate:
                 families, query, substrate, self.llm
             )
         if not families:
+            if getattr(self.llm, "budget_exhausted", False):
+                return GateResult(intercept=False)
             # Derivation unavailable — leave the generic coverage contract in
             # place and don't fire again.
             return GateResult(intercept=False,
                               state_updates={"mechanism_families_done": True})
 
         # Persist the full derivation (with literature terms) for audit + guidance.
-        (state.run_dir / "mechanism_families.json").write_text(
-            json.dumps(families, indent=2) + "\n"
-        )
+        atomic_write_json(run_file(state.run_dir, 'mechanism_families.json'), families)
 
         # SOFT guidance only — do NOT turn the families into hard coverage
         # buckets or raise minimum_distinct_families.  The coverage matcher does a
@@ -103,7 +112,7 @@ class MechanismFamilyGate:
         families_block = "\n".join(lines)
 
         guidance = (
-            "MECHANISM-FAMILY WORKFLOW. The target bond-forming reaction can be "
+            "MECHANISM-FAMILY WORKFLOW. The target transformation can be "
             "catalysed by several DISTINCT enzyme families/folds, listed below in "
             "DESCENDING order of how closely each family's native substrates "
             "resemble the target substrates. Work them in THIS ORDER — do NOT keep "

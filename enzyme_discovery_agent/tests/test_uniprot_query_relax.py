@@ -38,3 +38,44 @@ class TestRelaxUniprotQuery(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_structured_queries_never_drop_a_boolean_operand():
+    from unittest.mock import patch
+    from enzyme_discovery_agent.tools.database import search_uniprot
+    query = "gene:ExampleQ AND taxonomy_name:ExampleGenus"
+    assert _relax_uniprot_query(query) == [query]
+    with patch("enzyme_discovery_agent.tools.database.request_with_retry", return_value=b'{"results": []}') as request:
+        result = search_uniprot(query=query, function_filter="synthetic enzyme", max_results=5)
+    assert result["status"] == "partial"
+    assert result["count"] == 0
+    assert request.call_count == 1
+
+
+def test_completed_empty_gene_search_suppresses_only_equal_or_narrower_queries():
+    from enzyme_discovery_agent.bootstrap import register_builtin_tools
+    from enzyme_discovery_agent.tool_registry import check_search_duplicate, record_search
+    register_builtin_tools()
+    history = []
+    prior = {"gene_name": "exampleQ", "function_filter": "specific enzyme", "max_results": 5}
+    record_search('search_uniprot', prior, {"status": "partial", "count": 0, "search_completed": True}, history=history)
+    narrower = {**prior, "function_filter": "specific enzyme bacterial", "max_results": 20}
+    assert check_search_duplicate('search_uniprot', narrower, history=history)['deduplicated']
+    assert check_search_duplicate('search_uniprot', {**prior, "function_filter": "specific"}, history=history) is None
+    assert check_search_duplicate('search_uniprot', {**prior, "gene_name": "other"}, history=history) is None
+    assert check_search_duplicate('search_uniprot', {**prior, "function_filter": "specific OR enzyme"}, history=history) is None
+    assert check_search_duplicate('search_uniprot', {**prior, "function_filter": '"specific enzyme"'}, history=history) is None
+
+
+def test_incomplete_or_failed_search_is_never_cached_as_zero():
+    from enzyme_discovery_agent.bootstrap import register_builtin_tools
+    from enzyme_discovery_agent.tool_registry import check_search_duplicate, record_search
+    register_builtin_tools()
+    args = {"gene_name": "exampleQ", "function_filter": "specific enzyme"}
+    for result in ({"status": "error", "count": 0, "search_completed": True},
+                   {"status": "partial", "count": 0},
+                   {"status": "partial", "count": 1, "search_completed": True}):
+        history = []
+        record_search('search_uniprot', args, result, history=history)
+        assert not history
+        assert check_search_duplicate('search_uniprot', args, history=history) is None

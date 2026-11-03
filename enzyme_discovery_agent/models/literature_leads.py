@@ -32,6 +32,32 @@ def sequence_name_leads(text):
     return leads
 
 
+# A class label names a group, not an individual enzyme, so no identifier lookup can
+# ever resolve it. Registering one costs a pool slot and a share of every later
+# resolution pass while never being able to yield a sequence. Detection stays purely
+# grammatical -- plural heads, citation phrases, collection words -- so it carries no
+# assumption about which groups a given target makes relevant.
+_CLASS_CUES = re.compile(r"(\bet\s+al\b|\blibrar(?:y|ies)\b|\bfamil(?:y|ies)\b|\bsuperfamily\b|"
+                         r"\bclass\b|\bgroup\b|\(general\)|\bsuch\s+as\b|\bvarious\b|\bother\b|"
+                         # A domain is a part of an enzyme, and "used by"/"from" introduce a
+                         # provenance phrase rather than an enzyme's own name.
+                         r"\bdomains?\b|\benzymes\b|\bproteins\b|\bused\s+by\b)", re.I)
+_PLURAL_HEAD = re.compile(r"\b\w{3,}(?:ases|ases\b)\b", re.I)
+_BARE_GENERIC = re.compile(r"^\s*(?:putative\s+|probable\s+)?\w+(?:ase|domain|enzyme|protein)\s*$", re.I)
+
+
+def enzyme_class_label(name):
+    """True when the name denotes a category of enzymes rather than one enzyme."""
+    text = str(name or "").strip()
+    if not text:
+        return False
+    if _CLASS_CUES.search(text) or _PLURAL_HEAD.search(text):
+        return True
+    # A single generic head with no distinguishing qualifier ("Lipase", "Acyltransferase")
+    # is a class; the same head with a qualifier ("Coronafacate ligase") is an enzyme.
+    return bool(_BARE_GENERIC.match(text))
+
+
 def register_literature_lead(run_dir, record, paper, text_path, *, registration_run_id=None):
     """Register a paper-scoped candidate before a sequence identity is known."""
     from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry, update_candidate_registry
@@ -39,6 +65,11 @@ def register_literature_lead(run_dir, record, paper, text_path, *, registration_
     from enzyme_discovery_agent.run_layout import run_file
     root = Path(run_dir); name = str(record.get("name") or "").strip()
     if not name: return None
+    if enzyme_class_label(name) and not str(record.get("genbank") or "").strip():
+        # Keep the observation in the mined text; it just does not become a candidate
+        # that resolution passes will retry forever. A deposited identifier overrides
+        # this, because then the lookup is determinate regardless of how it is named.
+        return None
     path = Path(text_path).resolve(); contents = path.read_bytes()
     organism = str(record.get("organism") or "").strip()
     if organism.casefold() in {"not specified", "unknown", "not stated", "unspecified"}: organism = ""

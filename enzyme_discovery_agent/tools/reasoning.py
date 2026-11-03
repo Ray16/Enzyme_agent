@@ -37,13 +37,62 @@ from enzyme_discovery_agent.substrate_fit import assign_one_to_one
 from enzyme_discovery_agent.static.cofactors import COFACTOR_CHEBI_IDS
 from enzyme_discovery_agent.tool_registry import tool
 from enzyme_discovery_agent.tools._http import request_with_retry
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
+
+
+@tool(description="Read a candidate's saved identity, native-function evidence, expression assessment and structural observations without new network calls.",
+      category="reasoning", parallel_safe=True, injected_params=["run_dir"],
+      params={"accession": {"type": "string", "description": "Candidate accession to inspect."}})
+def get_candidate_evidence(accession: str, run_dir: str = "") -> dict:
+    entry = load_candidate_registry(Path(run_dir), strict=True).get("candidates", {}).get(accession)
+    if not entry:
+        return {"status": "empty", "data": None, "summary": "Candidate is not registered in this run."}
+    from enzyme_discovery_agent.models.expansion import seed_evidence
+    return {"status": "success", "summary": f"Saved candidate evidence for {accession}; no new evaluation performed.",
+            "data": seed_evidence(accession, entry)}
+
+
+@tool(description="Inspect this campaign's complete saved exploration frontier, modeling observations and unresolved questions. Supports bounded pagination beyond the examples in working context. This read-only view does not rank candidates, establish global saturation, approve an interpretation or authorize compute.",
+      category="reasoning", parallel_safe=True, injected_params=["run_dir"],
+      params={"section": {"type": "string", "enum": ["overview", "families", "hypotheses", "methods", "modeling", "questions", "searches"],
+                          "default": "questions", "description": "Saved state to inspect."},
+              "offset": {"type": "integer", "default": 0, "description": "Nonnegative pagination offset."},
+              "limit": {"type": "integer", "default": 10, "description": "Records per page, between 1 and 20."},
+              "query": {"type": "string", "default": "", "description": "Optional text filter over the requested saved-state section."}})
+def get_exploration_state(section: str = "questions", offset: int = 0, limit: int = 10,
+                          query: str = "", run_dir: str = "") -> dict:
+    from enzyme_discovery_agent.models.exploration_state import exploration_page
+    try:
+        data = exploration_page(Path(run_dir), section, offset=offset, limit=limit, query=query)
+    except ValueError as exc:
+        return {"status": "error", "summary": str(exc), "data": None}
+    return {"status": "success" if data["records"] else "empty", "data": data,
+            "summary": f"Saved {section} diagnostics: {len(data['records'])} of {data['total']} matching records."}
+
+
+@tool(description="Recall this campaign's saved searches, unresolved literature identities, family decisions or notebook passages without network calls. Results are paginated; notes and decisions are not primary evidence.",
+      category="reasoning", parallel_safe=True, injected_params=["run_dir"],
+      params={"topic": {"type": "string", "enum": ["searches", "leads", "notes", "decisions", "reasoning"],
+                        "description": "Research memory to inspect."},
+              "query": {"type": "string", "default": "", "description": "Optional text filter over saved records."},
+              "offset": {"type": "integer", "default": 0, "description": "Pagination offset from a previous response."},
+              "limit": {"type": "integer", "default": 10, "description": "Maximum records, between 1 and 20."}})
+def get_research_memory(topic: str, query: str = "", offset: int = 0, limit: int = 10, run_dir: str = "") -> dict:
+    from enzyme_discovery_agent.models.research_memory import recall_memory
+    try:
+        data = recall_memory(Path(run_dir), topic, query, offset, limit)
+    except ValueError as exc:
+        return {"status": "error", "summary": str(exc), "data": None}
+    return {"status": "success" if data["records"] else "empty", "data": data,
+            "summary": f"Recalled {len(data['records'])} saved {topic} records; {data['total']} matching records."}
 
 
 # --------------------------------------------------------------------------
 # Helpers
 # --------------------------------------------------------------------------
+
 
 def _fetch_uniprot_entry_light(accession: str) -> dict | None:
     """Fetch minimal UniProt data for screening (single API call)."""
@@ -233,73 +282,14 @@ def _check_pdb_availability(accession: str, entry: dict | None = None) -> dict:
 
 
 def _check_bacterial_expression(accession: str, entry: dict, pdb_ids: list[str]) -> dict:
-    """Check for evidence of expression in bacteria, prioritising E. coli."""
-    result = {
-        "ecoli_expression": False,
-        "bacterial_expression": False,
-        "is_eukaryote": False,
-        "expression_evidence": [],
-        "expression_host": None,
-    }
+    """Assess documented preferred-host expression, preserving uncertainty."""
+    from enzyme_discovery_agent.models.expression import assess_expression
 
-    # 1. Native organism is E. coli or another bacterium
-    organism = entry.get("organism", {}).get("scientificName", "")
-    # UniProt lineage is a list of strings (taxon names)
-    lineage = entry.get("organism", {}).get("lineage", [])
-    if isinstance(lineage, list) and lineage and isinstance(lineage[0], dict):
-        lineage = [t.get("scientificName", "") for t in lineage]
-    is_bacterial = "Bacteria" in lineage
-    is_eukaryote = "Eukaryota" in lineage
+    def fetch_json(url):
+        request = urllib.request.Request(url, headers={"Accept": "application/json"})
+        return json.loads(request_with_retry(request, timeout=10).decode())
 
-    if "Escherichia coli" in organism:
-        result["ecoli_expression"] = True
-        result["bacterial_expression"] = True
-        result["expression_evidence"].append("Native E. coli enzyme")
-        result["expression_host"] = "Escherichia coli (native)"
-        return result
-    result["is_eukaryote"] = is_eukaryote
-    if is_bacterial:
-        result["bacterial_expression"] = True
-        result["expression_evidence"].append(f"Native bacterium: {organism}")
-
-    # 2. UniProt comments mentioning recombinant expression
-    for comment in entry.get("comments", []):
-        text = json.dumps(comment)
-        ctype = comment.get("commentType", "")
-        if ctype in ("BIOTECHNOLOGY", "MISCELLANEOUS", "DISRUPTION PHENOTYPE"):
-            if "Escherichia coli" in text or "E. coli" in text:
-                result["ecoli_expression"] = True
-                result["bacterial_expression"] = True
-                result["expression_evidence"].append(f"UniProt {ctype} mentions E. coli expression")
-                result["expression_host"] = "Escherichia coli (UniProt annotation)"
-
-    # 3. Check PDB expression systems via RCSB API (check first 2 structures max)
-    for pdb_id in pdb_ids[:2]:
-        try:
-            url = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
-            req = urllib.request.Request(url, headers={"Accept": "application/json"})
-            data = json.loads(request_with_retry(req, timeout=10).decode())
-            data_str = json.dumps(data)
-            if "Escherichia coli" in data_str:
-                result["ecoli_expression"] = True
-                result["bacterial_expression"] = True
-                result["expression_evidence"].append(
-                    f"PDB {pdb_id} expressed in E. coli"
-                )
-                if not result["expression_host"]:
-                    result["expression_host"] = f"Escherichia coli (PDB {pdb_id})"
-                break
-            elif any(b in data_str for b in [
-                "Bacillus", "Lactococcus", "Streptomyces", "Corynebacterium"
-            ]):
-                result["bacterial_expression"] = True
-                result["expression_evidence"].append(
-                    f"PDB {pdb_id} expressed in bacteria"
-                )
-        except Exception as e:
-            logger.debug("RCSB expression check failed for %s: %s", pdb_id, e)
-
-    return result
+    return assess_expression(accession, entry, pdb_ids, fetch_json)
 
 
 def _extract_mutagenesis(entry: dict) -> dict:
@@ -468,7 +458,17 @@ def screen_candidates(run_dir: Path | str, accessions: list[str]) -> dict:
     registry_candidates = load_candidate_registry(run_dir).get("candidates", {})
     results = []
     for acc in accessions[:config.SCREENING_BATCH_SIZE]:
-        metadata = registry_candidates.get(acc, {}).get("metadata", {})
+        candidate_entry = registry_candidates.get(acc, {})
+        metadata = candidate_entry.get("metadata", {})
+        if metadata.get("is_literature_lead"):
+            results.append({"accession": acc, "screening_decision": "evidence_pending",
+                            "screening_reason": "Paper-scoped identity requires independent resolution."})
+            continue
+        from enzyme_discovery_agent.models.candidate_registry import defer_non_uniprot_deposit
+        if defer_non_uniprot_deposit(run_dir, acc, candidate_entry):
+            results.append({"accession": acc, "screening_decision": "evidence_pending",
+                            "screening_reason": "Deposited identity needs independent resolution."})
+            continue
         if metadata.get("is_metagenomic"):
             sequence = str(metadata.get("sequence") or "")
             entry = {
@@ -568,7 +568,9 @@ def screen_candidates(run_dir: Path | str, accessions: list[str]) -> dict:
         accession = result.get("accession", "")
         if not accession:
             continue
-        (candidate_dir / f"screen_{accession}.json").write_text(json.dumps({
+        import hashlib
+        safe = accession if re.fullmatch(r"[A-Za-z0-9_.-]+", accession) else "identifier_" + hashlib.sha256(accession.encode()).hexdigest()
+        (candidate_dir / f"screen_{safe}.json").write_text(json.dumps({
             "tool_name": "screen_candidates",
             "accession": accession,
             "target_direction": target_direction,
@@ -793,6 +795,17 @@ def evaluate_candidate(
             "suggestions": ["Resolve new, contradictory primary evidence before registering a new candidate."],
         }
     existing_metadata = existing.get("metadata", {})
+    from enzyme_discovery_agent.models.candidate_registry import defer_non_uniprot_deposit
+    if defer_non_uniprot_deposit(run_dir, accession, existing):
+        return {"status": "partial", "summary": "Deposited identifier requires identity resolution before evaluation.",
+                "data": {"accession": accession, "identity_status": "pending"},
+                "suggestions": ["Inspect the source-scoped identity evidence before selecting an accession."]}
+    if existing_metadata.get("is_literature_lead"):
+        resolved = existing_metadata.get("resolved_accession")
+        return {"status": "partial", "summary": "Literature identifiers are evidence aliases, not database accessions.",
+                "data": {"resolved_accession": resolved}, "suggestions": [
+                    f"Evaluate linked accession {resolved}." if resolved else
+                    "Resolve the paper's deposited identifier or candidate-specific sequence evidence before functional evaluation."]}
     if existing_metadata.get("is_metagenomic"):
         return _evaluate_metagenomic_candidate(run_dir, accession, existing_metadata)
 
@@ -941,17 +954,42 @@ def evaluate_candidate(
         resolve_chebi_smiles(cid)  # populates the name cache
         return get_chebi_name(cid)
 
-    for xid in _reactant_side_chebi_ids(entry, _name_of):
-        native_substrates_info.append({
-            "chebi_id": xid,
-            "name": get_chebi_name(xid),
-            "smiles": resolve_chebi_smiles(xid),
-        })
+    from enzyme_discovery_agent.tools.native_reactions import reaction_groups, select_reaction_group, substrate_occurrences
+    groups=reaction_groups(entry,lambda one:_reactant_side_chebi_ids(one,_name_of))
+    for group in groups:
+        group['native_substrates']=[{'chebi_id':cid,'name':get_chebi_name(cid),
+            'smiles':resolve_chebi_smiles(cid)} for cid in group['chebi_ids']]
+        group['native_substrates']=substrate_occurrences(group['reaction'],group['native_substrates'])
+    target_chemistry=extract_target_bond_type(target_reaction_type)
+    target_parts=[part.strip() for part in target_substrate_smiles.split('.') if part.strip()]
+    def _group_fit(group):
+        from enzyme_discovery_agent.tools.family_reactions import _substrate_facts
+        from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+        from enzyme_discovery_agent.substrate_fit import accommodation_score
+        native=[item['smiles'] for item in group['native_substrates'] if item.get('smiles')]
+        if not native or not target_parts:
+            return None
+        try:
+            facts=_substrate_facts(native,target_parts) or {}
+            from enzyme_discovery_agent.tools.native_reactions import annotate_indirect_donor_roles
+            roles=annotate_indirect_donor_roles(entry,group['native_substrates'],accommodation_facts(target_parts,native))
+            return accommodation_score({'property_comparisons':facts.get('property_comparisons'),
+                                        'accommodation':roles})
+        except (ValueError,TypeError,RuntimeError):
+            return None
+    selected_reaction=select_reaction_group(groups,target_chemistry.get('direction'),
+                                           target_chemistry.get('bond_types') or [],_group_fit)
+    if selected_reaction:
+        native_substrates_info=selected_reaction['native_substrates']
+        # The fallback must use this same reaction's identifiers as well.
+        rhea_ids=selected_reaction['rhea_ids']
 
     # Substrate-source cascade — measured or reported ONLY, never inferred.
     # 1) UniProt catalyticActivity -> ChEBI -> SMILES (above; most reliable).
     # 2) The enzyme's own Rhea reaction IDs -> ChEBI -> SMILES (still measured).
     literature_name = ""
+    literature_evidence = existing_metadata.get("literature_evidence")
+    extracted_literature_substrates = []
     if not native_substrates_info:
         native_substrates_info = _fallback_substrate_lookup(rhea_ids)
 
@@ -970,16 +1008,29 @@ def evaluate_candidate(
                 query=target_reaction_type, organism=organism,
             )
             if lit and lit.get("paper_relevant"):
-                for ns in lit.get("native_substrates") or []:
-                    if ns.get("smiles"):
-                        native_substrates_info.append({
-                            "chebi_id": "", "name": ns.get("name", ""),
-                            "smiles": ns["smiles"], "source": "literature",
-                        })
+                literature_evidence = lit.get("literature_evidence") or literature_evidence
+                extracted_literature_substrates = lit.get("native_substrates") or []
                 literature_name = (lit.get("enzyme_name_in_paper") or "").strip()
         except Exception as e:  # never let the fallback block evaluation
             logger.debug("literature substrate fallback failed for %s: %s",
                          accession, e)
+
+    from enzyme_discovery_agent.models.literature_evidence import verify_literature_evidence
+    literature_verified = verify_literature_evidence(literature_evidence, accession, entry)
+    if literature_verified and not native_substrates_info:
+        for ns in extracted_literature_substrates:
+            if isinstance(ns, dict) and ns.get("smiles"):
+                native_substrates_info.append({"chebi_id": "", "name": ns.get("name", ""),
+                                               "smiles": ns["smiles"], "source": "literature"})
+    if literature_verified and not native_substrates_info:
+        from enzyme_discovery_agent.chemistry_logic import resolve_substrate_names_to_smiles
+        for native in literature_evidence.get("native_substrates") or []:
+            name = native.get("name", "") if isinstance(native, dict) else str(native)
+            smiles = native.get("smiles") if isinstance(native, dict) else None
+            smiles = smiles or resolve_substrate_names_to_smiles(name)
+            if smiles:
+                native_substrates_info.append({"name": name, "smiles": smiles,
+                                              "source": "literature"})
 
     # Substrate similarity
     substrate_similarity = {}
@@ -994,15 +1045,9 @@ def evaluate_candidate(
                             if s.strip()]
 
         if native_smiles_list and target_molecules:
-            # ONE-TO-ONE correspondence (shared with the promotion path via
-            # assign_one_to_one): each native substrate serves AT MOST ONE target
-            # substrate, so a two-partner target cannot flatter itself by matching
-            # both partners onto its single best native.  Fingerprint similarity is
-            # the per-pair score; it already carries the role signal (an amine target
-            # is most similar to an amine native), so the assignment pairs amine↔amine
-            # and carboxyl↔carboxyl and forces the target's amine partner onto the
-            # family's amine partner even when that is a tiny FG-less donor (ammonia),
-            # which then scores as the poor fit it is.  Answer-agnostic throughout.
+            # Match distinct source-supported occurrences, including repeated
+            # copies of one species. Fingerprints supply structural context;
+            # reacting roles require an explicit step interpretation.
             _fp_cache: dict = {}
 
             def _fp(t_smi, n_smi):
@@ -1049,6 +1094,16 @@ def evaluate_candidate(
             from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
             substrate_similarity["accommodation"] = accommodation_facts(
                 target_molecules, native_smiles_list)
+            from enzyme_discovery_agent.tools.native_reactions import annotate_indirect_donor_roles
+            substrate_similarity['accommodation']=annotate_indirect_donor_roles(
+                entry,native_substrates_info,substrate_similarity['accommodation'])
+            from enzyme_discovery_agent.models.reaction_roles import apply_roles
+            role_basis={'catalytic_activities':catalytic_activities,'function_comments':function_comments[:3],
+                        'native_substrates':[ns for ns in native_substrates_info if ns.get('smiles')],
+                        'native_substrate_reaction_scope':selected_reaction,'required_cofactors':required_cofactors,
+                        'reaction_step':existing_metadata.get('reaction_step')}
+            substrate_similarity['accommodation']=apply_roles(role_basis,existing_metadata.get('reaction_roles'),
+                substrate_similarity['accommodation'])
             if len(property_comparisons) < len(target_molecules):
                 substrate_similarity["property_note"] = (
                     "Property comparison unavailable for some substrates "
@@ -1093,6 +1148,8 @@ def evaluate_candidate(
     is_enzyme, interpro_family, interpro_family_id = _catalytic_family(
         domain_architecture, ec_numbers, catalytic_activities
     )
+    if literature_verified and not catalytic_activities:
+        is_enzyme = True
 
     # Identity validity is necessary but says nothing about function.  Build a
     # second, target-specific bundle from the authoritative catalytic-activity
@@ -1106,16 +1163,26 @@ def evaluate_candidate(
         target_bond_types=target_bonds,
         target_topology=target_topology,
         require_native_reaction=True,
+        literature_evidence=literature_evidence,
     )
 
     existing_mechanism = existing.get("metadata", {}).get("mechanism_evidence")
-    activation = derive_activation_mechanism(catalytic_activities)
+    from enzyme_discovery_agent.tools.native_reactions import scoped_activation
+    activation_context=scoped_activation(selected_reaction,catalytic_activities)
+    activation = activation_context['activation']
     mechanism_evidence = dict(existing_mechanism or {})
+    if (selected_reaction and mechanism_evidence.get('activation') and
+            mechanism_evidence.get('modeled_reaction_scope')!=activation_context['reaction_scope']):
+        mechanism_evidence['previous_unscoped_activation']=mechanism_evidence.pop('activation')
     if activation:
         mechanism_evidence["activation"] = activation
+    if selected_reaction:
+        mechanism_evidence['modeled_reaction_scope']=activation_context['reaction_scope']
+    if activation_context.get('all_activity_observations'):
+        mechanism_evidence['all_activity_activation_observations']=activation_context['all_activity_observations']
 
     modeling_candidate = {
-        "catalytic_activities": catalytic_activities,
+        "catalytic_activities": activation_context['activities'],
         "required_cofactors": required_cofactors,
         "cofactor_notes": cofactor_notes,
         "mechanism_evidence": mechanism_evidence or None,
@@ -1124,7 +1191,7 @@ def evaluate_candidate(
         ),
     }
     try:
-        target_context = json.loads((run_dir / "target_context.json").read_text())
+        target_context = json.loads((run_file(run_dir, 'target_context.json')).read_text())
     except (OSError, json.JSONDecodeError):
         target_context = {
             "substrate_smiles": target_substrate_smiles,
@@ -1162,9 +1229,12 @@ def evaluate_candidate(
         "native_substrates": [
             ns for ns in native_substrates_info if ns.get("smiles")
         ],
+        "native_substrate_reaction_scope": selected_reaction,
+        "native_reaction_groups": groups,
         "rhea_ids": rhea_ids,
         "identity_validation": identity_validation,
         "claim_validation": function_validation,
+        "literature_evidence": literature_evidence,
         "mechanism_evidence": mechanism_evidence or None,
         "modeling_input": modeling_input,
     }
@@ -1172,6 +1242,9 @@ def evaluate_candidate(
     # Strengths and weaknesses
     strengths = []
     weaknesses = []
+    if (substrate_similarity.get('accommodation') or {}).get('indirect_donor_role_mappings'):
+        weaknesses.append('INDIRECT SUBSTRATE ROLE: the fitted native partner is annotated as a hydrolyzed nitrogen source. '
+            'Whole-molecule resemblance does not establish direct acceptance at the ligation site; target role transfer requires evidence.')
 
     if is_swissprot:
         strengths.append("Swiss-Prot reviewed entry")
@@ -1185,19 +1258,13 @@ def evaluate_candidate(
         strengths.append(f"Engineering precedent ({literature['engineering_papers']} papers)")
     if expression_data.get("ecoli_expression"):
         host = expression_data.get("expression_host", "E. coli")
-        strengths.append(f"E. coli expression demonstrated ({host})")
+        level = (expression_data.get("preferred_host_assessment") or {}).get("level", "reported_expression")
+        strengths.append(f"Preferred-host evidence: {level} ({host}); construct and activity scope retained")
     elif expression_data.get("bacterial_expression"):
         evid = expression_data.get("expression_evidence", ["bacteria"])[0]
         strengths.append(f"Bacterial expression demonstrated ({evid})")
-    elif not expression_data.get("bacterial_expression"):
-        lineage = entry.get("organism", {}).get("lineage", [])
-        if isinstance(lineage, list) and lineage and isinstance(lineage[0], dict):
-            lineage = [t.get("scientificName", "") for t in lineage]
-        if "Eukaryota" in lineage:
-            weaknesses.append(
-                "Eukaryotic origin — codon optimisation and soluble "
-                "expression in E. coli not guaranteed"
-            )
+    else:
+        weaknesses.append("Preferred-host expression is unresolved; native organism alone does not establish recombinant expression")
     if mutagenesis_data["n_mutations"] > 0:
         strengths.append(f"Mutagenesis data ({mutagenesis_data['n_mutations']} variants, {mutagenesis_data['n_references']} refs)")
     if structural_data.get("pdb_ids"):
@@ -1219,8 +1286,9 @@ def evaluate_candidate(
     requires_polymer = native_polymer_substrate and target_direction == "formation"
     if requires_polymer:
         weaknesses.append(
-            "POLYMER SUBSTRATE: native reaction extends a growing polymer chain -- "
-            "requires primer; cannot ligate two free small molecules"
+            "POLYMER SUBSTRATE: native annotation describes chain extension on a primer. "
+            "Initiation from two free inputs is unestablished; primer-compatible "
+            "elongation needs a separate substrate-compatibility assessment."
         )
     elif native_polymer_substrate and target_direction == "cleavage":
         strengths.append("Native oligomer/polymer substrate scope")
@@ -1239,6 +1307,14 @@ def evaluate_candidate(
                 critical_warnings.append(w)
             else:
                 weaknesses.append(w)
+        eval_data["reaction_chemistry"] = enzyme_chem
+    if literature_verified and not catalytic_activities:
+        mechanism = literature_evidence.get("mechanism") or {}
+        enzyme_chem = {
+            "bond_types": mechanism.get("bond_types") or [mechanism.get("bond_formed")],
+            "reaction_direction": mechanism.get("direction"),
+            "source": "primary_literature",
+        }
         eval_data["reaction_chemistry"] = enzyme_chem
 
     # Substrate size mismatch detection
@@ -1344,7 +1420,11 @@ def evaluate_candidate(
         blocked = ", ".join(function_validation.get("blocking_claims") or ["unknown"])
         weaknesses.append(f"Authoritative function claims not supported: {blocked}")
         eval_data["weaknesses"] = weaknesses
-    eval_status = "evaluated" if is_enzyme and function_supported else "rejected"
+    contradictions = [c for c in function_validation.get("claims", [])
+                      if c.get("verdict") == "contradicted"
+                      and c.get("claim_type") in function_validation.get("blocking_claims", [])]
+    eval_status = ("evaluated" if is_enzyme and function_supported else
+                   "rejected" if contradictions else "evidence_pending")
     update_candidate_registry(run_dir, accession, eval_status, metadata={
         "protein_name": protein_name,
         "gene_names": gene_names,
@@ -1361,6 +1441,7 @@ def evaluate_candidate(
         "literature": literature,
         "structural_data": structural_data,
         "substrate_similarity": substrate_similarity,
+        "expression_data": expression_data,
         "reaction_chemistry": enzyme_chem,
         "strengths": strengths,
         "weaknesses": weaknesses,
@@ -1368,8 +1449,10 @@ def evaluate_candidate(
         "is_swissprot": is_swissprot,
         "identity_validation": identity_validation,
         "claim_validation": function_validation,
+        "literature_evidence": literature_evidence,
         "mechanism_evidence": mechanism_evidence or None,
         "modeling_input": modeling_input,
+        "evaluation_data": dict(eval_data),
         "rejection_reason": (
             None if eval_status == "evaluated" else
             "authoritative function validation failed: "

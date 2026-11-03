@@ -111,6 +111,7 @@ def _semantic_rerank(
     min_score: float = config.RERANK_MIN_SCORE,
     title_key: str = "title",
     abstract_key: str = "abstract",
+    run_dir: str | None = None,
 ) -> list[dict]:
     """Re-rank papers by fusing native retrieval order with semantic similarity.
 
@@ -127,10 +128,21 @@ def _semantic_rerank(
     """
     if not papers:
         return []
+    def retain(result):
+        if run_dir:
+            from pathlib import Path
+            import uuid
+            from enzyme_discovery_agent.state_store import atomic_write_json
+            atomic_write_json(Path(run_dir) / "artifacts" / "literature" / "retrieval" / f"{uuid.uuid4().hex}.json", {
+                "query": query, "source": papers[0].get("source"),
+                "result": {"data": papers}, "retained_keys": [str(_paper_key(p)) for p in result],
+                "funnel": {"retrieved": len(papers), "retained": len(result), "limit": max_results},
+            })
+        return result
     model = _get_rerank_model()
     if model is None:
         # Expected no-op: rerank disabled or sentence-transformers absent.
-        return papers[:max_results]
+        return retain(papers[:max_results])
 
     # A failure computing embeddings/cosine is a genuine bug, NOT the expected
     # "embedder unavailable" path -- surface it loudly (with traceback) instead
@@ -140,9 +152,9 @@ def _semantic_rerank(
     except Exception as e:
         logger.error("Semantic rerank computation failed; returning native "
                      "order: %s", e, exc_info=True)
-        return papers[:max_results]
+        return retain(papers[:max_results])
 
-    return _rrf_fuse(papers, sims, max_results, min_score)
+    return retain(_rrf_fuse(papers, sims, max_results, min_score))
 
 
 # Embedding cache: within (and across) searches in a campaign the same abstract
@@ -275,37 +287,56 @@ def dedupe_and_merge(papers: list[dict]) -> tuple[list[dict], dict]:
     e.g. a paper from PubMed (no PMCID) merged with its Europe PMC record (has
     PMCID) ends up routable to full text.
     """
-    merged: dict = {}
-    order: list = []
-    src: dict = {}
-    unkeyable: list[dict] = []
+    unique: list[dict] = []
+    index: dict[tuple[str, str], set[int]] = {}
 
-    def _add_src(key, paper):
-        s = paper.get("sources") or paper.get("source")
-        if isinstance(s, list):
-            src[key].update(x for x in s if x)
-        elif s:
-            src[key].add(s)
+    def ids(record):
+        doi = str(record.get("doi") or "").lower().strip()
+        doi = re.sub(r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*)", "", doi)
+        return {"doi": doi, "pmid": str(record.get("pmid") or "").strip(),
+                "pmcid": str(record.get("pmcid") or "").upper().strip()}
 
-    for p in papers:
-        key = _paper_key(p)
-        if key is None:
-            unkeyable.append(dict(p))
-            continue
-        if key in merged:
-            merged[key] = _merge_records(merged[key], p)
+    def compatible(a, b):
+        left, right = ids(a), ids(b)
+        if any(left[k] and right[k] and left[k] != right[k] for k in left):
+            return False
+        if any(left[k] and left[k] == right[k] for k in left):
+            return True
+        # A title may join a record missing identifiers, never two distinct
+        # identifier-bearing records whose relationship is unconfirmed.
+        return (not any(left.values()) or not any(right.values())) and bool(
+            _normalize_title(a.get("title", ""))) and _normalize_title(a.get("title", "")) == _normalize_title(b.get("title", ""))
+
+    for paper in papers:
+        paper_ids = ids(paper)
+        keys = [(kind, value) for kind, value in paper_ids.items() if value]
+        title = _normalize_title(paper.get("title", ""))
+        if title:
+            keys.append(("title", title))
+        possible = set().union(*(index.get(key, set()) for key in keys)) if keys else set()
+        matches = [i for i in sorted(possible) if compatible(unique[i], paper)]
+        # Avoid merging through an ambiguous title or conflicting identifier bridge.
+        if len(matches) == 1:
+            idx = matches[0]
+            sources = set(unique[idx].get("sources") or [])
+            item = _merge_records(unique[idx], paper)
         else:
-            merged[key] = dict(p)
-            order.append(key)
-            src[key] = set()
-        _add_src(key, p)
-
-    unique = []
-    for key in order:
-        rec = merged[key]
-        rec["sources"] = sorted(src[key])
-        unique.append(rec)
-    unique.extend(unkeyable)
+            idx = len(unique)
+            sources = set()
+            item = dict(paper)
+        incoming = paper.get("sources") or paper.get("source") or []
+        sources.update(incoming if isinstance(incoming, list) else [incoming])
+        item["sources"] = sorted(s for s in sources if s)
+        if idx == len(unique):
+            unique.append(item)
+        else:
+            unique[idx] = item
+        for kind, value in ids(item).items():
+            if value:
+                index.setdefault((kind, value), set()).add(idx)
+        title = _normalize_title(item.get("title", ""))
+        if title:
+            index.setdefault(("title", title), set()).add(idx)
 
     stats = {
         "raw": len(papers),
@@ -341,12 +372,15 @@ def _recover_literature_papers(run_dir: str | None) -> list[dict]:
     from pathlib import Path
 
     recovered: list[dict] = []
-    for path in sorted((Path(run_dir) / "artifacts" / "literature").glob("*.json")):
+    for path in sorted((Path(run_dir) / "artifacts" / "literature").rglob("*.json")):
         try:
             artifact = json.loads(path.read_text())
             data = artifact.get("result", {}).get("data", [])
             if isinstance(data, list):
                 recovered.extend(item for item in data if isinstance(item, dict))
+            elif isinstance(data, dict):
+                for name in ("seed_papers", "reference_papers"):
+                    recovered.extend(item for item in data.get(name, []) if isinstance(item, dict))
         except (OSError, json.JSONDecodeError, AttributeError):
             continue
     seen = set()
@@ -509,6 +543,7 @@ def _pubmed_esearch_count(query: str) -> int:
     ),
     category="literature",
     parallel_safe=True,
+    injected_params=["run_dir"],
     params={
         "query": {
             "type": "string",
@@ -530,6 +565,7 @@ def search_pubmed(
     query: str,
     max_results: int = 10,
     rerank_query: str = "",
+    run_dir: str | None = None,
 ) -> dict:
     """Search PubMed for scientific articles with semantic re-ranking."""
     fetch_count = max_results * config.OVERFETCH_RATIO
@@ -613,7 +649,7 @@ def search_pubmed(
     reranked = _semantic_rerank(
         query=rerank_query or query,
         papers=articles,
-        max_results=max_results,
+        max_results=max_results, run_dir=run_dir,
     )
 
     return {
@@ -660,6 +696,7 @@ def _clean_openalex_doi(work: dict) -> str:
     ),
     category="literature",
     parallel_safe=True,
+    injected_params=["run_dir"],
     params={
         "query": {
             "type": "string",
@@ -672,9 +709,11 @@ def _clean_openalex_doi(work: dict) -> str:
         },
         "sort_by_citations": {
             "type": "boolean",
-            "description": "If true, sort by citation count; otherwise by publication year.",
-            "default": True,
+            "description": "Explicit legacy override for citation sorting; false uses sort_order.",
+            "default": False,
         },
+        "sort_order": {"type":"string","enum":["relevance","recent","citations"],"default":"relevance",
+                       "description":"Retrieve relevant works by default; choose recent or citations for a complementary source probe."},
         "rerank_query": {
             "type": "string",
             "description": "Optional richer intent for semantic re-ranking.",
@@ -685,19 +724,24 @@ def _clean_openalex_doi(work: dict) -> str:
 def search_openalex(
     query: str,
     max_results: int = 20,
-    sort_by_citations: bool = True,
+    sort_by_citations: bool = False,
     rerank_query: str = "",
+    run_dir: str | None = None,
+    sort_order: str = 'relevance',
 ) -> dict:
     """Search OpenAlex for scholarly works with semantic re-ranking."""
     fetch_count = min(max_results * config.OVERFETCH_RATIO, 200)
 
-    sort_param = "cited_by_count:desc" if sort_by_citations else "publication_year:desc"
+    order='citations' if sort_by_citations else sort_order
+    if order not in {'relevance','recent','citations'}:
+        return {'status':'error','summary':'Choose relevance, recent or citations ordering.','data':[]}
     params = {
         "search": query,
         "per-page": str(fetch_count),
         "mailto": config.OPENALEX_EMAIL,
-        "sort": sort_param,
     }
+    if order!='relevance':
+        params['sort']='cited_by_count:desc' if order=='citations' else 'publication_year:desc'
     if config.OPENALEX_API_KEY:
         params["api_key"] = config.OPENALEX_API_KEY
     url = f"https://api.openalex.org/works?{urllib.parse.urlencode(params)}"
@@ -746,12 +790,13 @@ def search_openalex(
     reranked = _semantic_rerank(
         query=rerank_query or query,
         papers=results,
-        max_results=max_results,
+        max_results=max_results, run_dir=run_dir,
     )
 
     return {
         "status": "success",
         "summary": f"Found {len(reranked)} OpenAlex works for: {query[:60]}",
+        "retrieval_order":order,
         "data": reranked,
         "count": len(reranked),
     }
@@ -788,6 +833,7 @@ def _europepmc_oa_pdf_url(result: dict) -> str:
     ),
     category="literature",
     parallel_safe=True,
+    injected_params=["run_dir"],
     params={
         "query": {
             "type": "string",
@@ -809,6 +855,7 @@ def search_europepmc(
     query: str,
     max_results: int = 20,
     rerank_query: str = "",
+    run_dir: str | None = None,
 ) -> dict:
     """Search Europe PMC for scientific articles with semantic re-ranking."""
     fetch_count = min(max_results * config.OVERFETCH_RATIO, 100)
@@ -861,7 +908,7 @@ def search_europepmc(
         }
 
     reranked = _semantic_rerank(query=rerank_query or query, papers=results,
-                                max_results=max_results)
+                                max_results=max_results, run_dir=run_dir)
     return {
         "status": "success",
         "summary": f"Found {len(reranked)} Europe PMC articles for: {query[:60]}",
@@ -886,6 +933,7 @@ _S2_FIELDS = "title,year,venue,abstract,externalIds,openAccessPdf,citationCount,
     ),
     category="literature",
     parallel_safe=True,
+    injected_params=["run_dir"],
     params={
         "query": {
             "type": "string",
@@ -907,6 +955,7 @@ def search_semantic_scholar(
     query: str,
     max_results: int = 20,
     rerank_query: str = "",
+    run_dir: str | None = None,
 ) -> dict:
     """Search Semantic Scholar for scholarly works with semantic re-ranking."""
     fetch_count = min(max_results * config.OVERFETCH_RATIO, 100)
@@ -969,7 +1018,7 @@ def search_semantic_scholar(
         }
 
     reranked = _semantic_rerank(query=rerank_query or query, papers=results,
-                                max_results=max_results)
+                                max_results=max_results, run_dir=run_dir)
     return {
         "status": "success",
         "summary": f"Found {len(reranked)} Semantic Scholar works for: {query[:60]}",
@@ -1000,11 +1049,14 @@ def _strip_tags(text: str) -> str:
     ),
     category="literature",
     parallel_safe=True,
+    injected_params=["run_dir"],
     params={
         "query": {
             "type": "string",
             "description": "Bibliographic query (title works best; keywords also accepted).",
         },
+        "include_related_material": {"type":"boolean","default":False,
+            "description":"Include peer-review letters and supplemental components as hits; otherwise retain them separately from research papers."},
         "max_results": {
             "type": "integer",
             "description": "Maximum results to return (default 10).",
@@ -1021,6 +1073,8 @@ def search_crossref(
     query: str,
     max_results: int = 10,
     rerank_query: str = "",
+    run_dir: str | None = None,
+    include_related_material: bool = False,
 ) -> dict:
     """Resolve bibliographic queries to DOIs + metadata via Crossref."""
     fetch_count = min(max_results * config.OVERFETCH_RATIO, 50)
@@ -1029,7 +1083,7 @@ def search_crossref(
         "rows": str(fetch_count),
         "mailto": config.CONTACT_EMAIL,
         "select": ("DOI,title,container-title,author,issued,"
-                   "is-referenced-by-count,score,abstract,type"),
+                   "is-referenced-by-count,score,abstract,type,relation,link"),
     }
     url = f"{config.CROSSREF_API}/works?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
@@ -1044,8 +1098,12 @@ def search_crossref(
             "suggestions": ["Try a more complete title string."],
         }
 
-    results = []
+    results = [];related=[]
     for item in data.get("message", {}).get("items", []):
+        if not include_related_material and item.get('type') in {'peer-review','component'}:
+            related.append({'title':(item.get('title') or [''])[0],'doi':item.get('DOI'),
+                            'type':item.get('type'),'relations':item.get('relation') or {}})
+            continue
         title_list = item.get("title") or [""]
         journal_list = item.get("container-title") or [""]
         authors = []
@@ -1066,6 +1124,8 @@ def search_crossref(
             "abstract": _strip_tags(item.get("abstract", ""))[:1500],
             "cited_by_count": item.get("is-referenced-by-count", 0),
             "crossref_score": round(float(item.get("score", 0.0)), 2),
+            "related_identifiers": item.get("relation") or {},
+            "fulltext_links":item.get('link') or [],
             "type": item.get("type", ""),
             "source": "crossref",
         })
@@ -1074,16 +1134,18 @@ def search_crossref(
         return {
             "status": "partial",
             "summary": f"No Crossref results for: {query[:60]}",
+            "related_material":related,
             "data": [],
             "count": 0,
             "suggestions": ["Provide a more complete or exact title."],
         }
 
     reranked = _semantic_rerank(query=rerank_query or query, papers=results,
-                                max_results=max_results)
+                                max_results=max_results, run_dir=run_dir)
     return {
         "status": "success",
         "summary": f"Found {len(reranked)} Crossref records for: {query[:60]}",
+        "related_material":related,
         "data": reranked,
         "count": len(reranked),
     }
@@ -1646,21 +1708,29 @@ def deep_literature_search(
     max_seed_papers: int = 5,
     max_refs_per_seed: int = 15,
     rerank_query: str = "",
+    seed_papers: list[dict] | None = None,
 ) -> dict:
     """Multi-hop snowball search with automatic entity extraction."""
     seed_pool_size = max(max_seed_papers * 4, 20)
 
     # Step 1: Search all sources in parallel for seed papers.
-    seed_fns = (search_pubmed, search_openalex, search_europepmc,
-                search_semantic_scholar)
-    with ThreadPoolExecutor(max_workers=len(seed_fns)) as pool:
-        futs = [pool.submit(fn, query, max_results=seed_pool_size,
-                            rerank_query=rerank_query) for fn in seed_fns]
-        source_papers = []
-        for fut in futs:
-            r = fut.result()
-            source_papers.append(
-                r.get("data", []) if r.get("status") != "error" else [])
+    if seed_papers is not None:
+        source_papers = [seed_papers]
+    else:
+        seed_fns = (search_pubmed, search_openalex, search_europepmc,
+                    search_semantic_scholar)
+        with ThreadPoolExecutor(max_workers=len(seed_fns)) as pool:
+            futs = [pool.submit(fn, query, max_results=seed_pool_size,
+                                rerank_query=rerank_query) for fn in seed_fns]
+            source_papers = []
+            for fut in futs:
+                try:
+                    r = fut.result()
+                except Exception as exc:
+                    logger.warning("Seed literature source failed: %s", exc)
+                    r = {"status": "error"}
+                source_papers.append(
+                    r.get("data", []) if r.get("status") != "error" else [])
 
     # Step 2: Deduplicate by DOI, round-robin across sources for diversity.
     seen_dois = set()
@@ -1777,6 +1847,7 @@ def deep_literature_search(
         ),
         "data": {
             "seed_papers": seed_summaries,
+            "reference_papers": ref_papers,
             "extracted_entities": entities,
             "stats": {
                 "seed_count": len(seeds),
@@ -1788,6 +1859,41 @@ def deep_literature_search(
             },
         },
     }
+
+
+@tool(description="Follow backward references and forward citations of a retrieved paper using multiple citation graphs.",
+      category="literature", parallel_safe=True,
+      params={"doi": {"type": "string", "default": ""}, "pmid": {"type": "string", "default": ""},
+              "title": {"type": "string", "default": ""}, "query": {"type": "string", "default": "enzyme catalysis"}})
+def follow_paper_citations(doi: str = "", pmid: str = "", title: str = "", query: str = "enzyme catalysis") -> dict:
+    if not doi and not pmid:
+        return {"status": "error", "summary": "A retrieved DOI or PMID is required", "data": {}}
+    return deep_literature_search(query, max_seed_papers=1, max_refs_per_seed=15,
+                                  seed_papers=[{"doi": doi, "pmid": pmid, "title": title}])
+
+
+@tool(description="Resolve an explicitly retrieved DOI or PMID to article metadata and an available abstract.",
+      category="literature", parallel_safe=True, params={"doi": {"type": "string", "default":""},
+                                                       "pmid": {"type":"string", "default":""}})
+def fetch_paper_metadata(doi: str = "", pmid: str = "") -> dict:
+    if pmid:
+        if not str(pmid).isdigit():
+            return {'status':'error','summary':'A retrieved numeric PMID is required','data':[]}
+        papers=_efetch_pubmed_papers([str(pmid)])
+        return {'status':'success' if papers else 'unavailable',
+                'summary':'Retrieved article metadata; missing text does not establish irrelevance.',
+                'count':len(papers),'data':papers}
+    if not doi:
+        return {'status':'error','summary':'An explicitly retrieved DOI or PMID is required','data':[]}
+    url = "https://api.crossref.org/works/" + urllib.parse.quote(doi, safe="")
+    try:
+        item = json.loads(request_with_retry(urllib.request.Request(url), timeout=20).decode())["message"]
+        paper = {"doi": item.get("DOI") or doi, "title": (item.get("title") or [""])[0],
+                 "abstract": _strip_tags(item.get("abstract", "")), "type": item.get("type"),
+                 "related_identifiers": item.get("relation") or {}, "source": "crossref"}
+        return {"status": "success", "summary": "Retrieved primary article metadata", "count": 1, "data": [paper]}
+    except Exception as exc:
+        return {"status": "error", "summary": f"Paper metadata lookup failed: {type(exc).__name__}", "data": []}
 
 
 # ---------------------------------------------------------------------------

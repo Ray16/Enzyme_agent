@@ -41,13 +41,16 @@ from enzyme_discovery_agent.models.candidate_registry import (
     update_candidate_registry,
 )
 from enzyme_discovery_agent.models import embedding_store as store_mod
+from enzyme_discovery_agent.models.expansion import (
+    require_evaluated_seed, select_expansion_seeds, searched_seeds, record_seed_search,
+)
 from enzyme_discovery_agent.tools.embedding_map import (
     _fetch_sequences,
-    _select_promising,
     _substrate_fit,
     embed_sequences,
 )
 from enzyme_discovery_agent.tool_registry import execute_tool, tool
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -191,8 +194,8 @@ def select_neighbors_by_steer(eligible: list, k: int, steer_mode: str) -> list:
         "wider membership of the families they belong to, embeds those sequences in "
         "a protein language-model space, and registers as new leads the ones that "
         "sit NEAREST the top candidates in that space. Use this to grow the search "
-        "into unexplored but closely related sequence space once several promising "
-        "candidates have accumulated; you choose how many candidates to expand "
+        "into unexplored but closely related sequence space after candidates have "
+        "been evaluated; you choose how many top evaluated candidates to expand "
         "around (n_seeds) and how many new leads to keep per candidate (k)."
     ),
     category="database",
@@ -266,10 +269,18 @@ def expand_candidates_esm(
     if not candidates:
         return {"status": "partial", "summary": "No candidates to expand from yet.", "data": None, "count": 0}
 
-    seeds = [accession] if accession else _select_promising(candidates, n_seeds)
-    seeds = [s for s in seeds if s in candidates]
+    search_method = f"esm_expansion:{steer_mode}:k{k}:per_family{per_family}"
+    if accession:
+        blocked = require_evaluated_seed(run_path, accession, method=search_method)
+        if blocked:
+            return blocked
+        seeds = [accession]
+    else:
+        seeds = select_expansion_seeds(candidates, n_seeds, run_path, method=search_method)
+    searched = searched_seeds(run_path, search_method)
+    seeds = [seed for seed in seeds if seed not in searched]
     if not seeds:
-        return {"status": "partial", "summary": "No promising candidates to expand around yet.", "data": None, "count": 0}
+        return {"status": "skipped", "summary": "No evaluated top candidates awaiting this expansion search.", "data": None, "count": 0}
 
     pool = set(candidates.keys())
 
@@ -380,6 +391,7 @@ def expand_candidates_esm(
                     run_path, acc, "discovered",
                     metadata={
                         "source_tool": f"esm_expansion:{seed}",
+                        "sequence_expansion": {"seed_accession": seed, "method": search_method},
                         "esm_distance": dist,
                         "expansion_background": f"family:{ipr}" if ipr else "family",
                         "interpro_family_id": ipr or None,
@@ -397,6 +409,9 @@ def expand_candidates_esm(
             "family": family_display(seed_meta, seed),
             "neighbors": nbr_out,
         })
+        record_seed_search(run_path, search_method, seed,
+                           {"status": "success", "count": len(nbr_out),
+                            "new_accessions": [nb["accession"] for nb in nbr_out]})
 
     if selected_rows:
         store_mod.append_vectors(run_path, model, list(selected_rows.values()))
@@ -411,7 +426,7 @@ def expand_candidates_esm(
         "promising": promising_out,
     }
     try:
-        (run_path / "candidate_map.json").write_text(json.dumps(map_payload, indent=2))
+        (run_file(run_path, 'candidate_map.json')).write_text(json.dumps(map_payload, indent=2))
     except Exception:  # noqa: BLE001
         pass
 

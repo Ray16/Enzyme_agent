@@ -23,6 +23,7 @@ paper is on-topic; no extractable mechanism means it is not).
 from __future__ import annotations
 
 import json
+import hashlib
 import logging
 import re
 from pathlib import Path
@@ -70,6 +71,8 @@ def find_candidate_paper(run_dir: Path, source_tool: str) -> dict | None:
                     "deposited_accession": acc,
                     "text_path": str(txt),
                     "doi": rec.get("doi", ""),
+                    "pmcid": rec.get("pmcid", ""),
+                    "pmid": rec.get("pmid", ""),
                     "title": rec.get("title", ""),
                 }
         except OSError:
@@ -157,8 +160,9 @@ _EXTRACT_SYSTEM = (
     '  "enzymes": [{\n'
     '     "name":"..", "genbank":"..", "organism":"source organism if stated",\n'
     '     "native_substrates":["exact chemical names resolvable to a structure"],\n'
-    '     "reaction":{"bond_formed":"amide|ester|thioester|peptide|other",'
-    '"direction":"formation|cleavage","cofactor":"ATP|none|..",'
+    '     "evidence_quote":"verbatim passage naming this enzyme and stating its experimentally characterized reaction",\n'
+    '     "reaction":{"bond_formed":"bond type explicitly supported by the paper",'
+    '"direction":"formation|cleavage|transfer|redox|other","cofactor":"cofactor identity or none",'
     '"reactive_groups":"group on each substrate that forms the bond","summary":"<=25 words"},\n'
     '     "catalytic_residues":[{"residue":"<one-letter/three-letter + position>","role":"<=8 words"}],\n'
     '     "characterization":[{"metric":"kcat|Km|kcat/Km|conversion|yield|'
@@ -171,7 +175,7 @@ _EXTRACT_SYSTEM = (
     '"relationship":"homolog|same_family|cited_analogue","identity":"% if stated",'
     '"why_relevant":"<=15 words"}]\n'
     "}\n"
-    "Rules: native_substrates = the ACTUAL acids/amines/acceptors, each named as a "
+    "Rules: native_substrates = the ACTUAL input substrates, each named as a "
     "specific compound (not a generic class), so it resolves to one structure. "
     "catalytic_residues = active-site residues the paper identifies (mutagenesis / "
     "structure), for downstream structural modelling. characterization = MEASURED "
@@ -185,9 +189,31 @@ _EXTRACT_SYSTEM = (
 )
 
 
+_DISCOVERY_EXTRACT_SYSTEM = (
+    "Extract discovery leads from the supplied text for the user's target reaction. "
+    "Return only JSON with paper_relevant (true/false/null), relevance_reason, "
+    "is_characterization_paper, enzymes, and homologs_or_related_enzymes. "
+    "For each enzyme include its name, organism, deposited genbank identifier if "
+    "explicitly linked, native_substrates, reaction (direction, bond_formed, summary), "
+    "and an exact evidence_quote linking that enzyme to its experimentally studied reaction. "
+    "For related enzymes include name, organism, relationship, and why_relevant. "
+    "Separate characterized enzymes from cited leads. Report only what the text "
+    "supports; do not invent identifiers or infer target activity from a name. "
+    "Discovery relevance includes the same reaction chemistry on different substrates, "
+    "experimentally demonstrated promiscuity, and informative related catalysts. "
+    "Lack of a test on the exact target substrates or product does not establish irrelevance. "
+    "Record exact-target activity separately as target_activity_demonstrated (true/false/null). "
+    "Keep one enzyme per record; do not combine multiple gene names into a single name. "
+    "For an unstated organism use an empty string, never a placeholder organism name. "
+    "If the text establishes irrelevance, set paper_relevant=false and explain why. "
+    "If it is inconclusive, use null. Detailed kinetics and residues will be examined later."
+)
+
+
 def extract_from_paper(
     paper_text: str, deposited_accession: str, protein_name: str, llm_client,
     query: str = "", organism: str = "", max_chars: int = 48000,
+    discovery_only: bool = False,
 ) -> dict:
     """LLM-extract from a paper's full text, in one focused pass:
 
@@ -212,16 +238,20 @@ def extract_from_paper(
         "deposited accession, so the target enzyme above can be identified by its "
         "accession/organism/name rather than assumed."
     )
+    if discovery_only:
+        target = "Identify characterized enzymes and related leads explicitly supported by this passage."
+    excerpt = select_relevant_sections(paper_text, [deposited_accession, protein_name], max_chars=min(max_chars, 12000)) if discovery_only else paper_text[:max_chars]
     user = (
         f"Query reaction of interest: {query or 'enzymatic reaction'}\n\n"
-        f"{target}\n\nPAPER:\n{paper_text[:max_chars]}"
+        f"{target}\n\nPAPER:\n{excerpt}"
     )
     from enzyme_discovery_agent import config
     response = llm_client.call(
-        messages=[{"role": "system", "content": _EXTRACT_SYSTEM},
+        messages=[{"role": "system", "content": _DISCOVERY_EXTRACT_SYSTEM if discovery_only else _EXTRACT_SYSTEM},
                   {"role": "user", "content": user}],
         temperature=config.LLM_TEMPERATURE,
-        timeout=max(config.LLM_TIMEOUT, 500),
+        timeout=config.DISCOVERY_EXTRACTION_TIMEOUT if discovery_only else max(config.LLM_TIMEOUT, 500),
+        **({"max_retries": 1, "max_tokens": 2048} if discovery_only else {}),
     )
     if response is None:
         return {}
@@ -238,10 +268,10 @@ _RELEVANCE_SYSTEM = (
     "enzyme-discovery query. Given its title and abstract, keep it only if it is "
     "SUBSTANTIVELY ABOUT AN ENZYME that catalyses the query reaction TYPE — its "
     "catalytic MECHANISM, characterisation, structure/active site, biosynthetic "
-    "role, or substrate scope — with the same BOND-FORMING CHEMISTRY and the same "
+    "role, or substrate scope — with the same TRANSFORMATION CHEMISTRY and the same "
     "DIRECTION (forming vs cleaving the bond).\n"
     "Judge by the REACTION TYPE and enzyme MECHANISM, NOT by the specific "
-    "substrates named in the query. An enzyme that forms the same kind of bond on "
+    "substrates named in the query. An enzyme that catalyses the same transformation on "
     "ANALOGOUS substrates (a different but comparable pair of reactants, a model "
     "substrate) IS relevant — substrate scope and specificity are assessed later, "
     "not here. Mechanistically related enzyme families are relevant even without "
@@ -265,6 +295,7 @@ _RELEVANCE_SYSTEM = (
 # matter, indexes, errata.  Dropped even when abstract-less, so the fail-open
 # below keeps real abstract-less primary papers without keeping this junk.
 _NON_ARTICLE_RE = re.compile(
+    r'^\s*(?:review for|decision letter for|author response for)\b|'
     r"\bposters?\b|poster session|poster abstract|\bproceedings\b|"
     r"table of contents|^\s*contents\s*$|author index|subject index|"
     r"^\s*index\s*$|errat(?:um|a)\b|corrigend|front ?matter|back ?matter|"
@@ -368,7 +399,7 @@ _SELECT_SYSTEM = (
 
 
 def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
-                          prefilter=120):
+                          prefilter=60):
     """LLM-reasoned selection of which candidate papers to read in full.
 
     The agent (not a keyword scorer) decides which retrieved papers are most
@@ -388,14 +419,43 @@ def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
         return []
     if llm_client is None:
         return fallback()
+    from enzyme_discovery_agent.state_store import atomic_write_json
+    target = mechanism_gate_query(run_dir, query)
+    context = {"target": target, "query": query, "prompt": _SELECT_SYSTEM,
+               "model": str(getattr(llm_client, "active_label", None)
+                            or getattr(llm_client, "model_name", None)
+                            or type(llm_client).__name__), "k": k, "prefilter": prefilter}
+    signature = hashlib.sha256(json.dumps(context, sort_keys=True).encode()).hexdigest()
+    serving_model = [context["model"]]
+    def paper_signature(paper):
+        return hashlib.sha256(json.dumps(paper, sort_keys=True, default=str).encode()).hexdigest()
+    memo_path = Path(run_dir) / "agent_state" / "literature_paper_priority.json"
+    try:
+        memo = json.loads(memo_path.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        memo = {}
+    order = {key: rank for rank, key in enumerate(memo.get("order", []))}
+    keys = [paper_signature(p) for p in papers]
+    if memo.get("context_signature") == signature and set(keys) <= set(order):
+        # A changing download queue does not invalidate a recorded relevance
+        # judgement. New or changed evidence and target/model changes do.
+        return [p for _, p in sorted(zip(keys, papers), key=lambda row: order[row[0]])]
+
+    def remember(ranked):
+        ranked_keys = [paper_signature(p) for p in ranked]
+        if set(keys) <= set(ranked_keys) and not getattr(llm_client, "budget_exhausted", False):
+            actual_signature = hashlib.sha256(json.dumps(
+                {**context, "model": serving_model[0]}, sort_keys=True).encode()).hexdigest()
+            atomic_write_json(memo_path, {"context_signature": actual_signature, "order": ranked_keys})
+        return ranked
+
     from enzyme_discovery_agent.tools.paper_relevance import rank_papers_by_enzymology
     pre = rank_papers_by_enzymology(run_dir, papers, fallback=lambda: papers)
     pre = pre[:max(prefilter, k)]
-    target = mechanism_gate_query(run_dir, query)
     listing = []
     for i, p in enumerate(pre):
-        title = (p.get("title") or "").strip()[:200]
-        abstract = (p.get("abstract") or "").strip()[:300]
+        title = (p.get("title") or "").strip()[:160]
+        abstract = (p.get("abstract") or "").strip()[:200]
         listing.append(f"[{i}] {title}\n{abstract}")
     want = min(len(pre), max(k * 2, k))
     # Hand the model BOTH the transformation (primary) and the application context
@@ -419,6 +479,7 @@ def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
             temperature=config.LLM_TEMPERATURE,
             timeout=max(config.LLM_TIMEOUT, 120),
         )
+        serving_model[0] = getattr(response, "_enzyme_serving_model", None) or serving_model[0]
         content = response.choices[0].message.content or ""
         obj = json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
         idxs = obj.get("selected") or []
@@ -430,10 +491,17 @@ def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
                 seen.add(i)
                 chosen.append(pre[i])
         if chosen:
-            return chosen
+            # Model choices affect order, not recall. A weak model returning one
+            # favorite must not hide every other unread primary paper.
+            pre_ids = {id(p) for p in pre}
+            return remember(chosen + [p for i, p in enumerate(pre) if i not in seen]
+                            + [p for p in papers if id(p) not in pre_ids])
     except Exception as exc:  # noqa: BLE001 - fail safe to the keyword order
         logger.debug("LLM paper selection error (falling back): %s", exc)
-    return fallback()
+    # Empty model selections still retain the full evidence pool. Cache the
+    # fallback order for a valid response; transient call failures remain retryable.
+    ranked = fallback()
+    return remember(ranked) if 'response' in locals() and response is not None else ranked
 
 
 def _match_enzyme_record(
@@ -514,6 +582,9 @@ def extract_substrates_and_mechanism(
                 "relevance_reason": base["relevance_reason"] or "no characterised query-type enzyme found"}
     substrates = [{"name": n, "smiles": resolve_substrate_names_to_smiles(n)}
                   for n in (rec.get("native_substrates") or [])]
+    from enzyme_discovery_agent.models.literature_evidence import build_literature_evidence
+    evidence = build_literature_evidence(
+        accession, rec, paper, paper["text_path"], identity_basis="deposited_accession")
     return {
         **base,
         "paper_relevant": True,
@@ -522,4 +593,5 @@ def extract_substrates_and_mechanism(
         "catalytic_residues": rec.get("catalytic_residues") or [],
         "characterization": rec.get("characterization") or [],
         "enzyme_name_in_paper": rec.get("name"),
+        "literature_evidence": evidence,
     }

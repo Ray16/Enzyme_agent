@@ -15,6 +15,7 @@ from enzyme_discovery_agent.models.candidate_registry import (
     current_candidate_status,
     load_candidate_registry,
     register_atlas_homologs,
+    update_candidate_registry,
 )
 from enzyme_discovery_agent.gates.ec_triage import auto_screen_candidates, _auto_evaluate_all
 from enzyme_discovery_agent.tools.reasoning import evaluate_candidate, screen_candidates
@@ -56,19 +57,22 @@ class TestTool(unittest.TestCase):
         self.assertEqual(ax.search_esm_atlas_homologs("")["status"], "error")
 
     def test_full_flow_stubbed(self):
-        with mock.patch.object(ax, "_fetch_alphafold_structure", return_value="ATOM ..."), \
+        with tempfile.TemporaryDirectory() as d, \
+             mock.patch.object(ax, "_fetch_alphafold_structure", return_value="ATOM ..."), \
              mock.patch.object(ax.requests, "post", return_value=_Resp({"id": "TK1"})), \
              mock.patch.object(ax.requests, "get") as get, \
              mock.patch.object(ax.time, "sleep"):
             get.side_effect = [_Resp({"status": "COMPLETE"}), _Resp(_PAYLOAD)]
-            out = ax.search_esm_atlas_homologs("Q46E79", min_probability=0.5)
+            update_candidate_registry(Path(d), "Q46E79", "evaluated")
+            out = ax.search_esm_atlas_homologs("Q46E79", min_probability=0.5, run_dir=d)
         self.assertEqual(out["status"], "success")
         self.assertEqual(out["count"], 2)
         self.assertEqual(out["data"]["homologs"][0]["mgnify_id"], "MGYP000932894257")
 
     def test_no_seed_structure_partial(self):
-        with mock.patch.object(ax, "_fetch_alphafold_structure", return_value=None):
-            out = ax.search_esm_atlas_homologs("Q46E79")
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(ax, "_fetch_alphafold_structure", return_value=None):
+            update_candidate_registry(Path(d), "Q46E79", "evaluated")
+            out = ax.search_esm_atlas_homologs("Q46E79", run_dir=d)
         self.assertEqual(out["status"], "partial")
         self.assertEqual(out["count"], 0)
 

@@ -15,6 +15,7 @@ from enzyme_discovery_agent.tools.mechanism_family_assignment import (
     load_mechanism_families,
     summarize_assignments,
 )
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -130,7 +131,7 @@ def write_exploration_summary(run_dir: Path, log_fn=None) -> None:
         "timestamp": datetime.now().astimezone().isoformat(),
     }
     try:
-        with open(run_dir / "exploration_summary.json", "w") as f:
+        with open(run_file(run_dir, 'exploration_summary.json'), "w") as f:
             json.dump(summary_data, f, indent=2, default=str)
     except Exception as e:
         logger.warning("Failed to write exploration summary: %s", e)

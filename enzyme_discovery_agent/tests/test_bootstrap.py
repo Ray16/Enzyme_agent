@@ -50,8 +50,10 @@ class TestToolBootstrap(unittest.TestCase):
         agent = EnzymeAgent.__new__(EnzymeAgent)
         agent._warning_file_handler = mock_handler = mock.Mock()
         agent._run = mock.Mock(side_effect=RuntimeError("setup failed"))
-        with self.assertRaisesRegex(RuntimeError, "setup failed"):
-            agent.run("query")
+        with tempfile.TemporaryDirectory() as tmp:
+            agent.run_dir = Path(tmp)
+            with self.assertRaisesRegex(RuntimeError, "setup failed"):
+                agent.run("query")
         mock_handler.close.assert_called_once_with()
 
     def test_registration_is_idempotent_and_populates_schemas(self):
@@ -111,7 +113,8 @@ class TestLLMClient(unittest.TestCase):
                 self.completions = FakeCompletions()
                 self.chat = type("Chat", (), {"completions": self.completions})()
 
-            def with_options(self, *, timeout):
+            def with_options(self, *, timeout, max_retries):
+                assert max_retries == 0
                 self.timeout = timeout
                 return self
 
@@ -214,6 +217,8 @@ class TestScreenToEvaluationTransition(unittest.TestCase):
     def test_screened_candidates_trigger_evaluation_without_llm_eval_call(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = AgentState(run_dir=Path(tmp), candidate_count=1)
+            from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
+            update_candidate_registry(Path(tmp), "P12345", "screened")
             self.assertTrue(ECTriageGate().should_fire(state, has_eval_calls=False, messages=[]))
 
 
@@ -274,16 +279,22 @@ class TestRunFinalizer(unittest.TestCase):
 
 
 class TestStructuralHandoff(unittest.TestCase):
+    def setUp(self):
+        # Target admission is tested separately; these cases test handoff provenance.
+        from unittest.mock import patch
+        guard=patch('enzyme_discovery_agent.models.target_review.eligible',return_value=True)
+        guard.start();self.addCleanup(guard.stop)
     def test_handoff_preserves_target_and_structural_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp)
             update_candidate_registry(run_dir, "P12345", "evaluated", metadata={
+                "claim_validation": {"promotion_eligible": True, "claims": [{"claim_type": "accession_identity", "subject": "P12345", "verdict": "supported", "evidence": {"source": "UniProtKB"}}]},
                 "protein_name": "Example enzyme",
                 "structural_homology": {"seed_accession": "Q99999", "tm_score": 0.71},
             })
             path = write_structural_modeling_handoff(
                 run_dir,
-                [{"data": {"accession": "P12345", "organism": "Example organism"}}],
+                [{"status": "success", "data": {"accession": "P12345", "organism": "Example organism"}}],
                 {"query": "target reaction", "substrate_smiles": "CCO"},
             )
             manifest = json.loads(path.read_text())
@@ -302,7 +313,7 @@ class TestStructuralHomologParsing(unittest.TestCase):
             {"theader": "AF-Q11111-F1 high", "eval": "0.72", "seqId": "0.23"},
             {"theader": "AF-Q22222-F1 low", "eval": "0.55"},
         ]]}]}
-        hits = _parse_foldseek_results(payload, "P12345")
+        hits = _parse_foldseek_results(payload, "P12345", search_mode='tmalign')
         self.assertEqual([hit["accession"] for hit in hits], ["Q11111", "Q22222"])
         self.assertEqual(hits[0]["tm_score"], 0.72)
 

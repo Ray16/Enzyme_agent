@@ -500,35 +500,8 @@ def extract_reaction_mechanism(
             "papers may not describe this enzyme's catalytic mechanism. Treat the nucleophile "
             "and residues as tentative and, if it matters, supply a specific mechanism/structure "
             "paper via `paper=`.")
-    # Family-keyed reaction-coordinate cache (mechanism is conserved within a family):
-    # UPDATE it when this extraction yielded an ordered coordinate, and otherwise RETRIEVE a
-    # coordinate a characterized family member already contributed (transfer to homologs,
-    # including unannotated ones). Guarded so a cache issue never breaks extraction.
-    try:
-        family_ids = _candidate_family_ids(run_dir, enzyme)
-        if family_ids:
-            from enzyme_discovery_agent.tools.mechanism_cache import MechanismCache
-
-            cache = MechanismCache()
-            steps = best.get("steps") if isinstance(best.get("steps"), list) else None
-            if steps and grounded and not violations:
-                cache.put(
-                    family_ids,
-                    mechanism_class=best.get("mechanism_class"),
-                    steps=steps,
-                    provenance={"source_enzyme": enzyme,
-                                "paper": _ref_brief(best_ref),
-                                "schema_version": MECHANISM_FACTS_SCHEMA_VERSION},
-                    grounding_score=best_score,
-                )
-            else:
-                cached = cache.get(family_ids)
-                if cached and cached.get("steps"):
-                    best["steps"] = cached["steps"]
-                    best.setdefault("provenance", {})["reaction_coordinate_transferred_from"] = (
-                        (cached.get("provenance") or {}).get("source_enzyme"))
-                    result["coordinate_transferred"] = True
-    except Exception as exc:  # noqa: BLE001 - cache must never break extraction
-        logger.debug("mechanism coordinate cache skipped: %s", exc)
+    # A shared family label does not establish an identical reaction coordinate.
+    # Preserve only this extraction's evidence; missing steps remain unknown.
+    # Run-specific persistence below retains its source and uncertainty.
     _persist_mechanism_evidence(run_dir, enzyme, result)
     return result

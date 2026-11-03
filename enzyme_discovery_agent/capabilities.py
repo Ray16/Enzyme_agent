@@ -68,4 +68,6 @@ def create_run_dir(base_dir: Path, query: str = "") -> Path:
     for subdir in ("artifacts/literature", "artifacts/database",
                     "artifacts/candidates", "agent_state"):
         (run_dir / subdir).mkdir(parents=True, exist_ok=True)
+    from enzyme_discovery_agent.run_layout import initialize_layout
+    initialize_layout(run_dir)
     return run_dir

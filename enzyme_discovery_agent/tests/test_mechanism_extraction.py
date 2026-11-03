@@ -219,20 +219,33 @@ class CacheAdmission(unittest.TestCase):
                 "P12345", paper="PMC1", llm_client=object(), run_dir=run_dir,
             )
 
-    def test_grounded_schema_valid_steps_are_cached(self):
+    def test_grounded_steps_persist_for_candidate_without_shared_cache(self):
         with tempfile.TemporaryDirectory() as tmp, \
              mock.patch(
                  "enzyme_discovery_agent.tools.mechanism_cache.MechanismCache.put"
              ) as put:
-            self._run(Path(tmp), self._facts())
-            put.assert_called_once()
-            self.assertEqual(put.call_args.args[0], ["IPR000001"])
+            result = self._run(Path(tmp), self._facts())
+            put.assert_not_called()
+            self.assertEqual(result['data']['steps'], self._facts()['steps'])
+            entry = load_candidate_registry(Path(tmp))['candidates']['P12345']
+            self.assertEqual(entry['metadata']['mechanism_evidence']['facts']['steps'], self._facts()['steps'])
 
     def test_low_confidence_steps_are_not_cached(self):
         with tempfile.TemporaryDirectory() as tmp, \
              mock.patch("enzyme_discovery_agent.tools.mechanism_cache.MechanismCache.put") as put:
             self._run(Path(tmp), self._facts(confidence="low"))
             put.assert_not_called()
+
+    def test_missing_steps_are_not_filled_from_another_candidate(self):
+        facts = self._facts(confidence="low")
+        facts.pop("steps")
+        with tempfile.TemporaryDirectory() as tmp, \
+             mock.patch("enzyme_discovery_agent.tools.mechanism_cache.MechanismCache.get",
+                        return_value={"steps": [{"name": "unrelated"}]}) as get:
+            result = self._run(Path(tmp), facts)
+            get.assert_not_called()
+            self.assertFalse(result["data"].get("steps"))
+            self.assertFalse(result.get("coordinate_transferred", False))
 
     def test_schema_invalid_steps_are_not_cached(self):
         facts = self._facts()

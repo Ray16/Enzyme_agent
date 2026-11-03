@@ -7,6 +7,7 @@ never dominate the table).  One source of truth keeps the two consistent.
 from __future__ import annotations
 
 import re
+import hashlib
 
 
 def _ec_subclass(ec: str) -> str:
@@ -23,18 +24,19 @@ def _ec_subclass(ec: str) -> str:
 
 
 def ortholog_key(data: dict) -> str | None:
-    """Group true orthologs — the SAME enzyme in different organisms — together.
+    """Return an exact-sequence group only when sequence evidence is present.
 
-    Uses the normalised gene symbol plus the primary EC sub-subclass.  Copy
-    suffixes that only distinguish duplicates of one enzyme (``geneX-1``,
-    ``geneX_2``, ``geneX II``) are stripped so they collapse, but a digit fused
-    directly to the stem is kept, because it names a DISTINCT gene (``geneA2`` is
-    a different enzyme from ``geneA`` and must not merge).  Genuinely different
-    enzymes that merely share a gene letter or an EC class still stay apart
-    (different gene stem or different EC sub-subclass → different key).  Only
-    i/v/x are treated as roman suffixes so a gene stem legitimately ending in a
-    consonant such as 'c'/'d'/'m' is left intact.
+    Shared labels and coarse classifications are tentative associations and do
+    not establish interchangeable sequences or justify suppressing candidates.
     """
+    sequence = data.get("sequence")
+    if isinstance(sequence, str) and re.fullmatch(r"[ACDEFGHIKLMNPQRSTVWY]+", sequence.upper()):
+        return "sequence-sha256:" + hashlib.sha256(sequence.upper().encode()).hexdigest()
+    return None
+
+
+def tentative_label_key(data: dict) -> str | None:
+    """Provide a name-based hint for exploration, never identity-based pruning."""
     genes = data.get("gene_names") or []
     gene = (genes[0] if genes else "").lower().strip()
     # Strip only a *separated* copy/paralog suffix (geneX-1, geneX_2, geneX II),

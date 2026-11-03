@@ -26,6 +26,7 @@ import logging
 import re
 from pathlib import Path
 from typing import Any
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -154,7 +155,7 @@ def build_candidate_provenance(
             native.append({
                 "name": ns.get("name"),
                 "smiles": ns.get("smiles"),
-                "source": "curated:UniProt/Rhea/ChEBI",
+                "source": "literature" if ns.get("source") == "literature" else "curated:UniProt/Rhea/ChEBI",
             })
     mechanism = None
     chem = eval_data.get("reaction_chemistry") or {}
@@ -162,7 +163,7 @@ def build_candidate_provenance(
         mechanism = {
             "bond_types": chem.get("bond_types"),
             "direction": chem.get("reaction_direction"),
-            "source": "curated:EC/catalytic-activity",
+            "source": chem.get("source") or "curated:EC/catalytic-activity",
         }
 
     paper_ref = None
@@ -255,6 +256,7 @@ def build_candidate_provenance(
             "engineering_papers": lit.get("engineering_papers", 0),
         },
         "critical_warnings": eval_data.get("critical_warnings", []),
+        "literature_evidence": eval_data.get("literature_evidence"),
     }
 
 
@@ -325,7 +327,7 @@ def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, l
     run = _Path(run_dir)
     reg = load_candidate_registry(run).get("candidates", {})
     try:
-        tc = _json.loads((run / "target_context.json").read_text())
+        tc = _json.loads((run_file(run, 'target_context.json')).read_text())
         target_smiles = tc.get("substrate_smiles") or ""
     except Exception:
         target_smiles = ""

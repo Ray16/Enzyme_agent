@@ -1,18 +1,7 @@
-"""Family-keyed, versioned cache of reaction coordinates (retrieve + update).
+"""Legacy family-indexed mechanism records for explicit offline inspection.
 
-Mechanism is conserved within an enzyme family, so a reaction coordinate extracted
-once from a characterized family member is cached BY InterPro family and reused for
-every homolog (including unannotated ones) and every future run. This is what keeps
-the expensive literature extraction off the per-candidate hot path:
-
-    retrieve: get(family_ids) -> cached coordinate, or None on a cache miss
-    update:   put(family_ids, ...) -> writes/refreshes the coordinate, archiving the
-              prior version so growth is auditable (self-evolving)
-
-A put only overwrites an existing entry when the new extraction is at least as well
-grounded (``grounding_score``), so re-running never regresses a good coordinate
-unless ``force=True``. The store schema mirrors the modeling_reasoning consumer
-snapshot; ``export_mechanisms`` emits that shape for vendoring.
+These records are not candidate-specific evidence. Production extraction never
+uses them to fill missing reaction steps. A caller must choose a store explicitly.
 """
 from __future__ import annotations
 
@@ -25,12 +14,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 CACHE_SCHEMA_VERSION = "reaction-coordinate-cache-v1"
-_DEFAULT_PATH = Path(__file__).resolve().parent.parent / "data" / "mechanism_coordinate_cache.json"
 _CACHE_LOCK = threading.RLock()
 
 
 class MechanismCache:
-    def __init__(self, path: Path | str = _DEFAULT_PATH):
+    def __init__(self, path: Path | str):
         self.path = Path(path)
         if self.path.exists():
             self.doc = json.loads(self.path.read_text())

@@ -7,6 +7,7 @@ This module deliberately owns post-run persistence and report generation so
 from __future__ import annotations
 
 import json
+from collections import Counter
 import logging
 from collections.abc import Callable
 from datetime import datetime
@@ -17,6 +18,8 @@ from enzyme_discovery_agent import config
 from enzyme_discovery_agent.gates.ec_triage import _auto_evaluate_all, auto_screen_candidates
 from enzyme_discovery_agent.gates.discovery_coverage import assess_discovery_coverage
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
+from enzyme_discovery_agent.models.evaluations import current_evaluations
+from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
 from enzyme_discovery_agent.output.candidate_map_plot import render_candidate_map
 from enzyme_discovery_agent.output.csv_generator import generate_candidates_csv
 from enzyme_discovery_agent.output.exploration_summary import write_exploration_summary
@@ -28,6 +31,7 @@ from enzyme_discovery_agent.output.report_generator import (
 from enzyme_discovery_agent.output.structure_downloader import download_candidate_structures
 from enzyme_discovery_agent.output.structural_modeling_handoff import write_structural_modeling_handoff
 from enzyme_discovery_agent.tools.citation_verification import verify_report_citations
+from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -43,7 +47,8 @@ class RunFinalizer:
 
     def _load_evaluations(self) -> list[dict]:
         evaluations = []
-        for path in sorted((self.artifacts_dir / "candidates").glob("evaluate_candidate_*.json")):
+        for path in sorted((self.artifacts_dir / "candidates").glob("evaluate_candidate_*.json"),
+                           key=lambda p: (p.stat().st_mtime_ns, p.name)):
             try:
                 with path.open() as handle:
                     artifact = json.load(handle)
@@ -54,27 +59,17 @@ class RunFinalizer:
                 # CSV / enrichment consumers all assume a dict here.
                 if not isinstance(data, dict):
                     continue
-                # Exclude non-enzymes (regulators/transporters that co-occur in the
-                # same gene clusters); they are not candidates and must not appear
-                # as families in the report.
-                if data.get("is_enzyme") is False:
-                    continue
-                # A successful tool execution is not the same as a validated
-                # candidate function.  New evaluation artifacts carry an atomic
-                # claim bundle; fail closed when it says the candidate cannot be
-                # promoted.  Legacy artifacts without the bundle remain readable.
-                validation = data.get("claim_validation")
-                if validation and validation.get("promotion_eligible") is not True:
-                    continue
                 evaluations.append(result)
             except (OSError, json.JSONDecodeError) as exc:
                 logger.warning("Skipping unreadable evaluation artifact %s: %s", path, exc)
 
-        if evaluations:
-            return evaluations
-
+        # Include registry recovery even when only part of the artifact set
+        # survived. The later artifact for an accession remains authoritative.
         registry = load_candidate_registry(self.run_dir)
+        artifact_accessions = {e.get("data", e).get("accession") for e in evaluations}
         for accession, entry in registry.get("candidates", {}).items():
+            if accession in artifact_accessions:
+                continue
             statuses = [s.get("status") for s in entry.get("statuses", [])]
             if "evaluated" not in statuses or (statuses and statuses[-1] == "rejected"):
                 continue
@@ -83,19 +78,84 @@ class RunFinalizer:
             if validation and validation.get("promotion_eligible") is not True:
                 continue
             recovered = {"accession": accession, "_recovered_from_registry": True}
+            if isinstance(metadata.get("evaluation_data"), dict):
+                recovered.update(metadata["evaluation_data"])
             keys = (
                 "protein_name", "gene_names", "organism", "sequence_length", "ec_numbers",
                 "catalytic_activities", "interpro_family", "interpro_family_id", "literature",
                 "structural_data", "substrate_similarity", "reaction_chemistry", "strengths",
                 "weaknesses", "critical_warnings", "is_swissprot",
+                "expression_data",
             )
             recovered.update({key: metadata[key] for key in keys if key in metadata})
             evaluations.append({"status": "success", "summary": f"Recovered: {accession}", "data": recovered})
         if evaluations:
             self.log(f"  Recovered {len(evaluations)} evaluations from registry")
-        return evaluations
+        return current_evaluations(self.run_dir, evaluations)
+
+    def _resource_reason(self) -> str | None:
+        check = getattr(self.llm, "budget_check", None)
+        reason = check() if callable(check) else None
+        return reason if isinstance(reason, str) else None
+
+    def snapshot(self, *, query: str, reason: str) -> tuple[str, int]:
+        """Write a budget checkpoint report using only already saved evidence."""
+        from enzyme_discovery_agent.output.report_generator import (
+            _deterministic_mechanistic_ranking, _write_deterministic_report,
+            _family_relevance_partition, _family_rank_map,
+        )
+        from enzyme_discovery_agent.models.candidate_registry import discovery_status
+        registry = load_candidate_registry(self.run_dir).get("candidates", {})
+        evaluations = [e for e in self._load_evaluations()
+                       if discovery_status(registry.get(e.get("data", e).get("accession"), {}))
+                       in {"evaluated", "ranked"}]
+        stopped, on_target, _ = _family_relevance_partition(self.run_dir, evaluations)
+        ranking = _deterministic_mechanistic_ranking(
+            evaluations, {}, family_rank_by_acc=_family_rank_map(stopped, on_target))
+        _write_deterministic_report(self.run_dir, "report_interim.md", query, evaluations,
+                                    ranking=ranking)
+        path = run_file(self.run_dir, 'report_interim.md')
+        text = path.read_text()
+        text = text.replace(
+            "This report was rendered directly from the completed evaluation artifacts because "
+            "the report-model response was empty. Rankings and evidence are preserved; no "
+            "composite score has been introduced.",
+            "This interim report uses saved evaluations. Discovery remains resumable. "
+            "Stop reason: " + reason + ".",
+        )
+        counts = Counter(discovery_status(entry) or "unknown" for entry in registry.values())
+        pending = sum(counts.get(status, 0) for status in ("discovered", "screened", "evidence_pending"))
+        disclosure = (
+            f"**Checkpoint coverage:** {len(evaluations)} evaluated record(s) available for assessment; "
+            f"{pending} discovered, screened, or evidence-pending records remain outside "
+            "this ranking. Ranks and tiers describe only the evaluated subset and do "
+            "not establish activity on the target or complete discovery coverage.\n\n"
+        )
+        marker = "## Ranked candidates\n"
+        text = text.replace(marker, marker + "\n" + disclosure, 1) if marker in text else disclosure + text
+        path.write_text(text)
+        # Always provide a stable report artifact, with the incomplete status
+        # preserved in its contents; no extra provider work after budget stop.
+        atomic_write_json(self.run_dir / "agent_state" / "report_delivery.json", {
+            "report": "report.md", "status": "incomplete", "reason": reason,
+            "evaluated_records": len(evaluations), "pending_records": pending})
+        (self.run_dir / "report.md").write_text(text)
+        generate_candidates_csv(self.run_dir, evaluations, log_fn=self.log)
+        try:
+            target = json.loads(run_file(self.run_dir, 'target_context.json').read_text())
+        except (OSError, ValueError):
+            target = {'query': query}
+        write_structural_modeling_handoff(
+            self.run_dir, evaluations, target,
+            discovery_status_value='incomplete', coverage={'status': 'incomplete', 'reason': reason})
+        from enzyme_discovery_agent.export_reasoning_trace import export_trace
+        trace=export_trace(self.run_dir)
+        self.log(f"  Scientific reasoning trace: {len(trace['examples'])} decisions; source integrity {trace['source_files_intact']}")
+        return text, len(evaluations)
 
     def _verify_confidence_report(self, report_path: Path) -> None:
+        if self._resource_reason():
+            return
         try:
             annotated, results = verify_report_citations(report_path.read_text(), self.llm)
             report_path.write_text(annotated)
@@ -107,7 +167,7 @@ class RunFinalizer:
                 self.log("  Citation verification: no verifiable citations found in report")
             elif flagged:
                 self.log(f"  Citation verification: {len(flagged)}/{len(results)} claims flagged")
-                (self.run_dir / "citation_verification.json").write_text(
+                (run_file(self.run_dir, 'citation_verification.json')).write_text(
                     json.dumps(results, indent=2)
                 )
             else:
@@ -122,7 +182,7 @@ class RunFinalizer:
 
     @property
     def _finalization_status_path(self) -> Path:
-        return self.run_dir / "finalization_status.json"
+        return run_file(self.run_dir, 'finalization_status.json')
 
     def _load_finalization_status(self) -> dict[str, Any]:
         try:
@@ -154,23 +214,25 @@ class RunFinalizer:
         detail: str | None = None,
     ) -> None:
         """Persist finalization progress so report delivery can be resumed safely."""
-        payload = self._load_finalization_status()
-        payload.setdefault("stages", {})[stage] = {
-            "status": status,
-            "updated_at": datetime.now().astimezone().isoformat(),
-            **({"error": error} if error else {}),
-            **({"detail": detail} if detail else {}),
-        }
-        self._finalization_status_path.write_text(json.dumps(payload, indent=2) + "\n")
+        with state_lock(self._finalization_status_path):
+            payload = self._load_finalization_status()
+            payload.setdefault("stages", {})[stage] = {
+                "status": status,
+                "updated_at": datetime.now().astimezone().isoformat(),
+                **({"error": error} if error else {}),
+                **({"detail": detail} if detail else {}),
+            }
+            atomic_write_json(self._finalization_status_path, payload)
 
     def _record_run_outcome(self, **fields: Any) -> None:
         """Record a top-level verdict so an empty run is not mistaken for a good one."""
-        payload = self._load_finalization_status()
-        payload["run_outcome"] = {
-            "updated_at": datetime.now().astimezone().isoformat(),
-            **fields,
-        }
-        self._finalization_status_path.write_text(json.dumps(payload, indent=2) + "\n")
+        with state_lock(self._finalization_status_path):
+            payload = self._load_finalization_status()
+            payload["run_outcome"] = {
+                "updated_at": datetime.now().astimezone().isoformat(),
+                **fields,
+            }
+            atomic_write_json(self._finalization_status_path, payload)
 
     def _run_finalization_stage(
         self,
@@ -187,7 +249,12 @@ class RunFinalizer:
         completed makes a failed run look successful.
         """
         self.log(f"  Finalization stage: {stage}")
+        reason = self._resource_reason()
+        if reason:
+            self._record_stage(stage, "deferred", detail=reason)
+            return None
         self._record_stage(stage, "running")
+        previous_stat = (produces.stat().st_mtime_ns, produces.stat().st_size) if produces and produces.exists() else None
         try:
             result = operation()
         except Exception as exc:  # Continue producing independent deliverables.
@@ -196,10 +263,11 @@ class RunFinalizer:
             self._emit_event("stage_failed", stage=stage, error=str(exc))
             self.log(f"  Finalization stage failed: {stage}: {exc}", level="warning")
             return None
-        if produces is not None and not produces.exists():
+        current_stat = (produces.stat().st_mtime_ns, produces.stat().st_size) if produces and produces.exists() else None
+        if produces is not None and (current_stat is None or current_stat == previous_stat):
             self._record_stage(
                 stage, "incomplete",
-                detail=f"expected artifact not written: {produces.name}",
+                detail=f"expected artifact not freshly written: {produces.name}",
             )
             self._emit_event(
                 "stage_incomplete", stage=stage,
@@ -236,7 +304,7 @@ class RunFinalizer:
             logger.warning("Failed to save messages: %s", exc)
 
         coverage = assess_discovery_coverage(self.run_dir)
-        (self.run_dir / "discovery_coverage.json").write_text(
+        (run_file(self.run_dir, 'discovery_coverage.json')).write_text(
             json.dumps(coverage, indent=2, default=str) + "\n"
         )
         # Finalization is the LAST backstop — there is no later turn — so always
@@ -269,8 +337,17 @@ class RunFinalizer:
                 )
             except Exception as exc:  # never let mining block finalization
                 logger.warning("Full-text accession mining failed: %s", exc)
+        reason = self._resource_reason()
+        if reason:
+            return self.snapshot(query=query, reason=reason)
         auto_screen_candidates(self.run_dir, log_fn=self.log)
-        _auto_evaluate_all(self.run_dir, log_fn=self.log)
+        reason = self._resource_reason()
+        if reason:
+            return self.snapshot(query=query, reason=reason)
+        _auto_evaluate_all(self.run_dir, log_fn=self.log, llm_client=self.llm)
+        reason = self._resource_reason()
+        if reason:
+            return self.snapshot(query=query, reason=reason)
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
         candidate_dir = self.artifacts_dir / "candidates"
         candidate_dir.mkdir(parents=True, exist_ok=True)
@@ -318,7 +395,9 @@ class RunFinalizer:
         )
 
         confidence_path = self.run_dir / "report_confidence.md"
-        if confidence_path.exists():
+        confidence_delivered = self._load_finalization_status().get("stages", {}).get(
+            "confidence_report", {}).get("status") == "completed"
+        if confidence_path.exists() and confidence_delivered:
             self._run_finalization_stage(
                 "citation_verification",
                 lambda: self._verify_confidence_report(confidence_path),
@@ -332,7 +411,7 @@ class RunFinalizer:
         self._run_finalization_stage(
             "exploration_summary",
             lambda: write_exploration_summary(self.run_dir, log_fn=self.log),
-            produces=self.run_dir / "exploration_summary.json",
+            produces=run_file(self.run_dir, 'exploration_summary.json'),
         )
         # Native-substrate-fit picture for experimentalists: a radar of per-axis
         # fit + native pocket-size ranges for the top families (best-effort).
@@ -343,10 +422,12 @@ class RunFinalizer:
         )
         # Candidate map in ESM embedding space (best-effort; only when the
         # agent-invoked embedding map was enabled for this run).
-        if config.ENABLE_CANDIDATE_MAP:
+        from enzyme_discovery_agent.models.embedding_store import load_store
+        if len(load_store(self.run_dir)) >= 3:
+            from enzyme_discovery_agent.output.evolving_map import update_candidate_map
             self._run_finalization_stage(
                 "candidate_map_plot",
-                lambda: render_candidate_map(self.run_dir, log_fn=self.log),
+                lambda: update_candidate_map(self.run_dir, log_fn=self.log),
                 produces=self.run_dir / "candidate_map.png",
             )
         self._run_finalization_stage(
@@ -357,7 +438,7 @@ class RunFinalizer:
         # ESM neighbors of promising candidates feed the cofold shortlist.
         neighbor_map = None
         try:
-            neighbor_map = json.loads((self.run_dir / "candidate_map.json").read_text())
+            neighbor_map = json.loads((run_file(self.run_dir, 'candidate_map.json')).read_text())
         except (OSError, json.JSONDecodeError):
             neighbor_map = None
         handoff_path = self._run_finalization_stage(
@@ -367,25 +448,31 @@ class RunFinalizer:
                 evaluations,
                 target=target_context or {"query": query},
                 neighbor_map=neighbor_map,
+                discovery_status_value="completed" if coverage.get("covered") and not force_completion else "incomplete",
+                coverage=coverage,
             ),
             produces=self.run_dir / "structural_modeling_handoff.json",
         )
         if handoff_path:
             self.log(f"  Structural-modeling handoff: {handoff_path}")
+        from enzyme_discovery_agent.export_reasoning_trace import export_trace
+        self._run_finalization_stage(
+            'scientific_reasoning_trace',lambda:export_trace(self.run_dir),
+            produces=self.run_dir/'reasoning/trace.json')
 
         # Written LAST, after the report stages above have recorded their own LLM
         # calls into ``token_usage``.  Writing it earlier undercounts the run: the
         # confidence/explorative report generation is a substantial fraction of
         # total tokens, and an early snapshot disagrees with the ``run_complete``
         # event and ``manifest.json`` (both taken after finalize returns).
-        (self.run_dir / "token_usage.json").write_text(
-            json.dumps(token_usage.to_dict(), indent=2)
-        )
+        atomic_write_json(run_file(self.run_dir, 'token_usage.json'), {
+            **token_usage.to_dict(), "request_counts": getattr(self.llm, "request_counts", {}),
+        })
 
         # A run that evaluated nothing produced no deliverable, whatever the
         # per-stage bookkeeping says.  Record that verdict explicitly.
         stages = self._load_finalization_status().get("stages", {})
-        delivered = confidence_path.exists()
+        delivered = confidence_path.exists() and confidence_delivered
         if not evaluations:
             outcome = "no_candidates_evaluated"
         elif not delivered:
@@ -409,4 +496,4 @@ class RunFinalizer:
             )
             self.log(f"  Run outcome: {outcome} ({len(evaluations)} evaluations)", level="warning")
 
-        return (confidence_path.read_text() if confidence_path.exists() else final_text, len(evaluations))
+        return (confidence_path.read_text() if evaluations and delivered else final_text, len(evaluations))

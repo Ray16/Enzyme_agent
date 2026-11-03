@@ -8,6 +8,7 @@ longest aliphatic chain, and ECFP4 fingerprints.
 from __future__ import annotations
 
 import logging
+import threading
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -32,6 +33,7 @@ class SubstrateProperties:
     smiles: str
     molecular_weight: float = 0.0
     molecular_volume: float = 0.0
+    molecular_volume_method: str = "unknown"
     logP: float = 0.0
     tpsa: float = 0.0
     num_hba: int = 0
@@ -72,6 +74,7 @@ class SubstrateProperties:
             "smiles": self.smiles,
             "molecular_weight": round(self.molecular_weight, 2),
             "molecular_volume": round(self.molecular_volume, 1),
+            "molecular_volume_method": self.molecular_volume_method,
             "logP": round(self.logP, 2),
             "tpsa": round(self.tpsa, 1),
             "num_hba": self.num_hba,
@@ -106,6 +109,8 @@ class SubstrateProperties:
 
 # Module-level cache
 _analyzer_cache: dict[str, SubstrateProperties] = {}
+_invalid_smiles_cache: set[str] = set()
+_invalid_smiles_lock = threading.Lock()
 
 
 def _detect_functional_groups(mol: Chem.Mol) -> dict:
@@ -225,17 +230,30 @@ def compute_substrate_properties(smiles: str, name: str = "") -> SubstrateProper
     if smiles in _analyzer_cache:
         return _analyzer_cache[smiles]
 
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        raise ValueError(f"Invalid SMILES: {smiles}")
+    # A single malformed source structure can recur in hundreds of family
+    # members. Cache only deterministic parse failures within this process.
+    with _invalid_smiles_lock:
+        if smiles in _invalid_smiles_cache:
+            raise ValueError(f"Invalid SMILES: {smiles}")
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            if len(_invalid_smiles_cache) < 10000:
+                _invalid_smiles_cache.add(smiles)
+            raise ValueError(f"Invalid SMILES: {smiles}")
 
     mol_h = Chem.AddHs(mol)
     try:
-        AllChem.EmbedMolecule(mol_h, AllChem.ETKDGv3())
-        AllChem.MMFFOptimizeMolecule(mol_h, maxIters=500)
+        if any(atom.GetAtomicNum() == 0 for atom in mol.GetAtoms()):
+            raise ValueError("unspecified structure contains a dummy atom")
+        if AllChem.EmbedMolecule(mol_h, AllChem.ETKDGv3()) != 0:
+            raise ValueError("conformer generation failed")
+        if AllChem.MMFFOptimizeMolecule(mol_h, maxIters=500) != 0:
+            raise ValueError("conformer optimization did not converge")
         vol = AllChem.ComputeMolVolume(mol_h)
+        volume_method = "3d_conformer"
     except Exception:
         vol = mol.GetNumHeavyAtoms() * 10.0
+        volume_method = "heavy_atom_estimate"
         logger.warning("3D embedding failed for %s; using volume estimate", smiles)
 
     ecfp4 = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=2048)
@@ -255,6 +273,7 @@ def compute_substrate_properties(smiles: str, name: str = "") -> SubstrateProper
         smiles=smiles,
         molecular_weight=Descriptors.MolWt(mol),
         molecular_volume=vol,
+        molecular_volume_method=volume_method,
         logP=Descriptors.MolLogP(mol),
         tpsa=Descriptors.TPSA(mol),
         num_hba=Descriptors.NumHAcceptors(mol),

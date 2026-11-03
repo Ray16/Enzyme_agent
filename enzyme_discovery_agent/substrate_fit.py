@@ -21,6 +21,25 @@ from __future__ import annotations
 from itertools import permutations
 
 
+def accommodation_score(similarity: dict) -> float | None:
+    """Shared role-aware ordering for survey selection and final ranking.
+
+    Every required target substrate contributes its own distinct-native match.
+    Explicitly unmatched roles remain a weak analogue (zero); unresolved
+    comparisons remain unknown. No similarity establishes target activity.
+    """
+    from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+    accommodation = similarity.get("accommodation") or {}
+    if accommodation.get('role_transfer_status')=='unresolved':
+        return None
+    if accommodation.get("unaccommodated_targets"):
+        return 0.0
+    comparisons = similarity.get("property_comparisons") or []
+    fits = [value for value in (whole_package_pair_fit(c) for c in comparisons)
+            if value is not None]
+    return min(fits) if fits else None
+
+
 def assign_one_to_one(targets, natives, score):
     """Assign each target substrate a DISTINCT native, maximising the WORST pair.
 
