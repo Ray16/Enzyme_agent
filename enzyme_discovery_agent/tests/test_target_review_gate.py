@@ -200,3 +200,23 @@ def test_every_refusal_names_itself(tmp_path):
                                             'strengths':[],'constraints':[]})
     meta=load_candidate_registry(tmp_path)['candidates']['SYNTH1']['metadata']
     assert review.eligibility_verdict(tmp_path,'SYNTH1',meta)[1]=="review decision is 'defer'"
+
+
+def test_a_budget_stop_snapshot_keeps_the_candidates_the_live_ranking_admitted(tmp_path):
+    """The run ends on its allowance, and the checkpoint rewrites the decision list.
+
+    A candidate resting on a registered hypothesis is still 'evidence_pending', so a
+    status-only filter dropped every one of them at the checkpoint -- overwriting a
+    populated ranked_candidates.csv with an empty one at the very last step.
+    """
+    from enzyme_discovery_agent.output.finalizer import RunFinalizer
+    packet=setup(tmp_path);review.save_assessment(tmp_path,packet,assessment('prioritize'))
+    update_candidate_registry(tmp_path,'SYNTH1','evidence_pending',{})
+    assert len(refresh_ranked_candidates(tmp_path))==1
+    before=list(csv.DictReader((tmp_path/'ranked_candidates.csv').open()))
+    assert [r['accession'] for r in before]==['SYNTH1']
+
+    RunFinalizer(tmp_path,llm=None,log=lambda *a,**k:None).snapshot(
+        query='ligate the target partners',reason='token allowance reached')
+    after=list(csv.DictReader((tmp_path/'ranked_candidates.csv').open()))
+    assert [r['accession'] for r in after]==['SYNTH1'],'the checkpoint emptied the decision list'

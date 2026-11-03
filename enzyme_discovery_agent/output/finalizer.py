@@ -105,10 +105,23 @@ class RunFinalizer:
             _family_relevance_partition, _family_rank_map,
         )
         from enzyme_discovery_agent.models.candidate_registry import discovery_status
+        from enzyme_discovery_agent.models.evaluations import registered_hypothesis
         registry = load_candidate_registry(self.run_dir).get("candidates", {})
-        evaluations = [e for e in self._load_evaluations()
-                       if discovery_status(registry.get(e.get("data", e).get("accession"), {}))
-                       in {"evaluated", "ranked"}]
+
+        def carries_evidence(evaluation):
+            """Admit exactly what the live ranking admits.
+
+            A candidate whose case rests on a registered hypothesis is still
+            pending routine evaluation, so a status-only filter dropped every one
+            of them here while the live refresh ranked them. The budget-stop
+            report then overwrote a populated decision list with an empty one.
+            """
+            accession = evaluation.get("data", evaluation).get("accession")
+            entry = registry.get(accession, {})
+            return (discovery_status(entry) in {"evaluated", "ranked"}
+                    or registered_hypothesis(self.run_dir, accession, entry.get("metadata") or {}))
+
+        evaluations = [e for e in self._load_evaluations() if carries_evidence(e)]
         stopped, on_target, _ = _family_relevance_partition(self.run_dir, evaluations)
         ranking = _deterministic_mechanistic_ranking(
             evaluations, {}, family_rank_by_acc=_family_rank_map(stopped, on_target))
