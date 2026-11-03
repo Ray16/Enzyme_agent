@@ -97,8 +97,11 @@ def summarize(root,manifest,results):
         e=f'AS{n}'
         enzyme_tasks=[t for t in manifest['tasks'] if t['enzyme']==e]
         poses=sorted({t['pose'] for t in enzyme_tasks})
+        if not poses:
+            selection=json.loads((root/f'inputs/{e}/selection.json').read_text())
+            poses=[selection['selected_pose']]
         baselines=[json.loads((root/f'inputs/{e}/pose_{pose}/mapping.json').read_text())['baseline'] for pose in poses]
-        good_start=all(t.get('good_start') is not False for t in enzyme_tasks)
+        good_start=bool(enzyme_tasks) and all(t.get('good_start') is not False for t in enzyme_tasks)
         row=dict(id=e,activity_ugml=float(assay[e]['activity_N66L1_ugml_avg']),
             selected_start_poses=';'.join(map(str,poses)),good_start=good_start,
             strong_producer=static[e]['strong_producer']=='True',
@@ -120,6 +123,7 @@ def summarize(root,manifest,results):
     raw=[r for r in rows if r['n_endpoints_10ns']==2]
     stats=dict(completed_endpoints=len(results),expected_endpoints=len(manifest['tasks']),
         panel_complete=len(results)==len(manifest['tasks']),
+        submitted_enzymes=len({t['enzyme'] for t in manifest['tasks']}),
         starting_geometry_qualified_n=sum(r['good_start'] for r in rows),
         unqualified_start_enzymes=[r['id'] for r in rows if not r['good_start']],
         primary_definition='Mean starting-residue contact retention across two 10 ns endpoints per enzyme, with a qualifying starting geometry.',
@@ -175,7 +179,7 @@ def make_report(root,rows,stats):
                 if r['strong_producer']:ax.annotate(r['id'],(r[key],r['activity_ugml']),xytext=(3,3),textcoords='offset points')
             ax.set_xlabel(label);ax.set_ylabel('Measured N66L1 product (µg/mL)')
             ax.set_yscale('symlog',linthresh=.01);ax.grid(alpha=.15)
-        fig.suptitle(f'BioEmu2 substrate-retention pilot: {len(selected)}/48 enzymes eligible')
+        fig.suptitle(f'BioEmu2 substrate-retention pilot: {len(selected)}/{stats["submitted_enzymes"]} submitted enzymes eligible')
         fig.savefig(root/'retention_vs_yield.png',dpi=180)
         fig.savefig(root/'retention_vs_yield.svg')
         plt.close(fig)

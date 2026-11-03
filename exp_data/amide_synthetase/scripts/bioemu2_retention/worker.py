@@ -85,7 +85,8 @@ def main():
     model=load_model(checkpoint_path=Path(checkpoint),device='cuda',precision='32-true')
     torch.cuda.synchronize()
     load_seconds=time.monotonic()-load_begin
-    tasks=[t for t in manifest['tasks'] if not args.only or t['id']==args.only]
+    tasks=[t for t in manifest['tasks'] if t.get('good_start') is not False and
+        (not args.only or t['id']==args.only)]
     if not tasks: raise ValueError('No matching tasks')
     consecutive=0
     session=None

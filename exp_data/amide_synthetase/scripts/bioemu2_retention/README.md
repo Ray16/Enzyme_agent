@@ -11,14 +11,15 @@ poses with an O–PA–O3A angle of at least 150 degrees and a distance at most 
 subject to protein physicality and absence of severe substrate/protein clashes.
 Larger angles and lower pose indices break distance ties. These are operational
 starting-pose criteria, not proof of catalysis. Selection never uses activity.
-If no pose qualifies, the best physically valid available pose is flagged and
-excluded from the primary good-start analysis; such endpoints are retained as
-descriptive controls. Fallback ordering prefers angle at least 150 degrees and
-then shortest distance. Every pose's measured geometry and selection outcome is
+If no pose qualifies, the enzyme is excluded from BioEmu2 submission. Its best
+available cofold is retained only in the starting-geometry audit and is not
+sampled. Fallback audit ordering prefers angle at least 150 degrees and then
+shortest distance. Every pose's measured geometry and selection outcome is
 recorded in `inputs/<enzyme>/selection.json`.
 
-Each enzyme's selected starting structure is propagated independently to 1 ns
-and 10 ns, two seeds per lag: 192 endpoints across AS1–AS48.
+Each qualifying enzyme's selected starting structure is propagated independently
+to 1 ns and 10 ns, two seeds per lag. The current panel has 45 qualifying enzymes
+and 180 endpoints; AS13, AS28 and AS36 have no qualifying pose and are not submitted.
 The runtime is BioEmu2 preview at the recorded local checkpoint, FP32, batch size
 one, default EDM propagation and up to 128 rows of the existing MSA. No contact
 conditioning or steering forces the substrate to remain bound.
@@ -96,3 +97,11 @@ The original fixed-index run in `bioemu2_retention_20261103` was stopped at the
 user's request and its 24 completed endpoints preserved. Its outputs must not be
 pooled with the corrected `bioemu2_best_geometry_20261103` experiment. The legacy
 preparation mode remains available as `--selection fixed` for reproduction only.
+
+The corrected run was narrowed from 48 to 45 enzymes before any excluded enzyme
+was sampled. `scope_amendment.json` records the archived original manifest and
+removed task IDs. `scope_guard.py` holds explicit exclusion leases while already
+running worker versions drain their in-memory queues; it does not fabricate task
+completion or consume a GPU. This lets useful predictions continue without
+recomputing their embeddings. The leases are released after those exact legacy
+worker identities have exited. New workers read the filtered manifest directly.

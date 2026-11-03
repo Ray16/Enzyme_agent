@@ -166,6 +166,8 @@ def main():
             for path in [source,initial/'topology.cif',initial/'samples.xtc',initial/'mapping.json']:
                 files.append({'path':str(path),'sha256':digest(path)})
             for lag in [1,10]:
+                if args.selection=='best_geometry' and not good_start:
+                    continue
                 for replicate in range(2 if args.selection=='best_geometry' else 1):
                     task_id=f'{e}_pose{pose}_lag{lag}'+(f'_rep{replicate}' if args.selection=='best_geometry' else '')
                     tasks.append(dict(id=task_id,enzyme=e,pose=pose,lag_ns=lag,
@@ -177,6 +179,7 @@ def main():
     for path in [checkpoint,checkpoint.with_name('config.yaml'),activities]:
         files.append({'path':str(path),'sha256':digest(path)})
     manifest = dict(schema='bioemu2-retention-panel-v1',tasks=tasks,files=files,checkpoint=str(checkpoint),
+        excluded_enzymes=[f'AS{n}' for n in range(1,49) if not any(t['enzyme']==f'AS{n}' for t in tasks)],
         protocol={'primary_lag_ns':10,'secondary_lag_ns':1,
             'starting_pose_indices':'per-enzyme best qualifying cofold' if args.selection=='best_geometry' else [0,25],
             'selection_mode':args.selection,'starting_poses_per_enzyme':1 if args.selection=='best_geometry' else 2,
@@ -189,7 +192,7 @@ def main():
             'statistical_unit':'enzyme; endpoints and poses are not biological replicates',
             'limitations':['Retrospective exploratory panel; labels have been examined previously.',
                 'Four endpoints per enzyme provide a small pilot, not a residence-time estimate.',
-                'Best-available starts failing the working geometry screen are flagged and excluded from the primary good-start analysis.',
+                'Enzymes without a qualifying starting pose are not submitted to BioEmu2; absence of a pose is not an experimental inactivity label.',
                 'Historical one-Mg step-1 setup; outcome reflects complete assay and expression.',
                 'Protein physicality does not validate ligand chemistry; extra clash diagnostics are descriptive.',
                 'No calibrated equilibrium probabilities, rate constants, or binding free energies.']})
