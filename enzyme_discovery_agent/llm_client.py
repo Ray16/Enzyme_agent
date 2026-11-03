@@ -128,6 +128,10 @@ class TokenUsage:
         usage = getattr(response, "usage", None)
         pt = getattr(usage, "prompt_tokens", 0) or 0
         ct = getattr(usage, "completion_tokens", 0) or 0
+        reported_total = getattr(usage, "total_tokens", None)
+        # Some providers exclude hidden reasoning from completion_tokens while
+        # including it in total_tokens. Budget the full reported charge.
+        total = max(pt + ct, reported_total) if type(reported_total) is int else pt + ct
         with self._lock:
             if id(response) in self._responses:
                 return None
@@ -139,8 +143,10 @@ class TokenUsage:
                 "iteration": label,
                 "prompt_tokens": pt,
                 "completion_tokens": ct,
-                "total_tokens": pt + ct,
+                "total_tokens": total,
             }
+            if total > pt + ct:
+                call["unattributed_tokens"] = total - pt - ct
             # Preserve the prompt breakdown when the backend reports one. The collapsed
             # total charges a cache read the same as fresh input, so without this the
             # ledger cannot show whether a budget was really consumed.
@@ -152,7 +158,7 @@ class TokenUsage:
             self.calls.append(call)
             self.total_prompt_tokens += pt
             self.total_completion_tokens += ct
-            self.total_tokens += pt + ct
+            self.total_tokens += total
             return call
 
     def to_dict(self) -> dict:

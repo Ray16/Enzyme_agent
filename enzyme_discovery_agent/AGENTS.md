@@ -6,6 +6,9 @@ unrelated enzyme systems.
 
 ## Runtime inputs and evidence
 
+- Always present an enzyme/protein name alongside its accession in candidate
+  tables, handoffs, and user-facing progress updates.
+
 - Never put specific enzyme/gene names, accessions, organisms, benchmark
   substrates/products, expected mechanisms, or benchmark publication identifiers
   in runtime scripts, prompts, tool descriptions, defaults, comments or docstrings.
