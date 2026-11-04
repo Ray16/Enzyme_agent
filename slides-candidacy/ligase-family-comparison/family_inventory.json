@@ -1,0 +1,189 @@
+{
+  "AMP": [
+    [
+      "NIS synthetases",
+      "IucA, IucC, DesD",
+      "Carrier-independent siderophore assembly; substrates and cyclization behavior differ.",
+      "NIS"
+    ],
+    [
+      "ANL amide ligases",
+      "McbA",
+      "Direct acid--amine coupling; other ANL enzymes perform different second half-reactions.",
+      "ANL"
+    ],
+    [
+      "GH3 acyl acid amido synthetases",
+      "GH3.5, GH3.11/JAR1, GH3.17",
+      "Acyl-acid / phytohormone conjugation to amino acids; listed as a functional family.",
+      "GH3"
+    ],
+    [
+      "Asparagine synthetase A",
+      "AsnA",
+      "Aspartate side-chain amidation using ammonia; specificity is not general amine ligation.",
+      "AsnA"
+    ],
+    [
+      "Asparagine synthetase B",
+      "AsnB",
+      "Glutamine-derived ammonia supplied to the adenylating synthetase domain.",
+      "AsnB"
+    ],
+    [
+      "AsnB-related ring-forming synthetases",
+      "$\\beta$-lactam synthetase; carbapenam synthetase (CarA)",
+      "Intramolecular amide closure after adenylation; distinct from intermolecular diad formation.",
+      "AsnB"
+    ],
+    [
+      "Other characterized AMP-forming ligases",
+      "DdaG",
+      "Fumarate--diaminopropanoate ligation; included without asserting an unverified fold assignment.",
+      "DdaG"
+    ],
+    [
+      "NAD synthetases",
+      "NadE / NAD synthetase",
+      "Amidation of deamido-NAD; a specialized nucleotide substrate rather than a free diacid.",
+      "NAD"
+    ],
+    [
+      "NRPS adenylation domains (related)",
+      "PheA / DhbE-type A domains",
+      "Carrier-dependent context: activation/loading precedes downstream peptide-bond formation.",
+      "ANL"
+    ],
+    [
+      "Aminoacyl-tRNA synthetases (related)",
+      "Class I and class II aaRS",
+      "Acyl transfer to tRNA forms an ester; peptide-bond formation occurs downstream.",
+      "aaRS"
+    ],
+    [
+      "Biotin--protein ligases (related)",
+      "BirA / holocarboxylase synthetase",
+      "Protein-bound lysine acceptor; covalent cofactor attachment rather than free-diamine ligation.",
+      "BirA"
+    ],
+    [
+      "Lipoate--protein ligases (related)",
+      "LplA / LplJ",
+      "Lipoyl-AMP intermediate; transfer to a lysine in a protein lipoyl domain.",
+      "LplA"
+    ]
+  ],
+  "ADP": [
+    [
+      "ATP-grasp peptide ligases",
+      "DdaF; D-Ala--D-Ala ligases",
+      "Peptide formation from activated carboxylates; family members differ in substrate requirements.",
+      "DdaG"
+    ],
+    [
+      "ATP-grasp isopeptide ligases",
+      "PylC",
+      "Lysine side-chain acylation; structural evidence supports an acyl-phosphate intermediate.",
+      "PylC"
+    ],
+    [
+      "ATP-grasp glutathione / polyamine ligases",
+      "GshB, GspS, TryS",
+      "Glutathione assembly or conjugation to spermidine; spermidine is a triamine.",
+      "GspS"
+    ],
+    [
+      "ATP-grasp purine-pathway ligases",
+      "PurD / glycinamide ribonucleotide synthetase",
+      "Glycine ligation to phosphoribosylamine; specialized native substrates.",
+      "PurD"
+    ],
+    [
+      "GS-fold ligases",
+      "GS, PuuA, GmaS",
+      "Different nitrogen donors: ammonia, putrescine or methylamine; a fold does not fix scope.",
+      "PuuA"
+    ],
+    [
+      "Glutamate--cysteine ligases",
+      "GCL / GshA / $\\gamma$-glutamylcysteine synthetase",
+      "Glutamate side-chain activation followed by cysteine addition; distinct from GshB.",
+      "GCL"
+    ],
+    [
+      "Mur peptide ligases",
+      "MurC, MurD, MurE, MurF; Mpl",
+      "Peptidoglycan-precursor ligation; nucleotide-linked acceptors need separate accommodation tests.",
+      "Mur"
+    ],
+    [
+      "Folate glutamate ligases",
+      "FolC / DHFS / FPGS",
+      "Folate synthesis or polyglutamylation via acyl-phosphate chemistry.",
+      "FolC"
+    ],
+    [
+      "Multidomain polymer ligases",
+      "Cyanophycin synthetase CphA1",
+      "ATP-grasp G domain + Mur-like M domain; iterative peptide and isopeptide formation.",
+      "CphA"
+    ],
+    [
+      "Other characterized ADP-forming activity",
+      "IaaL / indoleacetate--lysine synthetase",
+      "ADP production is established by enzyme nomenclature; no specific fold is assigned here.",
+      "IaaL"
+    ],
+    [
+      "Protein-conjugating ligases (related)",
+      "PafA / Pup ligase",
+      "Protein-bound glutamate activation and transfer to substrate lysine; not free-substrate coupling.",
+      "PafA"
+    ],
+    [
+      "tRNA-dependent amidotransferases (related)",
+      "GatCAB system",
+      "tRNA-bound acidic amino-acid side-chain amidation; different substrate context.",
+      "PafA"
+    ]
+  ],
+  "references": {
+    "NIS": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7325057/",
+    "ANL": "https://doi.org/10.1002/ange.201804592",
+    "GH3": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11253546/",
+    "AsnA": "https://iubmb.qmul.ac.uk/enzyme/EC6/3/1/1.html",
+    "AsnB": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2610506/",
+    "DdaG": "https://doi.org/10.1021/bi9013165",
+    "NAD": "https://iubmb.qmul.ac.uk/enzyme/EC6/3/1/5.html",
+    "aaRS": "https://doi.org/10.1186/1471-2164-13-621",
+    "BirA": "https://iubmb.qmul.ac.uk/enzyme/EC6/3/4/15.html",
+    "LplA": "https://iubmb.qmul.ac.uk/enzyme/EC6/3/1/20.html",
+    "PylC": "https://doi.org/10.1016/j.jmb.2012.09.007",
+    "GspS": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1698887/",
+    "TryS": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2427367/",
+    "PuuA": "https://pubmed.ncbi.nlm.nih.gov/18495664/",
+    "GCL": "https://pmc.ncbi.nlm.nih.gov/articles/PMC523444/",
+    "Mur": "https://www.rcsb.org/annotations/1P3D",
+    "FolC": "https://journals.iucr.org/d/issues/2008/07/00/gx5127/gx5127.pdf",
+    "CphA": "https://doi.org/10.1038/s41467-022-31542-7",
+    "IaaL": "https://iubmb.qmul.ac.uk/enzyme/EC6/3/2/20.html",
+    "PafA": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3039397/",
+    "GmaS": "https://iubmb.qmul.ac.uk/enzyme/EC6/3/4/12.html",
+    "PurD": "https://www.rcsb.org/structure/1GSO"
+  },
+  "scope": "Major relevant amide-ligase families and related activation systems; not an exhaustive count of independent folds.",
+  "validation": [
+    {
+      "route": "AMP",
+      "entries": 12,
+      "one_page": true,
+      "latex_overflow": false
+    },
+    {
+      "route": "ADP",
+      "entries": 12,
+      "one_page": true,
+      "latex_overflow": false
+    }
+  ]
+}

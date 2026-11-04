@@ -1,0 +1,30 @@
+\documentclass{article}
+\usepackage[paperwidth=16in,paperheight=12in,margin=0.45in]{geometry}
+\usepackage[T1]{fontenc}\usepackage{lmodern,amsmath,booktabs,tabularx,array,hyperref}
+\usepackage[table]{xcolor}
+\renewcommand{\familydefault}{\sfdefault}\pagestyle{empty}\setlength{\parindent}{0pt}
+\definecolor{maroon}{HTML}{890B23}\definecolor{pale}{HTML}{F8EDEF}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\tabcolsep}{8pt}\renewcommand{\arraystretch}{1.16}
+\begin{document}
+
+{\fontsize{27}{32}\selectfont\bfseries\color{maroon} ADP-forming ligases: extended family and substrate-context map\par}
+\vspace{10pt}{\fontsize{16}{20}\selectfont Major relevant families and functional groups; overlapping entries are not independent folds.}\par\vspace{16pt}
+\fontsize{16}{20}\selectfont
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.9in}>{\raggedright\arraybackslash}p{3.25in}Y@{}}
+\toprule\rowcolor{pale}\textbf{Family / functional group} & \textbf{Representative systems} & \textbf{Native context and limits of transfer}\\\midrule
+\textbf{ATP-grasp peptide ligases} & DdaF; D-Ala--D-Ala ligases & Peptide formation from activated carboxylates; family members differ in substrate requirements. \href{https://doi.org/10.1021/bi9013165}{[source]} \\[5pt]
+\textbf{ATP-grasp isopeptide ligases} & PylC & Lysine side-chain acylation; structural evidence supports an acyl-phosphate intermediate. \href{https://doi.org/10.1016/j.jmb.2012.09.007}{[source]} \\[5pt]
+\textbf{ATP-grasp glutathione / polyamine ligases} & GshB, GspS, TryS & Glutathione assembly or conjugation to spermidine; spermidine is a triamine. \href{https://pmc.ncbi.nlm.nih.gov/articles/PMC1698887/}{[source]} \\[5pt]
+\textbf{ATP-grasp purine-pathway ligases} & PurD / glycinamide ribonucleotide synthetase & Glycine ligation to phosphoribosylamine; specialized native substrates. \href{https://www.rcsb.org/structure/1GSO}{[source]} \\[5pt]
+\textbf{GS-fold ligases} & GS, PuuA, GmaS & Different nitrogen donors: ammonia, putrescine or methylamine; a fold does not fix scope. \href{https://pubmed.ncbi.nlm.nih.gov/18495664/}{[source]} \\[5pt]
+\textbf{Glutamate--cysteine ligases} & GCL / GshA / $\gamma$-glutamylcysteine synthetase & Glutamate side-chain activation followed by cysteine addition; distinct from GshB. \href{https://pmc.ncbi.nlm.nih.gov/articles/PMC523444/}{[source]} \\[5pt]
+\textbf{Mur peptide ligases} & MurC, MurD, MurE, MurF; Mpl & Peptidoglycan-precursor ligation; nucleotide-linked acceptors need separate accommodation tests. \href{https://www.rcsb.org/annotations/1P3D}{[source]} \\[5pt]
+\textbf{Folate glutamate ligases} & FolC / DHFS / FPGS & Folate synthesis or polyglutamylation via acyl-phosphate chemistry. \href{https://journals.iucr.org/d/issues/2008/07/00/gx5127/gx5127.pdf}{[source]} \\[5pt]
+\textbf{Multidomain polymer ligases} & Cyanophycin synthetase CphA1 & ATP-grasp G domain + Mur-like M domain; iterative peptide and isopeptide formation. \href{https://doi.org/10.1038/s41467-022-31542-7}{[source]} \\[5pt]
+\textbf{Other characterized ADP-forming activity} & IaaL / indoleacetate--lysine synthetase & ADP production is established by enzyme nomenclature; no specific fold is assigned here. \href{https://iubmb.qmul.ac.uk/enzyme/EC6/3/2/20.html}{[source]} \\[5pt]
+\textbf{Protein-conjugating ligases (related)} & PafA / Pup ligase & Protein-bound glutamate activation and transfer to substrate lysine; not free-substrate coupling. \href{https://pmc.ncbi.nlm.nih.gov/articles/PMC3039397/}{[source]} \\[5pt]
+\textbf{tRNA-dependent amidotransferases (related)} & GatCAB system & tRNA-bound acidic amino-acid side-chain amidation; different substrate context. \href{https://pmc.ncbi.nlm.nih.gov/articles/PMC3039397/}{[source]} \\[5pt]
+\bottomrule\end{tabularx}\par\vspace{13pt}
+{\fontsize{13}{16}\selectfont A family label or nucleotide product does not establish activity on adipate and hexamethylenediamine. For a new candidate, verify the native reacting partners, reaction direction, intermediate, molecular state and assembly. Related carrier-, tRNA- and protein-dependent systems are included for mechanistic breadth, not as interchangeable direct amide ligases. Carbamoyl-phosphate synthetase and biotin carboxylases are not placed in the core carboxyl-activating amide-ligase comparison because their activated substrates and reaction stoichiometries differ.}
+\end{document}

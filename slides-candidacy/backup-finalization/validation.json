@@ -1,0 +1,2576 @@
+{
+  "backup_pages": 10,
+  "combined_pages": 40,
+  "original_sha256": "474be402d3e256aad4f77915f0d9b38e8b1e04fc2f20afbd9a77ea2f960ced79",
+  "original_unchanged": true,
+  "main_pages_preserved": 28,
+  "proxy_inventory_preserved": true,
+  "main_page_text_and_render_checks": "28/28 identical",
+  "latex_table_included": true,
+  "text_boxes": 183,
+  "all_text_fits_without_scaling": true,
+  "checks": [
+    {
+      "page": 1,
+      "text": "BACKUP \u00b7 MECHANISTIC CHEMISTRY",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 1,
+      "text": "30",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 2,
+      "text": "Activation geometry depends on the ATP cleavage route",
+      "font_size": 51,
+      "requested_font_size": 51,
+      "box": [
+        70,
+        42,
+        1850,
+        122
+      ],
+      "spare_height": 14.759994506835938,
+      "scale": 1.0
+    },
+    {
+      "page": 2,
+      "text": "Saved predicted poses illustrate distinct reaction centers; they are not transition-state structures.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        80,
+        133,
+        1840,
+        182
+      ],
+      "spare_height": 11.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 2,
+      "text": "BACKUP \u00b7 STRUCTURAL COMPARISON",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 2,
+      "text": "31",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 2,
+      "text": "AMP-forming \u00b7 AS9",
+      "font_size": 34,
+      "requested_font_size": 34,
+      "box": [
+        80,
+        201,
+        920,
+        257
+      ],
+      "spare_height": 11.84000015258789,
+      "scale": 1.0
+    },
+    {
+      "page": 2,
+      "text": "ADP-forming \u00b7 PuuA",
+      "font_size": 34,
+      "requested_font_size": 34,
+      "box": [
+        1000,
+        201,
+        1840,
+        257
+      ],
+      "spare_height": 11.84000015258789,
+      "scale": 1.0
+    },
+    {
+      "page": 2,
+      "text": "AMP-forming: inspect P\u03b1 / O3A.     ADP-forming: inspect P\u03b3 / O3B.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        101,
+        942,
+        1820,
+        993
+      ],
+      "spare_height": 13.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 2,
+      "text": "Unchanged model-0 coordinates. AS9: one Mg; PuuA: two Mg. Metal count is model-specific, not determined by ATP cleavage class.",
+      "font_size": 19,
+      "requested_font_size": 19,
+      "box": [
+        86,
+        1000,
+        1820,
+        1028
+      ],
+      "spare_height": 2.440000534057617,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Agent roles, tools, and scientific responsibility",
+      "font_size": 51,
+      "requested_font_size": 51,
+      "box": [
+        70,
+        42,
+        1850,
+        122
+      ],
+      "spare_height": 14.759994506835938,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Each component owns a scientific decision and produces reviewable evidence.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        80,
+        133,
+        1840,
+        182
+      ],
+      "spare_height": 11.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "BACKUP \u00b7 FRAMEWORK",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "32",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Component",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        230,
+        414,
+        298
+      ],
+      "spare_height": 30.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Scientific decisions",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        446,
+        230,
+        1124,
+        298
+      ],
+      "spare_height": 30.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Tools and outputs",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        1156,
+        230,
+        1824,
+        298
+      ],
+      "spare_height": 30.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Enzyme discovery",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        317,
+        414,
+        444
+      ],
+      "spare_height": 89.04000091552734,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Which reaction analogues and families?<br/>Which candidates merit investigation?",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        446,
+        317,
+        1124,
+        444
+      ],
+      "spare_height": 53.08000183105469,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Literature, reaction databases, UniProt,<br/>homolog and family search \u2192 shortlist",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        1156,
+        317,
+        1824,
+        444
+      ],
+      "spare_height": 53.08000183105469,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Structural modeling",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        462,
+        414,
+        589
+      ],
+      "spare_height": 53.08000183105469,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Which chemical state and assembly?<br/>Which test addresses the uncertainty?",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        446,
+        462,
+        1124,
+        589
+      ],
+      "spare_height": 53.08000183105469,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Cofolding, pose checks, geometry proxies;<br/>question-driven follow-up requests",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        1156,
+        462,
+        1824,
+        589
+      ],
+      "spare_height": 53.08000183105469,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Enzyme design",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        607,
+        414,
+        734
+      ],
+      "spare_height": 89.04000091552734,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Redesign an existing enzyme or generate<br/>a scaffold? Which motif or positions?",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        446,
+        607,
+        1124,
+        734
+      ],
+      "spare_height": 53.08000183105469,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Pocket scan, saturation libraries,<br/>motif/ligand-conditioned generation",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        1156,
+        607,
+        1824,
+        734
+      ],
+      "spare_height": 53.08000183105469,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Experimental<br/>learning<br/>(proposed)",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        752,
+        414,
+        879
+      ],
+      "spare_height": 17.12000274658203,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Which candidates distinguish hypotheses?<br/>How should outcomes revise the next round?",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        446,
+        752,
+        1124,
+        879
+      ],
+      "spare_height": 53.08000183105469,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Measured product, expression and controls<br/>\u2192 revised hypotheses and test panel",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        1156,
+        752,
+        1824,
+        879
+      ],
+      "spare_height": 53.08000183105469,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "The model chooses scientific actions; tools execute them and return inspectable results.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        101,
+        942,
+        1820,
+        993
+      ],
+      "spare_height": 13.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 3,
+      "text": "Current component interfaces are implemented. The full prospective experimental learning loop is proposed work.",
+      "font_size": 19,
+      "requested_font_size": 19,
+      "box": [
+        86,
+        1000,
+        1820,
+        1028
+      ],
+      "spare_height": 2.440000534057617,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "How the agent selects and revises its next action",
+      "font_size": 51,
+      "requested_font_size": 51,
+      "box": [
+        70,
+        42,
+        1850,
+        122
+      ],
+      "spare_height": 14.759994506835938,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "Current decision protocol: hypothesis \u2192 predicted observation \u2192 tool result \u2192 revision",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        80,
+        133,
+        1840,
+        182
+      ],
+      "spare_height": 11.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "BACKUP \u00b7 FRAMEWORK",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "33",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "1  Inspect the state",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        103,
+        241,
+        587,
+        319
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "Target constraints<br/>Sources and current hypotheses<br/>Unresolved or conflicting evidence",
+      "font_size": 27,
+      "requested_font_size": 30,
+      "box": [
+        103,
+        326,
+        587,
+        447
+      ],
+      "spare_height": 18.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "2  Propose a test",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        718,
+        241,
+        1202,
+        319
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "Choose a permitted tool<br/>State a discriminating prediction<br/>Record alternatives and rationale",
+      "font_size": 28,
+      "requested_font_size": 30,
+      "box": [
+        718,
+        326,
+        1202,
+        447
+      ],
+      "spare_height": 14.839996337890625,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "3  Check the request",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        1333,
+        241,
+        1817,
+        319
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "Verify required evidence links<br/>Check tool and input contracts<br/>Retain unresolved assumptions",
+      "font_size": 30,
+      "requested_font_size": 30,
+      "box": [
+        1333,
+        326,
+        1817,
+        447
+      ],
+      "spare_height": 7.399993896484375,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "4  Execute the tool",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        1333,
+        553,
+        1817,
+        631
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "Run the declared investigation<br/>Save raw outputs and status<br/>Record failures separately",
+      "font_size": 30,
+      "requested_font_size": 30,
+      "box": [
+        1333,
+        638,
+        1817,
+        759
+      ],
+      "spare_height": 7.399993896484375,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "5  Compare with prediction",
+      "font_size": 32,
+      "requested_font_size": 33,
+      "box": [
+        718,
+        553,
+        1202,
+        631
+      ],
+      "spare_height": 36.31999969482422,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "Link the observed result<br/>Separate evidence from inference<br/>Retain or revise the hypothesis",
+      "font_size": 28,
+      "requested_font_size": 30,
+      "box": [
+        718,
+        638,
+        1202,
+        759
+      ],
+      "spare_height": 14.839996337890625,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "6  Update and continue",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        103,
+        553,
+        587,
+        631
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "Reprioritize the investigation<br/>Preserve previous observations<br/>Choose the next informative test",
+      "font_size": 29,
+      "requested_font_size": 30,
+      "box": [
+        103,
+        638,
+        587,
+        759
+      ],
+      "spare_height": 11.120002746582031,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "<b>Stopping:</b> unresolved coverage or budget limit \u2192 checkpoint; new evidence can reopen a decision.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        103,
+        837,
+        1817,
+        894
+      ],
+      "spare_height": 20.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "A completed tool call, a completed task list, and a supported scientific conclusion are distinct.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        101,
+        942,
+        1820,
+        993
+      ],
+      "spare_height": 13.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 4,
+      "text": "The controller checks recorded contracts and provenance; it does not independently certify biochemical interpretations.",
+      "font_size": 19,
+      "requested_font_size": 19,
+      "box": [
+        86,
+        1000,
+        1820,
+        1028
+      ],
+      "spare_height": 2.440000534057617,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Shared evidence and structured agent handoffs",
+      "font_size": 51,
+      "requested_font_size": 51,
+      "box": [
+        70,
+        42,
+        1850,
+        122
+      ],
+      "spare_height": 14.759994506835938,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Communication carries explicit claims, source records, modeling proposals, and unresolved choices.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        80,
+        133,
+        1840,
+        182
+      ],
+      "spare_height": 11.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "BACKUP \u00b7 FRAMEWORK",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "34",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Discovery evidence",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        103,
+        236,
+        587,
+        314
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Candidate identity + native reaction",
+      "font_size": 26,
+      "requested_font_size": 28,
+      "box": [
+        103,
+        321,
+        587,
+        372
+      ],
+      "spare_height": 16.759998321533203,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Modeling review",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        718,
+        236,
+        1202,
+        314
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Independent setup + pose assessment",
+      "font_size": 24,
+      "requested_font_size": 28,
+      "box": [
+        718,
+        321,
+        1202,
+        372
+      ],
+      "spare_height": 19.239999771118164,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Returned observations",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        1333,
+        236,
+        1817,
+        314
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Geometry + limitations + provenance",
+      "font_size": 25,
+      "requested_font_size": 28,
+      "box": [
+        1333,
+        321,
+        1817,
+        372
+      ],
+      "spare_height": 18.0,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Handoff content",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        445,
+        454,
+        493
+      ],
+      "spare_height": 10.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "What must remain explicit",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        486,
+        445,
+        1824,
+        493
+      ],
+      "spare_height": 10.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Target and identity",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        512,
+        454,
+        592
+      ],
+      "spare_height": 42.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Bond change, substrate structures, protein name + accession, sequence provenance",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        486,
+        512,
+        1824,
+        592
+      ],
+      "spare_height": 42.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Scientific evidence",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        610,
+        454,
+        690
+      ],
+      "spare_height": 42.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Native reaction, source passage, evidence status, contradictions and missing information",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        486,
+        610,
+        1824,
+        690
+      ],
+      "spare_height": 42.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Modeling proposal",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        708,
+        454,
+        788
+      ],
+      "spare_height": 42.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Reaction step, reactive atoms, cofactors, charges, assembly and proposed restraints",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        486,
+        708,
+        1824,
+        788
+      ],
+      "spare_height": 42.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "State and lineage",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        96,
+        806,
+        454,
+        886
+      ],
+      "spare_height": 42.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Admitted candidates separated from unresolved leads; source snapshots and revision identity",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        486,
+        806,
+        1824,
+        886
+      ],
+      "spare_height": 6.0800018310546875,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "A discovery proposal is reviewed by the modeling agent before it becomes an executable setup.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        101,
+        942,
+        1820,
+        993
+      ],
+      "spare_height": 13.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 5,
+      "text": "Current schema-3.0 interface. Structural evidence import is implemented; source integrity does not establish claim correctness.",
+      "font_size": 19,
+      "requested_font_size": 19,
+      "box": [
+        86,
+        1000,
+        1820,
+        1028
+      ],
+      "spare_height": 2.440000534057617,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "Reaction evidence refines a broad family annotation",
+      "font_size": 51,
+      "requested_font_size": 51,
+      "box": [
+        70,
+        42,
+        1850,
+        122
+      ],
+      "spare_height": 14.759994506835938,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "Saved discovery case: distinct nitrogen donors lead to different search priorities.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        80,
+        133,
+        1840,
+        182
+      ],
+      "spare_height": 11.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "BACKUP \u00b7 SAVED CASE STUDY",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "35",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "Initial examples",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        103,
+        248,
+        587,
+        326
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "<b>Glutamine synthetase:</b><br/>glutamate + ammonia<br/><br/><b>Glutamate\u2013methylamine ligase:</b><br/>glutamate + methylamine<br/><br/>These examples were deprioritized<br/>for the target diamine.",
+      "font_size": 27,
+      "requested_font_size": 29,
+      "box": [
+        103,
+        333,
+        587,
+        644
+      ],
+      "spare_height": 7.67999267578125,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "Later retrieved evidence",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        718,
+        248,
+        1202,
+        326
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "<b>PuuA</b><br/>Glutamate\u2013putrescine ligase<br/>UniProt P78061<br/><br/>Native nitrogen donor:<br/>putrescine, a free C4 diamine<br/><br/>Target donor: a C6 diamine",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        718,
+        333,
+        1202,
+        644
+      ],
+      "spare_height": 21.320037841796875,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "Revised investigation",
+      "font_size": 33,
+      "requested_font_size": 33,
+      "box": [
+        1333,
+        248,
+        1817,
+        326
+      ],
+      "spare_height": 35.07999801635742,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "Prioritize the PuuA lead<br/>and relevant family members.<br/><br/>Compare substrate scope<br/>and model target accommodation.<br/><br/><b>Target activity remains unresolved.</b>",
+      "font_size": 27,
+      "requested_font_size": 29,
+      "box": [
+        1333,
+        333,
+        1817,
+        644
+      ],
+      "spare_height": 41.160003662109375,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "<b>Decision boundary:</b> a broad GS-fold annotation cannot determine nitrogen-donor specificity. Search deprioritization is reversible and does not demonstrate inactivity on the target substrates.",
+      "font_size": 32,
+      "requested_font_size": 32,
+      "box": [
+        105,
+        736,
+        1815,
+        856
+      ],
+      "spare_height": 38.63999938964844,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "Evaluate the native reacting partners; avoid assigning one substrate scope to an entire fold.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        101,
+        942,
+        1820,
+        993
+      ],
+      "spare_height": 13.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 6,
+      "text": "Archived September 17 run, events 51 and 122\u2013125; reconstructed from saved decisions. Kurihara et al. (2008), PMID:18495664.",
+      "font_size": 19,
+      "requested_font_size": 19,
+      "box": [
+        86,
+        1000,
+        1820,
+        1028
+      ],
+      "spare_height": 2.440000534057617,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Model validation determines what can be interpreted",
+      "font_size": 51,
+      "requested_font_size": 51,
+      "box": [
+        70,
+        42,
+        1850,
+        122
+      ],
+      "spare_height": 14.759994506835938,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Current structural controller: review the declared experiment before interpreting a favorable pose.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        80,
+        133,
+        1840,
+        182
+      ],
+      "spare_height": 11.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "BACKUP \u00b7 FRAMEWORK",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "36",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Stage",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        230,
+        434,
+        288
+      ],
+      "spare_height": 21.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Required assessment",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        466,
+        230,
+        1214,
+        288
+      ],
+      "spare_height": 21.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Consequence",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1246,
+        230,
+        1824,
+        288
+      ],
+      "spare_height": 21.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Identity and evidence",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        307,
+        434,
+        404
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Resolve sequence identity; inspect sources,<br/>conflicts and intended reaction step.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        466,
+        307,
+        1214,
+        404
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Unresolved identity or source conflict<br/>returns to investigation.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1246,
+        307,
+        1824,
+        404
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Chemical setup",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        422,
+        434,
+        519
+      ],
+      "spare_height": 60.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Declare ligand state, cofactors, assembly,<br/>restraints and reactive atom assignments.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        466,
+        422,
+        1214,
+        519
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Failed setup checks require a<br/>new reviewed proposal.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1246,
+        422,
+        1824,
+        519
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Prediction quality",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        537,
+        434,
+        634
+      ],
+      "spare_height": 60.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Check output coverage, required atoms,<br/>declared physical criteria and file lineage.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        466,
+        537,
+        1214,
+        634
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Incomplete or invalid outputs<br/>cannot support a structural conclusion.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1246,
+        537,
+        1824,
+        634
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Mechanistic readout",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        652,
+        434,
+        749
+      ],
+      "spare_height": 60.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Evaluate the reaction-specific geometry<br/>with its distance and sampling context.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        466,
+        652,
+        1214,
+        749
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Geometric support remains distinct<br/>from measured catalytic activity.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1246,
+        652,
+        1824,
+        749
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Follow-up choice",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        767,
+        434,
+        864
+      ],
+      "spare_height": 60.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "State what cofolding cannot answer and<br/>what observation would distinguish hypotheses.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        466,
+        767,
+        1214,
+        864
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Dynamics, energetics or design<br/>requires its own scientific question.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1246,
+        767,
+        1824,
+        864
+      ],
+      "spare_height": 25.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Input validity, prediction validity, mechanistic support, and experimental activity are separate.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        101,
+        942,
+        1820,
+        993
+      ],
+      "spare_height": 13.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 7,
+      "text": "Generated cofold samples describe prediction variability; they are not a time trajectory or biological replicates.",
+      "font_size": 19,
+      "requested_font_size": 19,
+      "box": [
+        86,
+        1000,
+        1820,
+        1028
+      ],
+      "spare_height": 2.440000534057617,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "How to test the value of the agentic framework",
+      "font_size": 51,
+      "requested_font_size": 51,
+      "box": [
+        70,
+        42,
+        1850,
+        122
+      ],
+      "spare_height": 14.759994506835938,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Proposed evaluation: separate component accuracy from the benefit of adaptive coordination.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        80,
+        133,
+        1840,
+        182
+      ],
+      "spare_height": 11.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "BACKUP \u00b7 PROPOSED EVALUATION",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "37",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Scientific question",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        230,
+        474,
+        288
+      ],
+      "spare_height": 21.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Comparison",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        506,
+        230,
+        1204,
+        288
+      ],
+      "spare_height": 21.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Readout",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1236,
+        230,
+        1824,
+        288
+      ],
+      "spare_height": 21.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Does chemistry help discovery?",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        307,
+        474,
+        422
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Sequence / reaction retrieval baseline<br/>versus evidence-guided discovery",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        506,
+        307,
+        1204,
+        422
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Known-family recovery;<br/>precision among adjudicated candidates",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1236,
+        307,
+        1824,
+        422
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Does adaptation help?",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        440,
+        474,
+        555
+      ],
+      "spare_height": 78.27999877929688,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Same model, tools and allowance;<br/>adaptive decisions versus a fixed workflow",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        506,
+        440,
+        1204,
+        555
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Useful evidence per unit cost;<br/>correction after conflicting evidence",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1236,
+        440,
+        1824,
+        555
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Does specialization help?",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        573,
+        474,
+        688
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "One agent with all tools versus specialized<br/>agents with the same total resource budget",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        506,
+        573,
+        1204,
+        688
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Decision consistency;<br/>handoff errors and final candidate quality",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1236,
+        573,
+        1824,
+        688
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Does feedback help design?",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        706,
+        474,
+        821
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Initial ranking versus an updated ranking<br/>after measured outcomes",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        506,
+        706,
+        1204,
+        821
+      ],
+      "spare_height": 43.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Prospective hit rate;<br/>activity improvement and hypothesis resolution",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1236,
+        706,
+        1824,
+        821
+      ],
+      "spare_height": 8.839996337890625,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "<b>Controls:</b> independent reactions, fixed data access, repeated runs, matched cost, and separate development/test sets.",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        103,
+        849,
+        1817,
+        898
+      ],
+      "spare_height": 12.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "A traceable explanation supports auditability; improved scientific performance needs a controlled comparison.",
+      "font_size": 27,
+      "requested_font_size": 29,
+      "box": [
+        101,
+        942,
+        1820,
+        993
+      ],
+      "spare_height": 15.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 8,
+      "text": "Evaluation design, not completed comparative results. Unjudged candidates remain separate from confirmed negatives.",
+      "font_size": 19,
+      "requested_font_size": 19,
+      "box": [
+        86,
+        1000,
+        1820,
+        1028
+      ],
+      "spare_height": 2.440000534057617,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Implementation and validation status",
+      "font_size": 51,
+      "requested_font_size": 51,
+      "box": [
+        70,
+        42,
+        1850,
+        122
+      ],
+      "spare_height": 14.759994506835938,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Keep available software, preliminary scientific observations, and proposed validation distinct.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        80,
+        133,
+        1840,
+        182
+      ],
+      "spare_height": 11.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "BACKUP \u00b7 SCOPE AND STATUS",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "38",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Area",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        230,
+        404,
+        288
+      ],
+      "spare_height": 21.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Available evidence / implementation",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        436,
+        230,
+        1149,
+        288
+      ],
+      "spare_height": 21.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Next validation",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1181,
+        230,
+        1824,
+        288
+      ],
+      "spare_height": 21.279998779296875,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Discovery",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        307,
+        404,
+        429
+      ],
+      "spare_height": 85.27999877929688,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Saved target-reaction search and candidate<br/>shortlist; current source-linked decision records",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        436,
+        307,
+        1149,
+        429
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Independent reaction benchmark;<br/>adjudicated evidence and candidate quality",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1181,
+        307,
+        1824,
+        429
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Modeling and design",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        447,
+        404,
+        569
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Saved cofold ensembles and proxy comparisons;<br/>matched WT\u2013mutant structural predictions",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        436,
+        447,
+        1149,
+        569
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Setup sensitivity and prospective ranking;<br/>experimental mutant activity",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1181,
+        447,
+        1824,
+        569
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Coordination",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        587,
+        404,
+        709
+      ],
+      "spare_height": 85.27999877929688,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Independent domain agents, structured<br/>handoffs, persistent state and feedback import",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        436,
+        587,
+        1149,
+        709
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Controlled benefit of specialization<br/>and evidence-driven reassessment",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1181,
+        587,
+        1824,
+        709
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Experimental learning",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        96,
+        727,
+        404,
+        849
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Measured homolog yields motivate hypotheses;<br/>candidate-panel and revision policies proposed",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        436,
+        727,
+        1149,
+        849
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "Prospective repeated rounds with<br/>measured outcomes and matched controls",
+      "font_size": 28,
+      "requested_font_size": 28,
+      "box": [
+        1181,
+        727,
+        1824,
+        849
+      ],
+      "spare_height": 50.55999755859375,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "The thesis tests whether explicit chemical reasoning improves decisions and experimental outcomes.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        101,
+        942,
+        1820,
+        993
+      ],
+      "spare_height": 13.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 9,
+      "text": "The September case study predates current controller upgrades; newer interfaces are not attributed retrospectively to that run.",
+      "font_size": 19,
+      "requested_font_size": 19,
+      "box": [
+        86,
+        1000,
+        1820,
+        1028
+      ],
+      "spare_height": 2.440000534057617,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Exact inputs behind the structural comparisons",
+      "font_size": 51,
+      "requested_font_size": 51,
+      "box": [
+        70,
+        42,
+        1850,
+        122
+      ],
+      "spare_height": 14.759994506835938,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Saved setup audit: the activity panel and mutant campaign use distinct modeling conditions.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        80,
+        133,
+        1840,
+        182
+      ],
+      "spare_height": 11.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "BACKUP \u00b7 MODELING METHODS",
+      "font_size": 21,
+      "requested_font_size": 21,
+      "box": [
+        80,
+        1040,
+        1760,
+        1078
+      ],
+      "spare_height": 9.959999084472656,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "39",
+      "font_size": 23,
+      "requested_font_size": 23,
+      "box": [
+        1810,
+        1040,
+        1870,
+        1078
+      ],
+      "spare_height": 7.479999542236328,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Choice",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        96,
+        230,
+        379,
+        318
+      ],
+      "spare_height": 52.52000045776367,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Activity panel<br/>Activation step",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        411,
+        230,
+        861,
+        318
+      ],
+      "spare_height": 19.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Activity panel<br/>Amide-forming step",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        893,
+        230,
+        1343,
+        318
+      ],
+      "spare_height": 19.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Mutant scan<br/>Activation step",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        1375,
+        230,
+        1824,
+        318
+      ],
+      "spare_height": 19.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Complex",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        96,
+        337,
+        379,
+        401
+      ],
+      "spare_height": 28.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "ATP + adipate",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        411,
+        337,
+        861,
+        401
+      ],
+      "spare_height": 28.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Adipyl-AMP + HMDA",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        893,
+        337,
+        1343,
+        401
+      ],
+      "spare_height": 28.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "ATP + adipate",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        1375,
+        337,
+        1824,
+        401
+      ],
+      "spare_height": 28.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Metal / protein",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        96,
+        419,
+        379,
+        483
+      ],
+      "spare_height": 28.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "1 Mg<sup>2+</sup>; one chain",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        411,
+        419,
+        861,
+        483
+      ],
+      "spare_height": 28.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "1 Mg<sup>2+</sup>; one chain",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        893,
+        419,
+        1343,
+        483
+      ],
+      "spare_height": 28.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "2 Mg<sup>2+</sup>; one chain",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        1375,
+        419,
+        1824,
+        483
+      ],
+      "spare_height": 28.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Spatial restraint",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        96,
+        501,
+        379,
+        595
+      ],
+      "spare_height": 58.52000045776367,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "None",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        411,
+        501,
+        861,
+        595
+      ],
+      "spare_height": 58.52000045776367,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "HMDA\u2013pocket \u226410 \u00c5;<br/>not an N\u2013C attack restraint",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        893,
+        501,
+        1343,
+        595
+      ],
+      "spare_height": 25.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "None",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        1375,
+        501,
+        1824,
+        595
+      ],
+      "spare_height": 58.52000045776367,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Sampling",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        96,
+        613,
+        379,
+        703
+      ],
+      "spare_height": 54.52000045776367,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Boltz-2; 50 samples<br/>per enzyme",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        411,
+        613,
+        861,
+        703
+      ],
+      "spare_height": 21.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Boltz-2; 50 samples<br/>per enzyme",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        893,
+        613,
+        1343,
+        703
+      ],
+      "spare_height": 21.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "50 samples; fresh,<br/>matched WT controls",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        1375,
+        613,
+        1824,
+        703
+      ],
+      "spare_height": 21.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Ligand-state audit",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        96,
+        721,
+        379,
+        823
+      ],
+      "spare_height": 66.52000045776367,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Adipate input \u22122;<br/>processed graph 0",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        411,
+        721,
+        861,
+        823
+      ],
+      "spare_height": 33.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Adipyl-AMP \u22122;<br/>HMDA +1, one NH<sub>2</sub>",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        893,
+        721,
+        1343,
+        823
+      ],
+      "spare_height": 33.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Adipate \u22122 input;<br/>cached CCD ATP 0",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        1375,
+        721,
+        1824,
+        823
+      ],
+      "spare_height": 33.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "<b>Open sensitivity tests:</b> metal count, processed ligand states, restraints, sampling and rank stability.",
+      "font_size": 27,
+      "requested_font_size": 27,
+      "box": [
+        100,
+        860,
+        1820,
+        910
+      ],
+      "spare_height": 14.520000457763672,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Interpret comparisons within matched setups; favorable geometry does not establish a catalytic barrier.",
+      "font_size": 29,
+      "requested_font_size": 29,
+      "box": [
+        101,
+        942,
+        1820,
+        993
+      ],
+      "spare_height": 13.040000915527344,
+      "scale": 1.0
+    },
+    {
+      "page": 10,
+      "text": "Source: existing structural-modeling-setup audit and speaker notes. Historical panel ATP cache identity is not pinned for every run.",
+      "font_size": 19,
+      "requested_font_size": 19,
+      "box": [
+        86,
+        1000,
+        1820,
+        1028
+      ],
+      "spare_height": 2.440000534057617,
+      "scale": 1.0
+    }
+  ]
+}

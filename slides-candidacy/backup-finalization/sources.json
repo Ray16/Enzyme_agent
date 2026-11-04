@@ -1,0 +1,54 @@
+{
+  "scope": "Presentation preparation only. No model inference, fleet submission, or scientific experiments.",
+  "local_sources": [
+    {
+      "path": "enzyme_discovery_agent/README.md",
+      "sha256": "0a7fec3fcf2b2e7c2feb522875247d80a971db0de6d6b1debad1d891fd4005d2"
+    },
+    {
+      "path": "structural_modeling_agent/README.md",
+      "sha256": "b2c15d7a41dadcd5bf0f3544be33d374a0532ef6f828d7d24f474e858b596958"
+    },
+    {
+      "path": "enzyme_design_agent/README.md",
+      "sha256": "b9320cceb0b2dadda1f96e7843cd368c8f06d2e981ad0b1799bdd28d4eaad8c8"
+    },
+    {
+      "path": "enzyme_discovery_agent/AGENTS.md",
+      "sha256": "256df80f5872289122c96d89dcf3f7888bc9e86e505cf53bd55ff8ea193cf09c"
+    },
+    {
+      "path": "slides-candidacy/structural-modeling-setup/speaker_notes.txt",
+      "sha256": "59cf6dbb1b9400fbdf2feb57b5a193bb32a6be61ec0eb9c8d5026f0f27c19efa"
+    },
+    {
+      "path": "slides-candidacy/structural-modeling-setup/sources.json",
+      "sha256": "981c95062da171e417b83c3b8daf6efe838f17b33c70680c0e6761e6e78b92ca"
+    },
+    {
+      "path": "slides-candidacy/reasoning-trace/build_trace.py",
+      "sha256": "6702b3dae05faa048ee41015a8f20b728a0c7f84131a3de522885e6f57f8c872"
+    },
+    {
+      "path": "slides-candidacy/reasoning-trace/verification.json",
+      "sha256": "652441a67e6c834c45f2ec919a8588bdf4033e47e92edcbf83cdbec07fd3685c"
+    },
+    {
+      "path": "slides-candidacy/attack-angle/geometry.json",
+      "sha256": "fa7c4a89998dac12b9119fc7ee260b40b16100705b4b65a53a51b9f19993fe1a"
+    },
+    {
+      "path": "slides-candidacy/adp-attack-geometry/geometry.json",
+      "sha256": "f4a24c2ebb3d92b113e2d2c72d371f3d93d122eb2098652d163e733c6e54c25c"
+    },
+    {
+      "path": "slides-candidacy/adp-attack-geometry/validation.json",
+      "sha256": "a6c702c8c7d6cba797a9dc3b30ca012cd1880fccf9508524ce0149fd4a56921a"
+    }
+  ],
+  "primary_references": [
+    "https://doi.org/10.1021/bi9013165",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC7325057/",
+    "https://pubmed.ncbi.nlm.nih.gov/18495664/"
+  ]
+}

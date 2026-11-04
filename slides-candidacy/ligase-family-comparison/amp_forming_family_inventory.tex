@@ -1,0 +1,30 @@
+\documentclass{article}
+\usepackage[paperwidth=16in,paperheight=12in,margin=0.45in]{geometry}
+\usepackage[T1]{fontenc}\usepackage{lmodern,amsmath,booktabs,tabularx,array,hyperref}
+\usepackage[table]{xcolor}
+\renewcommand{\familydefault}{\sfdefault}\pagestyle{empty}\setlength{\parindent}{0pt}
+\definecolor{maroon}{HTML}{890B23}\definecolor{pale}{HTML}{F8EDEF}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\tabcolsep}{8pt}\renewcommand{\arraystretch}{1.16}
+\begin{document}
+
+{\fontsize{27}{32}\selectfont\bfseries\color{maroon} AMP-forming ligases: extended family and substrate-context map\par}
+\vspace{10pt}{\fontsize{16}{20}\selectfont Major relevant families and functional groups; overlapping entries are not independent folds.}\par\vspace{16pt}
+\fontsize{16}{20}\selectfont
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.9in}>{\raggedright\arraybackslash}p{3.25in}Y@{}}
+\toprule\rowcolor{pale}\textbf{Family / functional group} & \textbf{Representative systems} & \textbf{Native context and limits of transfer}\\\midrule
+\textbf{NIS synthetases} & IucA, IucC, DesD & Carrier-independent siderophore assembly; substrates and cyclization behavior differ. \href{https://pmc.ncbi.nlm.nih.gov/articles/PMC7325057/}{[source]} \\[5pt]
+\textbf{ANL amide ligases} & McbA & Direct acid--amine coupling; other ANL enzymes perform different second half-reactions. \href{https://doi.org/10.1002/ange.201804592}{[source]} \\[5pt]
+\textbf{GH3 acyl acid amido synthetases} & GH3.5, GH3.11/JAR1, GH3.17 & Acyl-acid / phytohormone conjugation to amino acids; listed as a functional family. \href{https://pmc.ncbi.nlm.nih.gov/articles/PMC11253546/}{[source]} \\[5pt]
+\textbf{Asparagine synthetase A} & AsnA & Aspartate side-chain amidation using ammonia; specificity is not general amine ligation. \href{https://iubmb.qmul.ac.uk/enzyme/EC6/3/1/1.html}{[source]} \\[5pt]
+\textbf{Asparagine synthetase B} & AsnB & Glutamine-derived ammonia supplied to the adenylating synthetase domain. \href{https://pmc.ncbi.nlm.nih.gov/articles/PMC2610506/}{[source]} \\[5pt]
+\textbf{AsnB-related ring-forming synthetases} & $\beta$-lactam synthetase; carbapenam synthetase (CarA) & Intramolecular amide closure after adenylation; distinct from intermolecular diad formation. \href{https://pmc.ncbi.nlm.nih.gov/articles/PMC2610506/}{[source]} \\[5pt]
+\textbf{Other characterized AMP-forming ligases} & DdaG & Fumarate--diaminopropanoate ligation; included without asserting an unverified fold assignment. \href{https://doi.org/10.1021/bi9013165}{[source]} \\[5pt]
+\textbf{NAD synthetases} & NadE / NAD synthetase & Amidation of deamido-NAD; a specialized nucleotide substrate rather than a free diacid. \href{https://iubmb.qmul.ac.uk/enzyme/EC6/3/1/5.html}{[source]} \\[5pt]
+\textbf{NRPS adenylation domains (related)} & PheA / DhbE-type A domains & Carrier-dependent context: activation/loading precedes downstream peptide-bond formation. \href{https://doi.org/10.1002/ange.201804592}{[source]} \\[5pt]
+\textbf{Aminoacyl-tRNA synthetases (related)} & Class I and class II aaRS & Acyl transfer to tRNA forms an ester; peptide-bond formation occurs downstream. \href{https://doi.org/10.1186/1471-2164-13-621}{[source]} \\[5pt]
+\textbf{Biotin--protein ligases (related)} & BirA / holocarboxylase synthetase & Protein-bound lysine acceptor; covalent cofactor attachment rather than free-diamine ligation. \href{https://iubmb.qmul.ac.uk/enzyme/EC6/3/4/15.html}{[source]} \\[5pt]
+\textbf{Lipoate--protein ligases (related)} & LplA / LplJ & Lipoyl-AMP intermediate; transfer to a lysine in a protein lipoyl domain. \href{https://iubmb.qmul.ac.uk/enzyme/EC6/3/1/20.html}{[source]} \\[5pt]
+\bottomrule\end{tabularx}\par\vspace{13pt}
+{\fontsize{13}{16}\selectfont A family label or nucleotide product does not establish activity on adipate and hexamethylenediamine. For a new candidate, verify the native reacting partners, reaction direction, intermediate, molecular state and assembly. Related carrier-, tRNA- and protein-dependent systems are included for mechanistic breadth, not as interchangeable direct amide ligases. Carbamoyl-phosphate synthetase and biotin carboxylases are not placed in the core carboxyl-activating amide-ligase comparison because their activated substrates and reaction stoichiometries differ.}
+\end{document}

@@ -1,0 +1,105 @@
+30 — AMP-forming versus ADP-forming synthetases
+Question: How does reaction mechanism change the modeled activation step?
+Carboxylate activation releases PPi in the adenylation route, or ADP in the
+phosphorylation route. During subsequent aminolysis, AMP or phosphate is the
+leaving group, respectively. Overall ATP-derived products are AMP + PPi or
+ADP + Pi. This table concerns carboxyl-activating amide ligases, not every
+biochemical process that consumes ATP. NIS and GS-fold examples keep the table
+relevant to this deck; ANL and ATP-grasp are not exhaustive class definitions.
+Metal stoichiometry must be supported independently for each modeled enzyme.
+Sources: Hollenhorst et al., Biochemistry 2009, doi:10.1021/bi9013165;
+Mydy et al., Biochemistry 2020, PMCID:PMC7325057; Kurihara et al., JBC 2008,
+PMID:18495664. Source links are embedded in the editable LaTeX table.
+
+31 — Structural comparison
+Question: Which phosphorus and leaving-group oxygen define the activation angle?
+AS9 uses its existing unmodified model-0 illustration, with PA/O3A. PuuA uses
+saved model 0 for accession P78061, with PG/O3B. The closest adipate oxygen to
+PG is selected among the saved ligand oxygen atoms. PuuA model 0 has two Mg
+ions, unlike the one-Mg AS9 illustration; this is not presented as a causal
+property of AMP- versus ADP-forming chemistry. These are pre-activation model
+poses, not transition states, reaction trajectories or experimental structures.
+The PuuA camera is face-on to the measured O–P–O plane. Independent rendered
+fiducials validate the annotation projection and visible versus 3D angle.
+Coordinates remain unchanged; no new cofolding was run.
+
+32 — Agent roles
+Question: What does each agent decide, and why separate the components?
+The current repository contains separate discovery, structural-modeling, and
+design agents. The main talk groups modeling and design into one scientific
+aim, while this backup exposes the software responsibilities. Persistent state
+and handoffs support separate decisions. Prospective experimental learning is
+the proposed integration, not a claim of autonomous wet-lab operation.
+Sources: the three component READMEs recorded in sources.json.
+
+33 — Adaptive action selection
+Question: What makes the framework adaptive instead of a fixed tool pipeline?
+The current discovery protocol records hypotheses, predictions, source-linked
+actions, observations and revisions. The model chooses scientific actions;
+deterministic execution handles tool contracts and persistence. Bounded review
+and resource limits can checkpoint unresolved work. A resource stop is not
+evidence that search coverage is complete. The controller cannot independently
+certify that an extracted passage entails the agent's scientific interpretation.
+Source: enzyme_discovery_agent/README.md, Adaptive research decisions.
+
+34 — Shared evidence and handoffs
+Question: What is passed between agents, and how are conflicts handled?
+The current schema-3.0 handoff separates admitted candidates, unresolved leads
+and exclusions. Candidate identity, native evidence and modeling proposals have
+different statuses. The receiving agent verifies identities and setup rather
+than inheriting a validity claim from discovery. Fingerprints detect changed
+bytes; they do not authenticate the scientific interpretation or prove activity.
+Sources: component READMEs, Structural-modeling handoff sections.
+
+35 — Saved PuuA decision example
+Question: Can the search distinguish members sharing a broad structural fold?
+The September 17 run initially stopped some GS-related examples, then later
+expanded annotation scopes associated with a PuuA lead. The slide reconstructs
+recorded actions, not a prospectively captured hypothesis test. It does not
+claim that all initial annotations were biologically homogeneous, or that the
+later scopes are independent new folds. Native ammonia, methylamine and
+putrescine substrates justify different scope questions. Deprioritization does
+not establish inactivity on adipate and hexamethylenediamine.
+Sources: archived events 51 and 122–125; existing reasoning-trace build source
+and nomenclature corrections; Kurihara et al., 2008, PMID:18495664.
+
+36 — Model validation
+Question: How can a convincing pose still fail to support a mechanistic claim?
+Identity, sources, chemical setup, physical acceptance criteria, coverage and
+provenance are checked separately. Failed input or pose validation returns to
+the decision loop. A complete but unproductive prediction can motivate a new
+scientific investigation; missing or stale outputs cannot. Geometry does not
+estimate a catalytic barrier or prove target turnover. Generated samples are
+technical model outputs, not biological replicates or a time trajectory.
+Source: structural_modeling_agent/README.md, Scientific validation tools.
+
+37 — Framework evaluation
+Question: How will the thesis establish that explicit reasoning is useful?
+This is a proposed controlled evaluation. Hold model, available tools, data
+access and resource budgets fixed where appropriate. Use independent tasks,
+repeated runs and adjudicated outcomes; report unjudged candidates separately
+from negatives. Discovery comparisons, adaptive-versus-fixed controls,
+specialized-versus-single-agent controls and prospective experimental feedback
+answer distinct questions. These comparisons have not been run for this slide.
+Sources: discovery evaluation documentation and the proposed aims in the deck.
+
+38 — Implementation and validation status
+Question: Which thesis claims already have evidence, and which require testing?
+Keep historical artifacts separate from current controller capabilities.
+Available software is not proof of comparative scientific performance.
+Mutant structures predict geometry changes; experimental activity gains are not
+claimed. Existing homolog measurements motivate proposed mechanistic tests.
+No new biological result is introduced by this slide.
+
+39 — Modeling setup
+Question: Were the activity panel and mutant campaign modeled identically?
+No. The saved audit records one Mg in the homolog panel and two in the mutant
+campaign. The first-step panel declares adipate charge -2 but its 49 saved
+processed ligand graphs are neutral. The mutant inputs specify charge -2 and
+their cached CCD ATP graph is formal charge 0; complete processed mutant
+ligand graphs were not all independently audited. Historical panel ATP cache
+identity is not pinned for every run. Step 2 is a separate prediction using
+adipyl-AMP and monoprotonated HMDA with one neutral attacking NH2. Its forced
+10-Angstrom HMDA-pocket restraint does not impose a reactive N–C distance.
+This is a saved-input audit, not a completed charge/metal sensitivity test.
+Source: existing structural-modeling-setup/speaker_notes.txt and sources.json.

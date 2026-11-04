@@ -1,0 +1,135 @@
+{
+  "source": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-finalization/build_backups.py",
+  "source_sha256": "cfd9b3986b6eae6cf4f875314aeb0fc6be9e3dd96d80857592c71de8c441d7aa",
+  "source_unchanged": true,
+  "figures": [
+    {
+      "name": "agent_roles_tools",
+      "drawing_index": 0,
+      "crop": [
+        80,
+        215,
+        1840,
+        895
+      ],
+      "caption": "Current component roles and tools. Prospective experimental-learning integration is proposed.",
+      "outputs": [
+        "agent_roles_tools.png",
+        "agent_roles_tools.pdf",
+        "agent_roles_tools.svg"
+      ]
+    },
+    {
+      "name": "adaptive_decision_loop",
+      "drawing_index": 1,
+      "crop": [
+        75,
+        215,
+        1845,
+        910
+      ],
+      "caption": "Current adaptive protocol: inspect state, propose a test, check the request, execute, compare and revise. Controller checks establish contract and source integrity, not biochemical correctness.",
+      "outputs": [
+        "adaptive_decision_loop.png",
+        "adaptive_decision_loop.pdf",
+        "adaptive_decision_loop.svg"
+      ]
+    },
+    {
+      "name": "shared_evidence_handoff",
+      "drawing_index": 2,
+      "crop": [
+        75,
+        210,
+        1845,
+        920
+      ],
+      "caption": "Current handoff content and source lineage. The modeling agent independently reviews discovery proposals. Fingerprints establish byte integrity, not evidence entailment.",
+      "outputs": [
+        "shared_evidence_handoff.png",
+        "shared_evidence_handoff.pdf",
+        "shared_evidence_handoff.svg"
+      ]
+    },
+    {
+      "name": "evidence_driven_search_example",
+      "drawing_index": 3,
+      "crop": [
+        75,
+        220,
+        1845,
+        875
+      ],
+      "caption": "Reconstruction of archived September 17 decisions. Native nitrogen donors distinguish GS-fold leads. The example does not establish target activity or prospectively captured reasoning.",
+      "outputs": [
+        "evidence_driven_search_example.png",
+        "evidence_driven_search_example.pdf",
+        "evidence_driven_search_example.svg"
+      ]
+    },
+    {
+      "name": "structural_validation",
+      "drawing_index": 4,
+      "crop": [
+        80,
+        215,
+        1840,
+        875
+      ],
+      "caption": "Current structural validation stages. Setup validity, physical acceptance, mechanism-specific geometry and experimental activity are different assessments.",
+      "outputs": [
+        "structural_validation.png",
+        "structural_validation.pdf",
+        "structural_validation.svg"
+      ]
+    },
+    {
+      "name": "proposed_framework_evaluation",
+      "drawing_index": 5,
+      "crop": [
+        80,
+        215,
+        1840,
+        910
+      ],
+      "caption": "Proposed comparisons and readouts. These are evaluation plans, not measured performance results. Use independent tasks, matched resources, repeated runs and adjudicated outcomes.",
+      "outputs": [
+        "proposed_framework_evaluation.png",
+        "proposed_framework_evaluation.pdf",
+        "proposed_framework_evaluation.svg"
+      ]
+    },
+    {
+      "name": "implementation_validation_status",
+      "drawing_index": 6,
+      "crop": [
+        80,
+        215,
+        1840,
+        890
+      ],
+      "caption": "Available software and artifacts are distinguished from proposed scientific validation. Current controller capabilities are not attributed retrospectively to the September run.",
+      "outputs": [
+        "implementation_validation_status.png",
+        "implementation_validation_status.pdf",
+        "implementation_validation_status.svg"
+      ]
+    },
+    {
+      "name": "modeling_setup_audit",
+      "drawing_index": 7,
+      "crop": [
+        80,
+        215,
+        1840,
+        917
+      ],
+      "caption": "Saved-input audit of the activity panel and mutant campaign: different metal counts, ligand processing and restraints. This is not a completed sensitivity analysis. Read the existing modeling-setup speaker notes.",
+      "outputs": [
+        "modeling_setup_audit.png",
+        "modeling_setup_audit.pdf",
+        "modeling_setup_audit.svg"
+      ]
+    }
+  ]
+}

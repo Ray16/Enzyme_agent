@@ -1,0 +1,15 @@
+{
+  "source_coordinates_changed": false,
+  "source": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/campaigns/amide_activation/modeling/results/output_configs/step1_P78061/boltz_results_step1_P78061/predictions/step1_P78061/step1_P78061_model_0.pdb",
+  "source_sha256": "ebfd01c31c5aa136efcd5250a7138f3e4ed9abe37d32c86a8cd9d6ad9887f12b",
+  "selection": "Saved model 0; not selected for optimized geometry.",
+  "electrophile": "chain B / PG",
+  "leaving_oxygen": "chain B / O3B",
+  "donor": "chain E / O14",
+  "metals": 2,
+  "distance_A": 5.866987889127201,
+  "angle_3d_deg": 175.4178765264143,
+  "angle_visible_2d_deg": 175.41408931236822,
+  "projection_fiducial_error_pixels": 1.6077746776921858e-13,
+  "scope": "One unmodified Boltz-2 pose; d and theta are per-pose values, not the ensemble A."
+}
