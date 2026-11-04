@@ -1,0 +1,15 @@
+{
+  "pages": 1,
+  "page_size_pt": [
+    0.0,
+    0.0,
+    1152.0,
+    648.0
+  ],
+  "lowest_text_y": 580.4335327148438,
+  "panel_inputs_verified": 98,
+  "panel_ligand_graphs_verified": 98,
+  "mutation_examples_verified": 4,
+  "historical_panel_poses_per_ensemble": 50,
+  "overfull_boxes": false
+}

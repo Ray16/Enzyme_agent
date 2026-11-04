@@ -1,0 +1,53 @@
+\documentclass{article}
+\usepackage[paperwidth=16in,paperheight=9in,left=0.5in,right=0.5in,top=0.32in,bottom=0.32in]{geometry}
+\usepackage[T1]{fontenc}\usepackage{lmodern,amsmath,booktabs,tabularx,array}
+\usepackage[table]{xcolor}\usepackage{microtype}
+\renewcommand{\familydefault}{\sfdefault}\pagestyle{empty}\setlength{\parindent}{0pt}
+\definecolor{maroon}{HTML}{890B23}\definecolor{muted}{HTML}{59636C}
+\definecolor{tint}{HTML}{F1F5F8}\definecolor{rose}{HTML}{F8EDEF}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\tabcolsep}{8pt}\renewcommand{\arraystretch}{1.14}
+\begin{document}
+{\fontsize{14}{17}\selectfont\color{muted} BACKUP\quad Structural modeling methods}\par\vspace{5pt}
+{\fontsize{27}{31}\selectfont\bfseries\color{maroon} Exact inputs behind the reported structural comparisons}\par
+\vspace{7pt}
+\fontsize{14.7}{17.2}\selectfont
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{1.35in}YYY@{}}
+\toprule
+\textbf{Modeling choice} & \textbf{Step 1: activity panel} & \textbf{Step 2: activity panel} & \textbf{Step 1: mutant scan}\\
+ & 48 homologs + SfaB reference & Same 49 enzymes & AS9 / AS17 / AS23; matched WT\\
+\midrule
+\textbf{Chemical state} & ATP (CCD) + adipate; pre-activation complex & Adipyl-AMP intermediate + HMDA; neutral attacking amine & ATP (CCD) + adipate; pre-activation complex\\
+\rowcolor{tint}
+\textbf{Formal charges} & Adipate: input $-2$; saved processed graph $0$\textsuperscript{*} & Adipyl-AMP $-2$; HMDA $+1$ with one NH$_2$ and one NH$_3^+$ & Adipate $-2$ input; cached CCD ATP $0$\textsuperscript{\ensuremath{\dagger}}\\
+\textbf{Metal / protein} & 1 Mg$^{2+}$; one protein chain & 1 Mg$^{2+}$; one protein chain & 2 Mg$^{2+}$; one protein chain\\
+\textbf{Spatial restraints} & None; adipate requested as affinity binder\textsuperscript{*} & Forced HMDA--pocket restraint: maximum distance 10\,\AA & None; no affinity property\\
+\textbf{MSA} & Cached sequence-specific MSA & Same protein MSA as step 1 & Separate MSA for each mutant; query sequence verified\\
+\textbf{Sampling} & Boltz-2; 50 diffusion samples; no explicit seed in launcher & Boltz-2; 50 diffusion samples; no explicit seed in launcher & 50 samples; seed 20261019; 3 recycles; 200 sampling steps\\
+\textbf{Reported quantity} & Proximity-weighted O--P$_\alpha$--O3A angle; all 50 poses & Neutral amine-N to activated acyl-C distance & Change in weighted angle versus fresh two-Mg WT\\
+\bottomrule
+\end{tabularx}
+\vspace{10pt}
+{\fontsize{16}{19}\selectfont\bfseries Reaction products determine the activation coordinate}\par\vspace{5pt}
+\begin{minipage}[t]{0.48\textwidth}
+\colorbox{tint}{\parbox{0.95\linewidth}{\fontsize{14}{17}\selectfont
+\textbf{AMP-forming: acyl-adenylate}\quad (e.g., DdaG)\\
+Carboxyl O attacks P$_\alpha$; leaving bond P$_\alpha$--O3A\\
+ATP $\rightarrow$ AMP + PP$_i$\quad |\quad $\theta=\angle$(O, P$_\alpha$, O3A)}}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\colorbox{tint}{\parbox{0.95\linewidth}{\fontsize{14}{17}\selectfont
+\textbf{ADP-forming: acyl-phosphate}\quad (e.g., PuuA)\\
+Carboxyl O attacks P$_\gamma$; leaving bond P$_\gamma$--O3B\\
+ATP $\rightarrow$ ADP + P$_i$\quad |\quad $\theta=\angle$(O, P$_\gamma$, O3B)}}
+\end{minipage}
+\vspace{8pt}\par
+{\fontsize{12}{14.2}\selectfont
+\textbf{Discovery ranking (slide 17):} recorded inputs use 1 or 2 Mg ions by candidate; score the assigned P$_\alpha$ or P$_\gamma$ coordinate. Mg stoichiometry is an input assumption, independent of coordinate assignment.\\[3pt]
+\textbf{Sensitivity remains to be tested:} compare within matched setups; the one-Mg panel does not validate transfer to the two-Mg mutant scan. Pose spread measures prediction variability.}
+\vspace{6pt}\par
+{\fontsize{10}{11.8}\selectfont\color{muted}
+\textsuperscript{*}All 49 step-1 processed ligand graphs are neutral despite charged input SMILES; the installed parser standardizes affinity ligands before construction.
+\textsuperscript{\ensuremath{\dagger}}The mutant campaign audit records CCD ATP charge 0; do not label it ATP$^{4-}$. Historical CCD identity is not pinned for every panel run.\\
+Sources: saved panel YAMLs and ligand graphs; mutant campaign chemistry audit, inputs and launcher; discovery coordinate audit. Full identifiers, hashes and speaker notes accompany this slide.}
+\end{document}
