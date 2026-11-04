@@ -21,8 +21,13 @@
     },
     {
       "path": "AGENT.md",
-      "bytes": 6654,
-      "sha256": "bd92cfd4ff4ff9f3d0aa808888d52bef8af1023d87f89de22dff203fa73b891b"
+      "bytes": 7521,
+      "sha256": "153317d702d3999c186b0a615f22f2c0e831bd9a4eb3e1c4ec85637475fea142"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 1049,
+      "sha256": "2ae1daecba316ddc91b9a2cc9585710f22e456990a8829414278143db3320bd8"
     },
     {
       "path": "README.md",
@@ -96,13 +101,18 @@
     },
     {
       "path": "docs/REVIEW_GUIDE.md",
-      "bytes": 6790,
-      "sha256": "563c02b90fce4f2e0a55172bf2356fcb4e9ec38be9a9f5b595b94ab6bbfa1689"
+      "bytes": 7032,
+      "sha256": "0a526c35411e7de837b9c7ace0208bdae6264bc15e9874a21155e5388bc122f9"
     },
     {
       "path": "docs/REVIEW_RESPONSE_20261104.md",
       "bytes": 5540,
       "sha256": "4ed7e77581d7b57c8c9f8c9c6219ba1bbe9af47c6f09f68fb81a1cb43d7c1ff3"
+    },
+    {
+      "path": "docs/ROLLING_MODELING.md",
+      "bytes": 4954,
+      "sha256": "ee54ddf95afc11ab614a6787ca33a8e395616877373b7353b6d52a8b717143fe"
     },
     {
       "path": "docs/discovery_agent_framework.md",
@@ -166,8 +176,13 @@
     },
     {
       "path": "docs/review_validation.json",
-      "bytes": 3047,
-      "sha256": "a5771381326dad68303ebf2308f597579d3c2abbaf34b77356b9254d6b5d98e6"
+      "bytes": 3900,
+      "sha256": "85c88e06add8de251468e0b8807f1d03d28fa1a3812f982360e163746e5ef4fd"
+    },
+    {
+      "path": "docs/rolling_modeling_validation_20261104.json",
+      "bytes": 3633,
+      "sha256": "4048126d43a3794dbf9d232da5fecfa069525fd60d9e58734aec963d3dc2bbf4"
     },
     {
       "path": "enzyme_design_agent/README.md",
@@ -556,8 +571,8 @@
     },
     {
       "path": "enzyme_discovery_agent/__main__.py",
-      "bytes": 5830,
-      "sha256": "6ac2824992cf4b2a24044993c2a39ce546572fa762adb87e91518df7fb4eefd8"
+      "bytes": 6713,
+      "sha256": "6d3f2bb03ec468d3211a6da609e2f04bf0375b36947787c1857a8192ea45a45a"
     },
     {
       "path": "enzyme_discovery_agent/agent.py",
@@ -906,8 +921,8 @@
     },
     {
       "path": "enzyme_discovery_agent/models/modeling_portfolio.py",
-      "bytes": 7777,
-      "sha256": "1bd6150f0a80559bb33123114d96f2167720932d1f4c047ec164ed676ac91399"
+      "bytes": 9948,
+      "sha256": "0ba8a1e56e05478b2cbc4de0c55ed6f74095629a4df9b27e1708f0764bc3a122"
     },
     {
       "path": "enzyme_discovery_agent/models/native_annotation.py",
@@ -981,8 +996,8 @@
     },
     {
       "path": "enzyme_discovery_agent/models/target_review.py",
-      "bytes": 31008,
-      "sha256": "4c78baa8574ff692e7de996eb031b2d097c8d1bbe4cf68f20243a279ec996f34"
+      "bytes": 31315,
+      "sha256": "6d19a46e0c63f7927be74c7a8a5296d8572f2b73bb576f00302e3428e2d445b4"
     },
     {
       "path": "enzyme_discovery_agent/molecule_input.py",
@@ -1076,8 +1091,8 @@
     },
     {
       "path": "enzyme_discovery_agent/production.py",
-      "bytes": 30474,
-      "sha256": "26a04e39ed6977f84aaa6d742ab79880529e8d00e18317461b0685fc9452eb7c"
+      "bytes": 31820,
+      "sha256": "d7175c327d6b0aa1ac91fa55cc3fe4e492ce924259920d163930e525c32a231f"
     },
     {
       "path": "enzyme_discovery_agent/prompts/__init__.py",
@@ -1113,6 +1128,11 @@
       "path": "enzyme_discovery_agent/rerun_report.py",
       "bytes": 6439,
       "sha256": "60a43fd2b1240724d6154418edbdfe6edb54163ad625db1676e230c4bd34a9bf"
+    },
+    {
+      "path": "enzyme_discovery_agent/rolling_modeling.py",
+      "bytes": 9612,
+      "sha256": "0b9a069fe06b48d7ca55deb48e16f1098d23cfed13d3af13cda2f5b6a748c1dc"
     },
     {
       "path": "enzyme_discovery_agent/run_layout.py",
@@ -1586,8 +1606,8 @@
     },
     {
       "path": "enzyme_discovery_agent/tests/test_modeling_portfolio.py",
-      "bytes": 3818,
-      "sha256": "addab171ca237261b35ea332befac05c61edbc2c6d4c910a49f81b1bbd4ce8d9"
+      "bytes": 5045,
+      "sha256": "803531185952db9bd26366b7bc972ffa6d209eba93288f2a8786c74bdb2dc9cc"
     },
     {
       "path": "enzyme_discovery_agent/tests/test_modelseed_reaction_discovery.py",
@@ -1641,8 +1661,8 @@
     },
     {
       "path": "enzyme_discovery_agent/tests/test_production.py",
-      "bytes": 12772,
-      "sha256": "f82dd1fed89eeebb62f4c777d275742ae9e1c32e960d8aff83a68d603c1fc60a"
+      "bytes": 14116,
+      "sha256": "ef233a36465484e783d5c210e286b4806d33ee06c91bbd31801be4d4765f9034"
     },
     {
       "path": "enzyme_discovery_agent/tests/test_promoted_candidate_screened.py",
@@ -1743,6 +1763,11 @@
       "path": "enzyme_discovery_agent/tests/test_rolling_expansion.py",
       "bytes": 17860,
       "sha256": "f552afb7a1cd629733870a0f1ce6d92ee94d240592f2b2c5999450725ba22425"
+    },
+    {
+      "path": "enzyme_discovery_agent/tests/test_rolling_modeling.py",
+      "bytes": 1595,
+      "sha256": "06a65bdac3c5a194882f6536988c47af576699f15a2e2d77e959e2f4789f9eda"
     },
     {
       "path": "enzyme_discovery_agent/tests/test_run_index.py",
@@ -2101,8 +2126,8 @@
     },
     {
       "path": "structural_modeling_agent/agent.py",
-      "bytes": 120589,
-      "sha256": "efbf0f2c606b3ca686e4a4e5bec508ca4c5d22be2fa3d97073ccd249122ccc54"
+      "bytes": 121363,
+      "sha256": "37a5e5e16d72bec5319d56a2a843f0865fe835518e948d58b589fc8cccee6980"
     },
     {
       "path": "structural_modeling_agent/audit_exports.py",
@@ -2246,8 +2271,8 @@
     },
     {
       "path": "structural_modeling_agent/lambda_boltz_backend.py",
-      "bytes": 16194,
-      "sha256": "b7b7e12562de4679fb9abb35dc8456d9ef5b5c475fed45960e4cffb77b031bd2"
+      "bytes": 17657,
+      "sha256": "e33a7ebfab6fa869fde5b06b60f228c44a7d022e8bcc97a627f827477b1230de"
     },
     {
       "path": "structural_modeling_agent/loop/__init__.py",
@@ -2571,8 +2596,8 @@
     },
     {
       "path": "structural_modeling_agent/tests/test_backend_pool_guard.py",
-      "bytes": 922,
-      "sha256": "6171237aa1681df79da2e1aa868725876c9b83c28634c57f63d1f0c2eada0cdf"
+      "bytes": 3295,
+      "sha256": "5e43e5cae25eff80c369c234ca001a91c656688d14423ab4c0343a7db1be9309"
     },
     {
       "path": "structural_modeling_agent/tests/test_backend_process_ownership.py",

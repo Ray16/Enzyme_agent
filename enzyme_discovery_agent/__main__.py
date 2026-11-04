@@ -76,6 +76,8 @@ def main():
     parser.add_argument("--target-profile", type=str, default=None,
                         help=("Path to a JSON target profile with generic evidence requirements and "
                               "optional pre-ranking discovery coverage; see target_profile.example.json"))
+    parser.add_argument('--discovery-only',action='store_true',
+                        help='Explicitly disable the default independent rolling structural-modeling handoff')
 
     args = parser.parse_args()
     if not args.query and not args.resume_run:
@@ -111,6 +113,17 @@ def main():
         )
     except (RuntimeError, ValueError) as exc:
         parser.error(str(exc))
+
+    if not args.discovery_only:
+        from enzyme_discovery_agent.rolling_modeling import attach
+        try:
+            launched=attach(agent.run_dir,model=args.model)
+            logging.getLogger('enzyme_agent').info('Rolling structural modeling coordinator PID %s',launched['pid'])
+        except Exception as exc:
+            from enzyme_discovery_agent.state_store import atomic_write_json
+            atomic_write_json(agent.run_dir/'rolling_modeling_startup_error.json',
+                              {'status':'pending','error':str(exc),'scope':'Discovery continues; structural modeling was not started.'})
+            logging.getLogger('enzyme_agent').error('Rolling modeling pending: %s',exc)
 
     report = agent.run(
         query=args.query or "",

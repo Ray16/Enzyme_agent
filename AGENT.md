@@ -2,6 +2,17 @@
 
 ## Candidate Modeling and Ranking
 
+- Ranked discovery candidates automatically enter rolling structural-modeling
+  review, including candidates added after launch. Use the coordinated production
+  workflow; do not leave a discovery run without its modeling coordinator unless
+  the user explicitly requests discovery only. The modeling agent gathers and
+  weighs independent sources, prioritizes informative target-substrate tests,
+  validates the molecular setup and submits justified cofolds. Missing native
+  reaction annotation alone neither authorizes compute nor excludes a hypothesis.
+- Model the requested target substrates, including non-native partners. Reuse
+  predictions only after verifying the exact sequence and complete molecular
+  setup. Native controls are additional discriminating tests, not substitutes
+  for the target. Preserve unresolved setups and compute-budget checkpoints.
 - A request to model candidates authorizes running the established candidate modeling pipeline, with its existing quality settings, resource reservations, and validation checks. Continue through structural output and ranking without asking again about routine submission steps.
 - Use the existing frozen proximity-weighted attack-angle metric for the in-silico ranking, unless the user explicitly requests another metric. Preserve its definition and calibration; do not refit it on new candidates.
 - For the current candidate workflow, that metric is the inverse-distance-weighted mean attack angle, `sum(angle / distance) / sum(1 / distance)`, in degrees (larger ranks higher). Report harmonic distance alongside it; do not silently substitute an older sigmoid/Gaussian composite score.

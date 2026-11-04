@@ -1,19 +1,51 @@
 """Select source-cited hypotheses for structural review as discovery progresses."""
 import json
+import csv
 from pathlib import Path
 
 from .candidate_registry import discovery_status, load_candidate_registry
 from enzyme_discovery_agent.state_store import atomic_write_json
 
 
+def ranked_portfolio(root, max_candidates=None):
+    """Forward every published rank to scientific setup review, without inventing inputs."""
+    path=root/'ranked_candidates.csv'
+    registry=load_candidate_registry(root,strict=True)['candidates']
+    published=list(csv.DictReader(path.open())) if path.exists() else []
+    rows=[];seen=set()
+    for rank in published:
+        accession=rank.get('accession')
+        if not accession or accession in seen:continue
+        seen.add(accession)
+        meta=(registry.get(accession) or {}).get('metadata') or {}
+        data={**(meta.get('evaluation_data') or {}),**meta}
+        name=rank.get('protein_name') or rank.get('enzyme_name') or data.get('protein_name') or 'Unresolved protein name'
+        data.setdefault('priority_assessment',{'decision':'investigate','reason':rank.get('priority_rationale') or 'Published discovery hypothesis; scientific setup review required.'})
+        data['published_discovery_rank']=rank
+        rows.append({'accession':accession,'enzyme_name':name,'data':data,
+            'native_substrates_resolved':bool(data.get('native_substrates') or data.get('catalytic_activities')),
+            'priority':data['priority_assessment'].get('decision','investigate'),
+            'family':data.get('interpro_family_id') or accession,
+            'modeling_setup_status':'requires_independent_source_and_target_setup_review'})
+    if max_candidates is not None:rows=rows[:max_candidates]
+    atomic_write_json(root/'modeling_portfolio.json',{'selection':rows,'published_ranked_candidates':len(seen),
+        'policy':'All published ranked candidates reach the modeling agent. GPU submission still requires a source-grounded, informative target-specific setup; unresolved science remains pending.'})
+    return rows
+
+
 def select_modeling_portfolio(run_dir, *, max_candidates, protected_unannotated_slots=0):
     """Schedule review independently of native annotation or activity-rank admission."""
+    root = Path(run_dir).resolve()
+    quality_policy=root/'agent_state/discovery_quality_policy.json'
+    policy=json.loads(quality_policy.read_text()) if quality_policy.exists() else {}
+    if policy.get('modeling_selection')=='ranked':
+        if max_candidates is not None and (type(max_candidates) is not int or max_candidates<1):
+            raise ValueError('Require a positive capacity or no candidate cap')
+        return ranked_portfolio(root,max_candidates)
     if (type(max_candidates) is not int or max_candidates < 1
             or type(protected_unannotated_slots) is not int
             or not 0 <= protected_unannotated_slots <= max_candidates):
         raise ValueError('Require a positive capacity and protected slots within that capacity')
-    root = Path(run_dir).resolve()
-    quality_policy=root/'agent_state/discovery_quality_policy.json'
     if quality_policy.exists() and json.loads(quality_policy.read_text()).get('primary_only'):
         from enzyme_discovery_agent.tools.discovery_proposals import write_primary_portfolio
         summary=write_primary_portfolio(root); registry=load_candidate_registry(root,strict=True)['candidates']

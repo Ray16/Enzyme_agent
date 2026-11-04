@@ -95,5 +95,32 @@
     "new_gpu_predictions": 0,
     "audit_record": "production_quality_20261104.json",
     "scope": "Shared weakest-required-partner assignment and ordering, explicit missing-comparison coverage, reaction aliases, bond-label normalization and evidence publication."
+  },
+  "rolling_modeling_20261104": {
+    "full_release": {
+      "passed": 1903,
+      "skipped": 9,
+      "subtests_passed": 95,
+      "wall_seconds": 238.53
+    },
+    "final_target_review_and_attachment_focused": {
+      "passed": 42,
+      "wall_seconds": 8.21
+    },
+    "final_production_reuse_and_target_projection_focused": {
+      "passed": 16,
+      "wall_seconds": 30.81
+    },
+    "scope": "Full release suite before final target propagation, snapshot-boundary and exact-sample regressions; final focused checks cover those changes.",
+    "live_record": "rolling_modeling_validation_20261104.json",
+    "gpu_ensembles_completed_at_verification": 0,
+    "final_source_and_runtime_checks": {
+      "passed": 17,
+      "wall_seconds": 32.81
+    },
+    "final_exact_sample_quality_checks": {
+      "passed": 7,
+      "wall_seconds": 0.84
+    }
   }
 }

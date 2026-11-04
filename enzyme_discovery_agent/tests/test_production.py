@@ -68,6 +68,26 @@ def test_worker_capacity_is_checked_in_a_child_not_against_the_coordinator_bindi
     assert calls[0][:3]==['taskset','-c','3,4']
 
 
+def test_target_partners_reach_both_reuse_lookup_and_modeling_agent(tmp_path,monkeypatch):
+    from enzyme_discovery_agent.run_layout import run_file
+    from enzyme_discovery_agent.state_store import atomic_write_json
+    atomic_write_json(run_file(tmp_path,'target_context.json'),{'substrate_smiles':'CCO.O'})
+    class Response:
+        def raise_for_status(self):pass
+        def json(self):return {'primaryAccession':'P12345','sequence':{'value':'AGGA'}}
+    monkeypatch.setattr('requests.get',lambda *a,**k:Response())
+    lookups=[]
+    def lookup(*a,**kwargs):lookups.append(kwargs);return {'matches':[]}
+    monkeypatch.setattr('campaign_catalog.lookup.lookup_predictions',lookup)
+    monkeypatch.setattr('structural_modeling_agent.msa.prepare',lambda *a,**k:[{'id':'0','csv':'synthetic-msa'}])
+    row={'accession':'P12345','data':{'priority_assessment':{'decision':'investigate'}},'native_substrates_resolved':False}
+    tasks=prepare_tasks({'cofold_pool':'synthetic-pool','msa_cache':'synthetic-cache',
+        'setup_turn_limit':8,'modeling_target':{'description':'Synthetic target hydration'}},tmp_path,[row],tmp_path/'batch')
+    assert lookups[0]['required_ligand_smiles']==['CCO','O']
+    task=json.loads(Path(tasks[0]['task']).read_text())
+    assert task['target']['discovery_target_contract']['substrate_smiles']=='CCO.O'
+
+
 def test_explicit_task_source_probes_are_bounded_and_not_repeated_on_resume(tmp_path,monkeypatch):
     from types import SimpleNamespace
     from unittest.mock import Mock

@@ -197,15 +197,47 @@ def worker(job):
         receipt['finished_at']=time.time(); write(job/'receipt.json',receipt)
 
 def check_prediction_pool(document,pool):
-    """Check the current shared pool using identity, without picking scientific inputs."""
+    """Only the same molecular system can block a new target-substrate prediction."""
     from campaign_catalog.lookup import lookup_predictions
+    from collections import Counter
+    from rdkit import Chem
+    import yaml
+    def system(doc):
+        entities=[]
+        for item in doc.get('sequences',[]):
+            value=item.get('protein')
+            if value:
+                copies=len(value['id']) if isinstance(value.get('id'),list) else 1
+                entities.extend([('protein',value['sequence'])]*copies)
+            value=item.get('ligand')
+            if value:
+                copies=len(value['id']) if isinstance(value.get('id'),list) else 1
+                identity=('ccd',value['ccd']) if value.get('ccd') else ('smiles',Chem.MolToSmiles(Chem.MolFromSmiles(value['smiles'])))
+                entities.extend([identity]*copies)
+        return Counter(entities),doc.get('constraints') or []
+    wanted=system(document)
     checks=[]
     for entity in document.get('sequences',[]):
         if 'protein' not in entity:continue
         protein=entity['protein']
-        checks.append(lookup_predictions(pool,sequence=protein['sequence']))
+        check=lookup_predictions(pool,sequence=protein['sequence'])
+        compatible=[]
+        for match in check['matches']:
+            source=(match.get('setup') or {}).get('input_source') or {}
+            path=Path(source.get('path',''))
+            if (path.is_file() and sha(path)==source.get('sha256')
+                    and system(yaml.safe_load(path.read_text()))==wanted):compatible.append(match)
+        check={**check,'same_system_matches':compatible}
+        checks.append(check)
     return {'pool':str(Path(pool).resolve()),'checks':checks,
-            'existing_predictions':any(check['matches'] for check in checks)}
+            'existing_predictions':any(check['same_system_matches'] for check in checks)}
+
+
+def validate_sample_count(count,policy):
+    minimum=policy.get('min_predictions_per_job',1);limit=policy.get('max_predictions_per_job')
+    if (type(count) is not int or type(minimum) is not int or type(limit) is not int
+            or not 1<=minimum<=count<=limit):
+        raise ValueError('Sample count must fit the explicit quality and resource allowance')
 
 
 def adapter():
@@ -213,9 +245,7 @@ def adapter():
     if not re.fullmatch('[0-9a-f]{64}',key): raise ValueError('Unsafe job identity')
     if request['operation'] not in {'submit','status'}:raise ValueError('Unsupported provider operation')
     if request['operation']=='submit':
-        count=request.get('expected_predictions');limit=request['resource_policy'].get('max_predictions_per_job')
-        if type(count) is not int or count<1 or type(limit) is not int or not 1<=count<=limit:
-            raise ValueError('Sample count must fit the explicit resource allowance')
+        validate_sample_count(request.get('expected_predictions'),request['resource_policy'])
     job=ROOT/'backend_jobs'/key; job.mkdir(parents=True,exist_ok=True)
     # Serialize claims across different job identities as well as repeated requests.
     with (ROOT/'submission.lock').open('a+') as lock:
@@ -234,7 +264,8 @@ def adapter():
                          'error':'Existing canonical-pool cofold: inspect and validate it; automatic recofolding is disabled.'}
                 write(job/'receipt.json',receipt);print(json.dumps(receipt));return
             attempts=list((ROOT/'backend_jobs').glob('*/request.json'))
-            if len(attempts)>=request['resource_policy'].get('max_candidate_ensembles',8):
+            ensemble_limit=request['resource_policy'].get('max_candidate_ensembles',8)
+            if ensemble_limit is not None and len(attempts)>=ensemble_limit:
                 receipt={'idempotency_key':key,'status':'failed','error':'Campaign ensemble allowance reached'}
                 write(job/'receipt.json',receipt);print(json.dumps(receipt));return
             # All jobs pass through one campaign owner, one GPU at a time.

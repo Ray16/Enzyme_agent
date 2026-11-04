@@ -38,6 +38,17 @@ input evidence, not an approved setup. Use tools to investigate, propose a model
 check it, inspect results and revise choices when checks fail. You choose the
 next action; there is no prescribed sequence of modeling decisions.
 
+Treat entry into this queue as a request for scientific investigation, not an
+instruction to spend GPU time immediately. Weigh primary studies, reaction
+databases, sequence/domain evidence and available structures. Record conflicting
+evidence and distinguish exact-protein measurements from homolog transfers.
+Before proposing compute, explain the uncertainty the requested target setup
+can resolve, why that information is valuable, and whether a cheaper source
+lookup or an existing prediction can answer it. Native reaction absence alone
+does not justify a cofold or disqualify a specific supported hypothesis. Model
+the requested target partners; a native-only control is not a substitute. Add
+controls selectively and avoid arbitrary combinations of molecular states.
+
 Tool-purpose policy: discovery handoff defaults to COFOLDING. Inspect the primary
 cofold ensemble before optional follow-ups. BioEmu2 serves conformational/dynamics
 questions, not the default cofold requirement. RFD4-Proteina serves de novo enzyme

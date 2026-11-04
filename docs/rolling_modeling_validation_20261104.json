@@ -1,0 +1,91 @@
+{
+  "verified_at": "2026-11-04T22:32:29.423093+00:00",
+  "discovery_run": "20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+  "rolling_root": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/rolling_modeling",
+  "coordinator_pid": 753130,
+  "coordinator_affinity": [
+    77
+  ],
+  "modeling_affinity": [
+    78,
+    79
+  ],
+  "native_thread_limits_verified": true,
+  "selection": "all published ranks, including future additions",
+  "native_annotation_required": false,
+  "gpu_admission": "Independent modeling-agent source and setup decision, not automatic approval on queue entry.",
+  "sequence_preparation_batches": [
+    {
+      "input": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/production_modeling/9799ec080958fd3923b4/sequences.fasta",
+      "sequences": 24
+    }
+  ],
+  "modeling_tasks_started": 0,
+  "cofolds_started": 0,
+  "phase": "First batched MSA is running; structural source investigation and GPU predictions have not started.",
+  "quality": {
+    "engine": "Boltz-2",
+    "profile": "exact",
+    "samples_per_justified_setup": 50,
+    "unrestrained": true,
+    "sequence_specific_batched_msa": true,
+    "exact_sample_count_enforced_by_provider": true
+  },
+  "research_limits": {
+    "tokens_per_task": 100000,
+    "max_calls_per_task": 20,
+    "setup_turn_limit": 8,
+    "coordinator_window_seconds": 43200,
+    "total_token_cap": null
+  },
+  "source_hashes_recorded": 320,
+  "accelerator_preflight": {
+    "host": "lambda13",
+    "python": "/nfs/lambda_stor_01/homes/rzhu/boltz2-venv/bin/python",
+    "ok": true,
+    "errors": [],
+    "online_cpus": 384,
+    "load": 9.57666015625,
+    "affinity": [
+      72,
+      73,
+      74,
+      75
+    ],
+    "available_ram_mib": 1509298.44921875,
+    "modules": {
+      "torch": "2.12.0+cu130",
+      "boltz.main": "import OK",
+      "boltz2_opt.cli": "import OK",
+      "rdkit": "2026.03.2",
+      "gemmi": "0.6.5",
+      "psutil": "7.2.2"
+    }
+  },
+  "future_entrypoints": {
+    "cli": "Automatic coordinator; --discovery-only disables it explicitly.",
+    "python_api": "enzyme_discovery_agent.rolling_modeling.attach"
+  },
+  "checks": {
+    "focused_tests_passed": 26,
+    "full_release_passed": 1903,
+    "skipped": 9,
+    "subtests_passed": 95,
+    "final_target_review_attachment_checks": 42,
+    "final_production_target_reuse_checks": 16,
+    "final_source_and_runtime_checks": 17,
+    "final_exact_sample_quality_checks": 7
+  },
+  "limits": [
+    "MSA startup is not completed modeling.",
+    "Evidence and setup validation do not prove source entailment or activity.",
+    "Per-candidate and elapsed-time limits can leave unresolved candidates pending."
+  ],
+  "token_allowance_limitation": "Checked between calls; a final in-flight response can overrun the remaining allowance.",
+  "leakage_audit": {
+    "scope": "Changed prompt literals, imports, file reads and snapshot contents; target inputs come from the current campaign, no historical enzyme answers seed discovery.",
+    "literal_scan": "No task-specific answer literals in changed runtime modules.",
+    "source_snapshots": "Maintained package code and declared static modeling contracts only. Generated historical material found during preparation was retained outside the runtime import tree before candidate workers started.",
+    "prediction_reuse": "Downstream setup/sequence lookup, never discovery seed input; fresh sequence-specific MSA caching is target-independent."
+  }
+}

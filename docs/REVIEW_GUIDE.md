@@ -55,6 +55,10 @@ That run saved one primary proposal and 68 ranked hypotheses. Those counts do
 not establish a panel of validated catalysts. The corrected ranking is a
 post-run diagnostic, not a rerun of discovery or an activity measurement.
 
+The automatic handoff and compute-admission distinction are documented in
+[ROLLING_MODELING.md](ROLLING_MODELING.md), with the live attachment record in
+[rolling_modeling_validation_20261104.json](rolling_modeling_validation_20261104.json).
+
 ## High-priority issues
 
 - The adaptive controller spent substantial effort inspecting and interpreting

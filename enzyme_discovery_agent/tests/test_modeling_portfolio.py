@@ -60,3 +60,20 @@ def test_one_damaged_priority_artifact_does_not_block_other_ready_candidates(tmp
     report = json.loads((tmp_path / 'modeling_portfolio.json').read_text())
     assert report['skipped_artifacts'][0]['accession'] == 'SYNTH_A'
     assert records['SYNTH_A']['statuses'][-1]['status'] == 'evidence_pending'
+
+
+def test_ranked_policy_tracks_expansion_without_a_primary_or_annotation_gate(tmp_path,monkeypatch):
+    policy=tmp_path/'agent_state/discovery_quality_policy.json';policy.parent.mkdir()
+    policy.write_text(json.dumps({'primary_only':True,'modeling_selection':'ranked'}))
+    records={'SYNTH_A':entry(tmp_path,'SYNTH_A'),'SYNTH_B':entry(tmp_path,'SYNTH_B'),
+             'SYNTH_UNRANKED':entry(tmp_path,'SYNTH_UNRANKED')}
+    monkeypatch.setattr(portfolio,'load_candidate_registry',lambda *a,**k:{'candidates':records})
+    ranking=tmp_path/'ranked_candidates.csv'
+    ranking.write_text('rank,accession,protein_name\n1,SYNTH_A,First synthetic enzyme\n')
+    assert [r['accession'] for r in portfolio.select_modeling_portfolio(tmp_path,max_candidates=None)]==['SYNTH_A']
+    ranking.write_text(ranking.read_text()+'2,SYNTH_B,Second synthetic enzyme\n')
+    rows=portfolio.select_modeling_portfolio(tmp_path,max_candidates=None)
+    assert [r['accession'] for r in rows]==['SYNTH_A','SYNTH_B']
+    assert rows[1]['enzyme_name']=='Second synthetic enzyme'
+    assert rows[1]['native_substrates_resolved'] is False
+    assert all(r['modeling_setup_status']=='requires_independent_source_and_target_setup_review' for r in rows)

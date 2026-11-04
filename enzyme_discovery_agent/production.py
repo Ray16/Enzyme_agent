@@ -220,9 +220,13 @@ def prepare_tasks(settings, run, rows, directory):
             if not re.fullmatch('[ACDEFGHIKLMNPQRSTVWY]+', sequence):
                 raise ValueError('Require the exact complete protein sequence')
             pools = list(dict.fromkeys([settings['cofold_pool']] + settings.get('prediction_cache_pools', [])))
+            from .models.target_review import target_contract
+            required=settings.get('modeling_required_ligand_smiles')
+            if required is None:
+                required=[s for s in (target_contract(run).get('substrate_smiles') or '').split('.') if s] or None
             lookups = [lookup_predictions(pool, accession=accession, sequence=sequence,
                 target_id=settings.get('cofold_pool_target_id'),
-                required_ligand_smiles=settings.get('modeling_required_ligand_smiles')) for pool in pools]
+                required_ligand_smiles=required) for pool in pools]
             def unique_matches(key):
                 found = {}
                 for result in lookups:
@@ -251,6 +255,7 @@ def prepare_tasks(settings, run, rows, directory):
                             dependency=Path(ref['path'])
                             if dependency.is_file() and checksum(dependency)==ref.get('sha256'):evidence_paths.add(str(dependency.resolve()))
             candidate = {'accession': accession, 'sequence': sequence, 'evidence': {
+                'enzyme_name':row.get('enzyme_name') or facts.get('protein_name') or 'Unresolved protein name',
                 'identity_source_path': str(identity_path.resolve()), 'identity_source_sha256': checksum(identity_path),
                 'discovery_evidence_path': str(facts_path), 'discovery_evidence_sha256': checksum(facts_path),
                 'priority_hypothesis': row['data']['priority_assessment'],
@@ -273,9 +278,13 @@ def prepare_tasks(settings, run, rows, directory):
     tasks = []
     for i, (row, slot, candidate) in enumerate(resolved):
         if not candidate['evidence']['existing_cofolds']:candidate['evidence']['msa_path'] = by_id[str(i)]
+        target=dict(settings['modeling_target'])
+        from .models.target_review import target_contract
+        contract=target_contract(run)
+        if any(contract.values()):target['discovery_target_contract']=contract
         task = {'schema_version': '1.0', 'objective': 'model_and_validate',
                 'workflow_mode': 'production_cofold', 'setup_turn_limit': settings['setup_turn_limit'],
-                'target': settings['modeling_target'], 'candidates': [candidate]}
+                'target': target, 'candidates': [candidate]}
         path = slot / 'task.json'; atomic_write_json(path, task)
         tasks.append({'accession': row['accession'], 'task': str(path),
                       'existing_predictions': bool(candidate['evidence']['existing_cofolds'])})
@@ -343,7 +352,12 @@ def coordinator(settings, root, config_path):
         time.sleep(5)
     run = Path(read(root / 'campaign_state.json')['run_dir'])
     queue = run / 'agent_state/production_modeling'; queue.mkdir(parents=True, exist_ok=True)
-    snapshot_source_code(run)
+    if not (run/'provenance/scripts/agent.py').exists():snapshot_source_code(run)
+    if settings.get('modeling_selection','ranked')=='ranked':
+        policy_path=run/'agent_state/discovery_quality_policy.json'
+        policy=read(policy_path,{})
+        atomic_write_json(policy_path,{**policy,'primary_only':False,'modeling_selection':'ranked',
+            'scope':'Ranked candidates enter independent agent-led source and target-setup review. The structural agent may submit justified batched MSAs and reserved cofolds; discovery does not submit duplicate jobs.'})
     consecutive_failures = 0
     last_pool_refresh = 0
     last_pool_inputs = None
@@ -420,11 +434,12 @@ def coordinator(settings, root, config_path):
                    not any(entry['accession'] == row['accession'] and (entry['status'] in OCCUPIED_STATUSES or
                        entry.get('basis_sha256') == evidence_basis(row)) for entry in entries)
                    and sum(entry['accession'] == row['accession'] for entry in entries) < settings['modeling_max_attempts']]
-            remaining = settings['modeling_token_budget'] - usage()
+            allowance=settings['modeling_token_budget']
+            remaining = allowance - usage() if allowance is not None else float('inf')
             known_ids = {entry['accession'] for entry in entries}
             selected = []
             for row in new:
-                if row['accession'] in known_ids or len(known_ids) < settings['max_modeling_candidates']:
+                if settings['max_modeling_candidates'] is None or row['accession'] in known_ids or len(known_ids) < settings['max_modeling_candidates']:
                     selected.append(row)
                     known_ids.add(row['accession'])
             if selected and remaining > 0 and consecutive_failures < 3:
@@ -441,6 +456,7 @@ def coordinator(settings, root, config_path):
                     key = hashlib.sha256((row['accession'] + evidence_basis(row)).encode()).hexdigest()[:20]
                     item_dir = queue / key; item_dir.mkdir(exist_ok=True)
                     item = {**prepared_by_id.get(row['accession'], {}), 'accession': row['accession'],
+                            'enzyme_name':row.get('enzyme_name') or row['data'].get('protein_name') or 'Unresolved protein name',
                             'item_dir': str(item_dir), 'modeling_run': str(run / 'structural_modeling' / key),
                             'basis_sha256': evidence_basis(row),
                             'status': 'ready' if row['accession'] in prepared_by_id else 'preparation_unresolved'}
