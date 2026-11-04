@@ -1,0 +1,671 @@
+{
+  "run_id": "20261103_154105_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+  "status": "budget_exhausted",
+  "wall_clock_seconds": 6828.34,
+  "run_configuration": {
+    "ADAPTIVE_REASONING": false,
+    "AUTO_TARGET_REVIEW": true,
+    "TARGET_REVIEW_BATCH_SIZE": 8,
+    "MODEL_CONTEXT_MAX_CHARS": 120000
+  },
+  "tokens": {
+    "total_tokens": 3009558,
+    "cache_read_fraction_of_prompt": 0.1374
+  },
+  "tokens_by_workload": {
+    "internal": {
+      "calls": 9,
+      "total_tokens": 58631,
+      "prompt_tokens": 44321,
+      "completion_tokens": 14310,
+      "cache_creation_tokens": 32894,
+      "cache_read_tokens": 11409,
+      "fraction_of_total_tokens": 0.01948159829450039,
+      "cache_read_fraction_of_prompt": 0.2574174770424855
+    },
+    "controller": {
+      "calls": 20,
+      "total_tokens": 490638,
+      "prompt_tokens": 484182,
+      "completion_tokens": 6456,
+      "cache_creation_tokens": 132442,
+      "cache_read_tokens": 351700,
+      "fraction_of_total_tokens": 0.16302659726112606,
+      "cache_read_fraction_of_prompt": 0.7263797497635187
+    },
+    "target_relevance_batch": {
+      "calls": 51,
+      "total_tokens": 2460289,
+      "prompt_tokens": 2130706,
+      "completion_tokens": 329583,
+      "cache_creation_tokens": 2128449,
+      "cache_read_tokens": 2155,
+      "fraction_of_total_tokens": 0.8174918044443735,
+      "cache_read_fraction_of_prompt": 0.0010114018545965516
+    }
+  },
+  "registered_records": 1141,
+  "saved_target_assessments": {
+    "investigate": 131,
+    "defer": 172,
+    "exclude": 2
+  },
+  "literature_leads": [
+    {
+      "lead_id": "literature:0f62e555ac227bc908a4",
+      "enzyme_name": "ShABS",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:8e79b0ebd97d6a4f4ff7",
+      "enzyme_name": "CouL",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:cd7a39f81db6495e781c",
+      "enzyme_name": "NovL",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:70f5327d631fad8b4307",
+      "enzyme_name": "CloL",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:f2612209ef27f03633ae",
+      "enzyme_name": "SimL",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:7598800a9f681b314678",
+      "enzyme_name": "PsCfaL",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:bc60a80f8529d258050c",
+      "enzyme_name": "4CBCL",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:3afb44c563fcf701cd3b",
+      "enzyme_name": "SpL",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:4f6f5b02d0522aa6397e",
+      "enzyme_name": "MsACT",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:c9acfa74a480d10a0bd7",
+      "enzyme_name": "ShABS",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:0b65e57d9efb9a0d6b27",
+      "enzyme_name": "AcABS",
+      "status": "pending"
+    },
+    {
+      "lead_id": "literature:a77066b90142d5f732c4",
+      "enzyme_name": "ShABS",
+      "status": "pending"
+    }
+  ],
+  "identity_resolution_attempt_events": 59,
+  "ranked_rows": 131,
+  "csv_assessment_projection_gaps": [
+    {
+      "enzyme": "Fatty-acyl-CoA synthase (A0A1M5ABR5)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Fatty acid CoA ligase (R4R1U5)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0ABD1DWY1)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0A084B834)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0A084QPT6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0A0U1LSE7)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (A4FZB0)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0A162JQM1)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (A5UMK4)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0A168DE93)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (A6US04)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A1I0VRD3)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (A6VJ27)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A1U7CQ09)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A2M9G595)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (A9A6Q7)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A2P7YED2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0A317UN57)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (C5A4U0)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A372JFA5)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A379JIG0)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (O27494)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A3A9KCS5)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (O29108)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A3M8WVJ0)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (O58061)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0A401KXC9)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A426V4T8)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A4R4DUG6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0A4R8PXP9)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (P15640)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0A4S2KF30)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A4U0MRF2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A4U0S1E8)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q0W6Q4)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Hydrogenobyrinate a,c-diamide synthase (A0A101V527)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A4Z0G8S2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q12X37)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0A4Z2BK01)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q2NI86)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A511YWY1)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q465Q9)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A512NI74)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q58347)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A517Z309)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q5JFP1)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A517ZMD7)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q6M079)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Hydrogenobyrinate a,c-diamide synthase (A0A176QAR3)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A518IUC6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q7MGT4)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Hydrogenobyrinate a,c-diamide synthase (A0A1C4ZDE2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q7UPZ8)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Hydrogenobyrinate a,c-diamide synthase (A0A1C5AE20)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q87D59)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q87KS8)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0A6G1FE06)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q87VR8)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A6I3KGX6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q88DK2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0A6J2IYQ2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q8D245)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q8DD07)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A6N8JM58)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q8FB69)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0A833VP61)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q8PD48)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A917U1L2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A919V295)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q8Q0J2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A9E6Y099)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q8TKT6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Phosphoribosylamine--glycine ligase (Q8TWG3)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0A9X1RZJ3)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0AAQ3PZX6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0AAV5DD31)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0AAW9QMT4)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0ABC9E951)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABN3CRN1)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABP3EJN9)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABP6TXZ7)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABQ1C611)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABQ5NQU2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABQ5QJ07)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0ABR2Y899)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABS7XC75)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABT2CEG4)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABT2ENL6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABV9TTS2)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABV9U2C4)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABW0L135)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABW1JTZ8)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABX7B793)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABY4T788)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABY6P688)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "asparagine synthase (glutamine-hydrolyzing) (A0ABY9US33)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (A0ACC1NEL6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (A0ACD5WZ68)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (B5U8J7)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Cobyrinate a,c-diamide synthase (Q2NHQ3)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (B6ETR5)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (I1H6K4)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (K3Z4Q3)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] 3 (O05272)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (O24661)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase, nodule [glutamine-hydrolyzing] (P19251)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] (P31752)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] 2 (P42113)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] 1 (P54420)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Putative asparagine synthetase [glutamine-hydrolyzing] (P64248)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Putative asparagine synthetase [glutamine-hydrolyzing] (P9WN32)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] 1 (Q10MX3)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Asparagine synthetase [glutamine-hydrolyzing] 2 (Q43011)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (U1HYR0)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "SUMO-conjugating enzyme UBC9 (W9CNE6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Nonribosomal peptide synthetase apmB (A0A1W6BT46)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Tyramine--L-glutamate ligase (C7P8V7)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "3-methyl-D-ornithine--L-lysine ligase (Q46E79)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "N-benzoylphenylalaninol synthetase apmA (A0A1W6BT53)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Tyramine--L-glutamate ligase (Q58225)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "3-methyl-D-ornithine--L-lysine ligase (Q8PWY3)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "8-demethylnovobiocic acid synthase (Q9L9F6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "3-methyl-D-ornithine--L-lysine ligase (Q8TUC0)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "UDP-N-acetylmuramoyl-tripeptide--D-alanyl-D-alanine ligase (Q2FWH4)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Formate-dependent phosphoribosylglycinamide formyltransferase (A0A087APZ5)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "N5-carboxyaminoimidazole ribonucleotide synthase (P9WHL8)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Formate-dependent phosphoribosylglycinamide formyltransferase (A0A142CTU6)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Formate-dependent phosphoribosylglycinamide formyltransferase (O58056)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Formate-dependent phosphoribosylglycinamide formyltransferase (Q5JFN8)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "Formate-dependent phosphoribosylglycinamide formyltransferase (Q8U3M7)",
+      "saved_decision": "investigate"
+    },
+    {
+      "enzyme": "UDP-N-acetylmuramoyl-L-alanyl-D-glutamate--2,6-diaminopimelate ligase (A0A1M5AUH8)",
+      "saved_decision": "investigate"
+    }
+  ],
+  "most_common_reported_substrate_fits": [
+    [
+      "0.3423333333333333",
+      83
+    ],
+    [
+      "0.17900000000000002",
+      30
+    ],
+    [
+      "0.0",
+      9
+    ],
+    [
+      "0.3",
+      4
+    ],
+    [
+      "0.43",
+      3
+    ]
+  ],
+  "limits": [
+    "Current saved records are reported, not reconstructed earlier states.",
+    "An assessment or a database match does not establish target activity.",
+    "Repeated substrate resemblance values are not per-protein affinity measurements.",
+    "Cache accounting is provider-reported; this audit makes no timing or speedup estimate."
+  ]
+}

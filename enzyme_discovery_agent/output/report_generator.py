@@ -271,16 +271,12 @@ def _expression_pref(data: dict) -> int:
 def _collapse_orthologs(
     pass1_ranking: list[dict], acc_to_eval: dict[str, dict],
 ) -> list[dict]:
-    """Collapse same-enzyme orthologs into one representative entry.
+    """Collapse verified exact sequences into one representative entry.
 
-    Experimentalists want DISTINCT enzyme families at the top, not the same
-    enzyme repeated across a dozen organisms (one enzyme was filling 7 of the
-    top 10 slots).  Each ortholog group is represented once; the remaining
-    members are attached as ``orthologs`` (accession + organism) so the organism
-    spread is preserved, not lost.  The representative is the member most likely
-    to express heterologously (see ``_expression_pref``), with ties broken by
-    the best original rank, and the group is placed at that best rank so the
-    choice of representative never demotes a strong candidate.
+    A matching name or gene alone does not establish interchangeable proteins.
+    The legacy ``orthologs`` field preserves exact-sequence alternatives and
+    their source accessions; it is not a phylogenetic inference. Preserve the
+    best group position and the existing representative-selection policy.
     """
     groups: dict[str, list[dict]] = {}
     order: list[str] = []

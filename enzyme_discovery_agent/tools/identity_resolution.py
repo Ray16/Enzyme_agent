@@ -30,8 +30,10 @@ def source_associations(name, sources):
     """Extract only explicit local name/taxon or name/deposit associations."""
     from enzyme_discovery_agent.models.literature_leads import sequence_name_leads
     associations = []
-    pattern = re.compile(r"(?<!\w)" + re.escape(name) +
-                         r"\s+from\s+([A-Z][a-z]+\s+[a-z][a-z-]+)(?![a-z])")
+    pattern = re.compile(r"(?<!\w)(?i:" + re.escape(name) +
+                         r")[)\],]*\s+(?:from|of)\s+([A-Z][a-z]+\s+[a-z][a-z-]+)(?![a-z])")
+    reverse = re.compile(r"\b([A-Z][a-z]+\s+[a-z][a-z-]+)[^.!?\n]{0,100}?\(\s*(?i:"+
+                         re.escape(name)+r")\s*\)")
     cluster = re.compile(r'\b(?:enzymes|proteins|genes)\s+([A-Za-z0-9_,/() -]{1,160}?)\s*,?\s*encoded\s+in\s+the\s+'
         r'([A-Z][a-z]+\s+[a-z][a-z-]+)[^.!?\n]{0,100}?(?:gene|biosynthetic)\s+cluster')
     for source in sources:
@@ -39,6 +41,11 @@ def source_associations(name, sources):
         for match in pattern.finditer(text):
             associations.append({"organism": match.group(1), "quote": match.group(0),
                                  **{k: source[k] for k in ("path", "sha256", "source_id")}})
+        for match in reverse.finditer(text):
+            if re.search(r'(?:ase|protein|enzyme|domain|family)$',match.group(1).split()[1]):
+                continue
+            associations.append({'organism':match.group(1),'quote':match.group(0),
+                                 **{k:source[k] for k in ('path','sha256','source_id')}})
         for match in cluster.finditer(text):
             if _contains(match.group(1),name):
                 associations.append({'organism':match.group(2),'quote':match.group(0),
@@ -50,6 +57,28 @@ def source_associations(name, sources):
     return associations
 
 
+def source_name_aliases(name, organism, sources):
+    """Derive aliases from the source's taxon prefix and explicit definitions.
+
+    These narrow identity queries; they are not evidence of shared activity.
+    """
+    aliases=[name]
+    words=organism.split()
+    text='\n'.join(s['text'] for s in sources)
+    if (len(words)>=2 and len(name)>2 and _contains(text,name) and _contains(text,organism)
+            and name[:2].casefold()==(words[0][0]+words[1][0]).casefold()
+            and re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]{1,30}',name[2:])):
+        aliases.append(name[2:])
+    for alias in list(aliases):
+        pattern=r'([A-Za-z][A-Za-z0-9 -]{2,100})\s*\(\s*'+re.escape(alias)+r'\s*\)'
+        for match in re.finditer(pattern,text):
+            description=match.group(1).strip()
+            description=re.sub(r'^(?:The|A|An|the|a|an)\s+','',description)
+            if re.search(r'(?:ase|protein|enzyme)$',description,re.I):
+                aliases.append(description)
+    return list(dict.fromkeys(aliases))[:6]
+
+
 def _matching_organism(entry, organism):
     taxon = entry.get("organism") or {}
     names = [taxon.get("scientificName", ""), *(taxon.get("synonyms") or [])]
@@ -58,7 +87,7 @@ def _matching_organism(entry, organism):
                or _norm(name).startswith(expected + " strain ") for name in names)
 
 
-def select_sequence(entries, name, organism, *, identifier=None):
+def select_sequence(entries, name, organism, *, identifier=None, aliases=()):
     """Return a unique, active, complete sequence identity or an abstention."""
     from enzyme_discovery_agent.tools.fulltext import _entry_gene_names
     candidates = []
@@ -79,8 +108,13 @@ def select_sequence(entries, name, organism, *, identifier=None):
                                        if p.get("key") == "ProteinId")
             if identifier not in identifiers:
                 continue
-        elif not any(_norm(gene) == _norm(name) for gene in _entry_gene_names(entry)):
-            continue
+        else:
+            names=set(map(_norm,[name,*aliases]))
+            labels=list(_entry_gene_names(entry))
+            pd=entry.get('proteinDescription') or {}
+            for item in [pd.get('recommendedName') or {},*pd.get('alternativeNames',[]),*pd.get('submissionNames',[])]:
+                labels.append((item.get('fullName') or {}).get('value',''))
+            if not any(_norm(label) in names for label in labels):continue
         pd = entry.get("proteinDescription") or {}
         if pd.get("flag") == "Fragment":
             continue
@@ -132,13 +166,18 @@ def resolve_literature_lead(lead_id, source_paths=None, run_dir=None):
     name = meta["literature_name"]
     associations = source_associations(name, sources)
     organisms = {_norm(a["organism"]): a["organism"] for a in associations if a.get("organism")}
-    if meta.get("organism"):
+    # A registry hint is not a second independent source association. Prefer
+    # explicit clauses in the fingerprinted paper; disagreements between two
+    # such clauses still remain conflicts below.
+    if meta.get("organism") and not organisms:
         organisms.setdefault(_norm(meta["organism"]), meta["organism"])
     identifiers = {a["identifier"] for a in associations if a.get("identifier")}
     if origin.get("deposited_identifier"):
         identifiers.add(origin["deposited_identifier"])
     basis = {"lead_id": lead_id, "name": name, "associations": associations,
              "sources": [{k: s[k] for k in ("path", "sha256", "source_id")} for s in sources]}
+    if meta.get('organism') and _norm(meta['organism']) not in organisms:
+        basis['superseded_organism_hint']=meta['organism']
     if len(organisms) > 1 or len(identifiers) > 1:
         result = {**basis, "status": "conflict", "reason": "Conflicting source identity associations"}
     elif not organisms and not identifiers:
@@ -164,11 +203,19 @@ def resolve_literature_lead(lead_id, source_paths=None, run_dir=None):
                                 "entryType": "NCBI Protein", "organism": {"scientificName": record.get("organism", "")},
                                 "proteinDescription": {"submissionNames": [{"fullName": {"value": record.get("title", "")}}]}}]
             else:
-                query = f'gene_exact:"{name.replace(chr(34), " ")}" AND organism_name:"{organism.replace(chr(34), " ")}"'
-                entries = _uniprot_search(query, size=101, fields="accession,gene_names,organism_name,sequence,protein_name,reviewed,xref_embl")
-                if len(entries) >= 101:
-                    raise LookupUnavailable("Identity query exceeds the bounded result window; narrow its source-derived scope")
-            entry, selection = select_sequence(entries, name, organism, identifier=identifier)
+                aliases=source_name_aliases(name,organism,sources)
+                entry=None;selection={'status':'pending','matching_accessions':[],'distinct_sequences':0}
+                for alias in aliases:
+                    field='protein_name' if ' ' in alias else 'gene_exact'
+                    query=f'{field}:"{alias.replace(chr(34)," ")}" AND organism_name:"{organism.replace(chr(34)," ")}"'
+                    entries=_uniprot_search(query,size=101,fields='accession,gene_names,organism_name,sequence,protein_name,reviewed,xref_embl')
+                    if len(entries)>=101:raise LookupUnavailable('Identity query exceeds the bounded result window; narrow its source-derived scope')
+                    entry,selection=select_sequence(entries,name,organism,aliases=aliases)
+                    if entry is not None or selection['status']=='ambiguous':break
+                basis['source_name_aliases']=aliases
+                basis['used_query']=query
+            if identifier:
+                entry,selection=select_sequence(entries,name,organism,identifier=identifier)
             result = {**basis, **selection, "organism": organism, "identifier": identifier}
             if entry:
                 accession = entry["primaryAccession"]
@@ -196,7 +243,8 @@ def resolve_literature_lead(lead_id, source_paths=None, run_dir=None):
                 return {"status": "success", "summary": "Literature lead linked to a unique sequence; activity remains unvalidated", "data": identity, "count": 1}
         except (LookupUnavailable, OSError, ValueError, TypeError) as exc:
             result = {**basis, "status": "unavailable", "reason": str(exc)}
-    update_candidate_registry(root, lead_id, None, {"identity_resolution": result})
+    update_candidate_registry(root, lead_id, None, {"identity_resolution": result,
+        'identity_resolution_status':result['status']})
     append_event(root, "literature_lead_resolution_pending", lead_id=lead_id, resolution_status=result["status"])
     return {"status": "partial", "summary": result.get("reason") or "Sequence identity is ambiguous", "data": result, "count": 0}
 
@@ -218,11 +266,14 @@ def resolve_actionable_literature_leads(run_dir,limit=4):
         associations=source_associations(meta.get('literature_name',''),sources)
         if not associations and not meta.get('organism') and not origin.get('deposited_identifier'):continue
         basis=hashlib.sha256(json.dumps({'name':meta.get('literature_name'),
-            'sources':[(source['path'],source['sha256']) for source in sources]},sort_keys=True).encode()).hexdigest()
+            'organism':meta.get('organism'),'identifier':origin.get('deposited_identifier'),
+            'implementation':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            'sources':sorted({source['sha256'] for source in sources})},sort_keys=True).encode()).hexdigest()
         if meta.get('identity_batch_attempt_basis')==basis and time.time()<meta.get('identity_batch_retry_after',0):continue
         result=resolve_literature_lead(lead['accession'],source_paths=paths,run_dir=root)
+        cooldown=60 if (result.get('data') or {}).get('status')=='unavailable' else 300
         update_candidate_registry(root,lead['accession'],None,{'identity_batch_attempt_basis':basis,
-            'identity_batch_retry_after':time.time()+3600})
+            'identity_batch_retry_after':time.time()+cooldown})
         results.append({'lead_id':lead['accession'],'name':lead['name'],'result':result})
         if len(results)>=limit:break
     return {'status':'success','summary':'Bounded source-grounded identity work; unresolved or ambiguous records stay pending.',

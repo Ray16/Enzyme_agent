@@ -5,10 +5,39 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
-from collections import Counter
+from collections import Counter, OrderedDict
+import hashlib
+import threading
 
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.run_layout import run_file
+
+_HISTORY_WINDOWS = OrderedDict()
+_HISTORY_WINDOW_LOCK = threading.RLock()
+
+
+def _history_window_start(messages, run_dir, prefix_length):
+    """Keep a history boundary fixed between bounded compaction points."""
+    key=(str(Path(run_dir).resolve()),config.MODEL_CONTEXT_MAX_CHARS,
+         config.MODEL_CONTEXT_RECENT_ASSISTANTS,config.MODEL_CONTEXT_COMPACT_INTERVAL)
+    def fingerprint(value):
+        return hashlib.sha256(json.dumps(value,sort_keys=True,ensure_ascii=False,default=str).encode()).hexdigest()
+    with _HISTORY_WINDOW_LOCK:
+        saved=_HISTORY_WINDOWS.get(key)
+        valid=(saved is not None and len(messages)>=saved['length']
+               and fingerprint(messages[:saved['length']])==saved['fingerprint'])
+        if valid and saved['turns']<max(1,config.MODEL_CONTEXT_COMPACT_INTERVAL):
+            start=saved['start']; turns=saved['turns']+1
+        else:
+            positions=[i for i,m in enumerate(messages) if i>=prefix_length and m.get('role')=='assistant']
+            keep=config.MODEL_CONTEXT_RECENT_ASSISTANTS
+            start=positions[-keep] if keep>0 and len(positions)>=keep else prefix_length
+            turns=1
+        _HISTORY_WINDOWS[key]={'start':start,'turns':turns,'length':len(messages),
+                               'fingerprint':fingerprint(messages)}
+        _HISTORY_WINDOWS.move_to_end(key)
+        while len(_HISTORY_WINDOWS)>32:_HISTORY_WINDOWS.popitem(last=False)
+        return start
 
 ARTIFACT_CATEGORIES = {
     "search_pubmed": "literature",
@@ -477,8 +506,7 @@ def build_model_context(messages: list[dict], run_dir: Path) -> list[dict]:
     from enzyme_discovery_agent.steering import context_message
     steering = context_message(run_dir)
     steering_context = [steering] if steering else []
-    positions = [i for i, m in enumerate(messages) if i >= len(prefix) and m.get("role") == "assistant"]
-    cut = positions[-config.MODEL_CONTEXT_RECENT_ASSISTANTS] if len(positions) >= config.MODEL_CONTEXT_RECENT_ASSISTANTS else len(prefix)
+    cut = _history_window_start(messages,run_dir,len(prefix))
     tail = copy.deepcopy(messages[cut:])
     for message in tail:
         content = message.get("content")

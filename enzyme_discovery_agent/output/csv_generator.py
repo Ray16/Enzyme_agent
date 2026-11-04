@@ -22,7 +22,7 @@ def refresh_ranked_candidates(run_dir):
     from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry,discovery_status
     from enzyme_discovery_agent.models.expansion import seed_evidence
     from enzyme_discovery_agent.models.evaluations import current_evaluations
-    from enzyme_discovery_agent.output.report_generator import _deterministic_mechanistic_ranking,_family_relevance_partition,_family_rank_map
+    from enzyme_discovery_agent.output.report_generator import _deterministic_mechanistic_ranking,_family_relevance_partition,_family_rank_map,_collapse_orthologs
     from enzyme_discovery_agent.state_store import atomic_write_json
     root=Path(run_dir)
     from enzyme_discovery_agent.state_store import state_lock
@@ -41,6 +41,7 @@ def refresh_ranked_candidates(run_dir):
         stopped,supported,_=_family_relevance_partition(root,evaluations)
         ranking=_deterministic_mechanistic_ranking([ev for ev in rankable if ev['data']['accession'] not in stopped],{},
             family_rank_by_acc=_family_rank_map(stopped,supported))
+        ranking=_collapse_orthologs(ranking,{ev['data']['accession']:ev for ev in rankable})
         atomic_write_json(run_file(root,'pass1_ranking.json'),ranking)
         generate_candidates_csv(root,evaluations,ranking_entries=ranking)
         return ranking
@@ -99,6 +100,8 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
                  if isinstance(e, dict) and isinstance(e.get("data", e), dict)]
     from enzyme_discovery_agent.models.target_review import admitted_evaluations
     accepted=admitted_evaluations(run_dir,all_evals)
+    from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
+    current_registry=load_candidate_registry(run_dir,strict=True)['candidates']
     accepted_ids={ev.get('data',ev).get('accession') for ev in accepted}
     queue=io.StringIO();work=csv.DictWriter(queue,fieldnames=['accession','protein_name','native_reaction','assessment_status']);work.writeheader()
     for ev in all_evals:
@@ -168,7 +171,7 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
                 acc = d.get("accession", "")
                 from enzyme_discovery_agent.models.native_annotation import native_annotation_for_report
                 annotation = native_annotation_for_report(run_dir, acc, d)
-                assessment = d.get('target_assessment') or {}
+                assessment = ((current_registry.get(acc) or {}).get('metadata') or {}).get('target_assessment') or d.get('target_assessment') or {}
                 genes = d.get("gene_names", [])
                 ec_list = d.get("ec_numbers", [])
                 lit = d.get("literature", {})
@@ -229,7 +232,7 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
                     "tier_label":rank_info.get("tier_label", ""),
                     "priority_rationale":rank_info.get("rationale", ""),
                     "native_annotation_status":"annotated_reaction" if cat_acts else "native_reaction_unknown",
-                    "ranking_basis":"source_cited_hypothesis" if d.get('priority_assessment') else "provisional_native_analogue",
+                    "ranking_basis":"target_assessed_hypothesis" if assessment else "source_cited_hypothesis" if d.get('priority_assessment') else "provisional_native_analogue",
                     "native_activity_evidence":annotation['native_activity_evidence'],
                     "native_activity_sources":"; ".join(sorted({
                         str(item.get('source',''))+':'+str(item.get('id',''))

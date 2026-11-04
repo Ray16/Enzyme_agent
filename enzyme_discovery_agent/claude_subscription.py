@@ -14,10 +14,47 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
+import time
+import hashlib
 from dataclasses import dataclass
 from typing import Any
 
 from enzyme_discovery_agent.claude_tool_bridge import ClaudeToolBridge
+
+_AUTH_CACHE = {}
+_AUTH_LOCK = threading.Lock()
+_AUTH_CACHE_SECONDS = 300
+
+
+def _auth_key(executable, settings):
+    def stamp(path):
+        try:
+            stat=path.stat();return (str(path),stat.st_ino,stat.st_mtime_ns,stat.st_size)
+        except OSError:return (str(path),None)
+    return (os.getpid(),executable,hashlib.sha256(settings.read_bytes()).hexdigest(),
+            stamp(settings),stamp(Path.home()/'.claude/.credentials.json'))
+
+
+def _verify_subscription(executable, settings, timeout, directory, env):
+    try:key=_auth_key(executable,settings)
+    except OSError as exc:
+        raise ClaudeTransportError('Claude Code subscription authentication could not be verified',attempted=False) from exc
+    with _AUTH_LOCK:
+        now=time.monotonic()
+        if _AUTH_CACHE.get(key,0)>now:return key
+        try:
+            auth=subprocess.run([executable,'--settings',str(settings),'--restricted','auth','status'],
+                text=True,capture_output=True,timeout=min(timeout,15),cwd=directory,env=env)
+            status=json.loads(auth.stdout)
+            if (auth.returncode!=0 or status.get('loggedIn') is not True
+                    or status.get('authMethod')!='claude.ai' or status.get('apiProvider')!='firstParty'):
+                raise ValueError('expected a signed-in Claude subscription account')
+        except (OSError,subprocess.TimeoutExpired,ValueError,TypeError,AttributeError) as exc:
+            raise ClaudeTransportError('Claude Code subscription authentication could not be verified',attempted=False) from exc
+        _AUTH_CACHE.clear()
+        _AUTH_CACHE[key]=now+_AUTH_CACHE_SECONDS
+        return key
 
 
 @dataclass
@@ -267,23 +304,17 @@ def call_claude(messages: list[dict], tools: list[dict] | None, model: str,
             # adaptive-thinking tokens against the same provider output cap;
             # reserve headroom so small structured answers can actually finish.
             env["CLAUDE_CODE_MAX_OUTPUT_TOKENS"] = str(min(max_tokens + 24576, 64000))
-        try:
-            auth = subprocess.run([executable, "--settings", str(settings), "--restricted", "auth", "status"],
-                                  text=True, capture_output=True, timeout=min(timeout, 15), cwd=directory, env=env)
-            auth_status = json.loads(auth.stdout)
-            if (auth.returncode != 0 or auth_status.get("loggedIn") is not True
-                    or auth_status.get("authMethod") != "claude.ai"
-                    or auth_status.get("apiProvider") != "firstParty"):
-                raise ValueError("expected a signed-in Claude subscription account")
-        except (OSError, subprocess.TimeoutExpired, ValueError, TypeError, AttributeError) as exc:
-            raise ClaudeTransportError("Claude Code subscription authentication could not be verified",
-                                       attempted=False) from exc
+        auth_key=_verify_subscription(executable,settings,timeout,directory,env)
         try:
             completed = subprocess.run(cmd, input=prompt, text=True, capture_output=True,
                                        timeout=timeout, cwd=directory, env=env)
+            return _parse_output(completed.stdout,names,model,defer_tool_rejections=defer_tool_rejections)
         except (OSError, subprocess.TimeoutExpired) as exc:
+            with _AUTH_LOCK:_AUTH_CACHE.pop(auth_key,None)
             raise ClaudeTransportError(f"Claude Code transport failed: {type(exc).__name__}") from exc
-        return _parse_output(completed.stdout, names, model,defer_tool_rejections=defer_tool_rejections)
+        except ClaudeTransportError:
+            with _AUTH_LOCK:_AUTH_CACHE.pop(auth_key,None)
+            raise
 
 
 if __name__ == "__main__" and len(sys.argv) == 3 and sys.argv[1] == "--mcp":

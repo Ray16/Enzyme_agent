@@ -42,6 +42,13 @@ The local MSA producer was cancelled at the user's request. No GPU modeling was
 submitted for this panel. The server-side MSA batch had already been accepted by
 ColabFold; cancellation on that remote service was not confirmed.
 
+## Review response and subsequent repairs
+
+See [REVIEW_RESPONSE_20261104.md](REVIEW_RESPONSE_20261104.md) for the audited
+workload breakdown, corrections to the assessment and lead counts, implemented
+repairs and the queued targeting follow-up. The historical checkpoint above is
+retained as a record of that earlier campaign.
+
 ## High-priority issues
 
 - The adaptive controller spent substantial effort inspecting and interpreting

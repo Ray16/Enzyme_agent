@@ -306,16 +306,17 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
         rows.pop()
         request=request_view()
     fields={key:{'type':'string'} for key in ('accession','reason','mechanism_and_step','revisit_when')}
-    fields['accession']['enum']=[row['accession'] for row in rows]
+    # Batch identifiers are validated against the saved packet on admission.
+    # Keeping them out of tool schemas preserves the provider's cache prefix.
     fields.update(decision={'type':'string','enum':['prioritize','investigate','defer','exclude']},
         evidence_level={'type':'string','enum':['direct_target_observation','mechanistic_transfer','speculative']},
-        target_roles={'type':'array','items':{'type':'object','properties':{'participant':{'type':'string','enum':[r['id'] for r in packet['target_inputs']]},'role':{'type':'string'},
+        target_roles={'type':'array','items':{'type':'object','properties':{'participant':{'type':'string','pattern':'^T[1-9][0-9]*$'},'role':{'type':'string'},
             'basis':{'type':'string','enum':['observed','transfer','hypothesis','incompatible']}},'required':['participant','role','basis']}},
         strengths={'type':'array','items':{'type':'string'}},unknowns={'type':'array','items':{'type':'string'}},
         constraints={'type':'array','items':{'type':'object','properties':{'finding':{'type':'string'},'basis':{'type':'string','enum':['observed_mismatch','missing_evidence']},
             'severity':{'type':'string','enum':['minor','major']}},'required':['finding','basis','severity']}},
         source_refs={'type':'array','minItems':1,'maxItems':1,
-            'items':{'type':'string','enum':[row['source_id'] for row in rows]},
+            'items':{'type':'string','pattern':'^R[1-9][0-9]*$'},
             'description':'Only this candidate\'s supplied R-indexed source ID. Describe paper citations in the rationale; do not add them here.'})
     tool={'type':'function','function':{'name':'record_target_assessment','description':'Record one source-grounded target relevance assessment.',
         'parameters':{'type':'object','properties':fields,'required':list(fields)}}}
@@ -349,7 +350,10 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
         'Keep each assessment around 200–250 words total, using concise source-specific findings. '
         'Avoid repeating the target description or generic caveats in multiple fields. '
         'Do not invent evidence, experiments, identities or missing native substrates.')
-    response=llm.call(messages=[{'role':'system','content':prompt},{'role':'user','content':json.dumps(request,separators=(',',':'))}],
+    common={key:request[key] for key in ('target','target_inputs')}
+    response=llm.call(messages=[{'role':'system','content':prompt},
+        {'role':'user','content':json.dumps(common,separators=(',',':'))},
+        {'role':'user','content':json.dumps({'candidates':request['candidates']},separators=(',',':'))}],
         tools=[tool],timeout=180,usage_label='target_relevance_batch')
     output={'assessed':[],'errors':[],'provider_faults':[]}
     candidate_errors={}

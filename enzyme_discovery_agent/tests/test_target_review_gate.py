@@ -95,6 +95,7 @@ def test_pending_search_interpretation_does_not_starve_candidate_assessment(tmp_
 def test_partial_target_batch_returns_to_assessment_before_gathering_more_native_records(tmp_path,monkeypatch):
     from enzyme_discovery_agent import config
     monkeypatch.setattr(config,'AUTO_TARGET_REVIEW',True)
+    monkeypatch.setattr(config,'TARGET_REVIEW_BATCHES_BEFORE_DECISION',2)
     from unittest.mock import Mock,patch
     from enzyme_discovery_agent.agent import EnzymeAgent
     with patch('enzyme_discovery_agent.models.target_reasoning.derive_target_reasoning',return_value={}):

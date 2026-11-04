@@ -41,5 +41,31 @@
   "limits": [
     "Software checks do not establish live model-provider availability or enzyme activity.",
     "GPU engines, credentials, model weights and large scientific outputs are external dependencies."
-  ]
+  ],
+  "review_repairs_20261104": {
+    "discovery_full_suite": {
+      "passed": 1217,
+      "skipped": 9,
+      "subtests_passed": 74,
+      "scope": "Before the final taxon-hint, disabled-review debt and message-separation regressions; those changes passed focused checks."
+    },
+    "supporting_components": {
+      "passed": 668,
+      "subtests_passed": 21
+    },
+    "final_focused_schema_identity_scheduling_checks": {
+      "passed": 68,
+      "subtests_passed": 5
+    },
+    "final_scheduler_auth_checks": {
+      "passed": 33
+    },
+    "paid_live_run_for_these_fixes": false,
+    "full_release_suite": {
+      "passed": 1887,
+      "skipped": 9,
+      "subtests_passed": 95,
+      "wall_seconds": 155.95
+    }
+  }
 }

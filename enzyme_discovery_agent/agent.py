@@ -165,6 +165,7 @@ class EnzymeAgent:
         self._consecutive_no_tool_turns = 0
         self._consecutive_no_progress_turns = 0
         self._automatic_evidence_batches = 0
+        self._automatic_review_batches = 0
         self._model_turns_since_recovery = 0
         self._last_automatic_action = None
         self._last_research_signature = None
@@ -266,6 +267,7 @@ class EnzymeAgent:
         self._consecutive_no_progress_turns = 0
         self._last_research_signature = progress.get("signature")
         self._last_automatic_action = progress.get("last_automatic_action")
+        self._automatic_review_batches = max(0,int(progress.get('automatic_review_batches',0)))
         if "automatic_evidence_batches" in progress:
             self._automatic_evidence_batches = max(0, int(progress["automatic_evidence_batches"]))
         else:
@@ -478,6 +480,7 @@ class EnzymeAgent:
                 "idle_turns": getattr(self, "_consecutive_no_progress_turns", 0),
                 "signature": getattr(self, "_last_research_signature", None),
                 "automatic_evidence_batches": getattr(self, "_automatic_evidence_batches", 0),
+                "automatic_review_batches": getattr(self,"_automatic_review_batches",0),
                 "model_turns_since_recovery": getattr(self, "_model_turns_since_recovery", 0),
                 "last_automatic_action": getattr(self, "_last_automatic_action", None),
             }
@@ -1171,14 +1174,18 @@ class EnzymeAgent:
             from enzyme_discovery_agent.models.target_review import review_queue,run_review
             from enzyme_discovery_agent.models.research_decisions import _root as decision_root,_read as read_decision_state
             pending_interpretation=read_decision_state(decision_root(self.run_dir)/'state.json',{}).get('awaiting_interpretation')
+            review_yield=(config.AUTO_TARGET_REVIEW and
+                getattr(self,'_automatic_review_batches',0)>=config.TARGET_REVIEW_BATCHES_BEFORE_DECISION)
             # Candidate assessment is itself a source-bound scientific interpretation.
             # A pending search-review closure must not leave retrieved candidates
             # unranked. Bound the tranche so strategy review still gets a turn.
             if (config.AUTO_TARGET_REVIEW
+                    and not review_yield
                     and self._automatic_evidence_batches < config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION
                     and review_queue(self.run_dir,limit=config.TARGET_REVIEW_BATCH_SIZE)):
                 review=run_review(self.run_dir,self.llm,limit=config.TARGET_REVIEW_BATCH_SIZE)
                 self._automatic_evidence_batches += 1
+                self._automatic_review_batches += 1
                 self._last_automatic_action = 'target_review'
                 if review['assessed']:
                     from enzyme_discovery_agent.output.csv_generator import refresh_ranked_candidates
@@ -1209,7 +1216,7 @@ class EnzymeAgent:
             # that work in the bounded tranche, even while an earlier search
             # outcome awaits interpretation. Never close that review implicitly.
             candidate_work = bool(backlog) or (source_reviewed and new_evaluation_work(self.run_dir))
-            if (candidate_work and not reconnaissance and not user_reflection
+            if (candidate_work and not reconnaissance and not user_reflection and not review_yield
                     and (source_reviewed or not adaptive_review)
                     and self._automatic_evidence_batches < config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION):
                 ready_gate = self._gate_pipeline.gates[2]
@@ -1243,7 +1250,7 @@ class EnzymeAgent:
                 else:
                     return self._finish_budget_checkpoint(messages, iteration - 1, token_usage,
                         'Adaptive decision could not be grounded after two attempts; review the preserved evidence and proposals.', status='discovery_incomplete')
-            forced_reflection = user_reflection or self._automatic_reflection_due()
+            forced_reflection = user_reflection or self._automatic_reflection_due() or review_yield
             # A productive automatic queue still yields periodically to a
             # normal model decision, without injecting a reflection request.
             automation_yield = self._automatic_evidence_batches >= config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION
@@ -1528,6 +1535,7 @@ class EnzymeAgent:
                                       status="failed")
 
             self._automatic_evidence_batches = 0
+            self._automatic_review_batches = 0
             token_usage.record(iteration, response)
             steering.mark_delivered(self.run_dir, delivered_ids, iteration)
             if steering.has_pending(self.run_dir):
@@ -1802,34 +1810,6 @@ class EnzymeAgent:
                     status="discovery_incomplete",
                 )
 
-    def _prune_tool_history(
-        self,
-        messages: list,
-        keep_recent: int = config.HISTORY_KEEP_RECENT_TOOL_MSGS,
-        stub_over: int = config.HISTORY_STUB_OVER_CHARS,
-    ) -> None:
-        """Stub the content of tool results older than the most recent
-        ``keep_recent`` tool messages, in place.
-
-        The prompt re-sent each iteration is the dominant cost (in one run: 2.1M
-        of 2.2M loop tokens were prompt, growing 19k -> 164k as raw tool dumps
-        piled up).  A later turn never needs the raw dump of an old search: the
-        candidates it surfaced are already in the registry, the reasoning is in
-        the notebook, and the full result is on disk under artifacts/.  So the
-        old tool CONTENT is replaced with a short stub while the message itself
-        is kept, preserving the assistant tool_call / tool-result pairing the
-        provider requires.  Recent results stay full so the model still reasons
-        over fresh evidence.
-        """
-        tool_positions = [i for i, m in enumerate(messages) if m.get("role") == "tool"]
-        if len(tool_positions) <= keep_recent:
-            return
-        stub = ("[elided older tool result — candidates are in the registry, "
-                "reasoning is in the notebook, full data is under artifacts/]")
-        for i in tool_positions[:-keep_recent]:
-            content = messages[i].get("content")
-            if isinstance(content, str) and len(content) > stub_over and content != stub:
-                messages[i]["content"] = stub
 
     def _finalize(
         self,

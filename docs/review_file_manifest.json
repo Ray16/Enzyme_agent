@@ -91,8 +91,13 @@
     },
     {
       "path": "docs/REVIEW_GUIDE.md",
-      "bytes": 6071,
-      "sha256": "8e1f5207986ce3fabdf306551a7a00b33f788c50085f3fa244f15453bee1e396"
+      "bytes": 6399,
+      "sha256": "50139fb4ae2695c20450d4fe5153f371aaa9738bb86f8a27b770f1c7bea61d2a"
+    },
+    {
+      "path": "docs/REVIEW_RESPONSE_20261104.md",
+      "bytes": 5145,
+      "sha256": "602b1e24951854761daae4b55224158e64c73c2d70341ea3c0e75ec5ed01554f"
     },
     {
       "path": "docs/discovery_agent_framework.md",
@@ -135,9 +140,14 @@
       "sha256": "eb2c5b5a2195b8d0e6e78ac2e0640cee153a01bd25eab51dde8d8562dec1bea6"
     },
     {
+      "path": "docs/review_run_audit_20261104.json",
+      "bytes": 19804,
+      "sha256": "018fe1043c4fd1b0c555c6d224fbacd47a4d32ca8f83e2786d06d448d6ad03ec"
+    },
+    {
       "path": "docs/review_validation.json",
-      "bytes": 1349,
-      "sha256": "51ce543d473de9a8cb20ca783921c76c28444c8cfb543849b14b96b6529acfc0"
+      "bytes": 2072,
+      "sha256": "7e82876e42c62dcd924eb49a2cb693f57c5247f20613e64d7e07c2c0db15cd38"
     },
     {
       "path": "enzyme_design_agent/README.md",
@@ -531,8 +541,13 @@
     },
     {
       "path": "enzyme_discovery_agent/agent.py",
-      "bytes": 112695,
-      "sha256": "2fb5045158c868e781bdfeb3ab6d762f3b24e90858d7643778791dc7df914554"
+      "bytes": 111712,
+      "sha256": "17916d98094582fe4fd43d14ba5a7b1b34e94c1d261446e4a681699ba160dc7d"
+    },
+    {
+      "path": "enzyme_discovery_agent/audit_run.py",
+      "bytes": 3943,
+      "sha256": "d796af58286ba4b73680bc52539937787e965b2221fb3e9b8ff53aa21784b987"
     },
     {
       "path": "enzyme_discovery_agent/bootstrap.py",
@@ -566,8 +581,8 @@
     },
     {
       "path": "enzyme_discovery_agent/claude_subscription.py",
-      "bytes": 15977,
-      "sha256": "52618b5e2100c44b9bd9557dbfd083441cb27de505685af754613f5f4fe03eff"
+      "bytes": 17066,
+      "sha256": "69c269e7a93d90bc8ef54573e8d110bd6e48a00a208382542fcdba2a45f5b5ae"
     },
     {
       "path": "enzyme_discovery_agent/claude_tool_bridge.py",
@@ -576,13 +591,13 @@
     },
     {
       "path": "enzyme_discovery_agent/config.py",
-      "bytes": 35350,
-      "sha256": "d5c7239a5119893c7d82e5f80387342fada8a969635d0da1969f852e91b0ba8a"
+      "bytes": 34946,
+      "sha256": "31744a66d6006fae9a96ce616df64ebeb23c8e7d301098274fc683bd869d0977"
     },
     {
       "path": "enzyme_discovery_agent/context.py",
-      "bytes": 37381,
-      "sha256": "731b35a7979601e2e78153ad88a5c257fdf02ff89e429a56d36a3285a3b24069"
+      "bytes": 38696,
+      "sha256": "88f5c1d342c107695f0e6c3321d48b091031b7bc6dcfd9594fe9be0491421de4"
     },
     {
       "path": "enzyme_discovery_agent/eval/__init__.py",
@@ -826,8 +841,8 @@
     },
     {
       "path": "enzyme_discovery_agent/models/lead_followup.py",
-      "bytes": 15345,
-      "sha256": "619e6a497c431e6956c584a7bf35fa0c12003ce48aedb073c410d93586b428cd"
+      "bytes": 15462,
+      "sha256": "13e99580ecc86b4843c7249e1441b14698afd2e11523864b999983332c0268a2"
     },
     {
       "path": "enzyme_discovery_agent/models/literature_bootstrap.py",
@@ -946,8 +961,8 @@
     },
     {
       "path": "enzyme_discovery_agent/models/target_review.py",
-      "bytes": 30249,
-      "sha256": "870834544ff529ee0a507b13703ef334d291927e404f9d8020c8bb195255d1cd"
+      "bytes": 30480,
+      "sha256": "d80620cd8fba0200edbac721a1cb8a234f5f58bfa32dabe8c8462cd83c8f27b7"
     },
     {
       "path": "enzyme_discovery_agent/molecule_input.py",
@@ -966,8 +981,8 @@
     },
     {
       "path": "enzyme_discovery_agent/output/csv_generator.py",
-      "bytes": 13087,
-      "sha256": "06cfbbb31ca7644be82aebdd2b1a198c6799a889f9ac5af1b9605c85cfda5d82"
+      "bytes": 13503,
+      "sha256": "5d76277b3034b42d4e3be8cb6d6d0651fe7984f1ed066bbbab990670230e9e1d"
     },
     {
       "path": "enzyme_discovery_agent/output/discovery_portfolio.py",
@@ -1011,8 +1026,8 @@
     },
     {
       "path": "enzyme_discovery_agent/output/report_generator.py",
-      "bytes": 74497,
-      "sha256": "86f0482c5a42a9edc40e51a67156f7e48503b9ab8221b33e4fd2b31081f54650"
+      "bytes": 74199,
+      "sha256": "8877d5e24015a738c18e2319d511cd2ece4f7ca384f89e87f16e3818bd90f432"
     },
     {
       "path": "enzyme_discovery_agent/output/research_portfolio.py",
@@ -1675,6 +1690,11 @@
       "sha256": "da659e88a7e1e14cf0c055901cca86253d0782246c758af32cfda550f06ff194"
     },
     {
+      "path": "enzyme_discovery_agent/tests/test_review_cache_regressions.py",
+      "bytes": 12531,
+      "sha256": "ccc8a5f00893171cb0e4698ac99d4bd6677b597d79077dc35c115705c4e3a237"
+    },
+    {
       "path": "enzyme_discovery_agent/tests/test_review_improvements.py",
       "bytes": 7595,
       "sha256": "5eea54d633ca22a09844d669507ab5f2387580d78a25127c652a84e592382117"
@@ -1791,8 +1811,8 @@
     },
     {
       "path": "enzyme_discovery_agent/tests/test_target_review_gate.py",
-      "bytes": 26025,
-      "sha256": "35f1652fd4eab7ece69b64aa9595f71bea1013496a1ee86422405e14893f3f73"
+      "bytes": 26099,
+      "sha256": "740523c86a9be4f854020597fed41e6f7005967aedb9da6c3b757984141e74ca"
     },
     {
       "path": "enzyme_discovery_agent/tests/test_throughput_control.py",
@@ -1886,8 +1906,8 @@
     },
     {
       "path": "enzyme_discovery_agent/tools/identity_resolution.py",
-      "bytes": 15488,
-      "sha256": "2ac9d3bd17f64fb1c582be0e0d9153c53dbe6266ae3bd5bacb157235f17d1b75"
+      "bytes": 18580,
+      "sha256": "54e76aeb6b2164231a323a2ada6fc7ac11c1cf218855103d83d31724e584b01c"
     },
     {
       "path": "enzyme_discovery_agent/tools/kbase.py",

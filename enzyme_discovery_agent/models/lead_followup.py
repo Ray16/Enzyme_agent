@@ -146,8 +146,9 @@ def service_leads(run_dir,limit=None,lead_ids=None):
         hints=[m.get('organism') or sibling_organism(registry,accession,m),
                (m.get('literature_lead') or {}).get('deposited_identifier')]
         basis=hashlib.sha256(json.dumps({'source':m.get('literature_lead'),
-            'retrieved_sources':sorted(extra),'identity_hints':hints,
-            'implementation':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()},sort_keys=True).encode()).hexdigest()
+            'retrieved_sources':sorted({value for _,value in extra}),'identity_hints':hints,
+            'implementation':[hashlib.sha256(path.read_bytes()).hexdigest() for path in
+                [Path(__file__),Path(__file__).parents[1]/'tools/identity_resolution.py']]},sort_keys=True).encode()).hexdigest()
         previous=ledger.get(lead_key(m),{})
         if previous.get('basis')==basis and (previous.get('stage') not in RETRYABLE_STAGES or
                 previous.get('attempts',0)>=LEAD_ATTEMPTS or time.time()<previous.get('retry_after',0)):continue

@@ -175,17 +175,11 @@ REFLECTION_INTERVAL = 5  # reflect every N iterations
 MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION = 4  # bounded evidence tranche before a model decision; never a scientific stopping rule
 TARGET_REVIEW_BATCH_SIZE = 8  # amortize the shared target context across distinct candidates
 TARGET_REVIEW_MAX_REQUEST_CHARS = 100000  # reduce batch size, never truncate scientific records
-# A candidate only enters the ranked shortlist once a target assessment is saved
-# (eligibility_verdict requires it). That assessment is produced EITHER by the
-# adaptive deliberation layer OR by this batched auto target-review. So couple
-# them: exactly one path is always active -- auto-review turns ON when the
-# deliberation layer is OFF (direct mode), so direct runs still roll candidates
-# out to the shortlist. The batched review (TARGET_REVIEW_BATCH_SIZE at a time,
-# bounded by MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION) is far lighter than the
-# per-action plan->interpret->conclude ceremony. Override with
-# ENZYME_AGENT_AUTO_TARGET_REVIEW=0|1.
-AUTO_TARGET_REVIEW = os.environ.get(
-    "ENZYME_AGENT_AUTO_TARGET_REVIEW", "0" if ADAPTIVE_REASONING else "1") == "1"
+# Priority decisions do not write the separate target-assessment record.
+# Service that queue in both controller modes, with a bounded tranche so source
+# retrieval and sequence resolution retain model turns.
+AUTO_TARGET_REVIEW = os.environ.get("ENZYME_AGENT_AUTO_TARGET_REVIEW", "1") == "1"
+TARGET_REVIEW_BATCHES_BEFORE_DECISION = 1
 DISCOVERY_PORTFOLIO_SIZE = 48
 DISCOVERY_RESEARCH_INTERVAL = 10
 LITERATURE_DISCOVERY_PAPERS_PER_STEP = 2
@@ -334,6 +328,7 @@ HISTORY_KEEP_RECENT_TOOL_MSGS = 16
 # several full evidence turns fit; still small vs the subscription window.
 MODEL_CONTEXT_MAX_CHARS = int(os.environ.get("ENZYME_MODEL_CONTEXT_MAX_CHARS", 120_000))
 MODEL_CONTEXT_RECENT_ASSISTANTS = 2
+MODEL_CONTEXT_COMPACT_INTERVAL = 6
 MODEL_CONTEXT_TOOL_RESULT_CHARS = 2000
 COMPACT_SYSTEM_PROMPT = True
 HISTORY_STUB_OVER_CHARS = 1_000
