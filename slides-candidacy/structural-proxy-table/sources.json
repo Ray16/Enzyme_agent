@@ -1,0 +1,899 @@
+{
+  "scope": "Complete historical 98-export inventory and 39 matched canonical formulas; grouped presentation, not 137 independent physical properties.",
+  "run_note": "The imported discovery run stores a historical selected bundle; the broad enumeration is reconstructed from associated saved structural-screening artifacts, not an autonomous enumeration trace in that run.",
+  "historical_fields": [
+    {
+      "feature": "preorg:posn_rmsf",
+      "status": "retained",
+      "canonical_definition": "preorg:posn_rmsf",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "preorg:angle",
+      "status": "retained",
+      "canonical_definition": "preorg:angle",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "mg:mgP_all_median",
+      "status": "retained",
+      "canonical_definition": "mg:mgP_all_median",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s1_his_dev7",
+      "status": "retained",
+      "canonical_definition": "pka:s1_his_dev7",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s1_nion",
+      "status": "retained",
+      "canonical_definition": "pka:s1_nion",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "preorg:approach_std",
+      "status": "retained",
+      "canonical_definition": "preorg:approach_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s1_his_dev7_std",
+      "status": "retained",
+      "canonical_definition": "pka:s1_his_dev7_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "hyp:H7_adenineBurial",
+      "status": "retained",
+      "canonical_definition": "hyp:H7_adenineBurial",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "bat:mg_pa_dist",
+      "status": "retained",
+      "canonical_definition": "bat:mg_pa_dist",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "tunnel:enc_tight",
+      "status": "retained",
+      "canonical_definition": "tunnel:enc_tight",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "esp:lef_pa_std",
+      "status": "retained",
+      "canonical_definition": "esp:lef_pa_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "hyp:H4_distMinusReact",
+      "status": "retained",
+      "canonical_definition": "hyp:H4_distMinusReact",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "mg:mean_mgPa",
+      "status": "retained",
+      "canonical_definition": "mg:mean_mgPa",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:acidO_8",
+      "status": "retained",
+      "canonical_definition": "elec:acidO_8",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "hyp:H3_channel",
+      "status": "retained",
+      "canonical_definition": "hyp:H3_channel",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:acidO_9",
+      "status": "retained",
+      "canonical_definition": "elec:acidO_9",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "boltz:boltz2_mean_gated_angle",
+      "status": "duplicate",
+      "canonical_definition": "bat:mean_inline_angle",
+      "reason": "Repeated measurement; mean-angle export differs only in rounding."
+    },
+    {
+      "feature": "bat:mean_inline_angle",
+      "status": "retained",
+      "canonical_definition": "bat:mean_inline_angle",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "sasa:distalC_sasa",
+      "status": "retained",
+      "canonical_definition": "sasa:distalC_sasa",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:nearBase_7",
+      "status": "retained",
+      "canonical_definition": "elec:nearBase_7",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:nearBase_8",
+      "status": "retained",
+      "canonical_definition": "elec:nearBase_8",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:nearBase_6",
+      "status": "retained",
+      "canonical_definition": "elec:nearBase_6",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:acidO_7",
+      "status": "retained",
+      "canonical_definition": "elec:acidO_7",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "tunnel:L2.5",
+      "status": "retained",
+      "canonical_definition": "tunnel:L2.5",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s1_nion_std",
+      "status": "retained",
+      "canonical_definition": "pka:s1_nion_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s2_nion",
+      "status": "retained",
+      "canonical_definition": "pka:s2_nion",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:nearBase_9",
+      "status": "retained",
+      "canonical_definition": "elec:nearBase_9",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "esp:esp_carbonyl",
+      "status": "retained",
+      "canonical_definition": "esp:esp_carbonyl",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "tunnel:L3.0",
+      "status": "retained",
+      "canonical_definition": "tunnel:L3.0",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "boltz:boltz2_min_d",
+      "status": "retained",
+      "canonical_definition": "boltz:boltz2_min_d",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "hyp:n1_gated",
+      "status": "retained",
+      "canonical_definition": "hyp:n1_gated",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "preorg:n_gated",
+      "status": "duplicate",
+      "canonical_definition": "hyp:n1_gated",
+      "reason": "Repeated measurement; mean-angle export differs only in rounding."
+    },
+    {
+      "feature": "elec:n_gated",
+      "status": "duplicate",
+      "canonical_definition": "hyp:n1_gated",
+      "reason": "Repeated measurement; mean-angle export differs only in rounding."
+    },
+    {
+      "feature": "elec:acidO_6",
+      "status": "retained",
+      "canonical_definition": "elec:acidO_6",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "tunnel:n_gated",
+      "status": "duplicate",
+      "canonical_definition": "hyp:n1_gated",
+      "reason": "Repeated measurement; mean-angle export differs only in rounding."
+    },
+    {
+      "feature": "hyp:H1_oxyanion",
+      "status": "retained",
+      "canonical_definition": "hyp:H1_oxyanion",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "hyp:H2_distalSASA",
+      "status": "retained",
+      "canonical_definition": "hyp:H2_distalSASA",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "esp:esp_pa",
+      "status": "retained",
+      "canonical_definition": "esp:esp_pa",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "s2nac:min_d",
+      "status": "retained",
+      "canonical_definition": "s2nac:min_d",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s1_lys_minpka",
+      "status": "retained",
+      "canonical_definition": "pka:s1_lys_minpka",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s2_lys_minpka",
+      "status": "retained",
+      "canonical_definition": "pka:s2_lys_minpka",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "bat:inline_frac_gated",
+      "status": "retained",
+      "canonical_definition": "bat:inline_frac_gated",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "hyp:H5_amineMinApproach",
+      "status": "retained",
+      "canonical_definition": "hyp:H5_amineMinApproach",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "bat:near_attack_frac",
+      "status": "retained",
+      "canonical_definition": "bat:near_attack_frac",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "boltz:boltz2_na_frac",
+      "status": "duplicate",
+      "canonical_definition": "bat:near_attack_frac",
+      "reason": "Repeated measurement; mean-angle export differs only in rounding."
+    },
+    {
+      "feature": "mg:mean_mgO",
+      "status": "retained",
+      "canonical_definition": "mg:mean_mgO",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "bat:mg_coord",
+      "status": "retained",
+      "canonical_definition": "bat:mg_coord",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "hyp:H6_amineFrac6A",
+      "status": "retained",
+      "canonical_definition": "hyp:H6_amineFrac6A",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "mg:frac_bridge_2.2",
+      "status": "retained",
+      "canonical_definition": "mg:frac_bridge_2.2",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "esp:esp_pa_std",
+      "status": "retained",
+      "canonical_definition": "esp:esp_pa_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "bat:mg_o_dist",
+      "status": "retained",
+      "canonical_definition": "bat:mg_o_dist",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s2_his_dev7_std",
+      "status": "retained",
+      "canonical_definition": "pka:s2_his_dev7_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "psiptm:se_max",
+      "status": "retained",
+      "canonical_definition": "psiptm:se_max",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "preorg:clamp_frac",
+      "status": "retained",
+      "canonical_definition": "preorg:clamp_frac",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "esp:lef_pa",
+      "status": "retained",
+      "canonical_definition": "esp:lef_pa",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "s2nac:n_gated",
+      "status": "retained",
+      "canonical_definition": "s2nac:n_gated",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "psiptm:es_mean",
+      "status": "retained",
+      "canonical_definition": "psiptm:es_mean",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "psiptm:min_mean",
+      "status": "retained",
+      "canonical_definition": "psiptm:min_mean",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "s2nac:mean_bd_gated",
+      "status": "retained",
+      "canonical_definition": "s2nac:mean_bd_gated",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "mg:median_dP",
+      "status": "retained",
+      "canonical_definition": "mg:median_dP",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "mg:frac_bridge_3.5",
+      "status": "retained",
+      "canonical_definition": "mg:frac_bridge_3.5",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "mg:frac_bridge_2.5",
+      "status": "retained",
+      "canonical_definition": "mg:frac_bridge_2.5",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "sasa:carbonylO_sasa",
+      "status": "retained",
+      "canonical_definition": "sasa:carbonylO_sasa",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:netChg_8",
+      "status": "retained",
+      "canonical_definition": "elec:netChg_8",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "bat:reactive_sasa",
+      "status": "retained",
+      "canonical_definition": "bat:reactive_sasa",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "hyp:H8_acylOxyanion",
+      "status": "retained",
+      "canonical_definition": "hyp:H8_acylOxyanion",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "tunnel:enc_loose",
+      "status": "retained",
+      "canonical_definition": "tunnel:enc_loose",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "psiptm:se_mean",
+      "status": "retained",
+      "canonical_definition": "psiptm:se_mean",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "psiptm:max_mean",
+      "status": "retained",
+      "canonical_definition": "psiptm:max_mean",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "esp:lef_carbonyl",
+      "status": "retained",
+      "canonical_definition": "esp:lef_carbonyl",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "esp:esp_carbonyl_std",
+      "status": "retained",
+      "canonical_definition": "esp:esp_carbonyl_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "esp:lef_carbonyl_std",
+      "status": "retained",
+      "canonical_definition": "esp:lef_carbonyl_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "s2nac:frac_nac",
+      "status": "retained",
+      "canonical_definition": "s2nac:frac_nac",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s2_lys_minpka_std",
+      "status": "retained",
+      "canonical_definition": "pka:s2_lys_minpka_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:netChg_9",
+      "status": "retained",
+      "canonical_definition": "elec:netChg_9",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "sasa:median_dprot",
+      "status": "retained",
+      "canonical_definition": "sasa:median_dprot",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "psiptm:es_max",
+      "status": "retained",
+      "canonical_definition": "psiptm:es_max",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s1_lys_minpka_std",
+      "status": "retained",
+      "canonical_definition": "pka:s1_lys_minpka_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "hyp:n2_bound",
+      "status": "excluded",
+      "canonical_definition": "",
+      "reason": "Constant or undefined in the panel; cannot distinguish homologs."
+    },
+    {
+      "feature": "tunnel:exit",
+      "status": "excluded",
+      "canonical_definition": "",
+      "reason": "Constant or undefined in the panel; cannot distinguish homologs."
+    },
+    {
+      "feature": "pka:s1_n",
+      "status": "excluded",
+      "canonical_definition": "",
+      "reason": "Constant or undefined in the panel; cannot distinguish homologs."
+    },
+    {
+      "feature": "pka:s2_n",
+      "status": "excluded",
+      "canonical_definition": "",
+      "reason": "Constant or undefined in the panel; cannot distinguish homologs."
+    },
+    {
+      "feature": "boltz:boltz2_n_poses",
+      "status": "excluded",
+      "canonical_definition": "",
+      "reason": "Constant or undefined in the panel; cannot distinguish homologs."
+    },
+    {
+      "feature": "psiptm:sym_mean",
+      "status": "retained",
+      "canonical_definition": "psiptm:sym_mean",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "mg:frac_bridge_3.0",
+      "status": "retained",
+      "canonical_definition": "mg:frac_bridge_3.0",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:netChg_6",
+      "status": "retained",
+      "canonical_definition": "elec:netChg_6",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "elec:netChg_7",
+      "status": "retained",
+      "canonical_definition": "elec:netChg_7",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "bat:n_gated",
+      "status": "retained",
+      "canonical_definition": "bat:n_gated",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "bat:n_acidic_6A",
+      "status": "retained",
+      "canonical_definition": "bat:n_acidic_6A",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "sasa:center_sasa",
+      "status": "retained",
+      "canonical_definition": "sasa:center_sasa",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "bat:n_basic_6A",
+      "status": "retained",
+      "canonical_definition": "bat:n_basic_6A",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s2_nion_std",
+      "status": "retained",
+      "canonical_definition": "pka:s2_nion_std",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "mg:frac_coord",
+      "status": "retained",
+      "canonical_definition": "mg:frac_coord",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "mg:min_mgO",
+      "status": "retained",
+      "canonical_definition": "mg:min_mgO",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "pka:s2_his_dev7",
+      "status": "retained",
+      "canonical_definition": "pka:s2_his_dev7",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "tunnel:enc_mid",
+      "status": "retained",
+      "canonical_definition": "tunnel:enc_mid",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "sasa:acylC_sasa",
+      "status": "retained",
+      "canonical_definition": "sasa:acylC_sasa",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    },
+    {
+      "feature": "tunnel:L2.7",
+      "status": "retained",
+      "canonical_definition": "tunnel:L2.7",
+      "reason": "Distinct definition or modeling setup; parameter variants kept separate."
+    }
+  ],
+  "table_rows": [
+    {
+      "category": "Activation geometry / local environment",
+      "prefix": "bat",
+      "n_exported_fields": 10
+    },
+    {
+      "category": "Geometry summaries",
+      "prefix": "boltz",
+      "n_exported_fields": 4
+    },
+    {
+      "category": "Amine attack (step 2)",
+      "prefix": "s2nac",
+      "n_exported_fields": 4
+    },
+    {
+      "category": "Mechanistic hypothesis battery",
+      "prefix": "hyp",
+      "n_exported_fields": 10
+    },
+    {
+      "category": "Preorganization / pose consistency",
+      "prefix": "preorg",
+      "n_exported_fields": 5
+    },
+    {
+      "category": "Intermediate exposure / pocket engagement",
+      "prefix": "sasa",
+      "n_exported_fields": 5
+    },
+    {
+      "category": "Substrate access / tunnel geometry",
+      "prefix": "tunnel",
+      "n_exported_fields": 8
+    },
+    {
+      "category": "Amine-subsite charge environment",
+      "prefix": "elec",
+      "n_exported_fields": 13
+    },
+    {
+      "category": "Electrostatic potential / electric field",
+      "prefix": "esp",
+      "n_exported_fields": 8
+    },
+    {
+      "category": "Protonation / acid--base environment",
+      "prefix": "pka",
+      "n_exported_fields": 14
+    },
+    {
+      "category": "Metal coordination",
+      "prefix": "mg",
+      "n_exported_fields": 10
+    },
+    {
+      "category": "Interface-confidence baselines",
+      "prefix": "psiptm",
+      "n_exported_fields": 7
+    }
+  ],
+  "matched_formulas": {
+    "Geometry and aggregation variants": [
+      "angle_90th_percentile",
+      "best_angle_all",
+      "best_joint_compatibility",
+      "current_regularized_score",
+      "distance_only",
+      "gated_angle_A4",
+      "gated_angle_min5",
+      "gated_weighted_angle_any",
+      "gated_weighted_angle_min5",
+      "interface_confidence",
+      "inverse_distance_weighted_alignment",
+      "inverse_distance_weighted_angle",
+      "joint_fraction_4A_150deg",
+      "lower_reorganization_best",
+      "lower_reorganization_best5",
+      "lower_reorganization_mean",
+      "mean_alignment_over_distance",
+      "mean_angle_all",
+      "mean_angle_over_distance",
+      "mean_best5_angles",
+      "mean_best5_joint",
+      "mean_joint_compatibility",
+      "minimum_distance",
+      "nearby_fraction",
+      "positive_alignment_over_distance",
+      "soft_nearattack_fraction",
+      "weighted_angle_90th_percentile",
+      "weighted_raw_angle",
+      "without_regularizer"
+    ],
+    "Consistency, contacts, and combinations": [
+      "approach_direction_consistency",
+      "lower_donor_center_rmsf",
+      "lower_pa_rmsf",
+      "lower_relative_donor_pa_rmsf",
+      "lower_severe_overlap",
+      "score_times_direction_consistency",
+      "score_times_donor_rigidity",
+      "score_times_polar_contacts",
+      "score_times_relative_rigidity",
+      "two_oxygen_polar_contacts"
+    ]
+  },
+  "inventory_audit": {
+    "historical_exported_columns": 98,
+    "excluded_constant_or_undefined": [
+      "hyp:n2_bound",
+      "tunnel:exit",
+      "pka:s1_n",
+      "pka:s2_n",
+      "boltz:boltz2_n_poses"
+    ],
+    "duplicate_copies": {
+      "preorg:n_gated": "hyp:n1_gated",
+      "elec:n_gated": "hyp:n1_gated",
+      "tunnel:n_gated": "hyp:n1_gated",
+      "boltz:boltz2_na_frac": "bat:near_attack_frac",
+      "boltz:boltz2_mean_gated_angle": "bat:mean_inline_angle"
+    },
+    "historical_retained_distinct_nonconstant_definitions": 88,
+    "scope": "The historical 98-column screen only. Formula variants and different modeling setups remain distinct. Min/maximum directional interface confidence remain distinct definitions even when numerically equal to one direction throughout this dataset.",
+    "matched_sources_reviewed": [
+      "geometry_proxy_screen/results.json",
+      "simple_geometry_review_20261010/results.json",
+      "docking_angle_review_20261010/results.json",
+      "proxy_performance_20261011/results.json"
+    ],
+    "matched_unique_formula_count": 39,
+    "matched_canonical_formulas": [
+      "angle_90th_percentile",
+      "approach_direction_consistency",
+      "best_angle_all",
+      "best_joint_compatibility",
+      "current_regularized_score",
+      "distance_only",
+      "gated_angle_A4",
+      "gated_angle_min5",
+      "gated_weighted_angle_any",
+      "gated_weighted_angle_min5",
+      "interface_confidence",
+      "inverse_distance_weighted_alignment",
+      "inverse_distance_weighted_angle",
+      "joint_fraction_4A_150deg",
+      "lower_donor_center_rmsf",
+      "lower_pa_rmsf",
+      "lower_relative_donor_pa_rmsf",
+      "lower_reorganization_best",
+      "lower_reorganization_best5",
+      "lower_reorganization_mean",
+      "lower_severe_overlap",
+      "mean_alignment_over_distance",
+      "mean_angle_all",
+      "mean_angle_over_distance",
+      "mean_best5_angles",
+      "mean_best5_joint",
+      "mean_joint_compatibility",
+      "minimum_distance",
+      "nearby_fraction",
+      "positive_alignment_over_distance",
+      "score_times_direction_consistency",
+      "score_times_donor_rigidity",
+      "score_times_polar_contacts",
+      "score_times_relative_rigidity",
+      "soft_nearattack_fraction",
+      "two_oxygen_polar_contacts",
+      "weighted_angle_90th_percentile",
+      "weighted_raw_angle",
+      "without_regularizer"
+    ],
+    "limitations": "These are descriptor-definition counts, not distinct biological properties. Historical 88 and matched formulas are overlapping inventories and must not be added. The 81-setting tuning grid and additional confidence baselines are not part of this matched-sources count."
+  },
+  "sources": [
+    {
+      "path": "exp_data/amide_synthetase/results/structural_proxies/attempts/proxy_inventory_20261011/historical_feature_inventory.csv",
+      "sha256": "62f4a16146e2c5ba9cfbea02a9a6c353e3fba2d7fe2efa1b5638544d6e588ebb"
+    },
+    {
+      "path": "exp_data/amide_synthetase/results/structural_proxies/attempts/proxy_inventory_20261011/inventory.json",
+      "sha256": "071d0815e0eeeef1127d659f57d6c950e85c26eafc64279fc852f103d51b89e0"
+    },
+    {
+      "path": "enzyme_discovery_agent/runs/imported_amide_discovery/structural_proxy_review.json",
+      "sha256": "29ffff548ed35a5b29f49f17c05bffb41f08354a105e8fc0724e73b98819478e"
+    },
+    {
+      "path": "structural_modeling_agent/CANDIDATE_RANKING_POLICY.md",
+      "sha256": "ad040c81bacb6d41cc85e821b4925f8ccb35a6904bcb3d76a86905f66f0db7c4"
+    },
+    {
+      "path": "structural_modeling_agent/knowledge/attack_angle_metric.json",
+      "sha256": "5d7ee90158d0019c11dd695de9a8c7935f4b72dbb8b33dbca7fdf4dbcc7d04e2"
+    },
+    {
+      "path": "exp_data/amide_synthetase/scripts/archive/legacy_code/analysis/synthetase/feature_surfacing.py",
+      "sha256": "d66a7a32a8f32155d3ca035d7c5da9aba0407d731bcf3fc86efe9dc16df61daa"
+    },
+    {
+      "path": "exp_data/amide_synthetase/results/structural_proxies/attempts/geometry_proxy_screen/results.json",
+      "sha256": "ab0854b5998d794a81ccaff9f8c6d715ca6401a4179ada681df9671b42563114"
+    },
+    {
+      "path": "exp_data/amide_synthetase/results/structural_proxies/attempts/simple_geometry_review_20261010/results.json",
+      "sha256": "ad6076839ecb86cf4cb4a72a6918c09c2c49f79895eac9526c37a859660836ff"
+    },
+    {
+      "path": "exp_data/amide_synthetase/results/structural_proxies/attempts/docking_angle_review_20261010/results.json",
+      "sha256": "3077799cbf923bf9d80ebb0959b4bb74403b97c6c90e3cb7ade84404ef6ee5ea"
+    },
+    {
+      "path": "exp_data/amide_synthetase/results/structural_proxies/attempts/proxy_performance_20261011/results.json",
+      "sha256": "088f2fb8918e156d126be7ca60436f1b9f84475359a7be1712620641f6ecc64e"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/acceptor_tunnel_geometry.csv",
+      "sha256": "b0951a3af8a08f2515e3cc49a008bf49213cc78324dca4b416e30d3ec619968a"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/amine_subsite_electrostatics.csv",
+      "sha256": "8cb07dc103190ba78a65833b0d7f26206a0a69c00b6bc2ce7214047186b9a919"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/angle_gate_step1_1mg.csv",
+      "sha256": "4dcb31de2f2bdd5149f525bc4554c0ae7191fac7a5a6a2298b2a534bbb7599db"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/angle_gate_step1_2mg.csv",
+      "sha256": "8d18bb2fd524f9d63e65f5deedf29e1cb072e7813484411c11c37df81f25d595"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/angle_gate_step1_pa.csv",
+      "sha256": "b5d3ae54a82321d9ca2b6bcee5d9daf1481bb7437f68025673af789570d56c65"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/battery_1mg.csv",
+      "sha256": "f297576db9fbe9629039bec6c1c281d5cead0d40b55b1f05ffe968298f4aa25f"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/crossmodel_nearattack.csv",
+      "sha256": "5d3990c1e4d18a27e4b772dab4db009ab246869cdf7c12ad7211663a8684d668"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/crossmodel_predictivity_summary.csv",
+      "sha256": "d6ed10997922376ebea4a58437d4d724e168d0758357054326af73a37109a02e"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/esp_reactive.csv",
+      "sha256": "88848cac629836c268a89031f440615f17531b6aa062b1f499ad6beaf8c4ed8b"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/exploratory_mg_coordination.csv",
+      "sha256": "61622314e338496e42021918a65a400020419fc22ef70776792ef839b3cba96f"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/exploratory_reactive_sasa.csv",
+      "sha256": "8dcbe2d41c2921f91fd1ff8fd6503ffa2b1cf5f691c8b462df8f362b9c3f4309"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/feature_surfacing_ranking.csv",
+      "sha256": "289267d23bd19ce2ac183273ff226c9a9542e632fb94b569f65f942dbde6f369"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/hypothesis_battery.csv",
+      "sha256": "04d0cc7c9cac52b690c61fbbef96314052630d446908ba6115750c2771574dbc"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/mg_bridging_bg.csv",
+      "sha256": "d56e08bfb2338fddfa9fc4d02cef00f654caab7493983d7227419bb48f993f43"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/propka_active_site.csv",
+      "sha256": "0752e16a9f0fc59e25acb80e5e4b23f86cee4a08c8ace5d72a0cd91547e7d5ed"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/psiptm_enzyme_diacid.csv",
+      "sha256": "dcd4f1644ed81f684fe86077144fe8cc7c1ea75e90bc47d2aa5102f7d93e4093"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/psiptm_enzyme_diacid_1mg.csv",
+      "sha256": "3821a888505ea58aa62d3397513af15ba256dd0bafb4d21f0a81b4053f8e3830"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/reactive_preorganization.csv",
+      "sha256": "356a1ae53d0f7153647b4306d8f609994b6d47812f3e56b607cb6b0c6e0feaae"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/reactive_sasa_intermediate.csv",
+      "sha256": "b64bff0d8816f7dcb81d0e90f167718aed59d7d7c478f0a55e36c95360516bd1"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/step2_acceptor_unrestrained.csv",
+      "sha256": "61683d7c1f7ac54f0e7cf538d475f7d962033572f5d7d2172eb1b5ec46cef3c4"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/step2_aminolysis_nac.csv",
+      "sha256": "ae61c77ebcc3af47077c508c6505b8ccc9cca4dc0ebb4967d4197c2a6188f96b"
+    },
+    {
+      "path": "exp_data/amide_synthetase/archive/cleanup_20261008/legacy_proxy_analysis/step2_aminolysis_nac_1mg.csv",
+      "sha256": "bd610007957e2f82cf69052f9efd9c45d3bbe244e41f7073bac35d99af9ab008"
+    }
+  ]
+}
