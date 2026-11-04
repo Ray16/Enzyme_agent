@@ -197,14 +197,8 @@ def _canonical_bond_tokens(values) -> set[str]:
     Preserve an unrecognized descriptor in lowercase so an unknown bond type
     cannot silently match a different reaction.
     """
-    from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
-    tokens: set[str] = set()
-    for value in (values or []):
-        if not value:
-            continue
-        mapped = set(extract_target_bond_type(str(value)).get("bond_types") or [])
-        tokens.update(mapped or {str(value).strip().lower()})
-    return tokens
+    from enzyme_discovery_agent.chemistry_logic import canonical_bond_types
+    return canonical_bond_types(values)
 
 
 def validate_uniprot_claims(

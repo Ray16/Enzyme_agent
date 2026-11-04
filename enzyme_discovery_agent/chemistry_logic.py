@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import re
 import urllib.parse
 import urllib.request
@@ -24,6 +25,7 @@ logger = logging.getLogger("enzyme_agent")
 # --------------------------------------------------------------------------
 _chebi_smiles_cache: dict[str, str | None] = {}
 _chebi_name_cache: dict[str, str | None] = {}
+_chebi_alias_cache: dict[str, list[str]] = {}
 
 
 def resolve_chebi_smiles(chebi_id: str) -> str | None:
@@ -42,6 +44,8 @@ def resolve_chebi_smiles(chebi_id: str) -> str | None:
         data = json.loads(request_with_retry(req, timeout=15).decode())
         terms = data.get("_embedded", {}).get("terms", [])
         for term in terms:
+            names=[term.get('label'),*(term.get('synonyms') or [])]
+            _chebi_alias_cache[chebi_id]=list(dict.fromkeys(n for n in names if isinstance(n,str) and n))
             annotation = term.get("annotation", {})
             smiles_list = annotation.get("smiles_string", [])
             if smiles_list:
@@ -61,6 +65,13 @@ def resolve_chebi_smiles(chebi_id: str) -> str | None:
     logger.info("ChEBI response contains no SMILES for %s", chebi_id)
     _chebi_smiles_cache[chebi_id] = None
     return None
+
+
+def get_chebi_names(chebi_id: str) -> list[str]:
+    """Return cached authoritative labels and aliases without another lookup."""
+    key=chebi_id if chebi_id.startswith('CHEBI:') else 'CHEBI:'+chebi_id
+    names=[get_chebi_name(key),*_chebi_alias_cache.get(key,[])]
+    return list(dict.fromkeys(n for n in names if n))
 
 
 def get_chebi_name(chebi_id: str) -> str | None:
@@ -645,6 +656,19 @@ def filter_ec_prefixes_by_bond_type(
     return kept if kept else ec_prefixes[:2]
 
 
+def canonical_bond_types(values) -> set[str]:
+    """Compare descriptive and canonical bond labels in one vocabulary."""
+    tokens=set()
+    for value in values or []:
+        if not value:continue
+        text=str(value).strip().translate(str.maketrans({'–':'-','—':'-','−':'-'}))
+        if re.fullmatch(r'[cnosp]-[cnosp]',text,re.I):
+            tokens.add(text.upper());continue
+        mapped=extract_target_bond_type(text).get('bond_types') or []
+        tokens.update(mapped or [text.lower()])
+    return tokens
+
+
 def check_bond_type_mismatch(
     enzyme_chem: dict,
     target_chem: dict,
@@ -655,8 +679,8 @@ def check_bond_type_mismatch(
     """
     warnings: list[str] = []
 
-    enzyme_bonds = set(enzyme_chem.get("bond_types", []))
-    target_bonds = set(target_chem.get("bond_types", []))
+    enzyme_bonds = canonical_bond_types(enzyme_chem.get("bond_types", []))
+    target_bonds = canonical_bond_types(target_chem.get("bond_types", []))
     enzyme_dir = enzyme_chem.get("reaction_direction")
     target_dir = target_chem.get("direction")
 
@@ -710,18 +734,19 @@ _CHEMICAL_AXES = ("functional_group_similarity", "tpsa_similarity", "logP_simila
 def whole_package_pair_fit(c: dict) -> float | None:
     """Physics-shaped fit in [0,1] for one (target → native) property comparison.
 
-    Not a blind min over mixed axes: STERIC/SHAPE fit is a genuine hard bottleneck
-    (a too-large or wrong-shape substrate cannot bind, however similar its
-    chemistry) so it is the WORST of the size axes, capped when the native is
-    aromatic/cyclic and the target is not; CHEMICAL compatibility is graded and
-    promiscuity-tolerant so it is the AVERAGE of its axes.  The pair fit is the
+    STERIC/SHAPE resemblance uses the WORST of the size axes, capped when the
+    native is aromatic/cyclic and the target is not; chemical resemblance uses
+    the AVERAGE of its axes. These are molecular descriptors, not measurements
+    of pocket size, binding or activity. The pair fit is the
     worst of {steric, chemical}.  Aggregates ONE (target → native) property
     comparison; the one-to-one pairing that produces those comparisons is shared
     across promotion and ranking via ``substrate_fit.assign_one_to_one``.  None when
     no axis resolved.
     """
-    steric = [c[k] for k in _STERIC_AXES if isinstance(c.get(k), (int, float))]
-    chem = [c[k] for k in _CHEMICAL_AXES if isinstance(c.get(k), (int, float))]
+    def valid(value):
+        return isinstance(value,(int,float)) and not isinstance(value,bool) and math.isfinite(value) and 0<=value<=1
+    steric = [c[k] for k in _STERIC_AXES if valid(c.get(k))]
+    chem = [c[k] for k in _CHEMICAL_AXES if valid(c.get(k))]
     parts = []
     if steric:
         s = min(steric)

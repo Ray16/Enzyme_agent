@@ -68,5 +68,32 @@
       "wall_seconds": 155.95
     },
     "production_launch_record": "production_review_validation_20261104.json"
+  },
+  "joint_substrate_repairs_20261104": {
+    "release_checks": {
+      "passed": 1898,
+      "skipped": 9,
+      "subtests_passed": 95,
+      "maintained_discovery_design_catalog_modeling_suites": {
+        "passed": 1846,
+        "skipped": 9,
+        "subtests_passed": 95,
+        "wall_seconds": 145.18
+      },
+      "remaining_modeling_subcomponent_suites": {
+        "passed": 52,
+        "wall_seconds": 0.19
+      }
+    },
+    "focused_partner_family_review_checks": {
+      "passed": 68,
+      "wall_seconds": 9.17
+    },
+    "post_run_diagnostic_rows": 68,
+    "new_paid_discovery_run": false,
+    "new_msa_jobs": 0,
+    "new_gpu_predictions": 0,
+    "audit_record": "production_quality_20261104.json",
+    "scope": "Shared weakest-required-partner assignment and ordering, explicit missing-comparison coverage, reaction aliases, bond-label normalization and evidence publication."
   }
 }

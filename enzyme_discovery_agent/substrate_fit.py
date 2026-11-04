@@ -4,13 +4,11 @@ A reaction's target may have several substrates (e.g. two co-substrates).  Both 
 family-survey PROMOTION path and the candidate-EVALUATION path must decide, for a
 member enzyme, how well its NATIVE substrates accommodate the target substrates.
 
-The one invariant that makes that judgement honest is ONE-TO-ONE assignment: each
-native substrate serves at most one target substrate.  Without it, a two-substrate
-target can flatter itself — both target substrates match the SAME best native (e.g.
-both an acid AND an amine partner map onto a single amino-acid native), hiding the
-fact that the enzyme's other partner is a poor analogue (an ammonia-type FG-less
-donor).  With one-to-one assignment the amine partner is forced onto the family's
-amine partner, so a small FG-less native is correctly scored as a poor fit.
+Each native substrate occurrence serves at most one target occurrence. Otherwise
+several target participants could all match the same favorable native partner,
+hiding a poor or unresolved counterpart. Assignment maximizes the weakest pair's
+descriptor resemblance. It proposes analogue pairings; it does not identify
+reacting atoms or establish that the participants have equivalent chemical roles.
 
 This module is the single place that assignment lives; both paths call it so they
 judge substrates identically.
@@ -19,6 +17,30 @@ judge substrates identically.
 from __future__ import annotations
 
 from itertools import permutations
+from collections import Counter
+
+
+def comparison_coverage(similarity):
+    """Account for every required target occurrence, retaining missing evidence."""
+    accommodation=similarity.get('accommodation') or {}
+    expected=similarity.get('target_smiles') or [p.get('target_smiles') for p in accommodation.get('per_target') or []]
+    expected=[s for s in expected if s]
+    required=similarity.get('n_target_molecules') or accommodation.get('n_target_substrates') or len(expected)
+    comparisons=similarity.get('property_comparisons') or []
+    from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+    observed=Counter(p.get('target_smiles') for p in comparisons if p.get('target_smiles')
+                     and p.get('native_smiles') and whole_package_pair_fit(p) is not None)
+    missing=list((Counter(expected)-observed).elements())
+    resolved=sum((Counter(expected)&observed).values()) if expected else sum(whole_package_pair_fit(p) is not None for p in comparisons)
+    # Older single-participant records attach their sole comparison to the
+    # sole explicit role rather than repeating its identity in that comparison.
+    roles=accommodation.get('per_target') or []
+    if (required==1 and len(expected)==1 and len(comparisons)==1
+            and not comparisons[0].get('target_smiles') and len(roles)==1 and roles[0].get('native_smiles')
+            and whole_package_pair_fit(comparisons[0]) is not None):
+        resolved=1;missing=[]
+    return {'required':required or None,'resolved':resolved,'missing_target_smiles':missing,
+            'complete':not missing and resolved>=required if required else None}
 
 
 def accommodation_score(similarity: dict) -> float | None:
@@ -32,12 +54,14 @@ def accommodation_score(similarity: dict) -> float | None:
     accommodation = similarity.get("accommodation") or {}
     if accommodation.get('role_transfer_status')=='unresolved':
         return None
+    coverage=comparison_coverage(similarity)
+    if coverage['complete'] is False:
+        return None
     if accommodation.get("unaccommodated_targets"):
         return 0.0
     comparisons = similarity.get("property_comparisons") or []
-    fits = [value for value in (whole_package_pair_fit(c) for c in comparisons)
-            if value is not None]
-    return min(fits) if fits else None
+    fits = [whole_package_pair_fit(c) for c in comparisons]
+    return min(fits) if fits and all(value is not None for value in fits) else None
 
 
 def assign_one_to_one(targets, natives, score):

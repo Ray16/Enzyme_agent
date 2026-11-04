@@ -359,6 +359,11 @@ must follow the scientific assessment.
   the appropriate native occurrence. Complementary roles may come from multiple
   copies of one native molecule. Whole-molecule functional-group counts and
   fingerprint similarity do not determine which ends react or whether they fit.
+- Resolve the complete partner set of the same annotated native reaction. Missing
+  structures or aliases are retrieval gaps, not absent substrates. The weakest
+  required partner limits recognition transfer; a good match elsewhere cannot
+  offset a major size, shape or reacting-role difference. Keep that hypothesis
+  exploratory until evidence supports acceptance of the limiting partner.
 - A serious observed conflict can outweigh several favorable measurements.
   Explain the limiting evidence rather than averaging it away. Descriptor gaps
   alone do not prove pocket exclusion, and missing measurements remain unknown.

@@ -28,6 +28,7 @@ from enzyme_discovery_agent.chemistry_logic import (
     compare_substrate_properties,
     extract_target_bond_type,
     get_chebi_name,
+    get_chebi_names,
     resolve_chebi_smiles,
 )
 from enzyme_discovery_agent.static.cofactors import COFACTOR_CHEBI_IDS
@@ -115,10 +116,8 @@ def _distribution(values: list[float]) -> dict | None:
     return {"n": n, "min": round(vals[0], 3), "median": round(med, 3), "max": round(vals[-1], 3)}
 
 
-# Similarity axes (each already 0-1, 1 = identical) that make up the holistic
-# substrate fit.  Averaged with EQUAL weight — no axis is privileged.  The mean is
-# only a presentation/ordering aid; it is NOT a verdict (the agent reasons over the
-# full per-dimension vector, not this single number).
+# Similarity axes retained for descriptive family profiles and legacy records.
+# Current per-participant comparisons use the shared weakest-partner fit.
 _HOLISTIC_SIM_AXES = (
     "functional_group_similarity", "mw_similarity", "volume_similarity",
     "chain_length_similarity", "tpsa_similarity", "logP_similarity",
@@ -126,9 +125,10 @@ _HOLISTIC_SIM_AXES = (
 
 
 def _holistic_fit(sub: dict | None) -> float | None:
-    """Equal-weight mean of every available similarity axis for one member's
-    substrate fit (0-1); None when nothing resolved.  Unbiased by construction —
-    each dimension contributes equally, so ordering never favours a subset."""
+    """Weakest required partner for current records; legacy summaries stay explicit."""
+    if sub and 'property_comparisons' in sub:
+        from enzyme_discovery_agent.substrate_fit import accommodation_score
+        return accommodation_score(sub)
     dims = (sub or {}).get("dimensions") or {}
     vals = [dims[a] for a in _HOLISTIC_SIM_AXES if isinstance(dims.get(a), (int, float))]
     if not vals:  # fall back to headline axes when the full vector is unavailable
@@ -190,9 +190,8 @@ def summarise_family_profile(members: list[dict]) -> dict:
     return {
         "n_members": len(members),
         "direction_vs_target_counts": direction_counts,
-        # Per-axis distributions AND an equal-weight holistic-fit distribution, so
-        # no single axis is privileged — the agent weighs the whole picture.  Facts,
-        # not a verdict.
+        # Per-axis descriptions accompany the weakest-partner fit distribution.
+        # Summary-only legacy records retain their available descriptive mean.
         "functional_group_similarity": _distribution(fg_sims),
         "size_ratio": _distribution(size_ratios),
         "chain_length_similarity": _distribution(chain_sims),
@@ -268,6 +267,7 @@ def select_relevant_members(
         if "property_comparisons" in substrate or m.get("accommodation") is not None:
             from enzyme_discovery_agent.substrate_fit import accommodation_score
             fit = accommodation_score({
+                **substrate,
                 "property_comparisons": substrate.get("property_comparisons"),
                 "accommodation": m.get("accommodation"),
             })
@@ -326,7 +326,7 @@ def _norm_chem(text: str) -> str:
     """Normalize a chemical name for side-matching: lowercase, drop charge/state
     parentheticals like ``(1-)``/``(+)`` and ``zwitterion``, collapse spaces."""
     text = text.lower()
-    text = re.sub(r"\([^)]*\)", "", text)
+    text = re.sub(r"\((?:\d*[+-]|[+-]\d*)\)", "", text)
     text = text.replace("zwitterion", "")
     return re.sub(r"\s+", " ", text).strip()
 
@@ -352,15 +352,20 @@ def _reactant_side_chebi_ids(entry: dict, name_of) -> list[str]:
         left = right = None
         if "=" in name:
             lhs, rhs = name.split("=", 1)
-            left, right = _norm_chem(lhs), _norm_chem(rhs)
+            def side_terms(side):
+                return {_norm_chem(re.sub(r'^\s*\d+\s+','',term))
+                        for term in re.split(r'\s+\+\s+',side)}
+            left,right=side_terms(lhs),side_terms(rhs)
         for x in c.get("reaction", {}).get("reactionCrossReferences", []):
             if x.get("database") != "ChEBI":
                 continue
             cid = x.get("id", "")
             if not cid or cid in COFACTOR_CHEBI_IDS or cid in ids:
                 continue
-            cname = _norm_chem(name_of(cid) or "")
-            if right is not None and cname and cname in right and cname not in left:
+            resolved=name_of(cid)
+            labels=resolved if isinstance(resolved,(list,tuple,set)) else [resolved]
+            names={_norm_chem(label) for label in labels if label}
+            if right is not None and names & right and not names & left:
                 continue  # a clear product — not an accepted substrate
             ids.append(cid)
     return ids
@@ -412,12 +417,9 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
     # ONE-TO-ONE correspondence, generic and consistent with the evaluation path:
     # each native substrate serves AT MOST ONE target substrate, so a two-partner
     # target can't flatter itself by matching both partners onto its single best
-    # native.  The pair score is functional-group overlap, which already carries the
-    # role signal (an amine target overlaps an amine native, carboxyl a carboxyl), so
-    # the assignment naturally pairs amine↔amine and carboxyl↔carboxyl — and forces
-    # a target's amine partner onto the family's amine partner even when that is a
-    # tiny FG-less donor (ammonia), which then scores as the poor fit it is.  The
-    # shared assign_one_to_one keeps this identical to the ranking path.
+    # native. Maximize the weakest complete pair using the same
+    # property-fit rule as evaluation. Reacting roles still need independent
+    # interpretation; whole-molecule overlap does not prove a direct reactant.
     _cmp_cache: dict = {}
 
     def _cmp(t, n):
@@ -427,13 +429,14 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
                 t, n, compute_substrate_properties)
         return _cmp_cache[key]
 
-    def _fg_score(t, n):
+    def _pair_score(t, n):
         cmp = _cmp(t, n)
-        fg = cmp.get("functional_group_similarity") if cmp else None
+        from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+        fg = whole_package_pair_fit(cmp) if cmp else None
         return fg if fg is not None else -1.0
 
     per_target = []
-    for t, n, sc in assign_one_to_one(target_smiles, member_smiles, _fg_score):
+    for t, n, sc in assign_one_to_one(target_smiles, member_smiles, _pair_score):
         if n is None or sc < 0:
             continue
         cmp = _cmp(t, n)
@@ -476,6 +479,7 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
         # Headline axes (kept flat for the ordering + budget-allocation spine).
         "property_comparisons": [p["cmp"] for p in per_target],
         "n_target_molecules": len(target_smiles),
+        "target_smiles": list(target_smiles),
         "n_matched_targets": len(per_target),
         "functional_group_similarity": round(min(p["fg"] for p in per_target), 3),
         "size_ratio": _worst("mw_similarity"),
@@ -866,13 +870,13 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
                         chebi_cache[cid] = resolve_chebi_smiles(cid)
                     except Exception:  # noqa: BLE001
                         chebi_cache[cid] = None
-                return get_chebi_name(cid)
+                return get_chebi_names(cid)
             smiles = []
             from enzyme_discovery_agent.tools.native_reactions import reaction_groups,select_reaction_group,substrate_occurrences
             groups=reaction_groups(entry,lambda one:_reactant_side_chebi_ids(one,_name_of))
             for group in groups:
                 group['native_substrates']=substrate_occurrences(group['reaction'],[
-                    {'name':get_chebi_name(cid),'smiles':chebi_cache[cid]} for cid in group['chebi_ids'] if chebi_cache.get(cid)])
+                    {'chebi_id':cid,'name':get_chebi_name(cid),'smiles':chebi_cache[cid]} for cid in group['chebi_ids'] if chebi_cache.get(cid)])
                 group['smiles']=[item['smiles'] for item in group['native_substrates']]
             def _fit(group):
                 from enzyme_discovery_agent.substrate_accommodation import accommodation_facts

@@ -49,6 +49,12 @@ workload breakdown, corrections to the assessment and lead counts, implemented
 repairs and the queued targeting follow-up. The historical checkpoint above is
 retained as a record of that earlier campaign.
 
+The completed fresh production validation and subsequent partner-comparison
+repairs are audited in [PRODUCTION_QUALITY_20261104.md](PRODUCTION_QUALITY_20261104.md).
+That run saved one primary proposal and 68 ranked hypotheses. Those counts do
+not establish a panel of validated catalysts. The corrected ranking is a
+post-run diagnostic, not a rerun of discovery or an activity measurement.
+
 ## High-priority issues
 
 - The adaptive controller spent substantial effort inspecting and interpreting

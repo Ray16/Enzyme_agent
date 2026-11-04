@@ -68,7 +68,7 @@ def accommodation_facts(
     """Structural comparison of source-supported native reactant occurrences.
 
     For EACH target substrate, assign its best DISTINCT native counterpart
-    (one-to-one maximin by functional-group overlap — the shared assignment the
+    (one-to-one maximin by the shared property-fit rule — the assignment the
     survey and evaluation paths use) and report the raw facts, KEEPING every
     target substrate.  A target whose counterpart shares no functional groups, is
     absent, or is cofactor-scale is listed in ``unaccommodated_targets`` so the
@@ -96,7 +96,8 @@ def accommodation_facts(
         return _cmp_cache[key]
 
     def _fg(t: str, n: str) -> float:
-        val = _cmp(t, n).get("functional_group_similarity")
+        from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+        val = whole_package_pair_fit(_cmp(t,n))
         # -1 sentinel so an unresolved pair never wins the maximin assignment.
         return val if isinstance(val, (int, float)) else -1.0
 

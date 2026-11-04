@@ -58,6 +58,7 @@ def substrate_occurrences(reaction, substrates):
     retains one occurrence and an unresolved multiplicity for investigation.
     """
     from enzyme_discovery_agent.tools.family_reactions import _norm_chem
+    from enzyme_discovery_agent.chemistry_logic import get_chebi_names
     left=reaction.split('=',1)[0] if '=' in reaction else ''
     terms=re.split(r'\s+\+\s+', left)
     counts={}
@@ -68,7 +69,10 @@ def substrate_occurrences(reaction, substrates):
             counts[name]=counts.get(name,0)+int(match[1] or 1)
     occurrences=[]
     for index, substrate in enumerate(substrates):
-        count=counts.get(_norm_chem(substrate.get('name') or ''))
+        labels=[substrate.get('name') or '']
+        if substrate.get('chebi_id'):labels+=get_chebi_names(substrate['chebi_id'])
+        matching={_norm_chem(label) for label in labels}&counts.keys()
+        count=sum(counts[label] for label in matching) if matching else None
         # Large coefficients remain explicit facts rather than creating a
         # combinatorial structural assignment over a bulk reaction equation.
         for copy in range(min(count or 1, 8)):

@@ -487,7 +487,10 @@ def _llm_focus_rank(
         "hypothesis about enzyme acceptance, not proof of activity.\n"
         "SUBSTRATE ACCOMMODATION: assess every target substrate "
         "actually specified. Compare reactive groups, size, shape, polarity and "
-        "physical form with native scope. Differences are evidence of uncertainty, "
+        "physical form with native scope. The weakest required partner limits the "
+        "acceptance hypothesis; a good match elsewhere cannot offset a major mismatch. "
+        "Keep the candidate exploratory unless evidence supports acceptance of that "
+        "limiting partner. Differences are evidence of uncertainty, "
         "not proof of impossibility or inactivity; distinguish missing evidence "
         "from demonstrated incompatibility. Do not assume two substrates or a "
         "particular scaffold.\n"
@@ -556,6 +559,11 @@ def _priority_fronts(rows):
     front=0
     while remaining:
         def dominates(left,right):
+            first,second=left.get('bottleneck_fit'),right.get('bottleneck_fit')
+            if (first is None)!=(second is None):
+                return False
+            if first is not None and second is not None and first!=second:
+                return first>second
             a,b=left['axes'],right['axes']
             return bool(a) and a.keys()==b.keys() and all(a[k]>=b[k] for k in a) and any(a[k]>b[k] for k in a)
         current=[row for row in remaining if not any(dominates(other,row) for other in remaining)]
@@ -582,6 +590,7 @@ def _deterministic_mechanistic_ranking(
     """
     from enzyme_discovery_agent.models.evaluations import priority_concerns,prioritized_hypothesis,shortlist_eligible
     from enzyme_discovery_agent.models.reaction_roles import role_transfer_summary
+    from enzyme_discovery_agent.substrate_fit import comparison_coverage
     family_rank_by_acc=family_rank_by_acc or {}
     groups={}
     for evaluation in rankable_evals:
@@ -597,7 +606,9 @@ def _deterministic_mechanistic_ranking(
         roles=role_transfer_summary(data)
         fallback=None if roles['review_required'] else (fallback_substrate_fit_by_acc or {}).get(accession)
         row={'accession':accession,'data':data,'tier':tier,'concerns':concerns,
-             'axes':{} if roles['review_required'] else _priority_axes(data,evidence_tiebreak=False,fallback=fallback)}
+             'bottleneck_fit':_accommodation_score(data),
+             'axes':{} if roles['review_required'] or comparison_coverage(data.get('substrate_similarity') or {})['complete'] is False
+                        else _priority_axes(data,evidence_tiebreak=False,fallback=fallback)}
         # Target-specific reaction hypotheses precede analogue ordering. Whole-molecule
         # group overlap cannot demote a source-checked complementary-role hypothesis.
         key=(tier==3,tier!=1)

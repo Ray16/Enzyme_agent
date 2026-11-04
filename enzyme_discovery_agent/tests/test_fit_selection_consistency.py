@@ -33,7 +33,10 @@ def test_real_multi_input_facts_retain_missing_role_for_selection():
     assert accommodation['unaccommodated_targets']
     rows = select_relevant_members([{'accession': 'SYNTH_A', 'direction_vs_target': 'same',
                                     'substrate': substrate, 'accommodation': accommodation}])
-    assert rows[0]['substrate_fit'] == 0
+    # Only one native counterpart is resolved. This is incomplete evidence,
+    # not a measured zero for the missing partner or a supported joint fit.
+    assert rows == []
+    assert _accommodation_score({'substrate_similarity':{**substrate,'accommodation':accommodation}}) is None
 
 
 def test_summary_only_callers_are_explicitly_labelled_as_legacy():

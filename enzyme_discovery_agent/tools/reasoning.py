@@ -957,7 +957,8 @@ def evaluate_candidate(
 
     def _name_of(cid):
         resolve_chebi_smiles(cid)  # populates the name cache
-        return get_chebi_name(cid)
+        from enzyme_discovery_agent.chemistry_logic import get_chebi_names
+        return get_chebi_names(cid)
 
     from enzyme_discovery_agent.tools.native_reactions import reaction_groups, select_reaction_group, substrate_occurrences
     groups=reaction_groups(entry,lambda one:_reactant_side_chebi_ids(one,_name_of))
@@ -1072,16 +1073,25 @@ def evaluate_candidate(
             per_target_best = []
             match_details = []
             property_comparisons = []
-            for t_smi, n_smi, sim in assign_one_to_one(
-                    target_molecules, native_smiles_list, _fp):
+            _property_cache={}
+            def _pair(t,n):
+                if (t,n) not in _property_cache:
+                    _property_cache[t,n]=compare_substrate_properties(t,n,compute_substrate_properties)
+                return _property_cache[t,n]
+            def _pair_fit(t,n):
+                from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+                value=whole_package_pair_fit(_pair(t,n))
+                return value if value is not None else -1.0
+            for component,(t_smi,n_smi,fit) in enumerate(assign_one_to_one(
+                    target_molecules,native_smiles_list,_pair_fit),1):
+                sim=_fp(t_smi,n_smi) if n_smi else 0.0
                 per_target_best.append(sim)
                 match_details.append(
                     f"{t_smi[:40]}->{(n_smi or 'none')[:40]}: {sim:.3f}")
                 if n_smi:
-                    prop = compare_substrate_properties(
-                        t_smi, n_smi, compute_substrate_properties)
+                    prop = _pair(t_smi,n_smi)
                     if prop:
-                        property_comparisons.append(prop)
+                        property_comparisons.append({**prop,'target_component_index':component})
 
             # The enzyme must accommodate EVERY target substrate, so the substrate
             # score is the WORST assigned pair (the bottleneck), not a geometric
@@ -1095,6 +1105,8 @@ def evaluate_candidate(
                 "tanimoto_score": round(base_score, 3),
                 "n_native_smiles": len(native_smiles_list),
                 "n_target_molecules": len(target_molecules),
+                "target_smiles": target_molecules,
+                "assignment_basis":"one-to-one maximin over the shared complete property-pair fit; fingerprints describe those same selected pairs",
                 "per_target_best": [round(s, 3) for s in per_target_best],
                 "match_details": match_details,
                 "property_comparisons": property_comparisons,

@@ -159,6 +159,9 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
         "tier_label", "priority_rationale",
         "native_annotation_status", "ranking_basis", "native_activity_evidence",
         "native_activity_sources", "target_assessment_decision", "target_activity_evidence",
+        "substrate_comparison_complete", "substrate_comparison_required", "substrate_comparison_resolved",
+        "substrate_partner_fits", "substrate_fit_scope",
+        "target_role_assessments", "substrate_role_mapping_status",
     ]
 
     try:
@@ -177,6 +180,9 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
                 lit = d.get("literature", {})
                 struct = d.get("structural_data", {})
                 sub_sim = d.get("substrate_similarity", {})
+                from enzyme_discovery_agent.substrate_fit import comparison_coverage
+                from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+                coverage=comparison_coverage(sub_sim)
                 mut = d.get("mutagenesis", {})
                 pdb_ids = struct.get("pdb_ids", [])
                 has_af = struct.get("has_alphafold", False)
@@ -240,6 +246,15 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
                         if item.get('source') and item.get('id')})),
                     "target_assessment_decision":assessment.get('decision',''),
                     "target_activity_evidence":assessment.get('evidence_level','unresolved'),
+                    "substrate_comparison_complete":coverage['complete'],
+                    "substrate_comparison_required":coverage['required'],
+                    "substrate_comparison_resolved":coverage['resolved'],
+                    "substrate_partner_fits":json.dumps([{'target_smiles':p.get('target_smiles'),
+                        'native_smiles':p.get('native_smiles'),'analogue_fit':whole_package_pair_fit(p)}
+                        for p in sub_sim.get('property_comparisons') or []]),
+                    "substrate_fit_scope":"Weakest required-partner analogue resemblance; incomplete comparisons are unknown. Not measured binding or activity.",
+                    "target_role_assessments":json.dumps(assessment.get('target_roles') or []),
+                    "substrate_role_mapping_status":(sub_sim.get('accommodation') or {}).get('role_transfer_status','not_recorded'),
                 })
 
             content=f.getvalue()

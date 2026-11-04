@@ -1,0 +1,133 @@
+{
+  "run_id": "20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+  "status": "budget_exhausted",
+  "wall_clock_seconds": 7511.77,
+  "run_configuration": {
+    "ADAPTIVE_REASONING": false,
+    "AUTO_TARGET_REVIEW": true,
+    "TARGET_REVIEW_BATCH_SIZE": 8,
+    "MODEL_CONTEXT_MAX_CHARS": 120000
+  },
+  "tokens": {
+    "total_tokens": 2906149,
+    "cache_read_fraction_of_prompt": 0.2149
+  },
+  "tokens_by_workload": {
+    "internal": {
+      "calls": 5,
+      "total_tokens": 43618,
+      "prompt_tokens": 21423,
+      "completion_tokens": 22195,
+      "cache_creation_tokens": 19806,
+      "cache_read_tokens": 1607,
+      "fraction_of_total_tokens": 0.015008865684450453,
+      "cache_read_fraction_of_prompt": 0.07501283667086776
+    },
+    "controller": {
+      "calls": 33,
+      "total_tokens": 1163553,
+      "prompt_tokens": 1134484,
+      "completion_tokens": 29069,
+      "cache_creation_tokens": 662386,
+      "cache_read_tokens": 472032,
+      "fraction_of_total_tokens": 0.4003762367311518,
+      "cache_read_fraction_of_prompt": 0.41607638362462585
+    },
+    "target_relevance_batch": {
+      "calls": 33,
+      "total_tokens": 1698978,
+      "prompt_tokens": 1369332,
+      "completion_tokens": 329646,
+      "cache_creation_tokens": 1300242,
+      "cache_read_tokens": 69024,
+      "fraction_of_total_tokens": 0.5846148975843978,
+      "cache_read_fraction_of_prompt": 0.05040705979265803
+    }
+  },
+  "registered_records": 1541,
+  "saved_target_assessments": {
+    "investigate": 63,
+    "prioritize": 6,
+    "defer": 128,
+    "exclude": 7
+  },
+  "literature_leads": [],
+  "identity_resolution_attempt_events": 0,
+  "ranked_rows": 68,
+  "csv_assessment_projection_gaps": [],
+  "most_common_reported_substrate_fits": [
+    [
+      "0.0",
+      23
+    ],
+    [
+      "0.3423333333333333",
+      16
+    ],
+    [
+      "0.34366666666666673",
+      5
+    ],
+    [
+      "0.48933333333333334",
+      4
+    ],
+    [
+      "0.3",
+      4
+    ]
+  ],
+  "limits": [
+    "Current saved records are reported, not reconstructed earlier states.",
+    "An assessment or a database match does not establish target activity.",
+    "Repeated substrate resemblance values are not per-protein affinity measurements.",
+    "Cache accounting is provider-reported; this audit makes no timing or speedup estimate."
+  ],
+  "source_commit": "03cc3891a3cfda5e402fea75f72cb8afbd595b95",
+  "primary_proposals": 1,
+  "written_assessments_covering_all_target_participants": 204,
+  "quantitative_comparison_counts": {
+    "both": 89,
+    "one": 95,
+    "neither": 20
+  },
+  "assessed_records_with_original_bond_type_warnings": 189,
+  "post_run_diagnostic": {
+    "rows": 68,
+    "tiers": {
+      "1": 6,
+      "2": 37,
+      "3": 25
+    },
+    "path": "discovery_validation/20261104_joint_substrates/corrected_diagnostic_ranking.csv",
+    "sha256": "77811dcc71f5acdd0a8db52a803d778ae504c6d960e830620d01d8c47acccdb5",
+    "source_outputs_modified": false,
+    "new_model_calls": 0,
+    "policy": "Same saved roster and assessments, shared bond-label normalization, explicit partner coverage and weakest-partner ordering. Not a new production result.",
+    "changed_bond_warning_records": 62
+  },
+  "paper_identity_verification": {
+    "uniprot_accession": "A0A1M5ABR5",
+    "paper_identifier": "WP_073481158.1",
+    "errors": {},
+    "ncbi_header": ">WP_073481158.1 AMP-binding protein [Streptoalloteichus hindustanus]",
+    "uniprot_length": 508,
+    "ncbi_length": 508,
+    "exact_sequence_match": true,
+    "uniprot_sequence_sha256": "cccae08213d421c81380c22d4374fde58beb8c74d77563e3e41cfa2f4ed540a5",
+    "ncbi_sequence_sha256": "cccae08213d421c81380c22d4374fde58beb8c74d77563e3e41cfa2f4ed540a5",
+    "refseq_ids": [
+      "WP_073481158.1"
+    ],
+    "protein_name": "Paper-associated ShABS / UniProt Fatty-acyl-CoA synthase",
+    "scope": "Exact current database sequence identity; not target activity or verification of all experimental constructs."
+  },
+  "scientific_verdict": "Useful exploratory hypotheses; no inspected positive evidence demonstrates acceptance of the complete requested substrate pair. Not 48 strong experimental candidates.",
+  "leakage_audit": {
+    "runtime_changes": "Generic participant assignment, comparison coverage, normalization, evidence publication and target-derived instructions.",
+    "campaign_specific_names_added_to_runtime": false,
+    "historical_findings_loaded_as_discovery_seeds": false,
+    "development_case_only": true,
+    "review_scope": "Changed literals, prompt text, imports, file reads and cache inputs; software checks do not establish generalization."
+  }
+}
