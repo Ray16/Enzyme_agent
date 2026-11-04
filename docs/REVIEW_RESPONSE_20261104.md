@@ -89,3 +89,11 @@ literature identities influence the next search and that evidence shared by
 related sequences is not counted as independent mechanistic support. Keep
 unresolved substrate acceptance explicit, preserve alternative justified catalytic
 routes, and do not encode preferred families or benchmark identities as defaults.
+
+## Authorized production validation
+
+After the release checks, a fresh campaign was submitted on the tested code
+revision. Its launch verification and comparison limits are recorded in
+[production_review_validation_20261104.json](production_review_validation_20261104.json).
+Live outcomes remain in the campaign artifacts; the launch record is not a
+completed-run result or a measured speedup.

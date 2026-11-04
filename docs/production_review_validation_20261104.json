@@ -1,0 +1,41 @@
+{
+  "verified_at": "2026-11-04T06:48:49.485351+00:00",
+  "status_at_verification": "running",
+  "source_commit": "03cc3891a3cfda5e402fea75f72cb8afbd595b95",
+  "run_id": "20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+  "run_directory": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+  "launcher": "enzyme_discovery_agent/runs/_launchers/20261104_004327_production_review_repairs",
+  "host": "lambda2",
+  "pid": 2827588,
+  "cpu_affinity": [
+    72,
+    73,
+    74,
+    76
+  ],
+  "model": "claude-code:claude-sonnet-5-5",
+  "effort": "high",
+  "token_allowance": 3000000,
+  "runtime_seconds": 14400.0,
+  "gpu_workers": 0,
+  "msa_jobs": 0,
+  "startup_verified": true,
+  "observations_at_verification": {
+    "phase": "running",
+    "pid": 2827588,
+    "run_dir": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+    "elapsed_seconds": 300.0508972071111,
+    "recorded_tokens": 62524,
+    "cache_read_fraction_of_prompt": 0.0405,
+    "registered_records": 0,
+    "literature_leads": 0,
+    "resolved_literature_leads": 0,
+    "target_assessments": 0,
+    "primary_candidates": 0,
+    "run_status": "running",
+    "updated_at": "2026-11-04T06:48:30.459520+00:00"
+  },
+  "comparability": "Same base target, provider/model and allowances as the previous campaign; current user quality directives, review cadence and CPU concurrency differ. This is production validation, not a controlled statistical comparison.",
+  "boundaries": "No prior candidate records, assessments, papers or ranking outputs are supplied as fresh discovery input. The saved query and resource/model settings were copied; only target-independent molecular-property caches can be reused.",
+  "completion_policy": "Final audit and actual primary-candidate count are written by the runner at stop. Startup is not evidence of completed discovery, increased speed or target activity."
+}
