@@ -116,3 +116,14 @@ another paid discovery run, structural prediction campaign or experimental
 activity test. Cache reuse and end-to-end throughput still need improvement.
 Scores shared by homologues with the same annotated reaction remain shared
 analogue context, not independent protein-specific selectivity measurements.
+
+## Fresh validation after the repairs
+
+The user requested another production campaign for experimental candidate
+collection. Run `20261104_160236` started from frozen source `eb7de861`, with
+3,000,000 tokens, a four-hour runtime limit, four CPU slots and no GPU or MSA
+jobs. It starts fresh without prior candidate findings. Its first controller
+turn issued literature searches and received results. This is startup and
+retrieval verification; no final candidate quality or speedup is claimed.
+The submission record is
+[production_joint_substrate_validation_20261104.json](production_joint_substrate_validation_20261104.json).

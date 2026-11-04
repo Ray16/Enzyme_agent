@@ -86,8 +86,8 @@
     },
     {
       "path": "docs/PRODUCTION_QUALITY_20261104.md",
-      "bytes": 7433,
-      "sha256": "b6733faa8f7cad9a6e5b8ce7d2ed6f98c99c3b7b2cfaa05535b9d496bac93d05"
+      "bytes": 8061,
+      "sha256": "824f324fd0881b66e4dd77459d3616e678eee43ac622cf76ffa86cc3da9280ff"
     },
     {
       "path": "docs/PROJECT_LAYOUT.md",
@@ -133,6 +133,11 @@
       "path": "docs/expression_screen.md",
       "bytes": 5005,
       "sha256": "0270170199c1bc558dd3912fa0f886e1fedca014b5ee3f1796fbfaa0d4cf1f5a"
+    },
+    {
+      "path": "docs/production_joint_substrate_validation_20261104.json",
+      "bytes": 4210,
+      "sha256": "297427c5356752fe4c1fa19fa41f1adba2178220ee6395ae14684fac398b13f8"
     },
     {
       "path": "docs/production_quality_20261104.json",

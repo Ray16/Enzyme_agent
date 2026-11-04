@@ -1,0 +1,75 @@
+{
+  "verified_at": "2026-11-04T22:04:00.100821+00:00",
+  "status_at_verification": "running",
+  "source_commit": "eb7de8614c73b5b91cf4e68069bb2e81619b8cc5",
+  "run_id": "20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+  "run_directory": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+  "launcher": "enzyme_discovery_agent/runs/_launchers/20261104_160116_production_joint_substrates",
+  "host": "lambda2",
+  "pid": 691954,
+  "model": "claude-code:claude-sonnet-5-5",
+  "effort": "high",
+  "token_allowance": 3000000,
+  "runtime_seconds": 14400.0,
+  "requested_candidate_goal": 48,
+  "candidate_count_is_quality_quota": false,
+  "cpu_affinity": [
+    72,
+    73,
+    74,
+    76
+  ],
+  "gpu_workers": 0,
+  "msa_jobs": 0,
+  "fresh_campaign": true,
+  "previous_findings_used_as_input": false,
+  "source_files_frozen_and_verified": 152,
+  "native_thread_limits_verified": true,
+  "startup_process_names": [
+    "python",
+    "claude",
+    "python"
+  ],
+  "paired_substrate_preflight_check": true,
+  "subscription_auth_verified": true,
+  "request_admission_guard": "Each request reserves estimated prompt tokens plus output headroom before provider submission.",
+  "expected_output_paths": {
+    "ranked_candidates.csv": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/ranked_candidates.csv",
+    "primary_candidates.csv": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/candidates/primary_candidates.csv",
+    "exploratory_candidates.csv": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/candidates/exploratory_candidates.csv",
+    "primary_modeling_handoff.json": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/handoffs/primary_modeling_handoff.json",
+    "agent_state/token_usage.json": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/agent_state/token_usage.json",
+    "reasoning/trace.jsonl": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/reasoning/trace.jsonl"
+  },
+  "progress_path": "enzyme_discovery_agent/runs/_launchers/20261104_160116_production_joint_substrates/progress.json",
+  "policy": "Publish source-linked primary and exploratory proposals incrementally. Compare every required substrate partner within one native reaction. The weakest-supported partner limits priority; missing evidence stays unresolved. Relevant family diversity and exact sequence identity matter. A panel count is not evidence of activity.",
+  "limits": [
+    "Startup verification is not completed candidate discovery.",
+    "This fresh run tests behavior on a development task; it is not a held-out generalization experiment.",
+    "No prediction, MSA or laboratory measurements are submitted in this workload."
+  ],
+  "observations_at_verification": {
+    "phase": "running",
+    "pid": 691954,
+    "run_dir": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+    "elapsed_seconds": 60.01032874174416,
+    "recorded_tokens": 34429,
+    "cache_read_fraction_of_prompt": 0.0,
+    "registered_records": 0,
+    "literature_leads": 0,
+    "resolved_literature_leads": 0,
+    "target_assessments": 0,
+    "primary_candidates": 0,
+    "run_status": "running",
+    "updated_at": "2026-11-04T22:03:36.877915+00:00"
+  },
+  "first_controller_turn_verified": true,
+  "first_retrieval_progress": "Controller turn 1 issued four literature searches; PubMed returned three articles.",
+  "derived_target_bond_types": [
+    "amide C-N bond (carboxylic acid + primary amine condensation, loss of water or equivalent leaving group)"
+  ],
+  "normalized_target_bond_types": [
+    "C-N",
+    "amide"
+  ]
+}
