@@ -189,6 +189,24 @@ def _quote_reaction_support(evidence: dict, direction: str | None, bonds: set[st
     return False
 
 
+def _canonical_bond_tokens(values) -> set[str]:
+    """Reduce target bond-type descriptors to the canonical token vocabulary.
+
+    Target profiles can describe bond types as phrases while native reactions
+    use canonical tokens. Apply the same tokenizer to both representations.
+    Preserve an unrecognized descriptor in lowercase so an unknown bond type
+    cannot silently match a different reaction.
+    """
+    from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+    tokens: set[str] = set()
+    for value in (values or []):
+        if not value:
+            continue
+        mapped = set(extract_target_bond_type(str(value)).get("bond_types") or [])
+        tokens.update(mapped or {str(value).strip().lower()})
+    return tokens
+
+
 def validate_uniprot_claims(
     entry: dict,
     *,
@@ -285,7 +303,7 @@ def validate_uniprot_claims(
             observed_value=observed_direction, reason=reason,
         ))
 
-    wanted_bonds = set(target_bond_types or set())
+    wanted_bonds = _canonical_bond_tokens(target_bond_types)
     observed_bonds = set(chemistry.get("bond_types") or [])
     if wanted_bonds:
         if observed_bonds & wanted_bonds:

@@ -21,7 +21,7 @@ class RunLayoutTest(unittest.TestCase):
             update_candidate_registry(root, "P12345", "discovered", {"protein_name": "Example enzyme"})
             self.assertTrue((root / "agent_state/candidate_registry.json").exists())
             self.assertFalse((root / "candidate_registry.json").exists())
-            self.assertEqual(run_file(root, "report_confidence.md"), root / "report_confidence.md")
+            self.assertEqual(run_file(root, "report_confidence.md"), root / "artifacts/reports/report_confidence.md")
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             update_candidate_registry(root, "P12345", "discovered", {})
@@ -36,7 +36,7 @@ class RunLayoutTest(unittest.TestCase):
             (root / "report_interim.md").write_text("Earlier partial report")
             moves = organize_run(root)
             self.assertEqual(load_candidate_registry(root), before)
-            self.assertEqual((root / "report_confidence.md").read_text(), "Saved scientific report")
+            self.assertEqual((root / "artifacts/reports/report_confidence.md").read_text(), "Saved scientific report")
             self.assertEqual(run_file(root, "report_interim.md").read_text(), "Earlier partial report")
             self.assertFalse((root / "candidate_registry.json.lock").exists())
             self.assertTrue((root / "agent_state/candidate_registry.json.lock").exists())

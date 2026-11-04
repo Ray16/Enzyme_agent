@@ -107,7 +107,7 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
             work.writerow({'accession':data.get('accession'),'protein_name':data.get('protein_name'),
                 'native_reaction':' | '.join(data.get('catalytic_activities') or []),'assessment_status':'Not admitted to target shortlist; see target review or obtain one.'})
     from enzyme_discovery_agent.state_store import atomic_write_text
-    atomic_write_text(run_dir/'candidate_assessment_queue.csv',queue.getvalue())
+    atomic_write_text(run_file(run_dir,'candidate_assessment_queue.csv'),queue.getvalue())
     all_evals=accepted
 
     ranking = _load_ranking(run_dir) if ranking_entries is None else {row["accession"]:row for row in ranking_entries}

@@ -1,0 +1,66 @@
+{
+  "schema_version": "family-mechanism-fallback-v1",
+  "purpose": "FALLBACK ONLY. Family-name keywords -> transfer coordinate, for enzymes with no annotated reaction equation. proxy_policy.mechanism_from_reaction() reads the coordinate from the UniProt/Rhea equation and always wins over this file; a family name does not determine transfer chemistry.",
+  "rule": "coordinate 'adenylate' = nucleophile attacks P-alpha, leaves along Pa--O3A, 1 catalytic Mg2+ (reaction releases AMP + diphosphate). coordinate 'acyl_phosphate' = nucleophile attacks P-gamma, leaves along Pg--O3B, 2 catalytic Mg2+ (reaction releases ADP + phosphate).",
+  "calibrated_note": "calibrated=true marks the ONLY regime the assay panel calibrated (P-alpha adenylation in the AMP-binding/ANL superfamily). Every other entry is a mechanistic transfer and must not be reported as a validated activity model.",
+  "scope_note": "Consumed by structural_modeling only (cofold setup + geometry scoring), downstream of discovery. Not an input to candidate retrieval or ranking.",
+  "matching": "First entry with a keyword contained in the lower-cased family name wins, so order is significant: calibrated entries first, then transfers.",
+  "known_unrepresentable": [
+    {
+      "family": "Fumarate--(S)-2,3-diaminopropanoate ligase / Dapdiamide",
+      "reason": "This family contains BOTH coordinates, so no family-level keyword can be correct for it. DdaG (E2JA32) releases AMP + diphosphate -> P-alpha, 1 Mg2+. Its paralogue DdaF (E2JA31) releases ADP + phosphate -> P-gamma, 2 Mg2+. Deliberately absent from 'entries' so the fallback ABSTAINS here instead of being wrong for one of them; these enzymes must be resolved from their annotated reaction.",
+      "evidence": "UniProt/Rhea catalytic activity for E2JA32 and E2JA31"
+    }
+  ],
+  "caution": "A family name is not a mechanism. The case above is a worked counterexample: same InterPro family, opposite attacked phosphorus and opposite metal count. Treat every entry here as a last resort.",
+  "entries": [
+    {
+      "family_group": "ANL/AMP-binding",
+      "coordinate": "adenylate",
+      "calibrated": true,
+      "keywords": ["amp-binding", "anl"]
+    },
+    {
+      "family_group": "Aerobactin NIS",
+      "coordinate": "adenylate",
+      "calibrated": false,
+      "keywords": ["iuca", "iucc", "aerobactin"]
+    },
+    {
+      "family_group": "Glutamine synthetase",
+      "coordinate": "acyl_phosphate",
+      "calibrated": false,
+      "keywords": ["glutamine synthetase", "gamma-glutamylputrescine"]
+    },
+    {
+      "family_group": "RimK/bS6",
+      "coordinate": "acyl_phosphate",
+      "calibrated": false,
+      "keywords": ["rimk", "lysx", "tyramine--l-glutamate"]
+    },
+    {
+      "family_group": "PurD/GAR",
+      "coordinate": "acyl_phosphate",
+      "calibrated": false,
+      "keywords": ["phosphoribosylglycinamide synthetase", "formyltransferase"]
+    },
+    {
+      "family_group": "ATP-grasp",
+      "coordinate": "acyl_phosphate",
+      "calibrated": false,
+      "keywords": ["atp-grasp", "pyrrolysine", "l-propargylglycine"]
+    },
+    {
+      "family_group": "phosphoribosylformylglycinamidine cyclo-ligase",
+      "coordinate": "acyl_phosphate",
+      "calibrated": false,
+      "keywords": ["phosphoribosylformylglycinamidine cyclo-ligase"]
+    },
+    {
+      "family_group": "carbamoyl-phosphate synthase",
+      "coordinate": "acyl_phosphate",
+      "calibrated": false,
+      "keywords": ["carbamoyl-phosphate synthase"]
+    }
+  ]
+}

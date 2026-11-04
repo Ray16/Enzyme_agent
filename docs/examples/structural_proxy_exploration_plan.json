@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "mechanism": "Example: evidence-supported N-terminal nucleophile amide hydrolysis; resolve actual candidate roles before extraction",
+  "reaction_step": "Ground-state substrate accommodation in a mature assembly; precursor processing is a separate unresolved state",
+  "assay_endpoint": "Example: measured polymer-product release by enzyme constructs at a fixed experimental condition",
+  "assay_context": {
+    "substrate_state": "insoluble_polymer",
+    "measurement_basis": "crude_lysate",
+    "modeled_state": "mature",
+    "requires_processing": true,
+    "assembly_status": "uncertain",
+    "substrate_representation": "A declared soluble fragment representing the assayed polymer segment",
+    "substrate_is_assayed": false,
+    "limiting_processes": ["substrate_access", "maturation", "assembly", "chemistry"]
+  },
+  "search_design": {
+    "mode": "discovery",
+    "objective": "high_producer_recovery",
+    "biological_unit": "enzyme_construct",
+    "budgets": [10, 15],
+    "validation": "nested_enzyme_heldout",
+    "selection_correction": "repeat_full_search",
+    "combination_policy": "physical_pairs",
+    "combination_rationale": "Test whether substrate access and chemically supported positioning jointly limit useful accommodation. Keep components separate and declare a dimensionless ranking formula; do not interpret it as a product of kinetic rates.",
+    "record_negative_results": true,
+    "qc_policy": {
+      "minimum_valid_poses": 20,
+      "require_all_poses": false,
+      "sensitivity_analysis": "Example only: compare basic chemical integrity, multiple defensible assembly gates, and the same enzyme membership; record excluded constructs and usable-pose counts."
+    }
+  },
+  "context": {},
+  "hypotheses": [
+    {
+      "proxy_id": "complex_plddt",
+      "rationale": "Confidence baseline and nuisance control; no catalytic interpretation.",
+      "expected_direction": null,
+      "evidence_ids": ["inference:prediction-confidence-baseline"]
+    },
+    {
+      "proxy_id": "access_channel_geometry",
+      "rationale": "Hypothesis: the full assembly must admit a chemically appropriate polymer-segment probe. Define start, probe and occluders, verify that a larger measured bottleneck improves access in this context, and retain alternative physical explanations.",
+      "expected_direction": "+",
+      "evidence_ids": ["inference:substrate-size-and-access"]
+    },
+    {
+      "proxy_id": "assembly_contact_support",
+      "rationale": "Hypothesis: specifically annotated neighboring subunits support the functional site without substrate clashes. Resolve partners and a contact/support definition before claiming relevance.",
+      "expected_direction": "+",
+      "evidence_ids": ["inference:multi-subunit-site-support"]
+    },
+    {
+      "proxy_id": "maturation_compatibility",
+      "rationale": "Uncovered physical process: a pre-cleaved mature structure assumes processing. A precursor model or measured processed fraction is needed for a maturation hypothesis; mature-state confidence is insufficient.",
+      "expected_direction": "+",
+      "evidence_ids": ["inference:active-state-processing-requirement"]
+    },
+    {
+      "proxy_id": "near_attack_fraction",
+      "rationale": "Hypothesis: the specifically annotated nucleophile and uncapped reactive bond recover the mechanism-appropriate attack geometry. Stable bond/site identity is required; this tests ground-state compatibility rather than a barrier.",
+      "expected_direction": "+",
+      "parameters": {"distance_gate_A": 3.5, "angle_tolerance_deg": 25.0},
+      "evidence_ids": ["inference:mechanism-relative-attack-geometry"]
+    }
+  ]
+}

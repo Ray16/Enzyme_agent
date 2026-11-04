@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "metric_id": "inverse_distance_attack_angle_v1",
+  "kind": "proximity_weighted_attack_angle",
+  "score_units": "degrees",
+  "aggregation": "sum(angle_deg / distance_A) / sum(1 / distance_A)",
+  "companion": "harmonic_distance_A = N / sum(1 / distance_A)",
+  "direction": "larger_angle_first",
+  "fitted_parameters": [],
+  "limitations": ["Angle is invariant to uniform distance scaling; report harmonic distance alongside it.", "Geometry alone does not establish activity, correct assembly or a supported mechanism."]
+}

@@ -38,13 +38,9 @@ def build_system_prompt(
     from enzyme_discovery_agent import config
     if config.COMPACT_SYSTEM_PROMPT:
         return "\n\n".join([ROLE, PRINCIPLES, ANTI_PATTERNS, SMILES_RULES,
-            "Use retrieved primary evidence to guide discovery. Establish the target chemistry, "
-            "inspect complementary hypotheses, retrieve sources and exact sequence identities, "
-            "then screen and evaluate before expanding the pool. Tool schemas define their arguments. "
-            "CURRENT RESEARCH STATE summarizes saved work; inspect artifacts with the evidence and memory tools. "
-            "Names and annotations are leads, not proof of target activity. Record uncertainty and source links. "
-            "Take concrete tool actions; avoid repeating searches or drafting full reports during discovery. "
-            "Controller checkpoints preserve incomplete work. Structural predictions do not prove activity."])
+            "Tool schemas define their arguments. CURRENT RESEARCH STATE summarizes saved work; "
+            "inspect artifacts with the evidence and memory tools before concluding anything from a preview. "
+            "Take the next concrete tool action each turn; controller checkpoints preserve incomplete work for resume."])
     sections = [
         ROLE,
         PRINCIPLES,

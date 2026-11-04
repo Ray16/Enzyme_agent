@@ -474,4 +474,4 @@ def _write_run_summary(run_dir: Path, manifest: dict[str, Any]) -> None:
         "per-tool artifacts under `artifacts/`.*",
         "",
     ]
-    (run_dir / "RUN_SUMMARY.md").write_text("\n".join(lines))
+    run_file(run_dir, "RUN_SUMMARY.md").write_text("\n".join(lines))

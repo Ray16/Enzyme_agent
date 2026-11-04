@@ -159,7 +159,7 @@ def render_candidate_map(run_dir, log_fn=None, reference_accessions=None):
                    fontsize=8, title_fontsize=9, frameon=True)
         fig.suptitle("Candidate map in ESM embedding space", fontsize=15, y=0.99)
         fig.tight_layout(rect=[0, 0.14, 1, 0.96])
-        out = run_dir / "candidate_map.png"
+        out = run_file(run_dir, "candidate_map.png")
         fig.savefig(out, dpi=300, bbox_inches="tight")
         plt.close(fig)
         if log_fn:

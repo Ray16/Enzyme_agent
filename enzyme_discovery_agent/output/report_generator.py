@@ -1414,7 +1414,7 @@ def generate_two_pass_report(
             )
             return
 
-    with open(run_dir / "report_confidence.md", "w") as f:
+    with open(run_file(run_dir, "report_confidence.md"), "w") as f:
         f.write(report_text)
 
     if log_fn:
@@ -1558,6 +1558,6 @@ def generate_two_pass_explorative(
         )
         return
 
-    (run_dir / "report_explorative.md").write_text(report_text)
+    run_file(run_dir, "report_explorative.md").write_text(report_text)
     if log_fn:
         log_fn(f"  Explorative report: {len(report_text)} chars")

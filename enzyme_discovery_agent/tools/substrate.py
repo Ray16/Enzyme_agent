@@ -7,13 +7,18 @@ longest aliphatic chain, and ECFP4 fingerprints.
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import json
 import logging
+import os
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields as dataclass_fields
+from pathlib import Path
 from typing import Optional
 
 try:
-    from rdkit import Chem, DataStructs
+    from rdkit import Chem, DataStructs, rdBase
     from rdkit.Chem import AllChem, Descriptors
     _HAS_RDKIT = True
 except ImportError:
@@ -111,6 +116,84 @@ class SubstrateProperties:
 _analyzer_cache: dict[str, SubstrateProperties] = {}
 _invalid_smiles_cache: set[str] = set()
 _invalid_smiles_lock = threading.Lock()
+
+# Persistent (cross-run) cache of computed SubstrateProperties, keyed by SMILES.
+# The per-member RDKit scoring (ETKDGv3 embed + MMFF + ComputeMolVolume) is the
+# CPU bottleneck of the family-survey breadth pass. The same molecules recur
+# across families and resumed runs, so reuse their target-independent properties
+# while the descriptor implementation and RDKit version remain unchanged.
+# A disk hit returns the same values the in-memory cache would. Lives outside
+# the repo so the auto-push
+# hook never commits it; override or disable with ENZYME_SUBSTRATE_CACHE_DIR
+# (set to empty to disable).  A corrupt/partial entry is silently treated as a
+# miss and recomputed, never a hard failure.
+_SMILES_CACHE_SCHEMA = 1
+_CACHE_CONTEXT = {
+    "rdkit_version": rdBase.rdkitVersion if _HAS_RDKIT else None,
+    "descriptor_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+}
+_env_cache_dir = os.environ.get("ENZYME_SUBSTRATE_CACHE_DIR")
+_DISK_CACHE_DIR: Optional[Path] = (
+    None if _env_cache_dir == ""
+    else Path(_env_cache_dir) if _env_cache_dir
+    else Path.home() / ".cache" / "enzyme_discovery_agent" / "substrate_props"
+)
+# Scalar dataclass fields persisted verbatim (everything except the RDKit objects).
+_SCALAR_FIELDS = tuple(f.name for f in dataclass_fields(SubstrateProperties)
+                       if f.name not in {"ecfp4", "mol"}) if _HAS_RDKIT else ()
+
+
+def _disk_cache_path(smiles: str) -> Optional[Path]:
+    if _DISK_CACHE_DIR is None:
+        return None
+    identity = json.dumps({"smiles": smiles, "schema": _SMILES_CACHE_SCHEMA,
+                           "context": _CACHE_CONTEXT}, sort_keys=True).encode("utf-8")
+    digest = hashlib.sha256(identity).hexdigest()
+    return _DISK_CACHE_DIR / digest[:2] / f"{digest}.json"
+
+
+def _load_from_disk(smiles: str, name: str) -> Optional[SubstrateProperties]:
+    """Return cached properties for ``smiles`` from disk, or None on any miss."""
+    path = _disk_cache_path(smiles)
+    if path is None or not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text())
+        if (data.get("schema") != _SMILES_CACHE_SCHEMA or data.get("smiles") != smiles
+                or data.get("context") != _CACHE_CONTEXT):
+            return None
+        kwargs = {k: data["props"][k] for k in _SCALAR_FIELDS if k in data["props"]}
+        props = SubstrateProperties(**kwargs)
+        fp = DataStructs.ExplicitBitVect(2048)
+        fp.FromBase64(data["ecfp4"])
+        props.ecfp4 = fp
+        props.mol = Chem.Mol(base64.b64decode(data["mol"]))
+        # The molecule is shared by SMILES; the display name is per-call.
+        props.name = name
+        return props
+    except Exception:  # noqa: BLE001 - any corruption/version skew -> recompute
+        return None
+
+
+def _store_to_disk(props: SubstrateProperties) -> None:
+    path = _disk_cache_path(props.smiles)
+    if path is None or props.ecfp4 is None or props.mol is None:
+        return
+    try:
+        payload = {
+            "schema": _SMILES_CACHE_SCHEMA,
+            "context": _CACHE_CONTEXT,
+            "smiles": props.smiles,
+            "props": {k: getattr(props, k) for k in _SCALAR_FIELDS},
+            "ecfp4": props.ecfp4.ToBase64(),
+            "mol": base64.b64encode(props.mol.ToBinary()).decode("ascii"),
+        }
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(payload))
+        os.replace(tmp, path)  # atomic; concurrent writers of the same key both valid
+    except Exception:  # noqa: BLE001 - caching must never break analysis
+        logger.debug("substrate disk-cache store failed for %s", props.smiles, exc_info=True)
 
 
 def _detect_functional_groups(mol: Chem.Mol) -> dict:
@@ -230,6 +313,11 @@ def compute_substrate_properties(smiles: str, name: str = "") -> SubstrateProper
     if smiles in _analyzer_cache:
         return _analyzer_cache[smiles]
 
+    disk_hit = _load_from_disk(smiles, name)
+    if disk_hit is not None:
+        _analyzer_cache[smiles] = disk_hit
+        return disk_hit
+
     # A single malformed source structure can recur in hundreds of family
     # members. Cache only deterministic parse failures within this process.
     with _invalid_smiles_lock:
@@ -319,6 +407,7 @@ def compute_substrate_properties(smiles: str, name: str = "") -> SubstrateProper
     )
 
     _analyzer_cache[smiles] = props
+    _store_to_disk(props)
     return props
 
 

@@ -193,7 +193,7 @@ def render_family_fit_plot(
         leg._legend_box.align = "left"
         # Leave room at the bottom for the legend; keep panels clear of it.
         fig.tight_layout(rect=[0, 0.15 if ncol == 1 else 0.20, 1, 0.95])
-        out = run_dir / "family_substrate_fit.png"
+        out = run_file(run_dir, "family_substrate_fit.png")
         fig.savefig(out, dpi=300, bbox_inches="tight")
         plt.close(fig)
         if log_fn:

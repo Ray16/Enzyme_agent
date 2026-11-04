@@ -1,0 +1,121 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enzyme-discovery-agent"
+version = "0.1.0"
+requires-python = ">=3.10"
+readme = "enzyme_discovery_agent/README.md"
+dependencies = [
+    "openai>=1.0",
+    "pandas",
+    "rdkit",
+    "biopython",
+    "requests",
+    "PyYAML>=6",
+    "psutil>=5.9",
+    "pymupdf>=1.23",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8",
+    "setuptools>=64",
+    "wheel",
+]
+structural-modeling = [
+    "scipy>=1.10",
+    "gemmi>=0.6",
+    "matplotlib>=3.5",
+]
+scoring = [
+    "torch>=2.0",
+    "torch-geometric",
+    "drfp",
+]
+# Semantic re-ranking (RRF fusion over embeddings). Previously an UNDECLARED
+# import that silently no-oped where missing; now an explicit optional extra.
+# numpy comes via pandas (a core dep); scikit-learn is no longer needed
+# (cosine is a dot product on normalized embeddings).
+rerank = [
+    "sentence-transformers>=2.2",
+]
+# Agent-invoked candidate ESM-embedding map (map_candidate_neighbors tool +
+# candidate_map_plot). The heavy ESM forward pass runs in a SEPARATE GPU
+# subprocess (tools/esm_embed_worker.py) via fair-esm -- loads ESM2 weights
+# through torch.hub, needing neither transformers nor huggingface_hub -- so it is
+# typically installed in a dedicated env layered on the main one (see
+# docs/PROJECT_LAYOUT.md). umap-learn/scikit-learn/matplotlib drive the 2-D
+# projection + figure; numpy comes via pandas (a core dep).
+embedding-map = [
+    "fair-esm>=2.0",
+    "torch>=2.0",
+    "umap-learn>=0.5",
+    "scikit-learn>=1.1",
+    "matplotlib>=3.5",
+]
+[tool.setuptools]
+packages = [
+    "campaign_catalog",
+    "enzyme_discovery_agent",
+    "enzyme_discovery_agent.eval",
+    "enzyme_discovery_agent.eval.tool_evals",
+    "enzyme_discovery_agent.gates",
+    "enzyme_discovery_agent.models",
+    "enzyme_discovery_agent.output",
+    "enzyme_discovery_agent.prompts",
+    "enzyme_discovery_agent.static",
+    "enzyme_discovery_agent.tools",
+    # Generative design tools -- a sibling package, not a subpackage: these build
+    # a protein rather than retrieve one. They reuse the discovery agent's
+    # `config` + `tool_registry`, and bootstrap.py registers them, so the running
+    # agent reaches both toolkits.
+    "enzyme_design_agent",
+    "enzyme_design_agent.prompts",
+    "enzyme_design_agent.saturation",
+    "enzyme_design_agent.tools",
+    "enzyme_design_agent.tools.rfd4_campaign",
+    "structural_modeling_agent",
+    "structural_modeling_agent.cofold",
+    "structural_modeling_agent.developability",
+    "structural_modeling_agent.exploration",
+    "structural_modeling_agent.loop",
+    "structural_modeling_agent.mlmm",
+    "structural_modeling_agent.modeling_reasoning",
+    "structural_modeling_agent.proxies",
+    "structural_modeling_agent.scripts",
+]
+package-dir = {"campaign_catalog" = "campaign_catalog", "enzyme_discovery_agent" = "enzyme_discovery_agent", "enzyme_design_agent" = "enzyme_design_agent", "structural_modeling_agent" = "structural_modeling_agent"}
+
+# Non-.py files are NOT picked up by package discovery, so anything the installed
+# agent reads at runtime has to be listed here or it silently ships missing.
+# `tests/test_packaging.py` asserts these resolve in a built wheel.
+# Deliberately excluded: data/mechanism_coordinate_cache.json -- a mutable runtime
+# artifact, not an asset (it must not be written inside site-packages).
+[tool.setuptools.package-data]
+enzyme_discovery_agent = [
+    "target_profile.example.json",
+    "campaign_inputs/*.json",
+    "structural_proxy_catalog.json",
+]
+structural_modeling_agent = ["validation_contract.json", "knowledge/*.json", "modeling_reasoning/knowledge/*.json", "developability/knowledge/*.json"]
+
+[project.scripts]
+enzyme-campaign-catalog = "campaign_catalog.cli:main"
+enzyme-discovery-agent = "enzyme_discovery_agent.__main__:main"
+enzyme-design-agent = "enzyme_design_agent.__main__:main"
+structural-modeling-agent = "structural_modeling_agent.__main__:main"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+pythonpath = [".", "campaign_catalog/tests", "structural_modeling_agent/tests"]
+testpaths = ["campaign_catalog/tests", "enzyme_discovery_agent/tests", "enzyme_design_agent/tests", "structural_modeling_agent/tests", "structural_modeling_agent/modeling_reasoning/tests", "structural_modeling_agent/developability/tests", "structural_modeling_agent/exploration/tests", "structural_modeling_agent/loop/tests"]
+# NOTE: this REPLACES pytest's defaults, so the defaults worth keeping (".*",
+# "*.egg", "node_modules") are restated -- otherwise `pytest <path>` walks into
+# .venv/ and benchmark/*/.venv/.
+norecursedirs = [
+    "runs", "archive", "build", "dist",
+    ".*", "*.egg", "node_modules",
+    "benchmark", "overleaf-candidacy", "foldseek_db",
+]

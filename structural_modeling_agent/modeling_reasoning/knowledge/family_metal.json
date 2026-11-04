@@ -1,0 +1,24 @@
+{
+  "schema_version": "family-metal-v1",
+  "description": "Per-ACTIVE-SITE catalytic-metal reasoning keyed by mechanism/family. The value is per catalytic site; the resolver multiplies by the number of active sites modeled (oligomeric state). A raw UniProt metal tally is only a cross-check, never the placement count, because it conflates per-subunit vs per-assembly and binding-site-label artifacts.",
+  "by_activation_mode": {
+    "acyl_adenylate": {
+      "per_site_metal_count": 1,
+      "metal": "MG",
+      "rationale": "ANL adenylate-forming ligases use a single catalytic Mg2+ that bridges the ATP alpha-phosphate during adenylate formation.",
+      "refs": ["mechanism:ANL-superfamily-single-Mg"]
+    },
+    "acyl_phosphate": {
+      "per_site_metal_count": 2,
+      "metal": "MG",
+      "rationale": "Two-metal-assisted phosphoryl transfer (e.g. glutamine-synthetase / ATP-grasp ligases) positions two divalent cations per active site.",
+      "refs": ["mechanism:two-metal-phosphoryl-transfer"]
+    }
+  },
+  "default": {
+    "per_site_metal_count": 1,
+    "metal": "MG",
+    "rationale": "Conservative single catalytic divalent metal when family/mechanism is unresolved.",
+    "refs": []
+  }
+}

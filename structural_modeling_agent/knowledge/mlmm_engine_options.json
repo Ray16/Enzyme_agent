@@ -1,0 +1,39 @@
+{
+  "schema_version": "mlmm-engine-options-1.0",
+  "reviewed_on": "2026-10-30",
+  "scope": "Documented software capabilities and validation requirements; not a validated calculator configuration or enzyme accuracy benchmark.",
+  "sources": {
+    "fairchem_inference": "https://facebookresearch.github.io/fairchem/ase-calculator/",
+    "fairchem_changelog": "https://facebookresearch.github.io/fairchem/uma-changelog/",
+    "toolkit_backends": "https://github.com/t-0hmura/mlmm_toolkit/blob/4aeab6458151f5e52f6e4db9b791d734d4bf81f3/docs/backends.md",
+    "toolkit_embedding": "https://github.com/t-0hmura/mlmm_toolkit/blob/4aeab6458151f5e52f6e4db9b791d734d4bf81f3/docs/mlmm-calc.md",
+    "emle": "https://github.com/chemle/emle-engine/tree/51881369d315447448bdb4fdfecc618ac7577010"
+  },
+  "purpose": "Targeted chemical-step energetics after structural assessment; separate from cofolding, conformational sampling and de novo design.",
+  "uma": {
+    "molecular_task": "omol",
+    "checkpoint_candidates": ["uma-s-1p2p1", "uma-s-1p2p1-ft-d4rev"],
+    "nitro_is": "An optimized inference mode, not a separate checkpoint or an electrostatic-embedding scheme.",
+    "nitro_scope": "Eligible small UMA checkpoints, supported NVIDIA Ampere/Hopper/Blackwell devices, single-system/single-worker energy and force evaluation. Verify the actual runtime mode; documented fallback is possible.",
+    "precision_policy": {
+      "screening_or_relaxation_candidate": "tf32, optionally Nitro; benchmark energies/forces and record actual settings",
+      "final_r_ts_p_energies": "Recompute all reported state energies using the same checkpoint, task, embedding and explicit final precision",
+      "hessian_and_frequencies": "Prefer explicit IEEE FP32; compare FP64 where supported and needed. Direct Hessian requests do not run in Nitro. Finite differences may use force evaluations, but step-size and force precision must be checked.",
+      "do_not": "Assume the named default preserves precision across fairchem releases, or claim Nitro acceleration when a fallback ran. Float64 Hessian assembly does not restore information lost in lower-precision forces."
+    },
+    "level_of_theory": "The D4rev fine-tune differs from the base molecular model. Do not mix checkpoints or add a second dispersion correction to the dispersion-inclusive fine-tune."
+  },
+  "embedding_options": [
+    {"id": "mechanical", "documented_support": "Default MLIP/MM ONIOM coupling", "meaning": "Vacuum ML-region potential plus classical environment coupling; total charge/spin inputs do not establish response to an external MM field."},
+    {"id": "xtb_oniom_ee", "documented_support": "Opt-in embedcharge in the reviewed newer toolkit", "meaning": "xTB embedded-minus-vacuum correction on the ML region plus link hydrogens, with ONIOM-EE Coulomb subtraction and consistent derivatives.", "validation": "Older local embedcharge code was flagged unsafe. Do not enable that implementation based on newer documentation. Verify the actual revision, boundary/link mapping, fixed point-charge set and absence of double counting before use."},
+    {"id": "dft_electrostatic", "documented_support": "Newer toolkit DFT/MM backend with embedcharge", "meaning": "MM point charges enter the PySCF electronic Hamiltonian; distinct from an MLIP plus xTB correction.", "validation": "Verify the selected DFT backend, Hamiltonian, force derivatives and boundary treatment. This is not Nitro inference."},
+    {"id": "emle", "documented_support": "Separate EMLE engine offers electrostatic, mechanical and nonpolarizable modes", "meaning": "Explicit electrostatic ML embedding, including polarization-aware options.", "validation": "Compatibility with this local toolkit, the selected vacuum potential, elements/charges and metal chemistry remains unverified. No integration or scientific accuracy is asserted."}
+  ],
+  "benchmark_before_adoption": [
+    "Identical coordinates, charge and spin: compare energy differences and forces between old/reference and proposed fast settings, including repeated calls and changed structures.",
+    "Check finite-difference force/energy consistency, Hessian symmetry and step-size convergence, negative-mode identity and IRC connectivity.",
+    "Use the same embedding/reference and numerical settings for every reported state; test boundary, point-charge and ML-region sensitivity.",
+    "Compare a small set of characterized mechanisms against independent reference calculations and experimental trends; benchmark speed separately."
+  ],
+  "verified_in_this_work": "Documentation/source inspection and offline gate tests only. No engine environment upgrade, checkpoint download, GPU benchmark or scientific barrier validation."
+}

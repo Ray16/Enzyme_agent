@@ -106,6 +106,23 @@ class TestAtomicClaimVerdicts(unittest.TestCase):
         self.assertEqual(_claim(result, "reaction_direction")["verdict"], "contradicted")
         self.assertFalse(result["promotion_eligible"])
 
+    def test_verbose_target_bond_phrase_matches_amide_native_reaction(self):
+        # Regression: the target bond type is stored as a human-readable phrase
+        # ("amide C-N bond formed ...") while the native reaction classifies to the
+        # token "amide". These must be compared in one vocabulary; otherwise a
+        # clearly amide-forming ligase (e.g. a gamma-glutamyl-polyamine synthetase:
+        # glutamate + putrescine -> gamma-glutamyl-putrescine) is wrongly rejected.
+        verbose = {"amide C–N bond formed (carboxylic acid + primary amine condensation)"}
+        result = validate_uniprot_claims(
+            _entry(reaction="putrescine + L-glutamate + ATP = "
+                            "gamma-L-glutamylputrescine + ADP + phosphate + H(+)",
+                   ec="6.3.1.11"),
+            expected_accession="P00001", target_direction="formation",
+            target_bond_types=verbose,
+        )
+        self.assertEqual(_claim(result, "bond_type")["verdict"], "supported")
+        self.assertTrue(result["promotion_eligible"])
+
     def test_topology_compatibility_is_directional(self):
         # Carrier-tethered vs a free target is a real machinery mismatch -> contradicted
         # and blocking (both directions).

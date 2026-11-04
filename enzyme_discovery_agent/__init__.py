@@ -1,1 +1,1 @@
-"""Enzyme Discovery Agent — LLM-driven, structurally aware, fully general."""
+"""Enzyme Discovery Agent"""

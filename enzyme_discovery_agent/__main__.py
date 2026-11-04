@@ -42,7 +42,7 @@ def _launch_and_load(url: str, tool_name: str) -> tuple[str, str | None]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Enzyme Discovery Agent -- LLM-driven enzyme search",
+        description="Enzyme discovery agent",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"

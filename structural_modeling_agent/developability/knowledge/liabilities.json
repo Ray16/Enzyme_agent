@@ -1,0 +1,21 @@
+{
+  "schema_version": "liability-evidence-v1",
+  "provenance_note": "Curated developability liabilities, keyed by UniProt accession and/or InterPro family. Authoritative when present: a documented liability overrides the sequence predictor (fail-closed demote). EVERY record MUST carry a verifiable primary citation (PMID or DOI) with an exact quote -- claims from memory are not admissible. Family-keyed records transfer to unannotated homologs, like the reaction coordinates.",
+  "records": [],
+  "corrections": [
+    {
+      "date": "2026-09-25",
+      "removed": "pylc-insoluble (PylC / Q46E79 documented insoluble -> veto)",
+      "reason": "Unsupported by the literature. The claim originated from project memory, not a citation. A targeted primary-literature search found NO report of PylC insolubility, aggregation, poor expression, or a refolding requirement. The opposite is documented.",
+      "refuting_evidence": [
+        {
+          "pmid": "22985965",
+          "doi": "10.1016/j.jmb.2012.09.007",
+          "citation": "Quitterer F, List A, Beck P, Bacher A, Groll M. J Mol Biol 2012;424(5):270-82 (PDB 4FFL)",
+          "quote": "Here, we present six crystal structures of the monomeric active ligase in complex with substrates, reaction intermediates, and products...",
+          "note": "PylC was expressed in E. coli BL21(DE3)/pET28b (His-tagged, per PDB 4FFL deposition) and purified well enough for six 1.5 A co-crystal structures; the paper also notes a nucleotide is 'responsible for protein stability'. No solubility problem is reported."
+        }
+      ]
+    }
+  ]
+}

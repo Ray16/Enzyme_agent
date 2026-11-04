@@ -22,6 +22,8 @@ env/
 
 # ---- Run outputs (provenance lives in the run dirs, not in git) ----
 /runs/
+/results/
+/modeling_agent_runs/
 /logs/
 enzyme_discovery_agent/runs/
 enzyme_discovery_agent_improved/runs/
@@ -175,3 +177,6 @@ enzyme_design_agent/campaigns/*/archive/
 campaigns/*/cofolds/*/results/
 campaigns/*/fleet/logs/
 campaigns/*/fleet/claims/
+# Generated read-only discovery status page and monitor state
+/index.html
+/analysis/status_monitor/

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry,discovery_status
 from enzyme_discovery_agent.state_store import atomic_write_text
+from enzyme_discovery_agent.run_layout import run_file
 
 
 def write_research_portfolio(run_dir):
@@ -46,7 +47,7 @@ def write_research_portfolio(run_dir):
             'scope':'Revisable investigation priority; target activity remains unestablished.'})
     def save(name,rows,fields):
         stream=io.StringIO();writer=csv.DictWriter(stream,fieldnames=fields);writer.writeheader();writer.writerows(rows)
-        atomic_write_text(root/name,stream.getvalue())
+        atomic_write_text(run_file(root,name),stream.getvalue())
     fields=['accession','name','work_priority','discovery_status','native_annotation_available','hypothesis_rationale',
         'strengths','unknowns','revisit_when','source_refs','modeling_review_status','scope']
     hypotheses.sort(key=lambda row:(row['work_priority']!='prioritize',row['accession']))

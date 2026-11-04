@@ -1,0 +1,62 @@
+{
+  "status_as_checked": "agent stopped at its conservative admission checkpoint",
+  "source_run": "enzyme_discovery_agent/runs/20261103_091116_Find_enzymes_that_ligate_glutarate_and_cadaverine_to_form_a_linear_diad_with_lat",
+  "launcher": "enzyme_discovery_agent/runs/_launchers/20261103_143105_primary_frontier",
+  "primary_recommendations_recorded": 0,
+  "recent_retrieval": {
+    "sequence_records": 20,
+    "paper_hits_before_deduplication": 15,
+    "scope": "Retrieved leads, not accepted catalysts."
+  },
+  "modeling": {
+    "local_msa_cancelled": true,
+    "gpu_predictions_submitted_for_this_panel": 0,
+    "remote_msa_cancellation_confirmed": false
+  },
+  "admission_accounting": {
+    "charged_tokens": 93426,
+    "reserved_tokens": 0,
+    "allowance": 120000,
+    "events": [
+      {
+        "label": 15,
+        "estimated_input_tokens": 17061,
+        "reserved_tokens": 45733,
+        "provider_reported_tokens": 5520,
+        "conservative_charge": 22579
+      },
+      {
+        "label": 16,
+        "estimated_input_tokens": 16142,
+        "reserved_tokens": 44814,
+        "provider_reported_tokens": 11333,
+        "conservative_charge": 27473
+      },
+      {
+        "label": 17,
+        "estimated_input_tokens": 16356,
+        "reserved_tokens": 45028,
+        "provider_reported_tokens": 6339,
+        "conservative_charge": 22693
+      },
+      {
+        "label": 18,
+        "estimated_input_tokens": 17020,
+        "reserved_tokens": 45692,
+        "provider_reported_tokens": 3663,
+        "conservative_charge": 20681
+      }
+    ],
+    "scope": "Conservative budget admission, separate from provider-reported physical usage."
+  },
+  "scientific_limits": [
+    "The 48-entry exploration panel is not 48 demonstrated target catalysts.",
+    "Zero recorded primary proposals does not establish absence of suitable enzymes.",
+    "Source shape and fingerprint checks do not prove biochemical entailment."
+  ],
+  "software_validation": {
+    "discovery_suite": "1204 passed, 9 skipped, 74 subtests; before the final cache-context addition",
+    "focused_cache_substrate_packaging": "16 passed, 11 subtests; includes final cache-context tests"
+  },
+  "runtime_artifact_policy": "Full run directories remain local and are not runtime discovery seeds for a fresh campaign."
+}

@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.0",
+  "purpose": "The agent proposes modeling_input plus validation_plan, investigates failures and revises the decision. These are declarations to check against evidence, not scientifically validated defaults.",
+  "workflow_policy": {
+    "default_after_discovery_handoff": "cofolding",
+    "optional_after_cofold_inspection": {"dynamics": "BioEmu2", "de_novo_design": "RFD4-Proteina via the design agent"},
+    "followup_requirement": "Use plan_followup with a current assessment fingerprint, scientific question, hypothesis IDs, why cofold is insufficient, expected information and decisions under support/refutation. Nonproductive geometry can motivate a follow-up; unresolved identity, completeness or provenance cannot.",
+    "result_scope": "Dynamics/design results stay separate and cannot satisfy or retroactively validate the primary cofolding requirement."
+  },
+  "modeling_input_required_fields": ["status", "method", "enzyme_state", "target_substrates", "cofactors", "modeled_step", "geometry", "unresolved", "validation_plan"],
+  "proposal": {
+    "modeling_input": "Provide the complete model object, OR use modeling_input_from with optional modeling_input_changes.",
+    "modeling_input_from": "candidate | current: explicitly copy that model proposal, with no inherited execution or validation pass",
+    "modeling_input_changes": "Optional JSON merge patch: nested objects merge, arrays replace, null deletes. The base hash and exact changes are recorded as input_derivation.",
+    "rationale": "Explain the evidence supporting the selected model and remaining uncertainties.",
+    "scientific_reasoning": "Required record described by scientific_reasoning below; modeled_step also declares reaction_center.",
+    "alternatives": [{"description": "A concrete alternative setup", "reason_not_selected": "Evidence that favors the selected setup"}]
+  },
+  "scientific_reasoning": {
+    "schema_version": "1.0",
+    "selected_hypothesis_id": "ID of a declared hypothesis",
+    "selection_rationale": "Why the evidence favors this hypothesis; address contrary evidence and transfer uncertainty",
+    "hypotheses": [{
+      "id": "Unique hypothesis ID; declare at least two distinct competing hypotheses",
+      "statement": "A testable mechanistic or modeling explanation",
+      "mechanism": "Exact modeled_step.mechanism for the selected hypothesis",
+      "step_index": "Positive integer; equals modeled_step.index for the selected hypothesis",
+      "step_description": "Exact proxy-plan reaction_step for the selected hypothesis",
+      "reaction_center": "atp_alpha | atp_gamma | carbonyl | other; equals modeled_step.reaction_center for the selected hypothesis",
+      "center_rationale": "Evidence-grounded elementary step and reactive atom interpretation",
+      "assumptions": ["Explicit premise needed for this inference"],
+      "uncertainties": ["A remaining uncertainty, including transfer or model limitations"],
+      "evidence": "Array of source_record objects plus effect: supports | contradicts | context. Unsupported alternatives may use []; the selected hypothesis requires supporting evidence before execution.",
+      "predictions": [{
+        "id": "Unique across all hypotheses",
+        "metric": "Explicit numerical observable; pose_pass_fraction has an automatic controller adapter",
+        "scope": "structural | experimental",
+        "unit": "Exact measurement units",
+        "endpoint": "Exact endpoint; different endpoints are not compared",
+        "conditions": "Explicit object describing the measurement conditions; exact matching is required",
+        "expected_interval": "Two ordered finite numbers in declared units, frozen before observations",
+        "decision_if_refuted": "Which modeling or proxy choice should be reconsidered"
+      }],
+      "discriminating_test": {
+        "measurement": "An observation that distinguishes the explanations",
+        "expected_if_selected": "Expected outcome under this hypothesis",
+        "expected_if_alternative": "Different expected outcome under the competing explanation",
+        "controls": ["Control for a confounder or measurement ambiguity"]
+      }
+    }],
+    "execution_rules": [
+      "This object describes required fields; execution_rules is documentation, not a required proposal field.",
+      "For atp_alpha, every pose site uses electrophile PA and angle_reference O3A on the same ATP residue. For atp_gamma use PG and O3B. These are CCD names; other atom conventions require an adapter.",
+      "ATP proxy plans additionally declare context.reaction_center matching the selected hypothesis. Proxy mechanism and reaction_step match the selected hypothesis exactly.",
+      "Controller proxy extraction resolves exact atoms from validation_plan.poses.sites, including optional leaving_group and charge_centre references for descriptors that need them. Multisite models require proxy context.site_id. The extraction report records role_resolution.",
+      "The automatic pose_pass_fraction prediction uses scope structural, unit fraction, endpoint declared_pose_checks, conditions {basis: declared_ensemble}, and bounds in [0,1]. Missing samples/atoms or duplicate sample contents yield unresolved, not zero.",
+      "Proxy prediction metric proxy:<descriptor_id> uses scope structural, the exact catalog units, endpoint declared_proxy_plan, and conditions {parameters: <resolved extractor parameters>}. Only verified, complete computed extraction is compared; missing or partial extraction is unresolved.",
+      "inspect_reasoning returns assessment_sha256. After validation or observations, respond_to_reasoning_feedback requires that fingerprint, action retain|revise|investigate|abstain, rationale, addressed_hypotheses (selected and all contradicted), and next_test with the discriminating_test fields.",
+      "inspect_reasoning also returns response_hypothesis_ids. Legacy revisions without a scientific record use the explicit ID legacy_unrecorded to acknowledge historical feedback, then require a new proposal before execution or completion.",
+      "Only a current retain response permits further execution/completion. Other actions require investigation or a new revision. Respond before revising any prior feedback. A revise response must actually change the model or hypothesis record.",
+      "record_reasoning_observation accepts id, metric, scope, unit, endpoint, conditions, finite value, interpretation and one source_record in source. Source extraction/interpretation remain asserted. IDs cannot be overwritten. Unknown measurements should be investigated, not submitted as zero.",
+      "Optional measurement_interval is a pair of finite bounds containing value. Partial overlap with a prediction is unresolved; disjoint intervals contradict it. Structural observations default to applicability model and bind to their original model hash. Structural candidate applicability requires transfer_rationale. Experimental observations default to candidate applicability. Inapplicable evidence remains visible across revision.",
+      "compare_hypothesis_tests groups exactly matching readouts and identifies disjoint prediction intervals, prioritizing unresolved hypothesis pairs. Shared endpoints, units and conditions are required; touching or overlapping bounds do not separate hypotheses. It returns pairs_needing_new_predictions and declared controls. Priorities do not establish causal truth, feasibility, cost or Bayesian information gain.",
+      "All hypotheses, negative observations, prediction comparisons and responses persist across revisions and resume. A new revision cannot retroactively edit an earlier prediction interval. Intervals are declared scientific expectations, not fitted confidence intervals."
+    ]
+  },
+  "validation_plan": {
+    "schema_version": "1.0",
+    "setup": {
+      "assembly": {
+        "expected": {"protomer_chain_counts": "Positive integers, one entry per protomer; their sum must match rendered protein chains", "active_sites": "Explicit positive integer; do not infer from chains", "site_context": "complete, only with evidence for the modeled ligand site"},
+        "evidence": "Source records as described below"
+      },
+      "enzyme_state": {
+        "expected": {"state": "intact or processed, matching enzyme_state.state", "chains": "Ordered list of {source: full_sequence} or {source: sequence_range, start: integer, end: integer}; one-based inclusive precursor numbering", "precursor_sha256": "SHA-256 of the exact full input amino-acid sequence"},
+        "evidence": "Construct/maturation and sequence provenance"
+      },
+      "cofactors": {
+        "expected": {"complete_for_step": true, "species": "Complete list, or explicit []; each entry needs ccd, role and exactly one of count_per_model or count_per_active_site"},
+        "evidence": "Evidence for identities, stoichiometry and completeness for the chosen step"
+      },
+      "substrates": {
+        "expected": {"components": "All components in modeling_input.target_substrates, including excluded ones, with component_index, role, modeling_smiles, include_in_model"},
+        "evidence": "Evidence/rationale for molecular identity, modeled intermediate, protonation and stereochemistry"
+      },
+      "reaction_step": {
+        "expected": {"index": "Positive integer", "mechanism": "Mechanism identifier matching modeled_step"},
+        "evidence": "Evidence for this step's participants and reactive roles"
+      }
+    },
+    "poses": {
+      "expected_predictions": "Positive integer; frozen before modeling",
+      "minimum_passing_predictions": "Positive integer <= expected_predictions, justified for the intended use",
+      "evidence": "Reviewed source records supporting physical criteria and their scope",
+      "sites": "One entry per modeled active site: id, substrate_chain, nucleophile, electrophile, angle_reference, distance_range_A: [min,max], angle_range_deg: [min,max]. Atom references are {chain, residue, atom}. Angle reference need not be the leaving atom.",
+      "distance_checks": "Array of {id, a: atom_reference, b: atom_reference, range_A: [min,max]}; include a required contact for each cofactor chain",
+      "coordination_checks": "For every metal chain: {id, center: atom_reference, element, donors: [atom_reference], distance_range_A: [min,max], donor_count_range: [min,max]}. Assesses only the declared modeled donors; omitted hydration is unresolved physical context.",
+      "interfaces": "For multichain models: {id, chains: [chain1,chain2], contact_radius_A, minimum_residue_pairs}. All protein chains must be connected by declared interfaces.",
+      "ligand_environment": {"contact_radius_A": "Explicit positive distance", "clash_distance_A": "Explicit positive distance", "minimum_contact_atoms": "Positive integer", "maximum_clashing_atoms": "Nonnegative integer"},
+      "protein_atom_policy": {
+        "allowed_missing": "Optional list of {chain,residue,atom,rationale,evidence}. Records omissions; never grants a completeness pass for required heavy atoms. Hydrogens and OXT are outside the required inventory.",
+        "modified_residues": "Optional list of {resname,heavy_atoms,rationale,evidence}. Names must be distinct nonstandard residues; explicit heavy-atom inventories include N,CA,C,O. Unrecognized/unsupported chemistry remains unresolved; declarations do not establish chemical truth."
+      }
+    }
+  },
+  "source_record": {
+    "kind": "primary_literature | experimental_structure | solution_measurement | curated_annotation",
+    "source_id": "Stable reference identifier",
+    "path": "Existing UTF-8 source snapshot, preferably an absolute path",
+    "sha256": "Actual snapshot SHA-256",
+    "quote": "Exact supporting passage present in the snapshot",
+    "reviewed": true,
+    "rationale": "Explain how the passage supports this particular expectation, including transfer limitations and contradictions",
+    "derived_from_prediction": false
+  },
+  "limits": [
+    "Source fingerprints and exact passages establish traceability, not semantic entailment.",
+    "Self-generated hypotheses and poses cannot independently validate their own setup.",
+    "No universal metal, assembly, reaction angle, contact cutoff or pose count is supplied.",
+    "Additional hypotheses can be explored as separate revisions; a failed check does not establish enzyme inactivity."
+  ]
+}

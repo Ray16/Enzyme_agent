@@ -9,6 +9,15 @@ from enzyme_discovery_agent.models import research_decisions as decisions
 from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry, load_candidate_registry, discovery_status
 from enzyme_discovery_agent.models.family_decisions import record_family_decisions
 from enzyme_discovery_agent.models.rolling import fresh_evaluation_backlog
+from enzyme_discovery_agent import config as _config
+
+
+@pytest.fixture(autouse=True)
+def _enable_adaptive_reasoning(monkeypatch):
+    # This module exercises the adaptive deliberation loop, which is no longer the
+    # default (direct discovery is now the default; see config.ADAPTIVE_REASONING).
+    # Pin it on so these tests exercise the behaviour they are written for.
+    monkeypatch.setattr(_config, "ADAPTIVE_REASONING", True)
 
 
 def evidence(root, count=20, mismatch=True):

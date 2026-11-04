@@ -91,6 +91,13 @@ GROQ_REQUESTS_PER_DAY = int(os.environ.get("GROQ_REQUESTS_PER_DAY", "1000"))
 GROQ_TOKENS_PER_DAY = int(os.environ.get("GROQ_TOKENS_PER_DAY", "200000"))
 GROQ_MAX_COMPLETION_TOKENS = int(os.environ.get("GROQ_MAX_COMPLETION_TOKENS", "4096"))
 DEFAULT_MODEL = os.environ.get("ENZYME_AGENT_MODEL") or "claude-code:claude-sonnet-5-5"
+# Discovery can run in two modes. DIRECT mode (ENZYME_AGENT_ADAPTIVE_REASONING=0)
+# drops the per-action plan->interpret->conclude deliberation ceremony that is the
+# source of repeated control calls; the self-improving
+# behavior (rolling refresh_ranked_candidates + family_learning steering +
+# deterministic mechanistic+fit ranking, plus the coupled batched auto target
+# review below) still runs. The default stays ON to preserve the full decision
+# trace and the adaptive-controller contract; launch fast runs with the env=0.
 ADAPTIVE_REASONING = os.environ.get("ENZYME_AGENT_ADAPTIVE_REASONING", "1") == "1"
 ADAPTIVE_REVIEW_MIN_ASSESSED = 20
 # Deliberation is the expensive part of an agentic run and retrieval is the cheap part, so
@@ -168,7 +175,17 @@ REFLECTION_INTERVAL = 5  # reflect every N iterations
 MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION = 4  # bounded evidence tranche before a model decision; never a scientific stopping rule
 TARGET_REVIEW_BATCH_SIZE = 8  # amortize the shared target context across distinct candidates
 TARGET_REVIEW_MAX_REQUEST_CHARS = 100000  # reduce batch size, never truncate scientific records
-AUTO_TARGET_REVIEW = False  # discovery proposes candidates; detailed assessment is optional
+# A candidate only enters the ranked shortlist once a target assessment is saved
+# (eligibility_verdict requires it). That assessment is produced EITHER by the
+# adaptive deliberation layer OR by this batched auto target-review. So couple
+# them: exactly one path is always active -- auto-review turns ON when the
+# deliberation layer is OFF (direct mode), so direct runs still roll candidates
+# out to the shortlist. The batched review (TARGET_REVIEW_BATCH_SIZE at a time,
+# bounded by MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION) is far lighter than the
+# per-action plan->interpret->conclude ceremony. Override with
+# ENZYME_AGENT_AUTO_TARGET_REVIEW=0|1.
+AUTO_TARGET_REVIEW = os.environ.get(
+    "ENZYME_AGENT_AUTO_TARGET_REVIEW", "0" if ADAPTIVE_REASONING else "1") == "1"
 DISCOVERY_PORTFOLIO_SIZE = 48
 DISCOVERY_RESEARCH_INTERVAL = 10
 LITERATURE_DISCOVERY_PAPERS_PER_STEP = 2
@@ -309,7 +326,13 @@ RESULTS_LIST_CAP = 10
 # prompt, which is ~97% of loop token spend.  Generous by default so the model
 # always sees several recent evidence turns in full.
 HISTORY_KEEP_RECENT_TOOL_MSGS = 16
-MODEL_CONTEXT_MAX_CHARS = 16_000
+# Per-call context ceiling (chars). Env-overridable. The 16k default was tuned
+# for the Argo proxy's per-token cache-creation cost; it is far too small for the
+# claude-code subscription's 200k-token window and, with a large staged-campaign
+# query, the mandatory prefix (system + user) alone (~16.6k chars) overflows it
+# and the run aborts at iteration 0. Default raised so the mandatory prefix plus
+# several full evidence turns fit; still small vs the subscription window.
+MODEL_CONTEXT_MAX_CHARS = int(os.environ.get("ENZYME_MODEL_CONTEXT_MAX_CHARS", 120_000))
 MODEL_CONTEXT_RECENT_ASSISTANTS = 2
 MODEL_CONTEXT_TOOL_RESULT_CHARS = 2000
 COMPACT_SYSTEM_PROMPT = True

@@ -10,6 +10,7 @@ from enzyme_discovery_agent.models.candidate_registry import load_candidate_regi
 from enzyme_discovery_agent.models.native_annotation import native_annotation_for_report
 from enzyme_discovery_agent.models.target_review import digest, identity_verified, target_contract
 from enzyme_discovery_agent.state_store import atomic_write_json, atomic_write_text, state_lock
+from enzyme_discovery_agent.run_layout import run_file
 
 
 ROLE = {'type':'object','required':['component_index','role','basis','recognition_change'],
@@ -133,11 +134,11 @@ def write_primary_portfolio(run_dir):
     fields=list((rows or other)[0]) if rows or other else ['enzyme_name','accession','tier','hypothesis']
     for filename,values in [('primary_candidates.csv',rows),('exploratory_candidates.csv',other)]:
         stream=io.StringIO();writer=csv.DictWriter(stream,fieldnames=fields);writer.writeheader();writer.writerows(values)
-        atomic_write_text(root/filename,stream.getvalue())
+        atomic_write_text(run_file(root,filename),stream.getvalue())
     summary={'selected':len(rows),'families':dict(Counter(r['family'] for r in rows)),
              'other_proposals':len(other),'candidates':rows,
              'scope':'Primary agent-selected modeling hypotheses, not demonstrated target activity. Counts do not establish adequacy.'}
-    atomic_write_json(root/'primary_modeling_handoff.json',summary)
+    atomic_write_json(run_file(root,'primary_modeling_handoff.json'),summary)
     return summary
 
 

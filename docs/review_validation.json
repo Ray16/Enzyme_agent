@@ -1,0 +1,45 @@
+{
+  "discovery_suite": {
+    "passed": 1204,
+    "skipped": 9,
+    "subtests_passed": 74,
+    "timing_seconds": 306.65,
+    "scope": "Full discovery suite before the final cache-context addition."
+  },
+  "supporting_component_suites": {
+    "passed": 668,
+    "subtests_passed": 21,
+    "timing_seconds": 44.4,
+    "components": [
+      "campaign_catalog",
+      "enzyme_design_agent",
+      "structural_modeling_agent and its subcomponents"
+    ]
+  },
+  "final_cache_substrate_packaging_checks": {
+    "passed": 16,
+    "subtests_passed": 11,
+    "scope": "Includes final descriptor cache identity and persistence checks."
+  },
+  "global_test_collection": {
+    "collected": 1883,
+    "errors": 0,
+    "scope": "Importlib mode avoids test-basename collisions across components."
+  },
+  "publication_snapshot": {
+    "source_only": true,
+    "wheel_built": true,
+    "wheel_installed_without_dependency_downloads": true,
+    "cli_help_checks_passed": [
+      "enzyme_discovery_agent",
+      "structural_modeling_agent",
+      "enzyme_design_agent",
+      "campaign_catalog.cli"
+    ],
+    "runtime_contract_files_verified": true
+  },
+  "limits": [
+    "Software checks do not establish live model-provider availability or enzyme activity.",
+    "GPU engines, credentials, model weights and large scientific outputs are external dependencies."
+  ]
+}

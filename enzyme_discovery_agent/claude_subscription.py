@@ -240,10 +240,16 @@ def call_claude(messages: list[dict], tools: list[dict] | None, model: str,
             "env": {"PYTHONPATH": str(Path(__file__).resolve().parent.parent)}}}}), encoding="utf-8")
         system_file = root / "system.txt"
         system_file.write_text(system or "Follow the user's instructions.", encoding="utf-8")
+        # Reasoning effort is a speed/quality lever: lower effort cuts per-call
+        # latency (the dominant pipeline wall-clock) at some depth cost. Default
+        # stays "high"; override per run with ENZYME_CLAUDE_EFFORT=low|medium|high.
+        effort = os.environ.get("ENZYME_CLAUDE_EFFORT", "high").strip().lower() or "high"
+        if effort not in {"low", "medium", "high", "xhigh", "max"}:
+            effort = "high"
         cmd = [executable, "--settings", str(settings), "--restricted", "--strict-mcp-config",
                "--mcp-config", str(mcp), "--system-prompt-file", str(system_file),
                "--tools", "", "--allowedTools", "mcp__discovery__*", "--permission-prompts", "none",
-               "-p", "--model", model, "--effort", "high", "--max-turns", "1", "--no-session-persistence",
+               "-p", "--model", model, "--effort", effort, "--max-turns", "1", "--no-session-persistence",
                "--output-format", "stream-json", "--verbose"]
         if images:
             cmd.extend(["--input-format", "stream-json"])

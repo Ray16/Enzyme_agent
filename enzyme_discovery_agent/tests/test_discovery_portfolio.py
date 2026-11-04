@@ -59,16 +59,23 @@ def test_conflicting_related_assessments_are_visible_not_silently_reconciled(tmp
     assert result['candidates'][0]['group_priority_status']=='conflicting_assessments_need_comparison'
 
 
-def test_discovery_proposals_reach_modeling_selection_without_activity_review(tmp_path):
+def test_discovery_proposals_reach_modeling_selection_without_activity_review(tmp_path, monkeypatch):
     from enzyme_discovery_agent.models.modeling_portfolio import select_modeling_portfolio
+    from enzyme_discovery_agent import config
+    # This test exercises the no-review discovery->modeling path, selected when
+    # AUTO_TARGET_REVIEW is off. The default now couples it on in direct mode, so
+    # pin it off here to test the path this test is about.
+    monkeypatch.setattr(config, 'AUTO_TARGET_REVIEW', False)
     setup(tmp_path);candidate(tmp_path,'SYNTH_A','Synthetic catalyst','FOLD_A')
     rows=select_modeling_portfolio(tmp_path,max_candidates=1)
     assert len(rows)==1 and rows[0]['priority']=='explore'
     assert rows[0]['modeling_setup_status']=='requires_step_partner_and_cofactor_validation'
 
 
-def test_small_modeling_batch_does_not_shrink_the_discovery_deliverable(tmp_path):
+def test_small_modeling_batch_does_not_shrink_the_discovery_deliverable(tmp_path, monkeypatch):
     from enzyme_discovery_agent.models.modeling_portfolio import select_modeling_portfolio
+    from enzyme_discovery_agent import config
+    monkeypatch.setattr(config, 'AUTO_TARGET_REVIEW', False)
     setup(tmp_path)
     candidate(tmp_path,'SYNTH_A','First synthetic catalyst','FOLD_A')
     candidate(tmp_path,'SYNTH_B','Other synthetic catalyst','FOLD_B')

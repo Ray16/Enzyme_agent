@@ -152,9 +152,9 @@ class RunFinalizer:
         atomic_write_json(self.run_dir / "agent_state" / "report_delivery.json", {
             "report": "report.md", "status": "incomplete", "reason": reason,
             "evaluated_records": len(evaluations), "pending_records": pending})
-        (self.run_dir / "report.md").write_text(text)
+        run_file(self.run_dir, "report.md").write_text(text)
         generate_candidates_csv(self.run_dir, evaluations, log_fn=self.log)
-        discovery_file=self.run_dir/'discovery_candidates.csv'
+        discovery_file=run_file(self.run_dir,'discovery_candidates.csv')
         if discovery_file.exists():
             self.log(f"  Discovery modeling candidates: {discovery_file}")
         try:
@@ -403,17 +403,17 @@ class RunFinalizer:
             lambda: generate_two_pass_report(
                 self.run_dir, evaluations, query, self.llm, token_usage, self.log
             ),
-            produces=self.run_dir / "report_confidence.md",
+            produces=run_file(self.run_dir, "report_confidence.md"),
         )
         self._run_finalization_stage(
             "explorative_report",
             lambda: generate_two_pass_explorative(
                 self.run_dir, evaluations, query, self.llm, token_usage, self.log
             ),
-            produces=self.run_dir / "report_explorative.md",
+            produces=run_file(self.run_dir, "report_explorative.md"),
         )
 
-        confidence_path = self.run_dir / "report_confidence.md"
+        confidence_path = run_file(self.run_dir, "report_confidence.md")
         confidence_delivered = self._load_finalization_status().get("stages", {}).get(
             "confidence_report", {}).get("status") == "completed"
         if confidence_path.exists() and confidence_delivered:
@@ -437,7 +437,7 @@ class RunFinalizer:
         self._run_finalization_stage(
             "family_fit_plot",
             lambda: render_family_fit_plot(self.run_dir, log_fn=self.log),
-            produces=self.run_dir / "family_substrate_fit.png",
+            produces=run_file(self.run_dir, "family_substrate_fit.png"),
         )
         # Candidate map in ESM embedding space (best-effort; only when the
         # agent-invoked embedding map was enabled for this run).
@@ -447,7 +447,7 @@ class RunFinalizer:
             self._run_finalization_stage(
                 "candidate_map_plot",
                 lambda: update_candidate_map(self.run_dir, log_fn=self.log),
-                produces=self.run_dir / "candidate_map.png",
+                produces=run_file(self.run_dir, "candidate_map.png"),
             )
         self._run_finalization_stage(
             "candidates_csv",

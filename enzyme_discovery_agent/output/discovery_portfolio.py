@@ -147,7 +147,7 @@ def write_discovery_portfolio(run_dir, *, limit=48):
     fields=list(selected[0]) if selected else ['selection_order','accession']
     for name,values in [('discovery_candidates.csv',selected),('discovery_alternatives.csv',alternatives)]:
         stream=io.StringIO();writer=csv.DictWriter(stream,fieldnames=fields);writer.writeheader();writer.writerows(values)
-        atomic_write_text(root/name,stream.getvalue())
+        atomic_write_text(run_file(root,name),stream.getvalue())
     summary={'requested':limit,'selected':len(selected),'available_annotation_groups':len(groups),
              'family_ids':dict(Counter(row['family_id'] for row in selected)),
              'mechanism_families':dict(Counter(row['mechanism_family'] for row in selected)),
@@ -155,5 +155,5 @@ def write_discovery_portfolio(run_dir, *, limit=48):
              'policy':'Discovery proposals ordered for breadth and native-evidence provenance, not predicted target activity. '
                  'Annotation groups are scheduling hints, not demonstrated ortholog equivalence.',
              'candidates':selected}
-    atomic_write_json(root/'discovery_modeling_handoff.json',summary)
+    atomic_write_json(run_file(root,'discovery_modeling_handoff.json'),summary)
     return summary
