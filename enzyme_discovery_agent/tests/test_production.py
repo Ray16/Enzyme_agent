@@ -222,3 +222,27 @@ def test_a_model_of_another_target_is_described_without_carrying_its_bulk():
 def test_an_absent_other_target_index_stays_absent():
     from enzyme_discovery_agent.production import compact_other_target_match
     assert compact_other_target_match({}, Path('/pool/lookup.json')) == {'full_record': '/pool/lookup.json'}
+
+
+def test_cpu_contention_preserves_ready_work_without_starting_another_alignment(tmp_path,monkeypatch):
+    import enzyme_discovery_agent.production as production
+    root=tmp_path/'launch';root.mkdir();run=tmp_path/'run';run.mkdir()
+    (root/'campaign_state.json').write_text(json.dumps({'run_dir':str(run)}))
+    item_dir=run/'agent_state/production_modeling/existing';item_dir.mkdir(parents=True)
+    item={'accession':'SYNTH_READY','status':'ready','item_dir':str(item_dir),
+          'modeling_run':str(run/'structural_modeling/existing'),'basis_sha256':'existing'}
+    (item_dir/'item.json').write_text(json.dumps(item))
+    row={'accession':'SYNTH_NEW','data':{},'native_substrates_resolved':False}
+    monkeypatch.setattr('enzyme_discovery_agent.models.modeling_portfolio.select_modeling_portfolio',lambda *a,**k:[row])
+    monkeypatch.setattr('enzyme_discovery_agent.provenance.snapshot_source_code',lambda *a,**k:None)
+    monkeypatch.setattr(production,'prepare_tasks',lambda *a,**k:(_ for _ in ()).throw(AssertionError('ready work must start before another alignment batch')))
+    monkeypatch.setattr(production,'require_capacity',lambda *a:(_ for _ in ()).throw(RuntimeError('temporary contention')))
+    clock=iter([0,.1,2]);monkeypatch.setattr(production.time,'monotonic',lambda:next(clock))
+    monkeypatch.setattr(production.time,'sleep',lambda *a:None)
+    settings={'runtime_budget_seconds':1,'max_modeling_candidates':None,'protected_unannotated_slots':0,
+        'modeling_token_budget':1000,'modeling_item_token_budget':1000,'modeling_max_attempts':2,'modeling_cpu_affinity':[3,4]}
+    production.coordinator(settings,root,root/'config.json')
+    status=json.loads((root/'campaign_status.json').read_text())
+    assert status['phase']=='waiting_for_cpu_capacity' and status['consecutive_failures']==0
+    assert json.loads((item_dir/'item.json').read_text())['status']=='ready'
+    assert not (item_dir/'claim').exists()

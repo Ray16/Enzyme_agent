@@ -122,5 +122,10 @@
       "passed": 7,
       "wall_seconds": 0.84
     }
+  },
+  "modeling_cpu_recovery_20261105": {
+    "passed": 15,
+    "wall_seconds": 31.93,
+    "scope": "Production controller and rolling attachment, including CPU contention without lost ready tasks or another blocking alignment batch."
   }
 }

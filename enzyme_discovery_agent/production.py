@@ -442,7 +442,10 @@ def coordinator(settings, root, config_path):
                 if settings['max_modeling_candidates'] is None or row['accession'] in known_ids or len(known_ids) < settings['max_modeling_candidates']:
                     selected.append(row)
                     known_ids.add(row['accession'])
-            if selected and remaining > 0 and consecutive_failures < 3:
+            # Alignment preparation can block on a remote server. Drain ready
+            # tasks first rather than holding their worker behind another batch.
+            if (selected and remaining > 0 and consecutive_failures < 3 and active is None
+                    and not any(item['status']=='ready' for item in entries)):
                 batch = hashlib.sha256(json.dumps([(r['accession'], evidence_basis(r)) for r in selected]).encode()).hexdigest()[:20]
                 directory = run / 'artifacts/production_modeling' / batch
                 try:
@@ -465,7 +468,17 @@ def coordinator(settings, root, config_path):
             if active is None and remaining > 0 and consecutive_failures < 3:
                 current = next((item for item in entries if item['status'] == 'ready'), None)
                 if current:
-                    cpus = settings['modeling_cpu_affinity']; require_capacity(cpus)
+                    cpus = settings['modeling_cpu_affinity']
+                    try:require_capacity(cpus)
+                    except RuntimeError as exc:
+                        atomic_write_json(root/'campaign_status.json',{
+                            'updated_at':time.time(),'run_dir':str(run),'owner':owner(),
+                            'phase':'waiting_for_cpu_capacity','modeling_live':False,
+                            'resource_wait_reason':str(exc),'queue':entries,
+                            'consecutive_failures':consecutive_failures})
+                        current=None
+                        time.sleep(10)
+                        continue
                     item_path = Path(current['item_dir']) / 'item.json'
                     current['token_allowance'] = min(remaining, settings['modeling_item_token_budget'])
                     atomic_write_json(item_path, current)

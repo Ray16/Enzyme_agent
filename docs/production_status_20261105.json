@@ -1,0 +1,99 @@
+{
+  "verified_at": "2026-11-05T16:51:08.205799+00:00",
+  "discovery_run": "20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+  "discovery_status": "budget_exhausted",
+  "reported_tokens": 2939746,
+  "token_allowance": 3000000,
+  "wall_seconds": 5695.27,
+  "ranked_hypotheses": 81,
+  "primary_proposals": 5,
+  "registered_records": 443,
+  "saved_target_assessments": {
+    "defer": 71,
+    "investigate": 80,
+    "prioritize": 2,
+    "exclude": 14
+  },
+  "stop_reason": "The next request could not fit the remaining allowance after reserving prompt and output headroom. Discovery did not declare scientific exploration complete.",
+  "tokens_by_workload": {
+    "internal": {
+      "calls": 21,
+      "total_tokens": 172517,
+      "prompt_tokens": 112773,
+      "completion_tokens": 59744,
+      "cache_creation_tokens": 111124,
+      "cache_read_tokens": 1607,
+      "fraction_of_total_tokens": 0.058684321706705275,
+      "cache_read_fraction_of_prompt": 0.014249864772596278
+    },
+    "controller": {
+      "calls": 39,
+      "total_tokens": 1545347,
+      "prompt_tokens": 1506029,
+      "completion_tokens": 39318,
+      "cache_creation_tokens": 945413,
+      "cache_read_tokens": 560538,
+      "fraction_of_total_tokens": 0.5256736466347773,
+      "cache_read_fraction_of_prompt": 0.37219602012975844
+    },
+    "target_relevance_batch": {
+      "calls": 37,
+      "total_tokens": 1221882,
+      "prompt_tokens": 953093,
+      "completion_tokens": 268789,
+      "cache_creation_tokens": 870219,
+      "cache_read_tokens": 82800,
+      "fraction_of_total_tokens": 0.41564203165851743,
+      "cache_read_fraction_of_prompt": 0.08687504787045965
+    }
+  },
+  "comparison_to_previous_production": {
+    "previous_tokens": 2906149,
+    "previous_wall_seconds": 7511.77,
+    "previous_ranked": 68,
+    "current_tokens_per_ranked": 36293.16049382716,
+    "previous_tokens_per_ranked": 42737.48529411765,
+    "scope": "Descriptive productivity comparison, not a controlled efficiency or candidate-activity experiment. Necessary context and reasoning are not classified as waste."
+  },
+  "modification_scope": "Only the observed CPU-contention crash and ready-work scheduling were repaired. Scientific prompts, reasoning effort, search breadth and acceptance criteria were unchanged in this repair.",
+  "modeling_recovery": {
+    "previous_failure": "CPU-contention check raised before any worker or GPU job launched.",
+    "ready_tasks_preserved": 24,
+    "msa_batch_reused": true,
+    "coordinator_pid": 3660384,
+    "source_recovery": {
+      "archive": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/rolling_modeling/revisions/20261105T164911Z_cpu_wait",
+      "reason": "Previous coordinator exited on transient CPU contention before launching any model worker.",
+      "preserved_ready_tasks": 24,
+      "preserved_completed_msa_batch": true,
+      "previous_gpu_requests": 0,
+      "source_changes": "Keep tasks queued on CPU contention; drain ready work before waiting for another alignment batch.",
+      "discovery_allowance_increased": false
+    },
+    "current_modeling_live": true,
+    "completed_ensembles": 0,
+    "process_resource_checks": [
+      {
+        "pid": 3660384,
+        "cpu_affinity": [
+          77
+        ],
+        "native_thread_limits_verified": true
+      },
+      {
+        "pid": 3662711,
+        "cpu_affinity": [
+          78,
+          79
+        ],
+        "native_thread_limits_verified": true
+      }
+    ],
+    "discovery_allowance_increased": false
+  },
+  "tests": {
+    "passed": 15,
+    "wall_seconds": 31.93,
+    "scope": "Production controller and rolling attachment, including CPU contention without lost ready tasks or another blocking alignment batch."
+  }
+}

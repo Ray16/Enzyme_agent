@@ -84,3 +84,11 @@ unranked records, handoff without a native-annotation gate, repeated-coordinator
 attachment, dead-owner reconciliation, batched sequence preparation and
 molecular-system reuse checks across different ligands, assemblies and charges.
 Full release results and the live attachment record are recorded separately.
+
+The first live coordinator stopped on temporary CPU contention after completing
+its initial 24-sequence MSA batch. The controller now preserves ready tasks and
+waits for capacity, and starts ready work before another blocking alignment
+batch. The completed alignments were reused on recovery; discovery's token
+allowance was not increased. See
+[production_status_20261105.json](production_status_20261105.json) for the actual
+stop reason, descriptive token productivity and recovery verification.

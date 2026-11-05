@@ -111,8 +111,8 @@
     },
     {
       "path": "docs/ROLLING_MODELING.md",
-      "bytes": 4954,
-      "sha256": "ee54ddf95afc11ab614a6787ca33a8e395616877373b7353b6d52a8b717143fe"
+      "bytes": 5452,
+      "sha256": "17a563aa69bfb56c174b963bbcd53d8f6ea82d05404eece7cf4c4feac81ec962"
     },
     {
       "path": "docs/discovery_agent_framework.md",
@@ -160,6 +160,11 @@
       "sha256": "754a00cc8a52540cd1bf19474af686c9c737a42f456a558d6b6c69fc5e67e7da"
     },
     {
+      "path": "docs/production_status_20261105.json",
+      "bytes": 3818,
+      "sha256": "1e3b4c4f8355265be20ac28205f2a804e512b439d239890b72bced8eb231b1de"
+    },
+    {
       "path": "docs/relevance_filtering_principles.md",
       "bytes": 3636,
       "sha256": "eb904c7c502eb3c39390b2f69f67b645db71706d6ec18ccf935786feac47ddad"
@@ -176,8 +181,8 @@
     },
     {
       "path": "docs/review_validation.json",
-      "bytes": 3900,
-      "sha256": "85c88e06add8de251468e0b8807f1d03d28fa1a3812f982360e163746e5ef4fd"
+      "bytes": 4136,
+      "sha256": "c150bad8e0cdb0eabb163848099e331e93f04e292e432283398f004756d66d8d"
     },
     {
       "path": "docs/rolling_modeling_validation_20261104.json",
@@ -1091,8 +1096,8 @@
     },
     {
       "path": "enzyme_discovery_agent/production.py",
-      "bytes": 31820,
-      "sha256": "d7175c327d6b0aa1ac91fa55cc3fe4e492ce924259920d163930e525c32a231f"
+      "bytes": 32655,
+      "sha256": "241805586bae9f2a84254c804eae1d5f5c007b5614948cc2196d7c5378890c27"
     },
     {
       "path": "enzyme_discovery_agent/prompts/__init__.py",
@@ -1661,8 +1666,8 @@
     },
     {
       "path": "enzyme_discovery_agent/tests/test_production.py",
-      "bytes": 14116,
-      "sha256": "ef233a36465484e783d5c210e286b4806d33ee06c91bbd31801be4d4765f9034"
+      "bytes": 16061,
+      "sha256": "590905acc5e88876c1fa93a64f9a75a240e367ad35ae28c0e7007bffcb9806ac"
     },
     {
       "path": "enzyme_discovery_agent/tests/test_promoted_candidate_screened.py",
