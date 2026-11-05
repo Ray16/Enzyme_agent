@@ -1,0 +1,227 @@
+{
+  "checks": {
+    "assay_rows": 50,
+    "measurements_per_row": 6,
+    "summary_mean_and_sd_match": true,
+    "pose_angles_match_saved_current_metric": true,
+    "assay_repeat_type": "Not established by this CSV; do not call biological replicates.",
+    "retrospective_scope": "Repeatedly inspected homolog panel; no independent validation."
+  },
+  "date_group_means": {
+    "AS9": {
+      "2025-01-24": 10.946810440104782,
+      "2025-01-09": 7.618751319746711
+    },
+    "AS17": {
+      "2025-01-24": 2.691567326953761,
+      "2025-01-09": 1.1235633368732876
+    },
+    "AS23": {
+      "2025-01-24": 2.889250836992158,
+      "2025-01-09": 0.012136598511276834
+    },
+    "SfaB": {
+      "2025-01-24": 0.0977355821586961,
+      "2025-01-09": 0.0
+    },
+    "BL21": {
+      "2025-01-24": 0.004255169313186467,
+      "2025-01-09": 0.011076429880298102
+    }
+  },
+  "angle_yield_correlations": [
+    {
+      "subset": "All 48 homologs",
+      "n": 48,
+      "spearman_rho": 0.27507598784194526
+    },
+    {
+      "subset": "Without the three highest-yielding homologs",
+      "n": 45,
+      "spearman_rho": 0.14163372859025034
+    }
+  ],
+  "shortlist_recovery": {
+    "Three highest-yielding homologs / weighted_angle": {
+      "at5": 2.0,
+      "at10": 3.0,
+      "at15": 3.0
+    },
+    "Three highest-yielding homologs / mean_angle": {
+      "at5": 2.0,
+      "at10": 3.0,
+      "at15": 3.0
+    },
+    "Three highest-yielding homologs / minimum_distance": {
+      "at5": 0.0,
+      "at10": 0.0,
+      "at15": 0.0
+    },
+    "Three highest-yielding homologs / near_attack_fraction": {
+      "at5": 0.5,
+      "at10": 1.0,
+      "at15": 1.0
+    },
+    "Three highest-yielding homologs / interface_confidence": {
+      "at5": 0.0,
+      "at10": 1.0,
+      "at15": 1.0
+    },
+    "Seven homologs above SfaB mean / weighted_angle": {
+      "at5": 2.0,
+      "at10": 4.0,
+      "at15": 4.0
+    },
+    "Seven homologs above SfaB mean / mean_angle": {
+      "at5": 2.0,
+      "at10": 4.0,
+      "at15": 4.0
+    },
+    "Seven homologs above SfaB mean / minimum_distance": {
+      "at5": 0.0,
+      "at10": 1.0,
+      "at15": 1.0
+    },
+    "Seven homologs above SfaB mean / near_attack_fraction": {
+      "at5": 0.5,
+      "at10": 3.0,
+      "at15": 3.0
+    },
+    "Seven homologs above SfaB mean / interface_confidence": {
+      "at5": 0.0,
+      "at10": 2.0,
+      "at15": 2.0
+    }
+  },
+  "finite_pose_sampling": {
+    "sizes": [
+      5,
+      10,
+      20,
+      30,
+      40,
+      50
+    ],
+    "resamples": 300,
+    "all_top3_at5": [
+      0.08666666666666667,
+      0.12666666666666668,
+      0.06666666666666667,
+      0.03666666666666667,
+      0.02666666666666667,
+      0.0
+    ],
+    "all_top3_at10": [
+      0.44,
+      0.59,
+      0.6866666666666666,
+      0.72,
+      0.8466666666666667,
+      1.0
+    ],
+    "kendall_quantiles": [
+      [
+        0.700354609929078,
+        0.7889184397163121,
+        0.861613475177305,
+        0.9060283687943264,
+        0.9361702127659576,
+        1.0
+      ],
+      [
+        0.7535460992907802,
+        0.8297872340425533,
+        0.8900709219858156,
+        0.9273049645390072,
+        0.9539007092198583,
+        1.0
+      ],
+      [
+        0.8050531914893617,
+        0.8671099290780143,
+        0.9167553191489363,
+        0.948581560283688,
+        0.9680851063829788,
+        1.0
+      ]
+    ]
+  },
+  "consistency_examples": {
+    "AS30": 5,
+    "AS32": 47
+  },
+  "mutation_counts": {
+    "AS17": {
+      "positions": 126,
+      "substitutions": 2394,
+      "higher_A": 552,
+      "higher_A_shorter_dH": 175
+    },
+    "AS23": {
+      "positions": 88,
+      "substitutions": 1672,
+      "higher_A": 1405,
+      "higher_A_shorter_dH": 945
+    },
+    "AS9": {
+      "positions": 80,
+      "substitutions": 1520,
+      "higher_A": 745,
+      "higher_A_shorter_dH": 468
+    }
+  },
+  "inventory_status_counts": {
+    "retained": 88,
+    "duplicate": 5,
+    "excluded": 5
+  },
+  "workbook_audit": {
+    "2025_activity_rows": 50,
+    "all_six_values_match_csv": true,
+    "historical_2023_sheets": [
+      "BioRepData",
+      "Noise",
+      "TechRepData",
+      "CAL",
+      "Layout",
+      "Data_wOutlier"
+    ],
+    "historical_limits_not_transferred": "No verified mapping from the 2023 Nyl-labeled workbook to the 2025 AS-labeled panel."
+  },
+  "PuuA_metal_audit": {
+    "Mg_Mg_distance_A": 3.2443382691178355,
+    "ions": [
+      {
+        "Mg": 1,
+        "nearest_ATP_oxygen": [
+          2.284048743487957,
+          "O2G"
+        ],
+        "nearest_protein_N_or_O": [
+          2.249611841236977,
+          "GLU 232 OE1"
+        ],
+        "nearest_adipate_oxygen": [
+          4.51573069853841,
+          "O14"
+        ]
+      },
+      {
+        "Mg": 2,
+        "nearest_ATP_oxygen": [
+          2.1148463784104305,
+          "O3G"
+        ],
+        "nearest_protein_N_or_O": [
+          2.098213989043375,
+          "GLU 369 OE2"
+        ],
+        "nearest_adipate_oxygen": [
+          5.4291303365457155,
+          "O14"
+        ]
+      }
+    ],
+    "experimental_stoichiometry_verified": false
+  }
+}

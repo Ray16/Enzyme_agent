@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs>
+<clipPath id="clip_1">
+<path transform="matrix(1,0,0,-1,80,125)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_2">
+<path transform="matrix(1,0,0,-1,80,125)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_3">
+<path transform="matrix(1,0,0,1,80,35)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_4">
+<path transform="matrix(1,0,0,-1,80,202)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_5">
+<path transform="matrix(1,0,0,-1,80,202)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_6">
+<path transform="matrix(1,0,0,1,80,145)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_7">
+<path transform="matrix(1,0,0,-1,103,346)" d="M0 0H484V78H0Z"/>
+</clipPath>
+<clipPath id="clip_8">
+<path transform="matrix(1,0,0,-1,103,346)" d="M0 0H484V78H0Z"/>
+</clipPath>
+<clipPath id="clip_9">
+<path transform="matrix(1,0,0,1,103,268)" d="M0 0H484V78H0Z"/>
+</clipPath>
+<clipPath id="clip_10">
+<path transform="matrix(1,0,0,-1,103,584)" d="M0 0H484V231H0Z"/>
+</clipPath>
+<clipPath id="clip_11">
+<path transform="matrix(1,0,0,-1,103,584)" d="M0 0H484V231H0Z"/>
+</clipPath>
+<clipPath id="clip_12">
+<path transform="matrix(1,0,0,1,103,353)" d="M0 0H484V231H0Z"/>
+</clipPath>
+<clipPath id="clip_13">
+<path transform="matrix(1,0,0,-1,718,346)" d="M0 0H484V78H0Z"/>
+</clipPath>
+<clipPath id="clip_14">
+<path transform="matrix(1,0,0,-1,718,346)" d="M0 0H484V78H0Z"/>
+</clipPath>
+<clipPath id="clip_15">
+<path transform="matrix(1,0,0,1,718,268)" d="M0 0H484V78H0Z"/>
+</clipPath>
+<clipPath id="clip_16">
+<path transform="matrix(1,0,0,-1,718,584)" d="M0 0H484V231H0Z"/>
+</clipPath>
+<clipPath id="clip_17">
+<path transform="matrix(1,0,0,-1,718,584)" d="M0 0H484V231H0Z"/>
+</clipPath>
+<clipPath id="clip_18">
+<path transform="matrix(1,0,0,1,718,353)" d="M0 0H484V231H0Z"/>
+</clipPath>
+<clipPath id="clip_19">
+<path transform="matrix(1,0,0,-1,1333,346)" d="M0 0H484V78H0Z"/>
+</clipPath>
+<clipPath id="clip_20">
+<path transform="matrix(1,0,0,-1,1333,346)" d="M0 0H484V78H0Z"/>
+</clipPath>
+<clipPath id="clip_21">
+<path transform="matrix(1,0,0,1,1333,268)" d="M0 0H484V78H0Z"/>
+</clipPath>
+<clipPath id="clip_22">
+<path transform="matrix(1,0,0,-1,1333,584)" d="M0 0H484V231H0Z"/>
+</clipPath>
+<clipPath id="clip_23">
+<path transform="matrix(1,0,0,-1,1333,584)" d="M0 0H484V231H0Z"/>
+</clipPath>
+<clipPath id="clip_24">
+<path transform="matrix(1,0,0,1,1333,353)" d="M0 0H484V231H0Z"/>
+</clipPath>
+<clipPath id="clip_25">
+<path transform="matrix(1,0,0,-1,110,875)" d="M0 0H1700V155H0Z"/>
+</clipPath>
+<clipPath id="clip_26">
+<path transform="matrix(1,0,0,-1,110,875)" d="M0 0H1700V155H0Z"/>
+</clipPath>
+<clipPath id="clip_27">
+<path transform="matrix(1,0,0,1,110,720)" d="M0 0H1700V155H0Z"/>
+</clipPath>
+<clipPath id="clip_28">
+<path transform="matrix(1,0,0,-1,80,1065)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+<clipPath id="clip_29">
+<path transform="matrix(1,0,0,-1,80,1065)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+<clipPath id="clip_30">
+<path transform="matrix(1,0,0,1,80,1004)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+</defs>
+<g clip-path="url(#clip_1)">
+<g clip-path="url(#clip_2)">
+<g clip-path="url(#clip_3)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 80 35)" font-size="48" font-family="DejaVu Sans" font-weight="bold"><tspan y="45.16" x="1 35.56 68.104007 102.424 134.776 158.44 190.792 213.73601 246.28002 262.984 295.528 326.488 360.808 377.224 410.2 433.864 466.216 489.16 505.576 538.552 572.68 590.872 607.576 628.456 652.12 685.096 713.032 745.576 779.704 796.40798 830.72799 863.272 898.83999 932.96798 949.384 972.328 988.744 1021.72006 1055.848 1084.4081 1102.6001 1119.3041 1151.6561 1185.7842 1220.1041 1236.8081 1268.0562 1300.4082 1316.8242 1333.2402 1367.5602 1399.9122 1422.8562 1439.2722 1472.2482">Separate exploration, frozen de&#xfb01;nitions, and validation</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_4)">
+<g clip-path="url(#clip_5)">
+<g clip-path="url(#clip_6)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 80 145)" font-size="25" font-family="DejaVu Sans"><tspan y="24" x="1 16.075 33.425004 53.100008 68.175 87.850009 103.700008 119.475009 138.725 146.65001 162.15001 179.25002 193.17502 200.52503 219.32503 234.47504 249.72504 257.07505 276.75004 295.45005 303.37504 311.30003 319.225 338.475 353.85 368.625 384 390.925 406.19999 422.05 446.4 461.775 477.6 487.4 495.32499 509.05 524.35 537.35 552.725 565.725 573.64999 583.375 598.75 623.1 638.39999 645.32498 661.14999 669.07498 684.9249 700.2999 715.07498 730.44998 737.37496 752.64999 768.49996 792.8499 808.2249 824.0499 833.8499 841.7749 855.4999 870.79989 883.79989 899.17489 912.17489 920.09988 935.39987 943.7498 953.5498 968.9248 979.1998 987.1248 996.9248 1012.7498 1028.1248 1042.8998 1050.8248 1057.7499 1073.5748 1082.3749 1097.6499 1107.475 1131.825 1139.75 1155.05 1162.9751 1176.7001 1192.525 1207.8251 1223.65 1239.5 1254.875">PROPOSED VALIDATION &#x00b7; Development cases remain development cases after they inform a change.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M80 480H610V830H80Z" fill="#f3f4f5"/>
+<g clip-path="url(#clip_7)">
+<g clip-path="url(#clip_8)">
+<g clip-path="url(#clip_9)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 103 268)" font-size="31" font-family="DejaVu Sans" font-weight="bold"><tspan y="29.52" x="1 22.545002 33.333005 54.506006 74.50101 96.66601 107.268009 128.565 143.848 164.86602 175.654 197.819 218.837 239.018 260.036 270.638 291.935 314.1 346.371 367.389 389.43">1 Explore development</tspan><tspan y="67.96" x="1 23.165 44.059003 58.877004">data</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_10)">
+<g clip-path="url(#clip_11)">
+<g clip-path="url(#clip_12)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 103 353)" font-size="29" font-family="DejaVu Sans"><tspan y="27.68" x="1 21.242 38.961 67.207 85.593 103.341 114.622 132.457 141.65 160.036 177.871 192.951 208.87201 220.79102 228.82402 247.21002 258.57804 276.29704 288.21604 303.29603 312.489 330.237 348.594 366.97999 376.17298 391.25297 409.08796 420.45597 438.81297 457.19895 472.27894">Compare descriptors and setups.</tspan><tspan y="63.64" x="1 23.330002 31.363003 49.111005 67.497 85.854007 103.573009 118.65301 136.488 145.681 162.472 180.829 198.54799 222.241 240.59799 249.79099 259.999 277.747 285.78 293.813 312.16999 323.451 341.28599 356.36598">Diagnose known failures.</tspan><tspan y="99.6" x="1 19.821 37.656 53.577 71.296 82.69299 101.078998 110.271999 128.107 145.246 163.08101 175.00002 192.139 201.332 212.7 224.619 232.65201 250.48702 268.87303 278.066 296.452 314.287 332.52799 350.88499 358.91798 370.28599 378.31898 396.03797 414.39497">Record every tried de&#xfb01;nition.</tspan><tspan y="171.51999" x="1 21.242 39.599 50.996 62.277 80.112 98.469 109.837009 119.03001 137.38701 155.106 183.352 201.071 209.104 226.823 245.209 254.402 272.788 290.536 308.893 326.728 334.761 343.95399 362.33998 380.17497 388.20796 405.92695 424.28395 442.66993">Current homolog panel belongs</tspan><tspan y="207.47998" x="1 19.357 37.192 48.473 66.308">here.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M695 480H1225V830H695Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_13)">
+<g clip-path="url(#clip_14)">
+<g clip-path="url(#clip_15)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 718 268)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 23.935002 35.419004 55.846006 72.115009 94.489009 116.86301 136.069 158.443 169.92699 185.70099 209.16399 231.538 243.02199 265.26399 288.727 310.969 322.255 343.738 363.37303 374.65904">2 Freeze the analysis</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_16)">
+<g clip-path="url(#clip_17)">
+<g clip-path="url(#clip_18)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 718 353)" font-size="26" font-family="DejaVu Sans"><tspan y="24.920002" x="1 14.052001 21.254002 36.620004 44.862005 58.382005 72.656009 88.54201 98.65601 114.64601 122.88801 138.8 155.258 171.74199 179.984 190.09799 206.088 222 236.274 246.466 253.668 269.034 285.024 293.266 309.17799 319.36997 335.25596 360.57997 374.09996">Fix score and reactive atoms.</tspan><tspan y="57.160005" x="1 21.02 37.010004 51.284006 58.486005 74.398 84.512 100.502 108.743999 122.264 138.176 163.5 179.984 187.18599 203.176 212.536 226.81 242.696 259.154 275.612 285.804 294.046 304.16 320.15 336.634 353.092 360.294 370.40803 386.398 411.72203 427.712 444.17 454.362 467.882">Declare sample-count requirements.</tspan><tspan y="89.40001" x="1 21.02 37.010004 53.364004 69.82201 85.812007 94.054 108.328 124.240009 140.698 157.18199 164.38399 180.86798 196.77999 206.97199 222.96199 231.204 247.68799 264.146 280.63 297.114 313.104 323.296 331.538 347.44999 363.908">De&#xfb01;ne candidate budget and</tspan><tspan y="121.64" x="1 16.99 33.447999 49.932 66.416 82.302 89.504009 105.962009 116.15401">endpoint.</tspan><tspan y="186.12001" x="1 16.210001 26.324002 42.314004 55.834005 71.824008 82.51001 97.87601 113.866008 122.108 135.628 151.514 167.97202 178.08602 192.36002 208.35002 216.59203 232.50403 248.96204 265.44606 273.68806 289.05406 305.04405 315.73005 329.25004 336.45204 352.338 368.79603 377.03804 384.24003 400.72404 416.71403 433.17204 443.364 450.566 460.758 472.406">Preserve source and version identity.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M1310 480H1840V830H1310Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_19)">
+<g clip-path="url(#clip_20)">
+<g clip-path="url(#clip_21)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 1333 268)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 23.935002 35.419004 53.536005 75.91 95.545009 111.31901 122.80301 134.089 157.552 181.147 203.521 227.116 249.48999 272.953 296.548 318.922 342.385 358.159 369.643 389.17903 411.42103 431.05604 453.43003">3 Test independent cases</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_22)">
+<g clip-path="url(#clip_23)">
+<g clip-path="url(#clip_24)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 1333 353)" font-size="27" font-family="DejaVu Sans"><tspan y="25.84" x="1 20.737 34.777 51.382 59.941 77.032 94.123 104.707 121.204 138.295 153.118 170.209 186.814 203.93199 212.491 222.994 239.599 256.123 270.94599 281.53 289.009 305.506 322.59703 336.63703 345.196">Use untouched reactions /</tspan><tspan y="59.32" x="1 15.823001 32.347005 49.438005 66.556 74.035 91.153 107.677 118.261 134.866 148.906">candidates.</tspan><tspan y="92.8" x="1 24.274003 40.798006 51.382005 66.205 83.296009 91.855 102.439 118.936008 135.433 142.912 156.952 165.511 182.035 199.126 216.244 224.80301 235.30602 251.91101 265.95103 282.44804 299.53904 310.04206 324.86506 341.47007 350.02906 367.14707 384.23808 401.35609 418.4741 435.0791 445.66313 459.70314">Match tools and resource budgets.</tspan><tspan y="126.28" x="1 18.523 35.128 52.246 68.743 79.84 90.423999 98.982997 116.07399 133.165 147.98799 164.59299 175.68999 186.27399 202.79799 210.277 227.368 237.952 253.909 262.468 278.992 296.083 313.20103 321.76 331.264 347.78804 355.26704 362.74604 379.83705 390.34004 406.94505 420.98506">Report uncertainty and failures.</tspan><tspan y="193.23999" x="1 17.875 33.832 50.329004 57.808004 74.926 83.485 94.069 111.16 128.251 135.73001 152.82102 169.93901 178.49802 194.99501 212.08602 220.64502 231.22902 248.32003 264.92503 273.484 284.06803 300.67304 314.71305 325.29707 333.85606 350.35307 367.44407 378.02809 392.85108 409.34809 435.6461 452.2511 466.2911">Avoid tuning on the test outcomes.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M620 660H685"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M672 667 685 660 672 653"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1235 660H1300"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1287 667 1300 660 1287 653"/>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M80 182H1840V390H80Z" fill="#f8edef"/>
+<g clip-path="url(#clip_25)">
+<g clip-path="url(#clip_26)">
+<g clip-path="url(#clip_27)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 110 720)" font-size="34" font-family="DejaVu Sans" font-weight="bold"><tspan y="32.28" x="1 25.888003 42.65 66.008 86.23801 110.548007 133.6 153.72801 169.98001 181.60802 203.74202 226.79402 238.62602 261.67805 283.60804 307.91804 330.97004 347.73204 359.36003 394.75404 417.80604 441.98005 458.23207 481.14808 492.77607 504.60807 521.37008 544.728 568.90206 593.07608 617.38607">Prospective experimental round:</tspan></text>
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 110 720)" font-size="34" font-family="DejaVu Sans"><tspan y="32.28" x="631.46096 642.23898 659.91897 680.8289 690.24697 711.1569 729.82296 743.15097 753.92898 775.485 796.39498 808.363 829.13699 842.363 863.27297 874.05099 907.167 928.07699 948.88497 966.56497 988.0869 1002.0609 1011.47897 1033.001 1054.557 1065.335 1093.793 1104.5709 1118.5449 1140.0669 1161.5889 1172.3668 1205.4828 1226.2908 1239.6188 1258.2848 1279.8068 1300.7168 1322.2728 1333.0508 1351.7168 1372.4909 1394.0128 1407.3408 1420.5668 1441.3408 1450.7588 1468.4389 1479.2168 1507.6748 1518.4528 1539.3628 1559.4568 1580.2648 1589.6828 1611.2047 1632.0127 1645.3407"> select before measuring &#x2192; run matched controls &#x2192; evaluate</tspan><tspan y="74.44" x="1 14.328001 35.850004 56.760004 67.538 89.094 102.32 123.229999 144.786 165.696 187.082 208.604 229.514 251.07 261.84803 282.75804 304.28004 325.83604 347.39204 368.16603 377.584 399.10603 412.43403 423.21205 451.67005 462.44807 475.67408 496.58409 516.6781 526.0961 543.7761 564.6861 575.4641 596.2381 617.7601 627.1781 647.2721 658.0501 670.0181 690.7921 704.7661 715.5441 736.3521 747.1301 764.8101 786.3321 807.88809 825.56808 846.478 868.03408 889.556 910.466 931.988 945.316 956.094 969.32 990.094 1011.61599 1033.138 1054.694">the prede&#xfb01;ned endpoint &#x2192; revise only for a subsequent round.</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_28)">
+<g clip-path="url(#clip_29)">
+<g clip-path="url(#clip_30)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 80 1004)" font-size="19" font-family="DejaVu Sans"><tspan y="18.48" x="1 13.996 20.019001 27.410002 39.095 51.141004 62.826005 74.454 81.902 93.587 105.632999 110.895999 122.125 128.148 133.411 145.43799 155.318 167.364 179.049 189.48 196.928 208.61299 220.659 226.68199 238.29099 246.09999 252.12299 259.51399 271.19898 283.24497 294.87297 300.13597 307.52696 319.21195 331.25794 337.28096 347.71195 359.33995 369.21995 380.90495 386.92796 397.35896 408.98695 421.01396 433.04096 444.64997 452.09797 458.12098 469.80598 479.68598 487.13398 498.76197 510.80796 516.0709 521.3339 531.2139 543.2409 549.2639 561.2909 572.9759 578.2389 590.2849 597.12496 608.73397 620.7609 628.2089 634.23196 646.27798 657.96298 669.9899 681.6749 689.48397 701.11196 706.37496 711.63796 721.59396 733.2219 740.6699 745.9329 757.54196 769.5689 775.5919 781.6149 793.20498 805.23196 810.49496 820.37496 826.39797 838.444 843.707 855.33499 867.381 875.19 886.818 905.324 911.347 916.61 926.49 932.513 944.141 956.16799 962.191 973.876 985.105 996.733 1001.996 1014.02297 1025.651 1033.099 1038.3619 1049.971 1061.9979 1068.0209 1080.0669 1085.3298 1096.9579 1108.9849">A repeatedly inspected or repaired case cannot establish held-out generalization. This diagram is an evaluation plan.</tspan></text>
+</g>
+</g>
+</g>
+</svg>

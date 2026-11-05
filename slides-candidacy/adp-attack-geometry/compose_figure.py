@@ -80,7 +80,7 @@ tag(r'$d$', pair.mean(0)+[-45,16], TEAL, 23, 'center')
 tag(r'$P_\gamma$', P['P_gamma']+[0,-100], INK, 22, 'center')
 tag(r'$\theta$', ARC[len(ARC)//2]+[55,-35], PURPLE, 23, 'center')
 tag(r'$O_{\mathrm{lg}}$ (O3B)', P['O3B']+[30,75], INK, 17, 'center')
-ax.text(.025,.045,'PuuA (P78061) • one predicted activation-step pose',
+ax.text(.025,.045,'PuuA (P78061) • predicted pose; two Mg²⁺ modeled',
         transform=ax.transAxes, fontsize=12, color=MUTED,
         bbox=dict(boxstyle='round,pad=.19',facecolor='white',edgecolor='none',alpha=.94),zorder=30)
 for ext in ('png','svg','pdf'):

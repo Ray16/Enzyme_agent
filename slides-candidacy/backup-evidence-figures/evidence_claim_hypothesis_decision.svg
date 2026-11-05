@@ -1,0 +1,243 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs>
+<clipPath id="clip_1">
+<path transform="matrix(1,0,0,-1,80,125)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_2">
+<path transform="matrix(1,0,0,-1,80,125)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_3">
+<path transform="matrix(1,0,0,1,80,35)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_4">
+<path transform="matrix(1,0,0,-1,80,202)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_5">
+<path transform="matrix(1,0,0,-1,80,202)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_6">
+<path transform="matrix(1,0,0,1,80,145)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_7">
+<path transform="matrix(1,0,0,-1,103,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_8">
+<path transform="matrix(1,0,0,-1,103,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_9">
+<path transform="matrix(1,0,0,1,103,308)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_10">
+<path transform="matrix(1,0,0,-1,103,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_11">
+<path transform="matrix(1,0,0,-1,103,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_12">
+<path transform="matrix(1,0,0,1,103,393)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_13">
+<path transform="matrix(1,0,0,-1,463,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_14">
+<path transform="matrix(1,0,0,-1,463,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_15">
+<path transform="matrix(1,0,0,1,463,308)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_16">
+<path transform="matrix(1,0,0,-1,463,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_17">
+<path transform="matrix(1,0,0,-1,463,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_18">
+<path transform="matrix(1,0,0,1,463,393)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_19">
+<path transform="matrix(1,0,0,-1,823,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_20">
+<path transform="matrix(1,0,0,-1,823,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_21">
+<path transform="matrix(1,0,0,1,823,308)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_22">
+<path transform="matrix(1,0,0,-1,823,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_23">
+<path transform="matrix(1,0,0,-1,823,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_24">
+<path transform="matrix(1,0,0,1,823,393)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_25">
+<path transform="matrix(1,0,0,-1,1183,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_26">
+<path transform="matrix(1,0,0,-1,1183,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_27">
+<path transform="matrix(1,0,0,1,1183,308)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_28">
+<path transform="matrix(1,0,0,-1,1183,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_29">
+<path transform="matrix(1,0,0,-1,1183,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_30">
+<path transform="matrix(1,0,0,1,1183,393)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_31">
+<path transform="matrix(1,0,0,-1,1543,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_32">
+<path transform="matrix(1,0,0,-1,1543,386)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_33">
+<path transform="matrix(1,0,0,1,1543,308)" d="M0 0H274V78H0Z"/>
+</clipPath>
+<clipPath id="clip_34">
+<path transform="matrix(1,0,0,-1,1543,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_35">
+<path transform="matrix(1,0,0,-1,1543,634)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_36">
+<path transform="matrix(1,0,0,1,1543,393)" d="M0 0H274V241H0Z"/>
+</clipPath>
+<clipPath id="clip_37">
+<path transform="matrix(1,0,0,-1,110,900)" d="M0 0H1700V145H0Z"/>
+</clipPath>
+<clipPath id="clip_38">
+<path transform="matrix(1,0,0,-1,110,900)" d="M0 0H1700V145H0Z"/>
+</clipPath>
+<clipPath id="clip_39">
+<path transform="matrix(1,0,0,1,110,755)" d="M0 0H1700V145H0Z"/>
+</clipPath>
+<clipPath id="clip_40">
+<path transform="matrix(1,0,0,-1,80,1065)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+<clipPath id="clip_41">
+<path transform="matrix(1,0,0,-1,80,1065)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+<clipPath id="clip_42">
+<path transform="matrix(1,0,0,1,80,1004)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+</defs>
+<g clip-path="url(#clip_1)">
+<g clip-path="url(#clip_2)">
+<g clip-path="url(#clip_3)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 80 35)" font-size="48" font-family="DejaVu Sans" font-weight="bold"><tspan y="45.16" x="1 37.288003 69.832 102.37601 136.69602 153.40001 186.376 220.69602 249.25601 281.80003 305.46403 336.71205 369.06404 392.00804 408.424 441.40003 475.528 504.088 522.28 538.984 555.4 589.528 612.47207 645.01608 668.68008 703.00009 726.66409 759.20809 782.1521 814.5041 837.4481 853.86416 886.84017 920.96817 949.52816 967.72018 984.42416 1016.7761 1050.9042 1085.2241 1101.9281 1136.248 1168.792 1197.208 1213.624 1242.1841 1258.6001 1291.576 1325.7041 1354.2642 1370.9682 1405.2881 1421.7041 1450.2642 1473.2081 1489.6242 1523.7522 1552.1682">Keep observations, interpretations, and decisions distinct</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_4)">
+<g clip-path="url(#clip_5)">
+<g clip-path="url(#clip_6)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 80 145)" font-size="25" font-family="DejaVu Sans"><tspan y="24" x="1 18.45 36.725 54.074998 71.424999 87.2 105.899997 121.149997 129.075 144.85 161.95001 169.30002 188.55002 204.32501 223.02501 240.475 256.25 264.175 279.25 296.6 303.95 322.65003 340.10005 347.45005 362.52507 376.45005 392.22505 400.15003 408.075 416 431.85 447.125 462.95 472.67503 486.40003 501.77503 509.7 516.625 532.45 542.25 557.625 573.475 583.75 590.675 600.475 615.25 623.175 638.475 654.3 670.14999 678.07498 691.07498 704.7999 711.7249 727.0999 742.9249 752.7249 759.6499 775.3749 789.09988 797.02487 810.7498 826.02487 835.84988 845.5749 860.9499 874.67489 884.47488 900.29989 915.67489 928.67489 941.67489 949.59988 959.3249 974.6999 990.54989 1006.3749 1013.29989 1023.0249 1038.3999 1046.325 1062.1749 1069.1 1086.2999 1101.6749 1111.3999 1126.7749 1142.5999 1152.3999 1160.325 1174.0499 1189.8749 1205.2499 1218.9749 1233.4498 1246.4498">CURRENT EVIDENCE PRINCIPLE &#x00b7; Source integrity and scienti&#xfb01;c correctness require di&#xfb00;erent checks.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M80 430H400V790H80Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_7)">
+<g clip-path="url(#clip_8)">
+<g clip-path="url(#clip_9)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 103 308)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 26.410002 48.652 79.111 90.595 110.23 132.901 156.364 172.633 192.16899">Raw source</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_10)">
+<g clip-path="url(#clip_11)">
+<g clip-path="url(#clip_12)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 103 393)" font-size="26" font-family="DejaVu Sans"><tspan y="24.920002" x="1 15.508001 31.420002 47.904 63.893999 74.58 82.822 99.306 115.218 128.738 142.25801 158.17002 174.654">Paper passage</tspan><tspan y="57.160005" x="1 21.02 36.932004 47.124006 63.036008 79.520008 95.43201 108.95201 124.94201 133.184 143.298 159.28801 173.56201 189.44802 199.66602">Database record</tspan><tspan y="89.40001" x="1 23.412 39.402 55.314004 68.83401 85.29201 95.40601 111.39601 136.72002 152.71002 169.16803 179.36003 187.60204">Measurement /</tspan><tspan y="121.64" x="1 15.274 31.16 47.045999 57.264 73.748 80.950008 97.408008 113.32001 123.51201 139.50202 147.74402 164.09803 171.30002">coordinate &#xfb01;le</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M410 610H430"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M417 617 430 610 417 603"/>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M440 430H760V790H440Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_13)">
+<g clip-path="url(#clip_14)">
+<g clip-path="url(#clip_15)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 463 308)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 22.021 33.307 56.77 77.824008 100.198009 123.79301 135.27701 154.813 166.099 188.341 199.627">Linked claim</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_16)">
+<g clip-path="url(#clip_17)">
+<g clip-path="url(#clip_18)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 463 393)" font-size="26" font-family="DejaVu Sans"><tspan y="24.920002" x="1 26.688002 43.146005 50.348005 64.622 81.08 89.322 103.596 119.508 135.966 152.45 159.652 176.13599 192.04799 202.23999 218.23">Which candidate?</tspan><tspan y="57.160005" x="1 26.688002 43.146005 50.348005 64.622 81.08 89.322 99.436 115.425998 131.338 145.612 155.804 163.006 178.892 195.35 203.59201">Which reaction /</tspan><tspan y="89.40001" x="1 14.520001 30.978 47.461999 60.982 71.173999 81.86 97.772 107.964008 123.954">substrate?</tspan><tspan y="121.64" x="1 17.484 33.942 50.426004 66.91 82.796009 93.48201 103.67401 111.91601 127.82801 144.28601">Support and</tspan><tspan y="153.88" x="1 15.274 31.16 47.618 63.972 71.174 85.448009 95.64001">con&#xfb02;icts</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M770 610H790"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M777 617 790 610 777 603"/>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M800 430H1120V790H800Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_19)">
+<g clip-path="url(#clip_20)">
+<g clip-path="url(#clip_21)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 823 308)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 28.588002 50.071004 73.666 96.337009 112.11101 135.574 157.948 177.583 188.86899">Hypothesis</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_22)">
+<g clip-path="url(#clip_23)">
+<g clip-path="url(#clip_24)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 823 393)" font-size="26" font-family="DejaVu Sans"><tspan y="24.920002" x="1 23.412 39.402 53.676004 70.134 86.046009 102.504009 109.70601 123.22601 133.41802 140.62001">Mechanistic</tspan><tspan y="57.160005" x="1 16.522 31.888 48.372 55.574 71.486 87.944 103.856 114.048007 121.25001 137.136">explanation</tspan><tspan y="89.40001" x="1 18.784 32.304 45.824 62.282 87.606 104.090007 114.282009 121.48401 137.37001 153.828 167.348 175.59001 191.50202 207.96002">Assumptions and</tspan><tspan y="121.64" x="1 16.912003 24.114003 34.306005 50.296007 60.514009 76.97201 92.88401 103.07601 110.278018 125.64401 141.63402">alternatives</tspan><tspan y="153.88" x="1 18.784 27.026001 43.510004 53.624006 69.614009 86.09801 93.30001 107.57401 117.766017 133.75601">A predicted</tspan><tspan y="186.12001" x="1 16.886 33.37 46.89 62.879999 73.565998 88.93199 104.843997 115.035999 122.238 138.124">observation</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1130 610H1150"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1137 617 1150 610 1137 603"/>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M1160 430H1480V790H1160Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_25)">
+<g clip-path="url(#clip_26)">
+<g clip-path="url(#clip_27)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 1183 308)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 28.390002 50.764 70.3 81.586009 101.22101 112.50701 135.17801">Decision</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_28)">
+<g clip-path="url(#clip_29)">
+<g clip-path="url(#clip_30)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 1183 393)" font-size="26" font-family="DejaVu Sans"><tspan y="24.920002" x="1 19.148 35.606004 51.492006 67.378009 80.89801 96.88801 105.130008 121.04201">Choose an</tspan><tspan y="57.160005" x="1 8.202 24.66 40.026 56.016 69.536 79.728008 86.93001 103.41401 119.32601 129.518 136.72 152.606">investigation</tspan><tspan y="89.40001" x="1 17.484 27.675999 43.588 53.780004 69.770008 78.012 85.214008 95.406009 108.92601 117.16801 132.69 148.056 164.54 180.53 194.804 204.996 220.98601">State its expected</tspan><tspan y="121.64" x="1 8.202 24.66 33.812 49.697999 59.916 85.240009 101.15201 111.34401 118.54601 134.432">information</tspan><tspan y="153.88" x="1 17.874 33.864 48.138 64.024 74.242008 90.726009 98.968 120.21001 136.668 152.034 160.276 167.478 177.67 185.912 207.154 223.06601">Record why it was</tspan><tspan y="186.12001" x="1 14.520001 30.510003 37.712 53.702005 67.976009 78.16801 94.158008">selected</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1490 610H1510"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1497 617 1510 610 1497 603"/>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M1520 430H1840V790H1520Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_31)">
+<g clip-path="url(#clip_32)">
+<g clip-path="url(#clip_33)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 1543 308)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 19.117 41.491 61.126 76.9 88.384 111.05501 134.518 150.292 169.828 192.49901 226.852">Test outcome</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_34)">
+<g clip-path="url(#clip_35)">
+<g clip-path="url(#clip_36)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 1543 393)" font-size="26" font-family="DejaVu Sans"><tspan y="24.920002" x="1 18.472 34.384004 55.626005 63.868005 73.982 89.972 100.164 116.622 126.84 143.298 159.28801">Raw returned</tspan><tspan y="57.160005" x="1 16.886 33.37 46.89 62.879999 73.565998 88.93199 104.843997 115.035999 122.238 138.124">observation</tspan><tspan y="89.40001" x="1 19.148 35.034 60.358 76.842 92.754009 103.44 110.642009 124.16201 140.048 156.50601 164.74802 185.99002 193.19202 203.38402">Comparison with</tspan><tspan y="121.64" x="1 17.484 27.598 43.587999 60.072 67.274 81.548007 91.740009 98.94201 114.82801">prediction</tspan><tspan y="153.88" x="1 17.874 33.864 44.056 59.968004 67.170009 83.628009 91.87 100.606 108.848 118.962 134.952 150.318 157.51999 171.04 187.03 195.272">Retain / revise /</tspan><tspan y="186.12001" x="1 14.520001 30.978 44.498 60.982004 76.972 93.43">suspend</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M80 155H1840V350H80Z" fill="#f8edef"/>
+<g clip-path="url(#clip_37)">
+<g clip-path="url(#clip_38)">
+<g clip-path="url(#clip_39)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 110 755)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 13.276 36.739004 52.513 74.887 91.156009 114.75101 131.02 153.39402 169.16802 191.41002 207.18402 218.47002 241.14102 264.60404 276.08805 299.68305 322.35404 345.81706 369.28007 392.87507 415.11708 431.38609 442.6721 465.04609">Interpretation boundaries</tspan></text>
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 110 755)" font-size="33" font-family="DejaVu Sans"><tspan y="72.28" x="1 29.446002 38.587 55.747 72.907009 82.048007 102.937007 123.85901 134.32 154.615 174.11801 183.25902 204.18102 224.47602 245.36502 263.48204 283.77705 294.23805 315.16004 335.32304 355.61805 372.77806 383.23905 404.12806 424.29106 437.22706 447.68806 467.98307 485.14308 498.07908 518.2751 539.1971 548.3381 557.47909 574.63906 595.528 605.989 615.13 636.019 656.21499 674.332 687.26797 696.40896 715.9119 725.0529 737.9889 752.7729 763.2339 773.6949 796.2669 806.7279 818.34396 838.5399 847.6809 856.8219 877.1169 898.0389 908.4999 926.6169 946.7799 978.92196 999.84396 1020.7329 1033.669 1053.865 1066.801 1075.942 1096.105 1116.994 1127.4551 1148.3771 1168.54 1188.8351 1205.9951 1216.4562 1237.3452 1257.5082 1270.4442 1280.9053 1293.7423 1314.0374 1325.6533 1346.5424 1359.4784 1379.7734 1390.2345 1410.4306 1420.8916 1453.0336 1473.3286 1491.4456 1512.3346 1532.5307 1553.4197 1562.5607 1579.7207 1611.8627 1622.3237 1632.7848">Missing evidence does not establish inactivity. A failed computation does not refute a mechanism. A</tspan><tspan y="113.200008" x="1 20.503 40.699 49.840005 58.981004 79.903 90.364 111.285999 124.123 144.418 165.34 174.481 192.598 205.53401 214.67502 234.83802 255.72702 266.18803 287.11003 307.273 327.56803 344.72804 355.18904 376.07804 396.24104 409.17704 419.63804 439.93305 457.09306 470.02906 490.22508 511.14707 520.2881 529.4291 546.58908 567.478 577.939 596.056 616.252 629.188 649.384 658.52499 678.02798 695.1879 704.3289 721.4889">valid prediction does not establish catalysis.</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_40)">
+<g clip-path="url(#clip_41)">
+<g clip-path="url(#clip_42)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 80 1004)" font-size="19" font-family="DejaVu Sans"><tspan y="18.48" x="1 14.262 26.289002 33.756 41.147005 52.832006 64.85901 72.30701 78.33001 85.72101 97.406009 107.837009 119.44601 126.913 138.959 149.276 160.961 172.646 184.692 189.955 201.982 214.028 220.051 229.931 241.95801 254.00402 266.05003 277.65904 285.46803 292.91603 302.79603 308.81904 320.44703 332.47404 344.52003 349.78303 357.23103 368.859 380.905 386.168 391.431 396.694 404.142 415.371 421.755 427.778 435.226 447.25303 458.93803 464.96104 474.84104 486.45005 498.47706 505.86805 516.2991 527.9841 534.8241 542.2721 554.2421 561.08218 571.5132 576.7762 588.4042 593.6672 612.17318 618.19619 623.45919 635.48617 642.93417 654.61917 662.42819 674.4742 681.8652 693.5502 700.99819 712.62619 720.07418 725.33718 736.94619 748.97317 754.99618 762.38717 774.07217 792.5781 804.2061 809.4691 821.4961 831.3761 837.3991 849.0271 855.0501 864.9301 875.36117 880.62417 892.30917 904.3361 911.7841 917.0471 928.9981 939.42916 945.45217 950.71517 962.7421 974.78817 986.83419 1005.34017 1017.02517 1029.0521 1036.5001">Current recordkeeping supports auditability; the source-to-claim interpretation remains a scienti&#xfb01;c judgment.</tspan></text>
+</g>
+</g>
+</g>
+</svg>

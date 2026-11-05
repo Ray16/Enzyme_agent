@@ -1,0 +1,789 @@
+{
+  "figures": 52,
+  "checked_files": 156,
+  "single_page_pdfs": true,
+  "valid_pngs_and_svgs": true,
+  "text_bbox_outliers": [],
+  "files": [
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_full_panel_measurements.png",
+      "bytes": 265802,
+      "sha256": "99e085f1b44cd3fa307ba85440d3ccb5bc58ec174a559dc5d56d3ebc9712a635"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_full_panel_measurements.svg",
+      "bytes": 77417,
+      "sha256": "0e5d61e619fccf2524e9446312d1dd012eff4d7679e6e7445cdb83b8c990a8ab"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_full_panel_measurements.pdf",
+      "bytes": 28140,
+      "sha256": "7a717c27aa1ab2bebdeed5bcda29fee95ca465d3f79f49b64c265ec58ac54e97"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_key_candidates_and_controls.png",
+      "bytes": 186733,
+      "sha256": "9ea28fb7e76612e6301dd36fd98011558ddecb5999ad61562640f903864fb497"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_key_candidates_and_controls.svg",
+      "bytes": 18904,
+      "sha256": "05b4a4cea03028a207439c806fbb70aab51007cb7567359bbc84288fbb7469f0"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_key_candidates_and_controls.pdf",
+      "bytes": 24313,
+      "sha256": "807f9dc81dffeac2c502e3ad9f194e341ead28c5bc56760bbb7482f254f31863"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_date_label_comparison.png",
+      "bytes": 212907,
+      "sha256": "1c8dcbfb9f42443e1820b6c206436e133326ef75d52bcd097593059ce9644173"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_date_label_comparison.svg",
+      "bytes": 25236,
+      "sha256": "3bbc4f1c4e9fc44e353256f25a24fb24b433237a0ee6842e2ed1f9433c1e4f04"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_date_label_comparison.pdf",
+      "bytes": 28190,
+      "sha256": "a70d16a93a6dfdf41260c5fd982c8019cf7389ac4bcbc0b7e665bb91fa03c5b2"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_summary_mean_sd.png",
+      "bytes": 203492,
+      "sha256": "97bb7ca7e15312e3b5e34292e901d7800efe397d47d4b71c7dbbb93ddfa57a33"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_summary_mean_sd.svg",
+      "bytes": 13277,
+      "sha256": "cf1e726a0fae72e8c1448a69b3c474f224e96f52fbe1b3ba26ac302911ea376b"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_summary_mean_sd.pdf",
+      "bytes": 21902,
+      "sha256": "f7c663d3be50900dd847c39068a7631e99ca6e3da545a5aebb76c9cd341d2713"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/angle_yield_and_influence.png",
+      "bytes": 253472,
+      "sha256": "8aabf5fcaf3007726d64e61be0f4f7c60525781b751a0921d30925841002839c"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/angle_yield_and_influence.svg",
+      "bytes": 53782,
+      "sha256": "484b8658d4548b609fd18edf15cbab06c94483e24b4d8ab50b29f83d230a9d3f"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/angle_yield_and_influence.pdf",
+      "bytes": 42129,
+      "sha256": "68e920f3eab2e50a86bf7101c68f5450c09b0f7f9e84aa3c54fd5f3ad97b3299"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/joint_angle_distance_activity.png",
+      "bytes": 250610,
+      "sha256": "a8f7587e073454a80b63e7d46d664a201999bee423630e218658194c39b31517"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/joint_angle_distance_activity.svg",
+      "bytes": 23501,
+      "sha256": "ee544f08ef60842a0809d166f6512b955aa34134804e2cc4307876b23306fad4"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/joint_angle_distance_activity.pdf",
+      "bytes": 26504,
+      "sha256": "ee2228e187aa73895932e34ccc9aff505c8d775cf7835b0d39c43108fbc5a62b"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/current_metric_shortlist_recovery.png",
+      "bytes": 303594,
+      "sha256": "7da44bf9592e017e81a727e2b1b4ebb86d5e203ce451c8337ae67456fd8f0583"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/current_metric_shortlist_recovery.svg",
+      "bytes": 30629,
+      "sha256": "804f3fea6d951409bfd776479b05dda0eafdab4d833db0a8188182e2aba0075f"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/current_metric_shortlist_recovery.pdf",
+      "bytes": 24534,
+      "sha256": "9ba283c6409bd6c6c0d0c40c41f30721054690229cb49d3176e0f01495558594"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/all_explored_proxy_comparison.png",
+      "bytes": 437151,
+      "sha256": "b67f8a37b83d4adef99eeb715a20e1f69f7a5db538303bd42cef20b1085637f9"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/all_explored_proxy_comparison.svg",
+      "bytes": 41749,
+      "sha256": "57a04bd2b331f20257bb9f2949fd6302eef9552c8f69ab8092c515536803ab78"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/all_explored_proxy_comparison.pdf",
+      "bytes": 41795,
+      "sha256": "0aaee44292493d43d9c9b15cb75d43ed2f6537f9114b154b4eed6f3936daeae0"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/weighted_angle_scale_invariance.png",
+      "bytes": 185432,
+      "sha256": "1d056a6e4198de08eacf372ef73ad1aa5b296ad525c1f5fb7a23a401fc5eb90a"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/weighted_angle_scale_invariance.svg",
+      "bytes": 12640,
+      "sha256": "321efe37fb66a160a38a97090c5779fb111efa5be30ef0f2a8d8b9e54c089116"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/weighted_angle_scale_invariance.pdf",
+      "bytes": 22467,
+      "sha256": "ed7e38f1e79aa808fba2f585f515298156174b44846deaebb44ee886bef595c0"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ensemble_distance_angle_coverage.png",
+      "bytes": 344123,
+      "sha256": "0373ee2421dd107d0508db46b357696df5364e253a51942a80dd873feef97566"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ensemble_distance_angle_coverage.svg",
+      "bytes": 133089,
+      "sha256": "4295eb5dd1dc3dadf01db386f70cbf0465a2e97f8236eb2df7b1a4bcc679ffed"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ensemble_distance_angle_coverage.pdf",
+      "bytes": 68062,
+      "sha256": "26259796beca424f89adfb3c90b6033e06ea551d58918373e924ff45a88a81ac"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/finite_pose_sampling_sensitivity.png",
+      "bytes": 256596,
+      "sha256": "6159efca74de36d75f3d76d787b6a455e2634ef259084be6699599dab9a9cd6f"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/finite_pose_sampling_sensitivity.svg",
+      "bytes": 18736,
+      "sha256": "05b746b11fdaa5ea8d447d36a2da6e79b5d02c5b51bb86003e59f5c2d40615f9"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/finite_pose_sampling_sensitivity.pdf",
+      "bytes": 23876,
+      "sha256": "a76d863afc4b580236ee7d56cb6358fa76f105efc8793f4bb45ccdb85445a3d1"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/best_pose_vs_pose_consistency.png",
+      "bytes": 204880,
+      "sha256": "cc5a55d2763ab2ad652eea34bceff56b09017b0d22d7769e58c370c7131685a5"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/best_pose_vs_pose_consistency.svg",
+      "bytes": 29546,
+      "sha256": "a82cb2b7eff2588d579162f66771b6e7459b6ed8834c46cd693c56928bb671c8"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/best_pose_vs_pose_consistency.pdf",
+      "bytes": 25390,
+      "sha256": "0a951a1beca49f264e4d7fa7c7859088c3638f1a60f3f67fdd1bce8b12be2d83"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/activation_vs_aminolysis_readouts.png",
+      "bytes": 204951,
+      "sha256": "0629c43cbd489e5160dcfc4a63cfd5fe6ad2dc0c8a2fd9b303c4c76a556f3b74"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/activation_vs_aminolysis_readouts.svg",
+      "bytes": 33042,
+      "sha256": "3fe3b82b969f0b9ec191d154ec7fdd47c2b42d6ae3ce2ee5efa44632762338fe"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/activation_vs_aminolysis_readouts.pdf",
+      "bytes": 39181,
+      "sha256": "a4fb3bf13b6bcf951dff27e6905768a7dc9e68f83bb0b2159f38c7e9ba940bea"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amine_identity_assignment.png",
+      "bytes": 159244,
+      "sha256": "a7cc9fd4a831c69bb438c204d1d6a3c627699b2c7eb326bab4f95568e6b3cec4"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amine_identity_assignment.svg",
+      "bytes": 31260,
+      "sha256": "475c8619f9df608fde8d89723deb12d76b27c5169a93d1c6e85bd06c978f4de9"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amine_identity_assignment.pdf",
+      "bytes": 21895,
+      "sha256": "37898ec04fbb57ed46902f44d160d219d5b0136b9635dc78e288a7ce73243af6"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/complete_mutant_geometry_tradeoffs.png",
+      "bytes": 349249,
+      "sha256": "b0f8e0ffb1c374e3214c6635066ae3788ae53b5aaa794bb2a2f67f9c26200a2f"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/complete_mutant_geometry_tradeoffs.svg",
+      "bytes": 851184,
+      "sha256": "2efaf35d45d9b2304bfa230562cd07ed39b547c8e5d23c1160f1a5a28695b994"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/complete_mutant_geometry_tradeoffs.pdf",
+      "bytes": 97069,
+      "sha256": "d6294b4da8365d1641a280f7b7e57cedcbfe514029e5f08af7645c722a796c48"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS17_all_mutation_effects.png",
+      "bytes": 205502,
+      "sha256": "f60d9b0aa13bbd4530385c265ffe8e792ff59de831851938b3239bcdf7faca0a"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS17_all_mutation_effects.svg",
+      "bytes": 57249,
+      "sha256": "3b92a4428275a52edbfe30fbbc2118f1a1c6e8438aa92bbbd619604634da50c0"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS17_all_mutation_effects.pdf",
+      "bytes": 59070,
+      "sha256": "4ccdd618cac37d5fdbb828ef47c5aa015c7e9e129d6186736c226f96e3c838eb"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS23_all_mutation_effects.png",
+      "bytes": 191516,
+      "sha256": "29c0018a8d0ace296db1bf2de3202daffcd0d04ed82cfb551088a3fdc2eee37b"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS23_all_mutation_effects.svg",
+      "bytes": 48701,
+      "sha256": "fc6d838fc3e2b6b720c165c79b719ee9531007563d0db2ff892aad3ba483f6bb"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS23_all_mutation_effects.pdf",
+      "bytes": 43553,
+      "sha256": "16011516ae925190aa4aa3e73a91f097ab15ec0deb5f2d428cb1884901a4726b"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS9_all_mutation_effects.png",
+      "bytes": 188181,
+      "sha256": "1b74cf98a3a474f9036ee277b67e97d3dd009d5d30570209d4cc15684acd8410"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS9_all_mutation_effects.svg",
+      "bytes": 46152,
+      "sha256": "d2a2449c3bddaf0771b8676c767e93164795d0514055baa47680dec02053134b"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS9_all_mutation_effects.pdf",
+      "bytes": 43043,
+      "sha256": "ff7778143444bbdb2e983e818e456dd93b29d7f8415017632ffaf0022ca1e878"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_candidate_accounting.png",
+      "bytes": 168745,
+      "sha256": "583816d6731cf053f0ed53783064343a7bbb99d52401f850dfbc0260a5a6f729"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_candidate_accounting.svg",
+      "bytes": 9293,
+      "sha256": "da95ca36fa58613fbf6414f88a48a4e4e09b307b5523156741822ae2b319e1ee"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_candidate_accounting.pdf",
+      "bytes": 18896,
+      "sha256": "1f2d67889193d60bd65aadaf5abeeed7b3dab3f50c5032f9ac1e18162da28d11"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_geometry_by_activation_route.png",
+      "bytes": 464311,
+      "sha256": "42d8930c979e12f82ee4d0a2afcdb635c6ce5a9b437921a761e29622f844dee2"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_geometry_by_activation_route.svg",
+      "bytes": 32237,
+      "sha256": "4443a4624b678c15177a569380a7bd3e04cb01f1e9763d7ba5e2cff610353b82"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_geometry_by_activation_route.pdf",
+      "bytes": 27018,
+      "sha256": "05749472e3b94373088f639a8c6b3f3f42eb4f8655a2eb7349e9cbd6b961a2e8"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/metal_count_is_model_specific.png",
+      "bytes": 122035,
+      "sha256": "6c7bf67f365fbc812c6540b419d5fc4ea5c6820f6ab9c81a941e4a03099f52a5"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/metal_count_is_model_specific.svg",
+      "bytes": 6298,
+      "sha256": "fb72d91e766a9de4c5eb40f510812c0c059a12893aee2bc97753379f8ab0d013"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/metal_count_is_model_specific.pdf",
+      "bytes": 20161,
+      "sha256": "d0c7e3c38060b089e3cfcd9ebc42d8dd64d2b57f54ddc8e4d1650d580727b086"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.png",
+      "bytes": 239526,
+      "sha256": "c1f76911e45cd3e1b18af85254654afea01b1a5084c3268370102548d12180bf"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.svg",
+      "bytes": 15268,
+      "sha256": "8f5cadc27a1c5c213138c77aba21f9b125e359779c35a869ca57c32b783718b6"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.pdf",
+      "bytes": 22144,
+      "sha256": "da1bb41c19a6c6c86f2be12620f55f4b7df08d9e146a10a0864bc9715eff6d3c"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_workbook_provenance.png",
+      "bytes": 217276,
+      "sha256": "b1d237d955dd49a4bb7c6bc9f8c0149975233c2958f8ac324eb62c4c30955201"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_workbook_provenance.svg",
+      "bytes": 7852,
+      "sha256": "f6e43466642fcf52607f5554aefc57f571af6195a6c4a92ae633d55bc0df439f"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_workbook_provenance.pdf",
+      "bytes": 21591,
+      "sha256": "b393b9ab44cc9e64d369f4d4df2776e82e1f0cfeaed3bfc49e2f3be7c2aa8511"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_modeled_metal_distance_audit.png",
+      "bytes": 178123,
+      "sha256": "c608aebad4fc4ef94ed1f171915ca9b171381855bbd6dc7c39799ba47da5bb89"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_modeled_metal_distance_audit.svg",
+      "bytes": 6588,
+      "sha256": "8d6c1cdba1ab98f36bbecf0900df720478932cf30159670d3ceeb90cdc98d12d"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_modeled_metal_distance_audit.pdf",
+      "bytes": 21375,
+      "sha256": "87d266ae6d1c690ab257415bfcec979eba4f859cebae1a26dd53e137fdb832b0"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_evidence_requirements.png",
+      "bytes": 199137,
+      "sha256": "21fab9302a54c9fe3f86c38d8de76293c581c67824cd2473f10c1cd4cca77fca"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_evidence_requirements.svg",
+      "bytes": 24275,
+      "sha256": "06dc6e2cf4da607602a4f316a4c9524b813ee3b442743f0bee8f10b098280eb4"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_evidence_requirements.pdf",
+      "bytes": 795388,
+      "sha256": "3d3e9b3592d92a619ed6611cc395aba38e919001e4610d4cc910c40005ba62e9"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/exploration_freeze_validation.png",
+      "bytes": 193002,
+      "sha256": "282f2a0b1a1d2bf57cd83e5809891784c7087b43009879692cdf625f9f906b45"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/exploration_freeze_validation.svg",
+      "bytes": 16198,
+      "sha256": "5d92756031ef002b281fdc82b4cad656122c6f86f29536aa0f22242b0abe3905"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/exploration_freeze_validation.pdf",
+      "bytes": 788011,
+      "sha256": "e7c448ef73a42dabe380e4a405d390d21fc297b7d144536a8f23ee7b1ef1cc0d"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_multistate_motif_constraints.png",
+      "bytes": 184038,
+      "sha256": "5ed9ecf3e491f4d6b5a053d5dfacc1bfc6107df4db2c8c40048c72b0c15115c2"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_multistate_motif_constraints.svg",
+      "bytes": 15943,
+      "sha256": "16197179d9475e405d5619f7e47ad38743c5879ef69dc6754f8bc04db6d98d58"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_multistate_motif_constraints.pdf",
+      "bytes": 788801,
+      "sha256": "30af0636b2f947ee767c2deba12de8a0daeef8c626b90f2b303029e407d34548"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_hypothesis_discriminating_panel.png",
+      "bytes": 188080,
+      "sha256": "9fe2e0f8e08eb2336dda0982ec22c8dc4aa5b0856b015ed5edc5f46fa4f732ee"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_hypothesis_discriminating_panel.svg",
+      "bytes": 17728,
+      "sha256": "d7df0c7c2feaa057b35cfbfd581220237262ad5aa7a458d58c062e376733d81a"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_hypothesis_discriminating_panel.pdf",
+      "bytes": 789844,
+      "sha256": "04a8e95b479186e342a03a9e70abd68ca034f80c94a008831f4a9dba8a62998d"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/prediction_experiment_mismatch_tests.png",
+      "bytes": 225579,
+      "sha256": "14d8ef51ad28b91e675924b9c11a596cb37858961441480ddbfc3b4d4e7e5843"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/prediction_experiment_mismatch_tests.svg",
+      "bytes": 26614,
+      "sha256": "38abf23d5aee9cd1d6c0f19adeb54301cd03c93ae97879794f05fccef24ad321"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/prediction_experiment_mismatch_tests.pdf",
+      "bytes": 795727,
+      "sha256": "b26dbab436c34558a0da3987c04cf35875efa5624aaf6bc9756e8cdb59eab41d"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/method_question_readout_limits.png",
+      "bytes": 205598,
+      "sha256": "52099175070f76f6b6a852423479336e04d09975a9431405f61bba0fe85c62c5"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/method_question_readout_limits.svg",
+      "bytes": 28530,
+      "sha256": "bd4dd71c6212695607d14b506e8e95bf36f9b1a0340f54bbcdbb5c38b4ee53b3"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/method_question_readout_limits.pdf",
+      "bytes": 799517,
+      "sha256": "cb611f07149d8078ebed8ed472be3d2a485a36cee544d2d4223d2e37ab993b88"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/aim_success_failure_criteria.png",
+      "bytes": 190349,
+      "sha256": "7fd70702af233b1add615ff0912f5a58a3833188f182e7b2d73fbaa6be6fe6ec"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/aim_success_failure_criteria.svg",
+      "bytes": 20928,
+      "sha256": "30637fe2ea81e89815a1a39f2f2647ea654d28a85a5072ded02558e30c38a9a5"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/aim_success_failure_criteria.pdf",
+      "bytes": 791013,
+      "sha256": "b485b9dd962f41c1d7716be9f1831a73b35e599ec2f46884880fdde309f039e3"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/evidence_claim_hypothesis_decision.png",
+      "bytes": 176878,
+      "sha256": "cb8bfc1b4689741bbfb90523f0b373bf9b60e892b9c56c424d660e9de6237576"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/evidence_claim_hypothesis_decision.svg",
+      "bytes": 19066,
+      "sha256": "5a1737b2626a3be71485542027ae103c064f003c908886a34e98924728681a2a"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/evidence_claim_hypothesis_decision.pdf",
+      "bytes": 791541,
+      "sha256": "90ac41d128a1d445ff67890b54803a55621ea89cdf8afd64bd5b7fb98fdd59f7"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/design_strategy_input_requirements.png",
+      "bytes": 203602,
+      "sha256": "44ff4ca2f139ce6600daa451657f8f629353362ab4ff40320def0bdefbb27f0b"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/design_strategy_input_requirements.svg",
+      "bytes": 22928,
+      "sha256": "84c668e9bde3b94cc55870df340d201ff69f2c859f50558a6b9548faf634e550"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/design_strategy_input_requirements.pdf",
+      "bytes": 793234,
+      "sha256": "0deba7a2171865e4aee8f81133a80c957cb074c1680a3e75d269d0f96e97fd7e"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/execution_vs_scientific_status.png",
+      "bytes": 203697,
+      "sha256": "f2b2165197f55b3a335fe1d8dbdd90a6ab926aab76ff2bbdc01bf7319193650f"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/execution_vs_scientific_status.svg",
+      "bytes": 24570,
+      "sha256": "79c0b6577b8d05a8870f845c67bb156a692067e34e56c0579141d83f0b12a500"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/execution_vs_scientific_status.pdf",
+      "bytes": 795452,
+      "sha256": "b1b915b919f0549056540455f00b6e8fb86fd5266f757450fccc4411ea6dd932"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/two_step_electrophile_and_leaving_group.png",
+      "bytes": 188568,
+      "sha256": "a80efcab981f951528f8d4313be296af69a01bd1326345e3c64a2f3757739c30"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/two_step_electrophile_and_leaving_group.svg",
+      "bytes": 18457,
+      "sha256": "1a54f93988f20498f358cee1449ba7e2b3e90a4c622e76384351422c84e62082"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/two_step_electrophile_and_leaving_group.pdf",
+      "bytes": 791437,
+      "sha256": "0baa1fb74c3aba8b1b7bda9da90abd9365ab3a503ee4c08caf8f049385f8d895"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ATP_accounting_scope.png",
+      "bytes": 145157,
+      "sha256": "4c956741699f98ec9e609ac4417a237d0c73fb448a7b0e14db18a884fe874289"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ATP_accounting_scope.svg",
+      "bytes": 18193,
+      "sha256": "062127ed4e80f10df024b326f781361806d6eab081746d7e744ad08fec27df12"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ATP_accounting_scope.pdf",
+      "bytes": 791924,
+      "sha256": "7e91a8765fbde704f775b5ff438b595c5787e6f3b54feb21797adc355c98666c"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/reported_quantity_interpretation.png",
+      "bytes": 202966,
+      "sha256": "ac60d8451b9c9ffd47068518d88542d7bc179befb341e3ce8852caecf3181c08"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/reported_quantity_interpretation.svg",
+      "bytes": 24653,
+      "sha256": "8217363ebc99110c94855329f5c1e94f9ad2d104df45041f316e3069a61475c5"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/reported_quantity_interpretation.pdf",
+      "bytes": 795469,
+      "sha256": "edfbbe37700522edd7bfb38ffca965ffc255cf0db0af87f0aabdfc2a47ccf233"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_native_evidence_vs_model_assumptions.png",
+      "bytes": 190985,
+      "sha256": "fb4afdc6bc63aeddf1f29f1278945c5d0dae910a350a6b183db046b87e7d3339"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_native_evidence_vs_model_assumptions.svg",
+      "bytes": 14160,
+      "sha256": "5df3a2499b9e347a751bfefc7bc24987e8343de4c09ea01aa4d2f35a70737e2a"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_native_evidence_vs_model_assumptions.pdf",
+      "bytes": 786026,
+      "sha256": "9befa2b561c4597d28b45de7f0d5a1278438bf0dba5e36c5345bc42a14a45ef5"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/archived_discovery_cost_and_scope.png",
+      "bytes": 144396,
+      "sha256": "e0aa975ed39bf841a789c88b680183d24027f7f7e5dd5b3e08d8f539320523c1"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/archived_discovery_cost_and_scope.svg",
+      "bytes": 18872,
+      "sha256": "4e4d8d34c61239623249e67aa944cc0aec2904fa519867d983a2b5ed9880522c"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/archived_discovery_cost_and_scope.pdf",
+      "bytes": 793682,
+      "sha256": "c9f83facab15bb7f8227e1c438af13bf7ba5626aa01edd0f68199918cc23d258"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/agent_roles_tools.png",
+      "bytes": 159339,
+      "sha256": "ccd6aba847c33645da97f522c7d1f05752a901ff3dc70f6fde650e9324d823ab"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/agent_roles_tools.pdf",
+      "bytes": 792262,
+      "sha256": "46b939e913a8ad10c247b00bca70bde299cfe6ad18b3015f0d91ffbd67597170"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/agent_roles_tools.svg",
+      "bytes": 24507,
+      "sha256": "20afa364e7e7b6792139ea8c53c615ec37e765eefc52815ccaaedf4720008846"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/adaptive_decision_loop.png",
+      "bytes": 189718,
+      "sha256": "3099de901d9a4db756fc63e1f5effa96f761f34c6128b65ebe2fd7a8a0cff246"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/adaptive_decision_loop.pdf",
+      "bytes": 791378,
+      "sha256": "f6bdce3097269f0b2fb89c58c46d2e07e76b01429e760ca29e9a031c09e3f36b"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/adaptive_decision_loop.svg",
+      "bytes": 25227,
+      "sha256": "ed026c8aa8b74cf47adb27c6311970a9f24b23673587f68ba68a846c453425f9"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/shared_evidence_handoff.png",
+      "bytes": 138308,
+      "sha256": "0c44f4b664ebf0f2cfc9317b1192869e948149ced84a044775a97e2120d5a6a1"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/shared_evidence_handoff.pdf",
+      "bytes": 792625,
+      "sha256": "c08a1d2b126c408b72785e4f3bed3b475aeb64bebb802eecc539bd7a909f7e3d"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/shared_evidence_handoff.svg",
+      "bytes": 24976,
+      "sha256": "76604851e6303181aab45a56d2c1ef531c884782732189b5848ae2b2f499e6c3"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/evidence_driven_search_example.png",
+      "bytes": 174793,
+      "sha256": "68ac6e4717ec3f7108de25d8fa97d29ec1d435111e4f90908b2a34d9c75f66fa"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/evidence_driven_search_example.pdf",
+      "bytes": 788156,
+      "sha256": "93549b5330784b9a600e5111e792c12db3f3425fedbaa6c3afcfc20c21c7a5a7"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/evidence_driven_search_example.svg",
+      "bytes": 20856,
+      "sha256": "2cd706c287607fde0575a3a0ba8805d01d648997d80955e8f98dde09cb433400"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/structural_validation.png",
+      "bytes": 171200,
+      "sha256": "dbfecccf13422baa21c574ad9719d3767071b03f4a72f0f59cefc14993fb5d6c"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/structural_validation.pdf",
+      "bytes": 794010,
+      "sha256": "04841c9ea8830569e627a72a452459b3b970ad5d74ec08cae11f9592f82217f0"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/structural_validation.svg",
+      "bytes": 28063,
+      "sha256": "5212d0a852f0fd0a8051a4b7958470a7701ae304461c926e890f9de2ce9455ea"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/proposed_framework_evaluation.png",
+      "bytes": 170509,
+      "sha256": "a9ba53e58717a4902f9e2e2e4cbd74278565d4f51cb95380457044c4c694081d"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/proposed_framework_evaluation.pdf",
+      "bytes": 793010,
+      "sha256": "2aaabbcaee1e5477625f51a58ba9a23b99cc9b7870dfd17863cf5fd511cf5ef3"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/proposed_framework_evaluation.svg",
+      "bytes": 26657,
+      "sha256": "c993d7ebab7ad1b3017c238100e44f6b2c1df162ec80ed041efde2e4cc9da788"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/implementation_validation_status.png",
+      "bytes": 146838,
+      "sha256": "bc00b19cb64a46dfeffbd9aa77f0ee2dedbfee1328f69e707efca8d681ac6999"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/implementation_validation_status.pdf",
+      "bytes": 792305,
+      "sha256": "a2fea03aa7d4fe19eb452e1363b116bac9d46de84b32c2f0e335aac1646ca8ec"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/implementation_validation_status.svg",
+      "bytes": 25128,
+      "sha256": "3200fdf3a126fc18fdf52a9ae11f9ae10b90eb050eb0801be51014832aff5607"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/modeling_setup_audit.png",
+      "bytes": 146174,
+      "sha256": "072ea733052d4cb3e08c94824b275c0d92e81ac5cc321e8eed60817c4a39ed7f"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/modeling_setup_audit.pdf",
+      "bytes": 796950,
+      "sha256": "17c932248925ac4cd9b6ae2984e3f5c0f560b6dfeb59cfce307c8ecd09adfd6b"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/modeling_setup_audit.svg",
+      "bytes": 30915,
+      "sha256": "f3f16dfd646b18bc91f99a4a5f18fbdc1ab5387261170a28047b839b031b4517"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-finalization/amp_adp_table.pdf",
+      "bytes": 167433,
+      "sha256": "75de065a1af617acbe98bf7d35e8fa4157e3e2c45d8c4d56a8fc854897fb2c4a"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-finalization/amp_adp_table.tex",
+      "bytes": 3974,
+      "sha256": "121a9217173c8445904032fb56d4d2b63eb1e0d96ea3c1603163094a732d7b98"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-finalization/amp_adp_table-1.png",
+      "bytes": 193081,
+      "sha256": "67b0954c39f7837277d6b81ccc1eb5a22c38d655ebcce2b69952204f246e035c"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/amp_forming_family_inventory.png",
+      "bytes": 299723,
+      "sha256": "13d39faded7644546711d71bc837915f84acda5546bad0e9e24f62e67ac278fc"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/amp_forming_family_inventory.svg",
+      "bytes": 30614,
+      "sha256": "a6435496e3be91aa4f5a4b76647b5b05e509951c862004e0d02978f65e301fd2"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/amp_forming_family_inventory.pdf",
+      "bytes": 78285,
+      "sha256": "b18b597bcf37aafd12866b014249dccbecb369e9e03d5117ffa422c66a7aae1e"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/amp_forming_family_inventory.tex",
+      "bytes": 4336,
+      "sha256": "f1abd566514c45cf1aa74883d828387930d8ab0c32dd6a9c5940698913b3eebe"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/adp_forming_family_inventory.png",
+      "bytes": 309990,
+      "sha256": "1610b3a1516e410c4e35664cf7f98f06abf774886b52bf35ee8442008438c7ce"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/adp_forming_family_inventory.svg",
+      "bytes": 31617,
+      "sha256": "669054b9d6cde59695b6fa0e89fef00f6dd3813268e56c6395dfd5d2f373f6c7"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/adp_forming_family_inventory.pdf",
+      "bytes": 77680,
+      "sha256": "fbcccf80cef7a47fd653bb1a6447d91f61c92c3757ad55c07fefc1aeb651fec4"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/adp_forming_family_inventory.tex",
+      "bytes": 4412,
+      "sha256": "fa94aa97f6a86ae94dbc651636fc82e6d17b0d9589d8aa25d300d8c71105a745"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/adp-attack-geometry/PuuA_ADP_attack_geometry.png",
+      "bytes": 865339,
+      "sha256": "9c565ec85801cce07b5fdd011c72211dfcec45598112ddcdd5f38d81b01a5406"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/adp-attack-geometry/PuuA_ADP_attack_geometry.svg",
+      "bytes": 1050091,
+      "sha256": "a9b08374c69fa6007da0ccc045bbfd375ddb66177e41261a4d6590a37a44f84c"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/adp-attack-geometry/PuuA_ADP_attack_geometry.pdf",
+      "bytes": 741808,
+      "sha256": "6afec60a116ecec60fe9180fd987d78158a0e7fa6930ee91632ec3829fe51319"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/attack-angle/AS9_attack_geometry.png",
+      "bytes": 798800,
+      "sha256": "f5fcb0fd2c3e91d9ecab3c23483ac1ea8facc1e1bf96d26ea7cc2db697761636"
+    }
+  ]
+}

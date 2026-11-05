@@ -1,0 +1,258 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs>
+<clipPath id="clip_1">
+<path transform="matrix(1,0,0,-1,80,125)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_2">
+<path transform="matrix(1,0,0,-1,80,125)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_3">
+<path transform="matrix(1,0,0,1,80,35)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_4">
+<path transform="matrix(1,0,0,-1,80,202)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_5">
+<path transform="matrix(1,0,0,-1,80,202)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_6">
+<path transform="matrix(1,0,0,1,80,145)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_7">
+<path transform="matrix(1,0,0,-1,103,336)" d="M0 0H334V78H0Z"/>
+</clipPath>
+<clipPath id="clip_8">
+<path transform="matrix(1,0,0,-1,103,336)" d="M0 0H334V78H0Z"/>
+</clipPath>
+<clipPath id="clip_9">
+<path transform="matrix(1,0,0,1,103,258)" d="M0 0H334V78H0Z"/>
+</clipPath>
+<clipPath id="clip_10">
+<path transform="matrix(1,0,0,-1,103,479)" d="M0 0H334V136H0Z"/>
+</clipPath>
+<clipPath id="clip_11">
+<path transform="matrix(1,0,0,-1,103,479)" d="M0 0H334V136H0Z"/>
+</clipPath>
+<clipPath id="clip_12">
+<path transform="matrix(1,0,0,1,103,343)" d="M0 0H334V136H0Z"/>
+</clipPath>
+<clipPath id="clip_13">
+<path transform="matrix(1,0,0,-1,578,336)" d="M0 0H519V78H0Z"/>
+</clipPath>
+<clipPath id="clip_14">
+<path transform="matrix(1,0,0,-1,578,336)" d="M0 0H519V78H0Z"/>
+</clipPath>
+<clipPath id="clip_15">
+<path transform="matrix(1,0,0,1,578,258)" d="M0 0H519V78H0Z"/>
+</clipPath>
+<clipPath id="clip_16">
+<path transform="matrix(1,0,0,-1,578,479)" d="M0 0H519V136H0Z"/>
+</clipPath>
+<clipPath id="clip_17">
+<path transform="matrix(1,0,0,-1,578,479)" d="M0 0H519V136H0Z"/>
+</clipPath>
+<clipPath id="clip_18">
+<path transform="matrix(1,0,0,1,578,343)" d="M0 0H519V136H0Z"/>
+</clipPath>
+<clipPath id="clip_19">
+<path transform="matrix(1,0,0,-1,1238,336)" d="M0 0H579V78H0Z"/>
+</clipPath>
+<clipPath id="clip_20">
+<path transform="matrix(1,0,0,-1,1238,336)" d="M0 0H579V78H0Z"/>
+</clipPath>
+<clipPath id="clip_21">
+<path transform="matrix(1,0,0,1,1238,258)" d="M0 0H579V78H0Z"/>
+</clipPath>
+<clipPath id="clip_22">
+<path transform="matrix(1,0,0,-1,1238,479)" d="M0 0H579V136H0Z"/>
+</clipPath>
+<clipPath id="clip_23">
+<path transform="matrix(1,0,0,-1,1238,479)" d="M0 0H579V136H0Z"/>
+</clipPath>
+<clipPath id="clip_24">
+<path transform="matrix(1,0,0,1,1238,343)" d="M0 0H579V136H0Z"/>
+</clipPath>
+<clipPath id="clip_25">
+<path transform="matrix(1,0,0,-1,103,686)" d="M0 0H334V78H0Z"/>
+</clipPath>
+<clipPath id="clip_26">
+<path transform="matrix(1,0,0,-1,103,686)" d="M0 0H334V78H0Z"/>
+</clipPath>
+<clipPath id="clip_27">
+<path transform="matrix(1,0,0,1,103,608)" d="M0 0H334V78H0Z"/>
+</clipPath>
+<clipPath id="clip_28">
+<path transform="matrix(1,0,0,-1,103,829)" d="M0 0H334V136H0Z"/>
+</clipPath>
+<clipPath id="clip_29">
+<path transform="matrix(1,0,0,-1,103,829)" d="M0 0H334V136H0Z"/>
+</clipPath>
+<clipPath id="clip_30">
+<path transform="matrix(1,0,0,1,103,693)" d="M0 0H334V136H0Z"/>
+</clipPath>
+<clipPath id="clip_31">
+<path transform="matrix(1,0,0,-1,578,686)" d="M0 0H519V78H0Z"/>
+</clipPath>
+<clipPath id="clip_32">
+<path transform="matrix(1,0,0,-1,578,686)" d="M0 0H519V78H0Z"/>
+</clipPath>
+<clipPath id="clip_33">
+<path transform="matrix(1,0,0,1,578,608)" d="M0 0H519V78H0Z"/>
+</clipPath>
+<clipPath id="clip_34">
+<path transform="matrix(1,0,0,-1,578,829)" d="M0 0H519V136H0Z"/>
+</clipPath>
+<clipPath id="clip_35">
+<path transform="matrix(1,0,0,-1,578,829)" d="M0 0H519V136H0Z"/>
+</clipPath>
+<clipPath id="clip_36">
+<path transform="matrix(1,0,0,1,578,693)" d="M0 0H519V136H0Z"/>
+</clipPath>
+<clipPath id="clip_37">
+<path transform="matrix(1,0,0,-1,1238,686)" d="M0 0H579V78H0Z"/>
+</clipPath>
+<clipPath id="clip_38">
+<path transform="matrix(1,0,0,-1,1238,686)" d="M0 0H579V78H0Z"/>
+</clipPath>
+<clipPath id="clip_39">
+<path transform="matrix(1,0,0,1,1238,608)" d="M0 0H579V78H0Z"/>
+</clipPath>
+<clipPath id="clip_40">
+<path transform="matrix(1,0,0,-1,1238,829)" d="M0 0H579V136H0Z"/>
+</clipPath>
+<clipPath id="clip_41">
+<path transform="matrix(1,0,0,-1,1238,829)" d="M0 0H579V136H0Z"/>
+</clipPath>
+<clipPath id="clip_42">
+<path transform="matrix(1,0,0,1,1238,693)" d="M0 0H579V136H0Z"/>
+</clipPath>
+<clipPath id="clip_43">
+<path transform="matrix(1,0,0,-1,80,1065)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+<clipPath id="clip_44">
+<path transform="matrix(1,0,0,-1,80,1065)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+<clipPath id="clip_45">
+<path transform="matrix(1,0,0,1,80,1004)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+</defs>
+<g clip-path="url(#clip_1)">
+<g clip-path="url(#clip_2)">
+<g clip-path="url(#clip_3)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 80 35)" font-size="48" font-family="DejaVu Sans" font-weight="bold"><tspan y="45.16" x="1 38.104005 66.520008 89.464008 105.880008 137.128 169.48001 192.42401 208.84001 241.81601 275.944 292.648 325 359.128 393.448 410.152 442.504 492.472 508.888 543.208 575.752 592.456 613.336 646.312 669.976 719.94406 752.296 775.24 791.656 824.632 858.76 875.464 909.592 938.152 970.696 987.39999 1021.72 1038.136 1077.016 1109.5599 1133.2239 1165.7678 1199.8959 1222.8399 1239.5438 1272.0878 1288.5038 1321.0477 1349.4638 1372.4077 1396.0718 1429.0477 1463.3677 1497.4957 1513.9118 1530.3278 1562.8717">Activation and amide formation use di&#xfb00;erent electrophiles</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_4)">
+<g clip-path="url(#clip_5)">
+<g clip-path="url(#clip_6)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 80 145)" font-size="25" font-family="DejaVu Sans"><tspan y="24" x="1 18.45 37.225004 53.000005 74.55 81.9 99.350009 116.450008 130.375 138.3 154.15001 171.6 190.375 206.15 227.7 242.85 258.1 265.45 282.90003 290.825 298.75 306.675 326.025 341.4 357.225 372.6 382.875 389.8 403.525 411.44999 425.175 440.47499 450.74998 466.59999 481.09999 495.87498 510.64997 517.57498 526.57498 541.87496 555.5999 565.3999 572.3249 587.0999 602.3999 612.1999 619.1249 634.9499 650.79989 658.72488 674.02487 698.3748 705.2998 721.1498 736.5248 744.44979 751.37478 758.29977 774.1497 789.4497 799.2497 806.1747 821.4497 837.2747 845.67477 853.59976 869.4497 879.17477 894.44979 904.24978 919.5248 935.3498 943.2748 958.57479 974.3998 990.24978 998.17477 1011.8997 1027.7247 1043.0248 1052.8499 1068.6998 1084.0748 1091.9999 1107.2999 1121.0249 1134.7499 1150.0249 1165.8499 1181.6748 1191.4749 1198.3999 1214.2249 1230.0748 1237.9999 1250.9999 1257.9249 1282.2749 1298.1249 1305.0499 1311.975 1327.7 1343.075 1358.9249">CHEMICAL SCHEMATIC &#x00b7; Generic carboxyl-activating amide ligation; proton and charge accounting simpli&#xfb01;ed.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M80 585H460V840H80Z" fill="#f8edef"/>
+<g clip-path="url(#clip_7)">
+<g clip-path="url(#clip_8)">
+<g clip-path="url(#clip_9)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 103 258)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 26.509003 59.344007 82.906009 96.601009 110.95601 133.62702 149.89601 184.24901 195.535 218.998">AMP-forming</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_10)">
+<g clip-path="url(#clip_11)">
+<g clip-path="url(#clip_12)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 103 343)" font-size="25" font-family="DejaVu Sans"><tspan y="24" x="1 18.45 33.75 44.025 59.875 74.375 89.15 103.925 110.850009 126.15001 135.95001 151.32501 159.25002 178.92502 186.85002 202.15003 211.95003 221.75003 237.05004 250.77504 265.25004 278.25004 286.17503 301.25004 317.72505">Carboxylate O attacks P&#x03b1;.</tspan><tspan y="86" x="1 17.65 31.375 46.15 53.075 62.075 79.175 100.725009 115.8 123.725009 144.65001 152.57501 167.65001 182.725 187.175 195.1 210.40001 220.125">Acyl-AMP + PP&#x1d62; are</tspan><tspan y="117" x="1 9.800001 25.075 34.9 59.25 74.625 90.475">formed.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M555 585H1120V840H555Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_13)">
+<g clip-path="url(#clip_14)">
+<g clip-path="url(#clip_15)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 578 258)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 26.509003 46.045003 61.819 73.105 94.588008 116.83 132.604 154.978 178.573 190.05699 212.299 231.83499 253.318 264.604 276.088 287.37403 310.83705 326.61103 348.98503 365.25404 399.60704 421.98103 445.57603 456.86204 479.10404 494.87803">Activated acyl intermediate</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_16)">
+<g clip-path="url(#clip_17)">
+<g clip-path="url(#clip_18)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 578 343)" font-size="27" font-family="DejaVu Sans"><tspan y="25.84" x="1 19.738 33.238 52.084 62.614 85.213 106.462 116.992 130.492 151.74102 165.24102 183.70902 206.98302">R&#x2013;C(=O)&#x2013;O&#x2013;AMP</tspan><tspan y="92.8" x="1 17.470002 34.561 51.166 59.725 76.249 91.072 101.656 109.134998 125.091999 141.616 152.2 168.805 185.92299 194.482 209.305 225.829 236.926 254.04399 270.541 287.632 303.589 311.068 319.62699 338.473 347.03199 354.511 368.551 377.11 387.694 404.785">The activated carbonyl C is the</tspan><tspan y="126.28" x="1 17.605 25.084 41.689 56.512 67.096 77.599 94.096 111.214008 128.30501 135.78401 143.26302 159.86801 168.42702 177.93102 194.42801 205.52501 214.08402 230.60802 256.906 264.385 281.476 298.08103 306.64 323.164 333.74803 344.33204 360.85603 375.67903 391.312">electrophile for amine attack.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M1215 585H1840V840H1215Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_19)">
+<g clip-path="url(#clip_20)">
+<g clip-path="url(#clip_21)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 1238 258)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 26.509003 60.862005 72.148 95.743007 118.117008 131.81201 146.167 168.83802 185.10701 219.46 230.746 254.209 277.80403 289.28804 308.92304 324.69703 347.071">Amide-forming step</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_22)">
+<g clip-path="url(#clip_23)">
+<g clip-path="url(#clip_24)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 1238 343)" font-size="30" font-family="DejaVu Sans"><tspan y="28.6" x="1 23.44 41.89 60.879999 72.64 84.97 103.33 111.64 121.15 139.51001 168.73001 177.04001 196.03002 214.48001 223.99 242.35 254.11 265.87 284.22999 300.69999 318.06999 333.66999 343.18 361.53999 378.00999 395.74 404.05 413.56 430.03 448.39 460.72 479.74 498.06999 517.06">Neutral amine attacks acyl carbon.</tspan><tspan y="103" x="1 21.82 36.82 57.760004 69.46001 94.57001 118.18001 129.88 144.88 167.32 189.85 204.85 225.67002 232.48001 241.99 267.1 276.61003 297.13 322.99">R&#x2013;C(=O)&#x2013;NH&#x2013;R&#x2032; + AMP</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M80 235H460V490H80Z" fill="#f8edef"/>
+<g clip-path="url(#clip_25)">
+<g clip-path="url(#clip_26)">
+<g clip-path="url(#clip_27)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 103 608)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 26.509003 53.899003 77.461009 91.156009 105.51101 128.182 144.451 178.804 190.09 213.553">ADP-forming</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_28)">
+<g clip-path="url(#clip_29)">
+<g clip-path="url(#clip_30)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 103 693)" font-size="25" font-family="DejaVu Sans"><tspan y="24" x="1 18.45 33.75 44.025 59.875 74.375 89.15 103.925 110.850009 126.15001 135.95001 151.32501 159.25002 178.92502 186.85002 202.15003 211.95003 221.75003 237.05004 250.77504 265.25004 278.25004 286.17503 301.25004 316.02503">Carboxylate O attacks P&#x03b3;.</tspan><tspan y="86" x="1 17.65 31.375 46.15 53.075 62.075 77.925 93.75 109.025 122.025 137.875 153.7 169 178.8 194.175 202.1 223.02501 230.95001 248.05002 267.30003 282.37504 290.30003 305.6 315.325">Acyl-phosphate + ADP are</tspan><tspan y="117" x="1 9.800001 25.075 34.9 59.25 74.625 90.475">formed.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M555 235H1120V490H555Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_31)">
+<g clip-path="url(#clip_32)">
+<g clip-path="url(#clip_33)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 578 608)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 26.509003 46.045003 61.819 73.105 94.588008 116.83 132.604 154.978 178.573 190.05699 212.299 231.83499 253.318 264.604 276.088 287.37403 310.83705 326.61103 348.98503 365.25404 399.60704 421.98103 445.57603 456.86204 479.10404 494.87803">Activated acyl intermediate</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_34)">
+<g clip-path="url(#clip_35)">
+<g clip-path="url(#clip_36)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 578 693)" font-size="27" font-family="DejaVu Sans"><tspan y="25.84" x="1 19.738 33.238 52.084 62.614 85.213 106.462 116.992 130.492 151.74102 165.24102 182.35901 199.45001 215.947 229.987 247.105 264.19599 280.71998 291.304">R&#x2013;C(=O)&#x2013;O&#x2013;phosphate</tspan><tspan y="92.8" x="1 17.470002 34.561 51.166 59.725 76.249 91.072 101.656 109.134998 125.091999 141.616 152.2 168.805 185.92299 194.482 209.305 225.829 236.926 254.04399 270.541 287.632 303.589 311.068 319.62699 338.473 347.03199 354.511 368.551 377.11 387.694 404.785">The activated carbonyl C is the</tspan><tspan y="126.28" x="1 17.605 25.084 41.689 56.512 67.096 77.599 94.096 111.214008 128.30501 135.78401 143.26302 159.86801 168.42702 177.93102 194.42801 205.52501 214.08402 230.60802 256.906 264.385 281.476 298.08103 306.64 323.164 333.74803 344.33204 360.85603 375.67903 391.312">electrophile for amine attack.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M1215 235H1840V490H1215Z" fill="#eaf5fd"/>
+<g clip-path="url(#clip_37)">
+<g clip-path="url(#clip_38)">
+<g clip-path="url(#clip_39)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 1238 608)" font-size="33" font-family="DejaVu Sans" font-weight="bold"><tspan y="31.36" x="1 26.509003 60.862005 72.148 95.743007 118.117008 131.81201 146.167 168.83802 185.10701 219.46 230.746 254.209 277.80403 289.28804 308.92304 324.69703 347.071">Amide-forming step</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_40)">
+<g clip-path="url(#clip_41)">
+<g clip-path="url(#clip_42)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 1238 693)" font-size="30" font-family="DejaVu Sans"><tspan y="28.6" x="1 23.44 41.89 60.879999 72.64 84.97 103.33 111.64 121.15 139.51001 168.73001 177.04001 196.03002 214.48001 223.99 242.35 254.11 265.87 284.22999 300.69999 318.06999 333.66999 343.18 361.53999 378.00999 395.74 404.05 413.56 430.03 448.39 460.72 479.74 498.06999 517.06">Neutral amine attacks acyl carbon.</tspan><tspan y="103" x="1 21.82 36.82 57.760004 69.46001 94.57001 118.18001 129.88 144.88 167.32 189.85 204.85 225.67002 232.48001 241.99 267.1 276.61003 294.7">R&#x2013;C(=O)&#x2013;NH&#x2013;R&#x2032; + P&#x1d62;</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M470 715H545"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M532 722 545 715 532 708"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1130 715H1205"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1192 722 1205 715 1192 708"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M470 365H545"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M532 372 545 365 532 358"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1130 365H1205"/>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="3" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#56616c" d="M1192 372 1205 365 1192 358"/>
+<g clip-path="url(#clip_43)">
+<g clip-path="url(#clip_44)">
+<g clip-path="url(#clip_45)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 80 1004)" font-size="19" font-family="DejaVu Sans"><tspan y="18.48" x="1 13.0460009 24.655 36.682 44.072999 54.503999 66.188999 76.069 82.453 88.476009 102.74501 114.35401 119.61701 124.88001 136.56502 148.59201 160.61902 172.22801 180.03702 189.91703 197.36502 203.38802 215.07302 222.52101 228.544 240.17201 245.43502 251.45801 257.48103 264.89103 276.97505 289.05906 301.14308 313.22709 320.6371 326.6601 332.6831 344.7291 356.3381 361.6011 367.9851 380.06913 392.15315 398.17616 410.26017 422.34419 434.4282 446.5122 452.8962 464.9422 470.2052 482.2892 494.37324 506.45726 518.54129 530.62527 542.7092 554.7932 561.1772 567.2002 572.7862 584.8132 595.2442 608.2402 614.2632 624.1432 631.5912 643.61819 655.6642 666.8932 672.9162 678.9392 690.39627 706.77426 720.03628 725.62228 740.25228 746.6362 758.09329 774.47128 787.7333 799.81729 811.90127 823.9852 836.0692 848.1532 860.2372 872.32119 878.3442 884.3672 895.9572 907.9842 913.2472 923.1272 929.1502 934.4132 944.2932 950.3162 962.3432 973.9522 981.4002 987.4232 999.0512 1005.0742 1017.12026 1024.5112 1036.1963 1048.2423 1053.5053 1063.9363 1071.3843 1083.0693 1095.1154 1101.1383 1108.5863 1116.3953 1128.0233 1133.2863 1144.9713 1155.4024 1162.8504 1174.4594 1182.2683 1190.7803">Sources: Hollenhorst et al. (2009), doi:10.1021/bi9013165; IucA study, PMCID:PMC7325057. This is not a predicted trajectory.</tspan></text>
+</g>
+</g>
+</g>
+</svg>

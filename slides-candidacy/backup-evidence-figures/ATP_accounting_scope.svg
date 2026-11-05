@@ -1,0 +1,299 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs>
+<clipPath id="clip_1">
+<path transform="matrix(1,0,0,-1,80,125)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_2">
+<path transform="matrix(1,0,0,-1,80,125)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_3">
+<path transform="matrix(1,0,0,1,80,35)" d="M0 0H1760V90H0Z"/>
+</clipPath>
+<clipPath id="clip_4">
+<path transform="matrix(1,0,0,-1,80,202)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_5">
+<path transform="matrix(1,0,0,-1,80,202)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_6">
+<path transform="matrix(1,0,0,1,80,145)" d="M0 0H1760V57H0Z"/>
+</clipPath>
+<clipPath id="clip_7">
+<path transform="matrix(1,0,0,-1,96,323)" d="M0 0H538V58H0Z"/>
+</clipPath>
+<clipPath id="clip_8">
+<path transform="matrix(1,0,0,-1,96,323)" d="M0 0H538V58H0Z"/>
+</clipPath>
+<clipPath id="clip_9">
+<path transform="matrix(1,0,0,1,96,265)" d="M0 0H538V58H0Z"/>
+</clipPath>
+<clipPath id="clip_10">
+<path transform="matrix(1,0,0,-1,666,323)" d="M0 0H563V58H0Z"/>
+</clipPath>
+<clipPath id="clip_11">
+<path transform="matrix(1,0,0,-1,666,323)" d="M0 0H563V58H0Z"/>
+</clipPath>
+<clipPath id="clip_12">
+<path transform="matrix(1,0,0,1,666,265)" d="M0 0H563V58H0Z"/>
+</clipPath>
+<clipPath id="clip_13">
+<path transform="matrix(1,0,0,-1,1261,323)" d="M0 0H563V58H0Z"/>
+</clipPath>
+<clipPath id="clip_14">
+<path transform="matrix(1,0,0,-1,1261,323)" d="M0 0H563V58H0Z"/>
+</clipPath>
+<clipPath id="clip_15">
+<path transform="matrix(1,0,0,1,1261,265)" d="M0 0H563V58H0Z"/>
+</clipPath>
+<clipPath id="clip_16">
+<path transform="matrix(1,0,0,-1,96,439)" d="M0 0H538V97H0Z"/>
+</clipPath>
+<clipPath id="clip_17">
+<path transform="matrix(1,0,0,-1,96,439)" d="M0 0H538V97H0Z"/>
+</clipPath>
+<clipPath id="clip_18">
+<path transform="matrix(1,0,0,1,96,342)" d="M0 0H538V97H0Z"/>
+</clipPath>
+<clipPath id="clip_19">
+<path transform="matrix(1,0,0,-1,666,439)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_20">
+<path transform="matrix(1,0,0,-1,666,439)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_21">
+<path transform="matrix(1,0,0,1,666,342)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_22">
+<path transform="matrix(1,0,0,-1,1261,439)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_23">
+<path transform="matrix(1,0,0,-1,1261,439)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_24">
+<path transform="matrix(1,0,0,1,1261,342)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_25">
+<path transform="matrix(1,0,0,-1,96,554)" d="M0 0H538V97H0Z"/>
+</clipPath>
+<clipPath id="clip_26">
+<path transform="matrix(1,0,0,-1,96,554)" d="M0 0H538V97H0Z"/>
+</clipPath>
+<clipPath id="clip_27">
+<path transform="matrix(1,0,0,1,96,457)" d="M0 0H538V97H0Z"/>
+</clipPath>
+<clipPath id="clip_28">
+<path transform="matrix(1,0,0,-1,666,554)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_29">
+<path transform="matrix(1,0,0,-1,666,554)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_30">
+<path transform="matrix(1,0,0,1,666,457)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_31">
+<path transform="matrix(1,0,0,-1,1261,554)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_32">
+<path transform="matrix(1,0,0,-1,1261,554)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_33">
+<path transform="matrix(1,0,0,1,1261,457)" d="M0 0H563V97H0Z"/>
+</clipPath>
+<clipPath id="clip_34">
+<path transform="matrix(1,0,0,-1,96,699)" d="M0 0H538V127H0Z"/>
+</clipPath>
+<clipPath id="clip_35">
+<path transform="matrix(1,0,0,-1,96,699)" d="M0 0H538V127H0Z"/>
+</clipPath>
+<clipPath id="clip_36">
+<path transform="matrix(1,0,0,1,96,572)" d="M0 0H538V127H0Z"/>
+</clipPath>
+<clipPath id="clip_37">
+<path transform="matrix(1,0,0,-1,666,699)" d="M0 0H563V127H0Z"/>
+</clipPath>
+<clipPath id="clip_38">
+<path transform="matrix(1,0,0,-1,666,699)" d="M0 0H563V127H0Z"/>
+</clipPath>
+<clipPath id="clip_39">
+<path transform="matrix(1,0,0,1,666,572)" d="M0 0H563V127H0Z"/>
+</clipPath>
+<clipPath id="clip_40">
+<path transform="matrix(1,0,0,-1,1261,699)" d="M0 0H563V127H0Z"/>
+</clipPath>
+<clipPath id="clip_41">
+<path transform="matrix(1,0,0,-1,1261,699)" d="M0 0H563V127H0Z"/>
+</clipPath>
+<clipPath id="clip_42">
+<path transform="matrix(1,0,0,1,1261,572)" d="M0 0H563V127H0Z"/>
+</clipPath>
+<clipPath id="clip_43">
+<path transform="matrix(1,0,0,-1,96,854)" d="M0 0H538V137H0Z"/>
+</clipPath>
+<clipPath id="clip_44">
+<path transform="matrix(1,0,0,-1,96,854)" d="M0 0H538V137H0Z"/>
+</clipPath>
+<clipPath id="clip_45">
+<path transform="matrix(1,0,0,1,96,717)" d="M0 0H538V137H0Z"/>
+</clipPath>
+<clipPath id="clip_46">
+<path transform="matrix(1,0,0,-1,666,854)" d="M0 0H563V137H0Z"/>
+</clipPath>
+<clipPath id="clip_47">
+<path transform="matrix(1,0,0,-1,666,854)" d="M0 0H563V137H0Z"/>
+</clipPath>
+<clipPath id="clip_48">
+<path transform="matrix(1,0,0,1,666,717)" d="M0 0H563V137H0Z"/>
+</clipPath>
+<clipPath id="clip_49">
+<path transform="matrix(1,0,0,-1,1261,854)" d="M0 0H563V137H0Z"/>
+</clipPath>
+<clipPath id="clip_50">
+<path transform="matrix(1,0,0,-1,1261,854)" d="M0 0H563V137H0Z"/>
+</clipPath>
+<clipPath id="clip_51">
+<path transform="matrix(1,0,0,1,1261,717)" d="M0 0H563V137H0Z"/>
+</clipPath>
+<clipPath id="clip_52">
+<path transform="matrix(1,0,0,-1,80,1065)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+<clipPath id="clip_53">
+<path transform="matrix(1,0,0,-1,80,1065)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+<clipPath id="clip_54">
+<path transform="matrix(1,0,0,1,80,1004)" d="M0 0H1760V61H0Z"/>
+</clipPath>
+</defs>
+<g clip-path="url(#clip_1)">
+<g clip-path="url(#clip_2)">
+<g clip-path="url(#clip_3)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 80 35)" font-size="48" font-family="DejaVu Sans" font-weight="bold"><tspan y="45.16" x="1 34.360006 67.09601 102.23201 118.93601 147.35202 180.32802 214.45603 243.01602 277.144 327.112 361.432 384.376 400.792 433.768 467.896 484.6 516.952 551.08 585.4 602.104 636.424 670.552 703.528 732.088 766.408 800.536 832.888 855.83206 888.37606 908.296 942.616 975.59207 1009.72006 1044.04 1060.744 1093.0961 1121.5121 1149.9281 1182.904 1217.0321 1251.1602 1274.1041 1290.5202 1324.6482">ATP consumption and phosphate-bond accounting</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_4)">
+<g clip-path="url(#clip_5)">
+<g clip-path="url(#clip_6)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 80 145)" font-size="25" font-family="DejaVu Sans"><tspan y="24" x="1 18.45 38.125 56.825 76.075008 83.425 98.675 106.025 125.700008 144.40001 161.50002 175.42502 183.35002 200.80002 219.57501 235.35 256.9 264.25 281.7 298.80003 312.725 320.65 337.3 354.75 372.2 391.875 410.15 428.85 444.1 451.45 470.15003 489.50004 497.42503 505.35 513.275 532.95 548.775 564.15 572.075 585.075 592 616.35 632.19998 639.12496 654.49996 662.4249 676.1499 691.4499 701.7249 717.5749 732.0749 746.8499 761.62496 768.5499 776.4749 791.7749 805.4999 815.29989 822.22488 836.9999 852.29989 862.09988 869.02487 884.29989 900.1249 908.04989 923.89987 939.27487 949.54989 957.47488 972.77487 997.1248 1004.0498 1019.8998 1035.2748 1044.2748 1053.0748 1068.3499 1078.1749 1102.5249 1109.45 1125.2749 1141.1249 1149.0499 1164.4249 1179.2 1194.575 1210.3999 1220.2">CONDITIONAL CHEMICAL ACCOUNTING &#x00b7; One simple carboxyl activation per amide-forming event.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M80 750H1840V830H80Z" fill="#f8edef"/>
+<g clip-path="url(#clip_7)">
+<g clip-path="url(#clip_8)">
+<g clip-path="url(#clip_9)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 96 265)" font-size="29" font-family="DejaVu Sans" font-weight="bold"><tspan y="27.68" x="1 25.650002 46.269006 65.815 86.434009 100.296009 110.214008 124.076007">Quantity</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_10)">
+<g clip-path="url(#clip_11)">
+<g clip-path="url(#clip_12)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 666 265)" font-size="29" font-family="DejaVu Sans" font-weight="bold"><tspan y="27.68" x="1 23.417002 52.272005 72.978 85.013 97.628 117.550998 131.84799 162.03699 171.95499 192.57399 213.30899 223.40099 237.69799 257.62098 278.23997 292.10197">AMP-forming route</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_13)">
+<g clip-path="url(#clip_14)">
+<g clip-path="url(#clip_15)">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 0 1 1261 265)" font-size="29" font-family="DejaVu Sans" font-weight="bold"><tspan y="27.68" x="1 23.417002 47.487005 68.193 80.228008 92.843 112.76601 127.063 157.252 167.17 187.789 208.524 218.616 232.913 252.836 273.455 287.317">ADP-forming route</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M80 635H1840V750H80Z" fill="#f3f4f5"/>
+<g clip-path="url(#clip_16)">
+<g clip-path="url(#clip_17)">
+<g clip-path="url(#clip_18)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 96 342)" font-size="29" font-family="DejaVu Sans" font-weight="bold"><tspan y="27.68" x="1 21.155003 40.933008 62.161008 72.253009 102.44201 122.365009 132.283 151.945 169.113 189.73201 199.65001 219.31201 236.56702 246.65901 256.57704 277.196 287.28804 301.15003 321.769 341.431 351.523 371.069 388.237 402.099 412.017 430.896 450.442 464.304 474.222 494.145">ATP molecules in the activation</tspan><tspan y="63.64" x="1 20.662 39.541 59.203004 79.82201">event</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_19)">
+<g clip-path="url(#clip_20)">
+<g clip-path="url(#clip_21)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 666 342)" font-size="29" font-family="DejaVu Sans"><tspan y="27.68" x="1">1</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_22)">
+<g clip-path="url(#clip_23)">
+<g clip-path="url(#clip_24)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 1261 342)" font-size="29" font-family="DejaVu Sans"><tspan y="27.68" x="1">1</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="1" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#dadde0" d="M80 635H1840"/>
+<g clip-path="url(#clip_25)">
+<g clip-path="url(#clip_26)">
+<g clip-path="url(#clip_27)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 96 457)" font-size="29" font-family="DejaVu Sans" font-weight="bold"><tspan y="27.68" x="1 21.155003 40.933008 61.639009 73.67401 94.40901 114.071018 128.36801 138.28601 157.16501 176.82701 197.56201 207.654 228.389 242.686 262.609 283.344 303.96299 321.13099 334.99299 352.248 362.34 382.263 394.878 404.97 414.888 424.806 445.54103 465.087 478.949 488.867 508.79">ATP-derived products of ligation</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_28)">
+<g clip-path="url(#clip_29)">
+<g clip-path="url(#clip_30)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 666 457)" font-size="29" font-family="DejaVu Sans"><tspan y="27.68" x="1 20.836 45.834 63.321 72.514 96.787 105.98 123.467 140.95401">AMP + PP&#x1d62;</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_31)">
+<g clip-path="url(#clip_32)">
+<g clip-path="url(#clip_33)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 1261 457)" font-size="29" font-family="DejaVu Sans"><tspan y="27.68" x="1 20.836 43.166 60.653 69.846 94.119 103.312007 120.799">ADP + P&#x1d62;</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="1" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#dadde0" d="M80 520H1840"/>
+<path transform="matrix(1,0,0,-1,0,1080)" d="M80 375H1840V520H80Z" fill="#f3f4f5"/>
+<g clip-path="url(#clip_34)">
+<g clip-path="url(#clip_35)">
+<g clip-path="url(#clip_36)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 96 572)" font-size="29" font-family="DejaVu Sans" font-weight="bold"><tspan y="27.68" x="1 22.257002 42.18 62.799005 81.67801 101.34001 121.959018 135.82102 145.73902 165.66202 186.28102 205.82703 215.74503 225.83702 246.45603 256.37403 277.109 297.728 309.763 329.425 350.04399 369.70597 384.00297 404.73799 423.61698 435.65199 456.38697 476.30998 496.92897">Conventional high-energy-bond</tspan><tspan y="63.64" x="1 20.662 41.397005 62.016008 71.934009 90.813 110.35901 120.27701 139.93901 160.55802 174.42002">equivalents</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_37)">
+<g clip-path="url(#clip_38)">
+<g clip-path="url(#clip_39)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 666 572)" font-size="29" font-family="DejaVu Sans"><tspan y="27.68" x="1 19.444 28.637001 36.670003 46.878004 56.071004 73.55801 91.045009 96.20701 105.40001 113.43301 128.513 137.706 152.786 171.14299 189.52899 204.609 222.444 240.83 259.187 277.022 295.379 306.747 314.78 331.919 341.112 359.469 376.608 394.994 406.275 423.994 432.02699 449.166 464.362 482.197">2 if PP&#x1d62; is subsequently hydrolyzed</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_40)">
+<g clip-path="url(#clip_41)">
+<g clip-path="url(#clip_42)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 1261 572)" font-size="29" font-family="DejaVu Sans"><tspan y="27.68" x="1 19.444 28.637001 38.845 56.564004 68.483 77.676 95.25 112.94 130.427 139.62 163.89299 173.08599 192.92198 215.25199">1 for ATP &#x2192; ADP</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="1" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#dadde0" d="M80 375H1840"/>
+<g clip-path="url(#clip_43)">
+<g clip-path="url(#clip_44)">
+<g clip-path="url(#clip_45)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 96 717)" font-size="29" font-family="DejaVu Sans" font-weight="bold"><tspan y="27.68" x="1 32.987 53.606004 73.15201 87.01401 97.10601 114.36101 128.223 138.141 148.059 157.977 168.069 188.804 208.466 222.328 241.99 256.28703 286.476 296.394 317.013 336.675 353.93 364.022 384.75703 399.05403 418.97703 436.14503 455.807 473.062">What still determines process</tspan><tspan y="63.64" x="1 18.168 38.091 55.346">cost</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_46)">
+<g clip-path="url(#clip_47)">
+<g clip-path="url(#clip_48)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 666 717)" font-size="28" font-family="DejaVu Sans"><tspan y="26.76" x="1 17.968 35.048 51.932 60.808 71.700008 88.920009 106.672008 123.892009 141.61602 158.83602 170.34401 187.48001 198.45601 206.212 223.32 241.044 249.92002 258.79603 275.34403 283.10005 300.32005 308.07606 325.82807 334.70408 343.58009 360.80009 378.52409 393.19609 409.74409 437.01609">ATP regeneration, yield, enzyme</tspan><tspan y="61.480005" x="1 18.752 29.644003 46.752004 64.504009 82.228008 97.600009 108.576007 116.332 133.44 151.164">production,</tspan><tspan y="96.200008" x="1 16.372002 33.480005 51.204004 68.956 76.712009 87.688 95.444 112.552 130.276 144.836 153.712 170.848 188.572 206.324 215.20001 232.95201 250.06002 272.936 290.66 305.22 316.196 327.088 344.308 361.44404 388.71604 397.59205 415.34407 426.23606 443.34407 458.71607 475.93608 490.49607 505.05607 512.8121 530.5361 548.2881">conditions and downstream processing.</tspan></text>
+</g>
+</g>
+</g>
+<g clip-path="url(#clip_49)">
+<g clip-path="url(#clip_50)">
+<g clip-path="url(#clip_51)">
+<text fill="#16191c" xml:space="preserve" transform="matrix(1 0 0 1 1261 717)" font-size="28" font-family="DejaVu Sans"><tspan y="26.76" x="1 17.968 35.048 51.932 60.808 71.700008 88.920009 106.672008 123.892009 141.61602 158.83602 170.34401 187.48001 198.45601 206.212 223.32 241.044 249.92002 258.79603 275.34403 283.10005 300.32005 308.07606 325.82807 334.70408 343.58009 360.80009 378.52409 393.19609 409.74409 437.01609">ATP regeneration, yield, enzyme</tspan><tspan y="61.480005" x="1 18.752 29.644003 46.752004 64.504009 82.228008 97.600009 108.576007 116.332 133.44 151.164">production,</tspan><tspan y="96.200008" x="1 16.372002 33.480005 51.204004 68.956 76.712009 87.688 95.444 112.552 130.276 144.836 153.712 170.848 188.572 206.324 215.20001 232.95201 250.06002 272.936 290.66 305.22 316.196 327.088 344.308 361.44404 388.71604 397.59205 415.34407 426.23606 443.34407 458.71607 475.93608 490.49607 505.05607 512.8121 530.5361 548.2881">conditions and downstream processing.</tspan></text>
+</g>
+</g>
+</g>
+<path transform="matrix(1,0,0,-1,0,1080)" stroke-width="1" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#dadde0" d="M80 220H1840"/>
+<g clip-path="url(#clip_52)">
+<g clip-path="url(#clip_53)">
+<g clip-path="url(#clip_54)">
+<text fill="#56616c" xml:space="preserve" transform="matrix(1 0 0 1 80 1004)" font-size="19" font-family="DejaVu Sans"><tspan y="18.48" x="1 14.262 26.289002 37.974004 56.480005 61.743005 72.174 83.802 89.065 95.088008 104.968 112.416 124.025 129.288 139.719 151.746 157.009 168.618 187.124 198.80899 206.25699 214.066 225.295 231.318 236.581 246.461 252.484 264.511 276.12 283.568 289.591 301.219 307.242 319.288 326.679 338.288 348.719 360.404 370.284 380.164 387.004 398.689 409.12 420.729 432.756 444.36503 462.87104 468.13404 478.56504 484.58805 496.19706 504.00605 510.02906 515.29208 520.55508 527.24307 538.92807 545.76809 556.1991 567.4281 577.85916 583.12216 594.8071 600.83016 612.4581 622.33816 632.21817 643.90316 653.78317 663.66317 682.1691 693.8541 705.8811 713.3291 719.7131 725.7361 736.1671 747.7761 766.2821 778.3281 783.5911 794.93417 806.16317 812.18618 830.69216 842.7191 847.9821 855.4301 860.6931 867.53317 879.0471 890.63717 902.0941 908.1171 920.16317 931.79116 939.23916 951.2661 966.7891 978.4171 989.6461 999.5261 1005.54916 1012.9401 1024.6251 1036.6712 1048.6981 1053.961 1061.352 1073.0371 1079.06 1088.9401 1100.6251 1112.6712 1124.2992 1132.1082 1143.7362 1151.1842 1162.8693 1168.8922 1180.5203 1190.9513 1201.3823 1212.9913 1225.0183 1237.0453 1244.4933 1249.7562 1261.7832 1273.8292">Chemical stoichiometry is not a process-economic or life-cycle assessment; complex multi-ATP pathways require separate accounting.</tspan></text>
+</g>
+</g>
+</g>
+</svg>
