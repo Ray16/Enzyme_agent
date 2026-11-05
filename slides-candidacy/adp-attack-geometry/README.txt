@@ -1,3 +1,8 @@
+CURRENT FIGURE LOCATION
+The canonical PuuA figure is now ../backup-evidence-figures/PuuA_ADP_attack_geometry.png
+with PDF/SVG exports. This folder retains the renderer, saved projection and
+coordinate provenance; compose_figure.py exports to the active figure folder.
+
 ADP-FORMING ACTIVATION GEOMETRY — PuuA (P78061)
 
 Main figure: PuuA_ADP_attack_geometry.png

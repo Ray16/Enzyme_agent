@@ -239,10 +239,9 @@ def puua_assumptions():
 
 def main():
     HERE.mkdir(exist_ok=True)
-    for f in [requirements,independence,multistate,experimental_panel,mismatch,methods,milestones,
-              provenance,strategies,execution,chemistry,accounting,endpoints,puua_assumptions]:
+    for f in [multistate]:
         f();print('Completed '+f.__name__,flush=True)
-    cost=archived_cost()
+    cost=ROOT/'enzyme_discovery_agent/runs/imported_amide_discovery/RUN_SUMMARY.md'
     (HERE/'method_figures.json').write_text(json.dumps({'figures':FIGURES,
         'source_artwork':str(SOURCE.relative_to(ROOT)),
         'source_artwork_sha256':hashlib.sha256(SOURCE.read_bytes()).hexdigest(),

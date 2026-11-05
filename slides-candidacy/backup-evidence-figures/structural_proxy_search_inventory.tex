@@ -1,0 +1,42 @@
+\documentclass{article}
+\usepackage[paperwidth=16in,paperheight=10.5in,margin=0.42in]{geometry}
+\usepackage[T1]{fontenc}\usepackage{lmodern,amsmath,booktabs,tabularx,array}
+\usepackage[table]{xcolor}
+\renewcommand{\familydefault}{\sfdefault}\pagestyle{empty}\setlength{\parindent}{0pt}
+\definecolor{maroon}{HTML}{890B23}\definecolor{pale}{HTML}{F8EDEF}
+\definecolor{stripe}{HTML}{F4F5F6}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\tabcolsep}{9pt}\renewcommand{\arraystretch}{1.24}
+\begin{document}
+{\fontsize{30}{35}\selectfont\bfseries\color{maroon} Structural descriptors explored\par}
+\vspace{10pt}
+{\fontsize{16}{20}\selectfont Historical inventory grouped by the physical quantity being assessed.}\par
+\vspace{15pt}
+\fontsize{15.5}{20}\selectfont
+\rowcolors{2}{stripe}{white}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries\raggedright\arraybackslash}p{4.2in}Y>{\raggedleft\arraybackslash}p{1.1in}@{}}
+\toprule
+\rowcolor{pale} Descriptor family & \textbf{Representative quantities} & \textbf{Distinct definitions}\\
+\midrule
+Activation geometry and catalytic environment & Attack angles and near-attack fractions; local metal geometry; reactive-group exposure; nearby charged residues. & 10 \\[3pt]
+Amine--acyl approach geometry (step 2) & Amine N--acyl C distance; B\"urgi--Dunitz angle; near-attack fraction; accepted-pose count. & 4 \\[3pt]
+Reactive-group preorganization & Carboxylate positional spread; attack-direction variability; mean angle; bidentate-contact fraction. & 4 \\[3pt]
+Hypothesis-specific geometric descriptors & Oxyanion contacts; substrate exposure and access; amine approach; adenine burial; accepted-pose count. & 9 \\[3pt]
+Ligand exposure and pocket engagement & Solvent-accessible surface areas of selected reactive atoms; intermediate--protein separation. & 5 \\[3pt]
+Substrate-access tunnel geometry & Tunnel enclosure and length under alternative clearance thresholds. & 6 \\[3pt]
+Amine-site electrostatic environment & Nearby acidic oxygens; distance to a basic residue; net charge within alternative probe radii. & 12 \\[3pt]
+Electrostatic potential and electric field & Potential and projected field at ATP P$_\alpha$ and the acyl carbonyl; ensemble means and variation. & 8 \\[3pt]
+Ionizable-residue and p$K_a$ descriptors & Histidine p$K_a$ proximity to 7; minimum lysine p$K_a$; ionizable-residue counts and ensemble variation. & 12 \\[3pt]
+Magnesium coordination geometry & Mg--phosphorus and Mg--oxygen distances; coordination and bridging fractions across distance thresholds. & 10 \\[3pt]
+Protein--ligand interface confidence & Directional pairwise ipTM; symmetric and extrema-based summaries across predicted poses. & 7 \\[3pt]
+Minimum substrate--ATP distance & Minimum donor oxygen--reactive phosphorus distance in the corresponding prediction ensemble. & 1 \\[3pt]
+\midrule
+\rowcolor{pale}\textbf{Total} & Distinct, nonconstant definitions in the historical inventory & \textbf{88}\\
+\bottomrule\end{tabularx}\par\vspace{14pt}
+{\fontsize{11.5}{15}\selectfont
+\textbf{Counting rule:} 98 exported fields = 88 distinct nonconstant definitions + 5 duplicate exports + 5 constant or undefined fields.
+Counts include formula variants, threshold variants and sampling diagnostics; they are not counts of independent mechanistic hypotheses.
+Related quantities can appear in different groups when their definitions or modeling setups differ. Later follow-up formulas overlap this inventory and are not added to these counts.\\[5pt]
+SASA = solvent-accessible surface area; ipTM = interface predicted TM score. Pose variation describes generated predictions, not a molecular-dynamics trajectory.
+This inventory does not establish that every descriptor predicts experimental activity.}
+\end{document}

@@ -1,402 +1,105 @@
-<?xml version="1.0" encoding="utf-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
-  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="773.598281pt" height="431.28pt" viewBox="0 0 773.598281 431.28" xmlns="http://www.w3.org/2000/svg" version="1.1">
- <metadata>
-  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-   <cc:Work>
-    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-11-04T22:51:56.273321</dc:date>
-    <dc:format>image/svg+xml</dc:format>
-    <dc:creator>
-     <cc:Agent>
-      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
-     </cc:Agent>
-    </dc:creator>
-   </cc:Work>
-  </rdf:RDF>
- </metadata>
- <defs>
-  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
- </defs>
- <g id="figure_1">
-  <g id="patch_1">
-   <path d="M 0 431.28
-L 773.598281 431.28
-L 773.598281 0
-L 0 0
-z
-" style="fill: #ffffff"/>
-  </g>
-  <g id="axes_1">
-   <g id="patch_2">
-    <path d="M 225.838281 339.28
-L 766.398281 339.28
-L 766.398281 86.4
-L 225.838281 86.4
-z
-" style="fill: #ffffff"/>
-   </g>
-   <g id="patch_3">
-    <path d="M 225.838281 327.785455
-L 268.739869 327.785455
-L 268.739869 312.19963
-L 225.838281 312.19963
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_4">
-    <path d="M 225.838281 308.303174
-L 397.44463 308.303174
-L 397.44463 292.71735
-L 225.838281 292.71735
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_5">
-    <path d="M 225.838281 288.820894
-L 397.44463 288.820894
-L 397.44463 273.235069
-L 225.838281 273.235069
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_6">
-    <path d="M 225.838281 269.338613
-L 440.346218 269.338613
-L 440.346218 253.752789
-L 225.838281 253.752789
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_7">
-    <path d="M 225.838281 249.856333
-L 483.247805 249.856333
-L 483.247805 234.270508
-L 225.838281 234.270508
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_8">
-    <path d="M 225.838281 230.374052
-L 526.149392 230.374052
-L 526.149392 214.788228
-L 225.838281 214.788228
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_9">
-    <path d="M 225.838281 210.891772
-L 569.05098 210.891772
-L 569.05098 195.305948
-L 225.838281 195.305948
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_10">
-    <path d="M 225.838281 191.409492
-L 611.952567 191.409492
-L 611.952567 175.823667
-L 225.838281 175.823667
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_11">
-    <path d="M 225.838281 171.927211
-L 654.854154 171.927211
-L 654.854154 156.341387
-L 225.838281 156.341387
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_12">
-    <path d="M 225.838281 152.444931
-L 654.854154 152.444931
-L 654.854154 136.859106
-L 225.838281 136.859106
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_13">
-    <path d="M 225.838281 132.96265
-L 740.657329 132.96265
-L 740.657329 117.376826
-L 225.838281 117.376826
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="patch_14">
-    <path d="M 225.838281 113.48037
-L 740.657329 113.48037
-L 740.657329 97.894545
-L 225.838281 97.894545
-z
-" clip-path="url(#p02dfabdd37)" style="fill: #0072b2"/>
-   </g>
-   <g id="matplotlib.axis_1">
-    <g id="xtick_1">
-     <g id="line2d_1">
-      <defs>
-       <path id="m20f7eb1f2b" d="M 0 0
-L 0 3.5
-" style="stroke: #000000; stroke-width: 0.8"/>
-      </defs>
-      <g>
-       <use xlink:href="#m20f7eb1f2b" x="225.838281" y="339.28" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_1">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="225.838281" y="357.677656" transform="rotate(-0 225.838281 357.677656)">0</text>
-     </g>
-    </g>
-    <g id="xtick_2">
-     <g id="line2d_2">
-      <g>
-       <use xlink:href="#m20f7eb1f2b" x="311.641456" y="339.28" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_2">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="311.641456" y="357.677656" transform="rotate(-0 311.641456 357.677656)">2</text>
-     </g>
-    </g>
-    <g id="xtick_3">
-     <g id="line2d_3">
-      <g>
-       <use xlink:href="#m20f7eb1f2b" x="397.44463" y="339.28" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_3">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="397.44463" y="357.677656" transform="rotate(-0 397.44463 357.677656)">4</text>
-     </g>
-    </g>
-    <g id="xtick_4">
-     <g id="line2d_4">
-      <g>
-       <use xlink:href="#m20f7eb1f2b" x="483.247805" y="339.28" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_4">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="483.247805" y="357.677656" transform="rotate(-0 483.247805 357.677656)">6</text>
-     </g>
-    </g>
-    <g id="xtick_5">
-     <g id="line2d_5">
-      <g>
-       <use xlink:href="#m20f7eb1f2b" x="569.05098" y="339.28" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_5">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="569.05098" y="357.677656" transform="rotate(-0 569.05098 357.677656)">8</text>
-     </g>
-    </g>
-    <g id="xtick_6">
-     <g id="line2d_6">
-      <g>
-       <use xlink:href="#m20f7eb1f2b" x="654.854154" y="339.28" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_6">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="654.854154" y="357.677656" transform="rotate(-0 654.854154 357.677656)">10</text>
-     </g>
-    </g>
-    <g id="xtick_7">
-     <g id="line2d_7">
-      <g>
-       <use xlink:href="#m20f7eb1f2b" x="740.657329" y="339.28" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_7">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="740.657329" y="357.677656" transform="rotate(-0 740.657329 357.677656)">12</text>
-     </g>
-    </g>
-    <g id="text_8">
-     <text style="font-size: 17px; font-family: 'DejaVu Sans'; text-anchor: middle" x="496.118281" y="377.714531" transform="rotate(-0 496.118281 377.714531)">Retained distinct exported definitions</text>
-    </g>
-   </g>
-   <g id="matplotlib.axis_2">
-    <g id="ytick_1">
-     <g id="line2d_8">
-      <defs>
-       <path id="m69cf5e506c" d="M 0 0
-L -3.5 0
-" style="stroke: #000000; stroke-width: 0.8"/>
-      </defs>
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="319.992542" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_9">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="325.69137" transform="rotate(-0 218.838281 325.69137)">Other ensemble summary</text>
-     </g>
-    </g>
-    <g id="ytick_2">
-     <g id="line2d_9">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="300.510262" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_10">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="306.20909" transform="rotate(-0 218.838281 306.20909)">Pose consistency</text>
-     </g>
-    </g>
-    <g id="ytick_3">
-     <g id="line2d_10">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="281.027982" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_11">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="286.72681" transform="rotate(-0 218.838281 286.72681)">Amine attack (step 2)</text>
-     </g>
-    </g>
-    <g id="ytick_4">
-     <g id="line2d_11">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="261.545701" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_12">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="267.244529" transform="rotate(-0 218.838281 267.244529)">Intermediate exposure</text>
-     </g>
-    </g>
-    <g id="ytick_5">
-     <g id="line2d_12">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="242.063421" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_13">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="247.762249" transform="rotate(-0 218.838281 247.762249)">Substrate access</text>
-     </g>
-    </g>
-    <g id="ytick_6">
-     <g id="line2d_13">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="222.58114" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_14">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="228.279968" transform="rotate(-0 218.838281 228.279968)">Interface confidence</text>
-     </g>
-    </g>
-    <g id="ytick_7">
-     <g id="line2d_14">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="203.09886" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_15">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="208.797688" transform="rotate(-0 218.838281 208.797688)">Electrostatic potential / field</text>
-     </g>
-    </g>
-    <g id="ytick_8">
-     <g id="line2d_15">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="183.616579" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_16">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="189.315407" transform="rotate(-0 218.838281 189.315407)">Mechanistic descriptors</text>
-     </g>
-    </g>
-    <g id="ytick_9">
-     <g id="line2d_16">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="164.134299" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_17">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="169.833127" transform="rotate(-0 218.838281 169.833127)">Activation geometry</text>
-     </g>
-    </g>
-    <g id="ytick_10">
-     <g id="line2d_17">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="144.652018" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_18">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="150.350847" transform="rotate(-0 218.838281 150.350847)">Metal coordination</text>
-     </g>
-    </g>
-    <g id="ytick_11">
-     <g id="line2d_18">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="125.169738" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_19">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="130.868566" transform="rotate(-0 218.838281 130.868566)">Protonation</text>
-     </g>
-    </g>
-    <g id="ytick_12">
-     <g id="line2d_19">
-      <g>
-       <use xlink:href="#m69cf5e506c" x="225.838281" y="105.687458" style="stroke: #000000; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_20">
-      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="218.838281" y="111.386286" transform="rotate(-0 218.838281 111.386286)">Charge environment</text>
-     </g>
-    </g>
-   </g>
-   <g id="patch_15">
-    <path d="M 225.838281 339.28
-L 225.838281 86.4
-" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
-   </g>
-   <g id="patch_16">
-    <path d="M 225.838281 339.28
-L 766.398281 339.28
-" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
-   </g>
-   <g id="text_21">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="277.320186" y="323.57973" transform="rotate(-0 277.320186 323.57973)">1</text>
-   </g>
-   <g id="text_22">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="406.024948" y="304.097449" transform="rotate(-0 406.024948 304.097449)">4</text>
-   </g>
-   <g id="text_23">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="406.024948" y="284.615169" transform="rotate(-0 406.024948 284.615169)">4</text>
-   </g>
-   <g id="text_24">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="448.926535" y="265.132889" transform="rotate(-0 448.926535 265.132889)">5</text>
-   </g>
-   <g id="text_25">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="491.828123" y="245.650608" transform="rotate(-0 491.828123 245.650608)">6</text>
-   </g>
-   <g id="text_26">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="534.72971" y="226.168328" transform="rotate(-0 534.72971 226.168328)">7</text>
-   </g>
-   <g id="text_27">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="577.631297" y="206.686047" transform="rotate(-0 577.631297 206.686047)">8</text>
-   </g>
-   <g id="text_28">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="620.532884" y="187.203767" transform="rotate(-0 620.532884 187.203767)">9</text>
-   </g>
-   <g id="text_29">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="663.434472" y="167.721486" transform="rotate(-0 663.434472 167.721486)">10</text>
-   </g>
-   <g id="text_30">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="663.434472" y="148.239206" transform="rotate(-0 663.434472 148.239206)">10</text>
-   </g>
-   <g id="text_31">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="749.237646" y="128.756926" transform="rotate(-0 749.237646 128.756926)">12</text>
-   </g>
-   <g id="text_32">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start" x="749.237646" y="109.274645" transform="rotate(-0 749.237646 109.274645)">12</text>
-   </g>
-  </g>
-  <g id="text_33">
-   <text style="font-weight: 700; font-size: 22px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #263746" x="386.598281" y="23.916562" transform="rotate(-0 386.598281 23.916562)">Breadth of the historical descriptor exploration</text>
-  </g>
-  <g id="text_34">
-   <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #59636c" x="10.398281" y="422.000312" transform="rotate(-0 10.398281 422.000312)">98 exported fields: 88 distinct nonconstant definitions, 5 duplicate exports, 5 constant/undefined fields.</text>
-  </g>
- </g>
- <defs>
-  <clipPath id="p02dfabdd37">
-   <rect x="225.838281" y="86.4" width="540.56" height="252.88"/>
-  </clipPath>
- </defs>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="1152" height="756" viewBox="0 0 1152 756">
+<text fill="#890b23" xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="29.8879" font-family="LMSans10" font-weight="bold"><tspan y="-705.004" x="30.24 48.501508 60.576219 71.69452 88.46163 103.07681 115.15153 131.91864 143.03694 158.72809 177.34825 194.11536 209.38808 222.00077 236.61595 247.73426 255.38556 272.15269 284.2274 299.73924 310.8575 334.4391 349.7118 364.65574 381.42286 389.07417 404.586 415.70429 430.977">Structuraldescriptorsexplored</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.9402" font-family="LMSans17"><tspan y="-677.00106" x="30.24 40.808355 44.363019 50.11743 55.5371 62.61455 67.715419 71.27008 77.93308 85.122119 93.66606 97.220729 104.93578 111.82195 118.484958 126.20001 131.61968 138.69713 143.79799 155.68938 163.18128 168.28214 175.77404 183.48909 191.61859 198.2816 210.98595 218.28656 230.16202 235.58168 243.29674 254.96497 262.68003 270.39509 277.28126 283.03569 286.59034 293.25334 300.44236 308.9863 316.70137 324.4164 331.60545 339.3205 344.74018 348.29484 353.30006 365.19145 373.32096 379.98396 383.5386 391.25367 403.73484 410.92387 416.67829 422.4327 429.0957 434.85014 440.60456 447.26756 454.9826">Historicalinventorygroupedbythephysicalquantitybeingassessed.</tspan></text>
+<path transform="matrix(1,0,0,-1,30.24,98.43799)" stroke-width=".797" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#000000" d="M0 0H1091.52"/>
+<path transform="matrix(1,0,0,-1,21.273,146.25702)" d="M0 0H320.333V44.633H0Z" fill="#f8edef"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-637.081" x="30.24 42.516469 50.407384 56.92395 64.475139 70.2196 74.172779 82.83579 89.0744 97.08885 108.500568 113.68911 121.79621 135.18451 139.13768 143.09085">Descriptorfamily</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,146.25702)" d="M0 0H691.987V44.633H0Z" fill="#f8edef"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-637.081" x="350.572 361.4278 369.3187 377.50303 383.2475 391.1384 397.65498 405.54588 414.2089 420.4475 428.55464 434.79325 438.74644 446.46748 460.0256 468.68864 477.35166 485.45878 494.1218 500.3604 504.3136 510.55223 514.5054 522.3963">Representativequantities</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,146.25702)" d="M0 0H97.133V44.633H0Z" fill="#f8edef"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-637.081" x="1066.392 1078.6685 1082.6216 1089.1382 1095.3768 1099.33 1107.9929 1115.5441">Distinct</tspan><tspan y="-617.15499" x="1049.653 1058.3159 1066.2068 1070.7313 1075.2559 1083.9188 1087.872 1094.1106 1098.0637 1106.5569 1115.2199">definitions</tspan></text>
+<path transform="matrix(1,0,0,-1,30.24,148.22101)" stroke-width=".498" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#000000" d="M0 0H1091.52"/>
+<path transform="matrix(1,0,0,-1,21.273,195.89002)" d="M0 0H320.333V44.633H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-587.447" x="30.24 41.080354 48.63154 54.870149 58.823328 66.54437 74.651477 80.89008 84.84326 93.33642 107.66669 116.15984 124.05076 132.54392 145.93222 153.82314 160.06174 165.8062 179.1945 187.3016 195.96463 210.27947 217.83066 225.93776 232.17636 240.28347 244.23664 251.95769 258.1963 262.14949">Activationgeometryandcatalytic</tspan><tspan y="-567.52206" x="30.24 38.130914 46.79393 54.51498 58.46816 64.212619 72.70577 81.36879 94.75709 102.648 111.31102">environment</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,195.89002)" d="M0 0H691.987V44.633H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-587.447" x="350.572 359.8218 365.0721 370.32243 377.2868 383.7416 395.64747 402.61186 410.08583 417.3436 420.78718 427.24198 437.66539 444.62977 452.10374 464.41108 471.88505 478.33985 484.90275 489.8442 494.69303 501.6574 506.9077 512.158 519.12246 525.5772 537.4831 541.915 546.85647 553.82089 560.27566 565.52597 568.96957 576.22738 583.70138 589.27597 598.15518 601.59878 609.25808 615.7128 622.67727 630.96969 642.47409 648.92886 654.17916 661.14358 669.42056 676.67837 683.1331 690.3909 701.8953 708.3501 713.6004 718.5419 725.2128 734.09207 739.0335 745.4883 752.4527 758.9075 764.1578 767.6014 774.27236 780.7271 785.5759 792.83377 797.7752 805.033 812.507 824.8144 831.26919 837.9401 845.8156 853.0734 858.648 866.122 871.0635 877.51828 886.39749 893.87149 900.32626 906.8737 911.8152 918.8877 930.4075 936.86227 944.33627 950.8992 955.84066 963.09848 969.5532">Attackanglesandnear-attackfractions;localmetalgeometry;reactive-groupexposure;nearbycharged</tspan><tspan y="-567.52206" x="350.572 355.51347 361.96827 367.54286 370.98646 378.46043 385.9344 392.3892 397.96379">residues.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,195.89002)" d="M0 0H97.133V44.633H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-587.447" x="1107.239 1114.4968">10</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,223.58698)" d="M0 0H320.333V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-542.814" x="30.24 41.55906 54.94736 58.90054 67.56356 75.454479 83.94763 92.05473 99.60592 107.326969 116.947399 125.0545 133.71752 141.90184 147.6463 156.13945 164.24655 171.79775 186.12802 194.62117 202.51209 211.00524 224.39354 232.28446 238.52306 244.26752 257.65583 264.26506 270.78163 277.0048 284.8957 299.22596 307.71913">Amine&#x2013;acylapproachgeometry(step2)</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,223.58698)" d="M0 0H691.987V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-542.814" x="350.572 360.2233 371.72767 375.17127 382.64524 393.9334 404.1715 411.4293 418.39369 424.84849 431.51948 439.8119 453.92597 461.39994 464.8435 470.4181 475.6684 482.63279 490.10676 496.56156 503.01637 511.89558 521.5623 529.0363 533.9778 541.2356 544.6792 551.937 562.40676 569.88076 577.35476 580.79837 586.04867 597.1824 604.1468 611.6208 618.8786 622.3222 628.777 637.6562 645.1302 651.58499 658.1479 663.08938 667.9382 674.9026 680.1529 685.4032 692.3676 698.8224 710.7283 715.16018 720.1016 727.06607 733.5208 738.7711 742.2147 749.47256 756.94656 765.82577 772.79019 779.24496 785.6997 792.1545 799.6285 804.8788 811.33358 818.80758 823.6564 831.53189 838.7897 844.36428 855.6524 862.1072 869.365 876.839 884.313 889.5633">AmineN&#x2013;acylCdistance;B&#x00fc;rgi&#x2013;Dunitzangle;near-attackfraction;accepted-posecount.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,223.58698)" d="M0 0H97.133V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-542.814" x="1114.499">4</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,251.28299)" d="M0 0H320.333V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-515.118" x="30.24 41.095796 48.98671 57.09381 64.645 70.883609 74.836788 82.55783 90.448749 96.116 104.60915 110.353618 118.84677 127.50979 141.84006 150.02439 155.76885 163.65976 171.68965 177.43412 185.92726 194.03437 202.69739 206.65056 214.00099 222.1081 228.3467 232.29987 240.79302">Reactive-grouppreorganization</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,251.28299)" d="M0 0H691.987V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-515.118" x="350.572 359.8527 366.4156 371.35707 379.2325 386.0888 392.7598 399.4308 402.8744 409.83879 415.08909 426.37727 434.25273 441.5105 447.08509 450.5287 455.779 459.2226 466.48039 473.95436 480.91874 489.21113 494.7857 501.8582 506.79966 513.25448 520.2189 527.6929 536.55667 543.52108 548.77139 554.02169 560.9861 567.44088 574.51339 579.3622 586.8362 590.2798 595.22128 601.676 608.1308 613.3811 616.8247 624.0825 636.40536 643.0763 649.6238 654.56527 658.0243 664.9887 672.44729 675.89089 679.3499 682.7935 687.6269 694.29788 703.17709 714.68148 721.1362 728.10067 740.408 747.37246 754.84646 762.10427 765.54788 772.0026 780.88186 788.35586 791.79946 799.27346 805.7282 813.2022 818.4525 825.41696 830.66726 837.122 841.9708 848.4256 855.6834 863.1574 868.4077 875.37216 881.8269 891.9106 896.34249 901.28396 908.24838 914.7031 919.9534 923.39706 930.65487 938.12887">Carboxylatepositionalspread;attack-directionvariability;meanangle;bidentate-contactfraction.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,251.28299)" d="M0 0H97.133V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-515.118" x="1114.499">4</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,278.979)" d="M0 0H320.333V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-487.422" x="30.24 42.516469 50.23752 59.3638 67.85696 74.095569 82.75858 90.6495 97.16606 101.11924 107.6358 113.303058 119.81962 128.96134 136.85225 144.40345 148.35662 152.88115 157.40569 170.62413 179.11728 187.0082 195.50135 208.88965 216.78057 223.01917 228.76363 232.7168 245.9198 254.58283 262.47373 268.9903 276.54148 282.28596 286.23915 294.90217 301.14079 309.1707 314.91517">Hypothesis-specificgeometricdescriptors</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,278.979)" d="M0 0H691.987V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-487.422" x="350.572 361.27339 367.94438 374.21388 381.17826 388.65223 392.09584 399.3536 411.66096 418.11576 425.37355 432.8475 438.0978 445.0622 451.517 456.7673 462.3419 471.2211 476.7957 484.26966 491.74363 497.3182 502.5685 507.50999 514.47439 519.7247 531.0128 537.4676 544.13858 552.01406 559.27188 564.84646 572.32046 577.2619 588.5655 595.5299 603.0039 615.3113 622.2757 628.73049 635.18527 641.64 647.2146 652.7892 661.6684 668.6328 680.1372 683.5808 691.0548 702.34298 709.3074 716.7814 723.8539 728.79537 736.05319 743.0176 749.47238 756.94638 765.8101 772.77456 780.24856 786.7033 794.1773 797.6209 805.0949 816.3985 823.8725 831.3465 836.28799 839.73159 846.696 850.1396 859.00338 865.9678 872.42257 878.8773 885.3321 892.8061 898.0564 904.51119 911.98519 916.834 924.7095 931.9673 937.5419 948.84548 955.30026 962.55807 970.03207 977.50607 982.75637">Oxyanioncontacts;substrateexposureandaccess;amineapproach;adenineburial;accepted-posecount.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,278.979)" d="M0 0H97.133V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-487.422" x="1114.499">9</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,306.675)" d="M0 0H320.333V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-459.726" x="30.24 39.21186 43.16504 51.658197 59.765298 68.428318 82.75858 90.6495 98.370548 107.496829 115.98998 122.506549 131.16957 136.91403 150.4722 158.5793 167.24233 181.5726 190.69889 199.67073 207.22193 214.94298 222.8339 234.73975 242.63066 251.29369 259.78684 267.89396 276.38713 284.278 297.66633 305.55723 314.22026">Ligandexposureandpocketengagement</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,306.675)" d="M0 0H691.987V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-459.726" x="350.572 358.6482 365.90599 369.34956 376.02055 382.47535 389.9493 395.19963 400.04844 407.01283 413.46763 419.92243 426.37724 431.9518 437.5264 440.96998 448.44395 451.8875 463.19114 468.75028 476.22425 481.1657 485.5976 492.56199 499.03224 510.3204 516.8833 521.82479 528.27957 535.24398 545.6519 552.9097 562.1904 567.765 574.2198 577.6634 584.11819 590.57296 595.82327 602.278 614.5854 619.52688 625.9816 632.94607 639.4008 644.6511 648.0947 654.7657 666.0693 673.0337 678.284 685.5418 697.0462 702.6208 711.48458 714.92819 722.40219 727.65249 734.10726 739.0487 750.5531 757.0079 764.4819 767.9255 774.8899 780.1402 786.595 793.8528 800.9253 805.86679 813.1246 818.3749 824.82968 828.27328 840.59609 846.17068 852.6254 860.0994 866.66238 871.6038 878.56826 883.81857 887.26217 894.51998 901.99398">Solvent-accessiblesurfaceareasofselectedreactiveatoms;intermediate&#x2013;proteinseparation.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,306.675)" d="M0 0H97.133V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-459.726" x="1114.499">5</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,334.372)" d="M0 0H320.333V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-432.03" x="30.24 39.67512 48.33814 57.001157 63.517724 69.75633 75.50079 83.607898 89.846508 97.73742 103.40467 111.51177 119.06296 126.61414 134.50505 141.02162 153.19 159.4286 168.09163 176.75466 185.41768 193.3086 202.92902 211.42217 219.31308 227.80623 241.19454 249.08545 255.32405 261.0685">Substrate-accesstunnelgeometry</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,334.372)" d="M0 0H691.987V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-432.03" x="350.572 359.26588 366.73985 374.2138 381.67234 388.14259 396.41957 402.87437 410.34834 416.80314 420.2467 427.5045 433.07908 440.55305 445.4945 456.79814 463.7625 471.22105 483.54383 486.98744 493.44224 500.9162 508.17399 513.4243 525.7317 533.2057 540.6797 548.1537 554.60848 564.39877 571.36318 574.80679 580.05709 586.51187 591.4533 598.9273 605.8917 611.142 614.58566 621.2566 632.54476 638.9995 642.4431 648.8979 655.4608 660.4023 667.3667 674.8407 681.2955 692.59909 697.84939 705.32339 710.26486 716.7196 722.2942 729.7682 737.026 740.4696 747.9436 753.5182">Tunnelenclosureandlengthunderalternativeclearancethresholds.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,334.372)" d="M0 0H97.133V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-432.03" x="1114.499">6</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,362.068)" d="M0 0H320.333V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-404.333" x="30.24 41.55906 54.94736 58.90054 67.56356 75.454479 81.12173 87.63829 91.59147 97.83008 111.388248 119.27916 123.23234 131.12325 138.67444 144.91304 150.6575 159.15065 165.66722 171.90583 180.01293 186.25153 190.2047 203.4077 211.29862 219.96164 227.6827 231.63587 237.38033 245.87348 254.5365 267.9248 275.8157 284.47874">Amine-siteelectrostaticenvironment</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,362.068)" d="M0 0H691.987V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-404.333" x="350.572 360.8101 367.2649 373.8278 378.76927 385.84175 397.3461 404.3105 410.7653 414.20887 421.68284 425.1264 436.43003 443.28633 449.9573 456.6283 463.88609 470.34089 477.81486 483.38945 492.2532 499.72718 503.17079 508.74537 513.99569 520.9601 528.4341 534.88888 546.19247 551.4273 563.53396 575.3317 582.8057 589.77017 595.3447 598.7883 610.0919 615.0334 621.48818 627.06277 630.50637 637.98037 645.45437 651.9091 660.7729 668.2469 674.70169 684.8008 691.25558 698.72958 705.2925 710.23397 717.49179 728.7799 738.6783 742.1219 747.3722 754.8462 758.2898 770.6126 777.577 781.0206 786.27096 792.7257 797.6672 805.1412 812.1056 817.3559 820.7995 827.47048 838.7586 845.8311 850.7726 858.0304 865.9059 877.19406 882.1355 889.0999 896.5739 900.0175 903.4611">Nearbyacidicoxygens;distancetoabasicresidue;netchargewithinalternativeproberadii.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,362.068)" d="M0 0H97.133V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-404.333" x="1107.239 1114.4968">12</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,389.764)" d="M0 0H320.333V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-376.637" x="30.24 40.153829 44.107007 51.99792 59.549108 65.78771 71.53217 80.02533 86.54189 92.7805 100.8876 107.12621 111.07939 124.29783 133.4241 141.91725 148.15586 156.04677 164.7098 170.9484 174.90157 183.00867 192.62909 200.73619 209.39922 223.72949 231.6204 235.57358 243.4645 251.01569 257.2543 262.99879 266.95198 280.15495 284.67948 289.204 297.0949 301.0481">Electrostaticpotentialandelectricfield</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,389.764)" d="M0 0H691.987V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-376.637" x="350.572 359.43577 366.69355 371.94386 378.39866 385.87263 391.12294 394.56654 401.5309 409.80787 416.77226 424.24623 436.569 443.64149 448.58296 455.84074 459.68583 466.14064 472.59544 477.84574 484.30055 496.60789 500.49159 504.37525 510.83006 514.2736 526.59646 533.56088 543.64456 552.0914 561.98977 576.0884">PotentialandprojectedfieldatATPP</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="10.8094" font-family="LMMathItalic10" font-style="italic"><tspan y="-374.32099" x="585.266">&#x03b1;</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-376.637" x="597.559 604.52346 611.99746 624.3048 629.5551 637.0291 648.3327 655.2971 661.7519 668.42288 676.6998 683.1546 689.7175 694.659 702.5345 709.7923 717.2663 723.93728 727.38088 736.2601 742.71487 750.18887 755.7634 762.2182 773.7226 781.1966 784.6402 795.92837 807.43276 813.8875 820.8519 828.3259 838.7493 845.71377 853.18777 865.4951 872.1661 878.729 883.6705 887.1141 894.0785 899.3288 902.7724 910.0302 917.5042">andtheacylcarbonyl;ensemblemeansandvariation.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,389.764)" d="M0 0H97.133V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-376.637" x="1114.499">8</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,417.46)" d="M0 0H320.333V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-348.941" x="30.24 35.351335 43.84449 52.507509 56.460687 63.811128 71.91823 80.581249 84.534427 92.42534 98.09259 103.83705 111.72797 118.24453 122.19771 130.86074 139.52376 153.08193 161.18903 169.85205 184.16689">Ionizable-residueandp</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMMathItalic12" font-style="italic"><tspan y="-348.941" x="192.821">K</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="10.8094" font-family="LMMathItalic10" font-style="italic"><tspan y="-346.625" x="205.685">a</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-348.941" x="217.55899 226.22202 234.11293 240.6295 248.1807 253.92516 257.87834 266.54136 272.77998 280.79444 286.53889">descriptors</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,417.46)" d="M0 0H691.987V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-348.941" x="350.572 360.8101 364.25367 369.82826 375.07856 378.52217 385.99613 389.4397 396.91368 408.20185">Histidinep</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMMathItalic12" font-style="italic"><tspan y="-348.941" x="415.645">K</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="10.8094" font-family="LMMathItalic10" font-style="italic"><tspan y="-346.625" x="428.509">a</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-348.941" x="439.561 446.63349 451.57496 458.43125 465.10224 468.54585 480.0502 483.49378 488.3426 499.84696 505.09727 517.20388 524.4617 533.32546 544.82986 548.27346 555.74746 559.19107 570.69546 578.16946 594.5072 597.9508 604.62179 610.19638 613.63998 621.11398 632.41757">proximityto7;minimumlysinep</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMMathItalic12" font-style="italic"><tspan y="-348.941" x="639.826">K</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="10.8094" font-family="LMMathItalic10" font-style="italic"><tspan y="-346.625" x="652.69">a</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-348.941" x="658.902 667.76577 671.2248 678.4826 685.94119 689.38479 695.6851 702.64956 710.12356 713.56716 720.03738 724.8707 729.8122 736.2824 741.857 745.3006 752.75918 760.23318 771.53677 777.9915 785.2493 792.7233 800.1973 805.44766 815.8556 822.82 830.294 842.6168 849.0716 856.5456 862.1202 868.57498 880.07937 887.55337 890.99697 902.2851 908.95608 915.519 920.46047 923.90408 930.86849 936.1188 939.5624 946.8202 954.2942">;ionizable-residuecountsandensemblevariation.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,417.46)" d="M0 0H97.133V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-348.941" x="1107.239 1114.4968">12</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,445.157)" d="M0 0H320.333V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-321.245" x="30.24 45.342374 53.449476 61.942628 70.605648 78.49656 85.01312 88.9663 97.62932 116.68487 124.23605 133.19246 141.22235 146.96681 155.62984 159.58301 168.24604 176.35314 182.59174 186.5449 195.03806 209.35289 217.84604 225.73696 234.2301 247.61841 255.50933 261.74794 267.49238">Magnesiumcoordinationgeometry</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,445.157)" d="M0 0H691.987V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-321.245" x="350.572 363.23454 370.4923 377.7501 385.22407 392.69804 399.9558 405.5304 413.00437 420.47834 427.33464 432.2761 439.75007 450.15803 457.1224 464.59638 476.90373 489.5817 496.83949 504.09727 510.9381 517.6091 524.28 531.53787 537.9926 550.3154 557.7894 561.23306 566.8076 572.0579 579.02236 586.49636 592.9511 599.4059 604.98049 613.84426 620.299 627.9583 634.81466 639.7561 647.2301 650.6737 658.1477 665.1121 670.3624 673.806 681.06387 693.38668 700.3511 707.8251 720.13247 727.20498 732.1464 735.59 743.064 750.32186 753.76547 761.23947 773.3306 777.7625 782.704 789.6684 796.12319 801.3735 804.8171 812.0749 819.5489 829.9723 836.9367 843.3915 848.33297 855.59078 861.16537 871.5733 879.0473 882.4909 888.0655 893.3158 900.2802 907.7542 914.209 925.5126 930.7629 938.2369 943.17837 949.6331 955.2077 962.6817 969.9395 973.3831 980.8571 986.4317">Mg&#x2013;phosphorusandMg&#x2013;oxygendistances;coordinationandbridgingfractionsacrossdistancethresholds.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,445.157)" d="M0 0H97.133V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-321.245" x="1107.239 1114.4968">10</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,472.853)" d="M0 0H320.333V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-293.548" x="30.24 41.095796 46.840257 55.333414 61.57202 69.46294 73.416118 82.07913 90.57229 94.52547 98.478649 106.9718 115.0789 123.74192 138.07219 142.02536 150.68839 156.92699 164.8179 170.56237 175.75092 183.85802 191.40921 204.95194 212.50313 220.99628 229.6593 234.18384 238.70838 247.3714 255.26232 263.92533 271.4765">Protein&#x2013;ligandinterfaceconfidence</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,472.853)" d="M0 0H691.987V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-293.548" x="350.572 361.04176 364.48536 369.42683 375.88163 382.33644 387.58674 391.03034 398.28813 405.7621 412.72648 421.01887 428.49284 435.4572 438.90083 443.8423 453.74067 457.18428 462.75886 474.04704 477.4906 484.96458 494.86296 507.52549 516.4047 521.9793 528.65029 540.1392 551.6436 558.11386 563.3487 568.3056 571.7492 583.03738 590.0018 597.47579 609.78317 616.2379 622.9089 628.1592 633.10067 639.5554 651.0598 658.02426 662.87307 670.34707 677.31149 682.88607 689.3408 701.66366 707.2382 714.7122 726.2166 737.721 744.28396 749.2254 752.669 759.1238 769.53176 776.49618 782.9509 787.8924 795.1502 800.7248 811.1482 818.20529 823.1467 829.6015 837.0755 840.5191 846.9739 852.2242 858.67898 871.0018 878.87728 886.1351 891.70968 898.1644 903.739">DirectionalpairwiseipTM;symmetricandextrema-basedsummariesacrosspredictedposes.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,472.853)" d="M0 0H97.133V27.696H0Z" fill="#ffffff"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-293.548" x="1114.499">7</tspan></text>
+<path transform="matrix(1,0,0,-1,21.273,500.549)" d="M0 0H320.333V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-265.852" x="30.24 45.342374 49.29555 57.95857 61.911748 75.30005 83.963069 103.018619 109.53518 118.1982 126.86121 133.37778 139.61638 145.36084 153.46794 159.70655 167.59746 176.0906 185.989 197.30806 213.8311 222.49413 226.4473 232.96387 239.20247 247.30957 255.9726 263.52378">Minimumsubstrate&#x2013;ATPdistance</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,500.549)" d="M0 0H691.987V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-265.852" x="350.572 363.23454 366.6781 374.15208 377.59565 389.1 396.57398 412.9117 420.38569 427.64347 435.11744 441.97373 451.764 458.6203 465.2913 471.96229 479.22007 485.67488 493.14884 500.40663 505.34809 511.8029 518.7673 525.22207 530.47238 533.91598 540.5869 551.87509 559.34909 566.82308 574.0809 579.65548 587.12948 594.60348 601.4598 606.40127 613.87527 624.2832 631.7572 635.2008 640.7754 646.0257 652.9901 660.4641 666.9189 678.2225 681.6661 693.97348 699.22378 706.69778 718.00137 724.4561 731.297 736.23849 741.17996 747.6347 753.2093 761.1002 768.35806 775.8166 783.2906 786.7342 794.2082 806.3148 813.3873 818.3288 824.78359 832.25759 835.7012 842.15597 847.40628 850.84988 858.10769 870.41506 876.8698 884.3438 889.9184 896.37319 907.87759 915.35159 918.79519 925.24996">Minimumdonoroxygen&#x2013;reactivephosphorusdistanceinthecorrespondingpredictionensemble.</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,500.549)" d="M0 0H97.133V27.696H0Z" fill="#f4f5f6"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-265.852" x="1114.499">1</tspan></text>
+<path transform="matrix(1,0,0,-1,30.24,502.513)" stroke-width=".498" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#000000" d="M0 0H1091.52"/>
+<path transform="matrix(1,0,0,-1,21.273,530.257)" d="M0 0H320.333V24.707H0Z" fill="#f8edef"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-233.155" x="30.24 40.138387 48.63154 54.870149 62.97725">Total</tspan></text>
+<path transform="matrix(1,0,0,-1,341.606,530.257)" d="M0 0H691.987V24.707H0Z" fill="#f8edef"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans17"><tspan y="-233.155" x="350.572 361.04176 364.48536 370.05995 375.31025 378.75386 386.2278 392.68263 397.93293 406.81214 414.27067 421.52845 429.0024 435.4572 442.715 450.18898 455.76356 461.01387 467.97825 475.4522 485.55134 493.0253 499.4801 503.3638 507.24748 514.72146 518.16506 523.41537 526.85897 534.11679 541.59078 551.9987 555.4423 567.76516 573.01547 580.48947 591.7776 599.2516 602.6952 608.2698 613.5201 620.3764 625.3179 628.7615 635.21627 642.18069 650.45767 653.90127 661.37527 668.0462 674.501 681.975 687.2253 694.0816 699.0231">Distinct,nonconstantdefinitionsinthehistoricalinventory</tspan></text>
+<path transform="matrix(1,0,0,-1,1033.593,530.257)" d="M0 0H97.133V24.707H0Z" fill="#f8edef"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="15.4421" font-family="LMSans10" font-weight="bold"><tspan y="-233.155" x="1104.774 1113.2672">88</tspan></text>
+<path transform="matrix(1,0,0,-1,30.24,532.371)" stroke-width=".797" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#000000" d="M0 0H1091.52"/>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="11.457" font-family="LMSans10" font-weight="bold"><tspan y="-200.33" x="30.24 38.29427 44.59562 51.022996 57.45037 62.079 65.01199 71.43937 82.472469 86.73447 93.16184 96.09483 101.94936">Countingrule:</tspan></text>
+<text xml:space="preserve" transform="matrix(1 0 -0 1 0 756)" font-size="11.457" font-family="LMSans12"><tspan y="-200.33" x="111.373 116.98693 126.80558 131.78937 136.9221 142.99433 148.28746 152.10265 156.15842 161.14221 171.1098 174.1058 177.1018 182.0856 184.72072 190.47214 198.97322 211.91963 217.53357 227.35222 233.10364 235.73876 240.03513 244.0909 246.72602 252.47743 257.46125 265.73323 271.48463 277.09855 282.84996 287.83375 293.44767 299.19908 303.49546 307.55125 312.92457 318.67597 326.93647 332.68788 337.67167 340.66767 343.66368 349.41508 352.05018 356.10597 358.74107 364.35499 370.10639 378.61897 391.5539 401.384 407.1354 412.8868 418.6382 421.27333 423.90843 428.8922 434.26554 438.32133 447.50984 452.49363 457.62635 463.69856 468.99168 472.80686 476.86265 485.3752 498.31016 508.14027 513.124 518.738 524.4894 528.78579 532.84158 538.2149 543.9663 552.2268 557.53146 565.5628 571.3142 577.0656 582.817 587.8008 590.7968 593.7928 599.5442 604.52798 614.4841 617.4801 620.4761 625.45986 628.095 633.8464 638.14279 647.6636 654.83566 660.4496 666.201 671.9524 676.0082 684.5093 687.1444 692.8958 697.87966 700.5148 706.2662 712.0176 721.2175 724.6432 729.93637 733.7515 742.61929 748.37069 751.0173 760.59536 765.7281 770.7921 774.6073 777.24246 782.6158 788.3672 792.423 796.71939 804.15499 808.21078 813.97366 817.7888 822.7726 827.069 832.8204 838.4343 841.06948 851.0256 856.1583 861.22238 865.03756 867.67269 873.046 878.7974 882.8532 891.3543 896.72769 902.47909 912.44668 916.74307 922.1164 930.98416 936.73556 939.37069 942.0058 947.7572 957.57589 963.33877 965.9739 971.3472 976.9497 982.7126 988.32656 992.6229 996.6787 999.31387 1004.2976 1008.594 1016.15567 1020.2114 1025.9629 1030.9467 1040.284 1045.348 1049.1632 1058.3517 1064.1032 1069.717 1077.989 1082.9728 1088.5867 1094.3381 1100.0896 1104.1454 1112.6465 1118.2604">98exportedfields=88distinctnonconstantdefinitions+5duplicateexports+5constantorundefinedfields.Countsincludeformulavariants,thresholdvariantsandsamplingdiagnostics;theyarenotcountsof</tspan><tspan y="-180.405" x="30.239998 32.875108 38.626523 44.377939 49.361734 55.422487 60.40628 66.15769 71.9091 76.8929 82.64431 90.446529 99.31425 104.29804 109.28184 115.03325 120.406589 126.158 128.7931 133.08948 137.14525 139.78037 148.49915 154.25057 159.3833 165.44406 171.058 175.11377 180.86519 185.84899 190.14536 195.12915 199.42552 207.53708 214.75499 219.73879 222.3739 227.74724 231.80301 236.7868 246.27321 252.02463 257.77604 263.14936 268.90077 272.95655 275.59165 279.64744 282.28254 287.26634 295.2977 300.2815 305.65483 315.15266 320.52598 326.27738 332.3381 337.3219 342.3859 349.93608 352.57118 362.069 367.8204 370.4555 373.72648 376.99748 381.98127 385.79646 390.78025 396.53166 404.32243 409.93635 413.75154 419.36546 425.11686 430.86827 438.91108 446.54145 452.29286 457.27665 466.76304 470.81883 476.57023 481.55403 484.18913 491.7393 497.4907 502.4745 505.4705 508.4665 514.2179 516.853 520.9088 523.5554 529.1579 534.9208 542.95217 548.2568 555.80697 564.6747 570.59799 576.34939 581.3331 583.96829 586.6034 592.3548 601.7152 606.0116 610.99539 615.05117 620.80258 626.55398 634.5853 640.33676 642.97189 646.24288 649.5138 654.49758 658.31277 666.4243 672.48507 677.8584 681.9142 686.8865 694.4481 697.8738 703.48776 706.12289 708.758 714.0626 721.693 725.428 731.1794 740.6658 744.09146 749.39608 753.21127 762.079 767.8304 770.4655 775.83889 783.87026 789.4842 794.61697 799.6007 803.4159 806.051 811.4244 820.92227 824.978 830.72946 833.36459 841.39596 844.03109 849.7825 854.9152 859.89907 865.65048 869.70626 875.01089 878.82608 887.70529 893.06716 898.83 908.3164 913.38046 917.1956 925.9144 931.66586 937.2798 945.07058 950.4439 956.1953 961.9467 966.93057 976.4284 980.4842 989.8331 993.8889 999.6403 1004.62417 1008.92056 1017.65078 1022.6345 1028.2484 1033.9999 1039.7514 1043.8071 1048.1035">independentmechanistichypotheses.Relatedquantitiescanappearindifferentgroupswhentheirdefinitionsormodelingsetupsdiffer.Laterfollow-upformulasoverlapthisinventoryandarenotaddedtothesecounts.</tspan><tspan y="-155.498" x="30.239998 36.472608 43.885286 50.117895 62.101915 75.40349 79.69986 85.31379 87.9489 93.081638 98.06543 103.81684 107.87262 111.607608 116.98094 121.96474 126.94853 131.93233 136.2287 140.52507 143.16019 148.9116 151.54673 161.10187 165.39824 171.14966 174.9763 178.39049 183.76383 188.74762 198.31421 203.36675 207.18193 212.16573 217.53907 225.65062 228.28574 234.03716 241.69043 256.0002 269.3018 271.9369 277.6883 281.74409 286.72789 290.54307 293.9687 299.342 304.3258 313.88096 319.32304 323.1382 328.122 333.8734 336.5085 341.4923 345.5481 350.5319 360.85466 368.50794 382.81776 387.11415 392.09794 397.40254 401.2177 406.2015 416.8107 423.62763 429.24156 433.53794 443.09309 448.22584 453.28984 457.105 459.7401 465.11344 469.16923 471.80433 477.41825 487.741 493.4924 498.4762 502.77259 507.75639 511.57157 514.20669 520.2789 525.2627 534.13046 539.7444 544.72817 550.47958 555.4634 559.27859 564.6519 568.7077 573.6915 584.0143 589.45639 593.27157 598.2554 604.0068 606.6419 611.62576 615.6815 618.31668 623.9306 629.682 633.9784 641.8723 647.6237 653.2377 661.8648 671.8095 680.67727 686.2912 688.9378 693.91018 698.8939 704.6453 707.29196 712.3445 716.15969 719.89468 725.64608 730.7788 736.5302 741.90359 750.7713 753.40646 758.39028 767.2695 771.32528 775.14047 780.5138 783.4697 788.442 793.4258 797.48159 802.7862 806.6014 810.8061 821.4039 829.0571 834.80856 837.44369 846.3114 848.94656 854.69796 859.84219 864.81448 870.57736 874.62167 879.9263 883.74148 893.44558 899.19699 905.1317 910.1155 918.9832 924.7346 930.3486 938.9757 943.9595 948.25588 952.31167 957.685 963.4364 966.07156 968.70669 973.00308 983.3258 987.3816 993.133 998.50637 1007.1335 1012.1173 1017.25009 1022.2339 1026.0491 1035.7645 1041.516 1046.4998 1050.7962 1055.7799 1059.5951 1062.2302 1067.9817 1072.0375 1077.3306 1085.7285 1091.1592 1094.9744 1099.9581 1105.7096 1108.3447 1113.3285 1117.3843">SASA=solvent-accessiblesurfacearea;ipTM=interfacepredictedTMscore.Posevariationdescribesgeneratedpredictions,notamolecular-dynamicstrajectory.Thisinventorydoesnotestablishthateverydescriptorpredicts</tspan><tspan y="-135.573" x="30.239998 35.223794 40.35653 46.417284 51.401079 55.21626 57.851369 66.719089 71.70288 77.45429 81.51007 86.88341 93.26495 98.63829 103.622089 107.677867 110.31297 115.44571 118.08082 121.8158 126.02052">experimentalactivity.</tspan></text>
 </svg>

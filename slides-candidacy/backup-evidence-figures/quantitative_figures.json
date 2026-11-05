@@ -1,17 +1,6 @@
 {
   "figures": [
     {
-      "name": "assay_full_panel_measurements",
-      "title": "Stored assay measurements and experimental variability",
-      "caption": "All six stored measurements shown; black marker: stored mean. Axis is symlog near zero to retain zero readings.\nZeros are shown at zero. The CSV does not establish whether repeats are biological or technical. BL21 is the stored control label; empty-vector/no-enzyme identity is not inferred.",
-      "kind": "saved-data analysis",
-      "files": [
-        "assay_full_panel_measurements.png",
-        "assay_full_panel_measurements.svg",
-        "assay_full_panel_measurements.pdf"
-      ]
-    },
-    {
       "name": "assay_key_candidates_and_controls",
       "title": "Stored assay measurements and experimental variability",
       "caption": "All six stored measurements shown; black marker: stored mean. Axis is symlog near zero to retain zero readings.\nZeros are shown at zero. The CSV does not establish whether repeats are biological or technical. BL21 is the stored control label; empty-vector/no-enzyme identity is not inferred.",
@@ -20,50 +9,6 @@
         "assay_key_candidates_and_controls.png",
         "assay_key_candidates_and_controls.svg",
         "assay_key_candidates_and_controls.pdf"
-      ]
-    },
-    {
-      "name": "assay_date_label_comparison",
-      "title": "Measurement variation across recorded date groups",
-      "caption": "Three stored values under each date label. Dashed line: equal means. This does not establish the cause of date-group differences.",
-      "kind": "saved-data analysis",
-      "files": [
-        "assay_date_label_comparison.png",
-        "assay_date_label_comparison.svg",
-        "assay_date_label_comparison.pdf"
-      ]
-    },
-    {
-      "name": "assay_summary_mean_sd",
-      "title": "Recorded mean and variation for key candidates and controls",
-      "caption": "Mean and sample SD recomputed from all six stored values and verified against the CSV. No confidence interval or replicate-type claim.",
-      "kind": "saved-data analysis",
-      "files": [
-        "assay_summary_mean_sd.png",
-        "assay_summary_mean_sd.svg",
-        "assay_summary_mean_sd.pdf"
-      ]
-    },
-    {
-      "name": "angle_yield_and_influence",
-      "title": "Enrichment of strong producers does not imply quantitative yield prediction",
-      "caption": "Descriptive, retrospective association. The right panel is a post-hoc influence diagnostic, not a separate validation set.",
-      "kind": "saved-data analysis",
-      "files": [
-        "angle_yield_and_influence.png",
-        "angle_yield_and_influence.svg",
-        "angle_yield_and_influence.pdf"
-      ]
-    },
-    {
-      "name": "joint_angle_distance_activity",
-      "title": "Angular alignment and absolute proximity are separate observations",
-      "caption": "48 homologs; one-Mg historical panel; 50 predictions each. Color is measured product concentration, not predicted activity.",
-      "kind": "saved-data analysis",
-      "files": [
-        "joint_angle_distance_activity.png",
-        "joint_angle_distance_activity.svg",
-        "joint_angle_distance_activity.pdf"
       ]
     },
     {
@@ -89,53 +34,9 @@
       ]
     },
     {
-      "name": "weighted_angle_scale_invariance",
-      "title": "A weights proximity but does not impose an absolute distance requirement",
-      "caption": "Mathematical illustration, not enzyme data: angles [160\u00b0, 170\u00b0, 175\u00b0], distances [3, 4, 5] \u00c5 before scaling.\nA = \u03a3(\u03b8\u1d62/d\u1d62) / \u03a3(1/d\u1d62); multiplying every distance by the same factor cancels. Report dH alongside A.",
-      "kind": "mathematical illustration",
-      "files": [
-        "weighted_angle_scale_invariance.png",
-        "weighted_angle_scale_invariance.svg",
-        "weighted_angle_scale_invariance.pdf"
-      ]
-    },
-    {
-      "name": "ensemble_distance_angle_coverage",
-      "title": "All 50 saved poses for every assayed homolog",
-      "caption": "Rows sorted by full-ensemble A. Colors saturate outside the indicated ranges; all models remain present.\nSample index is not time. Pose fractions are prediction statistics, not equilibrium populations or biological replicates.",
-      "kind": "saved-data analysis",
-      "files": [
-        "ensemble_distance_angle_coverage.png",
-        "ensemble_distance_angle_coverage.svg",
-        "ensemble_distance_angle_coverage.pdf"
-      ]
-    },
-    {
-      "name": "finite_pose_sampling_sensitivity",
-      "title": "Sensitivity of current A rankings to finite pose sampling",
-      "caption": "300 subsamples without replacement per size; same existing 50-pose batch. Shading: 5th\u201395th percentile.\nThis is conditional technical sensitivity, not independent sampling, biological uncertainty or prospective validation.",
-      "kind": "saved-data analysis",
-      "files": [
-        "finite_pose_sampling_sensitivity.png",
-        "finite_pose_sampling_sensitivity.svg",
-        "finite_pose_sampling_sensitivity.pdf"
-      ]
-    },
-    {
-      "name": "best_pose_vs_pose_consistency",
-      "title": "A favorable pose and consistent favorable geometry ask different questions",
-      "caption": "Development examples from the saved one-Mg panel. Region d < 4 \u00c5 and \u03b8 > 150\u00b0 is illustrative and not prospectively validated.\nGenerated-pose fractions do not estimate conformational populations. Independent untested candidates are needed for a prospective test.",
-      "kind": "saved-data analysis",
-      "files": [
-        "best_pose_vs_pose_consistency.png",
-        "best_pose_vs_pose_consistency.svg",
-        "best_pose_vs_pose_consistency.pdf"
-      ]
-    },
-    {
       "name": "activation_vs_aminolysis_readouts",
-      "title": "Aminolysis distance does not reproduce activation-step enrichment in this\npanel",
-      "caption": "48 homologs, paired saved one-Mg predictions. Neutral attacking N assigned by saved ligand formal charge and topology.\nStep 2 uses pocket-localization restraints. Distance alone is not an attack-orientation or catalytic-barrier measurement.",
+      "title": "Activation and aminolysis geometry",
+      "caption": "48 homologs; 50 poses per step. N\u2013C distance is the harmonic mean for the neutral amine and activated acyl carbon.\nPaired saved one-Mg predictions. Neutral attacking N assigned by ligand formal charge and topology. Aminolysis distance does not reproduce activation-step enrichment in this panel. Step 2 uses pocket-localization restraints. Distance alone is not an attack-orientation or catalytic-barrier measurement.",
       "kind": "saved-data analysis",
       "files": [
         "activation_vs_aminolysis_readouts.png",
@@ -144,20 +45,9 @@
       ]
     },
     {
-      "name": "amine_identity_assignment",
-      "title": "Selecting the closest terminal nitrogen can select the protonated end",
-      "caption": "Saved step-2 audit; all 50 poses per enzyme retained. Choose the reactive nitrogen from chemical identity, not nearest-N geometry.",
-      "kind": "saved-data analysis",
-      "files": [
-        "amine_identity_assignment.png",
-        "amine_identity_assignment.svg",
-        "amine_identity_assignment.pdf"
-      ]
-    },
-    {
       "name": "complete_mutant_geometry_tradeoffs",
       "title": "Full saturation scan: angular gains and distance changes",
-      "caption": "5,586 single substitutions + 3 matched WT controls; 50 predictions each; separate two-Mg campaign.\nChanges are predicted geometry, not measured activity. Lower-right quadrant combines higher A and shorter dH.",
+      "caption": "\u0394A: weighted angle; \u0394dH: harmonic O\u2013P distance. Each substitution is compared with its matched WT.\n5,586 single substitutions + 3 matched WT controls; 50 predictions each; separate two-Mg campaign. Changes are predicted geometry, not measured activity. Lower-right quadrant combines higher A and shorter dH.",
       "kind": "saved-data analysis",
       "files": [
         "complete_mutant_geometry_tradeoffs.png",
@@ -166,102 +56,15 @@
       ]
     },
     {
-      "name": "AS17_all_mutation_effects",
-      "title": "AS17: all scanned positions and single substitutions",
-      "caption": "Gray cells are unmutated WT identities, not zero effect. Each panel uses its own numeric color range, centered on zero.\nTwo-Mg predicted ensembles; 50 samples per variant. No experimental improvement is established.",
-      "kind": "saved-data analysis",
-      "files": [
-        "AS17_all_mutation_effects.png",
-        "AS17_all_mutation_effects.svg",
-        "AS17_all_mutation_effects.pdf"
-      ]
-    },
-    {
-      "name": "AS23_all_mutation_effects",
-      "title": "AS23: all scanned positions and single substitutions",
-      "caption": "Gray cells are unmutated WT identities, not zero effect. Each panel uses its own numeric color range, centered on zero.\nTwo-Mg predicted ensembles; 50 samples per variant. No experimental improvement is established.",
-      "kind": "saved-data analysis",
-      "files": [
-        "AS23_all_mutation_effects.png",
-        "AS23_all_mutation_effects.svg",
-        "AS23_all_mutation_effects.pdf"
-      ]
-    },
-    {
-      "name": "AS9_all_mutation_effects",
-      "title": "AS9: all scanned positions and single substitutions",
-      "caption": "Gray cells are unmutated WT identities, not zero effect. Each panel uses its own numeric color range, centered on zero.\nTwo-Mg predicted ensembles; 50 samples per variant. No experimental improvement is established.",
-      "kind": "saved-data analysis",
-      "files": [
-        "AS9_all_mutation_effects.png",
-        "AS9_all_mutation_effects.svg",
-        "AS9_all_mutation_effects.pdf"
-      ]
-    },
-    {
-      "name": "discovery_candidate_accounting",
-      "title": "What the saved discovery case actually produced",
-      "caption": "September 17 case: 63 evaluated, 43 representatives, 36 modeled. Seven >800-residue representatives were unmodeled in that round.\nStages are accounting categories, not biological hit rates; unmodeled candidates were not shown to be inactive.",
-      "kind": "saved-data analysis",
-      "files": [
-        "discovery_candidate_accounting.png",
-        "discovery_candidate_accounting.svg",
-        "discovery_candidate_accounting.pdf"
-      ]
-    },
-    {
-      "name": "discovery_geometry_by_activation_route",
-      "title": "Structural annotations separated by the recorded activation coordinate",
-      "caption": "Saved 36-candidate comparison. Blue: one Mg; orange: two Mg in the saved complex. Geometry does not override native-reaction evidence.\nSubstrate, metal and family differences limit cross-family score comparability; values are not universal predicted activities.",
-      "kind": "saved-data analysis",
-      "files": [
-        "discovery_geometry_by_activation_route.png",
-        "discovery_geometry_by_activation_route.svg",
-        "discovery_geometry_by_activation_route.pdf"
-      ]
-    },
-    {
-      "name": "metal_count_is_model_specific",
-      "title": "Metal stoichiometry is an explicit modeling assumption",
-      "caption": "Saved coordinate/input counts, not experimentally measured stoichiometries. Two Mg ions are retained in the PuuA figure.\nRelated GS structures support metal-assisted catalysis, but AMP/ADP fate alone does not determine Mg count; PuuA-specific stoichiometry remains unverified here.",
-      "kind": "saved-data analysis",
-      "files": [
-        "metal_count_is_model_specific.png",
-        "metal_count_is_model_specific.svg",
-        "metal_count_is_model_specific.pdf"
-      ]
-    },
-    {
       "name": "structural_proxy_search_inventory",
-      "title": "Breadth of the historical descriptor exploration",
-      "caption": "98 exported fields: 88 distinct nonconstant definitions, 5 duplicate exports, 5 constant/undefined fields.\nField counts include variants and diagnostics. Later matched formulas overlap this inventory; counts are not additive or independent tests.",
-      "kind": "saved-data analysis",
+      "title": "Structural descriptors explored",
+      "caption": "Historical inventory: 88 distinct nonconstant definitions grouped by physical quantity. Counts include formula / threshold variants and sampling diagnostics, not independent hypotheses.",
+      "kind": "LaTeX inventory table",
       "files": [
         "structural_proxy_search_inventory.png",
         "structural_proxy_search_inventory.svg",
-        "structural_proxy_search_inventory.pdf"
-      ]
-    },
-    {
-      "name": "assay_workbook_provenance",
-      "title": "The plotted panel matches the 2025 source workbook",
-      "caption": "The separate 2023 workbook contains calibration / repetition notes, but its limits and replicate labels are not assigned to this 2025 panel.",
-      "kind": "saved-data analysis",
-      "files": [
-        "assay_workbook_provenance.png",
-        "assay_workbook_provenance.svg",
-        "assay_workbook_provenance.pdf"
-      ]
-    },
-    {
-      "name": "PuuA_modeled_metal_distance_audit",
-      "title": "Two Mg ions are present in the saved PuuA prediction",
-      "caption": "Distances are measurements of predicted coordinates, not validated coordination assignments or experimental stoichiometry.\nWater ligands and a complete native assembly are not established by this monomer prediction; this table does not prove a physiological metal site.",
-      "kind": "saved-data analysis",
-      "files": [
-        "PuuA_modeled_metal_distance_audit.png",
-        "PuuA_modeled_metal_distance_audit.svg",
-        "PuuA_modeled_metal_distance_audit.pdf"
+        "structural_proxy_search_inventory.pdf",
+        "structural_proxy_search_inventory.tex"
       ]
     }
   ],

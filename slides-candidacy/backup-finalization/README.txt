@@ -1,3 +1,8 @@
+CURRENT COLLECTION
+Earlier review-deck exports and duplicate previews have been archived. The active
+14 standalone figures are in ../backup-evidence-figures/. No deck is maintained.
+Use ../backup-evidence-figures/FIGURE_INDEX.txt and cleanup_manifest.json.
+
 CANDIDACY BACKUP SLIDES — 2026-11-04
 
 LATEST SCOPE: generate standalone visualization assets for the user to assemble.

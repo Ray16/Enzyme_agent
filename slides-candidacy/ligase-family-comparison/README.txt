@@ -1,3 +1,8 @@
+CURRENT COLLECTION
+The detailed family inventory graphics have been archived as supplementary material.
+The active comprehensive comparison is ../backup-evidence-figures/amp_adp_comparison.tex
+with PDF/PNG/SVG exports. Restoration paths are in ../backup-evidence-figures/cleanup_manifest.json.
+
 STANDALONE ATP-DEPENDENT AMIDE-LIGASE FAMILY INVENTORIES
 
   amp_forming_family_inventory.tex / .pdf / .png / .svg

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="702.835pt" height="361.8pt" viewBox="0 0 702.835 361.8" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-04T23:17:15.522461</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 361.8
+L 702.835 361.8
+L 702.835 0
+L 0 0
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 81.4375 295.4
+L 659.2175 295.4
+L 659.2175 82.08
+L 81.4375 82.08
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 107.700227 295.4
+L 218.280132 295.4
+L 218.280132 210.072
+L 107.700227 210.072
+z
+" clip-path="url(#pfb8a59f3f4)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 245.925108 295.4
+L 356.505012 295.4
+L 356.505012 124.744
+L 245.925108 124.744
+z
+" clip-path="url(#pfb8a59f3f4)" style="fill: #d55e00"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 384.149988 295.4
+L 494.729892 295.4
+L 494.729892 210.072
+L 384.149988 210.072
+z
+" clip-path="url(#pfb8a59f3f4)" style="fill: #0072b2"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 522.374868 295.4
+L 632.954773 295.4
+L 632.954773 124.744
+L 522.374868 124.744
+z
+" clip-path="url(#pfb8a59f3f4)" style="fill: #d55e00"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="mf2588fc503" d="M 0 0
+L 0 3.5
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#mf2588fc503" x="162.990179" y="295.4" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="162.990179" y="313.797656" transform="rotate(-0 162.990179 313.797656)">DdaG</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#mf2588fc503" x="301.21506" y="295.4" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="301.21506" y="313.797656" transform="rotate(-0 301.21506 313.797656)">PuuA</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#mf2588fc503" x="439.43994" y="295.4" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="439.43994" y="313.797656" transform="rotate(-0 439.43994 313.797656)">AS9 illustration</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#mf2588fc503" x="577.664821" y="295.4" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: middle" x="577.664821" y="313.797656" transform="rotate(-0 577.664821 313.797656)">AS9 mutant WT</text>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_5">
+      <defs>
+       <path id="mf6a913bdbd" d="M 0 0
+L -3.5 0
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#mf6a913bdbd" x="81.4375" y="295.4" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="74.4375" y="301.098828" transform="rotate(-0 74.4375 301.098828)">0</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#mf6a913bdbd" x="81.4375" y="210.072" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="74.4375" y="215.770828" transform="rotate(-0 74.4375 215.770828)">1</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_7">
+      <g>
+       <use xlink:href="#mf6a913bdbd" x="81.4375" y="124.744" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: end" x="74.4375" y="130.442828" transform="rotate(-0 74.4375 130.442828)">2</text>
+     </g>
+    </g>
+    <g id="text_8">
+     <text style="font-size: 17px; font-family: 'DejaVu Sans'; text-anchor: middle" x="57.358281" y="188.74" transform="rotate(-90 57.358281 188.74)">Mg ions in the saved model</text>
+    </g>
+   </g>
+   <g id="patch_7">
+    <path d="M 81.4375 295.4
+L 81.4375 82.08
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 81.4375 295.4
+L 659.2175 295.4
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+  </g>
+  <g id="text_9">
+   <text style="font-weight: 700; font-size: 22px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #263746" x="351.4175" y="23.916562" transform="rotate(-0 351.4175 23.916562)">Metal stoichiometry is an explicit modeling assumption</text>
+  </g>
+  <g id="text_10">
+   <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #59636c" x="43.6175" y="352.520312" transform="rotate(-0 43.6175 352.520312)">Saved coordinate/input counts, not experimentally measured stoichiometries. Two Mg ions are retained in the PuuA figure.</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pfb8a59f3f4">
+   <rect x="81.4375" y="82.08" width="577.78" height="213.32"/>
+  </clipPath>
+ </defs>
+</svg>

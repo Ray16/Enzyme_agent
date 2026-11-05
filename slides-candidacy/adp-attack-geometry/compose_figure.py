@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib import patheffects as pe
 
 OUT = Path(__file__).resolve().parent
+OUTPUT=OUT.parent/'backup-evidence-figures'
 sys.path.insert(0, str(OUT.parent/'enzyme_visualization'))
 from style import load_style, adjacent_label
 STYLE = load_style()
@@ -84,8 +85,8 @@ ax.text(.025,.045,'PuuA (P78061) • predicted pose; two Mg²⁺ modeled',
         transform=ax.transAxes, fontsize=12, color=MUTED,
         bbox=dict(boxstyle='round,pad=.19',facecolor='white',edgecolor='none',alpha=.94),zorder=30)
 for ext in ('png','svg','pdf'):
-    fig.savefig(OUT/f'PuuA_ADP_attack_geometry.{ext}',dpi=240,facecolor='white')
-svg_path = OUT/'PuuA_ADP_attack_geometry.svg'
+    fig.savefig(OUTPUT/f'PuuA_ADP_attack_geometry.{ext}',dpi=240,facecolor='white')
+svg_path = OUTPUT/'PuuA_ADP_attack_geometry.svg'
 svg_path.write_text('\n'.join(line.rstrip() for line in svg_path.read_text().splitlines())+'\n')
 fig.savefig(OUT/'PuuA_ADP_attack_geometry_preview.png',dpi=110,facecolor='white')
 plt.close(fig)

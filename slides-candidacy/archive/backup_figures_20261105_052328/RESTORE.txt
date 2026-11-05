@@ -1,0 +1,3 @@
+Supplementary figures were moved here, not deleted.
+The original catalog and source-folder structure are retained.
+Cleanup receipt: /nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/cleanup_manifest.json

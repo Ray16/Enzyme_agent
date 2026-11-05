@@ -1,940 +1,56 @@
 {
-  "count": 52,
+  "count": 14,
   "figures": [
     {
-      "name": "assay_full_panel_measurements",
-      "title": "Stored assay measurements and experimental variability",
-      "caption": "All six stored measurements shown; black marker: stored mean. Axis is symlog near zero to retain zero readings.\nZeros are shown at zero. The CSV does not establish whether repeats are biological or technical. BL21 is the stored control label; empty-vector/no-enzyme identity is not inferred.",
-      "kind": "saved-data analysis",
-      "files": [
-        "assay_full_panel_measurements.png",
-        "assay_full_panel_measurements.svg",
-        "assay_full_panel_measurements.pdf"
-      ],
-      "section": "Saved-data evidence",
+      "name": "AMP versus ADP mechanism comparison",
+      "section": "Mechanistic chemistry and structures",
+      "kind": "table / coordinate illustration",
+      "caption": "Expanded LaTeX comparison of carboxyl activation and relevant enzyme families.",
       "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "files": [
+        "amp_adp_comparison.png",
+        "amp_adp_comparison.svg",
+        "amp_adp_comparison.pdf",
+        "amp_adp_comparison.tex"
+      ],
       "index": 1,
       "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_full_panel_measurements.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_full_panel_measurements.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_full_panel_measurements.pdf"
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amp_adp_comparison.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amp_adp_comparison.svg",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amp_adp_comparison.pdf",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amp_adp_comparison.tex"
       ]
     },
     {
-      "name": "assay_key_candidates_and_controls",
-      "title": "Stored assay measurements and experimental variability",
-      "caption": "All six stored measurements shown; black marker: stored mean. Axis is symlog near zero to retain zero readings.\nZeros are shown at zero. The CSV does not establish whether repeats are biological or technical. BL21 is the stored control label; empty-vector/no-enzyme identity is not inferred.",
-      "kind": "saved-data analysis",
-      "files": [
-        "assay_key_candidates_and_controls.png",
-        "assay_key_candidates_and_controls.svg",
-        "assay_key_candidates_and_controls.pdf"
-      ],
-      "section": "Saved-data evidence",
+      "name": "AMP-forming AS9 geometry",
+      "section": "Mechanistic chemistry and structures",
+      "kind": "table / coordinate illustration",
+      "caption": "Existing one-pose AS9 illustration; retained as the matching AMP-forming reference.",
       "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "files": [
+        "AS9_attack_geometry.png"
+      ],
       "index": 2,
       "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_key_candidates_and_controls.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_key_candidates_and_controls.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_key_candidates_and_controls.pdf"
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS9_attack_geometry.png"
       ]
     },
     {
-      "name": "assay_date_label_comparison",
-      "title": "Measurement variation across recorded date groups",
-      "caption": "Three stored values under each date label. Dashed line: equal means. This does not establish the cause of date-group differences.",
-      "kind": "saved-data analysis",
-      "files": [
-        "assay_date_label_comparison.png",
-        "assay_date_label_comparison.svg",
-        "assay_date_label_comparison.pdf"
-      ],
-      "section": "Saved-data evidence",
+      "name": "ADP-forming PuuA geometry",
+      "section": "Mechanistic chemistry and structures",
+      "kind": "table / coordinate illustration",
+      "caption": "Unchanged saved predicted coordinates; two Mg ions are modeled, not experimentally established stoichiometry.",
       "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "files": [
+        "PuuA_ADP_attack_geometry.png",
+        "PuuA_ADP_attack_geometry.svg",
+        "PuuA_ADP_attack_geometry.pdf"
+      ],
       "index": 3,
       "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_date_label_comparison.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_date_label_comparison.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_date_label_comparison.pdf"
-      ]
-    },
-    {
-      "name": "assay_summary_mean_sd",
-      "title": "Recorded mean and variation for key candidates and controls",
-      "caption": "Mean and sample SD recomputed from all six stored values and verified against the CSV. No confidence interval or replicate-type claim.",
-      "kind": "saved-data analysis",
-      "files": [
-        "assay_summary_mean_sd.png",
-        "assay_summary_mean_sd.svg",
-        "assay_summary_mean_sd.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 4,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_summary_mean_sd.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_summary_mean_sd.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_summary_mean_sd.pdf"
-      ]
-    },
-    {
-      "name": "angle_yield_and_influence",
-      "title": "Enrichment of strong producers does not imply quantitative yield prediction",
-      "caption": "Descriptive, retrospective association. The right panel is a post-hoc influence diagnostic, not a separate validation set.",
-      "kind": "saved-data analysis",
-      "files": [
-        "angle_yield_and_influence.png",
-        "angle_yield_and_influence.svg",
-        "angle_yield_and_influence.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 5,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/angle_yield_and_influence.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/angle_yield_and_influence.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/angle_yield_and_influence.pdf"
-      ]
-    },
-    {
-      "name": "joint_angle_distance_activity",
-      "title": "Angular alignment and absolute proximity are separate observations",
-      "caption": "48 homologs; one-Mg historical panel; 50 predictions each. Color is measured product concentration, not predicted activity.",
-      "kind": "saved-data analysis",
-      "files": [
-        "joint_angle_distance_activity.png",
-        "joint_angle_distance_activity.svg",
-        "joint_angle_distance_activity.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 6,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/joint_angle_distance_activity.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/joint_angle_distance_activity.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/joint_angle_distance_activity.pdf"
-      ]
-    },
-    {
-      "name": "current_metric_shortlist_recovery",
-      "title": "Shortlist recovery under current geometric and confidence baselines",
-      "caption": "48 homologs; SfaB excluded from ranking. Groups are retrospective yield definitions, not validated active/inactive labels.\nAll compared metrics use the same saved one-Mg ensembles. Ties use expected recovery within a tied group. Earlier Gaussian-score results do not apply to A.",
-      "kind": "saved-data analysis",
-      "files": [
-        "current_metric_shortlist_recovery.png",
-        "current_metric_shortlist_recovery.svg",
-        "current_metric_shortlist_recovery.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 7,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/current_metric_shortlist_recovery.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/current_metric_shortlist_recovery.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/current_metric_shortlist_recovery.pdf"
-      ]
-    },
-    {
-      "name": "all_explored_proxy_comparison",
-      "title": "Complete saved comparison of 14 structural descriptors",
-      "caption": "Exploratory performance on a repeatedly inspected panel; n denotes defined enzyme-level scores. AUROC uses available scores.\nDefinitions and orientation are retained from the saved comparison; no direction was chosen using the plotted activity labels.",
-      "kind": "saved-data analysis",
-      "files": [
-        "all_explored_proxy_comparison.png",
-        "all_explored_proxy_comparison.svg",
-        "all_explored_proxy_comparison.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 8,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/all_explored_proxy_comparison.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/all_explored_proxy_comparison.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/all_explored_proxy_comparison.pdf"
-      ]
-    },
-    {
-      "name": "weighted_angle_scale_invariance",
-      "title": "A weights proximity but does not impose an absolute distance requirement",
-      "caption": "Mathematical illustration, not enzyme data: angles [160\u00b0, 170\u00b0, 175\u00b0], distances [3, 4, 5] \u00c5 before scaling.\nA = \u03a3(\u03b8\u1d62/d\u1d62) / \u03a3(1/d\u1d62); multiplying every distance by the same factor cancels. Report dH alongside A.",
-      "kind": "mathematical illustration",
-      "files": [
-        "weighted_angle_scale_invariance.png",
-        "weighted_angle_scale_invariance.svg",
-        "weighted_angle_scale_invariance.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 9,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/weighted_angle_scale_invariance.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/weighted_angle_scale_invariance.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/weighted_angle_scale_invariance.pdf"
-      ]
-    },
-    {
-      "name": "ensemble_distance_angle_coverage",
-      "title": "All 50 saved poses for every assayed homolog",
-      "caption": "Rows sorted by full-ensemble A. Colors saturate outside the indicated ranges; all models remain present.\nSample index is not time. Pose fractions are prediction statistics, not equilibrium populations or biological replicates.",
-      "kind": "saved-data analysis",
-      "files": [
-        "ensemble_distance_angle_coverage.png",
-        "ensemble_distance_angle_coverage.svg",
-        "ensemble_distance_angle_coverage.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 10,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ensemble_distance_angle_coverage.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ensemble_distance_angle_coverage.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ensemble_distance_angle_coverage.pdf"
-      ]
-    },
-    {
-      "name": "finite_pose_sampling_sensitivity",
-      "title": "Sensitivity of current A rankings to finite pose sampling",
-      "caption": "300 subsamples without replacement per size; same existing 50-pose batch. Shading: 5th\u201395th percentile.\nThis is conditional technical sensitivity, not independent sampling, biological uncertainty or prospective validation.",
-      "kind": "saved-data analysis",
-      "files": [
-        "finite_pose_sampling_sensitivity.png",
-        "finite_pose_sampling_sensitivity.svg",
-        "finite_pose_sampling_sensitivity.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 11,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/finite_pose_sampling_sensitivity.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/finite_pose_sampling_sensitivity.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/finite_pose_sampling_sensitivity.pdf"
-      ]
-    },
-    {
-      "name": "best_pose_vs_pose_consistency",
-      "title": "A favorable pose and consistent favorable geometry ask different questions",
-      "caption": "Development examples from the saved one-Mg panel. Region d < 4 \u00c5 and \u03b8 > 150\u00b0 is illustrative and not prospectively validated.\nGenerated-pose fractions do not estimate conformational populations. Independent untested candidates are needed for a prospective test.",
-      "kind": "saved-data analysis",
-      "files": [
-        "best_pose_vs_pose_consistency.png",
-        "best_pose_vs_pose_consistency.svg",
-        "best_pose_vs_pose_consistency.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 12,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/best_pose_vs_pose_consistency.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/best_pose_vs_pose_consistency.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/best_pose_vs_pose_consistency.pdf"
-      ]
-    },
-    {
-      "name": "activation_vs_aminolysis_readouts",
-      "title": "Aminolysis distance does not reproduce activation-step enrichment in this\npanel",
-      "caption": "48 homologs, paired saved one-Mg predictions. Neutral attacking N assigned by saved ligand formal charge and topology.\nStep 2 uses pocket-localization restraints. Distance alone is not an attack-orientation or catalytic-barrier measurement.",
-      "kind": "saved-data analysis",
-      "files": [
-        "activation_vs_aminolysis_readouts.png",
-        "activation_vs_aminolysis_readouts.svg",
-        "activation_vs_aminolysis_readouts.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 13,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/activation_vs_aminolysis_readouts.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/activation_vs_aminolysis_readouts.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/activation_vs_aminolysis_readouts.pdf"
-      ]
-    },
-    {
-      "name": "amine_identity_assignment",
-      "title": "Selecting the closest terminal nitrogen can select the protonated end",
-      "caption": "Saved step-2 audit; all 50 poses per enzyme retained. Choose the reactive nitrogen from chemical identity, not nearest-N geometry.",
-      "kind": "saved-data analysis",
-      "files": [
-        "amine_identity_assignment.png",
-        "amine_identity_assignment.svg",
-        "amine_identity_assignment.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 14,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amine_identity_assignment.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amine_identity_assignment.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/amine_identity_assignment.pdf"
-      ]
-    },
-    {
-      "name": "complete_mutant_geometry_tradeoffs",
-      "title": "Full saturation scan: angular gains and distance changes",
-      "caption": "5,586 single substitutions + 3 matched WT controls; 50 predictions each; separate two-Mg campaign.\nChanges are predicted geometry, not measured activity. Lower-right quadrant combines higher A and shorter dH.",
-      "kind": "saved-data analysis",
-      "files": [
-        "complete_mutant_geometry_tradeoffs.png",
-        "complete_mutant_geometry_tradeoffs.svg",
-        "complete_mutant_geometry_tradeoffs.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 15,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/complete_mutant_geometry_tradeoffs.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/complete_mutant_geometry_tradeoffs.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/complete_mutant_geometry_tradeoffs.pdf"
-      ]
-    },
-    {
-      "name": "AS17_all_mutation_effects",
-      "title": "AS17: all scanned positions and single substitutions",
-      "caption": "Gray cells are unmutated WT identities, not zero effect. Each panel uses its own numeric color range, centered on zero.\nTwo-Mg predicted ensembles; 50 samples per variant. No experimental improvement is established.",
-      "kind": "saved-data analysis",
-      "files": [
-        "AS17_all_mutation_effects.png",
-        "AS17_all_mutation_effects.svg",
-        "AS17_all_mutation_effects.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 16,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS17_all_mutation_effects.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS17_all_mutation_effects.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS17_all_mutation_effects.pdf"
-      ]
-    },
-    {
-      "name": "AS23_all_mutation_effects",
-      "title": "AS23: all scanned positions and single substitutions",
-      "caption": "Gray cells are unmutated WT identities, not zero effect. Each panel uses its own numeric color range, centered on zero.\nTwo-Mg predicted ensembles; 50 samples per variant. No experimental improvement is established.",
-      "kind": "saved-data analysis",
-      "files": [
-        "AS23_all_mutation_effects.png",
-        "AS23_all_mutation_effects.svg",
-        "AS23_all_mutation_effects.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 17,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS23_all_mutation_effects.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS23_all_mutation_effects.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS23_all_mutation_effects.pdf"
-      ]
-    },
-    {
-      "name": "AS9_all_mutation_effects",
-      "title": "AS9: all scanned positions and single substitutions",
-      "caption": "Gray cells are unmutated WT identities, not zero effect. Each panel uses its own numeric color range, centered on zero.\nTwo-Mg predicted ensembles; 50 samples per variant. No experimental improvement is established.",
-      "kind": "saved-data analysis",
-      "files": [
-        "AS9_all_mutation_effects.png",
-        "AS9_all_mutation_effects.svg",
-        "AS9_all_mutation_effects.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 18,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS9_all_mutation_effects.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS9_all_mutation_effects.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/AS9_all_mutation_effects.pdf"
-      ]
-    },
-    {
-      "name": "discovery_candidate_accounting",
-      "title": "What the saved discovery case actually produced",
-      "caption": "September 17 case: 63 evaluated, 43 representatives, 36 modeled. Seven >800-residue representatives were unmodeled in that round.\nStages are accounting categories, not biological hit rates; unmodeled candidates were not shown to be inactive.",
-      "kind": "saved-data analysis",
-      "files": [
-        "discovery_candidate_accounting.png",
-        "discovery_candidate_accounting.svg",
-        "discovery_candidate_accounting.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 19,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_candidate_accounting.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_candidate_accounting.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_candidate_accounting.pdf"
-      ]
-    },
-    {
-      "name": "discovery_geometry_by_activation_route",
-      "title": "Structural annotations separated by the recorded activation coordinate",
-      "caption": "Saved 36-candidate comparison. Blue: one Mg; orange: two Mg in the saved complex. Geometry does not override native-reaction evidence.\nSubstrate, metal and family differences limit cross-family score comparability; values are not universal predicted activities.",
-      "kind": "saved-data analysis",
-      "files": [
-        "discovery_geometry_by_activation_route.png",
-        "discovery_geometry_by_activation_route.svg",
-        "discovery_geometry_by_activation_route.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 20,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_geometry_by_activation_route.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_geometry_by_activation_route.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/discovery_geometry_by_activation_route.pdf"
-      ]
-    },
-    {
-      "name": "metal_count_is_model_specific",
-      "title": "Metal stoichiometry is an explicit modeling assumption",
-      "caption": "Saved coordinate/input counts, not experimentally measured stoichiometries. Two Mg ions are retained in the PuuA figure.\nRelated GS structures support metal-assisted catalysis, but AMP/ADP fate alone does not determine Mg count; PuuA-specific stoichiometry remains unverified here.",
-      "kind": "saved-data analysis",
-      "files": [
-        "metal_count_is_model_specific.png",
-        "metal_count_is_model_specific.svg",
-        "metal_count_is_model_specific.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 21,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/metal_count_is_model_specific.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/metal_count_is_model_specific.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/metal_count_is_model_specific.pdf"
-      ]
-    },
-    {
-      "name": "structural_proxy_search_inventory",
-      "title": "Breadth of the historical descriptor exploration",
-      "caption": "98 exported fields: 88 distinct nonconstant definitions, 5 duplicate exports, 5 constant/undefined fields.\nField counts include variants and diagnostics. Later matched formulas overlap this inventory; counts are not additive or independent tests.",
-      "kind": "saved-data analysis",
-      "files": [
-        "structural_proxy_search_inventory.png",
-        "structural_proxy_search_inventory.svg",
-        "structural_proxy_search_inventory.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 22,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.pdf"
-      ]
-    },
-    {
-      "name": "assay_workbook_provenance",
-      "title": "The plotted panel matches the 2025 source workbook",
-      "caption": "The separate 2023 workbook contains calibration / repetition notes, but its limits and replicate labels are not assigned to this 2025 panel.",
-      "kind": "saved-data analysis",
-      "files": [
-        "assay_workbook_provenance.png",
-        "assay_workbook_provenance.svg",
-        "assay_workbook_provenance.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 23,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_workbook_provenance.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_workbook_provenance.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_workbook_provenance.pdf"
-      ]
-    },
-    {
-      "name": "PuuA_modeled_metal_distance_audit",
-      "title": "Two Mg ions are present in the saved PuuA prediction",
-      "caption": "Distances are measurements of predicted coordinates, not validated coordination assignments or experimental stoichiometry.\nWater ligands and a complete native assembly are not established by this monomer prediction; this table does not prove a physiological metal site.",
-      "kind": "saved-data analysis",
-      "files": [
-        "PuuA_modeled_metal_distance_audit.png",
-        "PuuA_modeled_metal_distance_audit.svg",
-        "PuuA_modeled_metal_distance_audit.pdf"
-      ],
-      "section": "Saved-data evidence",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 24,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_modeled_metal_distance_audit.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_modeled_metal_distance_audit.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_modeled_metal_distance_audit.pdf"
-      ]
-    },
-    {
-      "name": "assay_evidence_requirements",
-      "caption": "The CSV alone does not establish analytical identity, biological replication or isolated catalytic turnover.",
-      "kind": "data-availability and proposed validation",
-      "files": [
-        "assay_evidence_requirements.png",
-        "assay_evidence_requirements.svg",
-        "assay_evidence_requirements.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 25,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_evidence_requirements.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_evidence_requirements.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_evidence_requirements.pdf"
-      ]
-    },
-    {
-      "name": "exploration_freeze_validation",
-      "caption": "A repeatedly inspected or repaired case cannot establish held-out generalization. This diagram is an evaluation plan.",
-      "kind": "proposed analysis",
-      "files": [
-        "exploration_freeze_validation.png",
-        "exploration_freeze_validation.svg",
-        "exploration_freeze_validation.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 26,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/exploration_freeze_validation.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/exploration_freeze_validation.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/exploration_freeze_validation.pdf"
-      ]
-    },
-    {
-      "name": "proposed_multistate_motif_constraints",
-      "caption": "Multistate compatibility is proposed work; tool availability and successful generation do not establish catalytic activity.",
-      "kind": "proposed analysis",
-      "files": [
-        "proposed_multistate_motif_constraints.png",
-        "proposed_multistate_motif_constraints.svg",
-        "proposed_multistate_motif_constraints.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 27,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_multistate_motif_constraints.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_multistate_motif_constraints.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_multistate_motif_constraints.pdf"
-      ]
-    },
-    {
-      "name": "proposed_hypothesis_discriminating_panel",
-      "caption": "Thresholds and candidate identities must be fixed before testing independent candidates; known development examples are not prospective evidence.",
-      "kind": "proposed analysis",
-      "files": [
-        "proposed_hypothesis_discriminating_panel.png",
-        "proposed_hypothesis_discriminating_panel.svg",
-        "proposed_hypothesis_discriminating_panel.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 28,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_hypothesis_discriminating_panel.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_hypothesis_discriminating_panel.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_hypothesis_discriminating_panel.pdf"
-      ]
-    },
-    {
-      "name": "prediction_experiment_mismatch_tests",
-      "caption": "These are alternative investigations, not established explanations for AS9 / AS4 or automatic steps executed for every candidate.",
-      "kind": "proposed analysis",
-      "files": [
-        "prediction_experiment_mismatch_tests.png",
-        "prediction_experiment_mismatch_tests.svg",
-        "prediction_experiment_mismatch_tests.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 29,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/prediction_experiment_mismatch_tests.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/prediction_experiment_mismatch_tests.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/prediction_experiment_mismatch_tests.pdf"
-      ]
-    },
-    {
-      "name": "method_question_readout_limits",
-      "caption": "A stronger-looking structural prediction cannot substitute for an energetic calculation or a controlled experimental measurement.",
-      "kind": "method interpretation",
-      "files": [
-        "method_question_readout_limits.png",
-        "method_question_readout_limits.svg",
-        "method_question_readout_limits.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 30,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/method_question_readout_limits.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/method_question_readout_limits.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/method_question_readout_limits.pdf"
-      ]
-    },
-    {
-      "name": "aim_success_failure_criteria",
-      "caption": "These are proposed evaluation criteria, not a claim that the thesis milestones or comparative activity gains are complete.",
-      "kind": "proposed analysis",
-      "files": [
-        "aim_success_failure_criteria.png",
-        "aim_success_failure_criteria.svg",
-        "aim_success_failure_criteria.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 31,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/aim_success_failure_criteria.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/aim_success_failure_criteria.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/aim_success_failure_criteria.pdf"
-      ]
-    },
-    {
-      "name": "evidence_claim_hypothesis_decision",
-      "caption": "Current recordkeeping supports auditability; the source-to-claim interpretation remains a scientific judgment.",
-      "kind": "framework interpretation",
-      "files": [
-        "evidence_claim_hypothesis_decision.png",
-        "evidence_claim_hypothesis_decision.svg",
-        "evidence_claim_hypothesis_decision.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 32,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/evidence_claim_hypothesis_decision.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/evidence_claim_hypothesis_decision.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/evidence_claim_hypothesis_decision.pdf"
-      ]
-    },
-    {
-      "name": "design_strategy_input_requirements",
-      "caption": "Source: design-agent interfaces. Examples include saturation scanning, motif scaffolding, DISCO and GENzyme; this figure reports tool roles, not a benchmark.",
-      "kind": "available tool roles",
-      "files": [
-        "design_strategy_input_requirements.png",
-        "design_strategy_input_requirements.svg",
-        "design_strategy_input_requirements.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 33,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/design_strategy_input_requirements.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/design_strategy_input_requirements.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/design_strategy_input_requirements.pdf"
-      ]
-    },
-    {
-      "name": "execution_vs_scientific_status",
-      "caption": "Current software distinguishes execution, validity and interpretation. No new failure frequency or recovery rate is measured here.",
-      "kind": "framework interpretation",
-      "files": [
-        "execution_vs_scientific_status.png",
-        "execution_vs_scientific_status.svg",
-        "execution_vs_scientific_status.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 34,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/execution_vs_scientific_status.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/execution_vs_scientific_status.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/execution_vs_scientific_status.pdf"
-      ]
-    },
-    {
-      "name": "two_step_electrophile_and_leaving_group",
-      "caption": "Sources: Hollenhorst et al. (2009), doi:10.1021/bi9013165; IucA study, PMCID:PMC7325057. This is not a predicted trajectory.",
-      "kind": "chemical schematic",
-      "files": [
-        "two_step_electrophile_and_leaving_group.png",
-        "two_step_electrophile_and_leaving_group.svg",
-        "two_step_electrophile_and_leaving_group.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 35,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/two_step_electrophile_and_leaving_group.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/two_step_electrophile_and_leaving_group.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/two_step_electrophile_and_leaving_group.pdf"
-      ]
-    },
-    {
-      "name": "ATP_accounting_scope",
-      "caption": "Chemical stoichiometry is not a process-economic or life-cycle assessment; complex multi-ATP pathways require separate accounting.",
-      "kind": "chemical accounting",
-      "files": [
-        "ATP_accounting_scope.png",
-        "ATP_accounting_scope.svg",
-        "ATP_accounting_scope.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 36,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ATP_accounting_scope.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ATP_accounting_scope.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/ATP_accounting_scope.pdf"
-      ]
-    },
-    {
-      "name": "reported_quantity_interpretation",
-      "caption": "Definitions follow the saved analysis and model documentation; these quantities can support different, complementary scientific questions.",
-      "kind": "measurement interpretation",
-      "files": [
-        "reported_quantity_interpretation.png",
-        "reported_quantity_interpretation.svg",
-        "reported_quantity_interpretation.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 37,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/reported_quantity_interpretation.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/reported_quantity_interpretation.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/reported_quantity_interpretation.pdf"
-      ]
-    },
-    {
-      "name": "PuuA_native_evidence_vs_model_assumptions",
-      "caption": "Native source: Kurihara et al. (2008), PMID:18495664. Saved model-0 composition is measured from its coordinate file.",
-      "kind": "candidate-specific evidence audit",
-      "files": [
-        "PuuA_native_evidence_vs_model_assumptions.png",
-        "PuuA_native_evidence_vs_model_assumptions.svg",
-        "PuuA_native_evidence_vs_model_assumptions.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 38,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_native_evidence_vs_model_assumptions.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_native_evidence_vs_model_assumptions.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_native_evidence_vs_model_assumptions.pdf"
-      ]
-    },
-    {
-      "name": "archived_discovery_cost_and_scope",
-      "caption": "Source: archived RUN_SUMMARY.md. Serving-model metadata is recorded provenance, not a current product-availability claim.",
-      "kind": "archived telemetry",
-      "files": [
-        "archived_discovery_cost_and_scope.png",
-        "archived_discovery_cost_and_scope.svg",
-        "archived_discovery_cost_and_scope.pdf"
-      ],
-      "section": "Methods, interpretation and proposed work",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
-      "index": 39,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/archived_discovery_cost_and_scope.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/archived_discovery_cost_and_scope.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/archived_discovery_cost_and_scope.pdf"
-      ]
-    },
-    {
-      "name": "agent_roles_tools",
-      "drawing_index": 0,
-      "crop": [
-        80,
-        215,
-        1840,
-        895
-      ],
-      "caption": "Current component roles and tools. Prospective experimental-learning integration is proposed.",
-      "outputs": [
-        "agent_roles_tools.png",
-        "agent_roles_tools.pdf",
-        "agent_roles_tools.svg"
-      ],
-      "section": "Agentic framework",
-      "kind": "framework diagram",
-      "files": [
-        "agent_roles_tools.png",
-        "agent_roles_tools.pdf",
-        "agent_roles_tools.svg"
-      ],
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures",
-      "index": 40,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/agent_roles_tools.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/agent_roles_tools.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/agent_roles_tools.svg"
-      ]
-    },
-    {
-      "name": "adaptive_decision_loop",
-      "drawing_index": 1,
-      "crop": [
-        75,
-        215,
-        1845,
-        910
-      ],
-      "caption": "Current adaptive protocol: inspect state, propose a test, check the request, execute, compare and revise. Controller checks establish contract and source integrity, not biochemical correctness.",
-      "outputs": [
-        "adaptive_decision_loop.png",
-        "adaptive_decision_loop.pdf",
-        "adaptive_decision_loop.svg"
-      ],
-      "section": "Agentic framework",
-      "kind": "framework diagram",
-      "files": [
-        "adaptive_decision_loop.png",
-        "adaptive_decision_loop.pdf",
-        "adaptive_decision_loop.svg"
-      ],
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures",
-      "index": 41,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/adaptive_decision_loop.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/adaptive_decision_loop.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/adaptive_decision_loop.svg"
-      ]
-    },
-    {
-      "name": "shared_evidence_handoff",
-      "drawing_index": 2,
-      "crop": [
-        75,
-        210,
-        1845,
-        920
-      ],
-      "caption": "Current handoff content and source lineage. The modeling agent independently reviews discovery proposals. Fingerprints establish byte integrity, not evidence entailment.",
-      "outputs": [
-        "shared_evidence_handoff.png",
-        "shared_evidence_handoff.pdf",
-        "shared_evidence_handoff.svg"
-      ],
-      "section": "Agentic framework",
-      "kind": "framework diagram",
-      "files": [
-        "shared_evidence_handoff.png",
-        "shared_evidence_handoff.pdf",
-        "shared_evidence_handoff.svg"
-      ],
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures",
-      "index": 42,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/shared_evidence_handoff.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/shared_evidence_handoff.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/shared_evidence_handoff.svg"
-      ]
-    },
-    {
-      "name": "evidence_driven_search_example",
-      "drawing_index": 3,
-      "crop": [
-        75,
-        220,
-        1845,
-        875
-      ],
-      "caption": "Reconstruction of archived September 17 decisions. Native nitrogen donors distinguish GS-fold leads. The example does not establish target activity or prospectively captured reasoning.",
-      "outputs": [
-        "evidence_driven_search_example.png",
-        "evidence_driven_search_example.pdf",
-        "evidence_driven_search_example.svg"
-      ],
-      "section": "Agentic framework",
-      "kind": "framework diagram",
-      "files": [
-        "evidence_driven_search_example.png",
-        "evidence_driven_search_example.pdf",
-        "evidence_driven_search_example.svg"
-      ],
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures",
-      "index": 43,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/evidence_driven_search_example.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/evidence_driven_search_example.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/evidence_driven_search_example.svg"
-      ]
-    },
-    {
-      "name": "structural_validation",
-      "drawing_index": 4,
-      "crop": [
-        80,
-        215,
-        1840,
-        875
-      ],
-      "caption": "Current structural validation stages. Setup validity, physical acceptance, mechanism-specific geometry and experimental activity are different assessments.",
-      "outputs": [
-        "structural_validation.png",
-        "structural_validation.pdf",
-        "structural_validation.svg"
-      ],
-      "section": "Agentic framework",
-      "kind": "framework diagram",
-      "files": [
-        "structural_validation.png",
-        "structural_validation.pdf",
-        "structural_validation.svg"
-      ],
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures",
-      "index": 44,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/structural_validation.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/structural_validation.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/structural_validation.svg"
-      ]
-    },
-    {
-      "name": "proposed_framework_evaluation",
-      "drawing_index": 5,
-      "crop": [
-        80,
-        215,
-        1840,
-        910
-      ],
-      "caption": "Proposed comparisons and readouts. These are evaluation plans, not measured performance results. Use independent tasks, matched resources, repeated runs and adjudicated outcomes.",
-      "outputs": [
-        "proposed_framework_evaluation.png",
-        "proposed_framework_evaluation.pdf",
-        "proposed_framework_evaluation.svg"
-      ],
-      "section": "Agentic framework",
-      "kind": "framework diagram",
-      "files": [
-        "proposed_framework_evaluation.png",
-        "proposed_framework_evaluation.pdf",
-        "proposed_framework_evaluation.svg"
-      ],
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures",
-      "index": 45,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/proposed_framework_evaluation.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/proposed_framework_evaluation.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/proposed_framework_evaluation.svg"
-      ]
-    },
-    {
-      "name": "implementation_validation_status",
-      "drawing_index": 6,
-      "crop": [
-        80,
-        215,
-        1840,
-        890
-      ],
-      "caption": "Available software and artifacts are distinguished from proposed scientific validation. Current controller capabilities are not attributed retrospectively to the September run.",
-      "outputs": [
-        "implementation_validation_status.png",
-        "implementation_validation_status.pdf",
-        "implementation_validation_status.svg"
-      ],
-      "section": "Agentic framework",
-      "kind": "framework diagram",
-      "files": [
-        "implementation_validation_status.png",
-        "implementation_validation_status.pdf",
-        "implementation_validation_status.svg"
-      ],
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures",
-      "index": 46,
-      "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/implementation_validation_status.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/implementation_validation_status.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/implementation_validation_status.svg"
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_ADP_attack_geometry.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_ADP_attack_geometry.svg",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/PuuA_ADP_attack_geometry.pdf"
       ]
     },
     {
@@ -959,102 +75,236 @@
         "modeling_setup_audit.pdf",
         "modeling_setup_audit.svg"
       ],
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures",
-      "index": 47,
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 4,
       "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/modeling_setup_audit.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/modeling_setup_audit.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/framework-figures/modeling_setup_audit.svg"
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/modeling_setup_audit.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/modeling_setup_audit.pdf",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/modeling_setup_audit.svg"
       ]
     },
     {
-      "name": "AMP versus ADP mechanism comparison",
-      "section": "Mechanistic chemistry and structures",
-      "kind": "table / coordinate illustration",
-      "caption": "Expanded LaTeX comparison; the PNG is amp_adp_table-1.png in the same folder.",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-finalization",
+      "name": "structural_proxy_search_inventory",
+      "title": "Structural descriptors explored",
+      "caption": "Historical inventory: 88 distinct nonconstant definitions grouped by physical quantity. Counts include formula / threshold variants and sampling diagnostics, not independent hypotheses.",
+      "kind": "LaTeX inventory table",
       "files": [
-        "amp_adp_table.pdf",
-        "amp_adp_table.tex",
-        "amp_adp_table-1.png"
+        "structural_proxy_search_inventory.png",
+        "structural_proxy_search_inventory.svg",
+        "structural_proxy_search_inventory.pdf",
+        "structural_proxy_search_inventory.tex"
       ],
-      "index": 48,
+      "section": "Saved-data evidence",
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 5,
       "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-finalization/amp_adp_table.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-finalization/amp_adp_table.tex",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-finalization/amp_adp_table-1.png"
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.svg",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.pdf",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/structural_proxy_search_inventory.tex"
       ]
     },
     {
-      "name": "AMP family inventory",
-      "section": "Mechanistic chemistry and structures",
-      "kind": "table / coordinate illustration",
-      "caption": "Twelve entries at family / functional-group / related-context levels, not twelve independent folds.",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison",
+      "name": "assay_key_candidates_and_controls",
+      "title": "Stored assay measurements and experimental variability",
+      "caption": "All six stored measurements shown; black marker: stored mean. Axis is symlog near zero to retain zero readings.\nZeros are shown at zero. The CSV does not establish whether repeats are biological or technical. BL21 is the stored control label; empty-vector/no-enzyme identity is not inferred.",
+      "kind": "saved-data analysis",
       "files": [
-        "amp_forming_family_inventory.png",
-        "amp_forming_family_inventory.svg",
-        "amp_forming_family_inventory.pdf",
-        "amp_forming_family_inventory.tex"
+        "assay_key_candidates_and_controls.png",
+        "assay_key_candidates_and_controls.svg",
+        "assay_key_candidates_and_controls.pdf"
       ],
-      "index": 49,
+      "section": "Saved-data evidence",
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 6,
       "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/amp_forming_family_inventory.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/amp_forming_family_inventory.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/amp_forming_family_inventory.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/amp_forming_family_inventory.tex"
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_key_candidates_and_controls.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_key_candidates_and_controls.svg",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/assay_key_candidates_and_controls.pdf"
       ]
     },
     {
-      "name": "ADP family inventory",
-      "section": "Mechanistic chemistry and structures",
-      "kind": "table / coordinate illustration",
-      "caption": "Twelve entries; carrier-, tRNA- and protein-bound systems are explicitly identified.",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison",
+      "name": "all_explored_proxy_comparison",
+      "title": "Complete saved comparison of 14 structural descriptors",
+      "caption": "Exploratory performance on a repeatedly inspected panel; n denotes defined enzyme-level scores. AUROC uses available scores.\nDefinitions and orientation are retained from the saved comparison; no direction was chosen using the plotted activity labels.",
+      "kind": "saved-data analysis",
       "files": [
-        "adp_forming_family_inventory.png",
-        "adp_forming_family_inventory.svg",
-        "adp_forming_family_inventory.pdf",
-        "adp_forming_family_inventory.tex"
+        "all_explored_proxy_comparison.png",
+        "all_explored_proxy_comparison.svg",
+        "all_explored_proxy_comparison.pdf"
       ],
-      "index": 50,
+      "section": "Saved-data evidence",
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 7,
       "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/adp_forming_family_inventory.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/adp_forming_family_inventory.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/adp_forming_family_inventory.pdf",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/ligase-family-comparison/adp_forming_family_inventory.tex"
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/all_explored_proxy_comparison.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/all_explored_proxy_comparison.svg",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/all_explored_proxy_comparison.pdf"
       ]
     },
     {
-      "name": "ADP-forming PuuA geometry",
-      "section": "Mechanistic chemistry and structures",
-      "kind": "table / coordinate illustration",
-      "caption": "Unchanged saved predicted coordinates; two Mg ions are modeled, not experimentally established stoichiometry.",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/adp-attack-geometry",
+      "name": "current_metric_shortlist_recovery",
+      "title": "Shortlist recovery under current geometric and confidence baselines",
+      "caption": "48 homologs; SfaB excluded from ranking. Groups are retrospective yield definitions, not validated active/inactive labels.\nAll compared metrics use the same saved one-Mg ensembles. Ties use expected recovery within a tied group. Earlier Gaussian-score results do not apply to A.",
+      "kind": "saved-data analysis",
       "files": [
-        "PuuA_ADP_attack_geometry.png",
-        "PuuA_ADP_attack_geometry.svg",
-        "PuuA_ADP_attack_geometry.pdf"
+        "current_metric_shortlist_recovery.png",
+        "current_metric_shortlist_recovery.svg",
+        "current_metric_shortlist_recovery.pdf"
       ],
-      "index": 51,
+      "section": "Saved-data evidence",
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 8,
       "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/adp-attack-geometry/PuuA_ADP_attack_geometry.png",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/adp-attack-geometry/PuuA_ADP_attack_geometry.svg",
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/adp-attack-geometry/PuuA_ADP_attack_geometry.pdf"
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/current_metric_shortlist_recovery.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/current_metric_shortlist_recovery.svg",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/current_metric_shortlist_recovery.pdf"
       ]
     },
     {
-      "name": "AMP-forming AS9 geometry",
-      "section": "Mechanistic chemistry and structures",
-      "kind": "table / coordinate illustration",
-      "caption": "Existing one-pose AS9 illustration; retained as the matching AMP-forming reference.",
-      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/attack-angle",
+      "name": "activation_vs_aminolysis_readouts",
+      "title": "Activation and aminolysis geometry",
+      "caption": "48 homologs; 50 poses per step. N\u2013C distance is the harmonic mean for the neutral amine and activated acyl carbon.\nPaired saved one-Mg predictions. Neutral attacking N assigned by ligand formal charge and topology. Aminolysis distance does not reproduce activation-step enrichment in this panel. Step 2 uses pocket-localization restraints. Distance alone is not an attack-orientation or catalytic-barrier measurement.",
+      "kind": "saved-data analysis",
       "files": [
-        "AS9_attack_geometry.png"
+        "activation_vs_aminolysis_readouts.png",
+        "activation_vs_aminolysis_readouts.svg",
+        "activation_vs_aminolysis_readouts.pdf"
       ],
-      "index": 52,
+      "section": "Saved-data evidence",
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 9,
       "absolute_files": [
-        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/attack-angle/AS9_attack_geometry.png"
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/activation_vs_aminolysis_readouts.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/activation_vs_aminolysis_readouts.svg",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/activation_vs_aminolysis_readouts.pdf"
+      ]
+    },
+    {
+      "name": "complete_mutant_geometry_tradeoffs",
+      "title": "Full saturation scan: angular gains and distance changes",
+      "caption": "\u0394A: weighted angle; \u0394dH: harmonic O\u2013P distance. Each substitution is compared with its matched WT.\n5,586 single substitutions + 3 matched WT controls; 50 predictions each; separate two-Mg campaign. Changes are predicted geometry, not measured activity. Lower-right quadrant combines higher A and shorter dH.",
+      "kind": "saved-data analysis",
+      "files": [
+        "complete_mutant_geometry_tradeoffs.png",
+        "complete_mutant_geometry_tradeoffs.svg",
+        "complete_mutant_geometry_tradeoffs.pdf"
+      ],
+      "section": "Saved-data evidence",
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 10,
+      "absolute_files": [
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/complete_mutant_geometry_tradeoffs.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/complete_mutant_geometry_tradeoffs.svg",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/complete_mutant_geometry_tradeoffs.pdf"
+      ]
+    },
+    {
+      "name": "adaptive_decision_loop",
+      "drawing_index": 1,
+      "crop": [
+        75,
+        215,
+        1845,
+        910
+      ],
+      "caption": "Current adaptive protocol: inspect state, propose a test, check the request, execute, compare and revise. Controller checks establish contract and source integrity, not biochemical correctness.",
+      "outputs": [
+        "adaptive_decision_loop.png",
+        "adaptive_decision_loop.pdf",
+        "adaptive_decision_loop.svg"
+      ],
+      "section": "Agentic framework",
+      "kind": "framework diagram",
+      "files": [
+        "adaptive_decision_loop.png",
+        "adaptive_decision_loop.pdf",
+        "adaptive_decision_loop.svg"
+      ],
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 11,
+      "absolute_files": [
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/adaptive_decision_loop.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/adaptive_decision_loop.pdf",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/adaptive_decision_loop.svg"
+      ]
+    },
+    {
+      "name": "shared_evidence_handoff",
+      "drawing_index": 2,
+      "crop": [
+        75,
+        210,
+        1845,
+        920
+      ],
+      "caption": "Current handoff content and source lineage. The modeling agent independently reviews discovery proposals. Fingerprints establish byte integrity, not evidence entailment.",
+      "outputs": [
+        "shared_evidence_handoff.png",
+        "shared_evidence_handoff.pdf",
+        "shared_evidence_handoff.svg"
+      ],
+      "section": "Agentic framework",
+      "kind": "framework diagram",
+      "files": [
+        "shared_evidence_handoff.png",
+        "shared_evidence_handoff.pdf",
+        "shared_evidence_handoff.svg"
+      ],
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 12,
+      "absolute_files": [
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/shared_evidence_handoff.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/shared_evidence_handoff.pdf",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/shared_evidence_handoff.svg"
+      ]
+    },
+    {
+      "name": "proposed_framework_evaluation",
+      "drawing_index": 5,
+      "crop": [
+        80,
+        215,
+        1840,
+        910
+      ],
+      "caption": "Proposed comparisons and readouts. These are evaluation plans, not measured performance results. Use independent tasks, matched resources, repeated runs and adjudicated outcomes.",
+      "outputs": [
+        "proposed_framework_evaluation.png",
+        "proposed_framework_evaluation.pdf",
+        "proposed_framework_evaluation.svg"
+      ],
+      "section": "Agentic framework",
+      "kind": "framework diagram",
+      "files": [
+        "proposed_framework_evaluation.png",
+        "proposed_framework_evaluation.pdf",
+        "proposed_framework_evaluation.svg"
+      ],
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 13,
+      "absolute_files": [
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_framework_evaluation.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_framework_evaluation.pdf",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_framework_evaluation.svg"
+      ]
+    },
+    {
+      "name": "proposed_multistate_motif_constraints",
+      "caption": "Multistate compatibility is proposed work; tool availability and successful generation do not establish catalytic activity.",
+      "kind": "proposed analysis",
+      "files": [
+        "proposed_multistate_motif_constraints.png",
+        "proposed_multistate_motif_constraints.svg",
+        "proposed_multistate_motif_constraints.pdf"
+      ],
+      "section": "Methods, interpretation and proposed work",
+      "folder": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures",
+      "index": 14,
+      "absolute_files": [
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_multistate_motif_constraints.png",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_multistate_motif_constraints.svg",
+        "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/slides-candidacy/backup-evidence-figures/proposed_multistate_motif_constraints.pdf"
       ]
     }
   ]

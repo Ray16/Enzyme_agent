@@ -11,6 +11,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
+from plot_layout import point_label,outside_legend,place_point_labels,text_collisions
 
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
@@ -19,9 +20,13 @@ PROX=BASE/'results/structural_proxies'
 MUT=ROOT/'enzyme_design_agent/campaigns/amide_AS9_AS17_AS23_step1_2Mg_saturation_5A_20261019'
 BLUE,ORANGE,TEAL,PURPLE,GRAY,INK='#0072B2','#D55E00','#009E73','#8043AD','#A0A5AA','#263746'
 STRONG={'AS9','AS17','AS23'}
-SOURCE_FILES=[];FIGURES=[];STATS={}
-plt.rcParams.update({'font.family':'DejaVu Sans','font.size':15,'axes.labelsize':17,
- 'axes.titlesize':19,'axes.spines.top':False,'axes.spines.right':False,
+ACTIVE_PLOTS={'assay_key_candidates_and_controls','current_metric_shortlist_recovery',
+              'all_explored_proxy_comparison','activation_vs_aminolysis_readouts',
+              'complete_mutant_geometry_tradeoffs','structural_proxy_search_inventory'}
+SOURCE_FILES=[];FIGURES=[];STATS={};LAYOUT_REPORTS=[]
+plt.rcParams.update({'font.family':'DejaVu Sans','font.size':11,'axes.labelsize':12,
+ 'axes.titlesize':13,'xtick.labelsize':10,'ytick.labelsize':10,
+ 'axes.spines.top':False,'axes.spines.right':False,
  'svg.fonttype':'none','pdf.fonttype':42,'savefig.facecolor':'white'})
 
 
@@ -31,10 +36,44 @@ def read(relative):
 
 
 def finish(fig,stem,title,caption,kind='saved-data analysis'):
+    if stem not in ACTIVE_PLOTS:
+        plt.close(fig);return
+    handles,legend_labels=outside_legend(fig)
+    if handles:fig.set_size_inches(fig.get_figwidth(),fig.get_figheight()+1,forward=True)
+    for ax in fig.axes:
+        ax.tick_params(labelsize=10)
+        ax.title.set_fontsize(11)
+        for text in ax.texts:text.set_fontsize(min(text.get_fontsize(),11))
+        if getattr(ax,'_point_label_requests',[]):
+            lo,hi=ax.get_xlim()
+            if ax.get_xscale()=='linear':ax.set_xlim(lo-.08*(hi-lo),hi+.12*(hi-lo))
+            lo,hi=ax.get_ylim()
+            if ax.get_yscale()=='log':ax.set_ylim(lo/1.25,hi*3)
+            elif ax.get_yscale()=='linear':ax.set_ylim(lo-.10*(hi-lo),hi+.12*(hi-lo))
+        short_labels={
+            'Product concentration (µg/mL)':'Yield (µg/mL)',
+            'Mean product concentration (µg/mL)':'Yield (µg/mL)',
+            'Activation angle A (°)':'Weighted angle (°)',
+            'Proximity-weighted attack angle A (°)':'Weighted angle (°)',
+            'Neutral amine–acyl carbon dH (Å)':'N–C distance (Å)',
+            'ΔA versus matched WT (°)':'ΔA (°)',
+            'ΔdH versus matched WT (Å)':'ΔdH (Å)',
+        }
+        ax.set_xlabel(short_labels.get(ax.get_xlabel(),ax.get_xlabel()),fontsize=12)
+        ax.set_ylabel(short_labels.get(ax.get_ylabel(),ax.get_ylabel()),fontsize=12)
+        if len(ax.get_ylabel())>36:ax.set_ylabel(textwrap.fill(ax.get_ylabel(),32),fontsize=12)
+        if len(ax.get_xlabel())>44:ax.set_xlabel(textwrap.fill(ax.get_xlabel(),38),fontsize=12)
     title=textwrap.fill(title,78)
-    fig.suptitle(title,fontsize=22,fontweight='bold',color=INK,y=.98)
-    fig.tight_layout(rect=[0,.075,1,.85 if '\n' in title else .92])
-    fig.text(.025,.015,caption.split('\n')[0],fontsize=10,color='#59636C',va='bottom')
+    fig.suptitle(title,fontsize=16,fontweight='bold',color=INK,y=.98)
+    fig.tight_layout(rect=[0,.28 if handles else .075,1,.85 if '\n' in title else .92])
+    if handles:
+        fig.legend(handles,legend_labels,loc='lower center',bbox_to_anchor=(.5,.10),
+                   frameon=False,fontsize=10,ncol=min(3,len(handles)))
+    fig.text(.025,.015,caption.split('\n')[0],fontsize=9,color='#59636C',va='bottom')
+    placed=place_point_labels(fig)
+    collisions=text_collisions(fig)
+    LAYOUT_REPORTS.append({'name':stem,'point_labels':placed,'text_collisions':collisions})
+    if collisions:raise ValueError(f'Text collisions in {stem}: {collisions[:4]}')
     for ext in ['png','svg','pdf']:
         p=HERE/f'{stem}.{ext}'
         fig.savefig(p,dpi=240,bbox_inches='tight')
@@ -82,7 +121,7 @@ def assay_plots():
         ax.plot(x,d.activity_N66L1_ugml_avg,'k_',markersize=12,label='Stored mean')
         ax.set_yscale('symlog',linthresh=1e-4)
         ax.set_ylabel('Product concentration (µg/mL)')
-        ax.set_xticks(x,ids,rotation=90 if len(d)>10 else 0,fontsize=9 if len(d)>10 else 14)
+        ax.set_xticks(x,ids,rotation=90 if len(d)>10 else 0,fontsize=9 if len(d)>10 else 10)
         ax.legend(frameon=False,fontsize=11,ncol=3,loc='upper right')
         finish(fig,stem,'Stored assay measurements and experimental variability',
           'All six stored measurements shown; black marker: stored mean. Axis is symlog near zero to retain zero readings.\n'
@@ -93,7 +132,7 @@ def assay_plots():
     for ident in ASSAY.index:
         color=BLUE if ident in STRONG else ORANGE if ident in ['SfaB','BL21'] else GRAY
         ax.scatter(a[ident],b[ident],color=color,s=65 if ident in STRONG|{'SfaB','BL21'} else 25,zorder=3)
-        if ident in STRONG|{'SfaB','BL21'}:ax.annotate(ident,(a[ident],b[ident]),xytext=(6,5),textcoords='offset points',fontsize=12)
+        if ident in STRONG|{'SfaB','BL21'}:point_label(ax,ident,(a[ident],b[ident]),fontsize=12)
     ax.plot([0,20],[0,20],ls='--',color='#7D858C',lw=1)
     ax.set_xscale('symlog',linthresh=1e-4);ax.set_yscale('symlog',linthresh=1e-4)
     ax.set_xlabel('Mean under 2025-01-24 labels (µg/mL)');ax.set_ylabel('Mean under 2025-01-09 labels (µg/mL)')
@@ -117,7 +156,7 @@ def angle_activity():
         x=subset.weighted_angle;y=subset.activity_ugml
         for ident in subset.index:
             ax.scatter(x[ident],y[ident],color=BLUE if ident in STRONG else GRAY,s=55 if ident in STRONG else 24)
-            if ident in STRONG or ident=='AS4':ax.annotate(ident,(x[ident],y[ident]),xytext=(4,5),textcoords='offset points',fontsize=11)
+            if ident in STRONG or ident=='AS4':point_label(ax,ident,(x[ident],y[ident]),fontsize=11)
         rho=float(spearmanr(x,y).statistic);corr.append({'subset':label,'n':len(subset),'spearman_rho':rho})
         ax.set_yscale('log');ax.set_xlabel('Proximity-weighted attack angle A (°)');ax.set_ylabel('Mean product concentration (µg/mL)')
         ax.set_title(label,fontsize=14);ax.text(.03,.96,f'n = {len(subset)}; Spearman ρ = {rho:.3f}',transform=ax.transAxes,va='top',fontsize=12)
@@ -129,7 +168,7 @@ def angle_activity():
     dots=ax.scatter(panel.inverse_distance_angle_deg,panel.harmonic_distance_A,
                     c=np.log10(panel.activity_ugml),cmap='viridis',s=65,edgecolors='white',lw=.5)
     for ident in STRONG|{'AS4'}:
-        ax.annotate(ident,(panel.loc[ident,'inverse_distance_angle_deg'],panel.loc[ident,'harmonic_distance_A']),xytext=(5,5),textcoords='offset points',fontsize=12)
+        point_label(ax,ident,(panel.loc[ident,'inverse_distance_angle_deg'],panel.loc[ident,'harmonic_distance_A']),fontsize=12)
     ax.set_xlabel('Proximity-weighted attack angle A (°)');ax.set_ylabel('Harmonic donor–phosphorus distance (Å)')
     fig.colorbar(dots,ax=ax,label='log₁₀ mean product concentration (µg/mL)')
     finish(fig,'joint_angle_distance_activity','Angular alignment and absolute proximity are separate observations',
@@ -152,7 +191,7 @@ def ranking_plots():
             curve=np.array(curve);ax.plot(np.arange(1,49),curve,lw=2,label=name)
             records[label+' / '+metric]={'at5':float(curve[4]),'at10':float(curve[9]),'at15':float(curve[14])}
         ax.plot(np.arange(49),np.arange(49)*positive.sum()/48,'--',color='black',lw=1,label='Random expected recovery')
-        ax.set_title(label,fontsize=14);ax.set_xlabel('Candidates selected');ax.set_ylabel('Retrospective producers recovered')
+        ax.set_title(label,fontsize=14);ax.set_xlabel('Candidates selected');ax.set_ylabel('Producers recovered')
         ax.set_xlim(0,20);ax.set_ylim(-.1,positive.sum()+.2);ax.set_yticks(range(positive.sum()+1))
     axs[1].legend(frameon=False,fontsize=10,loc='lower right')
     finish(fig,'current_metric_shortlist_recovery','Shortlist recovery under current geometric and confidence baselines',
@@ -215,8 +254,8 @@ def ensemble_plots():
         prob10.append(float(np.mean(positive[order[:,:10]].sum(1)==3)))
         taus.append([float(kendalltau(full,s).statistic) for s in ss])
     fig,axs=plt.subplots(1,2,figsize=(12,5))
-    axs[0].plot(sizes,prob5,'o-',label='All three in top 5');axs[0].plot(sizes,prob10,'s-',label='All three in top 10');axs[0].set_ylabel('Fraction of pose subsamples');axs[0].set_ylim(-.03,1.03);axs[0].legend(frameon=False,fontsize=12)
-    q=np.quantile(taus,[.05,.5,.95],axis=1);axs[1].plot(sizes,q[1],'o-',color=TEAL);axs[1].fill_between(sizes,q[0],q[2],color=TEAL,alpha=.2);axs[1].set_ylabel('Kendall τ versus full ensemble')
+    axs[0].plot(sizes,prob5,'o-',label='All three in top 5');axs[0].plot(sizes,prob10,'s-',label='All three in top 10');axs[0].set_ylabel('Subsample fraction');axs[0].set_ylim(-.03,1.03);axs[0].legend(frameon=False,fontsize=12)
+    q=np.quantile(taus,[.05,.5,.95],axis=1);axs[1].plot(sizes,q[1],'o-',color=TEAL);axs[1].fill_between(sizes,q[0],q[2],color=TEAL,alpha=.2);axs[1].set_ylabel('Rank agreement (τ)')
     for ax in axs:ax.set_xlabel('Saved poses retained per enzyme');ax.set_xticks(sizes)
     finish(fig,'finite_pose_sampling_sensitivity','Sensitivity of current A rankings to finite pose sampling',
            '300 subsamples without replacement per size; same existing 50-pose batch. Shading: 5th–95th percentile.\n'
@@ -242,14 +281,16 @@ def second_step():
                          (axs[1],'step2_neutral_Dh_A','Neutral amine–acyl carbon dH (Å)')]:
         for ident in d.index:
             ax.scatter(d.loc[ident,col],d.loc[ident,'activity_ugml'],s=50 if ident in STRONG else 24,color=BLUE if ident in STRONG else GRAY)
-            if ident in STRONG:ax.annotate(ident,(d.loc[ident,col],d.loc[ident,'activity_ugml']),xytext=(5,5),textcoords='offset points',fontsize=11)
+            if ident in STRONG:point_label(ax,ident,(d.loc[ident,col],d.loc[ident,'activity_ugml']),fontsize=11)
         ax.set_yscale('log');ax.set_xlabel(label);ax.set_ylabel('Mean product concentration (µg/mL)')
-    finish(fig,'activation_vs_aminolysis_readouts','Aminolysis distance does not reproduce activation-step enrichment in this panel',
-           '48 homologs, paired saved one-Mg predictions. Neutral attacking N assigned by saved ligand formal charge and topology.\n'
+    finish(fig,'activation_vs_aminolysis_readouts','Activation and aminolysis geometry',
+           '48 homologs; 50 poses per step. N–C distance is the harmonic mean for the neutral amine and activated acyl carbon.\n'
+           'Paired saved one-Mg predictions. Neutral attacking N assigned by ligand formal charge and topology. '
+           'Aminolysis distance does not reproduce activation-step enrichment in this panel. '
            'Step 2 uses pocket-localization restraints. Distance alone is not an attack-orientation or catalytic-barrier measurement.')
     fig,ax=plt.subplots(figsize=(10,5.5));order=d.sort_values('closest_N_is_protonated_poses',ascending=False)
     ax.bar(np.arange(len(order)),order.closest_N_is_protonated_poses/50,color=ORANGE)
-    ax.set_xticks(np.arange(len(order)),order.index,rotation=90,fontsize=9);ax.set_ylim(0,1);ax.set_ylabel('Fraction where nearest terminal N is protonated')
+    ax.set_xticks(np.arange(len(order)),order.index,rotation=90,fontsize=9);ax.set_ylim(0,1);ax.set_ylabel('Fraction selecting protonated N')
     finish(fig,'amine_identity_assignment','Selecting the closest terminal nitrogen can select the protonated end',
            'Saved step-2 audit; all 50 poses per enzyme retained. Choose the reactive nitrogen from chemical identity, not nearest-N geometry.')
 
@@ -260,13 +301,14 @@ def mutations():
     for ax,(parent,g) in zip(axs,d.groupby('parent',sort=False)):
         ax.scatter(g.delta_angle_deg,g.delta_distance_A,s=8,alpha=.35,color=BLUE)
         ax.axvline(0,color='black',lw=1);ax.axhline(0,color='black',lw=1)
-        ax.set_title(f'{parent}: {len(g):,} single substitutions',fontsize=14)
+        ax.set_title(f'{parent}: {len(g):,} substitutions',fontsize=11)
         ax.set_xlabel('ΔA versus matched WT (°)');ax.set_ylabel('ΔdH versus matched WT (Å)')
         chosen='G211V' if parent=='AS9' else 'P318R' if parent=='AS23' else None
         if chosen:
-            r=g[g.mutation==chosen].iloc[0];ax.scatter(r.delta_angle_deg,r.delta_distance_A,s=70,color=ORANGE,zorder=4);ax.annotate(chosen,(r.delta_angle_deg,r.delta_distance_A),xytext=(6,6),textcoords='offset points',fontsize=11)
+            r=g[g.mutation==chosen].iloc[0];ax.scatter(r.delta_angle_deg,r.delta_distance_A,s=70,color=ORANGE,zorder=4);point_label(ax,chosen,(r.delta_angle_deg,r.delta_distance_A),fontsize=11)
     finish(fig,'complete_mutant_geometry_tradeoffs','Full saturation scan: angular gains and distance changes',
-           '5,586 single substitutions + 3 matched WT controls; 50 predictions each; separate two-Mg campaign.\n'
+           'ΔA: weighted angle; ΔdH: harmonic O–P distance. Each substitution is compared with its matched WT.\n'
+           '5,586 single substitutions + 3 matched WT controls; 50 predictions each; separate two-Mg campaign. '
            'Changes are predicted geometry, not measured activity. Lower-right quadrant combines higher A and shorter dH.')
     aa=list('ACDEFGHIKLMNPQRSTVWY')
     counts={}
@@ -275,9 +317,9 @@ def mutations():
         h=g.pivot(index='to',columns='pos',values='delta_angle_deg').reindex(aa)
         norm=TwoSlopeNorm(vmin=float(np.nanmin(h)),vcenter=0,vmax=float(np.nanmax(h)))
         cmap=plt.get_cmap('RdBu_r').copy();cmap.set_bad('#DDDDDD')
-        fig,ax=plt.subplots(figsize=(max(14,len(h.columns)*.13),6))
+        fig,ax=plt.subplots(figsize=(max(14,len(h.columns)*.13),8))
         im=ax.imshow(h,aspect='auto',cmap=cmap,norm=norm,interpolation='nearest')
-        ax.set_yticks(range(20),aa);ticks=np.arange(0,len(h.columns),5);ax.set_xticks(ticks,h.columns[ticks],fontsize=9,rotation=90)
+        ax.set_yticks(range(20),aa,fontsize=13);ticks=np.arange(0,len(h.columns),5);ax.set_xticks(ticks,h.columns[ticks],fontsize=9,rotation=90)
         ax.set_xlabel('WT residue position');ax.set_ylabel('Substituted amino acid');fig.colorbar(im,ax=ax,label='ΔA versus matched WT (°)',pad=.02)
         finish(fig,f'{parent}_all_mutation_effects',f'{parent}: all scanned positions and single substitutions',
                'Gray cells are unmutated WT identities, not zero effect. Each panel uses its own numeric color range, centered on zero.\n'
@@ -316,18 +358,12 @@ def discovery():
 
 
 def inventory():
+    from build_descriptor_table import build as build_table
     d=read('exp_data/amide_synthetase/results/structural_proxies/attempts/proxy_inventory_20261011/historical_feature_inventory.csv')
-    d['category']=d.feature.str.split(':').str[0]
-    counts=d[d.status=='retained'].groupby('category').size().sort_values()
-    labels={'elec':'Charge environment','pka':'Protonation','mg':'Metal coordination',
-            'bat':'Activation geometry','hyp':'Mechanistic descriptors','esp':'Electrostatic potential / field',
-            'psiptm':'Interface confidence','tunnel':'Substrate access','sasa':'Intermediate exposure',
-            's2nac':'Amine attack (step 2)','preorg':'Pose consistency','boltz':'Other ensemble summary'}
-    fig,ax=plt.subplots(figsize=(11,6));ax.barh([labels.get(x,x) for x in counts.index],counts,color=BLUE);ax.set_xlabel('Retained distinct exported definitions')
-    for i,v in enumerate(counts):ax.text(v+.2,i,str(v),va='center',fontsize=13)
-    finish(fig,'structural_proxy_search_inventory','Breadth of the historical descriptor exploration',
-           '98 exported fields: 88 distinct nonconstant definitions, 5 duplicate exports, 5 constant/undefined fields.\n'
-           'Field counts include variants and diagnostics. Later matched formulas overlap this inventory; counts are not additive or independent tests.')
+    build_table()
+    FIGURES.append({'name':'structural_proxy_search_inventory','title':'Structural descriptors explored',
+        'caption':'Historical inventory: 88 distinct nonconstant definitions grouped by physical quantity. Counts include formula / threshold variants and sampling diagnostics, not independent hypotheses.',
+        'kind':'LaTeX inventory table','files':[f'structural_proxy_search_inventory.{ext}' for ext in ['png','svg','pdf','tex']]})
     STATS['inventory_status_counts']=d.status.value_counts().to_dict()
 
 
@@ -386,6 +422,7 @@ def main():
         func();print(f'Completed {func.__name__}',flush=True)
     sources=[{'path':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in dict.fromkeys(SOURCE_FILES)]
     (HERE/'quantitative_results.json').write_text(json.dumps(STATS,indent=2)+'\n')
+    (HERE/'plot_layout_validation.json').write_text(json.dumps({'all_text_collision_free':True,'figures':LAYOUT_REPORTS},indent=2)+'\n')
     (HERE/'quantitative_figures.json').write_text(json.dumps({'figures':FIGURES,'sources':sources,
        'scope':'Saved-data plots and explicit mathematical illustrations only; no new predictor or fleet execution.'},indent=2)+'\n')
     print(f'Wrote {len(FIGURES)} independent quantitative figures to {HERE}',flush=True)

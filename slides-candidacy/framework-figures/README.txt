@@ -1,3 +1,9 @@
+CURRENT OUTPUT LOCATION
+Four retained framework figures are now exported to ../backup-evidence-figures/:
+adaptive_decision_loop, shared_evidence_handoff, proposed_framework_evaluation,
+and modeling_setup_audit. Other graphics listed below are historical reference
+assets and have been archived; see ../backup-evidence-figures/cleanup_manifest.json.
+
 STANDALONE FRAMEWORK FIGURES
 
 Each figure is available as PNG, editable SVG, and PDF. No slide deck is

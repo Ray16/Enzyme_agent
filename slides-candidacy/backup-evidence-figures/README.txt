@@ -1,52 +1,40 @@
-COMPREHENSIVE STANDALONE CANDIDACY BACKUP FIGURES
+CURATED CANDIDACY BACKUP FIGURES
 
-Start with FIGURE_INDEX.txt. It lists every graphic, its interpretation boundary,
-and full PNG/SVG/PDF paths, including the earlier framework and chemistry assets.
-previews/overview-*.png provide thumbnail sheets. No deck is assembled here.
+The active collection contains 14 figures. Start with FIGURE_INDEX.txt.
+All retained graphics are in this folder; no slide deck is assembled.
 
-This folder contains 24 quantitative / source-audit figures and 15 method,
-interpretation or proposed-work figures. Their sources and full captions are in
-quantitative_figures.json and method_figures.json. quantitative_results.json
-records verified calculations and the limited statistical interpretation.
+Retained content:
+  01  AMP/ADP chemistry and enzyme-family comparison (LaTeX)
+  02  AMP-forming AS9 structure
+  03  ADP-forming PuuA structure
+  04  Exact modeling inputs and assumptions
+  05  Structural descriptor inventory (LaTeX)
+  06  Stored measurements for key candidates and controls
+  07  Matched structural-proxy comparison
+  08  Shortlist recovery against baselines
+  09  Activation versus aminolysis geometry
+  10  Complete mutation-scan tradeoffs
+  11  Adaptive agent decision loop
+  12  Evidence handoff between agents
+  13  Proposed framework evaluation
+  14  Proposed multistate catalytic constraints
 
-Saved-data evidence:
-  All stored assay values; date-label variability; mean/SD summary
-  Current angle versus yield and influence of the three strongest producers
-  Absolute proximity alongside angle; complete matched baseline comparison
-  Shortlist recovery with tie-aware expected recovery
-  Weighted-angle scale invariance; full pose heatmaps and sampling sensitivity
-  Best-pose versus pose-consistency development examples
-  Audited neutral-amine step-2 readout and protonated-N assignment diagnostic
-  Full saturation scan tradeoffs; complete AS9/AS17/AS23 mutation heatmaps
-  Discovery accounting, activation-route-separated geometry, and proxy inventory
-  Source-workbook provenance and candidate-specific modeled-metal audit
+Layout: concise axis labels, smaller type, separate legend space and rendered
+point-label placement checks. Captions retain the detailed metric definitions.
+The descriptor bar chart has been replaced by structural_proxy_search_inventory.tex.
+Both tables have editable LaTeX sources and compiled PDF/PNG/SVG exports.
 
-Method / proposed-work graphics:
-  Assay evidence requirements; exploration/freeze/independent validation
-  Multistate design; hypothesis-discriminating experimental panel
-  Mismatch-driven follow-up tests; method/readout limitations
-  Aim success/failure criteria; source-to-claim reasoning chain
-  Design strategy requirements; execution versus scientific status
-  Two-step electrophiles; ATP accounting; measurement interpretation
-  Archived run cost/scope; native PuuA evidence versus model assumptions
+The 38 supplementary diagnostics and reference graphics were moved to an archive.
+cleanup_manifest.json records the archive path and original locations. No original
+assay data, predictions or main-talk assets were removed. The AS9 image here is a
+copy of the existing main-talk figure, whose source remains in place.
 
-Important evidence boundaries:
-  The CSV matches all six values per ID in the 2025 Activity workbook.
-  Repeat type is not established by that worksheet. A separate 2023 workbook
-  contains biological/technical/calibration notes but is not mapped to this panel.
-  Do not transfer its LOD, controls or repeat definition to the 2025 measurements.
-  Zeros remain recorded zeros, not confirmed absence or a verified detection limit.
-  Model ensembles are technical predictions, not biological repetitions or time.
-  The current weighted angle A is not the older calibrated Gaussian score.
-  All reported recovery/association is retrospective on an inspected panel.
-  Mutant geometry changes are not experimental activity improvements.
-  New assay results, biological independence, catalytic barriers, or benchmark
-  superiority have not been manufactured to fill missing backup topics.
+Rebuild the retained collection from the repository root:
+  /homes/rzhu/miniforge3/envs/palm/bin/python slides-candidacy/backup-evidence-figures/build_curated_collection.py
 
-Rebuild from the repository root:
-  /homes/rzhu/miniforge3/envs/palm/bin/python slides-candidacy/backup-evidence-figures/build_quantitative_figures.py
-  python slides-candidacy/backup-evidence-figures/build_method_figures.py
-  python slides-candidacy/backup-evidence-figures/catalog_figures.py
-
-These scripts read existing data, plot it, and verify the exports. They do not
-start inference, schedule fleet work, edit a manuscript, or assemble a slide deck.
+quantitative_results.json retains the saved-data calculations and evidence
+boundaries. plot_layout_validation.json records rendered Matplotlib collision
+checks; asset_validation.json records cross-format and PDF text-overlap checks.
+Proposed-work diagrams do not claim completed experimental results. The current
+weighted angle A is distinct from older calibrated Gaussian scores. Model poses
+are not biological replicates, equilibrium populations or MD trajectories.

@@ -1,0 +1,81 @@
+{
+  "source": "exp_data/amide_synthetase/results/structural_proxies/attempts/proxy_inventory_20261011/historical_feature_inventory.csv",
+  "source_sha256": "62f4a16146e2c5ba9cfbea02a9a6c353e3fba2d7fe2efa1b5638544d6e588ebb",
+  "total_distinct_definitions": 88,
+  "exported_fields": 98,
+  "latex_overflow": false,
+  "groups": [
+    {
+      "source_prefix": "bat",
+      "display_name": "Activation geometry and catalytic environment",
+      "examples": "Attack angles and near-attack fractions; local metal geometry; reactive-group exposure; nearby charged residues.",
+      "count": 10
+    },
+    {
+      "source_prefix": "s2nac",
+      "display_name": "Amine--acyl approach geometry (step 2)",
+      "examples": "Amine N--acyl C distance; B\\\"urgi--Dunitz angle; near-attack fraction; accepted-pose count.",
+      "count": 4
+    },
+    {
+      "source_prefix": "preorg",
+      "display_name": "Reactive-group preorganization",
+      "examples": "Carboxylate positional spread; attack-direction variability; mean angle; bidentate-contact fraction.",
+      "count": 4
+    },
+    {
+      "source_prefix": "hyp",
+      "display_name": "Hypothesis-specific geometric descriptors",
+      "examples": "Oxyanion contacts; substrate exposure and access; amine approach; adenine burial; accepted-pose count.",
+      "count": 9
+    },
+    {
+      "source_prefix": "sasa",
+      "display_name": "Ligand exposure and pocket engagement",
+      "examples": "Solvent-accessible surface areas of selected reactive atoms; intermediate--protein separation.",
+      "count": 5
+    },
+    {
+      "source_prefix": "tunnel",
+      "display_name": "Substrate-access tunnel geometry",
+      "examples": "Tunnel enclosure and length under alternative clearance thresholds.",
+      "count": 6
+    },
+    {
+      "source_prefix": "elec",
+      "display_name": "Amine-site electrostatic environment",
+      "examples": "Nearby acidic oxygens; distance to a basic residue; net charge within alternative probe radii.",
+      "count": 12
+    },
+    {
+      "source_prefix": "esp",
+      "display_name": "Electrostatic potential and electric field",
+      "examples": "Potential and projected field at ATP P$_\\alpha$ and the acyl carbonyl; ensemble means and variation.",
+      "count": 8
+    },
+    {
+      "source_prefix": "pka",
+      "display_name": "Ionizable-residue and p$K_a$ descriptors",
+      "examples": "Histidine p$K_a$ proximity to 7; minimum lysine p$K_a$; ionizable-residue counts and ensemble variation.",
+      "count": 12
+    },
+    {
+      "source_prefix": "mg",
+      "display_name": "Magnesium coordination geometry",
+      "examples": "Mg--phosphorus and Mg--oxygen distances; coordination and bridging fractions across distance thresholds.",
+      "count": 10
+    },
+    {
+      "source_prefix": "psiptm",
+      "display_name": "Protein--ligand interface confidence",
+      "examples": "Directional pairwise ipTM; symmetric and extrema-based summaries across predicted poses.",
+      "count": 7
+    },
+    {
+      "source_prefix": "boltz",
+      "display_name": "Minimum substrate--ATP distance",
+      "examples": "Minimum donor oxygen--reactive phosphorus distance in the corresponding prediction ensemble.",
+      "count": 1
+    }
+  ]
+}

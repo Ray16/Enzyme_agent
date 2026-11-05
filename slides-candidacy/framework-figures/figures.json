@@ -4,22 +4,6 @@
   "source_unchanged": true,
   "figures": [
     {
-      "name": "agent_roles_tools",
-      "drawing_index": 0,
-      "crop": [
-        80,
-        215,
-        1840,
-        895
-      ],
-      "caption": "Current component roles and tools. Prospective experimental-learning integration is proposed.",
-      "outputs": [
-        "agent_roles_tools.png",
-        "agent_roles_tools.pdf",
-        "agent_roles_tools.svg"
-      ]
-    },
-    {
       "name": "adaptive_decision_loop",
       "drawing_index": 1,
       "crop": [
@@ -52,38 +36,6 @@
       ]
     },
     {
-      "name": "evidence_driven_search_example",
-      "drawing_index": 3,
-      "crop": [
-        75,
-        220,
-        1845,
-        875
-      ],
-      "caption": "Reconstruction of archived September 17 decisions. Native nitrogen donors distinguish GS-fold leads. The example does not establish target activity or prospectively captured reasoning.",
-      "outputs": [
-        "evidence_driven_search_example.png",
-        "evidence_driven_search_example.pdf",
-        "evidence_driven_search_example.svg"
-      ]
-    },
-    {
-      "name": "structural_validation",
-      "drawing_index": 4,
-      "crop": [
-        80,
-        215,
-        1840,
-        875
-      ],
-      "caption": "Current structural validation stages. Setup validity, physical acceptance, mechanism-specific geometry and experimental activity are different assessments.",
-      "outputs": [
-        "structural_validation.png",
-        "structural_validation.pdf",
-        "structural_validation.svg"
-      ]
-    },
-    {
       "name": "proposed_framework_evaluation",
       "drawing_index": 5,
       "crop": [
@@ -97,22 +49,6 @@
         "proposed_framework_evaluation.png",
         "proposed_framework_evaluation.pdf",
         "proposed_framework_evaluation.svg"
-      ]
-    },
-    {
-      "name": "implementation_validation_status",
-      "drawing_index": 6,
-      "crop": [
-        80,
-        215,
-        1840,
-        890
-      ],
-      "caption": "Available software and artifacts are distinguished from proposed scientific validation. Current controller capabilities are not attributed retrospectively to the September run.",
-      "outputs": [
-        "implementation_validation_status.png",
-        "implementation_validation_status.pdf",
-        "implementation_validation_status.svg"
       ]
     },
     {
