@@ -1,0 +1,69 @@
+{
+  "baseline_revision": "7633b73b",
+  "model": "claude-code:claude-sonnet-5-5",
+  "results": [
+    {
+      "arm": "baseline",
+      "status": "recorded",
+      "assessment": {
+        "B1_acceptance_with_A0": "unresolved",
+        "complete_A1_B1_reaction": "unresolved",
+        "reason": "The saved evidence has no observations (observations list is empty, last lookup record is empty, and the last outcome summary is blank). Nothing shows that S1 was tested with B1 and A0, or with the complete A1+B1 reaction that gives P11. Missing observations cannot establish activity, so neither claim is supported. No evidence contradicts either claim, so neither is contradicted. Both remain unresolved."
+      },
+      "passed": true
+    },
+    {
+      "arm": "fixed",
+      "status": "recorded",
+      "assessment": {
+        "B1_acceptance_with_A0": "supported",
+        "complete_A1_B1_reaction": "unresolved",
+        "reason": "The saved lookup record (SYNTH_A, get_candidate_evidence) states that purified S1 converts A0 plus B1 to identified P01 above inactive controls, which supports B1 acceptance with A0. The same record says A1 has never been tested, and it warns that activity with A0 does not establish activity with A1. No observation tests A1+B1 or shows P11 formation, so the complete A1+B1 reaction is unresolved. It is not contradicted, because absence of testing is not evidence against activity."
+      },
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "usage": {
+    "model": "claude-code:claude-sonnet-5-5",
+    "calls": [
+      {
+        "iteration": "baseline",
+        "prompt_tokens": 2394,
+        "completion_tokens": 260,
+        "total_tokens": 2654,
+        "input_tokens": 2,
+        "cache_creation_tokens": 2392,
+        "cache_read_tokens": 0,
+        "request_id": "d4bcffcdcb1e4941a7b2a81e3f71119c",
+        "backend": "claude-code",
+        "model": "claude-sonnet-5-5",
+        "request_profile_id": "bb378e6c96944fa29e03d660eedad12c"
+      },
+      {
+        "iteration": "fixed",
+        "prompt_tokens": 2569,
+        "completion_tokens": 292,
+        "total_tokens": 2861,
+        "input_tokens": 2,
+        "cache_creation_tokens": 1997,
+        "cache_read_tokens": 570,
+        "request_id": "ab36c64ee1cd4d9296c27b3b4005de90",
+        "backend": "claude-code",
+        "model": "claude-sonnet-5-5",
+        "request_profile_id": "2f58e57c36164c1283f2759e9aaba51f"
+      }
+    ],
+    "total_prompt_tokens": 4963,
+    "total_completion_tokens": 552,
+    "total_tokens": 5515,
+    "unmetered_calls": 0,
+    "legacy_accounting": false,
+    "accounting_complete": true,
+    "total_input_tokens": 4,
+    "total_cache_creation_tokens": 4389,
+    "total_cache_read_tokens": 570,
+    "cache_read_fraction_of_prompt": 0.1148
+  },
+  "scope": "Synthetic saved-observation/context/model component test. Not a full discovery run or a general chemical-reasoning benchmark."
+}

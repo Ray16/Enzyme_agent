@@ -1,0 +1,154 @@
+{
+  "model": "claude-code:claude-sonnet-5-5",
+  "budget": 100000,
+  "tokens": 23089,
+  "cases": [
+    {
+      "id": "c01",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": true
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c02",
+      "status": "graded",
+      "passed": false,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": false
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c03",
+      "status": "graded",
+      "passed": false,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": false
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c04",
+      "status": "graded",
+      "passed": false,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": false,
+        "references": true,
+        "rationales_present": true,
+        "next_action": false
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c05",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": true
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c06",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": true
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c07",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": true
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c08",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": true
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c09",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": true
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c10",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": true
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    },
+    {
+      "id": "c11",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action": true
+      },
+      "limitation": "Structured scoped verdicts/action categories only. Scientific entailment of prose requires independent review."
+    }
+  ],
+  "passed": 8,
+  "total": 11,
+  "suite_sha256": "6cfe25bd73c2fb35a25d826569af9f6541d1e22b3826f67e31353ef488be9e6d",
+  "scope": "Synthetic development component baseline. Not autonomous discovery, full chemical reasoning or held-out generalization."
+}

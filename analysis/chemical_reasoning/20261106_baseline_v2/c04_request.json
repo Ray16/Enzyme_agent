@@ -1,0 +1,77 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "Evaluate chemical claims from supplied synthetic observations. Use only the supplied sources. Assess each claim at its stated scope. Call record_assessment exactly once, with one concise reason and source reference for every claim."
+    },
+    {
+      "role": "user",
+      "content": "{\"id\": \"c04\", \"target\": \"Evaluate target activity of synthetic sequence S1.\", \"sources\": [{\"id\": \"S01\", \"text\": \"The controlled target-reaction assay used a preparation called S2 and confirmed formation of the specified product above no-enzyme controls. Independent sequence and construct verification establish that S2 is exactly S1 under a different label.\"}], \"claims\": [{\"id\": \"K1\", \"statement\": \"activity of S2\"}, {\"id\": \"K2\", \"statement\": \"S1 catalyzes the target reaction\"}], \"available_actions\": [\"resolve_partner\", \"resolve_identity\", \"verify_controls\", \"test_mechanism\", \"measure_turnover\", \"repeat_retrieval\", \"compare_kinetics\", \"inspect_primary_source\"]}"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "record_assessment",
+        "description": "Assess the supplied claims and choose the next useful action.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "supported",
+                      "contradicted",
+                      "unresolved"
+                    ]
+                  },
+                  "evidence_refs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "verdict",
+                  "evidence_refs",
+                  "reason"
+                ]
+              }
+            },
+            "next_action": {
+              "type": "string",
+              "enum": [
+                "resolve_partner",
+                "resolve_identity",
+                "verify_controls",
+                "test_mechanism",
+                "measure_turnover",
+                "repeat_retrieval",
+                "compare_kinetics",
+                "inspect_primary_source"
+              ]
+            }
+          },
+          "required": [
+            "claims",
+            "next_action"
+          ]
+        }
+      }
+    }
+  ]
+}

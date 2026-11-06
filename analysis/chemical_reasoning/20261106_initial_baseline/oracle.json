@@ -1,0 +1,442 @@
+[
+  {
+    "id": "c01",
+    "public": {
+      "target": "Target: A1 + B1 -> P11, using synthetic protein S1.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "Purified S1 converts A0 + B1 to P01 in a controlled assay. A1 was not tested."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "B1 acceptance with A0"
+        },
+        {
+          "id": "K2",
+          "statement": "complete requested reaction"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "supported",
+      "K2": "unresolved"
+    },
+    "acceptable_actions": [
+      "resolve_partner"
+    ]
+  },
+  {
+    "id": "c02",
+    "public": {
+      "target": "Target: A1 + B1 -> P11, using synthetic protein S1.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "Purified S1 converts A1 + B1 to independently identified P11. Both substrates are required; no-enzyme and inactive-protein controls show no product."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "B1 acceptance with A1"
+        },
+        {
+          "id": "K2",
+          "statement": "complete requested reaction"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "supported",
+      "K2": "supported"
+    },
+    "acceptable_actions": [
+      "compare_kinetics"
+    ]
+  },
+  {
+    "id": "c03",
+    "public": {
+      "target": "Evaluate target activity of synthetic sequence S1.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "The controlled target-reaction assay used homolog S2. S1 and S2 are distinct sequences; S1 has not been tested."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "activity of S2"
+        },
+        {
+          "id": "K2",
+          "statement": "S1 catalyzes the target reaction"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "supported",
+      "K2": "unresolved"
+    },
+    "acceptable_actions": [
+      "resolve_identity",
+      "measure_turnover"
+    ]
+  },
+  {
+    "id": "c04",
+    "public": {
+      "target": "Evaluate target activity of synthetic sequence S1.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "The controlled target-reaction assay used a preparation called S2. Independent sequence and construct verification establish that S2 is exactly S1 under a different label."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "activity of S2"
+        },
+        {
+          "id": "K2",
+          "statement": "S1 catalyzes the target reaction"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "supported",
+      "K2": "supported"
+    },
+    "acceptable_actions": [
+      "compare_kinetics"
+    ]
+  },
+  {
+    "id": "c05",
+    "public": {
+      "target": "Target: join two separate molecules of NCCCC(=O)O through a C-N bond.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "The observed native reaction converts one molecule of NCCCC(=O)O into O=C1CCCN1 plus water. No intermolecular product has been measured."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "native reaction joins two molecules"
+        },
+        {
+          "id": "K2",
+          "statement": "S1 catalyzes requested intermolecular reaction"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "contradicted",
+      "K2": "unresolved"
+    },
+    "acceptable_actions": [
+      "test_mechanism",
+      "measure_turnover"
+    ]
+  },
+  {
+    "id": "c06",
+    "public": {
+      "target": "Assess whether synthetic protein S1 catalyzes the target reaction.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "The literature service returned an HTTP access error for every request. No experiment or successful source retrieval is available."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "target activity"
+        },
+        {
+          "id": "K2",
+          "statement": "S1 is inactive on target"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "unresolved",
+      "K2": "unresolved"
+    },
+    "acceptable_actions": [
+      "repeat_retrieval"
+    ]
+  },
+  {
+    "id": "c07",
+    "public": {
+      "target": "Assess S1 target activity at pH 7 and whether inactivity is established under all possible conditions.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "At pH 7, the target-product signal is below the validated detection limit in replicated assays. A native-substrate positive control confirms active protein. Other conditions were not tested."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "detectable target activity at pH7"
+        },
+        {
+          "id": "K2",
+          "statement": "inactivity under all conditions"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "contradicted",
+      "K2": "unresolved"
+    },
+    "acceptable_actions": [
+      "inspect_primary_source",
+      "test_mechanism"
+    ]
+  },
+  {
+    "id": "c08",
+    "public": {
+      "target": "Assess target-reaction evidence from a predicted complex.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "A predicted pose places the proposed reacting atoms 3 angstroms apart. No turnover experiment was performed; activation and proton-transfer requirements remain unresolved."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "predicted atoms are nearby"
+        },
+        {
+          "id": "K2",
+          "statement": "S1 catalyzes the target reaction"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "supported",
+      "K2": "unresolved"
+    },
+    "acceptable_actions": [
+      "measure_turnover",
+      "test_mechanism"
+    ]
+  },
+  {
+    "id": "c09",
+    "public": {
+      "target": "An earlier interpretation attributed product formation to S1. Reassess using the new control.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "The original assay reported product. A newly measured matched no-enzyme control produces the same amount of product. The current assay cannot distinguish an enzyme contribution from background."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "assay distinguishes enzyme from background"
+        },
+        {
+          "id": "K2",
+          "statement": "S1 target activity"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "contradicted",
+      "K2": "unresolved"
+    },
+    "acceptable_actions": [
+      "verify_controls"
+    ]
+  },
+  {
+    "id": "c10",
+    "public": {
+      "target": "Target: A1 + B1 -> P11 using S1; compare the B1 rate with the native reference.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "With native acid A0, B1 produces the expected product at 3 percent of the native-reference rate under identical conditions. Product identity and controls are sound. A1 was never tested."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "some turnover with A0 and B1"
+        },
+        {
+          "id": "K2",
+          "statement": "B1 rate at least half reference"
+        },
+        {
+          "id": "K3",
+          "statement": "complete requested reaction"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "supported",
+      "K2": "contradicted",
+      "K3": "unresolved"
+    },
+    "acceptable_actions": [
+      "resolve_partner",
+      "compare_kinetics"
+    ]
+  },
+  {
+    "id": "c11",
+    "public": {
+      "target": "Assess a proposed design intervention for synthetic S1.",
+      "sources": [
+        {
+          "id": "S01",
+          "text": "S1 accepts B1 with A0. Acceptance of target A1 is unmeasured. A model proposes enlarging the donor pocket; no variant has been generated or tested and the affected residues may also position the catalytic group."
+        }
+      ],
+      "claims": [
+        {
+          "id": "K1",
+          "statement": "intervention improves target activity"
+        },
+        {
+          "id": "K2",
+          "statement": "proposed variant preserves native function"
+        }
+      ],
+      "available_actions": [
+        "resolve_partner",
+        "resolve_identity",
+        "verify_controls",
+        "test_mechanism",
+        "measure_turnover",
+        "repeat_retrieval",
+        "compare_kinetics",
+        "inspect_primary_source"
+      ]
+    },
+    "expected": {
+      "K1": "unresolved",
+      "K2": "unresolved"
+    },
+    "acceptable_actions": [
+      "test_mechanism",
+      "measure_turnover"
+    ]
+  }
+]

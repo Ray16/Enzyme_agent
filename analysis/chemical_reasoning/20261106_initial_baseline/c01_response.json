@@ -1,0 +1,14 @@
+{
+  "role": "assistant",
+  "content": null,
+  "tool_calls": [
+    {
+      "id": "toolu_01Ct2r6GXPPsuhds7S175gEW",
+      "type": "function",
+      "function": {
+        "name": "record_assessment",
+        "arguments": "{\"claims\": [{\"id\": \"K1\", \"verdict\": \"supported\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01: purified S1 converts A0 + B1 to P01 in a controlled assay, so S1 accepts B1 when paired with A0.\"}, {\"id\": \"K2\", \"verdict\": \"unresolved\", \"evidence_refs\": [\"S01\"], \"reason\": \"The target is A1 + B1 -> P11, but S01 tested only A0 + B1 -> P01 and did not test A1. The source doesn't show that S1 accepts A1 or makes P11.\"}], \"next_action\": \"resolve_partner\"}"
+      }
+    }
+  ]
+}

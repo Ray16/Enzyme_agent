@@ -1,0 +1,14 @@
+{
+  "role": "assistant",
+  "content": null,
+  "tool_calls": [
+    {
+      "id": "toolu_017BAi61Ykx6PnWUm5duEnuc",
+      "type": "function",
+      "function": {
+        "name": "record_assessment",
+        "arguments": "{\"claims\": [{\"id\": \"K1\", \"verdict\": \"unresolved\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01 reports only HTTP access errors with no successful retrieval or experiment, so there is no evidence that S1 has target activity.\"}, {\"id\": \"K2\", \"verdict\": \"unresolved\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01 gives no data. Failed retrieval is not evidence of inactivity, so the claim that S1 is inactive is also unsupported.\"}], \"next_action\": \"repeat_retrieval\"}"
+      }
+    }
+  ]
+}

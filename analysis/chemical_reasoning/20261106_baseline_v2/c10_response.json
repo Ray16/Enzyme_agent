@@ -1,0 +1,14 @@
+{
+  "role": "assistant",
+  "content": null,
+  "tool_calls": [
+    {
+      "id": "toolu_01GNri8uKSznQMZpEjETPG8w",
+      "type": "function",
+      "function": {
+        "name": "record_assessment",
+        "arguments": "{\"claims\": [{\"id\": \"K1\", \"verdict\": \"supported\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01 reports A0 + B1 gives the expected product at 3% of the native-reference rate, with sound product identity and controls. That is some turnover.\"}, {\"id\": \"K2\", \"verdict\": \"contradicted\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01 gives the B1 rate as 3% of the native reference under identical conditions. That is far below the 50% threshold.\"}, {\"id\": \"K3\", \"verdict\": \"unresolved\", \"evidence_refs\": [\"S01\"], \"reason\": \"The requested reaction is A1 + B1 -> P11 using S1. S01 tested only A0 with B1, and A1 was never tested. The data say nothing about whether the requested reaction completes.\"}], \"next_action\": \"resolve_partner\"}"
+      }
+    }
+  ]
+}

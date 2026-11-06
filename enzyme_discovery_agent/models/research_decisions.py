@@ -284,13 +284,21 @@ def decision_context(run_dir, limit=6):
                 if isinstance(hit, dict) and 'tool_name' in hit and isinstance(hit.get('data'), list):
                     hits.extend({**record, 'source_tool':hit['tool_name']}
                                 for record in hit['data'][:3] if isinstance(record, dict))
+                elif (isinstance(hit, dict) and 'tool_name' in hit and isinstance(hit.get('data'), dict)
+                      and hit['data'].get('accession')):
+                    hits.append({**hit['data'], 'source_tool': hit['tool_name'], 'source_status': hit.get('status')})
                 else:
                     hits.append(hit)
             for hit in hits[:24]:
                 if isinstance(hit, dict):
                     examples.append({key:hit.get(key) for key in
                         ('accession','protein_name','name','gene_names','ec_numbers','organism','reviewed','is_swissprot',
-                         'pmid','doi','title','year','url','source_tool','abstract') if hit.get(key) is not None})
+                         'pmid','doi','title','year','url','source_tool','source_status','abstract',
+                         'catalytic_activities','function_comments','native_substrates',
+                         'critical_warnings') if hit.get(key) is not None})
+        elif isinstance(payload, dict) and payload.get('accession'):
+            examples.append({key: payload[key] for key in ('accession','protein_name','organism','reviewed','is_swissprot',
+                'catalytic_activities','function_comments','native_substrates','critical_warnings') if key in payload})
         elif isinstance(payload, dict) and 'actual_sample' in payload:
             registry = load_candidate_registry(Path(run_dir))['candidates']
             records = []

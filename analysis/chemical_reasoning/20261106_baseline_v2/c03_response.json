@@ -1,0 +1,14 @@
+{
+  "role": "assistant",
+  "content": null,
+  "tool_calls": [
+    {
+      "id": "toolu_01MQJ7VR5SULUoQskhwLpeEt",
+      "type": "function",
+      "function": {
+        "name": "record_assessment",
+        "arguments": "{\"claims\": [{\"id\": \"K1\", \"verdict\": \"supported\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01: the controlled assay with homolog S2 confirmed the specified product above no-enzyme controls, so S2 shows target activity.\"}, {\"id\": \"K2\", \"verdict\": \"unresolved\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01 says S1 and S2 are distinct sequences and S1 has not been tested. S2's activity does not show that S1 is active, so there is no direct evidence on S1.\"}], \"next_action\": \"resolve_identity\"}"
+      }
+    }
+  ]
+}

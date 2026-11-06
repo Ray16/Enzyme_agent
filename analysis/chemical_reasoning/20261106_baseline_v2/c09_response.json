@@ -1,0 +1,14 @@
+{
+  "role": "assistant",
+  "content": null,
+  "tool_calls": [
+    {
+      "id": "toolu_01LZwVS4tDTcBkKYyJH66zmE",
+      "type": "function",
+      "function": {
+        "name": "record_assessment",
+        "arguments": "{\"claims\": [{\"id\": \"K1\", \"verdict\": \"contradicted\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01: the matched no-enzyme control gives the same product as the original assay, so the assay cannot distinguish enzyme contribution from background.\"}, {\"id\": \"K2\", \"verdict\": \"unresolved\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01: product equals background, so S1 activity is neither supported nor excluded. The assay can't resolve it, and a valid control or orthogonal assay is needed.\"}], \"next_action\": \"verify_controls\"}"
+      }
+    }
+  ]
+}

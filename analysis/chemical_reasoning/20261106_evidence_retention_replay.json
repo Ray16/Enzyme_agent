@@ -1,0 +1,14 @@
+{
+  "source_run": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261106_000850_Find_enzymes_that_ligate_glutarate_and_cadaverine_Production_objective_deliver_a",
+  "baseline_commit": "7633b73b",
+  "cases": [
+    {
+      "decision_id": "262b63ba799e44bc88ae4f21dcd0b8a1",
+      "expected_candidate_records": 5,
+      "baseline_identified_records": 0,
+      "fixed_identified_records": 5,
+      "selected_chemical_fields_preserved": true
+    }
+  ],
+  "scope": "Offline data-projection replay on copied saved artifacts. No model calls or writes to the source campaign; does not measure model comprehension."
+}

@@ -1,0 +1,31 @@
+{
+  "scope": "Initial chemical-reasoning development work; no demonstrations or production restart.",
+  "artifacts": {
+    "20261106_initial_baseline/report.json": {
+      "sha256": "333f8bd21fb91e42c43994a2d5d4c166b62bd9ef404ced66fa4824d77b514f49"
+    },
+    "20261106_baseline_v2/report.json": {
+      "sha256": "ef85833cd2d4f93e7d1ba1c7228faf2b7d71389485ac0c64014d24e3014d570f"
+    },
+    "20261106_context_component/report.json": {
+      "sha256": "f2cc16b986354366320974e04685fff8a30eced34863f87c39a4723387037882"
+    },
+    "20261106_evidence_retention_replay.json": {
+      "sha256": "9f259d4d027629b893173c8fe3aae8119d8b75d62aa66cfe490a8b09021f5eca"
+    }
+  },
+  "findings": {
+    "initial_baseline": "8/11 raw score is not a valid ability estimate: two prompts omitted assay outcomes, and reference-action grading was overrestrictive. Original artifacts retained.",
+    "corrected_baseline": "Version 2: 11/11 scoped synthetic claim tests passed, 22337 tokens. The suite changed; this is not a model improvement estimate.",
+    "implementation_defect": "Nested candidate objects were omitted from next-decision result examples. Offline replay: 0/5 identified records before, 5/5 after, selected chemical fields preserved.",
+    "live_component": "Old context: both claims unresolved. Fixed context: observed partner acceptance supported; complete untested reaction unresolved. 5515 tokens. This is a component test, not autonomous discovery.",
+    "regression": "55 targeted tests passed. Full suite: 1266 passed, 9 skipped, one unrelated structural_modeling_agent.sampling packaging failure, 74 subtests passed.",
+    "production_status": "Running campaign was not restarted; loaded code predates this fix."
+  },
+  "next_work": [
+    "Replicated tests with reordered, noisy, contradictory and sequential evidence.",
+    "Mechanistic and atom-mapped chemistry tasks across independent reaction classes.",
+    "Ablate a claim ledger against the current context using matched evidence and cost.",
+    "Only after component and executed-action validation: budget-matched discovery and design evaluation."
+  ]
+}

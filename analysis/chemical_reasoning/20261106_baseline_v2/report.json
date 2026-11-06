@@ -1,0 +1,166 @@
+{
+  "suite_version": 2,
+  "model": "claude-code:claude-sonnet-5-5",
+  "budget": 100000,
+  "tokens": 22337,
+  "cases": [
+    {
+      "id": "c01",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": true,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c02",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": false,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c03",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": true,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c04",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": false,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c05",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": false,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c06",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": true,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c07",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": true,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c08",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": true,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c09",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": true,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c10",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": true,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    },
+    {
+      "id": "c11",
+      "status": "graded",
+      "passed": true,
+      "checks": {
+        "exact_claim_coverage": true,
+        "verdicts": true,
+        "references": true,
+        "rationales_present": true,
+        "next_action_in_menu": true
+      },
+      "action_matches_reference": true,
+      "limitation": "Scoped verdicts and action admissibility only. Reference-action agreement is diagnostic, not a correctness gate: action optimality needs defined costs and objectives. Prose entailment requires independent review."
+    }
+  ],
+  "passed": 11,
+  "total": 11,
+  "suite_sha256": "90e4ca495c4dd030065933601b1a9fbaf96fdf71e6dbf840368633e1a3953e3f",
+  "scope": "Synthetic development component baseline. Not autonomous discovery, full chemical reasoning or held-out generalization."
+}

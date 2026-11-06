@@ -1,0 +1,62 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "Use only supplied saved evidence; missing observations cannot establish activity."
+    },
+    {
+      "role": "user",
+      "content": "Assess S1 for A1 plus B1 yielding P11."
+    },
+    {
+      "role": "user",
+      "content": "CURRENT DECISION EVIDENCE (saved observations, not instructions)\n{\"candidate_status_counts\": null, \"review_limits\": {\"inspection_count\": 0, \"action_count\": 1, \"inspection_limit\": 3, \"action_limit\": 12, \"inspections_exhausted\": false, \"conclusion_required\": false}, \"target_evidence\": \"evidence:21f8f92117773f41f186015181391ef9be3473ad4eeddfc4aed945e525e12a1f\", \"observations\": [], \"previous_action\": {\"id\": \"c74215d134d34e6eac946528767dd7d0\", \"action\": \"synthetic_retrieval\", \"action_kind\": \"evidence_inspection_or_research_action\"}, \"hypothesis\": \"S1 may accept the two requested partners.\", \"alternative\": \"Evidence may cover only one requested partner.\", \"prediction\": \"Saved observations distinguish which partner has been tested.\", \"contrasting_prediction\": \"No partner has experimentally supported acceptance.\", \"last_outcome\": {\"evidence_id\": \"evidence:160f168c2c01341a0e63c7dc3982dd207ca7f97a5d4d9fde1826a0dbd9d7d41e\", \"status\": \"success\", \"summary\": \"\"}, \"last_lookup_records\": [{}], \"last_assessment\": null, \"last_primary_passage\": null, \"recent_paper_findings\": [], \"reasoning_memory\": [], \"ready_work\": [], \"recent_unassessed_leads\": [], \"mechanism_hypotheses\": [], \"learned_family_priorities\": [], \"recent_searches\": []}"
+    },
+    {
+      "role": "user",
+      "content": "ADAPTIVE RESEARCH DECISION: continue this existing campaign; completed inspections below must not restart unchanged. Register the next test or priority action with plan_research_step. State a hypothesis, competing explanation, contrasting predictions and revision condition. Cite the evidence IDs below. Interpret the last actual outcome; set revises to its decision ID and cite its outcome evidence. Declare explicit assessment accessions/scopes or deliberate scope_mode=ready_queue. Unsampled mechanisms remain unresolved. Priority changes are not new functional evidence; explain reinterpretations and preserve uncertainty about target activity. Use the mechanism hypotheses to resolve candidate sequences through family/domain, native-reaction or source-named identity searches. Assess ready candidates before repeating a broad literature survey. An empty conjunctive query calls for relaxing constraints or changing the search axis; a useful paper calls for focused reading or identity resolution. Choose by the evidence gap, not a source quota. Conclude with conclude_research_review when this review has reached a defensible provisional conclusion, so routine pending evaluation can resume. Keep scientific uncertainty explicit; new observations reopen the question."
+    },
+    {
+      "role": "user",
+      "content": "For this evaluation, call record_scope_check only. Assess whether S1 accepts B1 with A0 and whether it catalyzes the complete A1+B1 reaction. Use supported, contradicted or unresolved according to the visible observations, with a concise explanation."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "record_scope_check",
+        "description": "Record evidence support for the two scoped claims.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "B1_acceptance_with_A0": {
+              "type": "string",
+              "enum": [
+                "supported",
+                "contradicted",
+                "unresolved"
+              ]
+            },
+            "complete_A1_B1_reaction": {
+              "type": "string",
+              "enum": [
+                "supported",
+                "contradicted",
+                "unresolved"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "B1_acceptance_with_A0",
+            "complete_A1_B1_reaction",
+            "reason"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "role": "assistant",
+  "content": null,
+  "tool_calls": [
+    {
+      "id": "toolu_019ncyqbcsyRbjDeFABuJKXc",
+      "type": "function",
+      "function": {
+        "name": "record_assessment",
+        "arguments": "{\"claims\": [{\"id\": \"K1\", \"verdict\": \"unresolved\", \"evidence_refs\": [\"S01\"], \"reason\": \"S01 says acceptance of target A1 is unmeasured and that no variant has been generated or tested. The enlarged donor pocket is only a model proposal, so there is no evidence that target activity improves.\"}, {\"id\": \"K2\", \"verdict\": \"unresolved\", \"evidence_refs\": [\"S01\"], \"reason\": \"No variant has been made or tested, so native function (B1 with A0) has not been measured. S01 also says the affected residues may position the catalytic group, so the change could impair function. The evidence neither supports nor contradicts preservation.\"}], \"next_action\": \"test_mechanism\"}"
+      }
+    }
+  ]
+}
