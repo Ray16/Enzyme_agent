@@ -5,6 +5,29 @@ Canonical location: `enzyme_design_agent/runs/as9_motif_design_rfd4_proteina/`. 
 and existing campaign wrappers. Generated campaign data remain in
 `runs/rfd4_campaigns/<campaign>/`.
 
+## AS9 M0/M1 generation and independent refolding
+
+`prepare_as9_motif_comparison.py` authors the matched core and donor-backbone
+motifs. `render_as9_motif_comparison.py` creates viewing figures from their
+unchanged coordinates. The model inputs keep coordinate, sequence, index and
+scaffold-length controls separate.
+
+`lambda_motif_campaign.py` consumes a frozen run manifest through reserved,
+continuously guarded GPUs. The first draw checks execution and input fidelity
+before parallel expansion. `cuda_motif_generate.py` records FP32 execution,
+startup, generation timing and device memory without changing model weights.
+
+`boltz_after_generation.py` is the dependent refolding coordinator. It includes
+all generated sequences, including generation-QC failures, searches fresh MSAs
+in batches, and uses the existing guarded Boltz provider for 50 unrestrained
+poses per design. `score_boltz_design_refolds.py` reports backbone, conditioned
+motif and fixed-residue sidechain RMSDs with explicit alignment frames. Attack
+geometry and the frozen ensemble metric come from the Boltz refolds. Missing
+poses, prediction failures and incomplete scoring remain explicit.
+
+Run manifests, producer snapshots, inputs, receipts and live status files belong
+to the campaign directory, not this source directory.
+
 ## Run statistics
 
 `run_logging.py` supplies common timing and size fields. Deploy it beside

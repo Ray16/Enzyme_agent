@@ -28,7 +28,8 @@ def audit(path, source, meta, geometry):
         issues.append('Nonfinite coordinates')
     if set(atoms.chain_id) != {'A', 'B', 'C', 'D'}:
         issues.append('Assembly chain mismatch')
-    expected_names = Counter(v['res_name'] for v in meta['motif_fixed_atoms'].values())
+    expected_names = Counter(v['res_name'] for v in meta['motif_fixed_atoms'].values()
+                             if v.get('sequence_fixed', True))
     if Counter(targets[fixed_ca]) != expected_names:
         issues.append('Fixed motif identities differ from input')
     if not np.array_equal(targets[fixed_ca], atoms.res_name[fixed_ca]):
@@ -58,7 +59,8 @@ def audit(path, source, meta, geometry):
             continue
         mapped = int(atoms.res_id[selected][0])
         mapping[rid] = mapped
-        if set(protein.res_name[protein.res_id == mapped]) != {definition['res_name']}:
+        if (definition.get('sequence_fixed', True)
+                and set(protein.res_name[protein.res_id == mapped]) != {definition['res_name']}):
             issues.append(f'Mapped motif identity differs at A{rid}')
         for name in sorted(expected):
             native = source[(source.chain_id == 'A') & (source.res_id == int(rid)) & (source.atom_name == name)]
