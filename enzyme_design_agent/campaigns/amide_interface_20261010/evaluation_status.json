@@ -1,9 +1,0 @@
-{
-  "counts": {
-    "evaluated": 321,
-    "pending": 119
-  },
-  "expected_variants": 440,
-  "complete": false,
-  "interpretation": "Pose-resampling intervals are not biological confidence or multiplicity-adjusted significance. Improvements are structural hypotheses under the specified assembly."
-}
