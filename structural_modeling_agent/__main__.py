@@ -1,6 +1,7 @@
 """Run the structural-modeling agent without a discovery orchestrator."""
 import argparse
 import json
+import sys
 from pathlib import Path
 
 
@@ -17,7 +18,11 @@ def environment_diagnostics():
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    if sys.argv[1:2]==['family-cofold']:
+        from .family_cofold import main as family_main
+        family_main(sys.argv[2:])
+        return 0
+    parser = argparse.ArgumentParser(description=__doc__,epilog='Shared family execution: python -m structural_modeling_agent family-cofold --help')
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--task", type=Path, help="standalone task or schema-3.0 discovery handoff (2.0 leads are unverified)")
     source.add_argument("--resume", type=Path, help="existing modeling-agent run directory")

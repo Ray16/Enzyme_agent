@@ -127,5 +127,18 @@
     "passed": 15,
     "wall_seconds": 31.93,
     "scope": "Production controller and rolling attachment, including CPU contention without lost ready tasks or another blocking alignment batch."
+  },
+  "family_cofold_20261106": {
+    "affected_suites": {
+      "passed": 1689,
+      "skipped": 9,
+      "subtests_passed": 95,
+      "wall_seconds": 155.4
+    },
+    "latest_focused_guard_reuse_checks": {
+      "passed": 33,
+      "wall_seconds": 1.15
+    },
+    "full_release_collection_limit": "Unrelated enzyme_design_agent test imports missing campaign module merge_analysis; no source patch made to unrelated scientific campaign."
   }
 }

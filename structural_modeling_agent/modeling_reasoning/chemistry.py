@@ -28,6 +28,15 @@ def characterize_smiles(smiles: str) -> dict[str, Any]:
     if molecule is None:
         return {"valid": False, "input_smiles": smiles}
     centers = Chem.FindMolChiralCenters(molecule, includeUnassigned=True, includeCIP=True)
+    # An ordinary phosphate diester monoanion has two resonance-equivalent
+    # nonbridging oxygens. A chosen P=O/O- drawing must not invent P chirality.
+    def resonance_equivalent_oxygens(index):
+        atom=molecule.GetAtomWithIdx(index)
+        if atom.GetAtomicNum()!=15:return False
+        terminal=[n for n in atom.GetNeighbors() if n.GetAtomicNum()==8 and n.GetDegree()==1 and n.GetIsotope()==0]
+        return (len(terminal)>=2 and any(n.GetFormalCharge()==-1 for n in terminal)
+                and any(molecule.GetBondBetweenAtoms(index,n.GetIdx()).GetBondType()==Chem.BondType.DOUBLE for n in terminal))
+    centers=[(index,label) for index,label in centers if not (label=='?' and resonance_equivalent_oxygens(index))]
     assigned = [{"atom_index": i, "cip": label} for i, label in centers if label != "?"]
     unassigned = [i for i, label in centers if label == "?"]
     if not centers:

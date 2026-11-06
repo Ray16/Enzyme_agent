@@ -1,94 +1,112 @@
-# Automatic ranked-candidate structural investigation
+# Family-based rolling structural modeling
 
-Production discovery now hands each new published rank to the independent
-structural-modeling agent. The standard discovery CLI attaches its coordinator
-before discovery starts; `--discovery-only` explicitly disables that handoff.
-Programmatic production launchers call `rolling_modeling.attach(run_dir)`.
-The current run was attached without restarting discovery.
+The default handoff is a shared family/mechanism protocol with a list of member
+sequences. The structural modeling agent compiles the protocol once and renders
+member inputs in code. It does not start a separate LLM research session for
+every enzyme. The older individual-research route remains explicit opt-in.
 
-The coordination boundary is deliberately different from GPU admission:
+## Inputs and family decisions
 
-```mermaid
-flowchart LR
-    A[Retrieved candidate pool] --> B[Discovery evidence and ranking]
-    B --> C[Rolling modeling-agent queue]
-    C --> D[Source gathering and scientific setup decision]
-    D --> E[Justified non-native target setup]
-    D --> F[Pending with evidence gaps and next action]
-    E --> G[Reserved exact-mode cofold]
-    G --> H[Complete ensemble and physical checks]
-    H --> B
+The protocol is runtime task data: component structures and charge states,
+stage-specific species/roles, mechanism-assignment rules, cofactors, metal counts
+and the modeled enzyme unit. No target molecules or enzyme identities are
+runtime Python defaults. Reaction coordinates and atom selectors come from the
+existing modeling-reasoning library; another coordinate file can be supplied.
+Directly conflicting member evidence splits groups or leaves a family pending.
+Unknown chemistry is not assigned an arbitrary default cofactor.
+
+The current task uses the user-requested two-step test. Step 1 contains the
+supplied acid dianion, nucleotide and mechanism-dependent metals. Step 2 contains
+the activated intermediate and the supplied amine; consumed nucleotide is not
+silently retained. The current single-chain screening protocol is conditional,
+not proof of native assembly. Family unit overrides are explicit. For example,
+Gamma-glutamylputrescine synthetase PuuA (P78061) is annotated as a dodecamer;
+its single-chain screen must not be presented as native-assembly validation.
+
+The standard discovery CLI attaches the family-mode watcher. It waits for a
+shared protocol, or adopts a registered protocol for the exact ordered target
+structures. That registry contains chemical protocol data, not prior candidate
+findings or cohort-specific pilot accessions. New members join their family;
+new sequences are resolved and aligned in batches. Existing alignments are reused
+only for the exact sequence and after fingerprint checks. A different ligand
+requires no new MSA when the protein sequence is unchanged.
+
+```bash
+python -m structural_modeling_agent family-cofold \
+  --run /path/to/discovery-run \
+  --specification /path/to/shared-protocol.json \
+  --backend /path/to/backend.json --out /path/to/results \
+  --worker-id unique-worker --watch-seconds 30
 ```
 
-Every published rank reaches investigation. Neither an absent native reaction
-nor a plausible fold by itself authorizes expensive predictions. The modeling
-agent weighs primary studies, reaction annotations, sequence/domain evidence
-and structures, distinguishing exact-protein results from inferred annotations
-and homolog transfers. The decision must explain the useful uncertainty a cofold
-can resolve, the cheaper evidence already considered, the justified molecular
-setup, contradictory observations and remaining assumptions. Source and
-consistency checks do not independently establish that its interpretation is true.
+## Execution, reuse and ownership
 
-The requested target contract travels with each candidate. Non-native substrates
-are the intended test, and native-only controls cannot substitute for them.
-A partial-step model must state which target partner it omits and what remains
-untested. The agent chooses controls when they discriminate model/setup failure
-from a target-specific difference; it should not enumerate arbitrary state,
-cofactor or ligand combinations.
+The Lambda fleet launcher preflights node interpreters, CUDA architecture,
+checkpoints, imports, host RAM and CPU capacity. Frontends and native workers use
+disjoint CPU allocations and capped native pools. GPU selection uses the actual
+free-device gate and an additional dispatch claim to prevent our own workers
+choosing the same device. The authoritative reservation remains `gpu_reserve run`.
+Real foreign-user GPU contention stops our affected process and preserves its
+partial work. Completed ensembles are never replaced as a resource retry.
 
-MSAs are batched and cached by exact sequence. Predictions require Boltz-2 exact
-mode and 50 samples per justified setup. Complete molecular entities, copy
-counts, charge and reaction restraints matter for reuse: the same protein with
-another substrate is not the same modeled system. Complete cached systems still
-need provenance, numerical-profile and sampling review. The backend now checks
-the actual molecular system rather than blocking every new target merely because
-a protein has some earlier prediction.
+H100 workers use the exact optimized profile. V100 workers use the established
+FP32 serial-sampling profile, with 50 predictions, exact-sequence MSA and no
+reaction-geometry restraint. Numerical profiles are recorded separately; they
+are not claimed byte-identical across hardware/software or sampling layouts.
+The serial sampler patch is process-local and fails closed on unknown code.
 
-The current coordinator runs one modeling task and one reserved GPU ensemble
-at a time. Research has a 100,000-token allowance and 20-call limit per task, including
-an eight-turn setup limit; new scientific evidence can reopen a task within the
-attempt bound. There is no fixed eight-candidate portfolio cap in ranked mode.
-A total modeling-token limit may also be supplied. The current attachment uses
-per-candidate limits rather than sharing or silently extending discovery's token
-allowance. It has a 12-hour coordinator window and resumable pending records.
-The token allowance is checked between model calls; an in-flight response can
-exceed the remaining allowance. These limits can leave tasks unresolved; they do not justify reporting all
-candidates as modeled.
+The measured T4 test exhausted its 15 GiB device with this full-quality profile.
+Those workers are held; quality was not reduced. The former provisional
+400-residue guard is not a candidate-selection criterion and is no longer the
+fleet default. This task's measured profile now requests at least 24 GiB VRAM.
+Other protocols can declare their own resource requirement.
 
-The discovery process, coordinator and modeling worker have separate CPU
-allocations. Native thread pools are capped. The GPU provider verifies imports,
-weights, storage and free accelerators, acquires the shared reservation gate and
-checks for foreign resident processes. Existing live coordinators are reused;
-dead owners require reconciliation rather than blind duplicate submissions.
+Reuse compares the exact sequence/construct and copy count, ligand structures
+including charge/stereochemistry, cofactor identities/counts and restraints.
+Registered pool inputs and coordinate files must retain their fingerprints and
+have complete sample coverage. Earlier family results are revalidated and reused
+across runs even when the logical job ID is identical. Legacy exact coordinates
+without sufficient atom-map metadata are marked for analysis reconciliation,
+rather than automatically folded again. Source and consuming discovery runs
+remain distinct. In-flight duplicates are held rather than submitted twice.
 
-Reports preserve failed poses, unresolved setups and incomplete ensembles.
-The frozen inverse-distance-weighted attack angle is used only when applicable,
-with harmonic distance alongside it. A favorable pose, confidence score or
-activation-only model does not demonstrate acceptance of both target partners
-or experimental activity. Timing and scientific-quality gains remain to be
-established in the live campaign.
+## Rolling results
 
-## Evidence lesson from the current development task
+Every cohort is pinned to an explicit discovery-run directory; there is no
+latest-run pointer. Results, inputs and reports stay beneath its `family_cofold`:
 
-Gamma-glutamylpolyamine synthetase GlnA2 (Q9RDS6) illustrates why binary substrate
-annotations are insufficient. Its primary study reports cadaverine turnover but
-describes cadaverine as a poor substrate. Glutarate acceptance remains untested;
-calling this the best complete-pair catalyst is unsupported.
-[Primary study](https://pmc.ncbi.nlm.nih.gov/articles/PMC8998196/).
-This observation was not supplied as an enzyme seed to the fresh campaign.
+- `cohort.json`: discovery identity and target.
+- `family_handoff.json`: shared protocols, families and member lists.
+- `input_index.csv` and `inputs/by_accession/<accession>/step_<n>.yaml`.
+- `family_results.csv`: member/step completion and geometry summary.
+- `jobs/<physical-job-id>/complete.json`: producer receipt, all pose observations
+  and source fingerprints; resource stops are retained separately.
+- `results/<accession>/step_<n>/`: readable structure and result views.
+- `analysis/pose_geometry.csv`, `analysis/ensemble_summary.csv`, per-ensemble
+  plots and separate step comparisons, refreshed after completed ensembles.
 
-## Verification
+The existing metric remains `sum(angle/distance)/sum(1/distance)`, with harmonic
+mean distance alongside it. Every pose is retained. No sigmoid, fitted cutoff,
+or assay-activity claim is introduced. Different reaction steps and numerical
+profiles are reported separately. These measurements describe geometry under
+the declared setup, not experimental substrate acceptance.
 
-Regression coverage checks growth of the published ranked list, exclusion of
-unranked records, handoff without a native-annotation gate, repeated-coordinator
-attachment, dead-owner reconciliation, batched sequence preparation and
-molecular-system reuse checks across different ligands, assemblies and charges.
-Full release results and the live attachment record are recorded separately.
+## Development validation
 
-The first live coordinator stopped on temporary CPU contention after completing
-its initial 24-sequence MSA batch. The controller now preserves ready tasks and
-waits for capacity, and starts ready work before another blocking alignment
-batch. The completed alignments were reused on recovery; discovery's token
-allowance was not increased. See
-[production_status_20261105.json](production_status_20261105.json) for the actual
-stop reason, descriptive token productivity and recovery verification.
+The first completed pilot belongs to discovery run `20261104_160236`.
+Paper-associated ShABS / UniProt Fatty-acyl-CoA synthase (A0A1M5ABR5) produced
+50 predictions for each step. Both ensembles passed sequence and molecular
+inventory checks. Step 1 measured 147.6914 degrees and harmonic distance
+4.6096 A; step 2 measured 90.5187 degrees and 7.5550 A. They are separate
+reaction-center observations, not a common activity ranking.
+
+The step-1 output bundle occupies 118.49 MiB: 15.13 MiB PDBs and 103.11 MiB NPZ
+arrays, plus small logs/metadata. Shared sequence alignments and model weights
+are not replicated per job. Larger proteins/assemblies can use substantially
+more storage and memory.
+
+The former workflow consumed 8.48 million model tokens in setup investigations
+without submitting a GPU job. That historical failure remains recorded. The
+family compiler/native execution path makes zero setup LLM calls; unsupported
+families stay visible for one shared review instead of repeating the failure
+per member. Software and live validation are recorded in the review manifest.

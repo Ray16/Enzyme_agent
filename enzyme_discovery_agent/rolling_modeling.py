@@ -56,16 +56,22 @@ def _snapshot(folder):
         target=folder/'source'/asset.relative_to(project)
         target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(asset,target)
         hashes[str(asset.relative_to(project))]=hashlib.sha256(target.read_bytes()).hexdigest()
+    for asset in (project/'structural_modeling_agent/modeling_reasoning/knowledge').glob('*.json'):
+        target=folder/'source'/asset.relative_to(project)
+        target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(asset,target)
+        hashes[str(asset.relative_to(project))]=hashlib.sha256(target.read_bytes()).hexdigest()
     return hashes
 
 
 def attach(run_dir, *, discovery_owner=None, model=None, runtime_seconds=43200,
-           per_candidate_tokens=100000, modeling_token_budget=None, msa_cache=None):
+           per_candidate_tokens=100000, modeling_token_budget=None, msa_cache=None,
+           execution_mode='family',family_specification=None):
     """Start once; repeated attachment preserves live ownership and the existing queue."""
     if type(per_candidate_tokens) is not int or per_candidate_tokens<1 or runtime_seconds<=0:
         raise ValueError('Require positive per-candidate research and elapsed-time allowances')
     if modeling_token_budget is not None and (type(modeling_token_budget) is not int or modeling_token_budget<1):
         raise ValueError('Require a positive total allowance or per-candidate budgeting')
+    if execution_mode not in {'family','individual_research'}:raise ValueError('Unknown structural execution mode')
     run=Path(run_dir).resolve();folder=run/'rolling_modeling';folder.mkdir(exist_ok=True)
     with state_lock(folder/'launch'):
         previous=read(folder/'launch_manifest.json')
@@ -84,6 +90,7 @@ def attach(run_dir, *, discovery_owner=None, model=None, runtime_seconds=43200,
         build(pool)
         cache=Path(msa_cache) if msa_cache else run.parent/'.sequence_msa_cache'
         settings={'project_root':str(project),'model':model or 'claude-code:claude-sonnet-5-5',
+            'execution_mode':execution_mode,
             'cofold_pool':str(pool),'cofold_pool_target_id':run.name,'msa_cache':str(cache),
             'prediction_cache_pools':[str(path.parent.parent) for path in
                 run.parent.glob('*/rolling_modeling/prediction_pool/catalog/current.json')
@@ -111,6 +118,12 @@ def attach(run_dir, *, discovery_owner=None, model=None, runtime_seconds=43200,
         env=os.environ.copy();env.update({key:'1' for key in THREADS});env['PYTHONUNBUFFERED']='1'
         argv=['taskset','-c',','.join(map(str,coordinator_cpus)),sys.executable,'-u',str(worker),
             '--config',str(config_path),'--role','coordinator']
+        if execution_mode=='family':
+            specification=Path(family_specification) if family_specification else run/'agent_state/family_modeling_protocol.json'
+            argv=['taskset','-c',','.join(map(str,coordinator_cpus)),sys.executable,'-u','-m','structural_modeling_agent',
+                'family-cofold','--run',str(run),'--specification',str(specification),'--backend',str(folder/'backend.json'),
+                '--out',str(run/'family_cofold'),'--watch-seconds','30']
+            env['PYTHONPATH']=str(folder/'source')
         manifest={'host':socket.gethostname(),'run_dir':str(run),'source_hashes':hashes,
             'argv':argv,'cpu_affinity':coordinator_cpus,'modeling_cpu_affinity':modeling_cpus,
             'gpu_policy':'One reserved exact-mode ensemble at a time; the backend checks actual free GPUs and dependencies before claiming.',

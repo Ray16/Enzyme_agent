@@ -1,0 +1,100 @@
+{
+  "verified_at": "2026-11-06T06:37:42.329681+00:00",
+  "discovery_run_id": "20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+  "results_root": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/family_cofold",
+  "family_groups": 13,
+  "shared_protocols": 2,
+  "eligible_members": 80,
+  "pending_family_members": [
+    {
+      "accession": "A0A1C3K786",
+      "enzyme_name": "Desferrioxamine E biosynthesis protein DesC @ Siderophore synthetase small component, acetyltransferase",
+      "rank": 4,
+      "assignment_basis": "conditional_family_coordinate",
+      "recorded_activities": [],
+      "family_id": "IPR000182",
+      "reason": "No applicable shared mechanism protocol; resolve this family once."
+    }
+  ],
+  "setup_llm_calls_in_family_path": 0,
+  "completed_ensembles": 20,
+  "active_gpu_jobs_by_host": {
+    "lambda2": 4,
+    "lambda4": 4,
+    "lambda13": 4
+  },
+  "pilot_results": [
+    {
+      "accession": "A0A1M5ABR5",
+      "enzyme_name": "Fatty-acyl-CoA synthase",
+      "step": 1,
+      "identity_pass_poses": 50,
+      "geometry": {
+        "weighted_attack_angle_deg": 147.69144100039344,
+        "harmonic_distance_A": 4.609608718471762,
+        "n_poses": 50
+      },
+      "numerical_profile": "exact",
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/family_cofold/jobs/2496a39324269245ddd1d1a2a744a628b58068755cb02e9ff90ab2d90cae07c3/complete.json"
+    },
+    {
+      "accession": "A0A1M5ABR5",
+      "enzyme_name": "Fatty-acyl-CoA synthase",
+      "step": 2,
+      "identity_pass_poses": 50,
+      "geometry": {
+        "weighted_attack_angle_deg": 90.51868813233422,
+        "harmonic_distance_A": 7.555028581569226,
+        "n_poses": 50
+      },
+      "numerical_profile": "stock_fp32_serial",
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/family_cofold/jobs/1d96941879ab626f1873138ec217bb2747f69d0b64a02953dcbce753b2a726b7/complete.json"
+    }
+  ],
+  "quality": {
+    "samples_per_step": 50,
+    "restraints": false,
+    "sequence_specific_batched_msa": true,
+    "h100_profile": "exact",
+    "v100_profile": "stock_fp32_serial"
+  },
+  "storage": {
+    "measured_first_ensemble_outputs_mib": 118.49,
+    "pdb_mib": 15.13,
+    "npz_mib": 103.11,
+    "shared_model_weights_excluded": true,
+    "msa_shared_between_steps": true
+  },
+  "resource_observations": [
+    "Real foreign-user contention stopped affected H100 jobs; their partial outputs were preserved.",
+    "T4 representative test exhausted its15GiB device; T4 workers are held, not given reduced-quality settings.",
+    "Local native workers explicitly receive their separate CPU allocation; frontends and native GPU work remain independent."
+  ],
+  "provenance_guards": [
+    "Output root pinned to this exact discovery run, never latest.",
+    "Reuse requires exact molecular system and verified saved inputs/coordinates; equal job IDs across runs do not suppress reuse.",
+    "Global physical-system claims plus legacy/native receipt checks block in-flight duplicates across cohorts.",
+    "Registered chemistry protocols omit cohort pilot identifiers; current candidate evidence still comes from its own discovery run."
+  ],
+  "tests": {
+    "affected_suites": {
+      "passed": 1689,
+      "skipped": 9,
+      "subtests_passed": 95,
+      "wall_seconds": 155.4
+    },
+    "latest_focused_guard_reuse_checks": {
+      "passed": 33,
+      "wall_seconds": 1.15
+    },
+    "full_release_collection_limit": "Unrelated enzyme_design_agent test imports missing campaign module merge_analysis; no source patch made to unrelated scientific campaign."
+  },
+  "limits": [
+    "Shared single-chain screening units are conditional, not independently validated native assemblies.",
+    "Raw angles refer to different reaction centers in different steps and are not a universal activity ranking.",
+    "Profile and hardware differences are recorded; no claim of byte identity across H100 and V100 sampling layouts."
+  ],
+  "leakage_audit": {
+    "scope": "Changed literals, imports, file reads, protocol registry and cache identities reviewed. Runtime code contains no task molecules or enzyme/accession seeds; task-specific structures remain explicit runtime input data. Chemistry-protocol registry removes cohort pilot selectors. Modeling caches are downstream evidence, not discovery initialization."
+  }
+}

@@ -26,8 +26,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 1049,
-      "sha256": "2ae1daecba316ddc91b9a2cc9585710f22e456990a8829414278143db3320bd8"
+      "bytes": 1429,
+      "sha256": "61beefd514177b1d209d62a8358024d8484ed1be84f2c224b9597e5928dd4f02"
     },
     {
       "path": "README.md",
@@ -61,8 +61,8 @@
     },
     {
       "path": "campaign_catalog/lookup.py",
-      "bytes": 4960,
-      "sha256": "4eae418de4caf02283211ba6662f254270277905677bda665f299d672190f7da"
+      "bytes": 7467,
+      "sha256": "cfd36c9d97d2b25650e781e9f3f10f07ae898f5859c5044b0241b38563dff3a8"
     },
     {
       "path": "campaign_catalog/prioritization.py",
@@ -101,8 +101,8 @@
     },
     {
       "path": "docs/REVIEW_GUIDE.md",
-      "bytes": 7032,
-      "sha256": "0a526c35411e7de837b9c7ace0208bdae6264bc15e9874a21155e5388bc122f9"
+      "bytes": 7287,
+      "sha256": "72169dab46e9ce40ea0673f6306ce935398eb033a9a1c03f4b15c46798feb79b"
     },
     {
       "path": "docs/REVIEW_RESPONSE_20261104.md",
@@ -111,8 +111,8 @@
     },
     {
       "path": "docs/ROLLING_MODELING.md",
-      "bytes": 5452,
-      "sha256": "17a563aa69bfb56c174b963bbcd53d8f6ea82d05404eece7cf4c4feac81ec962"
+      "bytes": 6525,
+      "sha256": "c545c89790bc93bbdfdf16ef3928907965a9cb9dae861ff183b6ecce9c941dca"
     },
     {
       "path": "docs/discovery_agent_framework.md",
@@ -143,6 +143,11 @@
       "path": "docs/expression_screen.md",
       "bytes": 5005,
       "sha256": "0270170199c1bc558dd3912fa0f886e1fedca014b5ee3f1796fbfaa0d4cf1f5a"
+    },
+    {
+      "path": "docs/family_cofold_validation_20261106.json",
+      "bytes": 4611,
+      "sha256": "5f9a6fbeadabeb5c0ef0aa26863a4e62a8fc5f7492767a533eb858ef747b26f7"
     },
     {
       "path": "docs/production_joint_substrate_validation_20261104.json",
@@ -181,8 +186,8 @@
     },
     {
       "path": "docs/review_validation.json",
-      "bytes": 4136,
-      "sha256": "c150bad8e0cdb0eabb163848099e331e93f04e292e432283398f004756d66d8d"
+      "bytes": 4576,
+      "sha256": "13e585821ec457b5aed0b56911d4751bb433d30189ee0ab4d802c5d23b57e384"
     },
     {
       "path": "docs/rolling_modeling_validation_20261104.json",
@@ -1136,8 +1141,8 @@
     },
     {
       "path": "enzyme_discovery_agent/rolling_modeling.py",
-      "bytes": 9612,
-      "sha256": "0b9a069fe06b48d7ca55deb48e16f1098d23cfed13d3af13cda2f5b6a748c1dc"
+      "bytes": 10715,
+      "sha256": "73620f4f500367e5472b90d3b52e867a0af1b0eb33382a495467bc54f2ee4104"
     },
     {
       "path": "enzyme_discovery_agent/run_layout.py",
@@ -2126,8 +2131,8 @@
     },
     {
       "path": "structural_modeling_agent/__main__.py",
-      "bytes": 4950,
-      "sha256": "0378e0837e246389b1f452335e8ba5e6838cebb1578bcee2edaa7ab5b2694e6c"
+      "bytes": 5199,
+      "sha256": "605a400fe96125917d8bad889cd2a38c60da7964a478e20bab9bf093c62f1d31"
     },
     {
       "path": "structural_modeling_agent/agent.py",
@@ -2151,8 +2156,8 @@
     },
     {
       "path": "structural_modeling_agent/cofold/boltz_serial_predict.py",
-      "bytes": 1980,
-      "sha256": "07d282e62782f33370a7214de8660c9c82450a5892cd4c6c6a6dcb45ac3258ab"
+      "bytes": 2354,
+      "sha256": "7ca2d482292361136f8ef3abe8cb1a0c00668d8332037aadb2782d2a588fbeb6"
     },
     {
       "path": "structural_modeling_agent/cofold/queue_report.py",
@@ -2240,6 +2245,31 @@
       "sha256": "9e75c9121d3c5085e10df1f54f820a0a50e7c85acff9d8f4d0bae01a39150d8d"
     },
     {
+      "path": "structural_modeling_agent/family_analysis.py",
+      "bytes": 5766,
+      "sha256": "7f8b9c22dcab59a4719c89180b521430d2d90c594935295be171b0f649691bb4"
+    },
+    {
+      "path": "structural_modeling_agent/family_cofold.py",
+      "bytes": 36152,
+      "sha256": "5defb0b9e5f5d3181a7a73d88f70e3f38a1f24d9a403b603ba6257800f5e1f7b"
+    },
+    {
+      "path": "structural_modeling_agent/family_fleet.py",
+      "bytes": 7841,
+      "sha256": "fd141bb208af93478aa87537e22d96199eaa87bd1e144eedff5a14d7582f70fa"
+    },
+    {
+      "path": "structural_modeling_agent/family_inflight.py",
+      "bytes": 5139,
+      "sha256": "1799390e989a19401b4ef331b77836f8af9104dcb2c81b6bf18897af547eb229"
+    },
+    {
+      "path": "structural_modeling_agent/family_sequences.py",
+      "bytes": 2788,
+      "sha256": "ace3d50d9c77a38eb52e3323f9ef4d53a2300ad65b1cc46de9835b3c47da2ec6"
+    },
+    {
       "path": "structural_modeling_agent/handoff_inspect.py",
       "bytes": 2018,
       "sha256": "cc0f3405f28f87058ebc9bd6cb5a2d930f46634163e920ca5a559a4025225524"
@@ -2276,8 +2306,8 @@
     },
     {
       "path": "structural_modeling_agent/lambda_boltz_backend.py",
-      "bytes": 17657,
-      "sha256": "e33a7ebfab6fa869fde5b06b60f228c44a7d022e8bcc97a627f827477b1230de"
+      "bytes": 23001,
+      "sha256": "d2105b5f2cb0df7311e5ff7d77099fa29485ec5bee90057864dda0d17283003c"
     },
     {
       "path": "structural_modeling_agent/loop/__init__.py",
@@ -2361,8 +2391,8 @@
     },
     {
       "path": "structural_modeling_agent/modeling_reasoning/chemistry.py",
-      "bytes": 4875,
-      "sha256": "3f825e571e9f88bf8bfb8837667d507bf472b16948b52b57ff9a0e640ded0b9f"
+      "bytes": 5609,
+      "sha256": "a5ffd9fb610518a8d996e299222aeba9da9dfccfbe0eaa4020c07d7dc6e74ef3"
     },
     {
       "path": "structural_modeling_agent/modeling_reasoning/evolve.py",
@@ -2638,6 +2668,16 @@
       "path": "structural_modeling_agent/tests/test_existing_prediction_review.py",
       "bytes": 3938,
       "sha256": "c8087fc3b13b40d13f161125a7dd1e42704da3ec97e79cd78ef9c6b9815b843f"
+    },
+    {
+      "path": "structural_modeling_agent/tests/test_family_cofold.py",
+      "bytes": 9010,
+      "sha256": "196f47f5737ed1ceae4d3e4b96a968d4eb5682d89cbbed40bccf5000be252e0d"
+    },
+    {
+      "path": "structural_modeling_agent/tests/test_family_inflight.py",
+      "bytes": 2815,
+      "sha256": "882ab3a1b2ec8a570f0f8c2c5ab4acdc0da98c95f19861c8313cadf9049814bc"
     },
     {
       "path": "structural_modeling_agent/tests/test_geometry_candidates.py",

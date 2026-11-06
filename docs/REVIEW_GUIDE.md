@@ -58,6 +58,9 @@ post-run diagnostic, not a rerun of discovery or an activity measurement.
 The automatic handoff and compute-admission distinction are documented in
 [ROLLING_MODELING.md](ROLLING_MODELING.md), with the live attachment record in
 [rolling_modeling_validation_20261104.json](rolling_modeling_validation_20261104.json).
+The current default is the family compiler/native fleet, replacing the costly
+per-member research loop. Its live cofold proof and run-isolation/reuse guards
+are recorded in [family_cofold_validation_20261106.json](family_cofold_validation_20261106.json).
 
 ## High-priority issues
 

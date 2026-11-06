@@ -11,6 +11,7 @@ import os
 import re
 import sys
 import textwrap
+import time
 
 
 def serial_sampler_source(source):
@@ -43,7 +44,13 @@ def main():
     print(json.dumps({'producer':'boltz_serial_fp32_v1','precision':32,
         'sample_batch_patch':changed,'original_sampler_sha256':hashlib.sha256(source.encode()).hexdigest(),
         'executed_sampler_sha256':hashlib.sha256(fixed.encode()).hexdigest()}),flush=True)
-    engine.cli()
+    started= time.monotonic()
+    try:engine.cli()
+    finally:
+        import torch
+        if torch.cuda.is_initialized():
+            print(json.dumps({'producer':'boltz_serial_fp32_v1_finish','wall_seconds':time.monotonic()-started,
+                'peak_allocated_bytes':torch.cuda.max_memory_allocated(),'peak_reserved_bytes':torch.cuda.max_memory_reserved()}),flush=True)
 
 
 if __name__=='__main__':

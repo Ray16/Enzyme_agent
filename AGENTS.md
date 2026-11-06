@@ -7,6 +7,11 @@ rolling structural-modeling coordinator, or call
 Do not launch discovery alone unless the user requests that scope explicitly.
 
 Each new ranked candidate enters agent-led scientific setup investigation.
+Use shared family/mechanism handoffs and the structural modeling agent's
+`family-cofold` execution mode. Resolve a protocol once, list its member enzymes,
+and generate their inputs in code. Do not repeat a research-agent session for
+each member. Use parallel workers with disjoint GPU/CPU allocations when capacity
+permits; preserve resource-contention stops and partial outputs.
 The modeling agent gathers independent sources and decides whether a justified,
 informative target-substrate cofold merits compute. Missing native annotation
 alone neither authorizes compute nor excludes a hypothesis. Preserve pending

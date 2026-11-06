@@ -40,7 +40,7 @@ def alive(pid, ticks):
     try: return Path(f'/proc/{pid}/stat').read_text().rsplit(')',1)[1].split()[19] == ticks
     except OSError: return False
 
-def allocation(slots=4):
+def allocation(slots=4,requested=None):
     import psutil
     available = set(os.sched_getaffinity(0)); occupied = set()
     for process in psutil.process_iter(['pid','cmdline']):
@@ -55,8 +55,8 @@ def allocation(slots=4):
                 affinity=set(os.sched_getaffinity(process.pid))
                 if len(affinity)<=8: occupied |= affinity
             except ProcessLookupError: pass
-    cpus = sorted(available-occupied)[-slots:]
-    if len(cpus)!=slots or max(os.getloadavg())+slots > os.cpu_count():
+    cpus = list(requested) if requested is not None else sorted(available-occupied)[-slots:]
+    if len(cpus)!=slots or len(set(cpus))!=slots or not set(cpus)<=available-occupied or max(os.getloadavg())+slots > os.cpu_count():
         raise RuntimeError('Insufficient verifiable CPU capacity')
     return cpus
 
@@ -91,7 +91,7 @@ def worker(job):
     receipt={'idempotency_key':key,'status':'queued','host':socket.gethostname(),
              'pid':os.getpid(),'process_start_ticks':Path('/proc/self/stat').read_text().rsplit(')',1)[1].split()[19]}
     write(job/'receipt.json',receipt)
-    predictor=None
+    predictor=None;dispatch_claim=None
     def stop(*_):
         if predictor and predictor.poll() is None:
             os.killpg(predictor.pid,signal.SIGTERM)
@@ -101,12 +101,17 @@ def worker(job):
         raise SystemExit('terminated; partial outputs retained')
     signal.signal(signal.SIGTERM,stop); signal.signal(signal.SIGINT,stop)
     try:
-        os.sched_setaffinity(0,set(allocation()))
-        if socket.gethostname().split('.')[0]!='lambda13': raise RuntimeError('Wrong accelerator host')
+        policy=request.get('resource_policy',{});profile=policy.get('numerical_profile','exact')
+        host=policy.get('execution_host','lambda13')
+        requested_cpus=policy.get('gpu_cpu_affinity')
+        os.sched_setaffinity(0,set(allocation(requested=requested_cpus)))
+        if socket.gethostname().split('.')[0]!=host: raise RuntimeError('Wrong accelerator host')
         if sha(request['input_yaml'])!=request['input_sha256']:
             raise RuntimeError('Rendered input changed')
+        for source in request.get('msa_evidence',[]):
+            if sha(source['path'])!=source['sha256']:raise RuntimeError('Prepared MSA changed')
         document=yaml.safe_load(Path(request['input_yaml']).read_text())
-        component_sources=chemical_component_sources(document,ROOT)
+        component_sources=chemical_component_sources(document,policy.get('ccd_cache_root',ROOT))
         for entity in document['sequences']:
             if 'protein' in entity:
                 msa=entity['protein'].get('msa')
@@ -114,6 +119,16 @@ def worker(job):
                     raise RuntimeError('Every protein requires a prepared sequence-specific MSA')
         # Preflight before allocating any accelerator. No downloads or environment changes.
         import boltz.main, torch, rdkit
+        from rdkit import Chem
+        ligand_atom_maps={}
+        for entity in document['sequences']:
+            ligand=entity.get('ligand') or {}
+            if not ligand.get('smiles'):continue
+            molecule=Chem.AddHs(Chem.MolFromSmiles(ligand['smiles']))
+            ranks=list(Chem.CanonicalRankAtoms(molecule))
+            ligand_atom_maps[ligand['id']]={'smiles':ligand['smiles'],'rdkit_version':rdkit.__version__,
+                'atoms':{str(atom.GetIdx()):{'name':atom.GetSymbol().upper()+str(ranks[atom.GetIdx()]+1),'element':atom.GetSymbol().upper()}
+                         for atom in molecule.GetAtoms() if atom.GetAtomicNum()!=1}}
         for name in ('boltz2_conf.ckpt','ccd.pkl','mols'):
             if not (NFS/'.boltz'/name).exists(): raise RuntimeError('Missing checkpoint/cache: '+name)
         total_length=sum(len(e['protein']['sequence']) for e in document['sequences'] if 'protein' in e)
@@ -121,14 +136,39 @@ def worker(job):
         if shutil.disk_usage(job).free<required_bytes:
             raise RuntimeError('Insufficient shared storage for this ensemble and safety reserve; no cofold submitted')
         deadline=time.monotonic()+21600
+        receipt.update(phase='waiting_for_free_gpu',requested_gpu=request.get('resource_policy',{}).get('gpu_index'))
+        write(job/'receipt.json',receipt)
         while True:
-            free=subprocess.run([str(GATE),'list','--hosts','lambda13'],capture_output=True,text=True,check=True,timeout=30).stdout
+            free=subprocess.run([str(GATE),'list','--hosts',host],capture_output=True,text=True,check=True,timeout=30).stdout
             choices=[int(line.split()[1]) for line in free.splitlines()
-                     if len(line.split())>=2 and line.split()[0]=='lambda13' and line.split()[1].isdigit()]
-            if choices: break
+                     if len(line.split())>=2 and line.split()[0]==host and line.split()[1].isdigit()]
+            policy=request.get('resource_policy',{});fixed_gpu=policy.get('gpu_index')
+            if fixed_gpu is not None and not policy.get('allow_any_free_gpu'):
+                choices=[index for index in choices if index==fixed_gpu]
+            elif fixed_gpu in choices:choices=[fixed_gpu]+[index for index in choices if index!=fixed_gpu]
+            dispatch_root=Path(policy['gpu_dispatch_root']) if policy.get('gpu_dispatch_root') else None
+            if dispatch_root:
+                dispatch_root.mkdir(parents=True,exist_ok=True);selected=None
+                for candidate_gpu in choices:
+                    candidate_claim=dispatch_root/(host+'_gpu_'+str(candidate_gpu))
+                    try:candidate_claim.mkdir()
+                    except FileExistsError:
+                        owner_path=candidate_claim/'owner.json'
+                        if owner_path.exists():
+                            owner=read(owner_path)
+                            if owner.get('host')==socket.gethostname() and not alive(owner['pid'],owner['process_start_ticks']):
+                                archive=dispatch_root/'stale';archive.mkdir(exist_ok=True)
+                                os.rename(candidate_claim,archive/(candidate_claim.name+'_'+str(time.time_ns())))
+                        continue
+                    dispatch_claim=candidate_claim
+                    write(candidate_claim/'owner.json',{'pid':os.getpid(),'host':socket.gethostname(),
+                        'process_start_ticks':receipt['process_start_ticks'],'job':key})
+                    selected=candidate_gpu;break
+                choices=[selected] if selected is not None else []
+            if choices:break
             if time.monotonic()>deadline: raise RuntimeError('GPU wait allowance exhausted; no cofold submitted')
             time.sleep(30)
-        cpus=allocation(); os.sched_setaffinity(0,set(cpus)); gpu=choices[0]
+        cpus=allocation(requested=requested_cpus); os.sched_setaffinity(0,set(cpus)); gpu=choices[0]
         env=os.environ.copy(); env.update({name:'1' for name in THREADS})
         env.pop('PYTHONPATH',None)
         command=['taskset','-c',','.join(map(str,cpus)),str(GATE),'run',str(gpu),'--label','discovery-'+key[:12],'--',
@@ -136,18 +176,28 @@ def worker(job):
                  '--input',request['input_yaml'],'--out_dir',str(job/'outputs'),
                  '--diffusion_samples',str(request['expected_predictions']),'--seed','42',
                  '--num_workers','0','--preprocessing-threads','1','--output_format','pdb']
-        # Verify the installed predictor's real interface before claiming an accelerator.
-        from boltz2_opt.cli import build_parser
-        kit_args=command[command.index('pred'):]
-        # Deployment-only --config is consumed by the shell wrapper, not the predictor.
-        index=kit_args.index('--config');del kit_args[index:index+2]
-        build_parser().parse_args(kit_args)
-        receipt.update(status='running',gpu=gpu,cpu_affinity=cpus,argv=command,
+        producer=KIT/'_kit_run.sh';batch_size=request['expected_predictions']
+        if profile=='stock_fp32_serial':
+            producer=Path(policy['serial_producer']);batch_size=1
+            options=['predict',request['input_yaml'],'--out_dir',str(job/'outputs'),'--diffusion_samples',str(request['expected_predictions']),
+                     '--seed','42','--num_workers','0','--preprocessing-threads','1','--output_format','pdb',
+                     '--max_parallel_samples','1','--cache',str(NFS/'.boltz'),'--model','boltz2','--no_kernels']
+            boltz.main.cli.commands['predict'].make_context('predict',options[1:])
+            prefix=command[:command.index('--')+1]
+            command=prefix+[policy['worker_python'],'-u',str(producer)]+options
+        elif profile=='exact':
+            # Verify the installed predictor's real interface before reserving.
+            from boltz2_opt.cli import build_parser
+            kit_args=command[command.index('pred'):]
+            index=kit_args.index('--config');del kit_args[index:index+2]
+            build_parser().parse_args(kit_args)
+        else:raise ValueError('Unsupported numerical profile')
+        receipt.update(status='running',phase='predicting',gpu=gpu,cpu_affinity=cpus,argv=command,
                        load_before=os.getloadavg(),thread_limits={name:env[name] for name in THREADS},
-                       started_at=time.time(),producer_sha256=sha(KIT/'_kit_run.sh'),
+                       started_at=time.time(),producer_sha256=sha(producer),
                        lengths=[len(e['protein']['sequence']) for e in document['sequences'] if 'protein' in e],
-                       requested_samples=request['expected_predictions'],batch_size=request['expected_predictions'],
-                       numerical_profile='exact',peak_allocated_memory=None,peak_reserved_memory=None)
+                       requested_samples=request['expected_predictions'],batch_size=batch_size,
+                       numerical_profile=profile,peak_allocated_memory=None,peak_reserved_memory=None)
         write(job/'receipt.json',receipt)
         with (job/'predictor.log').open('ab') as log:
             predictor=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,env=env,start_new_session=True)
@@ -175,6 +225,13 @@ def worker(job):
                 time.sleep(5)
         files=sorted((job/'outputs').rglob('*_model_*.pdb'))
         confidence=sorted((job/'outputs').rglob('confidence_*_model_*.json'))
+        for line in (job/'predictor.log').read_text(errors='replace').splitlines():
+            if line.startswith('{'):
+                try:measurement=json.loads(line)
+                except ValueError:continue
+                if measurement.get('producer')=='boltz_serial_fp32_v1_finish':
+                    receipt['peak_allocated_memory']=measurement.get('peak_allocated_bytes')
+                    receipt['peak_reserved_memory']=measurement.get('peak_reserved_bytes')
         if predictor.returncode or len(files)!=request['expected_predictions'] or len(confidence)!=len(files):
             raise RuntimeError(f'Incomplete prediction: rc={predictor.returncode}, coordinates={len(files)}, confidence={len(confidence)}')
         destination=job/'ensemble';destination.mkdir(exist_ok=True)
@@ -184,7 +241,8 @@ def worker(job):
             target.symlink_to(file)
         producer={'input_sha256':request['input_sha256'],'execution_sha256':request['execution_sha256'],
                   'predictions':[{'path':str(p),'sha256':sha(p)} for p in destination.glob('*.pdb')],
-                  'producer':receipt,'mode':'exact','seed':42,'chemical_component_sources':component_sources,
+                  'producer':receipt,'mode':profile,'seed':42,'chemical_component_sources':component_sources,
+                  'ligand_atom_maps':ligand_atom_maps,
                   'format_policy':{'generic_ligand_residue_names':['LIG']}}
         write(job/'prediction_manifest.json',producer)
         receipt.update(status='complete',prediction_dir=str(destination),prediction_manifest=str(job/'prediction_manifest.json'),
@@ -195,6 +253,8 @@ def worker(job):
         receipt.update(status='failed',error=receipt.get('error') or f'{type(exc).__name__}: {exc}')
     finally:
         receipt['finished_at']=time.time(); write(job/'receipt.json',receipt)
+        if dispatch_claim:
+            (dispatch_claim/'owner.json').unlink();dispatch_claim.rmdir()
 
 def check_prediction_pool(document,pool):
     """Only the same molecular system can block a new target-substrate prediction."""
@@ -274,11 +334,23 @@ def adapter():
                 raise RuntimeError('A cofold is already outstanding; reconcile it first')
             write(job/'request.json',request)
             write(job/'receipt.json',{'idempotency_key':key,'status':'queued'})
-            argv=[str(PYTHON),'-u',str(Path(__file__).resolve()),'--state-dir',str(ROOT),'--worker',str(job)]
-            remote='nohup '+shlex.join(argv)+' > '+shlex.quote(str(job/'worker.log'))+' 2>&1 < /dev/null &'
-            result=subprocess.run(['ssh','-o','BatchMode=yes','-o','ConnectTimeout=10','lambda13',remote],capture_output=True,text=True,timeout=25)
-            if result.returncode:
-                write(job/'receipt.json',{'idempotency_key':key,'status':'unknown','error':'SSH submission uncertain; reconcile instead of retrying'})
+            policy=request['resource_policy'];host=policy.get('execution_host','lambda13')
+            argv=[policy.get('worker_python',str(PYTHON)),'-u',str(Path(__file__).resolve()),'--state-dir',str(ROOT),'--worker',str(job)]
+            if host==socket.gethostname().split('.')[0]:
+                if policy.get('gpu_cpu_affinity'):
+                    argv=['taskset','-c',','.join(map(str,policy['gpu_cpu_affinity']))]+argv
+                environment=os.environ.copy()
+                if policy.get('library_path'):environment['LD_LIBRARY_PATH']=policy['library_path']
+                with (job/'worker.log').open('ab') as log:
+                    process=subprocess.Popen(argv,stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,
+                        env=environment,start_new_session=True)
+            else:
+                if policy.get('library_path'):argv=['env','LD_LIBRARY_PATH='+policy['library_path']]+argv
+                remote='nohup '+shlex.join(argv)+' > '+shlex.quote(str(job/'worker.log'))+' 2>&1 < /dev/null &'
+                result=subprocess.run(['ssh','-o','BatchMode=yes','-o','ConnectTimeout=10',host,remote],capture_output=True,text=True,timeout=25)
+                if result.returncode:
+                    write(job/'receipt.json',{'idempotency_key':key,'status':'unknown','error':'SSH submission uncertain; reconcile instead of retrying',
+                        'submission_stderr':result.stderr[-1000:]})
             receipt=read(job/'receipt.json')
         if request['operation']=='status' and receipt.get('status') in {'queued','running'}:
             # A producer may still be alive after its coordinator vanished: never reset its claim here.

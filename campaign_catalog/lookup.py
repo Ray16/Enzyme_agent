@@ -6,6 +6,46 @@ from pathlib import Path
 import yaml
 
 
+def physical_system_key(document):
+    """Exact molecular inventory, charge/stereo, copies and restraints; ignore labels."""
+    from collections import Counter
+    from rdkit import Chem
+    entities=[]
+    for item in document.get('sequences',[]):
+        protein=item.get('protein');ligand=item.get('ligand')
+        value=protein or ligand
+        if not value:continue
+        copies=len(value['id']) if isinstance(value.get('id'),list) else 1
+        if protein:
+            identity=('protein',protein['sequence'],bool(protein.get('cyclic')),
+                      json.dumps(protein.get('modifications') or [],sort_keys=True))
+        elif ligand.get('ccd'):identity=('ccd',ligand['ccd'])
+        else:
+            molecule=Chem.MolFromSmiles(ligand['smiles'])
+            if molecule is None:raise ValueError('Invalid cached molecular structure')
+            identity=('smiles',Chem.MolToSmiles(molecule,isomericSmiles=True))
+        entities.extend([identity]*copies)
+    inventory=sorted((list(key),count) for key,count in Counter(entities).items())
+    return hashlib.sha256(json.dumps({'entities':inventory,'constraints':document.get('constraints') or []},sort_keys=True).encode()).hexdigest()
+
+
+def lookup_exact_system(campaign_dir,document,minimum_poses=50):
+    """Reuse eligibility requires fingerprinted inputs and a complete saved ensemble."""
+    proteins=[item['protein']['sequence'] for item in document['sequences'] if item.get('protein')]
+    result=lookup_predictions(campaign_dir,sequence=proteins[0]);wanted=physical_system_key(document);matches=[]
+    for match in result['matches']:
+        source=(match.get('setup') or {}).get('input_source') or {};path=Path(source.get('path',''))
+        execution=match['execution']
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=source.get('sha256'):continue
+        if physical_system_key(yaml.safe_load(path.read_text()))!=wanted:continue
+        if execution.get('output_presence')!='complete' or (execution.get('expected_poses') or 0)<minimum_poses:continue
+        coordinates=[a for a in execution.get('artifacts') or [] if Path(a.get('path','')).suffix.lower() in {'.pdb','.cif'}]
+        if len(coordinates)<minimum_poses:continue
+        if any(not Path(a['path']).is_file() or hashlib.sha256(Path(a['path']).read_bytes()).hexdigest()!=a.get('sha256') for a in coordinates):continue
+        matches.append(match)
+    return {**result,'exact_system_matches':matches,'physical_system_key':wanted}
+
+
 def lookup_predictions(campaign_dir, *, accession=None, sequence=None, target_id=None,
                        required_ligand_smiles=None):
     """Find candidate systems for review; an identity match does not authorize reuse."""
