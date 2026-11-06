@@ -201,3 +201,21 @@ def test_live_replay_reports_decorated_identifiers_and_unsupported_positive_deci
     assert 'Unknown or duplicate accession' in response_contract_errors(message(invalid), request)
     invalid = assessment(); invalid['evidence_level'] = 'speculative'
     assert 'Unsupported positive decision' in response_contract_errors(message(invalid), request)
+
+
+def test_behavior_comparison_does_not_treat_matching_failures_as_success(tmp_path, monkeypatch):
+    from enzyme_discovery_agent.eval import efficiency_behavior
+    from enzyme_discovery_agent import request_efficiency
+    sent = []
+    def fake_run(output, model, budget):
+        messages = [{'role': 'tool', 'content': '{ "fact": 1 }'}]
+        sent.append(request_efficiency.compact_json_messages(messages)[0]['content'])
+        return {'passed': False, 'tokens': 12,
+                'cases': [{'case': 1, 'passed': False, 'revision_passed': False}]}
+    monkeypatch.setattr(efficiency_behavior, 'run', fake_run)
+    original = request_efficiency.compact_json_messages
+    result = efficiency_behavior.compare(tmp_path/'comparison', 'synthetic-model', 100)
+    assert result['matched_executed_outcomes']
+    assert not result['both_arms_passed']
+    assert sent == ['{ "fact": 1 }', '{"fact":1}']
+    assert request_efficiency.compact_json_messages is original

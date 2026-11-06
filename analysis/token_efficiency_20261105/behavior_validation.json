@@ -1,0 +1,84 @@
+{
+  "comparison": {
+    "model": "claude-code:claude-sonnet-5-5",
+    "token_allowance": 120000,
+    "both_arms_passed": false,
+    "matched_executed_outcomes": false,
+    "tokens": {
+      "baseline": 35978,
+      "optimized": 35724
+    },
+    "outcomes": {
+      "baseline": [
+        {
+          "case": 1,
+          "passed": false,
+          "revision_passed": null,
+          "surviving_work": [
+            "SYNTH_PENDING_beta"
+          ],
+          "surviving_after_revision": null
+        },
+        {
+          "case": 2,
+          "passed": true,
+          "revision_passed": true,
+          "surviving_work": [
+            "SYNTH_PENDING_alpha"
+          ],
+          "surviving_after_revision": [
+            "SYNTH_PENDING_alpha",
+            "SYNTH_PENDING_beta"
+          ]
+        }
+      ],
+      "optimized": [
+        {
+          "case": 1,
+          "passed": true,
+          "revision_passed": true,
+          "surviving_work": [
+            "SYNTH_PENDING_beta"
+          ],
+          "surviving_after_revision": [
+            "SYNTH_PENDING_alpha",
+            "SYNTH_PENDING_beta"
+          ]
+        },
+        {
+          "case": 2,
+          "passed": true,
+          "revision_passed": true,
+          "surviving_work": [
+            "SYNTH_PENDING_alpha"
+          ],
+          "surviving_after_revision": [
+            "SYNTH_PENDING_alpha",
+            "SYNTH_PENDING_beta"
+          ]
+        }
+      ]
+    },
+    "scope": "Pre-existing synthetic evidence-swap and executed revision cases. Baseline disables only JSON whitespace normalization; schemas and scientific rules are identical.",
+    "limitations": [
+      "Single execution per arm; stochastic variation and cache-order effects remain.",
+      "These are development cases, not real enzyme discovery or a held-out hit-rate estimate."
+    ]
+  },
+  "artifacts": {
+    "comparison": {
+      "path": "analysis/token_efficiency_20261105/live_behavior_01/comparison.json",
+      "sha256": "aea7ddeea957d0ae68b8b772c393fcc031a87158e74ff15b5410ff3dc1dee9b4"
+    },
+    "guard_replay": {
+      "path": "analysis/token_efficiency_20261105/live_behavior_01/baseline_guard_replay/guard_check.json",
+      "sha256": "d619763900c399c9dbcbf67d11dbead604f6b9aae2ea9d34628f8bc88f3c1f3b"
+    }
+  },
+  "guard_checks": {
+    "invalid_calls_rejected": true,
+    "pending_work_preserved": true,
+    "source_campaign_unchanged_by_replay": true
+  },
+  "interpretation": "Optimized formatting passed both evidence-swap cases and both executed revisions. The strict paired comparison is not an all-pass result: baseline case 1 returned an invalid revision. This is not evidence of a formatting-induced improvement, statistical noninferiority, or real enzyme recovery."
+}

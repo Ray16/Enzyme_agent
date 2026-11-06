@@ -1,0 +1,31 @@
+{
+  "objective": "Improve token efficiency carefully while preserving pipeline correctness.",
+  "decisions": [
+    {
+      "area": "Evidence payloads",
+      "outcome": "Exact sharing and tabular encoding implemented behind an off-by-default switch. Offline reconstruction passed 71 saved batches. Live scientific decision divergence prevented default rollout."
+    },
+    {
+      "area": "Controller context",
+      "outcome": "Default whitespace-only JSON projection preserves source strings, numeric lexemes, duplicate keys, provider metadata, tool pairing and stored transcript. Current request profiling measures its input-size effects. No additional evidence truncation or memory-window reduction shipped."
+    },
+    {
+      "area": "Review output",
+      "outcome": "Existing concise assessment guidance retained. No hard output cap or schema-field removal introduced; live evaluation showed that smaller input can increase output. Such changes were not justified by the evidence."
+    },
+    {
+      "area": "Repair overhead",
+      "outcome": "Explicit exact-accession and positive-decision constraints added. Corrected live replay returned valid structured records. Invalid outputs remain rejected rather than silently repaired or admitted."
+    },
+    {
+      "area": "Pipeline validation",
+      "outcome": "Latest full runtime suite: 1252 passed, 8 skipped. Live controller/checkpoint smoke passed. Integration covers actual review admission, ranking, checkpoint/resume and modeling intake with synthetic provider data, both encodings. Current behavior harness: optimized passes both cases and revisions; baseline failure is retained."
+    }
+  ],
+  "limitations": [
+    "No new production discovery campaign or GPU job was launched.",
+    "Real-world enzyme recovery and statistical noninferiority are not established.",
+    "Aggressive evidence factoring is experimental and remains disabled."
+  ],
+  "acceptance": "Default changes preserve supplied evidence and pass the exercised pipeline paths. Higher-risk representation changes were evaluated and withheld from default use rather than claiming unverified equivalence."
+}
