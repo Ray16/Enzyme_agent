@@ -115,7 +115,7 @@ are required for remote execution. No shell startup files are changed.
 The registered RFD4 worker above targets H100 and rejects V100. A separate
 FP32, eager compatibility profile supports V100 runs through the shared GPU
 reservation system. Its reusable batch wrapper, queue tools, and configurable
-attack-geometry reports are in [`tools/rfd4_campaign`](tools/rfd4_campaign/README.md).
+attack-geometry reports are in [`runs/rfd4_campaign`](runs/rfd4_campaign/README.md).
 The installed [`rfd4-proteina-v100` skill](/homes/rzhu/.agents/skills/rfd4-proteina-v100/SKILL.md)
 records the runtime, reservation, preflight, and verification procedure. Follow
 project provider preferences and the `lambda-fleet` skill when submitting a fleet.

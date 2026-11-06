@@ -3,7 +3,7 @@ import importlib.util
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location(
-    'run_logging', Path(__file__).parents[1] / 'tools/rfd4_campaign/run_logging.py')
+    'run_logging', Path(__file__).parents[1] / 'runs/rfd4_campaign/run_logging.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 

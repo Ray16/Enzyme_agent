@@ -180,3 +180,8 @@ campaigns/*/fleet/claims/
 # Generated read-only discovery status page and monitor state
 /index.html
 /analysis/status_monitor/
+
+# Track reusable RFD4 campaign code under runs; generated campaigns stay ignored.
+!enzyme_design_agent/runs/
+enzyme_design_agent/runs/*
+!enzyme_design_agent/runs/rfd4_campaign/
