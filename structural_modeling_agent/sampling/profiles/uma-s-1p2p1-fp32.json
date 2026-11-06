@@ -1,0 +1,27 @@
+{
+  "scope": "water compatibility probe; set charge and multiplicity from reviewed enzyme preparation before production",
+  "model_name": "uma-s-1p2p1",
+  "model": {
+    "id": "uma-s-1p2p1-fp32-general",
+    "factory": "structural_modeling_agent.sampling.backends:uma",
+    "source_revision": "2.21.0",
+    "precision": "ieee-fp32-general",
+    "kwargs": {
+      "checkpoint": "/nfs/lambda_stor_01/homes/rzhu/.cache/huggingface/hub/models--facebook--UMA/snapshots/f611b917d9c68566bbbeccbb0aa0f7cad1696cb2/checkpoints/uma-s-1p2p1.pt",
+      "reference_yaml": "/nfs/lambda_stor_01/homes/rzhu/.cache/fairchem/models--facebook--UMA/snapshots/f611b917d9c68566bbbeccbb0aa0f7cad1696cb2/references/iso_atom_elem_refs.yaml",
+      "charge": 0,
+      "multiplicity": 1
+    },
+    "artifacts": [
+      {
+        "path": "/nfs/lambda_stor_01/homes/rzhu/.cache/huggingface/hub/models--facebook--UMA/snapshots/f611b917d9c68566bbbeccbb0aa0f7cad1696cb2/checkpoints/uma-s-1p2p1.pt",
+        "sha256": "b2673b85037b075674c25f55c34ffe1ff1e15db924be977b10a184765df0d5ce"
+      },
+      {
+        "path": "/nfs/lambda_stor_01/homes/rzhu/.cache/fairchem/models--facebook--UMA/snapshots/f611b917d9c68566bbbeccbb0aa0f7cad1696cb2/references/iso_atom_elem_refs.yaml",
+        "sha256": "8d6b57a33c6a139f80cd706f253a030bd9d93cbfb1bbe33fba066e23b7e8c29e"
+      }
+    ],
+    "force_check_tolerance_eV_per_A": 0.02
+  }
+}
