@@ -306,6 +306,8 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
         rows.pop()
         request=request_view()
     fields={key:{'type':'string'} for key in ('accession','reason','mechanism_and_step','revisit_when')}
+    fields['accession']['description'] = (
+        'Exact supplied accession only. Put the protein name in reason, never in accession.')
     # Batch identifiers are validated against the saved packet on admission.
     # Keeping them out of tool schemas preserves the provider's cache prefix.
     fields.update(decision={'type':'string','enum':['prioritize','investigate','defer','exclude']},
@@ -356,13 +358,19 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
         'a substrate being listed in a database does not establish that it is a good substrate. '
         'A database reaction annotation, reviewed status, or literature hit count '
         'does not alone establish experimental characterization. '
+        'For prioritize or investigate, evidence_level must be direct_target_observation or mechanistic_transfer '
+        'and strengths must contain candidate-specific support. Otherwise defer; never upgrade the evidence level just to satisfy validation. '
         'Keep each assessment around 200–250 words total, using concise source-specific findings. '
         'Avoid repeating the target description or generic caveats in multiple fields. '
         'Do not invent evidence, experiments, identities or missing native substrates.')
     common={key:request[key] for key in ('target','target_inputs')}
+    from enzyme_discovery_agent.request_efficiency import factor_evidence, serialized
+    candidate_request = {'candidates': request['candidates']}
+    if config.TARGET_REVIEW_FACTOR_EVIDENCE:
+        candidate_request = factor_evidence(request['candidates'])
     response=llm.call(messages=[{'role':'system','content':prompt},
         {'role':'user','content':json.dumps(common,separators=(',',':'))},
-        {'role':'user','content':json.dumps({'candidates':request['candidates']},separators=(',',':'))}],
+        {'role':'user','content':serialized(candidate_request)}],
         tools=[tool],timeout=180,usage_label='target_relevance_batch')
     output={'assessed':[],'errors':[],'provider_faults':[]}
     candidate_errors={}
@@ -421,6 +429,7 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
             attempts_by_candidate[row['accession']]=attempt
     atomic_write_json(path,{'id':identifier,'created_at':datetime.now(timezone.utc).isoformat(),
         'packet':packet,'result':output,'attempts':attempts_by_candidate,
+        'request_projection':candidate_request,
         'response':response.choices[0].message.model_dump() if response else None})
     from enzyme_discovery_agent.models.reasoning_trace import capture_scientific_record
     capture_scientific_record(root,'target_review_batch_recorded',path)

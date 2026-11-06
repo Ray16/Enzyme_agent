@@ -175,6 +175,7 @@ REFLECTION_INTERVAL = 5  # reflect every N iterations
 MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION = 4  # bounded evidence tranche before a model decision; never a scientific stopping rule
 TARGET_REVIEW_BATCH_SIZE = 8  # amortize the shared target context across distinct candidates
 TARGET_REVIEW_MAX_REQUEST_CHARS = 100000  # reduce batch size, never truncate scientific records
+TARGET_REVIEW_FACTOR_EVIDENCE = os.environ.get("ENZYME_TARGET_REVIEW_FACTOR_EVIDENCE", "0") == "1"
 # Priority decisions do not write the separate target-assessment record.
 # Service that queue in both controller modes, with a bounded tranche so source
 # retrieval and sequence resolution retain model turns.

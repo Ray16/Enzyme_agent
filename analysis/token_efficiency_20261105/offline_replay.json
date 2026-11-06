@@ -1,0 +1,594 @@
+{
+  "measurement": "compact_json_characters_in_candidate_message",
+  "limitations": [
+    "Not provider token counts or cost.",
+    "Exact reconstruction does not establish unchanged model decisions.",
+    "Saved runs are development data, not held-out discovery evaluation."
+  ],
+  "runs": [
+    {
+      "run": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+      "batches": [
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_03b7917bf84447e7b34c38a81992d9b4.json",
+          "sha256": "50e4baf34b5e2b906c5aeb4ade14b0b6683d0b5a2e794292c2ceb3668dd9dea6",
+          "candidates": 1,
+          "before_characters": 7958,
+          "after_characters": 7568,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_069f91a99bed4a91a76ab090b0dca2f7.json",
+          "sha256": "86286720f13fa50203c601bd4f05245a140f1a54715a1a619ae9a3c0f6bd5fd6",
+          "candidates": 4,
+          "before_characters": 21315,
+          "after_characters": 19421,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_089349b5e038499488e2e9be9d30f958.json",
+          "sha256": "2e2bcc24530a1f23aa05f93e6c788d02047afe19a3f39d382ed6b3dd4bcca976",
+          "candidates": 8,
+          "before_characters": 62620,
+          "after_characters": 53613,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_0b399370f92c41959cc632152f692855.json",
+          "sha256": "e1947698a20ee6968fd8a07971d72b0ddfec5d3694e5b66378c398bf7d788fe0",
+          "candidates": 2,
+          "before_characters": 19652,
+          "after_characters": 14847,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_11793fd89a6b4d4fbfe1c9441c7a27de.json",
+          "sha256": "127788e9cece704f0142789bf7bc9f9e94c09817b36b83ceaad2820e3941993b",
+          "candidates": 4,
+          "before_characters": 17550,
+          "after_characters": 16123,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_17fae58654014af6b0346fe87557ec26.json",
+          "sha256": "4b0f149fd97b29b70a9c26304d317df106b9f0881694335da5bdbc331cabe92b",
+          "candidates": 8,
+          "before_characters": 35544,
+          "after_characters": 32242,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_1e200a88a09e4a63ab3df421bfd27e7e.json",
+          "sha256": "0aefa982529a8cc0e7d37c7f117124cc1d5a7518df48e3860e8792a53edbbfcb",
+          "candidates": 1,
+          "before_characters": 6250,
+          "after_characters": 6250,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_20d8077b6059446bb077f678b672daeb.json",
+          "sha256": "e678b0f2ea2f7df11f30346d4844e0cc8aba8bbe3844ae106e5babfe9cfc2148",
+          "candidates": 8,
+          "before_characters": 67976,
+          "after_characters": 56232,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_25c3079c804a456398b36cb8e5915536.json",
+          "sha256": "9c8edf23ed02fc8d8a8ee0f341d56f4631219379feda11179eee1d295012de76",
+          "candidates": 3,
+          "before_characters": 27620,
+          "after_characters": 24534,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_2891bfbc5e20462dae143cb57fefb07b.json",
+          "sha256": "a409f78b34e50c44748a8ffd06ce1d3a0c22d7aade2d1ba0d0a94dab36a0c4df",
+          "candidates": 8,
+          "before_characters": 34755,
+          "after_characters": 31314,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_2a0105d6032e4be5bc4b7f84e849cdd3.json",
+          "sha256": "14889535e304673ca966f2486a1c65765cf63e873ebbf22eefe7f4a7a41386db",
+          "candidates": 4,
+          "before_characters": 35142,
+          "after_characters": 28593,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_34107ab3cc364a1eb97ac9b4e7115904.json",
+          "sha256": "69f1b0a38d1f99d7e50e2dd7ded6fe963fe54bf5b0a802a19395c587dcec010a",
+          "candidates": 3,
+          "before_characters": 12287,
+          "after_characters": 11457,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_483e3b86dd244528ac0ed1bfc8e61101.json",
+          "sha256": "7cd5aad443ead532cb3606d8f1f651c11181e951bb90843d89984ddaadc90f09",
+          "candidates": 8,
+          "before_characters": 49038,
+          "after_characters": 39786,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_4bc859f83601498ba67e9c186c2bf0a6.json",
+          "sha256": "6c25b2faf1069709661e0cac6f0bc8b3c69b5050ea9b113f25a3d1438bd64d82",
+          "candidates": 7,
+          "before_characters": 30761,
+          "after_characters": 27870,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_50cb2de515fb45eab8ea6531d5dc8f53.json",
+          "sha256": "a33ee03fd16513fc2597b5a0d5964cf9899cb7c67d07c2954313c69432468568",
+          "candidates": 2,
+          "before_characters": 16763,
+          "after_characters": 15101,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_51ce23428b344a4ebc8a3f8dea529a9d.json",
+          "sha256": "02fcc3d11f75e8dd1cd364b747385c6cbb9a093d0d6bf633acbc366adca5f2c7",
+          "candidates": 8,
+          "before_characters": 66336,
+          "after_characters": 47724,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_597b8aceb42e4607bc7ca0d1bfecb990.json",
+          "sha256": "9e885f9ca5e07767588a02b59b685f0fcc84750c730574dfa8ad4c450e0189f3",
+          "candidates": 8,
+          "before_characters": 65777,
+          "after_characters": 54167,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_65237beea8d24d6caef451b47b2c30ee.json",
+          "sha256": "67a806337333a90ce97a9876506b1a4d0b92048833a5d04f0641ef12cb0353d9",
+          "candidates": 1,
+          "before_characters": 7898,
+          "after_characters": 7508,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_66febd7b7a5e458d975c7c9888b28609.json",
+          "sha256": "93a2a338e881f4f0111c248b5c38bdbac64bc1678261d6f0a560a59ad6724327",
+          "candidates": 8,
+          "before_characters": 69975,
+          "after_characters": 56865,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_859771d1b53e46d09bf7c1919bedc3d8.json",
+          "sha256": "2a2aee0a1d37a1df74b0ca56d936707fa431b66d22324601c6044ad52c88e16f",
+          "candidates": 1,
+          "before_characters": 7837,
+          "after_characters": 7487,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_933fa98766074587a1028dd046d6d1f2.json",
+          "sha256": "23ee6f22c1612fb69484dde49f2f13ee4614efb986f095096552e3a5eed12ecf",
+          "candidates": 8,
+          "before_characters": 37986,
+          "after_characters": 34144,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_988e21edec314cb5baa5209c43e96d5d.json",
+          "sha256": "b98d889b339ac9ba4197cc8a316015b29139cb98f9103938ddaff612a40a5115",
+          "candidates": 8,
+          "before_characters": 56175,
+          "after_characters": 48958,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_a1282a7bcfb449658eb7d11ff9f00273.json",
+          "sha256": "3343d8f7ebe063715b6b8022161224cec0433179ef91494d8c658ae7472d23a5",
+          "candidates": 2,
+          "before_characters": 13834,
+          "after_characters": 13422,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_a1360ba45afb408994b1eb7de5b3e15e.json",
+          "sha256": "c93434c7943f8c935c1fce8774eb09c4c8819ac90de940d356882a344c503fa2",
+          "candidates": 2,
+          "before_characters": 12258,
+          "after_characters": 11380,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_a5e525a9e42e40978d31385aeeee3371.json",
+          "sha256": "d3cd5d726dde1cd284e5a10b43c876e0ac283bfd0c29460a0d8a1c27f0d42b61",
+          "candidates": 1,
+          "before_characters": 6262,
+          "after_characters": 6179,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_a75d2a5eb2a84399ae75df2e160d9fa5.json",
+          "sha256": "9ef98330ed6992d6c103f42f8d8216f67128f8f2fab0711563badb3683bd0bea",
+          "candidates": 8,
+          "before_characters": 42019,
+          "after_characters": 37383,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_bda1162dbd3d451b86ca1ac7eeb89cb6.json",
+          "sha256": "1cb666ac301dc4317a414dc5990b2c207b6b61b3e58cf9df27a18ce3fd5519fd",
+          "candidates": 6,
+          "before_characters": 29879,
+          "after_characters": 27049,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_c0cd527e3e4648cc9f79ec8d8eac78cf.json",
+          "sha256": "4a784189b9b484d7cd529052fae40d84bf8111c876375604f7b0ea5f1c702de4",
+          "candidates": 1,
+          "before_characters": 7660,
+          "after_characters": 7310,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_c1421b44fe7441cfb0d26f16be49a0ea.json",
+          "sha256": "2e4d1c7e61f91055f490dc3bc4eb9d4cf76ec611d05f26172ad48805b96d4197",
+          "candidates": 8,
+          "before_characters": 66376,
+          "after_characters": 55456,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_c2b511774a31430199801646580d1997.json",
+          "sha256": "7fe0df1a7c889322f8aa365dee226e3eb1250fa289f5efac87dde3b1cff17844",
+          "candidates": 1,
+          "before_characters": 7888,
+          "after_characters": 7498,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_c75b9fad072149af941ed2ba26377bb8.json",
+          "sha256": "90756823aed4aeab9b99ab9664108df80b26b245a6d750fd9f58fc7a5db173a1",
+          "candidates": 5,
+          "before_characters": 26300,
+          "after_characters": 24385,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_c9d1c07f97ef4675af21969bea64c6ad.json",
+          "sha256": "527beea64fe40868a82bf120e3689562758e84802e1d81648076702d9db598a5",
+          "candidates": 8,
+          "before_characters": 43062,
+          "after_characters": 37923,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_d20968d2ea77434eaf8f502b8da4cc4e.json",
+          "sha256": "43a5e82e51548d07844675a13981a6affdeff89dd47572543c7232f504cb11c7",
+          "candidates": 3,
+          "before_characters": 19809,
+          "after_characters": 18466,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_dab587f52d06438bae8d82d4f88ccd0d.json",
+          "sha256": "b4eb1ef0feaec9784ce210e954bd7ff081133f5f644859c5709dca904da79646",
+          "candidates": 8,
+          "before_characters": 43556,
+          "after_characters": 38952,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_e84f4378ae9d40caadd93338d35976ce.json",
+          "sha256": "72c31f0fd8b504c1ea1339a2ae79b8033211f10702c3e9d48cbd1c85b7c4d14e",
+          "candidates": 1,
+          "before_characters": 4568,
+          "after_characters": 4565,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_f03424e00a4d4d909392b02104dcc3a0.json",
+          "sha256": "a87d3751307069c0138071b2c124693e027a4dcfbd7cebca6504f3e7bd56ae5e",
+          "candidates": 1,
+          "before_characters": 7943,
+          "after_characters": 7553,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_f3da463ee16240f0b2d8e27e1d0c648c.json",
+          "sha256": "07cd68b9ee1e5bc373a6ae4aa5d1d6d1ba4e59a11741db46515e1d187f8c04f3",
+          "candidates": 2,
+          "before_characters": 13235,
+          "after_characters": 12784,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_f8e774569ddd4826a099216d8a4b09d4.json",
+          "sha256": "bbbe45b9511ff736139f8dd0142f21a05ad0e4133542878025204596d89e04a2",
+          "candidates": 8,
+          "before_characters": 35030,
+          "after_characters": 31651,
+          "round_trip_equal": true
+        }
+      ],
+      "before_characters": 1136894,
+      "after_characters": 983760,
+      "reduction_fraction": 0.1346950551238726
+    },
+    {
+      "run": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine",
+      "batches": [
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_0e61751392d148baa187d5d898446d61.json",
+          "sha256": "ebbc83394298da3754303423cb10061748f0a4532c7cf5aed464bd914028cb5b",
+          "candidates": 8,
+          "before_characters": 67859,
+          "after_characters": 55100,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_160f421637e24a35a1301bddd18d4146.json",
+          "sha256": "03914b62a79cc64e7c395d7e3af1cadfcb390f16b0bb7c31abaff4b25682dafb",
+          "candidates": 8,
+          "before_characters": 57443,
+          "after_characters": 47973,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_17bb80d756d241f7a614d9127989ef87.json",
+          "sha256": "781487c6b4d66bb00e95fcd8385ccdb6b7d760610908b818087762beabe209ab",
+          "candidates": 8,
+          "before_characters": 74962,
+          "after_characters": 64439,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_21dc51212dd943439101c45348a16090.json",
+          "sha256": "b28906b74ed4f269425760f57a70bf22899406a82ac961e779cabe6e11ed6192",
+          "candidates": 6,
+          "before_characters": 54480,
+          "after_characters": 41082,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_226aeff4477746e5bbd733bf1cd3e97b.json",
+          "sha256": "464f85c0b2509208707f342fd35f390ce093b6458ed228c24d6beb97f410b5dd",
+          "candidates": 4,
+          "before_characters": 35312,
+          "after_characters": 27522,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_286b3a550f4a4c47a3ca983c28f50074.json",
+          "sha256": "cde61fd3958363313c4416f058f4a9081c65259fbf777dbd13e5f763726ceac7",
+          "candidates": 5,
+          "before_characters": 47515,
+          "after_characters": 39567,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_3a290349726a402cbf98fa5146a6090c.json",
+          "sha256": "2ceb6aaf30b4ce5fb9b4fdf50af3ba8a57505184cfd3016d8bfec35151a09e4d",
+          "candidates": 1,
+          "before_characters": 10649,
+          "after_characters": 9722,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_481b2c72ba3940b98b9b05b1b96420b0.json",
+          "sha256": "c9f654797d22dfca5e6042450983cd520cbe7307a3433bfd5b622be295931298",
+          "candidates": 8,
+          "before_characters": 78415,
+          "after_characters": 64478,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_487ee1c8fe9246029f30f22236c27947.json",
+          "sha256": "9495aaea3422bbc947803206289eef0ff7fc69592efb38aad2a698f5226b2ba8",
+          "candidates": 8,
+          "before_characters": 71318,
+          "after_characters": 57003,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_51306a9109ca48efb2f8dbb0bb3d0ee4.json",
+          "sha256": "412ac9048a557ad6f18622074367a8e0e0003a88ca03b10f72360b5d59751d8b",
+          "candidates": 8,
+          "before_characters": 80277,
+          "after_characters": 60855,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_5eb3636f4bd045b6a5db1a77ece5f099.json",
+          "sha256": "e309bac5f18d311e935fc65a5885c4dc15e2d5e9fda2c916ad3ea1f8fb6dd775",
+          "candidates": 8,
+          "before_characters": 75151,
+          "after_characters": 62800,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_6233cc68ed704da8be879d3ab93dc24b.json",
+          "sha256": "90e05eb869f57a7d150f20d176080beac3d473db483f234d77db82d309c14386",
+          "candidates": 8,
+          "before_characters": 70174,
+          "after_characters": 54110,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_79b769ef461f439aa99959ec60300d98.json",
+          "sha256": "99a4c3c015c7832bcd8423fc7dd2c524108d4d79b4ed2040c69a78a647d0af15",
+          "candidates": 8,
+          "before_characters": 52071,
+          "after_characters": 44781,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_7af3b1588de94513b6b886b3cccd46b7.json",
+          "sha256": "e69f38e34394a37b67bac432352f5da83e031e631551baadb0126cd009cf60de",
+          "candidates": 3,
+          "before_characters": 26478,
+          "after_characters": 22970,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_7b3efdff542e4dbaadc6b16575bc3087.json",
+          "sha256": "5aa4c8c0fdd98c391fcfc5eb9ed40d3f6501c9c05bc995d7ac7f0f8f44033a41",
+          "candidates": 8,
+          "before_characters": 80268,
+          "after_characters": 66758,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_829ecbe33eed4312b01c0fa31f4836bf.json",
+          "sha256": "90675f55f2ae587ce04071a1b4a2b6cf4b93382238d05f5624716c56d754ea13",
+          "candidates": 8,
+          "before_characters": 73141,
+          "after_characters": 51023,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_88ae38de9a0b437a85164d2e1716ff40.json",
+          "sha256": "ca8ab928a10c77b0b674ed394652dbf5e02732e3c3bc2a7a810480a439002770",
+          "candidates": 1,
+          "before_characters": 10059,
+          "after_characters": 9879,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_8ad961af96a24ec2a904f992c7258f71.json",
+          "sha256": "517bc3b3b5007f51f5f714a2785c21002c90a0a1cc2a403415a1969c266aadb3",
+          "candidates": 8,
+          "before_characters": 60145,
+          "after_characters": 47890,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_8b6018e7e7ee4d0c817028b00bc9d3b1.json",
+          "sha256": "df8e28b7bee4802562431e0d5e59101cffe055069b694371eb28f523300e973a",
+          "candidates": 1,
+          "before_characters": 8840,
+          "after_characters": 8106,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_8fdbed4aaf38475ba4e11cbffb05a722.json",
+          "sha256": "944bfd09259072ceb67df741ff44186630e5a55accf1781b519300e383952849",
+          "candidates": 8,
+          "before_characters": 65717,
+          "after_characters": 57180,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_91df387a57234ca8b5819d21531e3578.json",
+          "sha256": "c73c471602dd9b81201633004394d9148ae1a61b579470c4f4bc301f364865ce",
+          "candidates": 8,
+          "before_characters": 70883,
+          "after_characters": 54667,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_9bb1386a354c46d882e858488dcb7215.json",
+          "sha256": "fa4b249cf0959187487cd9095f64dcb60cf5b7307c73136511020bc280153fb5",
+          "candidates": 4,
+          "before_characters": 38625,
+          "after_characters": 31691,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_a472bc5ae5ba47359bbe065324e077d2.json",
+          "sha256": "6545568d721c816b7f147c6d54ad9b7714f08b6387628d74cca7d8bf7838c3b4",
+          "candidates": 8,
+          "before_characters": 72502,
+          "after_characters": 50893,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_a8ab075f3ffe4cb49198c55cd8a74980.json",
+          "sha256": "d5d721844315cca3ab9768d149875c94b112c2b45ebb155f4c61d8b560413d4c",
+          "candidates": 8,
+          "before_characters": 74481,
+          "after_characters": 52167,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_a99ed19ed35a4fb181cd23d80f42a82b.json",
+          "sha256": "da2229082743dd505260b3c4c80e8ce7c441105f069745b943a5b50df35e36f2",
+          "candidates": 8,
+          "before_characters": 67301,
+          "after_characters": 50806,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_cb0e9d761b7245198cae4a10607be427.json",
+          "sha256": "716d0e7cd6f25e811bdd9c25f99bc87c3a647c171b1e505a2f73e558bb2e0615",
+          "candidates": 8,
+          "before_characters": 70926,
+          "after_characters": 50859,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_cbc7bb7878914791840a0566b182b7ac.json",
+          "sha256": "81c70ad4fe1dcd09914cf700e55c597e02d8d124aaf8b87e24602ce6f025c015",
+          "candidates": 6,
+          "before_characters": 55148,
+          "after_characters": 44535,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_d89a0585e58c49cbbd2cfb0ecc0d87af.json",
+          "sha256": "afba029c95c6d21af9ae868f8af7ca0c502eb91cc7157527d3a43d17cbf3a2ab",
+          "candidates": 8,
+          "before_characters": 70898,
+          "after_characters": 50650,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_e7c565a80f5c414a963c1cf559bd9590.json",
+          "sha256": "5d8acc4f58e42b02f23ed12dbf2254b2738792f17a98ef98b85bfb9f5121129a",
+          "candidates": 8,
+          "before_characters": 70937,
+          "after_characters": 59129,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_eb233976b216449e8746fb6239111953.json",
+          "sha256": "5f6c0d1e5a34cc53244d1c6713b9a7ffb0fd5a0dd991f6141835afbfb78a4a2e",
+          "candidates": 3,
+          "before_characters": 27116,
+          "after_characters": 20063,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_f640925eb57840e0908437213377db13.json",
+          "sha256": "af180944f981686a9bfe13dc0d364824c8fc9f49633264bb33aac7cf25098626",
+          "candidates": 8,
+          "before_characters": 36993,
+          "after_characters": 33123,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_f833b3978d7d4253aeab7c99c6a82ebb.json",
+          "sha256": "8de792d9b731c85b1bd60a2525a55a29eec4b2ec445a37a7fbe8a38bb6be9dc5",
+          "candidates": 2,
+          "before_characters": 15944,
+          "after_characters": 14482,
+          "round_trip_equal": true
+        },
+        {
+          "path": "enzyme_discovery_agent/runs/20261104_004330_Find_enzymes_that_ligate_glutarate_and_cadaverine/artifacts/target_reviews/batch_f8aa20891ba141a0a33c11d62b988928.json",
+          "sha256": "728bce851be9b84bcce553467ca509621b405cb23a6bcd4e49df309899883aa7",
+          "candidates": 8,
+          "before_characters": 81252,
+          "after_characters": 64459,
+          "round_trip_equal": true
+        }
+      ],
+      "before_characters": 1853280,
+      "after_characters": 1470762,
+      "reduction_fraction": 0.20640054390054385
+    }
+  ]
+}

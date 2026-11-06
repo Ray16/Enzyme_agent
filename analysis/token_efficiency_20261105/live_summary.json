@@ -1,0 +1,82 @@
+{
+  "scope": "Development validation; not held-out discovery or full live GPU modeling.",
+  "live_replays": [
+    {
+      "path": "live_review_01/comparison.json",
+      "total_tokens": 65393,
+      "comparisons": [
+        {
+          "source_sha256": "e1947698a20ee6968fd8a07971d72b0ddfec5d3694e5b66378c398bf7d788fe0",
+          "round_trip_equal": true,
+          "responses": {
+            "baseline": {
+              "prompt_tokens": 20155,
+              "completion_tokens": 3544,
+              "total_tokens": 23699,
+              "contract_errors": null,
+              "assessment_count": 2
+            },
+            "factored": {
+              "prompt_tokens": 16974,
+              "completion_tokens": 3830,
+              "total_tokens": 20804,
+              "contract_errors": null,
+              "assessment_count": 2
+            }
+          }
+        },
+        {
+          "source_sha256": "a33ee03fd16513fc2597b5a0d5964cf9899cb7c67d07c2954313c69432468568",
+          "round_trip_equal": true,
+          "responses": {
+            "factored": {
+              "prompt_tokens": 16566,
+              "completion_tokens": 4324,
+              "total_tokens": 20890,
+              "contract_errors": null,
+              "assessment_count": 2
+            }
+          }
+        }
+      ],
+      "limitation": "Stopped at conservative request budget guard before the final baseline request; first factored pair had decorated accessions and was not admissible."
+    },
+    {
+      "path": "live_review_02/comparison.json",
+      "total_tokens": 45260,
+      "comparisons": [
+        {
+          "source_sha256": "e1947698a20ee6968fd8a07971d72b0ddfec5d3694e5b66378c398bf7d788fe0",
+          "round_trip_equal": true,
+          "responses": {
+            "baseline": {
+              "prompt_tokens": 20260,
+              "completion_tokens": 3948,
+              "total_tokens": 24208,
+              "contract_errors": [],
+              "assessment_count": 2
+            },
+            "factored": {
+              "prompt_tokens": 17082,
+              "completion_tokens": 3970,
+              "total_tokens": 21052,
+              "contract_errors": [],
+              "assessment_count": 2
+            }
+          }
+        }
+      ],
+      "finding": "After explicit accession guidance, both arms returned valid exact accessions with matching defer/speculative decisions for both candidates."
+    }
+  ],
+  "defaults": {
+    "evidence_factoring": false,
+    "request_profiling": true,
+    "compact_transport_json": true
+  },
+  "remaining_validation": [
+    "Broader positive, negative and uncertain evidence live comparisons before enabling factoring by default.",
+    "Independent end-to-end discovery quality comparison; saved evidence replay does not measure candidate recovery.",
+    "Controller context changes require profiling evidence before rollout."
+  ]
+}

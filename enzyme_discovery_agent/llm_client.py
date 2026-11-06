@@ -470,7 +470,7 @@ class LLMClient:
                                   to_model=self._backend_label(following), reason=reason)
             self._persist_cascade()
 
-    def _account_response(self, response, backend, label) -> None:
+    def _account_response(self, response, backend, label, *, request_profile_id=None) -> None:
         usage = getattr(self, "_usage", None)
         if usage is None:
             return
@@ -482,6 +482,8 @@ class LLMClient:
             if call is not None:
                 call.update({"request_id": uuid.uuid4().hex,
                              "backend": backend.name, "model": backend.model})
+                if request_profile_id is not None:
+                    call['request_profile_id'] = request_profile_id
                 if (backend.name == "groq" or (backend.name == "gemini"
                         and backend.model in config.GEMINI_FREE_MODEL_PRIORITY)
                         or (backend.name == "argo" and backend.model == config.ARGO_MODEL)):
@@ -573,6 +575,8 @@ class LLMClient:
                     self._model_event("llm_model_reconsider", model=self._backend_label(backend),
                                       reason="previous request-specific skip")
                     break
+        from enzyme_discovery_agent.request_efficiency import request_metrics
+        profile = request_metrics(messages, tools)
         while self._active_idx < len(self.backends):
             if getattr(self, "resource_stop_reason", None):
                 return None
@@ -589,6 +593,10 @@ class LLMClient:
                 self._backend_failures[self._backend_label(backend)] = "daily quota already exhausted"
                 self._advance_backend(index)
                 continue
+            profile_id = uuid.uuid4().hex
+            self._model_event('llm_request_profile', request_profile_id=profile_id,
+                              iteration=usage_label, backend=backend.name,
+                              model=backend.model, **profile)
             response = self._call_backend(
                 backend, messages, tools, temperature, timeout, max_retries, max_tokens)
             if response is not None:
@@ -597,7 +605,8 @@ class LLMClient:
                 # Carry response provenance into the durable tool-call history.
                 if hasattr(response, "choices"):
                     setattr(response, "_enzyme_serving_model", self._backend_label(backend))
-                self._account_response(response, backend, usage_label)
+                self._account_response(response, backend, usage_label,
+                                       request_profile_id=profile_id)
                 return response
             if getattr(self, "budget_exhausted", False):
                 return None

@@ -1,0 +1,23 @@
+{
+  "checks": {
+    "default_suite": {
+      "command_output_sha256": "446d900ef8bb06290048bbb4eeb44686f2575411b01fcba14b72ba61c61346c3",
+      "result": "1247 passed, 8 skipped, 2 warnings, 74 subtests passed in 107.21s (0:01:47)"
+    },
+    "factored_suite": {
+      "command_output_sha256": "1d96068712fba492fa2b92b0dd88e6df82b5c10549f1d645839d07f6e4520be0",
+      "result": "1249 passed, 8 skipped, 2 warnings, 74 subtests passed in 108.25s (0:01:48)"
+    },
+    "live_controller_smoke": {
+      "command_output_sha256": "ec153554a2cca59e4e225865f1ce483957acea761c023575258abd63bec2b5b4",
+      "result": "1 passed in 10.87s"
+    }
+  },
+  "leakage_audit": {
+    "runtime_files_scanned": 141,
+    "findings": [],
+    "scope": "Runtime literals and imports, plus manual review of changed prompts, file reads and cache scope. No new production import of evaluation or historical run data; evidence sharing stays within each request."
+  },
+  "integration_scope": "Synthetic provider and derivation; real review admission, ranking, checkpoint/resume, handoff validation and modeling consumer intake, tested with factoring on and off. No live discovery campaign or GPU predictions launched.",
+  "rollout": "Request profiling, compact transport JSON and clearer output constraints enabled; evidence factoring remains opt-in pending broader model-quality evaluation."
+}
