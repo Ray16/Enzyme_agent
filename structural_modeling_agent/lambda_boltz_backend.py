@@ -25,6 +25,19 @@ THREADS = ('OMP_NUM_THREADS','OMP_THREAD_LIMIT','OPENBLAS_NUM_THREADS',
 def cap_native_threads():
     for variable in THREADS:os.environ[variable]='1'
 
+
+def memory_failure(log, error=''):
+    text=(str(error)+'\n'+log).lower()
+    return any(value in text for value in ('cuda out of memory','cuda error: out of memory',
+        'ran out of memory, skipping batch','torch.outofmemoryerror'))
+
+
+def eligible_gpus(choices, inventory, policy):
+    allowed=policy.get('allowed_gpu_indices')
+    minimum=policy.get('minimum_gpu_memory_mib',0)
+    return [index for index in choices if index in inventory and inventory[index]>=minimum
+            and (allowed is None or index in allowed)]
+
 def read(path):
     return json.loads(Path(path).read_text())
 
@@ -143,6 +156,10 @@ def worker(job):
             choices=[int(line.split()[1]) for line in free.splitlines()
                      if len(line.split())>=2 and line.split()[0]==host and line.split()[1].isdigit()]
             policy=request.get('resource_policy',{});fixed_gpu=policy.get('gpu_index')
+            memory_rows=subprocess.check_output(['nvidia-smi','--query-gpu=index,memory.total',
+                '--format=csv,noheader,nounits'],text=True,timeout=15)
+            inventory={int(line.split(',')[0]):int(line.split(',')[1]) for line in memory_rows.splitlines() if line.strip()}
+            choices=eligible_gpus(choices,inventory,policy)
             if fixed_gpu is not None and not policy.get('allow_any_free_gpu'):
                 choices=[index for index in choices if index==fixed_gpu]
             elif fixed_gpu in choices:choices=[fixed_gpu]+[index for index in choices if index!=fixed_gpu]
@@ -193,6 +210,7 @@ def worker(job):
             build_parser().parse_args(kit_args)
         else:raise ValueError('Unsupported numerical profile')
         receipt.update(status='running',phase='predicting',gpu=gpu,cpu_affinity=cpus,argv=command,
+                       gpu_memory_total_mib=inventory[gpu],
                        load_before=os.getloadavg(),thread_limits={name:env[name] for name in THREADS},
                        started_at=time.time(),producer_sha256=sha(producer),
                        lengths=[len(e['protein']['sequence']) for e in document['sequences'] if 'protein' in e],
@@ -233,6 +251,8 @@ def worker(job):
                     receipt['peak_allocated_memory']=measurement.get('peak_allocated_bytes')
                     receipt['peak_reserved_memory']=measurement.get('peak_reserved_bytes')
         if predictor.returncode or len(files)!=request['expected_predictions'] or len(confidence)!=len(files):
+            if memory_failure((job/'predictor.log').read_text(errors='replace')):
+                receipt['failure_kind']='gpu_out_of_memory'
             raise RuntimeError(f'Incomplete prediction: rc={predictor.returncode}, coordinates={len(files)}, confidence={len(confidence)}')
         destination=job/'ensemble';destination.mkdir(exist_ok=True)
         for file in files+confidence:
@@ -251,6 +271,7 @@ def worker(job):
         if predictor and predictor.poll() is None:
             os.killpg(predictor.pid,signal.SIGTERM); predictor.wait(timeout=60)
         receipt.update(status='failed',error=receipt.get('error') or f'{type(exc).__name__}: {exc}')
+        if memory_failure('',receipt['error']):receipt['failure_kind']='gpu_out_of_memory'
     finally:
         receipt['finished_at']=time.time(); write(job/'receipt.json',receipt)
         if dispatch_claim:

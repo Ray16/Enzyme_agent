@@ -79,12 +79,15 @@ def launch(run,specification,out,launch_workers=False):
                     'numerical_profile':node['profile'],'serial_producer':str(project/'structural_modeling_agent/cofold/boltz_serial_predict.py'),
                     'library_path':STOCK_LIB if node['profile']!='exact' else '',
                     'gpu_index':gpu,'gpu_cpu_affinity':native,'allow_any_free_gpu':True,
+                    'minimum_gpu_memory_mib':minimum_vram,'allowed_gpu_indices':[index for index,_ in eligible],
                     'gpu_dispatch_root':str(out/'gpu_dispatch'),'max_candidate_ensembles':None}}
             backend_path=directory/'backend.json';atomic_write_json(backend_path,backend)
             argv=['taskset','-c',str(front),node['python'],'-u','-m','structural_modeling_agent','family-cofold',
                 '--run',str(Path(run).resolve()),'--specification',str(Path(specification).resolve()),'--backend',str(backend_path),
                 '--out',str(out),'--worker-id',worker_id,'--expand-after-pilot','--watch-seconds','30']
             task=json.loads(Path(specification).read_text())
+            if task.get('pocket_guided_from'):
+                argv+=['--pocket-guided-from',str(task['pocket_guided_from'])]
             pilot=task.get('fleet_pilots',{}).get('small' if small else 'standard')
             if not pilot:
                 queue=json.loads((out/'queue.json').read_text())

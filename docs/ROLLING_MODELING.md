@@ -49,6 +49,14 @@ choosing the same device. The authoritative reservation remains `gpu_reserve run
 Real foreign-user GPU contention stops our affected process and preserves its
 partial work. Completed ensembles are never replaced as a resource retry.
 
+GPU out-of-memory failures are recorded separately, including Boltz's zero-exit
+"skipping batch" failure. The shared job state imposes a cooldown and a limit of
+three distinct OOM attempts. A retry requires a larger memory tier, retains all
+failed artifacts, and preserves the input, prepared MSA and 50-prediction quality
+setting. The native provider rechecks device memory and reservations at dispatch.
+Resource deferrals do not trip the worker's scientific-failure circuit breaker.
+Full saved coordinates are held for validation before any replacement cofold.
+
 H100 workers use the exact optimized profile. V100 workers use the established
 FP32 serial-sampling profile, with 50 predictions, exact-sequence MSA and no
 reaction-geometry restraint. Numerical profiles are recorded separately; they
@@ -60,6 +68,31 @@ Those workers are held; quality was not reduced. The former provisional
 400-residue guard is not a candidate-selection criterion and is no longer the
 fleet default. This task's measured profile now requests at least 24 GiB VRAM.
 Other protocols can declare their own resource requirement.
+
+## Optional pocket-localization arm
+
+The structural agent can prepare a separate broad-pocket test with
+`python -m structural_modeling_agent.family_pockets --run RUN --source BASELINE
+--out GUIDED --max-distance 10`, then execute it using `family-cofold
+--pocket-guided-from BASELINE` and the guided queue's specification. A fleet
+specification can provide `pocket_guided_from` and `pocket_max_distance_A` so new
+eligible baseline members are prepared automatically. Preparation is fingerprinted
+and shared across workers; no member-specific LLM session or new MSA is needed.
+
+The current diagnostic rule selects distant second-step partners, maps a pocket
+around the activated carboxyl end of an identity-verified first-step model, and
+checks that the activated intermediate occupies that region in a second-step
+reference. Insufficient localization or residue mapping stays pending. Residue
+numbers are resolved independently for each member under the shared family rule.
+These pockets are model-derived hypotheses, not experimentally validated sites.
+
+The user-requested historical setup uses `max_distance: 10.0`, `force: true`,
+and a protein-residue pocket list for the amine-bearing ligand. It imposes no
+reactive-atom distance or attack-angle constraint. The original unrestrained
+inputs/results are preserved. A different restraint changes physical-system
+identity, preventing inappropriate reuse of the unrestrained second step.
+First-step structures are reused with their original provenance. Guided
+localization and reactive geometry are reported separately from enzyme activity.
 
 Reuse compares the exact sequence/construct and copy count, ligand structures
 including charge/stereochemistry, cofactor identities/counts and restraints.
@@ -84,6 +117,10 @@ latest-run pointer. Results, inputs and reports stay beneath its `family_cofold`
 - `results/<accession>/step_<n>/`: readable structure and result views.
 - `analysis/pose_geometry.csv`, `analysis/ensemble_summary.csv`, per-ensemble
   plots and separate step comparisons, refreshed after completed ensembles.
+- `analysis/both_steps_comparison.png` and `.svg`: 24 paired candidates ordered
+  by the larger of their two harmonic attack distances; the full paired view is
+  `both_steps_all_candidates.png` and `.svg`. `both_steps_summary.csv` retains
+  all paired rows, including numerical profile and restraint-arm identity.
 
 Comparison figures give each enzyme its own named row, with aligned weighted
 angle and harmonic-distance panels. Plot labels use enzyme symbols or specific
@@ -91,6 +128,14 @@ enzyme names; organism names distinguish homologs. Accessions remain in the
 underlying identity records and tables but are omitted from plot labels.
 The distance axis is explicitly logarithmic. Numerical values and metric
 definitions are unchanged, and vector SVG comparisons accompany the PNGs.
+
+For carbonyl attack, the paired view supplements the legacy leaving-group angle
+with the N–acyl C–carbonyl O angle (approximately 107 degrees as a geometric
+reference), using bond-topology-verified atom maps. The legacy angle against the
+leaving oxygen is not the Bürgi–Dunitz angle and is not interpreted as one.
+Saved scores remain unchanged. The paired ordering is a distance-based display,
+not a calibrated combined activity score. Guided and unrestrained arms remain
+separate, and raw per-pose results are retained.
 
 The existing metric remains `sum(angle/distance)/sum(1/distance)`, with harmonic
 mean distance alongside it. Every pose is retained. No sigmoid, fitted cutoff,

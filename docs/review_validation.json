@@ -146,5 +146,18 @@
     "wall_seconds": 2.67,
     "scope": "Enzyme-name labels and dedicated comparison rows; frozen angle and distance calculations unchanged.",
     "saved_ensemble_metrics_verified": 65
+  },
+  "memory_recovery_and_paired_guidance_20261106": {
+    "passed": 39,
+    "wall_seconds": 2.78,
+    "frozen_ensemble_metrics_verified": 152,
+    "scope": "Zero-exit OOM recovery, memory-tier filtering, bounded retries, complete-coordinate preservation, carbonyl atom identity, paired-step ordering and separate broad-pocket input generation.",
+    "live_validation": {
+      "guided_ensembles_prepared": 63,
+      "guided_workers_submitted": 15,
+      "pilot": "Prediction start and GPU/CPU ownership verified; completion not claimed.",
+      "memory_recovery_workers": 2,
+      "source_run": "20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine"
+    }
   }
 }

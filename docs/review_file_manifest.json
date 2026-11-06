@@ -21,8 +21,8 @@
     },
     {
       "path": "AGENT.md",
-      "bytes": 7521,
-      "sha256": "153317d702d3999c186b0a615f22f2c0e831bd9a4eb3e1c4ec85637475fea142"
+      "bytes": 8284,
+      "sha256": "90138223220cbf1328880bf0a3bc45551d2a28cdb11ee78b9260bc8e91733a25"
     },
     {
       "path": "AGENTS.md",
@@ -111,8 +111,8 @@
     },
     {
       "path": "docs/ROLLING_MODELING.md",
-      "bytes": 6978,
-      "sha256": "9220928996c8995d5f698aae883d3e26cebe8b46a04e5c249ce3dc538f53a098"
+      "bytes": 9977,
+      "sha256": "9ac4c0e435c6fade47adb756283313da036505aa984499f37248e6a18e4fffdc"
     },
     {
       "path": "docs/discovery_agent_framework.md",
@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/review_validation.json",
-      "bytes": 4821,
-      "sha256": "d7041f7eb88be45bd5613939a6e4af026433814d12f5f75f1becb0ae21f6fa1e"
+      "bytes": 5493,
+      "sha256": "f2977bbebad44d855cf4dc49f2d03f26df30af7da2dcd0c285146a75483454c1"
     },
     {
       "path": "docs/rolling_modeling_validation_20261104.json",
@@ -2246,23 +2246,28 @@
     },
     {
       "path": "structural_modeling_agent/family_analysis.py",
-      "bytes": 11503,
-      "sha256": "de5238b9733bd34e11849798d21aef9ced073b4f2f5a1c8efa067d0fa6542866"
+      "bytes": 11944,
+      "sha256": "00f554aed586f072cfb136d492c79750a5e502681ef5ff5802983eda2e3cf22e"
     },
     {
       "path": "structural_modeling_agent/family_cofold.py",
-      "bytes": 36152,
-      "sha256": "5defb0b9e5f5d3181a7a73d88f70e3f38a1f24d9a403b603ba6257800f5e1f7b"
+      "bytes": 39284,
+      "sha256": "19952bbe0bb4cec8d557bdecee6e9306533bc593a8694c00be05a9ed64d71e1f"
     },
     {
       "path": "structural_modeling_agent/family_fleet.py",
-      "bytes": 7841,
-      "sha256": "fd141bb208af93478aa87537e22d96199eaa87bd1e144eedff5a14d7582f70fa"
+      "bytes": 8080,
+      "sha256": "04c80d99261eca3bdccc464ccbc2aec64199cf7c365e7f79b9212caa71f613a3"
     },
     {
       "path": "structural_modeling_agent/family_inflight.py",
       "bytes": 5139,
       "sha256": "1799390e989a19401b4ef331b77836f8af9104dcb2c81b6bf18897af547eb229"
+    },
+    {
+      "path": "structural_modeling_agent/family_pockets.py",
+      "bytes": 11589,
+      "sha256": "7e7f87c48b9d78c73d0a278d794dc0e4775572331500741ff88debfe733df780"
     },
     {
       "path": "structural_modeling_agent/family_sequences.py",
@@ -2306,8 +2311,8 @@
     },
     {
       "path": "structural_modeling_agent/lambda_boltz_backend.py",
-      "bytes": 23001,
-      "sha256": "d2105b5f2cb0df7311e5ff7d77099fa29485ec5bee90057864dda0d17283003c"
+      "bytes": 24178,
+      "sha256": "4585aea778dd2ce12f750fa3a53057d07b501c09bf467ee90d1b2b42bc9608e0"
     },
     {
       "path": "structural_modeling_agent/loop/__init__.py",
@@ -2343,6 +2348,11 @@
       "path": "structural_modeling_agent/loop/tests/test_robustness.py",
       "bytes": 2834,
       "sha256": "04e4830d6f7b78273de73308f0c60c28c1e8344dd9f182ad5b35b03a6e77081a"
+    },
+    {
+      "path": "structural_modeling_agent/memory_retry.py",
+      "bytes": 8351,
+      "sha256": "a70551164064fe42fd2d1a0ceb706b46033ab52fd390ef2b6fb772909d605cfb"
     },
     {
       "path": "structural_modeling_agent/mlmm/README.md",
@@ -2498,6 +2508,11 @@
       "path": "structural_modeling_agent/msa.py",
       "bytes": 9093,
       "sha256": "af31402ad1492f60c6ccc811926d772f35c23ae7ff97cb01305b28e17f1a10fe"
+    },
+    {
+      "path": "structural_modeling_agent/paired_analysis.py",
+      "bytes": 11164,
+      "sha256": "29e2fd6e89c0a0724e8773a3f685187f48d2450dfe9cb624cc0747d59fd389a1"
     },
     {
       "path": "structural_modeling_agent/production.py",
@@ -2685,6 +2700,11 @@
       "sha256": "882ab3a1b2ec8a570f0f8c2c5ab4acdc0da98c95f19861c8313cadf9049814bc"
     },
     {
+      "path": "structural_modeling_agent/tests/test_family_pockets.py",
+      "bytes": 4171,
+      "sha256": "2eb1a66e5fb9d77c52494c5c7b13830bf0b21af196c5801831f2846aa66964b6"
+    },
+    {
       "path": "structural_modeling_agent/tests/test_geometry_candidates.py",
       "bytes": 962,
       "sha256": "0b2d92004ceb2c05fc6505a92f884e9228d849fdde05e6a7382f05a0a09bc4f1"
@@ -2703,6 +2723,11 @@
       "path": "structural_modeling_agent/tests/test_legacy_coordinate_review.py",
       "bytes": 3242,
       "sha256": "b8b9045e655e9b829725015b646da5e176950454f623f71ef50280d4e1b72272"
+    },
+    {
+      "path": "structural_modeling_agent/tests/test_memory_retry.py",
+      "bytes": 6890,
+      "sha256": "c5499723849f1a2a0d92f50455b448e3223c45561fbe7184a21a354f12d857aa"
     },
     {
       "path": "structural_modeling_agent/tests/test_mlmm_gate.py",
@@ -2743,6 +2768,11 @@
       "path": "structural_modeling_agent/tests/test_ntn_pairing.py",
       "bytes": 1295,
       "sha256": "1b0d8250d234b108bbe9550c900949b0bb2afb0f6933aab44017391daf973aa9"
+    },
+    {
+      "path": "structural_modeling_agent/tests/test_paired_analysis.py",
+      "bytes": 4386,
+      "sha256": "12ac1892719985198d5e3912bfc46456f6a2945c3bcc7a84d5c97a1d6a89765e"
     },
     {
       "path": "structural_modeling_agent/tests/test_production_workflow.py",

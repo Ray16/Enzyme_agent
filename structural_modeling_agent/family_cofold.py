@@ -22,6 +22,7 @@ from .modeling_reasoning.literature import LiteratureKnowledge
 from .modeling_reasoning.reaction import ReactionCoordinates
 from .modeling_reasoning.resolve_handoff import resolve_candidate, _load_family_metal
 from .msa import valid_csv
+from .memory_retry import MemoryRetryPending, is_memory_failure, record_failure, retry_backend
 from .scripts.build_step1_inputs import enzyme_chains, modeled_substrates, yaml_for
 
 
@@ -243,10 +244,11 @@ def write_input_index(jobs,directory):
 
 def provider_owner_live(receipt):
     """A terminal receipt still needs PID/start-time reconciliation before retry."""
-    code="from pathlib import Path;import json,sys;r=json.load(sys.stdin);p=Path('/proc/'+str(r['pid'])+'/stat');print(json.dumps(p.exists() and p.read_text().rsplit(')',1)[1].split()[19]==r['process_start_ticks']))"
+    code="from pathlib import Path;import json,sys;r=json.load(sys.stdin);p=Path('/proc/'+str(r['pid'])+'/stat');print(json.dumps((p.exists() and p.read_text().rsplit(')',1)[1].split()[19]==r['process_start_ticks']) or (bool(r.get('predictor_pid')) and Path('/proc/'+str(r['predictor_pid'])).exists())))"
     if receipt.get('host')==socket.gethostname():
         path=Path('/proc/'+str(receipt['pid'])+'/stat')
-        return path.exists() and path.read_text().rsplit(')',1)[1].split()[19]==receipt['process_start_ticks']
+        return ((path.exists() and path.read_text().rsplit(')',1)[1].split()[19]==receipt['process_start_ticks'])
+                or bool(receipt.get('predictor_pid') and Path('/proc/'+str(receipt['predictor_pid'])).exists()))
     command=shlex.join(['/nfs/lambda_stor_01/homes/rzhu/boltz2-venv/bin/python','-c',code])
     result=subprocess.run(['ssh','-o','BatchMode=yes','-o','ConnectTimeout=8',receipt['host'],command],
         input=json.dumps(receipt),text=True,capture_output=True,timeout=20,check=True)
@@ -256,6 +258,7 @@ def provider_owner_live(receipt):
 def execute_job(job, backend, directory,resource_attempt=0):
     """Use the existing reserved native provider, without a modeling-agent session."""
     directory=Path(directory);receipt_path=directory/'receipt.json'
+    backend=retry_backend(directory,backend,provider_owner_live,job)
     state_dir=Path(backend['argv'][backend['argv'].index('--state-dir')+1])
     if not receipt_path.exists():
         for path in directory.parents[1].glob('workers/*/provider/backend_jobs/'+job['id']+'/receipt.json'):
@@ -299,6 +302,9 @@ def execute_job(job, backend, directory,resource_attempt=0):
             'native_archive':str(archive),'resource_attempt':resource_attempt+1})
         time.sleep(5)
         return execute_job(job,backend,directory,resource_attempt+1)
+    if is_memory_failure(receipt):
+        record_failure(directory,receipt,backend['resource_policy'])
+        raise MemoryRetryPending('GPU memory exhausted; queued for a larger device')
     if receipt.get('status')!='complete':raise RuntimeError(receipt.get('error') or str(receipt))
     return receipt
 
@@ -405,10 +411,20 @@ def analyze_outputs(job,receipt):
         ref,donor=min(donors,key=lambda pair:np.linalg.norm(pair[1]-center))
         vector=donor-center;distance=float(np.linalg.norm(vector))
         angle=math.degrees(math.acos(float(np.clip(np.dot(vector,axis)/(distance*np.linalg.norm(axis)),-1,1))))
-        poses.append({'path':str(path),'sha256':prediction['sha256'],'distance_A':distance,'angle_deg':angle,
-                      'identity_issues':issues,'nucleophile':ref})
+        pose={'path':str(path),'sha256':prediction['sha256'],'distance_A':distance,'angle_deg':angle,
+              'identity_issues':issues,'nucleophile':ref}
+        if job.get('pocket_protocol'):
+            protocol=job['pocket_protocol'];contacts={(chain,str(number)) for chain,number in protocol['contacts']}
+            pocket=np.array([value['xyz'] for key,value in atoms.items() if (key[0],key[1]) in contacts and value['protein']])
+            if not len(pocket):raise ValueError('Mapped pocket residues are absent from guided prediction')
+            ligand=np.array([value['xyz'] for key,value in atoms.items() if key[0]==ref[0]])
+            pose['nucleophile_to_pocket_A']=float(np.linalg.norm(pocket-donor,axis=1).min())
+            pose['ligand_to_pocket_A']=float(np.linalg.norm(ligand[:,None,:]-pocket[None,:,:],axis=2).min())
+            pose['pocket_localized']=pose['ligand_to_pocket_A']<=protocol['max_distance_A']
+        poses.append(pose)
     score=weighted_attack_angle([p['distance_A'] for p in poses],[p['angle_deg'] for p in poses])
     return {'poses':poses,'geometry':score,'identity_pass_poses':sum(not p['identity_issues'] for p in poses),
+        **({'pocket_localized_poses':sum(p['pocket_localized'] for p in poses)} if job.get('pocket_protocol') else {}),
         'step':job['step'],'ideal_angle':geometry.get('ideal_angle'),'scope':'Raw step-specific structural observations; no enzyme-activity threshold or cross-step activity ranking.'}
 
 
@@ -424,6 +440,8 @@ def main(argv=None):
     parser.add_argument('--worker-id',default='worker-0')
     parser.add_argument('--msa-cache',type=Path)
     parser.add_argument('--watch-seconds',type=int,default=0)
+    parser.add_argument('--memory-retries-only',action='store_true',help='Recover only saved GPU-memory failures; reuse the existing prepared queue')
+    parser.add_argument('--pocket-guided-from',type=Path,help='Prepare a separate broad-pocket arm from this saved unrestrained family queue')
     args=parser.parse_args(argv);args.out.mkdir(parents=True,exist_ok=True)
     if not re.fullmatch('[A-Za-z0-9_.-]+',args.worker_id):raise ValueError('Unsafe worker identity')
     failed=0;seen=set()
@@ -438,14 +456,21 @@ def main(argv=None):
                     'status':'awaiting_shared_family_protocol','path':str(args.specification),'setup_llm_calls':0})
                 if not args.watch_seconds:return
                 time.sleep(args.watch_seconds);continue
-            specification=json.loads(args.specification.read_text());handoff=build_handoff(args.run,specification)
-            atomic_write_json(args.out/'family_handoff.json',handoff)
-            from .family_sequences import prepare_members
-            candidates=prepare_members(handoff,_prepared_candidates(args.run),args.out/'sequences',
-                args.msa_cache or args.run.parent/'.sequence_msa_cache')
-            jobs,pending=render_jobs(args.run,handoff,args.out/'inputs',candidates)
-            atomic_write_json(args.out/'queue.json',{'items':jobs,'pending':pending,'setup_llm_calls':0})
-            write_input_index(jobs,args.out)
+            specification=json.loads(args.specification.read_text())
+            if args.pocket_guided_from:
+                from .family_pockets import prepare
+                jobs=prepare(args.run,args.pocket_guided_from,args.out,specification.get('pocket_max_distance_A',10.))
+            elif args.memory_retries_only:
+                jobs=json.loads((args.out/'queue.json').read_text())['items']
+            else:
+                handoff=build_handoff(args.run,specification)
+                atomic_write_json(args.out/'family_handoff.json',handoff)
+                from .family_sequences import prepare_members
+                candidates=prepare_members(handoff,_prepared_candidates(args.run),args.out/'sequences',
+                    args.msa_cache or args.run.parent/'.sequence_msa_cache')
+                jobs,pending=render_jobs(args.run,handoff,args.out/'inputs',candidates)
+                atomic_write_json(args.out/'queue.json',{'items':jobs,'pending':pending,'setup_llm_calls':0})
+                write_input_index(jobs,args.out)
             publish_results(args.out,jobs)
             if args.prepare_only:return
             pilot_steps={int(value) for value in args.pilot_steps.split(',')}
@@ -454,6 +479,12 @@ def main(argv=None):
             if pilot_passed:
                 pilot_passed=all(json.loads((args.out/'jobs'/j['id']/'complete.json').read_text())['analysis']['identity_pass_poses']==50 for j in pilot_jobs)
             selected=[j for j in jobs if not args.pilot_accession or (j['accession']==args.pilot_accession and j['step'] in pilot_steps) or (args.expand_after_pilot and pilot_passed)]
+            if args.memory_retries_only:
+                def memory_pending(job):
+                    folder=args.out/'jobs'/job['id'];receipt=folder/'receipt.json'
+                    return (not (folder/'complete.json').exists() and ((folder/'memory_retry.json').exists()
+                        or (receipt.exists() and is_memory_failure(json.loads(receipt.read_text())))))
+                selected=[j for j in selected if memory_pending(j)]
             backend_definition=json.loads(args.backend.read_text())
             provider_root=Path(backend_definition['argv'][backend_definition['argv'].index('--state-dir')+1])
             owned_native={p.parent.name for p in (provider_root/'backend_jobs').glob('*/receipt.json')
@@ -464,7 +495,8 @@ def main(argv=None):
                 import yaml
                 selected=[j for j in selected if max(len(e['protein']['sequence']) for e in yaml.safe_load(Path(j['input_yaml']).read_text())['sequences'] if e.get('protein'))<=args.max_protein_length]
             selected.sort(key=lambda j:(j['rank'],j['step']))
-            for job in selected:
+            deferred=[]
+            for job in {j['id']:j for j in selected}.values():
                 if job['id'] in seen:continue
                 folder=args.out/'jobs'/job['id'];folder.mkdir(parents=True,exist_ok=True)
                 complete=folder/'complete.json'
@@ -510,8 +542,13 @@ def main(argv=None):
                     receipt=execute_job(job,json.loads(args.backend.read_text()),folder)
                     analysis=analyze_outputs(job,receipt)
                     atomic_write_json(complete,{'job':job,'receipt':receipt,'analysis':analysis,'scope':'Complete ensemble with identity checks and step-specific geometry; not experimental activity.'})
+                    memory_state=folder/'memory_retry.json'
+                    if memory_state.exists():
+                        record=json.loads(memory_state.read_text());record['status']='complete';atomic_write_json(memory_state,record)
                     publish_results(args.out,jobs)
                     failed=0;seen.add(job['id'])
+                except MemoryRetryPending as exc:
+                    deferred.append({'job':job['id'],'reason':str(exc)})
                 except Exception as exc:
                     atomic_write_json(folder/'failure.json',{'error':str(exc),'job':job})
                     failed+=1
@@ -520,7 +557,8 @@ def main(argv=None):
                     if shared_claim is not None:release(shared_claim)
                     (claim/'owner.json').unlink();claim.rmdir()
             atomic_write_json(args.out/'workers'/args.worker_id/'current.json',{'status':'waiting_for_new_ranked_candidates' if args.watch_seconds else 'finished',
-                'completed_jobs':len(seen),'setup_llm_calls':0})
+                'completed_jobs':len(seen),'memory_deferred':deferred,'setup_llm_calls':0})
+            if args.memory_retries_only and not selected and not args.watch_seconds:return
             if not args.watch_seconds:return
             time.sleep(args.watch_seconds)
 

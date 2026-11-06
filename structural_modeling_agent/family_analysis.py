@@ -45,6 +45,7 @@ def display_labels(directory,jobs):
         names[accession]=name or _short_name(job['enzyme_name'],meta.get('gene_names') or evidence.get('gene_names'),meta.get('literature_name'))
         organism=meta.get('organism') or evidence.get('organism') or ''
         if isinstance(organism,dict):organism=organism.get('scientificName','')
+        organism=re.sub(r'\s*\(.*$', '',str(organism))
         words=str(organism).split()
         if len(words)>=2:organism=words[0][0]+'. '+' '.join(words[1:])
         organisms[accession]=str(organism)
@@ -128,8 +129,11 @@ def refresh(directory):
                 poses.append({'discovery_run_id':discovery_run_id,'enzyme_name':job['enzyme_name'],'accession':job['accession'],'family_id':job['family_id'],
                     'step':step,'pose':int(re.search(r'_model_(\d+)',Path(pose['path']).name)[1]),'distance_A':pose['distance_A'],'angle_deg':pose['angle_deg'],
                     'normalized_inverse_distance_weight':(1/pose['distance_A'])/total,
+                    'nucleophile_to_pocket_A':pose.get('nucleophile_to_pocket_A'),
+                    'ligand_to_pocket_A':pose.get('ligand_to_pocket_A'),'pocket_localized':pose.get('pocket_localized'),
                     'identity_pass':not pose['identity_issues'],'path':pose['path']})
             summaries.append({'discovery_run_id':discovery_run_id,'enzyme_name':job['enzyme_name'],'accession':job['accession'],'family_id':job['family_id'],
+                'analysis_arm':job.get('analysis_arm','unrestrained'),
                 'step':step,**score,'identity_pass_poses':analysis['identity_pass_poses'],
                 'numerical_profile':result['receipt'].get('numerical_profile'),'result':str(path)})
             folder=out/'ensembles'/job['accession'];folder.mkdir(parents=True,exist_ok=True)
@@ -162,6 +166,8 @@ def refresh(directory):
                 target=out/('step_'+str(step)+'_comparison.'+extension);temporary=target.with_name(target.stem+'.tmp.'+extension)
                 fig.savefig(temporary,dpi=180);os.replace(temporary,target)
             plt.close(fig)
+        from .paired_analysis import write_paired_analysis
+        write_paired_analysis(summaries,labels,out)
         atomic_write_json(status,{'discovery_run_id':directory.parent.name,'signature':signature,'completed_ensembles':len(summaries),'poses':len(poses),
             'metric':'sum(angle/distance) / sum(1/distance)','scope':'Step-specific structural geometry, not demonstrated activity; no cutoffs fitted.'})
 

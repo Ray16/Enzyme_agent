@@ -18,6 +18,8 @@
 - For the current candidate workflow, that metric is the inverse-distance-weighted mean attack angle, `sum(angle / distance) / sum(1 / distance)`, in degrees (larger ranks higher). Report harmonic distance alongside it; do not silently substitute an older sigmoid/Gaussian composite score.
 - Match the established molecular setup when it is supported for the candidate's reaction step. Resolve sequence identity and verify the applicable mechanism, reactive atoms, assembly and cofactors before submission; preserve uncertainty when transfer is unsupported.
 - Report structural results and the metric separately from experimentally established activity. Retain failed poses and incomplete ensembles.
+- Distinguish phosphate inline attack from carbonyl attack. A carbonyl attack angle uses the attacking nucleophile, activated carbonyl carbon and double-bonded carbonyl oxygen, with approximately 107 degrees as a reference; the angle against a leaving-group oxygen is a different quantity. Preserve historical scores and label supplementary measurements explicitly.
+- Let the structural agent decide when a separate pocket-localization test is informative. The user's broad-pocket reference is 10 angstroms with `force: true`; resolve member residue mappings under shared family rules, retain uncertain cases, and do not impose reactive-atom distance or angle restraints to obtain favorable scores. Preserve and label the unrestrained and guided arms separately.
 
 ## Manuscript Overleaf Sync
 
