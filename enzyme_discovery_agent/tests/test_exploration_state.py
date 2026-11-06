@@ -90,6 +90,26 @@ def test_frontier_reads_do_not_mutate_registry_decisions_or_search_ledgers(tmp_p
     assert first["data"]["observational_only"] is True
 
 
+def test_exploration_sources_resolve_name_keys_and_disambiguated_names(tmp_path):
+    name = 'Synthetic / catalyst ~ label'
+    for accession in ('SYNTH_A', 'SYNTH_B'):
+        update_candidate_registry(tmp_path, accession, 'evaluated', {'protein_name': name})
+    path = tmp_path/'candidate_registry.json'
+    before = path.read_bytes()
+    stored = json.loads(before)['candidates']
+    assert len(stored) == 2
+    questions = exploration_state(tmp_path)['questions']
+    sources = {row['accession']: row['source'] for row in questions if row.get('accession')}
+    assert set(sources) == {'SYNTH_A', 'SYNTH_B'}
+    for accession, source in sources.items():
+        filename, fragment = source.split('#', 1)
+        value = json.loads((tmp_path/filename).read_text())
+        for token in fragment.lstrip('/').split('/'):
+            value = value[token.replace('~1', '/').replace('~0', '~')]
+        assert value['accession'] == accession
+    assert path.read_bytes() == before
+
+
 def test_duplicate_accessions_do_not_imply_biological_diversity(tmp_path):
     for i in range(8):
         candidate(tmp_path, f"SYNTHETIC{i}", sequence="ACDEFG")

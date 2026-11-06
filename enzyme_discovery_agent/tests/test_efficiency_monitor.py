@@ -28,6 +28,34 @@ def test_unresolved_names_are_not_counted_as_verified_sequences_or_distinct_fami
     assert result['annotated_family_groups'] == 0
 
 
+def test_name_keyed_records_are_monitored_by_accession_without_changing_the_file(tmp_path):
+    from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
+    update_candidate_registry(tmp_path, 'SYNTH_A', 'evaluated', {
+        'protein_name': 'Synthetic display name', 'sequence': 'ACDEFG',
+        'claim_validation': {'claims': [
+            {'claim_type': kind, 'subject': 'SYNTH_A', 'verdict': 'supported'}
+            for kind in ('accession_identity', 'record_active')]},
+        'target_assessment': {'accession': 'SYNTH_A', 'decision': 'investigate',
+                              'evidence_level': 'mechanistic_transfer'}})
+    path = tmp_path/'candidate_registry.json'
+    before = path.read_bytes()
+    assert 'Synthetic display name' in json.loads(before)['candidates']
+    result = summarize(tmp_path)
+    assert result['verified_sequence_records'] == 1
+    assert result['assessments'][0]['accession'] == 'SYNTH_A'
+    assert result['assessments'][0]['protein_name'] == 'Synthetic display name'
+    assert path.read_bytes() == before
+    # Updating by accession after a display-name change must still reach the
+    # same record, including its status and previously saved assessment.
+    update_candidate_registry(tmp_path, 'SYNTH_A', None, {'protein_name': 'Renamed synthetic catalyst'})
+    from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
+    records = load_candidate_registry(tmp_path, strict=True)['candidates']
+    assert list(records) == ['SYNTH_A']
+    assert records['SYNTH_A']['statuses'][-1]['status'] == 'evaluated'
+    assert records['SYNTH_A']['metadata']['target_assessment']['accession'] == 'SYNTH_A'
+    assert summarize(tmp_path)['assessments'][0]['accession'] == 'SYNTH_A'
+
+
 def test_live_monitor_preserves_journal_and_reports_source_integrity_failure(tmp_path):
     from enzyme_discovery_agent.models.reasoning_trace import append_scientific_trace
     source = tmp_path/'source.json'; source.write_text('{}')

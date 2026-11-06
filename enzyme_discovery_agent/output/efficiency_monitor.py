@@ -7,7 +7,7 @@ from pathlib import Path
 import time
 
 from enzyme_discovery_agent.models.event_log import read_events
-from enzyme_discovery_agent.models.candidate_registry import discovery_status
+from enzyme_discovery_agent.models.candidate_registry import discovery_status, load_candidate_registry
 from enzyme_discovery_agent.run_layout import run_file
 from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
 
@@ -20,7 +20,7 @@ def summarize(root):
     root = Path(root)
     usage = read(run_file(root, 'token_usage.json'), {})
     events = read_events(root)
-    candidates = read(run_file(root, 'candidate_registry.json'), {}).get('candidates', {})
+    candidates = load_candidate_registry(root, strict=True).get('candidates', {})
     stages = defaultdict(lambda: {'calls': 0, 'prompt_tokens': 0, 'completion_tokens': 0})
     for call in usage.get('calls', []):
         label = call.get('iteration')

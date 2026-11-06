@@ -1,0 +1,15 @@
+{
+  "run_dir": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261106_165013_Find_enzymes_that_ligate_glutarate_and_cadaverine_Production_objective_deliver_a",
+  "checked_at": 1794006471.6487799,
+  "registry_lookup_succeeded": true,
+  "candidate_name": "Fatty acid CoA ligase",
+  "candidate_accession": "R4R1U5",
+  "matching_registry_records": 1,
+  "monitor_assessment_accession": "R4R1U5",
+  "verified_sequence_records": 0,
+  "exploration_record_pointers_resolved": 761,
+  "process_same_and_running": true,
+  "registry_repair_required": false,
+  "scope": "Read-only checks; display-name file keys are intentional. Monitoring and source-link readers corrected; existing discovery process continues.",
+  "regression_tests": "58 passed; 4 subtests passed. Covers accession lookup after renaming, monitoring, source-pointer resolution, live progress and evidence recall."
+}

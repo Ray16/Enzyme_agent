@@ -39,9 +39,14 @@ def _grouping_fields(data):
     return view
 
 
-def _source(root, accession):
-    pointer = str(accession).replace("~", "~0").replace("/", "~1")
-    return str(run_file(root, "candidate_registry.json").relative_to(root)) + "#/candidates/" + pointer
+def _source(root, accession, source_keys):
+    path = str(run_file(root, "candidate_registry.json").relative_to(root))
+    key = source_keys.get(accession)
+    if key is None:
+        # An injected or concurrently changed record has no verified file key.
+        return path + "#/candidates"
+    pointer = str(key).replace("~", "~0").replace("/", "~1")
+    return path + "#/candidates/" + pointer
 
 
 def exploration_state(run_dir, *, registry=None, learning=None):
@@ -51,6 +56,8 @@ def exploration_state(run_dir, *, registry=None, learning=None):
         registry = load_candidate_registry(root, strict=True).get("candidates", {})
     if learning is None:
         learning = _read(run_file(root, "family_learning.json"), {})
+    stored = _read(run_file(root, "candidate_registry.json"), {}).get("candidates", {})
+    source_keys = {entry.get("accession") or key: key for key, entry in stored.items()}
     feedback = learning.get("candidates") or {}
     decisions = _read(run_file(root, "family_decisions.json"), {}).get("decisions", {})
     families, groups, sequences, models, questions = {}, {}, defaultdict(list), [], []
@@ -81,7 +88,7 @@ def exploration_state(run_dir, *, registry=None, learning=None):
             row["sequence_records"] += 1
         host = ((data.get("expression_data") or {}).get("preferred_host_assessment") or {}).get("level") or "unknown"
         row["expression_unknown"] += host == "unknown"
-        source = _source(root, accession)
+        source = _source(root, accession, source_keys)
         observation = modeling_feedback_summary(accession, data, source)
         if observation:
             row["modeling_records"] += 1
