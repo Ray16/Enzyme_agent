@@ -159,5 +159,11 @@
       "memory_recovery_workers": 2,
       "source_run": "20261104_160236_Find_enzymes_that_ligate_glutarate_and_cadaverine"
     }
+  },
+  "guided_owner_probe_recovery_20261106": {
+    "passed": 28,
+    "wall_seconds": 0.43,
+    "scope": "Unavailable remote ownership probes defer recovery; system claims publish and retire atomically with preserved owner records.",
+    "live_recovery": "63/64 guided ensembles complete; final DfoC native retry queued on lambda13 awaiting free high-memory GPU."
   }
 }

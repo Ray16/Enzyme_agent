@@ -88,11 +88,13 @@ def acquire(run,job,worker_id):
             if live is not False or (_native_pending(owner['run_dir'],owner['job_id']) and not same_job):return None
             archive=root/'archive';archive.mkdir(exist_ok=True)
             os.rename(claim,archive/(key+'_'+str(time.time_ns())))
-        claim.mkdir()
-        atomic_write_json(claim/'owner.json',{'run_dir':str(run),'discovery_run_id':run.name,'job_id':job['id'],
+        staged=root/'staging'/(key+'_'+str(os.getpid())+'_'+str(time.time_ns()))
+        staged.mkdir(parents=True)
+        atomic_write_json(staged/'owner.json',{'run_dir':str(run),'discovery_run_id':run.name,'job_id':job['id'],
             'worker_id':worker_id,'host':socket.gethostname(),'pid':os.getpid(),
             'process_start_ticks':Path('/proc/self/stat').read_text().rsplit(')',1)[1].split()[19],
             'python':sys.executable,'input_yaml':job['input_yaml'],'physical_system_key':key})
+        os.rename(staged,claim)
         return claim
 
 
@@ -101,4 +103,8 @@ def release(claim):
     claim=Path(claim);owner=json.loads((claim/'owner.json').read_text())
     if owner['host']!=socket.gethostname() or owner['pid']!=os.getpid():
         raise RuntimeError('Cannot release another system owner')
-    (claim/'owner.json').unlink();claim.rmdir()
+    # Retire the populated claim atomically. Interruption cannot leave an empty
+    # public claim that every subsequent worker must conservatively preserve.
+    with state_lock(claim.parent/'dispatch'):
+        archive=claim.parent/'archive';archive.mkdir(exist_ok=True)
+        os.rename(claim,archive/(claim.name+'_released_'+str(time.time_ns())))

@@ -128,3 +128,13 @@ def test_full_saved_ensemble_blocks_refolding_until_validation(failed):
         retry.retry_backend(folder, backend, lambda receipt: False, {'input_sha256': 'same-input'})
     assert native.exists()
     assert json.loads((folder / 'memory_retry.json').read_text())['status'] == 'coordinates_need_validation'
+
+
+def test_unreachable_owner_is_resource_deferral_and_cannot_authorize_replacement(monkeypatch):
+    import subprocess
+    monkeypatch.setattr(family.socket, 'gethostname', lambda: 'controller')
+    def unreachable(*args, **kwargs):
+        raise subprocess.CalledProcessError(255, args[0], stderr='SSH temporarily unavailable')
+    monkeypatch.setattr(family.subprocess, 'run', unreachable)
+    with pytest.raises(retry.MemoryRetryPending, match='preserve attempt'):
+        family.provider_owner_live({'host': 'remote', 'pid': 1234, 'process_start_ticks': '5678'})

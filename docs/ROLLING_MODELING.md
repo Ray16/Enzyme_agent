@@ -56,6 +56,9 @@ failed artifacts, and preserves the input, prepared MSA and 50-prediction qualit
 setting. The native provider rechecks device memory and reservations at dispatch.
 Resource deferrals do not trip the worker's scientific-failure circuit breaker.
 Full saved coordinates are held for validation before any replacement cofold.
+Unavailable remote ownership probes defer the retry without authorizing a
+replacement. Shared system claims are published with their owner record and
+retired into the archive atomically, avoiding empty claims after interruption.
 
 H100 workers use the exact optimized profile. V100 workers use the established
 FP32 serial-sampling profile, with 50 predictions, exact-sequence MSA and no

@@ -250,9 +250,12 @@ def provider_owner_live(receipt):
         return ((path.exists() and path.read_text().rsplit(')',1)[1].split()[19]==receipt['process_start_ticks'])
                 or bool(receipt.get('predictor_pid') and Path('/proc/'+str(receipt['predictor_pid'])).exists()))
     command=shlex.join(['/nfs/lambda_stor_01/homes/rzhu/boltz2-venv/bin/python','-c',code])
-    result=subprocess.run(['ssh','-o','BatchMode=yes','-o','ConnectTimeout=8',receipt['host'],command],
-        input=json.dumps(receipt),text=True,capture_output=True,timeout=20,check=True)
-    return json.loads(result.stdout)
+    try:
+        result=subprocess.run(['ssh','-o','BatchMode=yes','-o','ConnectTimeout=8',receipt['host'],command],
+            input=json.dumps(receipt),text=True,capture_output=True,timeout=20,check=True)
+        return json.loads(result.stdout)
+    except (subprocess.SubprocessError,ValueError,OSError) as exc:
+        raise MemoryRetryPending('Cannot verify previous producer ownership on '+receipt['host']+'; preserve attempt and retry the ownership check') from exc
 
 
 def execute_job(job, backend, directory,resource_attempt=0):

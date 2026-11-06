@@ -111,8 +111,8 @@
     },
     {
       "path": "docs/ROLLING_MODELING.md",
-      "bytes": 9977,
-      "sha256": "9ac4c0e435c6fade47adb756283313da036505aa984499f37248e6a18e4fffdc"
+      "bytes": 10206,
+      "sha256": "5c54c51efc77f08d31a248eca8bd21845872ab0f84e1213acda232bc3ea9670f"
     },
     {
       "path": "docs/discovery_agent_framework.md",
@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/review_validation.json",
-      "bytes": 5493,
-      "sha256": "f2977bbebad44d855cf4dc49f2d03f26df30af7da2dcd0c285146a75483454c1"
+      "bytes": 5858,
+      "sha256": "d6c9d954946caba9038d450903a97a9c0f1294f3dbb9d451a8bcc72b0f3156cb"
     },
     {
       "path": "docs/rolling_modeling_validation_20261104.json",
@@ -2251,8 +2251,8 @@
     },
     {
       "path": "structural_modeling_agent/family_cofold.py",
-      "bytes": 39284,
-      "sha256": "19952bbe0bb4cec8d557bdecee6e9306533bc593a8694c00be05a9ed64d71e1f"
+      "bytes": 39530,
+      "sha256": "6354ebd6a750d30a636d27644001cdeba41eca13fbe4599911860ad2578112ba"
     },
     {
       "path": "structural_modeling_agent/family_fleet.py",
@@ -2261,8 +2261,8 @@
     },
     {
       "path": "structural_modeling_agent/family_inflight.py",
-      "bytes": 5139,
-      "sha256": "1799390e989a19401b4ef331b77836f8af9104dcb2c81b6bf18897af547eb229"
+      "bytes": 5569,
+      "sha256": "e8b66400dcdb4e58a4f83d5511b379a76331914c969dcdb1a93efe341f53bf1e"
     },
     {
       "path": "structural_modeling_agent/family_pockets.py",
@@ -2696,8 +2696,8 @@
     },
     {
       "path": "structural_modeling_agent/tests/test_family_inflight.py",
-      "bytes": 2815,
-      "sha256": "882ab3a1b2ec8a570f0f8c2c5ab4acdc0da98c95f19861c8313cadf9049814bc"
+      "bytes": 3804,
+      "sha256": "f7b5d3c05e6f29e4a1b997f673990300ae942948665fb66323d136f5c28d5eff"
     },
     {
       "path": "structural_modeling_agent/tests/test_family_pockets.py",
@@ -2726,8 +2726,8 @@
     },
     {
       "path": "structural_modeling_agent/tests/test_memory_retry.py",
-      "bytes": 6890,
-      "sha256": "c5499723849f1a2a0d92f50455b448e3223c45561fbe7184a21a354f12d857aa"
+      "bytes": 7457,
+      "sha256": "66f89a104308478428962d482eb66da56c972e45cbcf8c61d11d705a0cf3ac52"
     },
     {
       "path": "structural_modeling_agent/tests/test_mlmm_gate.py",

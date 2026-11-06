@@ -59,3 +59,26 @@ def test_orphan_native_job_without_a_local_claim_still_blocks_other_runs(tmp_pat
     assert guard.acquire(new,b,'new') is None
     own=guard.acquire(old,a,'reattach');assert own is not None
     guard.release(own)
+
+
+def test_claim_is_not_visible_before_its_owner_is_written(tmp_path,monkeypatch):
+    first=tmp_path/'first';candidate=job(first)
+    published=[];write=guard.atomic_write_json
+    def observe(path,value):
+        target=tmp_path/'.family_inflight'/value['physical_system_key']
+        assert not target.exists()
+        published.append(target)
+        return write(path,value)
+    monkeypatch.setattr(guard,'atomic_write_json',observe)
+    claim=guard.acquire(first,candidate,'one')
+    assert published==[claim] and (claim/'owner.json').exists()
+    guard.release(claim)
+
+
+def test_release_retires_owner_and_directory_together(tmp_path):
+    first=tmp_path/'first';claim=guard.acquire(first,job(first),'one')
+    record=json.loads((claim/'owner.json').read_text())
+    guard.release(claim)
+    assert not claim.exists()
+    archived=list((tmp_path/'.family_inflight/archive').glob('*_released_*/owner.json'))
+    assert len(archived)==1 and json.loads(archived[0].read_text())==record
