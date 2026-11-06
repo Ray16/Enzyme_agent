@@ -78,6 +78,26 @@ def test_preparation_and_identity_fail_closed(tmp_path):
         p.load(path)
 
 
+def test_scientific_input_requires_key_residue_protonation_review(tmp_path):
+    path, c, atoms = fixture_config(tmp_path)
+    atoms += Atoms("H", positions=[[10, 10, 10]])
+    write(c["structure"], atoms)
+    c.update(purpose="pose_accessibility", charge=1, structure_sha256=p.digest(c["structure"]),
+             bond_guards=[{"atoms": [0, 1], "min_A": 2.0, "max_A": 4.0}])
+    prep = {"reviewed": True, "structure_sha256": c["structure_sha256"], "protein_lengths": [1],
+            "sequence_sha256": "synthetic", "components": [{"formal_charge": 1, "count": 1}],
+            "assay_conditions": {"pH": 7.5, "pH_source": "synthetic fixture"}}
+    for key in ("protonation_evidence", "solvent_evidence", "metal_evidence", "mechanism_evidence",
+                "reactive_atom_mapping_evidence"):
+        prep[key] = "synthetic fixture"
+    prep_path = tmp_path / "preparation.json"
+    prep_path.write_text(json.dumps(prep))
+    c.update(preparation_report=str(prep_path), preparation_sha256=p.digest(prep_path))
+    path.write_text(json.dumps(c))
+    with pytest.raises(ValueError, match="coverage of catalytic"):
+        p.load(path)
+
+
 def test_resume_reproduces_uninterrupted_langevin(tmp_path, monkeypatch, cpu_run):
     from ase.md.langevin import Langevin
     path, _, _ = fixture_config(tmp_path)

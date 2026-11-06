@@ -169,6 +169,8 @@ def load(config_path):
             raise ValueError("Prepared component charge inventory must sum to total charge")
         if not (atoms.numbers == 1).any() or not c["bond_guards"]:
             raise ValueError("Require explicit hydrogens and reviewed reactant-state bond guards")
+        from .protonation import validate_protonation_review
+        validate_protonation_review(atoms, prep)
         for m in c["models"]:
             if not m.get("source_revision") or not m.get("precision") or not m.get("artifacts"):
                 raise ValueError("Pin model revision, numerical profile and checkpoint artifacts")

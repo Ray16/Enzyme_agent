@@ -56,6 +56,48 @@ component's formal charge must contribute to the full system charge. Net charge
 and spin must agree with electron parity. Binding equilibria, solvent preparation
 and metal-shell quality require scientific review in addition to these checks.
 
+The report also requires documented `assay_conditions` and `key_residue_review`:
+
+```json
+{
+  "assay_conditions": {"pH": 7.5, "pH_source": "Replace with the actual assay evidence"},
+  "key_residue_review": {
+    "coverage_evidence": "How catalytic residues and nearby titratable networks were identified",
+    "histidines": [{
+      "residue_id": "A:123",
+      "state": "HIE",
+      "ND1": 1200,
+      "NE2": 1204,
+      "role": "Replace with the supported catalytic, binding or structural role",
+      "rationale": "Explain the selected tautomer using the complete local environment",
+      "evidence": ["pKa calculation, annotation, structure or independent reference"],
+      "considered_states": ["HID", "HIE", "HIP"],
+      "metal_bindings": []
+    }]
+  }
+}
+```
+
+These are schema illustrations, not protonation assignments or an assay pH for
+this project. Key histidines require explicit HID (ND1-H), HIE (NE2-H), or HIP
+(both nitrogens protonated). Prepared coordinates must retain atom names through
+the `atomnames` or `atomtypes` ASE array. The gate checks their nitrogen identities
+and starting H positions. Declared metal bindings add `nitrogen`, `metal_index`
+and `max_distance_A`; a protonated donor nitrogen or absent coordination blocks
+the run. An empty histidine list requires a scientific coverage explanation.
+Unusual states outside these three variants require an explicit extension and
+validation rather than silently mapping to a standard state.
+
+Use protein pKa predictors to propose assignments, then review catalytic
+histidines, metal ligands, substrate-facing acids/bases and coupled waters with
+the actual ligands and cofactors present. Apo predictions alone cannot establish
+the bound active-site state. Keep ambiguous initial microstates as separate
+prepared inputs, and use each exact input across all three models. Their
+pH-dependent populations and protonation free energies require separate treatment;
+raw total energies or standard MBAR pooling across different proton inventories
+cannot select a preferred state. Proton motion under an MLIP is not constant-pH
+sampling. The gate verifies bookkeeping and starting geometry, not pKa accuracy.
+
 The pilot JSON has `schema_version: 1`, `purpose: "pose_accessibility"`, paths
 and SHA256 values for `structure` and `preparation_report`, explicit `charge` and
 `spin_multiplicity`, plus these simulation fields:

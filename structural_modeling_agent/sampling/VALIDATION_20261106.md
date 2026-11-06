@@ -40,3 +40,11 @@ The exact ordinary UMA checkpoint and references are pinned in
 [`profiles/uma-s-1p2p1-fp32.json`](profiles/uma-s-1p2p1-fp32.json).
 Environment records and inheritance limits are in
 [`environments/README.md`](environments/README.md).
+
+The subsequent protonation gate requires the documented assay pH and a key-residue
+review before scientific MD. Key histidines have explicit HID/HIE/HIP states,
+traceable role/rationale/evidence, atom-name/index checks and starting N-H geometry
+checks. Declared metal-donor nitrogens carrying a proton are rejected. The
+21 targeted sampling/protonation tests pass, including a check that the scientific
+input loader invokes this gate. These tests do not determine enzyme pKa values or
+validate any particular enzyme's protonation assignment.
