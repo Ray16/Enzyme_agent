@@ -184,4 +184,4 @@ campaigns/*/fleet/claims/
 # Track reusable RFD4 campaign code under runs; generated campaigns stay ignored.
 !enzyme_design_agent/runs/
 enzyme_design_agent/runs/*
-!enzyme_design_agent/runs/rfd4_campaign/
+!enzyme_design_agent/runs/as9_motif_design_rfd4_proteina/

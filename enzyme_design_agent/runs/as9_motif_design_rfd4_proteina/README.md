@@ -1,6 +1,6 @@
-# Reusable RFD4 campaign tools
+# AS9 motif design with RFD4-Proteina
 
-Canonical location: `enzyme_design_agent/runs/rfd4_campaign/`. The old
+Canonical location: `enzyme_design_agent/runs/as9_motif_design_rfd4_proteina/`. The old
 `tools/rfd4_campaign` path is a compatibility symlink for recorded commands
 and existing campaign wrappers. Generated campaign data remain in
 `runs/rfd4_campaigns/<campaign>/`.
@@ -43,7 +43,7 @@ reaction mechanism. Example:
 Run with the RFD4 Python environment:
 
 ```bash
-python runs/rfd4_campaign/geometry.py generated.cif --geometry geometry.json
+python runs/as9_motif_design_rfd4_proteina/geometry.py generated.cif --geometry geometry.json
 ```
 
 The geometry describes whatever structure is supplied. In particular, measuring
@@ -58,7 +58,7 @@ wall time divided by its structure count as an amortized throughput measure, not
 an individual latency. Use `--once` to produce a snapshot; omit it to poll.
 
 ```bash
-python runs/rfd4_campaign/rolling_report.py \
+python runs/as9_motif_design_rfd4_proteina/rolling_report.py \
   --records '/shared/run/complete/*.json' --geometry geometry.json \
   --output /shared/run/rolling_metrics.csv --interval 30
 ```
@@ -84,13 +84,13 @@ like this (replace the input and paths for the task):
 ```
 
 ```bash
-python runs/rfd4_campaign/prepare_queue.py campaign.json --output /shared/new-run
+python runs/as9_motif_design_rfd4_proteina/prepare_queue.py campaign.json --output /shared/new-run
 ```
 
 After task-specific preflight and capacity testing, launch each worker inside a
 `gpu_reserve run` process tree with separate CPU affinity and explicit thread
 caps, following the `lambda-fleet` skill. Its command is
-`python runs/rfd4_campaign/queue_worker.py /shared/new-run --cwd /path/to/RFD4-Proteina`.
+`python runs/as9_motif_design_rfd4_proteina/queue_worker.py /shared/new-run --cwd /path/to/RFD4-Proteina`.
 The generated complete records represent the profile's basic output checks;
 task-specific chemical QC and independent validation remain separate. Claims
 are atomic, attempts are bounded to one per item, and partial results require
@@ -129,11 +129,11 @@ Run rendering first, then plotting to also produce a comparison panel:
 # From Enzyme_agent; replace CAMPAIGN with the actual campaign directory.
 env OMP_NUM_THREADS=1 OMP_THREAD_LIMIT=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
   /nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/pymol/bin/python \
-  enzyme_design_agent/runs/rfd4_campaign/render_theozymes.py --campaign CAMPAIGN
+  enzyme_design_agent/runs/as9_motif_design_rfd4_proteina/render_theozymes.py --campaign CAMPAIGN
 
 env OMP_NUM_THREADS=1 OMP_THREAD_LIMIT=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
   /nfs/lambda_stor_01/homes/rzhu/miniforge3/bin/python \
-  enzyme_design_agent/runs/rfd4_campaign/plot_geometry.py --campaign CAMPAIGN
+  enzyme_design_agent/runs/as9_motif_design_rfd4_proteina/plot_geometry.py --campaign CAMPAIGN
 ```
 
 Assign separate free CPU affinities with `taskset` when running these concurrently.

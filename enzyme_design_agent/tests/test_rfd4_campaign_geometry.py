@@ -2,7 +2,7 @@
 from types import SimpleNamespace
 import numpy as np
 import pytest
-from enzyme_design_agent.runs.rfd4_campaign.geometry import evaluate
+from enzyme_design_agent.runs.as9_motif_design_rfd4_proteina.geometry import evaluate
 
 
 def atoms():
