@@ -95,6 +95,8 @@ def refresh(root, baseline=None):
                      'tests_with_observation': sum(bool(e.get('observation')) for e in examples),
                      'prospective_tests_verified': sum(bool(e.get('prospective_capture_verified')) for e in examples),
                      'tests_with_revision': sum(bool(e.get('followup_decisions')) for e in examples),
+                     'planned_actions': (trace.get('audit_summary') or {}).get('planned_actions'),
+                     'linked_request_tokens': (trace.get('audit_summary') or {}).get('linked_request_tokens'),
                      'trace_page': '../reasoning/trace.html'}
     except (ValueError, OSError, KeyError) as exc:
         reasoning = {'status': 'verification_failed', 'error': str(exc)}

@@ -109,6 +109,8 @@ def export_trace(run_dir, *, reconstruct_missing=True):
                 and event['sequence']<observation['sequence'],
             'source':plan['source']})
     cases.sort(key=lambda row:(row['registered_at'],row['decision_id']))
+    from enzyme_discovery_agent.output.trace_audit import enrich_trace
+    audit_details,audit_summary=enrich_trace(root,events,cases)
     result={'schema_version':1,'generated_at':datetime.now(timezone.utc).isoformat(),'run_dir':str(root),
         'journal':'reasoning/trace.jsonl','hash_chain_valid':True,
         'source_files_intact':all(item['intact'] for item in checks),'source_checks':checks,
@@ -116,7 +118,8 @@ def export_trace(run_dir, *, reconstruct_missing=True):
         'limits':['Recorded reasoning and source integrity do not prove scientific entailment or activity.',
                   'Reconstructed historical captures do not establish prospective prediction registration.',
                   'An action change is not necessarily an improved scientific decision.'],
-        'events':events,'examples':cases,'conclusions':[item['record'] for item in conclusions]}
+        'events':events,'examples':cases,'conclusions':[item['record'] for item in conclusions],
+        'audit_details':audit_details,'audit_summary':audit_summary}
     destination=root/'reasoning'
     atomic_write_json(destination/'trace.json',result)
     lines=['# Scientific reasoning trace','',result['scope'],'',
@@ -124,12 +127,16 @@ def export_trace(run_dir, *, reconstruct_missing=True):
         '','This export copies saved records; no model wrote a retrospective explanation.','']
     for index,case in enumerate(cases,1):
         outcome=case['observation'] or {}
+        audit=case.get('audit') or {}
         lines.extend([f"## {index}. {case['action']['tool']} — {case['decision_id'][:8]}",'',
             f"Recorded: {case['registered_at']} · Capture: {case['capture_mode']}",'',
             f"**Hypothesis:** {case['hypothesis']}",'',f"**Alternative:** {case['alternative']}",'',
             f"**Prediction:** {case['prediction']}",'',f"**Contrasting prediction:** {case['contrasting_prediction']}",'',
             f"**Why this action:** {case['why_this_test']}",'',
-            '**Action arguments:**','', '```json',json.dumps(case['action']['arguments'],indent=2),'```','',
+            '**Complete planned action batch:**','', '```json',json.dumps(audit.get('actions',[case['action']]),indent=2),'```','',
+            '**Per-action observations:**','', '```json',json.dumps(audit.get('outcomes',[]),indent=2),'```','',
+            '**Request token usage:** '+json.dumps(audit.get('request_usage')),'',
+            '**Audit notes:** '+json.dumps(audit.get('issues',[])),'',
             f"**Observed result:** {outcome.get('status','not yet recorded')} — {outcome.get('summary','')}",'',
             f"**Revision condition:** {case['revision_trigger']}",'',
             f"**Belief update:** {case.get('belief_update') or 'not stated'}; revises {case.get('revises') or 'no earlier decision'}.",'',

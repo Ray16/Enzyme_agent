@@ -28,7 +28,7 @@ pre{overflow:auto;max-height:460px;padding:14px;background:#f1f5f8;font:12px/1.5
 </style></head><body><header><h1>Saved scientific reasoning</h1>
 <p class="muted">Predictions, observations, revisions and participant interpretations from this campaign.</p>
 <div class="notice">These are explicit recorded hypotheses and actions. Source integrity does not establish scientific correctness or target activity. Automated evidence processing is separate from a model decision.</div>
-<div id="integrity"></div><p id="run" class="meta"></p><div class="stats" id="stats"></div>
+<div id="integrity"></div><p id="run" class="meta"></p><div class="stats" id="stats"></div><div id="audit-summary" class="notice"></div>
 <p class="links"><a href="__EXPORT_PREFIX__trace.json">Complete JSON export</a><a href="__EXPORT_PREFIX__trace.md">Readable Markdown</a><a href="__EXPORT_PREFIX__trace.jsonl">Append-only journal</a></p>
 </header><main><div class="controls"><input id="query" aria-label="Search reasoning" placeholder="Search candidate, hypothesis, source or uncertainty…"><select id="type" aria-label="Event type"><option value="">All event types</option></select><span id="count" class="muted"></span></div>
 <h2>Decision and revision links</h2><p class="muted">Solid links connect a prediction to its result; dashed links show a recorded revision or review. Click a node to inspect its record.</p><div class="graph" id="graph"></div>
@@ -40,12 +40,17 @@ const trace=JSON.parse(document.getElementById('trace-data').textContent), event
 const titles={prediction_registered:'Prediction before action',observation_recorded:'Observed result',review_concluded:'Provisional conclusion',participant_roles_recorded:'Participant roles',reaction_step_recorded:'Mapped reaction step',outcome_interpreted:'Outcome interpretation',mechanism_hypotheses_recorded:'Mechanism hypotheses',target_assessment_recorded:'Candidate assessment',target_review_batch_recorded:'Assessment attempt'};
 const colors={prediction_registered:'#2563aa',observation_recorded:'#347a65',review_concluded:'#986225',participant_roles_recorded:'#7652a1',reaction_step_recorded:'#7652a1'};
 const byId=new Map(events.map(e=>[e.id,e]));
+const auditDetails=trace.audit_details||{}, auditSummary=trace.audit_summary||{};
 function element(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
 function field(card,label,value){if(value===undefined||value===null||value==='')return;const d=element('div',undefined,'field');d.append(element('b',label),element('p',typeof value==='string'?value:JSON.stringify(value,null,2)));card.append(d)}
 function paths(value,found=new Set()){if(Array.isArray(value))value.forEach(v=>paths(v,found));else if(value&&typeof value==='object'){if(typeof value.path==='string'&&!value.path.startsWith('/')&&!value.path.split('/').includes('..'))found.add(value.path);Object.values(value).forEach(v=>paths(v,found))}return found}
 const intact=trace.hash_chain_valid&&trace.source_files_intact;
 document.getElementById('integrity').append(element('strong',intact?'Journal and referenced source checks passed':'Source verification needs attention',intact?'pass':'fail'));
 document.getElementById('run').textContent=trace.run_dir||'';
+document.getElementById('audit-summary').textContent='Recorded decisions: '+(auditSummary.registered_decisions??'unknown')+
+ '; planned actions including batches: '+(auditSummary.planned_actions??'unknown')+
+ '; exact request-linked tokens: '+(auditSummary.linked_request_tokens??'unavailable')+
+ ' / '+(auditSummary.run_tokens??'unknown')+' total run tokens. '+(auditSummary.scope||'Usage attribution unavailable for this export.');
 for(const [label,type] of [['Predictions','prediction_registered'],['Results','observation_recorded'],['Conclusions','review_concluded'],['Interpretations',null]]){const n=events.filter(e=>type?e.type===type:['participant_roles_recorded','reaction_step_recorded'].includes(e.type)).length;const d=element('div',undefined,'stat');d.append(element('strong',String(n)),element('span',label));document.getElementById('stats').append(d)}
 for(const type of [...new Set(events.map(e=>e.type))]){const option=element('option',titles[type]||type);option.value=type;document.getElementById('type').append(option)}
 function render(){const query=document.getElementById('query').value.toLowerCase(),type=document.getElementById('type').value;
@@ -57,7 +62,19 @@ function render(){const query=document.getElementById('query').value.toLowerCase
   if(event.capture_mode!=='live')card.append(element('p','Reconstructed from saved artifacts; this is not proof of prospective capture.','notice'));
   for(const [key,label] of [['scope','Scope'],['hypothesis','Hypothesis'],['alternative','Competing explanation'],['prediction','Prediction'],['contrasting_prediction','Contrasting prediction'],['why_this_test','Why this test'],['tool_name','Action'],['arguments','Action arguments'],['status','Execution status'],['summary','Observed summary'],['conclusion','Provisional conclusion'],['belief_update','Belief update'],['revision_trigger','Revisit when']])field(card,label,r[key]);
   if(r.outcome){field(card,'Observed outcome',r.outcome.summary);field(card,'Outcome status',r.outcome.status)}
-  if(event.type==='target_assessment_recorded'){for(const [key,label] of [['accession','Candidate'],['decision','Decision'],['reason','Rationale'],['mechanism_and_step','Mechanism and step'],['target_roles','Participant roles'],['strengths','Support'],['constraints','Constraints'],['unknowns','Unknowns'],['revisit_when','Reopen when']])field(card,label,r[key])}
+  const audit=auditDetails[event.id]||{};
+  if(event.type==='prediction_registered'){
+   field(card,'Complete planned action batch',audit.actions);
+   field(card,'Per-action observations and saved candidate facts',audit.outcomes);
+   if((audit.candidate_revisits||[]).length)field(card,'Earlier decisions involving these candidates (revisits may be justified)',audit.candidate_revisits);
+   field(card,'Exact request-linked token usage',audit.request_usage||'Not available; no cost inferred.');
+   for(const issue of audit.issues||[])card.append(element('p',issue,'notice'));
+   for(const assessment of audit.candidate_assessments||[]){const related=byId.get(assessment.event_id);if(related){
+    const link=element('a','Saved assessment of '+(assessment.protein_name||'unnamed protein')+' ('+assessment.accession+'): '+assessment.decision+' · '+assessment.recorded_at);
+    link.href='#event-'+related.sequence;const p=element('p');p.append(link);card.append(p)}}
+   field(card,'Audit provenance',audit.provenance);
+  }
+  if(event.type==='target_assessment_recorded'){field(card,'Candidate',(audit.candidate_name||'Name not recorded')+' ('+r.accession+')');for(const [key,label] of [['decision','Decision'],['evidence_level','Recorded evidence level (not independently adjudicated)'],['reason','Rationale'],['mechanism_and_step','Mechanism and step'],['target_roles','Participant roles'],['strengths','Support'],['constraints','Constraints'],['unknowns','Unknowns'],['revisit_when','Reopen when']])field(card,label,r[key])}
   if(event.type==='target_review_batch_recorded'){field(card,'Assessment results',r.result);field(card,'Unresolved attempts and correction feedback',r.attempts)}
   if(event.type==='mechanism_hypotheses_recorded')field(card,'Provisional search hypotheses',r.families);
   if(typeof r.interpretation==='string')field(card,'Interpretation',r.interpretation);
