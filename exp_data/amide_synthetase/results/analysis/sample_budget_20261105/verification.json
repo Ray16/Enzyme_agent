@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "checks": [
+    "Cumulative scores, harmonic distance, positional spread and AUROC agree with direct calculations for 18 independent subset panels.",
+    "Exact boundary ties and deferred missing scores receive correct fractional membership.",
+    "All saved recovery probabilities and mean rank correlations agree with independent ranks and the Spearman rank-distance formula; 1,000 SciPy spot checks agree.",
+    "All source, derived-feature and analysis-script hashes match the completed results.",
+    "All 27 two-stage policies agree with explicit candidate selection and sample-count arithmetic."
+  ],
+  "analysis_results_sha256": "b021d43bc5f02e76973f2bddedf7153881e878328bcef1088e040f88016fa99e"
+}

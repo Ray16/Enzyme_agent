@@ -1,0 +1,55 @@
+Smaller Boltz-2 ensembles for the experimental amide synthetase panel
+
+The enrichment signal survives fewer poses. At 10 poses per enzyme, the mean
+AUROC for the three strongest producers is 0.9166, compared with 0.9407 using
+all 50. However, recovering all three in a fixed top-10 shortlist is sensitive
+to sample count, especially because AS23 ranks ninth in the full-50 result.
+
+The analysis uses 48 homologs with 50 matched one-Mg activation poses each.
+For each enzyme, independently select a uniform random subset without
+replacement. Repeat 10,000 times, using nested subsets across sample counts.
+Keep the score fixed: A = sum(angle/distance) / sum(1/distance), larger first.
+The strongest producers are AS9, AS17 and AS23. SfaB stays outside the ranking.
+Harmonic distance is retained in the per-enzyme exports. No new cofolds ran.
+
+Poses/enzyme    All three in top 10    All three in top 15
+5                       44.60%                 78.12%
+10                      54.91%                 91.61%
+15                      61.67%                 96.19%
+20                      67.14%                 98.59%
+25                      70.84%                 99.45%
+30                      74.20%                 99.89%
+35                      78.34%                 99.99%
+40                      84.44%                100.00%
+45                      92.15%                100.00%
+50                     100.00%                100.00% (reference)
+
+A practical option on this panel is an initial 10 poses for every enzyme,
+followed by completing the top 20 of 48 enzymes to 50 total poses and ranking
+those retained enzymes by their completed score. This retrospective policy
+recovers all three strongest producers in the final top 10 in 99.47% of trials,
+and the exact full-50 top 10 in 98.13%. It uses 1,280 rather than 2,400 structures:
+46.67% fewer structures, or an ideal sampling-stage throughput gain of 1.875x.
+Startup and featurization overheads are excluded from that throughput estimate.
+If completing any ensembles is undesirable, 15 poses and a top-15 shortlist
+preserves all three strongest producers in 96.19% of the retrospective trials.
+
+These probabilities describe the existing ensembles, not prospective success
+rates on new enzymes. Agreement at 50 is guaranteed by construction. A separate
+empirical bootstrap with replacement avoids the finite-population collapse:
+even at 50 resampled poses, all three appear in the top 10 in only 70.32% of
+5,000 trials. That sensitivity highlights uncertainty in the original reference
+ranking; it is not a measured success rate for genuinely new cofolds.
+
+All 14 prior descriptors were reproduced before resampling, and compared on
+identical pose subsets. Weighted angle remains useful, but it is not uniquely
+best across every endpoint: alternatives can tie or outperform it. This study
+does not retune or replace the frozen metric. Assay labels remain fixed, and
+10,000 pose draws do not add experimental replicates. The sample-budget results
+apply to this one-Mg setup; transfer to two-Mg production cofolds remains untested.
+
+The full budget results are in sample_budget_summary.csv and results.json.
+See sample_budget.png for the overview, two_stage_budget.csv for all 27
+retrospective refinement policies, and verification.json for independent checks.
+The reproducible script is ../../../scripts/analyze_sample_budget.py,
+relative to this directory.
