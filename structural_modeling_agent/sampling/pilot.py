@@ -100,10 +100,14 @@ def load(config_path):
     if not 0 < c["analysis"]["min_adjacent_overlap"] < 1:
         raise ValueError("Invalid minimum adjacent overlap")
     centers = c["umbrella"]["centers_A"]
-    if len(centers) < 2 or any(not math.isfinite(x) for x in centers) or any(
+    enabled = c["umbrella"].get("enabled", True)
+    if type(enabled) is not bool:
+        raise ValueError("umbrella.enabled must be an explicit boolean")
+    if (enabled and len(centers) < 2) or any(not math.isfinite(x) for x in centers) or any(
             b <= a for a, b in zip(centers, centers[1:])):
         raise ValueError("Provide at least two finite, strictly increasing umbrella centers")
-    positive(c["umbrella"]["spring_eV_per_A2"], "spring_eV_per_A2")
+    if enabled:
+        positive(c["umbrella"]["spring_eV_per_A2"], "spring_eV_per_A2")
     if not c["models"] or len({m["id"] for m in c["models"]}) != len(c["models"]):
         raise ValueError("Model IDs must be nonempty and distinct")
     p = resolve(config_path, c["structure"])
@@ -122,10 +126,8 @@ def load(config_path):
     electrons = int(atoms.numbers.sum()) - c["charge"]
     if electrons <= 0 or (electrons - (c["spin_multiplicity"] - 1)) % 2:
         raise ValueError("Charge/spin electron parity is inconsistent")
-    for key, value in (("charge", c["charge"]), ("spin", c["spin_multiplicity"])):
-        if key in atoms.info and atoms.info[key] != value:
-            raise ValueError(f"Structure {key} disagrees with configuration")
-        atoms.info[key] = value
+    from .backends import bind_electronic_state
+    bind_electronic_state(atoms, c["charge"], c["spin_multiplicity"])
     for selection, count in ((c["distance_atoms"], 2), (c["angle_atoms"], 3)):
         if len(selection) != count or len({x["index"] for x in selection}) != count:
             raise ValueError("Invalid or repeated CV atom indices")
@@ -171,6 +173,8 @@ def load(config_path):
             raise ValueError("Require explicit hydrogens and reviewed reactant-state bond guards")
         from .protonation import validate_protonation_review
         validate_protonation_review(atoms, prep)
+        from .setup import validate_execution_binding
+        validate_execution_binding(c, prep, config_path)
         for m in c["models"]:
             if not m.get("source_revision") or not m.get("precision") or not m.get("artifacts"):
                 raise ValueError("Pin model revision, numerical profile and checkpoint artifacts")
@@ -195,7 +199,8 @@ def load(config_path):
                 raise ValueError("Scientific runs require a pinned local checkpoint or model directory")
             if m["factory"].endswith((":orbmol_v2", ":so3lr")) and kwargs.get("precision") != m["precision"]:
                 raise ValueError("Declared precision disagrees with calculator arguments")
-            if m["factory"].endswith(":uma") and (kwargs.get("charge") != c["charge"] or kwargs.get("multiplicity") != c["spin_multiplicity"] or m["precision"] != "ieee-fp32-general"):
+            uma_profile = {"float32": "ieee-fp32-general", "float64": "ieee-fp64-general"}.get(kwargs.get("precision", "float32"))
+            if m["factory"].endswith(":uma") and (kwargs.get("charge") != c["charge"] or kwargs.get("multiplicity") != c["spin_multiplicity"] or m["precision"] != uma_profile):
                 raise ValueError("UMA charge/spin/precision arguments disagree with the prepared system")
             if m["factory"].endswith(":uma") and Path(kwargs["reference_yaml"]).resolve() not in declared:
                 raise ValueError("UMA atomic reference table must be hashed alongside its checkpoint")
@@ -203,9 +208,10 @@ def load(config_path):
 
 
 def tasks(c):
+    windows = list(enumerate(c["umbrella"]["centers_A"])) if c["umbrella"].get("enabled", True) else []
     return [dict(model=m["id"], seed=seed, window=window, center_A=center)
             for m in c["models"] for seed in c["seeds"]
-            for window, center in [(-1, None), *enumerate(c["umbrella"]["centers_A"])]]
+            for window, center in [(-1, None), *windows]]
 
 
 def measurement(atoms, c):
@@ -517,6 +523,8 @@ def analyze(config_path, output, model_id):
     from scipy.special import logsumexp
 
     c, _ = load(config_path)
+    if not c["umbrella"].get("enabled", True):
+        raise ValueError("The selected run is unbiased MD; umbrella-PMF analysis is not applicable")
     identity = canonical_hash(c)
     centers, springs, series = [], [], []
     metadata = []

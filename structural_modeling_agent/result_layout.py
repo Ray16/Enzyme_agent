@@ -107,6 +107,11 @@ def results_index(run_dir, state):
                     "registered_prediction_files": [{"path": p["path"], "sha256": p.get("sha256")} for p in poses],
                     "validation_artifact": record.get("validation_artifact")}, "followups": studies})
         candidates[accession] = {"current_revision": revisions[-1]["revision"] if revisions else None,
+                                 "sampling_setups": [{"id": key, "artifact": value["artifact"],
+                                                      "recorded_status": value["assessment"]["status"]}
+                                                     for key, value in candidate.get("sampling_setups", {}).items()],
+                                 "kinetic_networks": [{"id": key, **value}
+                                                      for key, value in candidate.get("kinetic_networks", {}).items()],
                                  "revisions": revisions,
                                  "planned_next_revision": len(revisions) + 1,
                                  "planned_next_cofold_dir": str(cofold_dir(root, state, accession, len(revisions) + 1))}

@@ -1,0 +1,6 @@
+{
+  "status": "passed",
+  "host": "lambda4",
+  "remaining_validation_processes": [],
+  "scope": "post_validation_owned_worker_lifecycle_check"
+}

@@ -3,3 +3,8 @@ ase==3.29.0
 psutil==7.2.2
 pymbar==4.0.3
 pytest==8.4.2
+rdkit==2026.3.1
+gemmi==0.7.5
+PyYAML==6.0.3
+requests==2.34.2
+biopython==1.88

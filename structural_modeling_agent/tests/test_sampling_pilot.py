@@ -65,6 +65,15 @@ def test_unbiased_potential_unchanged(tmp_path):
     np.testing.assert_array_equal(wrapper.get_forces(atoms), base.get_forces(atoms))
 
 
+def test_unbiased_only_choice_does_not_add_umbrella_windows(tmp_path):
+    path, c, _ = fixture_config(tmp_path)
+    c["umbrella"] = {"enabled": False, "centers_A": [], "spring_eV_per_A2": 0}
+    path.write_text(json.dumps(c))
+    loaded, _ = p.load(path)
+    assert len(p.tasks(loaded)) == len(c["seeds"])
+    assert all(task["window"] == -1 and task["center_A"] is None for task in p.tasks(loaded))
+
+
 def test_preparation_and_identity_fail_closed(tmp_path):
     path, c, _ = fixture_config(tmp_path)
     c["distance_atoms"][0]["element"] = "O"

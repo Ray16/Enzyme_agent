@@ -1,0 +1,76 @@
+{
+  "scope": "author_fixture_software_numerical_check_only",
+  "status": "passed",
+  "runtime": {
+    "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-qmmm-20261106/bin/python",
+    "packages": {
+      "numpy": "2.4.6",
+      "ase": "3.29.0",
+      "torch": "2.13.0+cu126",
+      "jax": null,
+      "jaxlib": null,
+      "so3lr": null,
+      "orb-models": null,
+      "fairchem-core": "2.25.0",
+      "pymbar": null
+    },
+    "host": "lambda4",
+    "pid": 2258468,
+    "process_start": "11089891",
+    "affinity": [
+      64,
+      65
+    ],
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OMP_THREAD_LIMIT": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    }
+  },
+  "input_sha256": "7659d614eb6dfcffb0f796b08ff19ed3da0a8ebc32c10b6c18038acb5f7669e3",
+  "parm7_sha256": "ed2ad0febe1153b2415077631d6ac1783ad6a20d55724eeeb8a8b1da2a913b94",
+  "model_pdb_sha256": "e390a78e0f190bc1f02c580a468072e29b23e3ad099acc6f41c45d24d061990d",
+  "ml_atoms": 46,
+  "link_bonds_1based": [
+    [
+      33,
+      31
+    ],
+    [
+      64,
+      62
+    ]
+  ],
+  "model_profile_sha256": "fccc3cf67e9deaf300e28e5706cebab2808c61e68801c0389b6bbe8f0da902ec",
+  "energy_eV": -248.1202440623357,
+  "atom_count": 122,
+  "selected_force_check_atoms": [
+    0,
+    30,
+    32,
+    61,
+    63,
+    121
+  ],
+  "force_check_max_error_eV_per_A": 0.0007260951943019456,
+  "first_force_seconds": 11.586723161002737,
+  "md_steps": 3,
+  "timestep_fs": 0.05,
+  "nve_total_energy_drift_eV": 1.7394137898918416e-06,
+  "md_seconds": 0.049015234006219544,
+  "embedding": "mechanical_ONIOM",
+  "mm_backend": "openmm",
+  "enzyme_accuracy": null,
+  "activation_free_energy": null,
+  "processivity_demonstrated": false,
+  "path_interface": {
+    "images": 3,
+    "second_input_sha256": "c24e4d4c09a18b23ba16bbcf98298367bf4b85ac8e51d1a918fd7dd4cf3718a9",
+    "finite_projected_forces": true,
+    "converged": false,
+    "activation_free_energy": null,
+    "scope": "single_band_force_evaluation_only_no_transition_state_claim"
+  }
+}

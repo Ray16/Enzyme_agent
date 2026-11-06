@@ -53,6 +53,8 @@ print(json.dumps({'pid':p.pid,'argv':x['argv'],'host':os.uname().nodename,
 def validate_assignments(assignments, c):
     if type(assignments["max_workers"]) is not int or not 1 <= len(assignments["workers"]) <= assignments["max_workers"]:
         raise ValueError("Worker count must fit the explicitly declared budget")
+    if c.get("purpose") != "software_validation" and assignments["max_workers"] > c["resource_budget"]["max_workers"]:
+        raise ValueError("Worker allocation exceeds the agent's resource decision")
     used_gpu, used_cpu = set(), set()
     for worker in assignments["workers"]:
         host = worker["host"]

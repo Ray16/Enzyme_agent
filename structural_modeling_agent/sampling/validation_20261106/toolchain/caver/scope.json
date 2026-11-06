@@ -1,0 +1,11 @@
+{
+  "scope": "static_geometry_software_smoke_only",
+  "origin_A": [
+    -1.2290999999999999,
+    1.5191000000000003,
+    -2.5373
+  ],
+  "origin_source": "centroid of predicted chain D in exact source pose; not an experimentally validated catalytic origin",
+  "source_sha256": "15890d68fcb01d5ff3cd49eded9468a411b5991f563385b3e43d8f2185b84de6",
+  "parameters": "upstream example defaults; not a validated substrate transport model"
+}

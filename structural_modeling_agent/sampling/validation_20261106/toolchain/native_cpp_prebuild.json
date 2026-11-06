@@ -1,0 +1,17 @@
+{
+  "status": "prebuilt_optional_not_selected_for_hybrid_MD",
+  "host": "lambda4",
+  "artifacts": {
+    "get_bonded_extension": {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/build/hessian-ff-torch213/.build_bonded/a3af514cd6e9c52af3a353b70b1fc5c73dc0f01272541423a3d7da2e5e1da660/hessian_ff_bonded_ext_r4_a3af514cd6e9c52a.so",
+      "sha256": "7fb79813e1ec53a97f239eb1d7144e938f153836bbd101202922ae710e6ff8fc"
+    },
+    "get_analytical_hessian_extension": {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/build/hessian-ff-torch213/.build_analytical_hessian/4b0945fae679c8c1b46e676ae1953c28e84755dde279ea186f7f36cceb923805/hessian_ff_analytical_hessian_ext_r0_4b0945fae679c8c1.so",
+      "sha256": "5077c63ad93bedc1eb38adcc8df70832ba46033f9768a426396813b009353981"
+    }
+  },
+  "scope": "native_extension_load_only_no_numerical_hessian_validation",
+  "bonded_recipe": "r4 serial fallback; OpenMP recipes failed compilation",
+  "hessian_recipe": "r0 host-native OpenMP; restrict reuse to compatible CPU architecture"
+}

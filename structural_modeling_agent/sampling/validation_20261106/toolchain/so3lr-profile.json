@@ -1,0 +1,46 @@
+{
+  "schema": "ase-model-process-1.0",
+  "scope": "author_fixture_numerical_software_validation_only",
+  "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-so3lr-20261105/bin/python",
+  "factory": "structural_modeling_agent.sampling.backends:so3lr",
+  "kwargs": {
+    "model_directory": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-so3lr-20261105/lib/python3.12/site-packages/so3lr/models/so3lr-tauri-m-2606",
+    "precision": "float64",
+    "lr_cutoff_A": 100.0
+  },
+  "charge": -1,
+  "multiplicity": 1,
+  "require_gpu": true,
+  "artifacts": [
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-so3lr-20261105/lib/python3.12/site-packages/so3lr/models/so3lr-tauri-m-2606/hyperparameters.yaml",
+      "sha256": "8737e71817b110e058933e09aea1851640a295b8edb3c0be06aeee11555f867d"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-so3lr-20261105/lib/python3.12/site-packages/so3lr/models/so3lr-tauri-m-2606/params.pkl",
+      "sha256": "7293f2c12e0d807f73c0d7f2b70c5bee5779af815dae9feacd2091b031753426"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-so3lr-20261105/lib/python3.12/site-packages/so3lr/models/so3lr-tauri-m-2606/hyperparameters.json",
+      "sha256": "e6cbf62cd03131ba1a1ad762d2925ffb3bc6946c8f305210185021f6b8068f30"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-so3lr-20261105/lib/python3.12/site-packages/so3lr/models/so3lr-tauri-m-2606/data_splits.json",
+      "sha256": "e71f5f06eb934ac35541bfec82024271437ce05abc4b654e226aa4022fe7e92d"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-so3lr-20261105/lib/python3.12/site-packages/so3lr/models/so3lr-tauri-m-2606/fine_tuning.json",
+      "sha256": "e6b074ef1b4c51200ed5fe53b62eab8ac8031c763dde5ee632f438b9c58c8557"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/backends.py",
+      "sha256": "78550f603368e77012fa90417982aa8796df72b50571580f7fe6e3a773f4ded9"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/persistent_calculator.py",
+      "sha256": "ad0e0a6122eae7f6652570e1b0054d492192b6acdac49f684af9047498f61f60"
+    }
+  ],
+  "log": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/so3lr-model.log",
+  "timeout_seconds": 240
+}

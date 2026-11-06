@@ -6,6 +6,25 @@ Keep each model stack isolated; do not upgrade the existing UMA environment.
 from pathlib import Path
 
 
+def bind_electronic_state(atoms, charge, multiplicity):
+    """Bind explicit state in both molecular-model metadata conventions.
+
+    UMA/Orb use ``spin`` as multiplicity; SO3LR's ASE reader uses
+    ``multiplicity`` and converts it to the number of unpaired electrons.
+    Never pass a number of unpaired electrons as the shared ``spin`` field.
+    """
+    if type(charge) is not int or type(multiplicity) is not int or multiplicity < 1:
+        raise ValueError("Require integer charge and positive spin multiplicity")
+    electrons = int(atoms.numbers.sum()) - charge
+    if electrons < multiplicity - 1 or electrons <= 0 or (electrons - multiplicity + 1) % 2:
+        raise ValueError("Charge/spin electron count is inconsistent")
+    for key, value in (("charge", charge), ("spin", multiplicity),
+                       ("multiplicity", multiplicity)):
+        if key in atoms.info and atoms.info[key] != value:
+            raise ValueError(f"Structure {key} disagrees with configuration")
+        atoms.info[key] = value
+
+
 def orbmol_v2(checkpoint, device="cuda", precision="float32-highest", compile=False):
     from orb_models.forcefield import pretrained
     from orb_models.forcefield.inference.calculator import ORBCalculator
@@ -32,7 +51,7 @@ def so3lr(model_directory, precision="float64", lr_cutoff_A=12.0):
                            dtype=getattr(np, precision), lr_cutoff=lr_cutoff_A)
 
 
-def uma(checkpoint, charge, multiplicity, reference_yaml, device="cuda"):
+def uma(checkpoint, charge, multiplicity, reference_yaml, device="cuda", precision="float32"):
     import inspect
     import torch
     from omegaconf import OmegaConf
@@ -41,8 +60,10 @@ def uma(checkpoint, charge, multiplicity, reference_yaml, device="cuda"):
 
     # An explicit object works across the old default/turbo and newer Nitro-era
     # setting names. General FP32 is the ordinary portable reference path.
+    if precision not in ("float32", "float64"):
+        raise ValueError("Select an explicit supported ordinary UMA precision")
     options = dict(tf32=False, activation_checkpointing=True, merge_mole=False,
-                   compile=False, base_precision_dtype=torch.float32,
+                   compile=False, base_precision_dtype=getattr(torch, precision),
                    execution_mode="general", torch_num_threads=1)
     if "nitro" in inspect.signature(InferenceSettings).parameters:
         options["nitro"] = False

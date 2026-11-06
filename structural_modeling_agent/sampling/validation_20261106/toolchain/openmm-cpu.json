@@ -1,0 +1,47 @@
+{
+  "scope": "software_benchmark_only",
+  "runtime": {
+    "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+    "packages": {
+      "numpy": "2.4.6",
+      "ase": "3.29.0",
+      "torch": null,
+      "jax": null,
+      "jaxlib": null,
+      "so3lr": null,
+      "orb-models": null,
+      "fairchem-core": null,
+      "pymbar": "4.0.3"
+    },
+    "host": "lambda2",
+    "pid": 2426855,
+    "process_start": "1477896980",
+    "affinity": [
+      78
+    ],
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OMP_THREAD_LIMIT": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    }
+  },
+  "pdb_sha256": "41093ef12085e33f2cab5d3c2cf4c82074e90996917218dcc1e5807c605bf82a",
+  "platform": "CPU",
+  "openmm_version": "8.6.1",
+  "status": "passed",
+  "plumed_analytical_energy_error_kJ_per_mol": 4.440892098500626e-15,
+  "plumed_analytical_force_max_error_kJ_per_mol_nm": 8.526512829121202e-14,
+  "restart_position_max_error_nm": 5.653215133794021e-07,
+  "potential_energy_kJ_per_mol": -58140.97786143003,
+  "checkpoint_restore_max_error_nm": 0.0,
+  "replay_tolerance_nm": 1e-05,
+  "atoms": 4010,
+  "md_steps": 60,
+  "checkpoint_sha256": "8f009c5ed4a89f5e2a26b750f0d9557fa46c13f1355bda55424b2aef7ef9b331",
+  "two_segments_seconds": 1.2137322071939707,
+  "enzyme_accuracy": null,
+  "physical_rate": null,
+  "processivity_demonstrated": false
+}

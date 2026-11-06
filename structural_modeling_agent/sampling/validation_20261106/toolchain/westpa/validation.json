@@ -1,0 +1,81 @@
+{
+  "status": "passed",
+  "scope": "two_CPU_worker_NaCl_WESTPA_software_restart_check_only",
+  "iterations": [
+    {
+      "iteration": 1,
+      "segments": 2,
+      "weight_sum": 1.0,
+      "complete": 2
+    },
+    {
+      "iteration": 2,
+      "segments": 2,
+      "weight_sum": 1.0,
+      "complete": 2
+    },
+    {
+      "iteration": 3,
+      "segments": 2,
+      "weight_sum": 1.0,
+      "complete": 2
+    }
+  ],
+  "coordinator_affinity": [
+    76
+  ],
+  "worker_bindings": [
+    {
+      "pid": 2432534,
+      "worker": 1,
+      "affinity": [
+        78
+      ],
+      "scope": "local_CPU_workers_only"
+    },
+    {
+      "pid": 2432533,
+      "worker": 0,
+      "affinity": [
+        77
+      ],
+      "scope": "local_CPU_workers_only"
+    },
+    {
+      "pid": 2433294,
+      "worker": 0,
+      "affinity": [
+        77
+      ],
+      "scope": "local_CPU_workers_only"
+    },
+    {
+      "pid": 2433295,
+      "worker": 1,
+      "affinity": [
+        78
+      ],
+      "scope": "local_CPU_workers_only"
+    },
+    {
+      "pid": 2436618,
+      "worker": 1,
+      "affinity": [
+        78
+      ],
+      "scope": "local_CPU_workers_only"
+    },
+    {
+      "pid": 2436617,
+      "worker": 0,
+      "affinity": [
+        77
+      ],
+      "scope": "local_CPU_workers_only"
+    }
+  ],
+  "resumed_after_iteration": 2,
+  "steps_per_segment": 20,
+  "physical_rate": null,
+  "processivity_demonstrated": false
+}

@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "scope": "neutral_singlet_acetamide_parameterization_software_check_only",
+  "smiles": "CC(=O)N",
+  "charge_sum": 6.585337719577922e-09,
+  "atoms": 9,
+  "energy_kJ_per_mol": -130.54971506559968,
+  "charge_normalization": {
+    "original_net_charge_e": 0.002000999999999961,
+    "declared_formal_charge": 0,
+    "per_atom_shift_e": -0.00022233333333332902,
+    "source": "SQM sqm.out reports individual Mulliken charges to three decimals; molecular total is neutral. BCC bond corrections conserve charge.",
+    "method": "Uniform minimal L2 correction to exact formal charge; preserves equivalent-atom equalization.",
+    "purpose": "software preparation benchmark; no enzyme parameters validated"
+  },
+  "artifacts": {
+    "acetamide.sdf": "5e470c6ace2fc32616628c4186383b8681cd1672e1b7823e85d08b66dc4447d4",
+    "acetamide.mol2": "b08559da543c79a130b0ae01804023393728f259c65b10f15cc530607f3fe753",
+    "acetamide.frcmod": "7952f6ae06bada8faf76752f16478495eb59813c8fb7e45c0c8edd96166177f4",
+    "acetamide.parm7": "7aa1338cc55a8f7829b5cb4602fbe9e70cbd36971bc32a9fecc0bb7da9cafa3e",
+    "acetamide.rst7": "4d14d1b4617cfa57b4d35281fe2b82d77d1f7a03c4ee6461ce8c8389be62b3ff",
+    "acetamide.pdb": "907bada2bdfa30242fd6be09a6f29cc4426a1c36670c2917805586d937e35faa"
+  },
+  "enzyme_parameters_validated": false
+}

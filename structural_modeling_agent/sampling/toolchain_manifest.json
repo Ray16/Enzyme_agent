@@ -1,0 +1,406 @@
+{
+  "schema": "processivity-toolchain-1.0",
+  "date": "2026-11-06",
+  "status": "validated_software_interfaces_for_bounded_pilots",
+  "environments": [
+    {
+      "name": "processivity-md-20261106",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+      "lock": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/environments/processivity-md.lock",
+      "lock_sha256": "d86a1af50dc5d68a7af58549f8e6a995bc4cd5ec02e3e3f75df8893fbdad8ddc"
+    },
+    {
+      "name": "processivity-qmmm-20261106",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-qmmm-20261106/bin/python",
+      "lock": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/environments/processivity-qmmm.lock",
+      "lock_sha256": "3cf17d6ce95d2224fad31c90482ce5137c1114fc034f1ea0e3ab33c2aa910410"
+    },
+    {
+      "name": "processivity-plumed-20261106",
+      "lock": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/environments/processivity-plumed.lock",
+      "lock_sha256": "33dc0c8fcdf883fa2722f81f02778c4ddbcaaf5ef24327e83d8c2c92b17b22de",
+      "executable": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-plumed-20261106/bin/plumed"
+    },
+    {
+      "name": "amide-sampling-20261105",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-sampling-20261105/bin/python",
+      "lock": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/environments/validation.lock",
+      "lock_sha256": "3cbdd21a39a1ca5a0b5ff4a4f0a866f6c629633e7c34fe1aea8f693a93b48c84"
+    },
+    {
+      "name": "amide-uma-20261105",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-uma-20261105/bin/python",
+      "lock": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/environments/uma-existing-base.lock",
+      "lock_sha256": "f0958aa4a7e9f545714ea0ea78c925d5b715506dafbffb5ac8e9fdee677694c2"
+    },
+    {
+      "name": "amide-orb-20261105",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-orb-20261105/bin/python",
+      "lock": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/environments/orb-v100.lock",
+      "lock_sha256": "cd44a426735216edd0de3486ad2a68ba63b96505b4bda56293b9ed9eeb6729b5"
+    },
+    {
+      "name": "amide-so3lr-20261105",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-so3lr-20261105/bin/python",
+      "lock": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/environments/so3lr-cuda12.lock",
+      "lock_sha256": "ef469fb3641b8f87b0bf585e6a68c2082531a8ba943d6fdfe135fcaa1e79f42c"
+    }
+  ],
+  "sources": [
+    {
+      "name": "mlmm-toolkit",
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/sources/mlmm-toolkit",
+      "commit": "6c713051c27d587ad811570a0f9c39d2552c6902",
+      "origin": "https://github.com/t-0hmura/mlmm_toolkit.git"
+    },
+    {
+      "name": "openmm-plumed",
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/sources/openmm-plumed",
+      "commit": "295e1880a9b24ba18a12a1841f4559b118b4a256",
+      "origin": "https://github.com/openmm/openmm-plumed.git"
+    },
+    {
+      "name": "caver",
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/sources/caver",
+      "commit": "ec6c730e57420452205e2512c1d9128572216f02",
+      "origin": "https://github.com/loschmidt/caver-pymol-plugin.git"
+    },
+    {
+      "name": "westpa-tutorials",
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/sources/westpa-tutorials",
+      "commit": "14d374d7e9fe8f4707497090775068ef36597dd2",
+      "origin": "https://github.com/westpa/tutorials.git"
+    },
+    {
+      "name": "westpa-tutorials/tutorials7.1-7.4",
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/sources/westpa-tutorials/tutorials7.1-7.4",
+      "commit": "13e0fa4a6b5f18224d800cb524dd9c456c5d7b35",
+      "origin": "https://github.com/westpa/westpa_tutorials"
+    }
+  ],
+  "checks": [
+    {
+      "id": "classical_md",
+      "status": "passed_within_stated_scope",
+      "scope": "OpenMM 8.6.1 4010-atom NaCl/water MD, analytical PLUMED restraint and checkpoint replay on CPU/V100",
+      "evidence": [
+        {
+          "path": "validation_20261106/toolchain/openmm-cpu.json",
+          "sha256": "5ffe477a581f91091cc18756463d11444a8a507c91f53d4c6a9a7e81efc02398",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/openmm-cpu.json"
+        },
+        {
+          "path": "validation_20261106/toolchain/openmm-cuda.json",
+          "sha256": "f4867ae44a87b83157516ac3c1b037340dc32bf50116abd45e1e7009c5de138c",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/openmm-cuda.json"
+        },
+        {
+          "path": "validation_20261106/toolchain/plumed-native-tests.txt",
+          "sha256": "5561b517dcdb9cd39c8759a4e59aa9404f2d0d962380e8cdedbec95a809bfd84",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/plumed-native-tests.log"
+        }
+      ],
+      "limits": [
+        "60 steps are software validation, not equilibration or a physical rate.",
+        "CPU trajectory replay tolerance 1e-5 nm; checkpoint coordinate restoration exact."
+      ]
+    },
+    {
+      "id": "uma_hybrid",
+      "status": "passed_within_stated_scope",
+      "scope": "Common 122-atom finite mechanical-ONIOM fixture, 46 ML atoms plus 2 link H, OpenMM MM, FP64 high level, selected Cartesian gradients, three 0.05-fs NVE steps and one 3-image NEB force evaluation",
+      "evidence": [
+        {
+          "path": "validation_20261106/toolchain/uma-hybrid.json",
+          "sha256": "407ce5c732c5d2f613a4b7c7237136252b8998f4282275b86b60599e63fcceb5",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/uma-hybrid.json"
+        },
+        {
+          "path": "validation_20261106/toolchain/uma-profile.json",
+          "sha256": "b2ebfd092740976760f4487a868ed3e785424292e6169e123c333d8766034f1d",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/uma-profile.json"
+        }
+      ],
+      "limits": [
+        "No enzyme, ATP/Mg accuracy, converged transition state or activation free energy established.",
+        "Mechanical ONIOM finite nonperiodic reference; no periodic electrostatic QM/MM implementation is validated."
+      ]
+    },
+    {
+      "id": "orb_hybrid",
+      "status": "passed_within_stated_scope",
+      "scope": "Common 122-atom finite mechanical-ONIOM fixture, 46 ML atoms plus 2 link H, OpenMM MM, FP64 high level, selected Cartesian gradients, three 0.05-fs NVE steps and one 3-image NEB force evaluation",
+      "evidence": [
+        {
+          "path": "validation_20261106/toolchain/orb-hybrid.json",
+          "sha256": "910da09a7e0dd5fdf778479584a8477b69a88ea7a234531a8fed322f070d0827",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/orb-hybrid.json"
+        },
+        {
+          "path": "validation_20261106/toolchain/orb-profile.json",
+          "sha256": "445638e680854a48c3868f751f199694f3c8b7a5864589308c733a447fd38590",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/orb-profile.json"
+        }
+      ],
+      "limits": [
+        "No enzyme, ATP/Mg accuracy, converged transition state or activation free energy established.",
+        "Mechanical ONIOM finite nonperiodic reference; no periodic electrostatic QM/MM implementation is validated."
+      ]
+    },
+    {
+      "id": "so3lr_hybrid",
+      "status": "passed_within_stated_scope",
+      "scope": "Common 122-atom finite mechanical-ONIOM fixture, 46 ML atoms plus 2 link H, OpenMM MM, FP64 high level, selected Cartesian gradients, three 0.05-fs NVE steps and one 3-image NEB force evaluation",
+      "evidence": [
+        {
+          "path": "validation_20261106/toolchain/so3lr-hybrid.json",
+          "sha256": "440f87d7856af9592b996e079df9e487a550127406223dca81af6fc323283865",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/so3lr-hybrid.json"
+        },
+        {
+          "path": "validation_20261106/toolchain/so3lr-profile.json",
+          "sha256": "fccc3cf67e9deaf300e28e5706cebab2808c61e68801c0389b6bbe8f0da902ec",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/so3lr-profile.json"
+        }
+      ],
+      "limits": [
+        "No enzyme, ATP/Mg accuracy, converged transition state or activation free energy established.",
+        "Mechanical ONIOM finite nonperiodic reference; no periodic electrostatic QM/MM implementation is validated."
+      ]
+    },
+    {
+      "id": "quantum_embedding",
+      "status": "passed_within_stated_scope",
+      "scope": "Native CPU PySCF embedding/cache/state, embedding-charge forces, model-MM electrostatic subtraction and link derivative tests; 79 passed, 1 skipped then skipped xTB test passed separately",
+      "evidence": [
+        {
+          "path": "validation_20261106/mlmm-native-interface-tests.xml",
+          "sha256": "173da2e7c9a24011572c3da95d79c6858423efa4488efc1ee93a57f760ad0baa",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/mlmm-native-interface-tests.xml"
+        },
+        {
+          "path": "validation_20261106/mlmm-xtb-interface-tests.xml",
+          "sha256": "0cacbee54d7005f76945ce8a1d556607c48c6e17b26340e2b347826e5b9dd8c4",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/mlmm-xtb-interface-tests.xml"
+        }
+      ],
+      "limits": [
+        "HF/LDA small fixtures establish interface consistency, not reference-method accuracy for amide chemistry.",
+        "GPU4PySCF installed but GPU execution not tested."
+      ]
+    },
+    {
+      "id": "weighted_ensemble_CPU",
+      "status": "passed_within_stated_scope",
+      "scope": "WESTPA 3 iterations with 2 disjoint CPU workers and restart, finite pcoords, independent segment outcomes and normalized weights",
+      "evidence": [
+        {
+          "path": "validation_20261106/toolchain/westpa/validation.json",
+          "sha256": "4af3cf31b5cd72ab5559729e654d60aa0ac256a71ec7f1ccade4aa5f424c0a09",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/westpa/validation.json"
+        }
+      ],
+      "limits": [
+        "20-step tutorial segments do not establish rates, convergence or processivity."
+      ]
+    },
+    {
+      "id": "weighted_ensemble_GPU",
+      "status": "passed_within_stated_scope",
+      "scope": "Two reserved V100 ZMQ workers, four iterations, same-run restarts, normalized weights, supervised descendant cleanup",
+      "evidence": [
+        {
+          "path": "validation_20261106/toolchain/westpa-gpu/validation.json",
+          "sha256": "256ea2e6c0ea4377b0f99c167e1a7633caf52a5fd2729e791046e36c8b61834e",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/westpa-gpu/validation.json"
+        }
+      ],
+      "limits": [
+        "20-step tutorial segments; rates and convergence unvalidated.",
+        "Production requires reviewed state definitions, independent stochastic streams, adequate segments and uncertainty."
+      ]
+    },
+    {
+      "id": "tunnel_geometry",
+      "status": "passed_within_stated_scope",
+      "scope": "CAVER 3.02 tunnel profiles/bottlenecks/curvature and pyKVFinder cavities/depth on unliganded protein coordinates",
+      "evidence": [
+        {
+          "path": "validation_20261106/toolchain/caver/scope.json",
+          "sha256": "99d291cd5e97cd441cd7143b9229fd312c08c8c848aa3a282c57260a2ab584d3",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/caver/scope.json"
+        },
+        {
+          "path": "validation_20261106/toolchain/caver/output/analysis/tunnel_characteristics.csv",
+          "sha256": "93961961c40efce1e61dee9420937c05bf72e3acf477462b78e47563d2fbad4e",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/caver/output/analysis/tunnel_characteristics.csv"
+        },
+        {
+          "path": "validation_20261106/toolchain/kvfinder.json",
+          "sha256": "4b9e17d47d0e580e5443e42f57503d3da6c76f53e43b4b85081e7be723da6b6c",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/kvfinder.json"
+        }
+      ],
+      "limits": [
+        "Static geometry test; origin/probe example is not a validated substrate-access model.",
+        "Dynamic tunnel/chain sampling and matched geometry comparisons remain case-specific."
+      ]
+    },
+    {
+      "id": "parameterization",
+      "status": "passed_within_stated_scope",
+      "scope": "RDKit acetamide \u2192 AmberTools AM1-BCC/GAFF2 \u2192 tleap \u2192 OpenMM finite energy/force and total-charge check",
+      "evidence": [
+        {
+          "path": "validation_20261106/toolchain/parameterization/validation.json",
+          "sha256": "7378f00def7d1d293c9d09c214acc791a381786af1b6c1722d8a187ac217bba6",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/parameterization/validation.json"
+        },
+        {
+          "path": "validation_20261106/toolchain/parameterization/charge_normalization.json",
+          "sha256": "b03f07dc12e59e99de7e830b2227b9e32a144e4a871432e05933f2082b8105d1",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/parameterization/charge_normalization.json"
+        }
+      ],
+      "limits": [
+        "A small charge normalization is explicitly recorded; no global charge-correction policy.",
+        "ATP, metals, intermediates and product/oligomer parameters remain unvalidated."
+      ]
+    },
+    {
+      "id": "protonation_software",
+      "status": "passed_within_stated_scope",
+      "scope": "Explicit key-histidine review gate plus separate protein-only PROPKA and PyPka diagnostics",
+      "evidence": [
+        {
+          "path": "validation_20261106/preparation/AS9/protein_heavy.pka",
+          "sha256": "47dd9232c8140e3b051beb0049a2f3242f293a06ddb84b3f310b4670f924f2d0",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/preparation/AS9/protein_heavy.pka"
+        },
+        {
+          "path": "validation_20261106/preparation/AS9/pypka_apo_extended/pypka_states.json",
+          "sha256": "a77913c590dec4cba916e8b9b9f77879a268a63db1b311a00245abd6c16211f9",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/preparation/AS9/pypka_apo_extended/pypka_states.json"
+        }
+      ],
+      "limits": [
+        "Protein-only pKa predictions omit ligand/metal/proton-network effects.",
+        "No AS9 catalytic protonation state is declared correct; actual scientific setup remains pending."
+      ]
+    },
+    {
+      "id": "representative_UMA_precision",
+      "status": "passed_within_stated_scope",
+      "scope": "Ordinary newest small UMA-S-1.2.1 on 7690-atom isolated protein; FP64 finite-difference error 5.76e-5 eV/A, FP32 error 0.939 eV/A",
+      "evidence": [
+        {
+          "path": "validation_20261106/preparation/AS9/uma_enzyme_fp64_reference.json",
+          "sha256": "4574238cc3c4d070d51dce1151677717e37e9576503f57576ba6552130a2c758",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/preparation/AS9/uma_enzyme_fp64_reference.json"
+        },
+        {
+          "path": "validation_20261106/preparation/AS9/uma_enzyme_resource_probe_retry.json",
+          "sha256": "02bd437c185881fc0f06a47b234ca5cf0dd723f358ad043c5f62e39c270d191d",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/preparation/AS9/uma_enzyme_resource_probe_retry.json"
+        }
+      ],
+      "limits": [
+        "FP32 fails 0.02 eV/A tolerance for this input; no general FP32 recommendation.",
+        "FP64 about 10.42 s/force and 29.62 GB peak allocated; isolated-protein probe, not solvated MD."
+      ]
+    },
+    {
+      "id": "project_regression",
+      "status": "passed_within_stated_scope",
+      "scope": "409 project tests passed in the final full regression run",
+      "evidence": [
+        {
+          "path": "validation_20261106/full-review-regression.xml",
+          "sha256": "794d5a8a9123ede14b64aa1f6bcdcb9adce087a956531bb66c3d7bd8665f9501",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/full-review-regression.xml"
+        }
+      ],
+      "limits": [
+        "Software tests cannot establish chemical accuracy."
+      ]
+    },
+    {
+      "id": "inventory_and_process_adapter",
+      "status": "passed_within_stated_scope",
+      "scope": "11 targeted checks passed after inventory integration, including agent dispatch and persistent CPU process lifecycle",
+      "evidence": [
+        {
+          "path": "validation_20261106/toolchain-inventory-tests.xml",
+          "sha256": "b8bf92f376fbfa626d164f1b5de4cd694417012cc503d267fac23768c74734c9",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain-inventory-tests.xml"
+        }
+      ],
+      "limits": [
+        "Most cases also appear in the full regression run; counts are not additive."
+      ]
+    },
+    {
+      "id": "worker_lifecycle",
+      "status": "passed_within_stated_scope",
+      "scope": "GPU restart after ZMQ thread join/subreaper fix; independent process check and orphan-grandchild lifecycle test",
+      "evidence": [
+        {
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/westpa-lifecycle-tests.xml",
+          "path": "validation_20261106/westpa-lifecycle-tests.xml",
+          "sha256": "aa08fd07e1e723767b72f88e2a542350fbf85e82728e636b88090ace4fd14e02"
+        },
+        {
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/westpa-gpu/cleanup.json",
+          "path": "validation_20261106/toolchain/westpa-gpu/cleanup.json",
+          "sha256": "fef9e06a3ea45e00ab1f37b0e4339fdceb5884c058b301d41e2fe0710a97d3eb"
+        }
+      ],
+      "limits": [
+        "Software lifecycle validation; no performance advantage inferred."
+      ]
+    },
+    {
+      "id": "existing_rfd4_aurora_profile",
+      "status": "prior_technical_validation_referenced",
+      "scope": "Existing Aurora native XPU FP32 qualification on 100- and 516-residue inputs; no new design generation in this pass",
+      "evidence": [
+        {
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Tool/RFD4-Proteina-compat/aurora/validation_summary.json",
+          "path": "validation_20261106/rfd4_aurora/validation_summary.json",
+          "sha256": "9fa34f9ee68fe992912d278be2156465ee6c5429dfe8048d79aef0bf99dab347"
+        },
+        {
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Tool/RFD4-Proteina-compat/aurora/staging_manifest.json",
+          "path": "validation_20261106/rfd4_aurora/staging_manifest.json",
+          "sha256": "c0612b35623e11ad96770e14197cd7ed6e5186decc77fff07140aa543da95c0c"
+        }
+      ],
+      "limits": [
+        "No joint multistate optimization or catalytic/processivity validation.",
+        "Future workloads require current scheduler/resource preflight and exact input/weight review."
+      ]
+    }
+  ],
+  "implementation": {
+    "source_root": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent",
+    "command": "python -m structural_modeling_agent.sampling.toolchain_validation --help"
+  },
+  "optional_native_prebuild": {
+    "path": "validation_20261106/toolchain/native_cpp_prebuild.json",
+    "sha256": "fadc3003e30659be269799553f387f3b2e89851c953a6d67c5d76aee69229851",
+    "selected_for_hybrid_MD": false,
+    "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/native_cpp_prebuild.json"
+  },
+  "case_specific_pending": [
+    "Exact chemical and assembly states for each step, including chain length and exchanged ATP/cofactor species.",
+    "Ligand-aware protonation/metal hydration alternatives and quantum reference validation.",
+    "Solvated system parameter review, stability, timestep and representative throughput.",
+    "Mapped reactant/intermediate/product atom identities and newly parameterized MD topologies after reaction.",
+    "Reaction free energies/barriers and transport/release physical rates with uncertainty and convergence.",
+    "Positive-control calibration and productive repeated extension before first committed release."
+  ],
+  "processivity_demonstrated": false,
+  "automatic_model_choice": false,
+  "evidence_policy": "Committed immutable report snapshots; origin_path points to full local run. Digest checks apply to snapshots, not live installed software or hardware.",
+  "performance_selection_status": "Representative sampler and end-to-end efficiency benchmarks requested; pending. Software compatibility does not select a production method."
+}

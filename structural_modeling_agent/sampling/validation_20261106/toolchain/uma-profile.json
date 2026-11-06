@@ -1,0 +1,36 @@
+{
+  "schema": "ase-model-process-1.0",
+  "scope": "author_fixture_numerical_software_validation_only",
+  "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-uma-20261105/bin/python",
+  "factory": "structural_modeling_agent.sampling.backends:uma",
+  "kwargs": {
+    "checkpoint": "/nfs/lambda_stor_01/homes/rzhu/.cache/huggingface/hub/models--facebook--UMA/snapshots/f611b917d9c68566bbbeccbb0aa0f7cad1696cb2/checkpoints/uma-s-1p2p1.pt",
+    "charge": -1,
+    "multiplicity": 1,
+    "reference_yaml": "/nfs/lambda_stor_01/homes/rzhu/.cache/fairchem/models--facebook--UMA/snapshots/f611b917d9c68566bbbeccbb0aa0f7cad1696cb2/references/iso_atom_elem_refs.yaml",
+    "precision": "float64"
+  },
+  "charge": -1,
+  "multiplicity": 1,
+  "require_gpu": true,
+  "artifacts": [
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/.cache/huggingface/hub/models--facebook--UMA/snapshots/f611b917d9c68566bbbeccbb0aa0f7cad1696cb2/checkpoints/uma-s-1p2p1.pt",
+      "sha256": "b2673b85037b075674c25f55c34ffe1ff1e15db924be977b10a184765df0d5ce"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/.cache/fairchem/models--facebook--UMA/snapshots/f611b917d9c68566bbbeccbb0aa0f7cad1696cb2/references/iso_atom_elem_refs.yaml",
+      "sha256": "8d6b57a33c6a139f80cd706f253a030bd9d93cbfb1bbe33fba066e23b7e8c29e"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/backends.py",
+      "sha256": "78550f603368e77012fa90417982aa8796df72b50571580f7fe6e3a773f4ded9"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/persistent_calculator.py",
+      "sha256": "ad0e0a6122eae7f6652570e1b0054d492192b6acdac49f684af9047498f61f60"
+    }
+  ],
+  "log": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/uma-model.log",
+  "timeout_seconds": 240
+}

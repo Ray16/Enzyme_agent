@@ -1,9 +1,65 @@
 # MD and umbrella-sampling pilot
 
+The configured multiscale tools and their exact test scope are recorded in
+[`toolchain_manifest.json`](toolchain_manifest.json) and
+[`VALIDATION_20261106.md`](VALIDATION_20261106.md). The agent can read this inventory
+with `inspect_processivity_toolchain`; changed or missing evidence is flagged.
+
 This pilot asks whether catalytic poses remain plausible during motion and what
 it costs to access those poses. It does not predict enzyme activity or replace
 the frozen proximity-weighted attack-angle ranking. A pose-accessibility PMF is
 not a chemical activation barrier.
+
+## The agent chooses the scientific protocol
+
+The structural-modeling agent exposes `inspect_sampling_setup_contract`,
+`declare_sampling_setup`, and `inspect_sampling_setup`. Its evidence ledger
+asks the agent to resolve the reaction state, assembly, conditions, participants,
+protonation, metals, solvent/boundaries, potential, sampling/CVs, validation and
+resources. These are investigation questions, not a case recipe. The code never
+chooses a pH, histidine tautomer, metal count, cofactor setup or engine merely
+because it appears in an example. Family-level decisions can be shared with
+explicit exact-sequence and target applicability review.
+
+Each decision retains its selected value, alternatives, assumptions, uncertainties
+and source IDs; conditional choices require a discriminating test. Source
+categories distinguish primary evidence and user conditions from computational
+proposals and structural observations. Missing decisions and changed sources
+remain pending. A complete declaration is only `ready_for_preparation`, never
+proof of correct chemistry or automatic authorization to compute.
+
+Scientific runs require `setup_declaration` (the agent's saved `decision.json`)
+and `setup_declaration_sha256`. The preparation report carries the full candidate
+`sequence`, exact requested `target`, and `agent_setup_sha256`. Execution rechecks
+that ledger and its sources, then compares the actual pH, temperature, model
+profile IDs, sampling parameters and resource budget with the agent's decisions.
+An unsupported selected sampling method requires an execution adapter; it cannot
+silently become the umbrella method implemented by this reference runner.
+
+For processivity, `inspect_processivity_contract` and
+`assess_processivity_network` connect transport, orientation, chemical extension
+and committed escape using an agent-defined state graph and sourced physical
+rates. Unknown rates remain pending. First committed release is absorbing for
+the same-association processivity calculation, so release followed by rebinding
+cannot inflate continuation probability. The rate-network solver cannot establish
+that an enzyme is processive: synthetic tests are labeled software-only, and
+sourced results remain conditional kinetic predictions. The physical state
+definitions, chemistry, rate estimators and uncertainty still require validation.
+
+The scientific objective is productive repeated extension before escape, not
+maximum binding strength or a visually favorable tunnel. Straight, curved or
+V-shaped paths are candidate-specific hypotheses. Select geometry from accessible
+states and transport/chemistry evidence, preserving active-site function and
+cofactor/product exchange. A tunnel or groove that retains a chain in a dead-end
+pose is not a processivity success.
+
+For execution, `conditions.choice` supplies `pH` and `temperature_K`,
+`model_backend.choice.profile_ids` names calculator profiles, and
+`sampling.choice` supplies `method` and the exact run settings in `parameters`.
+`resources.choice` is copied exactly to `resource_budget`, including
+`max_workers` and `max_wall_seconds_per_task`. The initial reference runner
+implements `unbiased_md` and `umbrella_distance`; additional methods can be
+investigated and recorded without being misrepresented as executable.
 
 ## Execution and tool choices
 
@@ -115,7 +171,7 @@ and SHA256 values for `structure` and `preparation_report`, explicit `charge` an
   "seeds": [17, 31, 47],
   "distance_atoms": [{"index": 0, "element": "O"}, {"index": 1, "element": "P"}],
   "angle_atoms": [{"index": 0, "element": "O"}, {"index": 1, "element": "P"}, {"index": 2, "element": "O"}],
-  "umbrella": {"centers_A": [3.0, 3.2, 3.4], "spring_eV_per_A2": 0.1},
+  "umbrella": {"enabled": true, "centers_A": [3.0, 3.2, 3.4], "spring_eV_per_A2": 0.1},
   "bond_guards": [{"atoms": [0, 1], "min_A": 2.7, "max_A": 8.0}],
   "metal_sites": [{"index": 3, "element": "Mg", "donor_indices": [4, 5, 6, 7, 8, 9], "cutoff_A": 2.6}],
   "analysis": {"min_effective_samples_per_window": 50, "min_adjacent_overlap": 0.03, "bin_edges_A": [2.8, 3.0, 3.2, 3.4, 3.6]}
@@ -130,6 +186,9 @@ leaves orientation free, but slow angle, solvent or coordination modes can requi
 additional coordinates. The cutoff-based metal counts are diagnostics, not
 definitions of chemical bonding. Equilibration and production durations above
 are software-pilot settings, not convergence claims.
+For an agent-selected ordinary-MD study, set `umbrella.enabled` to false and
+provide empty centers with zero spring strength. That generates only unbiased
+replicas and does not add an enhanced-sampling campaign.
 
 Each entry in `models` declares a unique `id`, a factory from `backends.py`, its
 `kwargs`, exact `source_revision`, `precision`, local checkpoint `artifacts`
@@ -208,3 +267,92 @@ Compare the same prepared system, numerical profile, sampling budget and outputs
 Tiny-water compatibility timings cannot predict enzyme throughput. Benchmark
 native batches on a representative prepared system and check forces against the
 reference path before enabling production batching.
+
+## Transport, chemistry and release tools
+
+OpenMM 8.6.1 with the CUDA 12 plugin supplies the solvated classical MD engine.
+PLUMED 2.10.2 and its locally built OpenMM adapter supply collective variables
+and biases. WESTPA supplies weighted-ensemble transport/release sampling;
+`westpa_bound` assigns disjoint local CPU workers, and `westpa_gpu_worker` requires
+one reserved GPU for each ZeroMQ worker node. The sole master owns HDF5 writes.
+The GPU worker monitors contention, and completed segments survive restart.
+Agent-selected state boundaries, independent stochastic streams, convergence,
+uncertainty and concentration conventions remain required for physical rates.
+The tutorial's short segments and seed scheme are software fixtures, not a
+production protocol.
+
+CAVER and pyKVFinder supply complementary tunnel and open-pocket measurements.
+Choose origins, probe sizes, path definitions and snapshots from the modeled
+substrate and state. Static length, curvature and bottleneck radius do not
+establish transport rates or favor a straight or V-shaped design by themselves.
+
+ML/MM uses mlmm-toolkit 0.6.0's public custom ASE interface. The
+`persistent_calculator` bridge keeps one model loaded in its validated environment,
+while OpenMM evaluates the subtractive MM terms. Profiles require explicit
+charge/multiplicity, precision, interpreter and hashed artifacts. The same bridge
+supports ordinary UMA-S-1.2.1, OrbMol-v2 and SO3LR Tauri-M without combining their
+dependency stacks. SO3LR reads `multiplicity`; UMA/Orb use `spin` as multiplicity.
+Conflicting metadata is rejected. `toolchain_validation` checks forces on both
+sides of covalent boundaries, a short MD integration and reaction-path forces.
+Give each GPU worker one core/bridge instance. Reuse it for sequential image or
+window evaluations; constructing a model for every image defeats this allocation.
+The reference band uses ASE's explicit shared-calculator mode. Distribute
+independent workers across separately reserved GPUs, and do not call a bridge
+concurrently from multiple threads.
+
+The validated hybrid benchmark is **finite, nonperiodic mechanical ONIOM**.
+Native PySCF electrostatic embedding and the optional xTB correction have separate
+interface tests. Those tests do not validate electrostatic embedding for an enzyme
+reaction or full periodic QM/MM. Keep changing bonds and transferring protons
+inside the high-level region, check boundary/region convergence, and compare ML
+energetics with quantum references. Static path energies and QRRHO estimates are
+not condensed-phase activation free energies.
+
+Piece the stages together through chemically defined states and mapped atoms:
+solvated access/retention/release ensembles, a representative reactive region,
+validated chemical kinetics, then a newly prepared product/intermediate state for
+continued MD. A reacted ligand cannot continue under its old fixed reactant
+topology. Generate and review new parameters, protonation and solvent/cofactor
+states; preserve atom correspondence and any exchanged species. These per-enzyme
+handoffs require investigation and have not been demonstrated by the software
+fixtures. The kinetic-network interface preserves missing rates as gaps.
+
+## Multistate design and sampler selection
+
+The design objective covers a common protein sequence across the required
+reaction, cofactor-exchange and representative chain-length states, together
+with access, retention and release. The agent chooses those states from the
+mechanism. Each has its own full chemical graph, protonation/charge, cofactors
+and atom mapping. A large growing ligand can require an open groove and flexible
+regions; its full volume need not become a rigidly enclosed cavity.
+
+RFD4's standard enzyme tutorial scaffolds a conditioned catalytic constellation.
+The tutorial leaves some ligand coordinates flexible while preserving ligand
+identity. Its YAML input list combines structures into one molecular context;
+it is not an alternative-state ensemble. The published ligase demonstration uses
+multistate AF3 filtering. Accordingly the current proposed handoff is generation
+from a justified state, followed by shared-sequence evaluation/refinement across
+the required states. Joint multistate conditioning is not claimed as an
+implemented feature. Preserve original conditioning targets during refinement.
+See the official [enzyme tutorial](https://rfd4-proteina.org/latest/examples/enzyme_design_tutorial.html),
+[input specification](https://rfd4-proteina.org/latest/how-to/input_prep/yaml-json.html)
+and [ligase demonstration](https://rfd4-proteina.org/).
+
+WESTPA is the configured initial weighted-ensemble implementation for competing
+productive motion and escape. Its [methods paper](https://doi.org/10.1021/acs.jctc.1c01154)
+describes kinetic/pathway estimation, parallel trajectories and adaptive
+resampling. Suitability depends on the actual states, progress descriptors,
+segment duration, dynamics and convergence. The software benchmarks do not
+establish an advantage on this enzyme. A representative pilot should compare
+ordinary MD and an appropriate PLUMED free-energy calculation with WE, preserving
+the Hamiltonian, starting ensembles, physical definitions and comparable budgets.
+Compare distinct observables separately: a PMF is not a rate estimate.
+
+Use effective transition counts, flux/rate stability, uncertainty, independent
+replica/lineage support and total GPU-hours including startup and I/O. Repeated
+descendants of one successful walker are correlated observations. If WE is
+useful but its resampling is inefficient, compare a justified WESTPA resampler
+or [wepy's REVO/WExplore alternatives](https://adicksonlab.github.io/wepy/_source/api.html).
+wepy has been reviewed as an alternative; it is not installed or benchmarked in
+this configuration pass. The agent retains sampler choice as an explicit
+decision rather than embedding WESTPA in every scientific protocol.

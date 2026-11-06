@@ -1,0 +1,751 @@
+{
+  "status": "diagnostic_complete_not_a_bound_state_assignment",
+  "request": {
+    "scope": "protein-only PB/MC diagnostic; not a bound-state assignment",
+    "structure": "protein.pdb",
+    "output": "pypka_states.json",
+    "target_pH": 8.0,
+    "parameters": {
+      "pH": "0,14",
+      "pHstep": 0.5,
+      "epsin": 15.0,
+      "ionicstr": 0.1,
+      "pbc_dimensions": 0,
+      "ncpus": 2,
+      "clean_pdb": "yes",
+      "ser_thr_titration": false
+    },
+    "cpu_roles": {
+      "controller": 75,
+      "workers": [
+        76,
+        77
+      ],
+      "manager": 78
+    },
+    "assumptions": [
+      "0.1 M screening is a diagnostic approximation; buffer counterions and Mg-ATP speciation remain unresolved",
+      "Protein-only dielectric 15 model omits ATP, adipate, Mg and explicit waters; use only to prioritize bound-state review"
+    ],
+    "wall_limit_seconds": 600,
+    "retry_reason": "Initial 180-second diagnostic reached its wall limit during PB calculations. Partial output retained separately. The extended diagnostic excludes Ser/Thr titration, which is not relevant near the confirmed assay pH, and retains the full standard acid/base network."
+  },
+  "input_sha256": "5d3c684de814d5425d8cd8b7837d838cfe600db11f3461629c5788e1eee16c78",
+  "sites": [
+    {
+      "resname": "NTR",
+      "res_number": 5001,
+      "pKa": 7.941786195565893,
+      "state_at_target_pH": "('undefined', 0.46653952502274487)",
+      "final_state": "2"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 3,
+      "pKa": 3.1545881187651816,
+      "state_at_target_pH": "('deprotonated', 1.4275190715017944e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 10,
+      "pKa": 5.84394194362642,
+      "state_at_target_pH": "('deprotonated', 0.006932988804275985)",
+      "final_state": "1"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 11,
+      "pKa": 2.756142094905764,
+      "state_at_target_pH": "('deprotonated', 5.703475993660994e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 22,
+      "pKa": 3.860769260077726,
+      "state_at_target_pH": "('deprotonated', 7.256676178633622e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 23,
+      "pKa": 4.308095312014903,
+      "state_at_target_pH": "('deprotonated', 0.00020323899442770276)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 24,
+      "pKa": 2.5499726391494684,
+      "state_at_target_pH": "('deprotonated', 3.547897776882489e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 30,
+      "pKa": 3.504271609913359,
+      "state_at_target_pH": "('deprotonated', 3.193432499551218e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 31,
+      "pKa": 6.341828188561857,
+      "state_at_target_pH": "('deprotonated', 0.021497605131193764)",
+      "final_state": "1"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 39,
+      "pKa": 6.530240390432783,
+      "state_at_target_pH": "('deprotonated', 0.032791442428075565)",
+      "final_state": "1"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 40,
+      "pKa": 2.9922084367245656,
+      "state_at_target_pH": "('deprotonated', 9.822095919995874e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 58,
+      "pKa": 2.9374775784753364,
+      "state_at_target_pH": "('deprotonated', 8.65912118865426e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 64,
+      "pKa": 3.444762219044476,
+      "state_at_target_pH": "('deprotonated', 2.7845186168876405e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 67,
+      "pKa": 2.5961388960870693,
+      "state_at_target_pH": "('deprotonated', 3.945819206537157e-06)",
+      "final_state": "1"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 72,
+      "pKa": null,
+      "state_at_target_pH": "('undefined', 'pk Not In Range')",
+      "final_state": "4"
+    },
+    {
+      "resname": "LYS",
+      "res_number": 92,
+      "pKa": 10.783552076413452,
+      "state_at_target_pH": "('protonated', 0.998356636515191)",
+      "final_state": "3"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 93,
+      "pKa": 3.063852127310511,
+      "state_at_target_pH": "('deprotonated', 1.1583694534992436e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 95,
+      "pKa": 3.3711964930376483,
+      "state_at_target_pH": "('deprotonated', 2.3506408773798954e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "TYR",
+      "res_number": 98,
+      "pKa": 11.563238507393029,
+      "state_at_target_pH": "('protonated', 0.999726698016986)",
+      "final_state": "1"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 102,
+      "pKa": 3.840180756556761,
+      "state_at_target_pH": "('deprotonated', 6.920710764343887e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "CYS",
+      "res_number": 103,
+      "pKa": 11.314251523953688,
+      "state_at_target_pH": "('protonated', 0.9995152275941399)",
+      "final_state": "1"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 116,
+      "pKa": 3.672592015916267,
+      "state_at_target_pH": "('deprotonated', 4.705129502561182e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 118,
+      "pKa": 2.7093387200603787,
+      "state_at_target_pH": "('deprotonated', 5.120784458658162e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 119,
+      "pKa": 4.2193333582731665,
+      "state_at_target_pH": "('deprotonated', 0.0001656766863742552)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 129,
+      "pKa": 3.1687546607009693,
+      "state_at_target_pH": "('deprotonated', 1.4748513683305167e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 130,
+      "pKa": 5.96226735626109,
+      "state_at_target_pH": "('deprotonated', 0.009084561121314587)",
+      "final_state": "1"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 133,
+      "pKa": 7.536327258244989,
+      "state_at_target_pH": "('undefined', 0.25585101839613467)",
+      "final_state": "1"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 135,
+      "pKa": 3.5231400117164617,
+      "state_at_target_pH": "('deprotonated', 3.3352279894710824e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 136,
+      "pKa": 4.006384310919296,
+      "state_at_target_pH": "('deprotonated', 0.00010147060284496176)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 137,
+      "pKa": 1.9711326238500033,
+      "state_at_target_pH": "('deprotonated', 9.356904942836845e-07)",
+      "final_state": "4"
+    },
+    {
+      "resname": "TYR",
+      "res_number": 138,
+      "pKa": 13.926976726908004,
+      "state_at_target_pH": "('protonated', 0.9999988168964452)",
+      "final_state": "1"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 139,
+      "pKa": 1.2716222533894344,
+      "state_at_target_pH": "('deprotonated', 1.869055390880417e-07)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 153,
+      "pKa": 3.6616898476677076,
+      "state_at_target_pH": "('deprotonated', 4.5884913744620397e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 157,
+      "pKa": 2.7487815766955617,
+      "state_at_target_pH": "('deprotonated', 5.6076272992792375e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "TYR",
+      "res_number": 164,
+      "pKa": null,
+      "state_at_target_pH": "('undefined', 'pk Not In Range')",
+      "final_state": "0"
+    },
+    {
+      "resname": "LYS",
+      "res_number": 173,
+      "pKa": 10.18777253141368,
+      "state_at_target_pH": "('protonated', 0.9935521026433237)",
+      "final_state": "3"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 179,
+      "pKa": 0.9864238810780325,
+      "state_at_target_pH": "('deprotonated', 9.69223284405424e-08)",
+      "final_state": "1"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 187,
+      "pKa": 4.253687356069745,
+      "state_at_target_pH": "('deprotonated', 0.00017931204965467408)",
+      "final_state": "4"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 194,
+      "pKa": 6.92459840864735,
+      "state_at_target_pH": "('deprotonated', 0.07754331959190634)",
+      "final_state": "0"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 196,
+      "pKa": 4.497160252135189,
+      "state_at_target_pH": "('deprotonated', 0.0003140681039496498)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 199,
+      "pKa": 3.3766007491941807,
+      "state_at_target_pH": "('deprotonated', 2.380073739256424e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 209,
+      "pKa": 3.1526329297029934,
+      "state_at_target_pH": "('deprotonated', 1.4211069319269043e-05)",
+      "final_state": "0"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 221,
+      "pKa": 4.321999243606108,
+      "state_at_target_pH": "('deprotonated', 0.00020984957671053546)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 231,
+      "pKa": 2.511732746305707,
+      "state_at_target_pH": "('deprotonated', 3.248862530199044e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 235,
+      "pKa": 3.6128512148785124,
+      "state_at_target_pH": "('deprotonated', 4.100467805417449e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 242,
+      "pKa": 3.824414408904654,
+      "state_at_target_pH": "('deprotonated', 6.673988026565765e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "CYS",
+      "res_number": 245,
+      "pKa": 9.936032852820118,
+      "state_at_target_pH": "('protonated', 0.9885458213670912)",
+      "final_state": "0"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 256,
+      "pKa": 4.620767085076708,
+      "state_at_target_pH": "('deprotonated', 0.00041743201935413973)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 260,
+      "pKa": 4.643361693188383,
+      "state_at_target_pH": "('deprotonated', 0.0004397143972625907)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 265,
+      "pKa": 4.059968551066474,
+      "state_at_target_pH": "('deprotonated', 0.0001147938690835502)",
+      "final_state": "4"
+    },
+    {
+      "resname": "TYR",
+      "res_number": 277,
+      "pKa": 11.525092827252903,
+      "state_at_target_pH": "('protonated', 0.9997016146020681)",
+      "final_state": "1"
+    },
+    {
+      "resname": "CYS",
+      "res_number": 282,
+      "pKa": 10.711380859308028,
+      "state_at_target_pH": "('protonated', 0.9980601156409945)",
+      "final_state": "0"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 288,
+      "pKa": 3.425023977315375,
+      "state_at_target_pH": "('deprotonated', 2.660801161464149e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 296,
+      "pKa": 3.9542827840561703,
+      "state_at_target_pH": "('deprotonated', 9.000024582960089e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 298,
+      "pKa": 3.4664362277067196,
+      "state_at_target_pH": "('deprotonated', 2.9270053463409656e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "TYR",
+      "res_number": 303,
+      "pKa": null,
+      "state_at_target_pH": "('undefined', 'pk Not In Range')",
+      "final_state": "0"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 307,
+      "pKa": 0.9586027201764439,
+      "state_at_target_pH": "('deprotonated', 9.090812086735509e-08)",
+      "final_state": "4"
+    },
+    {
+      "resname": "CYS",
+      "res_number": 309,
+      "pKa": 12.568685501607174,
+      "state_at_target_pH": "('protonated', 0.9999730037914839)",
+      "final_state": "2"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 320,
+      "pKa": 5.5051616866133,
+      "state_at_target_pH": "('deprotonated', 0.0031898783850304886)",
+      "final_state": "0"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 322,
+      "pKa": 1.6922590542529594,
+      "state_at_target_pH": "('deprotonated', 4.923328796999923e-07)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 324,
+      "pKa": 3.809595085823144,
+      "state_at_target_pH": "('deprotonated', 6.450109276805508e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 325,
+      "pKa": 7.860580686265586,
+      "state_at_target_pH": "('undefined', 0.4204260084029899)",
+      "final_state": "0"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 327,
+      "pKa": 3.0813088865744667,
+      "state_at_target_pH": "('deprotonated', 1.2058787705181402e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 337,
+      "pKa": 3.483387366551717,
+      "state_at_target_pH": "('deprotonated', 3.043505904059708e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 338,
+      "pKa": 7.379967513889658,
+      "state_at_target_pH": "('undefined', 0.1934608052755712)",
+      "final_state": "1"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 340,
+      "pKa": 3.155270209478358,
+      "state_at_target_pH": "('deprotonated', 1.4297628223231544e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 345,
+      "pKa": 2.783986744442937,
+      "state_at_target_pH": "('deprotonated', 6.081127420026693e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 351,
+      "pKa": 2.701829218275777,
+      "state_at_target_pH": "('deprotonated', 5.03300118286283e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 356,
+      "pKa": 3.9480667172100077,
+      "state_at_target_pH": "('deprotonated', 8.872135874556274e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 359,
+      "pKa": 2.198224502340536,
+      "state_at_target_pH": "('deprotonated', 1.5784245127477935e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "LYS",
+      "res_number": 366,
+      "pKa": 11.604277899701923,
+      "state_at_target_pH": "('protonated', 0.99975133532565)",
+      "final_state": "3"
+    },
+    {
+      "resname": "TYR",
+      "res_number": 371,
+      "pKa": 13.136997727130554,
+      "state_at_target_pH": "('protonated', 0.9999927054399324)",
+      "final_state": "0"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 376,
+      "pKa": 3.9887460431514965,
+      "state_at_target_pH": "('deprotonated', 9.743247319979316e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 384,
+      "pKa": 3.5475075408795047,
+      "state_at_target_pH": "('deprotonated', 3.527704669784269e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 392,
+      "pKa": 2.70596531404474,
+      "state_at_target_pH": "('deprotonated', 5.081162769916872e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 397,
+      "pKa": 1.7062754870865429,
+      "state_at_target_pH": "('deprotonated', 5.084816282931445e-07)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 398,
+      "pKa": 4.308811906001195,
+      "state_at_target_pH": "('deprotonated', 0.000203574551047828)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 399,
+      "pKa": 3.0674844414542135,
+      "state_at_target_pH": "('deprotonated', 1.1680982369545887e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 406,
+      "pKa": 1.1776829834860836,
+      "state_at_target_pH": "('deprotonated', 1.5055074816962173e-07)",
+      "final_state": "4"
+    },
+    {
+      "resname": "LYS",
+      "res_number": 409,
+      "pKa": 10.29098194588267,
+      "state_at_target_pH": "('protonated', 0.9949090196329203)",
+      "final_state": "3"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 410,
+      "pKa": 0.8604594837727494,
+      "state_at_target_pH": "('deprotonated', 7.252027666777978e-08)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 417,
+      "pKa": 4.377223496671807,
+      "state_at_target_pH": "('deprotonated', 0.0002382977780705345)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 423,
+      "pKa": 2.5336491714421663,
+      "state_at_target_pH": "('deprotonated', 3.4170213115231783e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 425,
+      "pKa": 2.240980805949151,
+      "state_at_target_pH": "('deprotonated', 1.741726860690984e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 430,
+      "pKa": 4.217863723762218,
+      "state_at_target_pH": "('deprotonated', 0.00016511708328289612)",
+      "final_state": "4"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 431,
+      "pKa": 2.3510917030567686,
+      "state_at_target_pH": "('deprotonated', 2.2443507415366915e-06)",
+      "final_state": "1"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 436,
+      "pKa": 2.624579424675238,
+      "state_at_target_pH": "('deprotonated', 4.212865509607087e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 444,
+      "pKa": 2.8892086883106916,
+      "state_at_target_pH": "('deprotonated', 7.748280299894157e-06)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 449,
+      "pKa": 3.989952559507779,
+      "state_at_target_pH": "('deprotonated', 9.77035008457089e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "LYS",
+      "res_number": 461,
+      "pKa": 10.708484957665286,
+      "state_at_target_pH": "('protonated', 0.998047162498085)",
+      "final_state": "3"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 464,
+      "pKa": 3.725261953955136,
+      "state_at_target_pH": "('deprotonated', 5.3117653871769975e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 466,
+      "pKa": 3.7534199333256697,
+      "state_at_target_pH": "('deprotonated', 5.66754945901477e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 467,
+      "pKa": 3.8967,
+      "state_at_target_pH": "('deprotonated', 7.882532413061707e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "LYS",
+      "res_number": 480,
+      "pKa": 11.625794706359537,
+      "state_at_target_pH": "('protonated', 0.9997633521807985)",
+      "final_state": "3"
+    },
+    {
+      "resname": "CYS",
+      "res_number": 481,
+      "pKa": 10.185895698983002,
+      "state_at_target_pH": "('protonated', 0.9935243581641466)",
+      "final_state": "2"
+    },
+    {
+      "resname": "ASP",
+      "res_number": 489,
+      "pKa": 3.878339129060302,
+      "state_at_target_pH": "('deprotonated', 7.556249882370698e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 490,
+      "pKa": 4.106740146819268,
+      "state_at_target_pH": "('deprotonated', 0.00012784525707172469)",
+      "final_state": "4"
+    },
+    {
+      "resname": "LYS",
+      "res_number": 498,
+      "pKa": 8.874425482218204,
+      "state_at_target_pH": "('undefined', 0.8822008899780288)",
+      "final_state": "3"
+    },
+    {
+      "resname": "LYS",
+      "res_number": 501,
+      "pKa": 12.423481238236354,
+      "state_at_target_pH": "('protonated', 0.9999622860186056)",
+      "final_state": "3"
+    },
+    {
+      "resname": "HIS",
+      "res_number": 502,
+      "pKa": 6.1791333174600265,
+      "state_at_target_pH": "('deprotonated', 0.014880658950215656)",
+      "final_state": "1"
+    },
+    {
+      "resname": "GLU",
+      "res_number": 503,
+      "pKa": 3.7534070365734946,
+      "state_at_target_pH": "('deprotonated', 5.667381168243887e-05)",
+      "final_state": "4"
+    },
+    {
+      "resname": "CTR",
+      "res_number": 5516,
+      "pKa": 2.556141183523593,
+      "state_at_target_pH": "('deprotonated', 3.5986500899408614e-06)",
+      "final_state": "4"
+    }
+  ],
+  "elapsed_seconds": 396.1421661041677
+}

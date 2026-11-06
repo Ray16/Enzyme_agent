@@ -1,5 +1,110 @@
 # Sampling setup validation — 2026-11-06
 
+## Current review status
+
+The essential tools are configured and their bounded software interfaces have
+been exercised. The agent has a source-backed setup ledger and a read-only
+`inspect_processivity_toolchain` tool, so scientific choices remain specific to
+the enzyme, chemical state and question. This is readiness for reviewed pilots;
+it does not establish a correct catalytic protonation state, amide reaction
+barrier, physical processivity rate or processive enzyme.
+
+The [machine-readable inventory](toolchain_manifest.json) pins source commits,
+environment records, check scopes and SHA256 values. Compact reports are committed
+in [validation_20261106](validation_20261106/); their full local runs remain under
+`runs/amide_sampling_pilot_20261105/`. The inventory checks immutable report bytes,
+not live hardware availability or scientific accuracy.
+
+| Component | Completed validation |
+| --- | --- |
+| OpenMM 8.6.1 | CPU and V100 MD on the 4,010-atom official WESTPA NaCl/water fixture; exact checkpoint coordinate restoration and numerical replay |
+| PLUMED 2.10.2/OpenMM adapter | Two native tests; analytical restraint energy/forces on CPU and V100, including 1-based atom selection and units |
+| WESTPA | Two local CPU workers over three iterations, then two independently reserved V100 workers over four iterations; separate master, restart, finite trajectories and normalized weights |
+| CAVER 3.02 + pyKVFinder 0.9.6 | Static tunnel length, bottleneck, curvature, cavity volume and depth; explicit example origin/probe scope retained |
+| UMA-S-1.2.1, OrbMol-v2, SO3LR Tauri-M | Same finite ML/MM fixture, conservative force checks across two covalent boundaries, short MD integration and reaction-path force evaluation |
+| Native PySCF/xTB embedding interfaces | 79 upstream tests passed, one skipped; the skipped xTB test then passed separately with its configured executable |
+| Preparation | Acetamide AM1-BCC/GAFF2 → tleap → OpenMM; atom/total-charge checks, with the small charge correction explicitly recorded |
+| Agent/pilot regression | Final full suite: 409 passed. Earlier targeted inventory/process-adapter and worker-lifecycle checks also passed |
+
+The V100 hybrid comparison used 122 real atoms, 46 ML-region atoms and two link
+hydrogens, FP64 high-level inference and explicit OpenMM MM. It checked selected
+Cartesian derivatives on both sides of the boundaries. Three 0.05-fs NVE steps
+check the integration interface; one three-image NEB force evaluation checks the
+path interface. Neither is a stability or transition-state convergence study.
+
+| High-level model | Maximum force error (eV/Å) | Three-step NVE energy drift (eV) |
+| --- | ---: | ---: |
+| Ordinary UMA-S-1.2.1 | 0.0007263 | 0.00000295 |
+| OrbMol-v2 | 0.0007255 | 0.00000362 |
+| SO3LR Tauri-M | 0.0007261 | 0.00000174 |
+
+The shared force-error scale is consistent with the MM numerical path; these
+values do not rank the ML models' chemical accuracy. The finite-difference gate
+was 0.02 eV/Å. All models remained in separate validated environments, with one
+loaded model per worker and a persistent ASE bridge to the public toolkit API.
+Model profiles pin their artifacts and explicit charge, multiplicity and precision.
+Conflicting metadata is rejected, including the different SO3LR spin convention.
+
+The two-GPU WESTPA check used lambda4 GPUs 4/5, CPU sets 60–61/62–63, and a sole
+HDF5-writing master on lambda2 CPU 76. Saved segment records confirm both physical
+GPUs performed MD. These were 20-step software segments; no transport rate or
+convergence claim follows. Production stochastic streams, state definitions,
+sampling length and uncertainty require their own review.
+
+Shutdown validation found lingering WESTPA ZMQ helpers. The reserved worker now
+waits for the ZMQ communication thread, adopts orphaned descendants with a Linux
+subreaper, and terminates/reaps its remaining children before releasing the
+reservation. A subsequent GPU restart completed and an independent process check
+found no remaining validation workers/helpers. The lifecycle test is included in
+the final full suite.
+
+## Material runtime findings
+
+* OpenMM's default CUDA-12 extra selected NVRTC 12.9, which imported but failed
+  during V100 execution. The tested MD stack pins NVRTC/runtime **12.4.127**.
+* The original Orb stack needed the official CUDA-12 Warp wheel. A 7,690-atom
+  isolated-protein Orb probe exceeded the 32-GB V100 memory budget; the validated
+  hybrid region is much smaller.
+* Ordinary UMA runs on a V100. On the isolated protein, FP32 failed the declared
+  force tolerance (0.939 eV/Å); FP64 passed (0.0000576 eV/Å). FP64 took about
+  10.42 seconds per steady force call and peaked at 29.62 GB allocated memory.
+  These are isolated-protein numerical/resource probes, not solvated-enzyme MD.
+* The optional hessian_ff path encountered a stale compilation lock. A dedicated
+  serial prebuild succeeded using its serial bonded fallback; OpenMP bonded
+  recipes failed compilation. The validated hybrid MD explicitly selects OpenMM
+  MM. The optional analytical-Hessian binary loaded but was not numerically
+  validated here, and its host-native build has CPU portability limits.
+
+The environment/build details and exact pins are in
+[environments/README.md](environments/README.md). No global modeling environment
+was upgraded. The small acetamide charge normalization is retained with its raw
+charges and rationale; it is not a universal correction policy.
+
+## Scientific gates before an enzyme study
+
+The validated hybrid reference is **finite, nonperiodic mechanical ONIOM**.
+Native CPU electrostatic-embedding interfaces have separate tests; periodic
+electrostatic QM/MM and GPU4PySCF execution are not validated by this work.
+Changing bonds and transferring protons must remain inside a justified reactive
+region, with quantum-reference, boundary and region-convergence checks.
+
+For each enzyme the agent still needs to resolve functional assembly, reaction
+state, ligand/oligomer parameters, key-residue/ligand protonation, metal hydration,
+solvent and ionic conditions. Protein-only PROPKA and PyPka diagnostics for AS9
+disagree at several sites and omit bound-ligand effects; the AS9 chemical setup
+remains pending. The assay pH is confirmed, but a pH alone does not uniquely fix
+active-site histidine tautomers.
+
+The full cycle needs mapped chemical states and newly prepared product/intermediate
+topologies between reactive calculations and continued classical MD. Its transport,
+retention, chemistry and release rates need validated estimators, common conditions,
+uncertainty and convergence. The new kinetic-network solver keeps unknown rates
+null and first release absorbing, so rebinding cannot count as continuous growth.
+No full-cycle enzyme trajectory or new molecular demonstration of processivity
+has been produced. No shorter/wider tunnel designs were launched in this phase.
+
+## Earlier ASE pilot baseline
+
 The ordinary newest small base UMA checkpoint (`uma-s-1p2p1`) is configured and
 has completed an energy/force compatibility probe on a Tesla V100-SXM2-32GB.
 Its actual settings were FP32, TF32 disabled, general execution, compilation off,

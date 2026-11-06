@@ -1,0 +1,29 @@
+{
+  "schema": "ase-model-process-1.0",
+  "scope": "author_fixture_numerical_software_validation_only",
+  "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-orb-20261105/bin/python",
+  "factory": "structural_modeling_agent.sampling.backends:orbmol_v2",
+  "kwargs": {
+    "checkpoint": "/nfs/lambda_stor_01/homes/rzhu/Tool/model_cache/amide-sampling/orbmol-v2-teqabfhg-20260523.ckpt",
+    "precision": "float64"
+  },
+  "charge": -1,
+  "multiplicity": 1,
+  "require_gpu": true,
+  "artifacts": [
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Tool/model_cache/amide-sampling/orbmol-v2-teqabfhg-20260523.ckpt",
+      "sha256": "3dbef70b5fdc9124392181b0d8686c79f1c02bf5fefcb878a4eaa51d03e4f5e8"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/backends.py",
+      "sha256": "78550f603368e77012fa90417982aa8796df72b50571580f7fe6e3a773f4ded9"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/persistent_calculator.py",
+      "sha256": "ad0e0a6122eae7f6652570e1b0054d492192b6acdac49f684af9047498f61f60"
+    }
+  ],
+  "log": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/toolchain/orb-model.log",
+  "timeout_seconds": 240
+}

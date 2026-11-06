@@ -1,0 +1,8 @@
+{
+  "original_net_charge_e": 0.002000999999999961,
+  "declared_formal_charge": 0,
+  "per_atom_shift_e": -0.00022233333333332902,
+  "source": "SQM sqm.out reports individual Mulliken charges to three decimals; molecular total is neutral. BCC bond corrections conserve charge.",
+  "method": "Uniform minimal L2 correction to exact formal charge; preserves equivalent-atom equalization.",
+  "purpose": "software preparation benchmark; no enzyme parameters validated"
+}

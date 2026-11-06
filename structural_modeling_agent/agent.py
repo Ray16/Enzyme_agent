@@ -72,6 +72,46 @@ a default metal. Distinguish experimentally established assemblies from the
 minimal unit required to contain a complete ligand site. A pose produced in an
 assumed assembly cannot independently justify that assembly.
 
+For physical MD or enhanced sampling, use inspect_sampling_setup_contract and
+declare_sampling_setup to investigate the protocol before preparing coordinates.
+Use inspect_processivity_toolchain to check recorded runtime capabilities and
+their validation scope before selecting engines; installed software and small
+numerical benchmarks do not establish enzyme accuracy or production readiness.
+You select the reaction state, conditions, participants, protonation microstates,
+metal hydration, solvent/boundaries, potential/precision, sampling method,
+collective variables, validation and bounded resources from evidence for this
+case. No example enzyme, residue number, pH, metal count, tautomer or sampling
+schedule is a default. Share a family-level protocol only with an applicability
+review. Record conditional choices with alternatives and discriminating tests;
+keep missing decisions unresolved. Computational pKa and structural observations
+are hypotheses/evidence of their stated scope, not independent proof of a native
+state. A complete decision ledger is preparation readiness only. Prepared-atom,
+force, runtime and convergence checks still apply before results can be used.
+An unsupported chosen method needs another tool or investigation, never a silent
+replacement with the method the current runner happens to implement.
+
+For processivity, use inspect_processivity_contract and assess_processivity_network
+to connect transport, orientation, chemical extension and release. Define a
+chain-extension cycle separately from auxiliary bond changes and keep committed
+escape distinct from transient loss of active-pocket contacts. Rebinding starts
+a new association and cannot establish same-association processivity. Preserve
+unknown physical rates and mismatched conditions as gaps. A sourced kinetic
+network is a conditional prediction; synthetic solver examples, retention alone,
+forced chemistry and raw biased trajectory times do not demonstrate an enzyme's
+processivity. Select each transition estimator from its physical timescale and
+validate the interface between methods rather than prescribing one engine for
+the entire cycle.
+For de novo enzyme design, record a shared-sequence state-coverage plan: which
+chemical state conditions generation and how the other required states and
+representative growing-chain lengths are evaluated. Preserve each state's
+chemical graph, charge, protonation, cofactors and atom correspondence. RFD4's
+input structure list is merged molecular context, not a shared-sequence multistate
+optimization switch. Use separate state complexes and multistate evaluation;
+keep flexible ligand regions available to move while preserving their identity.
+Choose a transport sampler through a representative comparison of useful
+transitions, uncertainty, lineage diversity and total GPU/CPU/I/O cost. A working
+WESTPA installation does not establish its efficiency on a candidate enzyme.
+
 Reuse the candidate context and field contract already supplied in the working
 context. Use focused inspection only for missing information before proposing.
 Retrieve primary sources or inspect supplied local
@@ -308,6 +348,16 @@ def tool_schemas():
         _schema("inspect_result_locations", "Find this system/run's output destinations, current revisions and recorded result paths; folder existence is not completion", acc),
         _schema("inspect_workflow_policy", "Inspect default cofolding and the distinct scientific purposes of optional dynamics and de novo design", acc, ("accession",)),
         _schema("inspect_mlmm_engine_options", "Inspect reviewed UMA/Nitro, precision and embedding options and the separate evidence needed before a chemical-energetics run; no model loading"),
+        _schema("inspect_sampling_setup_contract", "Inspect the evidence ledger for agent-selected MD/enhanced-sampling protocols; supplies questions, no chemical defaults"),
+        _schema("inspect_processivity_toolchain", "Inspect configured MD, enhanced sampling, tunnel, QM/MM and ML/MM tools and exact validation scope; no model loading or submission"),
+        _schema("inspect_processivity_contract", "Inspect the transport/chemistry/release network contract and limits of processivity claims"),
+        _schema("assess_processivity_network", "Evaluate a source-grounded kinetic network without filling unknown rates or counting release/rebinding as continuation", {
+            **acc, "network": {"type": "object", "description": "processivity-network-1.0 declaration with exact sequence_sha256 and target_sha256"}}, ("accession", "network")),
+        _schema("declare_sampling_setup", "Save candidate-specific MD setup decisions, alternatives, source evidence and pending questions; does not submit compute", {
+            **acc, "setup": {"type": "object", "description": "sampling-setup-1.0 declaration from inspect_sampling_setup_contract"}}, ("accession", "setup")),
+        _schema("inspect_sampling_setup", "Recheck an agent-selected sampling setup against current evidence and model context; paginate the full declaration", {
+            **acc, "setup_id": _string("Saved setup ID; omit for latest"),
+            "offset": {"type": "integer", "minimum": 0}}, ("accession",)),
         _schema("plan_followup", "Record an evidence-grounded optional follow-up after primary cofold inspection", {
             **acc, "plan": {"type": "object", "properties": {
                 "purpose": {"type": "string", "enum": ["dynamics", "de_novo_design"]},
@@ -734,6 +784,15 @@ class ModelingAgent:
                 current = None
             return {**result, "controller_environment_fairchem_version": current,
                     "execution_environment": "External engine environments must be inspected independently; this tool does not test runtime capability."}
+        if name == "inspect_sampling_setup_contract":
+            from .sampling.setup import contract
+            return contract()
+        if name == "inspect_processivity_toolchain":
+            from .sampling.toolchain import inspect_toolchain
+            return inspect_toolchain()
+        if name == "inspect_processivity_contract":
+            from .sampling.kinetics import contract
+            return contract()
         if name == "inspect_result_locations":
             from .result_layout import results_index
             index = results_index(self.run_dir, self.state)
@@ -821,12 +880,60 @@ class ModelingAgent:
             return {"status": self.state["status"], "rationale": args["rationale"]}
         acc = args["accession"]
         candidate = self._candidate(acc)
+        if name == "assess_processivity_network":
+            from .sampling.kinetics import evaluate
+            network = copy.deepcopy(args["network"])
+            if (network.get("sequence_sha256") != hashlib.sha256(candidate["sequence"].encode()).hexdigest()
+                    or network.get("target_sha256") != fingerprint(self.task["target"])):
+                raise ValueError("Kinetic network must match the exact candidate sequence and requested target")
+            for transition in network.get("transitions", []):
+                self._authorize_reasoning_source(transition.get("source", {}))
+            result = evaluate(network)
+            artifact = self._artifact(f"kinetic_network_{acc}", {"network": network, "assessment": result})
+            self.state["candidates"][acc].setdefault("kinetic_networks", {})[result["network_sha256"]] = {
+                "artifact": artifact, "status": result["status"], "processivity_demonstrated": False}
+            return {**result, "artifact": artifact}
         if name == "inspect_workflow_policy":
             from .workflow_policy import TOOL_PURPOSES, baseline_errors
             revisions = self.state["candidates"][acc]["revisions"]
             errors = baseline_errors(revisions[-1]) if revisions else ["no primary cofold decision yet"]
             return {"default": "cofolding", "tool_purposes": TOOL_PURPOSES,
                     "cofold_baseline_errors": errors, "followups_available": not errors}
+        if name in {"declare_sampling_setup", "inspect_sampling_setup"}:
+            from .sampling.setup import assess
+            from .result_layout import revision_dir
+            state = self.state["candidates"][acc]
+            revisions = state["revisions"]
+            basis = fingerprint(revisions[-1]["modeling_input"]) if revisions else None
+            setups = state.setdefault("sampling_setups", {})
+            if name == "declare_sampling_setup":
+                setup = copy.deepcopy(args["setup"])
+                for source in setup.get("sources", []):
+                    self._authorize_reasoning_source(source)
+                assessment = assess(setup, candidate["sequence"], self.task["target"])
+                identity = fingerprint({"setup": setup, "basis_model_sha256": basis})[:16]
+                if identity in setups:
+                    return {"id": identity, "artifact": setups[identity]["artifact"], **assessment}
+                record = {"id": identity, "setup": setup, "assessment": assessment,
+                          "basis_model_sha256": basis, "revision": len(revisions) or None}
+                destination = revision_dir(self.run_dir, acc, max(1, len(revisions))) / "sampling_setups" / identity
+                destination.mkdir(parents=True, exist_ok=True)
+                record["artifact"] = str(destination / "decision.json")
+                atomic_write_json(record["artifact"], record, allow_nan=False)
+                setups[identity] = record
+                return {"id": identity, "artifact": record["artifact"], **assessment}
+            if not setups:
+                raise ValueError("No sampling setup has been declared for this candidate")
+            identity = args.get("setup_id") or next(reversed(setups))
+            record = copy.deepcopy(setups[identity])
+            for source in record["setup"]["sources"]:
+                self._authorize_reasoning_source(source)
+            record["assessment"] = assess(record["setup"], candidate["sequence"], self.task["target"])
+            if record["basis_model_sha256"] != basis:
+                record["assessment"]["status"] = "needs_investigation"
+                record["assessment"]["gaps"].append({"decision": "model_context", "reason": "Baseline model changed; review setup applicability and redeclare"})
+            return _text_page(json.dumps(record, ensure_ascii=False, allow_nan=False), args.get("offset", 0),
+                              setup_id=identity, status=record["assessment"]["status"])
         if name == "propose_model":
             if not args.get("rationale", "").strip() or not args.get("alternatives") or any(
                     not a.get("description") or not a.get("reason_not_selected") for a in args["alternatives"]):
@@ -1319,6 +1426,8 @@ class ModelingAgent:
             assessment = assess_reasoning(revision) if revision else {}
             contradictions = [p["prediction_id"] for p in assessment.get("predictions", []) if p["status"] == "contradicted"]
             state[accession] = {"revision": revision.get("revision"),
+                "sampling_setup_count": len(candidate.get("sampling_setups", {})),
+                "latest_sampling_setup": next(reversed(candidate.get("sampling_setups", {})), None),
                 'existing_prediction_review':candidate.get('existing_prediction_review'),
                 "setup": (revision.get("setup_validation") or {}).get("status"),
                 "poses": (revision.get("pose_validation") or {}).get("status"),

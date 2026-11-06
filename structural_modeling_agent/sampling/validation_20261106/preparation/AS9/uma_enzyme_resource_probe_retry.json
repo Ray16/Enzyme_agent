@@ -1,0 +1,70 @@
+{
+  "scope": "prepared_input_software_resource_probe_only",
+  "backend": "uma",
+  "runtime": {
+    "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-uma-20261105/bin/python",
+    "packages": {
+      "numpy": "2.4.6",
+      "ase": "3.29.0",
+      "torch": "2.8.0",
+      "jax": "0.11.1",
+      "jaxlib": "0.11.1",
+      "so3lr": null,
+      "orb-models": null,
+      "fairchem-core": "2.21.0",
+      "pymbar": null
+    },
+    "host": "lambda4",
+    "pid": 2174712,
+    "process_start": "10609942",
+    "affinity": [
+      70,
+      71
+    ],
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OMP_THREAD_LIMIT": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    }
+  },
+  "status": "software_probe_completed_review_numerical_errors",
+  "enzyme_accuracy": null,
+  "checkpoint": "/nfs/lambda_stor_01/homes/rzhu/.cache/huggingface/hub/models--facebook--UMA/blobs/b2673b85037b075674c25f55c34ffe1ff1e15db924be977b10a184765df0d5ce",
+  "peak_device_memory_bytes": null,
+  "input_sha256": "381fd4aefd792e32d44e97590eb0323938f0e7606c3f670daefeba1df17fa296",
+  "atom_count": 7690,
+  "charge": -25,
+  "spin_multiplicity": 1,
+  "chemical_validation": "not established by this numerical/resource probe",
+  "checkpoint_sha256": "b2673b85037b075674c25f55c34ffe1ff1e15db924be977b10a184765df0d5ce",
+  "reference_sha256": "8d6b57a33c6a139f80cd706f253a030bd9d93cbfb1bbe33fba066e23b7e8c29e",
+  "actual_inference_settings": {
+    "tf32": false,
+    "activation_checkpointing": true,
+    "merge_mole": false,
+    "compile": false,
+    "wigner_cuda": null,
+    "external_graph_gen": false,
+    "internal_graph_gen_version": 2,
+    "torch_num_threads": 1,
+    "edge_chunk_size": null,
+    "use_quaternion_wigner": true,
+    "base_precision_dtype": "float32",
+    "execution_mode": "general",
+    "predict_untrained_forces": [],
+    "predict_untrained_stress": [],
+    "predict_untrained_hessian": [],
+    "hessian_vmap": true,
+    "auto_add_default_untrained_tasks": true,
+    "max_atoms": null,
+    "_target_": "fairchem.core.units.mlip_unit.api.inference.InferenceSettings"
+  },
+  "construction_seconds": 27.829847768996842,
+  "first_energy_force_seconds": 11.042026801005704,
+  "energy_eV": -5289995.926787472,
+  "force_check_max_error_eV_per_A": 0.939213752746582,
+  "steady_force_seconds_per_call": 5.111674225601019,
+  "entrypoint_seconds": 181.9582331690035
+}

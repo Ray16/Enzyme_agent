@@ -1,0 +1,36 @@
+Start testing: Nov 06 09:09 CST
+----------------------------------------------------------
+1/2 Testing: TestPlumedForce
+1/2 Test: TestPlumedForce
+Command: "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/build/openmm-plumed/tests/TestPlumedForce"
+Directory: /nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/build/openmm-plumed/tests
+"TestPlumedForce" start time: Nov 06 09:09 CST
+Output:
+----------------------------------------------------------
+Testing Reference
+Done
+<end of output>
+Test time =   0.14 sec
+----------------------------------------------------------
+Test Passed.
+"TestPlumedForce" end time: Nov 06 09:09 CST
+"TestPlumedForce" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/2 Testing: TestSerializePlumedForce
+2/2 Test: TestSerializePlumedForce
+Command: "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/build/openmm-plumed/serialization/tests/TestSerializePlumedForce"
+Directory: /nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/build/openmm-plumed/serialization/tests
+"TestSerializePlumedForce" start time: Nov 06 09:09 CST
+Output:
+----------------------------------------------------------
+Done
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"TestSerializePlumedForce" end time: Nov 06 09:09 CST
+"TestSerializePlumedForce" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 06 09:09 CST

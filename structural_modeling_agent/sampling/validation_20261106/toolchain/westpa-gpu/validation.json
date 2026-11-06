@@ -1,0 +1,183 @@
+{
+  "status": "passed",
+  "scope": "two_reserved_V100_GPU_workers_WESTPA_ZMQ_NaCl_software_restart_check_only",
+  "master": {
+    "host": "lambda2",
+    "affinity": [
+      76
+    ],
+    "hdf5_writer": "sole_master"
+  },
+  "worker_host": "lambda4",
+  "physical_GPUs": [
+    4,
+    5
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "segments": 2,
+      "weight_sum": 1.0,
+      "complete": 2
+    },
+    {
+      "iteration": 2,
+      "segments": 2,
+      "weight_sum": 1.0,
+      "complete": 2
+    },
+    {
+      "iteration": 3,
+      "segments": 2,
+      "weight_sum": 1.0,
+      "complete": 2
+    },
+    {
+      "iteration": 4,
+      "segments": 2,
+      "weight_sum": 1.0,
+      "complete": 2
+    }
+  ],
+  "resumed_after_iteration": 2,
+  "confirmed_segment_workers": [
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+      "packages": {
+        "numpy": "2.4.6",
+        "ase": "3.29.0",
+        "torch": null,
+        "jax": null,
+        "jaxlib": null,
+        "so3lr": null,
+        "orb-models": null,
+        "fairchem-core": null,
+        "pymbar": "4.0.3"
+      },
+      "host": "lambda4",
+      "pid": 2291636,
+      "process_start": "11235578",
+      "affinity": [
+        62,
+        63
+      ],
+      "threads": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "physical_gpu_index": "5",
+      "status": "segment_completed",
+      "steps": 20
+    },
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+      "packages": {
+        "numpy": "2.4.6",
+        "ase": "3.29.0",
+        "torch": null,
+        "jax": null,
+        "jaxlib": null,
+        "so3lr": null,
+        "orb-models": null,
+        "fairchem-core": null,
+        "pymbar": "4.0.3"
+      },
+      "host": "lambda4",
+      "pid": 2291640,
+      "process_start": "11235580",
+      "affinity": [
+        60,
+        61
+      ],
+      "threads": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "physical_gpu_index": "4",
+      "status": "segment_completed",
+      "steps": 20
+    }
+  ],
+  "steps_per_segment": 20,
+  "physical_rate": null,
+  "processivity_demonstrated": false,
+  "resumed_after_iterations": [
+    2,
+    3
+  ],
+  "lifecycle_supervision": "Linux subreaper, join ZMQ communication thread before release, terminate/reap remaining descendants",
+  "final_worker_records": [
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+      "packages": {
+        "numpy": "2.4.6",
+        "ase": "3.29.0",
+        "torch": null,
+        "jax": null,
+        "jaxlib": null,
+        "so3lr": null,
+        "orb-models": null,
+        "fairchem-core": null,
+        "pymbar": "4.0.3"
+      },
+      "host": "lambda4",
+      "pid": 2291583,
+      "process_start": "11235395",
+      "affinity": [
+        60,
+        61
+      ],
+      "threads": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "physical_gpu_index": "4",
+      "status": "worker_exited",
+      "cleanup_descendant_pids": [
+        2291617
+      ]
+    },
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+      "packages": {
+        "numpy": "2.4.6",
+        "ase": "3.29.0",
+        "torch": null,
+        "jax": null,
+        "jaxlib": null,
+        "so3lr": null,
+        "orb-models": null,
+        "fairchem-core": null,
+        "pymbar": "4.0.3"
+      },
+      "host": "lambda4",
+      "pid": 2291530,
+      "process_start": "11235390",
+      "affinity": [
+        62,
+        63
+      ],
+      "threads": {
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "physical_gpu_index": "5",
+      "status": "worker_exited",
+      "cleanup_descendant_pids": [
+        2291618
+      ]
+    }
+  ]
+}
