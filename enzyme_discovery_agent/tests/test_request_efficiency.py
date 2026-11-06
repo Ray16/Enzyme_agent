@@ -6,8 +6,56 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from enzyme_discovery_agent.request_efficiency import (
-    expand_evidence, factor_evidence, request_metrics, serialized,
+    compact_json_messages, compact_json_text, expand_evidence, factor_evidence, request_metrics, serialized,
 )
+
+
+def test_json_compaction_preserves_numbers_duplicate_keys_escapes_and_quoted_whitespace():
+    text = r'''{ "number": 0.123456789012345678901234567890,
+        "same": 1, "same": 2, "signed": -0, "exponent": 1e+003,
+        "quote": "a  b\t\n\"c\\d", "unicode": "\u03b1" }'''
+    result = compact_json_text(text)
+    assert '0.123456789012345678901234567890' in result
+    assert '"same":1,"same":2' in result
+    assert '"signed":-0,"exponent":1e+003' in result
+    assert r'"a  b\t\n\"c\\d"' in result
+    assert r'"\u03b1"' in result
+    assert json.loads(result) == json.loads(text)
+
+
+def test_json_compaction_leaves_truncated_preview_prose_and_signed_messages_unchanged():
+    for text in (' {"partial": ', 'Source prose  with  spaces.', '[' * 2000):
+        assert compact_json_text(text) == text
+    raw = '{ "observation": "two  spaces" }'
+    messages = [{'role': 'tool', 'tool_call_id': 't1', 'content': raw},
+                {'role': 'assistant', 'content': raw, 'tool_calls': []},
+                {'role': 'tool', 'content': raw, 'extra_content': {'signature': 'opaque'}},
+                {'role': 'user', 'content': raw},
+                {'role': 'user', 'content': 'CURRENT RESEARCH STATE\n' + raw}]
+    before = copy.deepcopy(messages)
+    result = compact_json_messages(messages)
+    assert messages == before
+    assert result[1:4] == messages[1:4]
+    assert result[0]['content'] == '{"observation":"two  spaces"}'
+    assert result[4]['content'] == 'CURRENT RESEARCH STATE\n{"observation":"two  spaces"}'
+    assert compact_json_messages(result) is result
+
+
+def test_client_compacts_the_sent_copy_and_profiles_actual_savings(tmp_path):
+    from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+    from enzyme_discovery_agent.run_layout import run_file
+    client = LLMClient(model='claude-code:synthetic-model')
+    client.attach_usage(TokenUsage(), tmp_path)
+    messages = [{'role': 'tool', 'tool_call_id': 't1', 'content': '{ "value": 1 }'}]
+    response = SimpleNamespace(choices=[], usage=SimpleNamespace(
+        prompt_tokens=10, completion_tokens=2, total_tokens=12))
+    with patch.object(client, '_call_backend', return_value=response) as backend:
+        client.call(messages)
+    assert messages[0]['content'] == '{ "value": 1 }'
+    assert backend.call_args.args[1][0]['content'] == '{"value":1}'
+    events = [json.loads(line) for line in run_file(tmp_path, 'events.jsonl').read_text().splitlines()]
+    profile = next(e for e in events if e['type'] == 'llm_request_profile')
+    assert profile['messages_characters_before_json_compaction'] > profile['messages_characters']
 
 
 def evidence():

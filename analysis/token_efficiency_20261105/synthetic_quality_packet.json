@@ -1,0 +1,169 @@
+{
+  "packet": {
+    "target": {
+      "substrate_smiles": "CCO.O=O",
+      "target_reasoning": {
+        "reaction_direction": "oxidation",
+        "requested_product_smiles": "CC=O",
+        "scope": "Synthetic evaluation fixture. Assess the supplied observations for the exact candidate; do not infer real protein identities."
+      }
+    },
+    "candidates": [
+      {
+        "accession": "SYNTH_OBSERVED",
+        "source_id": "R1",
+        "record": {
+          "accession": "SYNTH_OBSERVED",
+          "protein_name": "Synthetic catalyst 1",
+          "claim_validation": {
+            "claims": [
+              {
+                "claim_type": "accession_identity",
+                "subject": "SYNTH_OBSERVED",
+                "verdict": "supported",
+                "evidence": {
+                  "source": "Synthetic fixture",
+                  "locator": "accession_identity",
+                  "scope": "These are explicitly supplied synthetic observations, not database retrieval or statements about a real protein. Identity refers only to the exact candidate in this record. Repeated source metadata does not represent independent evidence."
+                }
+              },
+              {
+                "claim_type": "record_active",
+                "subject": "SYNTH_OBSERVED",
+                "verdict": "supported",
+                "evidence": {
+                  "source": "Synthetic fixture",
+                  "locator": "record_active",
+                  "scope": "These are explicitly supplied synthetic observations, not database retrieval or statements about a real protein. Identity refers only to the exact candidate in this record. Repeated source metadata does not represent independent evidence."
+                }
+              },
+              {
+                "claim_type": "sequence_identity",
+                "subject": "SYNTH_OBSERVED",
+                "verdict": "supported",
+                "evidence": {
+                  "source": "Synthetic fixture",
+                  "locator": "sequence_identity",
+                  "scope": "These are explicitly supplied synthetic observations, not database retrieval or statements about a real protein. Identity refers only to the exact candidate in this record. Repeated source metadata does not represent independent evidence."
+                }
+              }
+            ]
+          },
+          "source_function_evidence": {
+            "passage": "A purified preparation of the exact supplied candidate converted the requested ethanol and oxygen to acetaldehyde and peroxide. Both requested participants were experimentally required. Product identity was confirmed independently, with 90 percent conversion and no product in the no-enzyme control. This is an observation on the requested transformation, not transfer from a related protein.",
+            "exact_candidate": true,
+            "source_id": "fixture_1"
+          },
+          "catalytic_activities": [
+            "ethanol + oxygen = acetaldehyde + peroxide"
+          ],
+          "critical_warnings": [
+            "Evidence is limited to the supplied observations; no claims about untested conditions or related proteins."
+          ]
+        }
+      },
+      {
+        "accession": "SYNTH_UNKNOWN",
+        "source_id": "R2",
+        "record": {
+          "accession": "SYNTH_UNKNOWN",
+          "protein_name": "Synthetic catalyst 2",
+          "claim_validation": {
+            "claims": [
+              {
+                "claim_type": "accession_identity",
+                "subject": "SYNTH_UNKNOWN",
+                "verdict": "supported",
+                "evidence": {
+                  "source": "Synthetic fixture",
+                  "locator": "accession_identity",
+                  "scope": "These are explicitly supplied synthetic observations, not database retrieval or statements about a real protein. Identity refers only to the exact candidate in this record. Repeated source metadata does not represent independent evidence."
+                }
+              },
+              {
+                "claim_type": "record_active",
+                "subject": "SYNTH_UNKNOWN",
+                "verdict": "supported",
+                "evidence": {
+                  "source": "Synthetic fixture",
+                  "locator": "record_active",
+                  "scope": "These are explicitly supplied synthetic observations, not database retrieval or statements about a real protein. Identity refers only to the exact candidate in this record. Repeated source metadata does not represent independent evidence."
+                }
+              },
+              {
+                "claim_type": "sequence_identity",
+                "subject": "SYNTH_UNKNOWN",
+                "verdict": "supported",
+                "evidence": {
+                  "source": "Synthetic fixture",
+                  "locator": "sequence_identity",
+                  "scope": "These are explicitly supplied synthetic observations, not database retrieval or statements about a real protein. Identity refers only to the exact candidate in this record. Repeated source metadata does not represent independent evidence."
+                }
+              }
+            ]
+          },
+          "source_function_evidence": {
+            "passage": "The exact supplied candidate has only a sequence identity record. No native reaction, substrate acceptance, catalytic mechanism or target conversion has been measured. The available record contains no positive or negative functional evidence.",
+            "exact_candidate": true,
+            "source_id": "fixture_2"
+          },
+          "catalytic_activities": [],
+          "critical_warnings": [
+            "Evidence is limited to the supplied observations; no claims about untested conditions or related proteins."
+          ]
+        }
+      },
+      {
+        "accession": "SYNTH_MISMATCH",
+        "source_id": "R3",
+        "record": {
+          "accession": "SYNTH_MISMATCH",
+          "protein_name": "Synthetic catalyst 3",
+          "claim_validation": {
+            "claims": [
+              {
+                "claim_type": "accession_identity",
+                "subject": "SYNTH_MISMATCH",
+                "verdict": "supported",
+                "evidence": {
+                  "source": "Synthetic fixture",
+                  "locator": "accession_identity",
+                  "scope": "These are explicitly supplied synthetic observations, not database retrieval or statements about a real protein. Identity refers only to the exact candidate in this record. Repeated source metadata does not represent independent evidence."
+                }
+              },
+              {
+                "claim_type": "record_active",
+                "subject": "SYNTH_MISMATCH",
+                "verdict": "supported",
+                "evidence": {
+                  "source": "Synthetic fixture",
+                  "locator": "record_active",
+                  "scope": "These are explicitly supplied synthetic observations, not database retrieval or statements about a real protein. Identity refers only to the exact candidate in this record. Repeated source metadata does not represent independent evidence."
+                }
+              },
+              {
+                "claim_type": "sequence_identity",
+                "subject": "SYNTH_MISMATCH",
+                "verdict": "supported",
+                "evidence": {
+                  "source": "Synthetic fixture",
+                  "locator": "sequence_identity",
+                  "scope": "These are explicitly supplied synthetic observations, not database retrieval or statements about a real protein. Identity refers only to the exact candidate in this record. Repeated source metadata does not represent independent evidence."
+                }
+              }
+            ]
+          },
+          "source_function_evidence": {
+            "passage": "The exact supplied candidate catalyzes oxidation of an unrelated native substrate. Binding and activity measurements show that the requested ethanol is not accommodated in the observed native pocket. No requested product was detected with the requested pair, despite positive native-substrate controls. No alternative active site or target-specific transfer evidence has been supplied.",
+            "exact_candidate": true,
+            "source_id": "fixture_3"
+          },
+          "catalytic_activities": [],
+          "critical_warnings": [
+            "Evidence is limited to the supplied observations; no claims about untested conditions or related proteins."
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "decision": "Keep shared-object/table encoding disabled by default. Decision equivalence is not established.",
+  "findings": [
+    {
+      "artifact": "analysis/token_efficiency_20261105/live_review_02/comparison.json",
+      "sha256": "e628387c17ea287a0b7ff73fdaf2feb4b65610c23c60106d2c7751a35518f87c",
+      "candidate_count": 2,
+      "matching_decisions_and_evidence_levels": 2,
+      "contract_errors": {
+        "baseline": [],
+        "factored": []
+      },
+      "usage": {
+        "baseline": {
+          "prompt_tokens": 20260,
+          "completion_tokens": 3948,
+          "total_tokens": 24208
+        },
+        "factored": {
+          "prompt_tokens": 17082,
+          "completion_tokens": 3970,
+          "total_tokens": 21052
+        }
+      }
+    },
+    {
+      "artifact": "analysis/token_efficiency_20261105/live_review_03/comparison.json",
+      "sha256": "1d2dd68e9aec50aeb185069322bba0faa71734622522dff6dc999c2495d3ebad",
+      "candidate_count": 2,
+      "matching_decisions_and_evidence_levels": 1,
+      "contract_errors": {
+        "baseline": [],
+        "factored": []
+      },
+      "usage": {
+        "baseline": {
+          "prompt_tokens": 17476,
+          "completion_tokens": 4222,
+          "total_tokens": 21698
+        },
+        "factored": {
+          "prompt_tokens": 16378,
+          "completion_tokens": 5649,
+          "total_tokens": 22027
+        }
+      }
+    },
+    {
+      "artifact": "analysis/token_efficiency_20261105/live_review_04_synthetic/comparison.json",
+      "sha256": "38e22bc1021aff8933c09acee71a10d3ae582ffc0c62efa74ca61b28e2ca5e1c",
+      "candidate_count": 3,
+      "matching_decisions_and_evidence_levels": 3,
+      "contract_errors": {
+        "baseline": [],
+        "factored": []
+      },
+      "usage": {
+        "baseline": {
+          "prompt_tokens": 5883,
+          "completion_tokens": 3066,
+          "total_tokens": 8949
+        },
+        "factored": {
+          "prompt_tokens": 5503,
+          "completion_tokens": 2848,
+          "total_tokens": 8351
+        }
+      }
+    }
+  ],
+  "interpretation": "One real-evidence candidate changed from defer/speculative to investigate/mechanistic_transfer. Stochastic variation is a possible explanation; a single paired replay cannot establish causation or noninferiority. One pair used more total tokens despite smaller input.",
+  "synthetic_scope": "Observed target activity, unknown function, and observed mismatch were distinguished identically in both representations. These are development fixtures, not biological results or held-out discovery tasks.",
+  "shipped_controller_change": "Remove only JSON formatting whitespace from tool results and generated state on a sent copy. Preserve original numbers, escapes, duplicate keys, strings, signed messages and stored transcript.",
+  "offline_controller_measurement": {
+    "scope": "Whole saved transcript, not reconstructed historical prompts or provider token usage",
+    "message_count": 354,
+    "changed_messages": 162,
+    "before_characters": 1353257,
+    "after_characters": 1328000
+  },
+  "remaining_quality_scope": "Independent discovery recovery has not been measured; no new production campaign or GPU modeling job was launched."
+}

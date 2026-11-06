@@ -575,8 +575,11 @@ class LLMClient:
                     self._model_event("llm_model_reconsider", model=self._backend_label(backend),
                                       reason="previous request-specific skip")
                     break
-        from enzyme_discovery_agent.request_efficiency import request_metrics
+        from enzyme_discovery_agent.request_efficiency import compact_json_messages, request_metrics, serialized
+        original_message_characters = len(serialized(messages))
+        messages = compact_json_messages(messages)
         profile = request_metrics(messages, tools)
+        profile['messages_characters_before_json_compaction'] = original_message_characters
         while self._active_idx < len(self.backends):
             if getattr(self, "resource_stop_reason", None):
                 return None

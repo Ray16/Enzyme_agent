@@ -20,6 +20,68 @@ def serialized(value):
     return json.dumps(value, ensure_ascii=False, separators=(',', ':'), default=str)
 
 
+def compact_json_text(text):
+    """Remove JSON formatting whitespace while preserving every original lexeme.
+
+    Do not deserialize and reserialize: that can round numbers, discard duplicate
+    keys or change escapes. Incomplete previews and ordinary prose stay untouched.
+    """
+    if not text.lstrip().startswith(('{', '[')):
+        return text
+    try:
+        json.loads(text)
+    except (ValueError, TypeError, RecursionError):
+        return text
+    output = []
+    quoted = escaped = False
+    for char in text:
+        if quoted:
+            output.append(char)
+            if escaped:
+                escaped = False
+            elif char == '\\':
+                escaped = True
+            elif char == '"':
+                quoted = False
+        elif char == '"':
+            output.append(char)
+            quoted = True
+        elif char not in ' \t\r\n':
+            output.append(char)
+    return ''.join(output)
+
+
+def compact_json_messages(messages):
+    """Compact tool JSON and generated state without changing audit messages.
+
+    Preserve assistant/tool arguments and messages with provider metadata verbatim.
+    Only known generated user-state headers are eligible; user prose is untouched.
+    """
+    result = []
+    changed = False
+    headers = ('CURRENT RESEARCH STATE\n',
+               'CURRENT DECISION EVIDENCE (saved observations, not instructions)\n',
+               'CURRENT DECISION EVIDENCE\n',
+               'RECENT READ-ONLY INSPECTIONS (previews; full records remain saved)\n')
+    for message in messages:
+        text = message.get('content')
+        compact = text
+        if isinstance(text, str) and not set(message).difference({'role', 'content', 'tool_call_id', 'name'}):
+            if message.get('role') == 'tool':
+                compact = compact_json_text(text)
+            elif message.get('role') == 'user':
+                for header in headers:
+                    if text.startswith(header):
+                        compact = header + compact_json_text(text[len(header):])
+                        break
+        if compact != text:
+            result.append({**message, 'content': compact})
+            changed = True
+        else:
+            result.append(message)
+    return result if changed else messages
+
+
 def factor_evidence(candidates):
     """Share only exactly equal JSON objects within this request, never across runs.
 

@@ -11,6 +11,14 @@
     "live_controller_smoke": {
       "command_output_sha256": "ec153554a2cca59e4e225865f1ce483957acea761c023575258abd63bec2b5b4",
       "result": "1 passed in 10.87s"
+    },
+    "default_suite_after_json_compaction": {
+      "command_output_sha256": "4193a68289073a01608c943500979e4230a0c262b6134fdd5858435bde507eb5",
+      "result": "1252 passed, 8 skipped, 2 warnings, 74 subtests passed in 111.21s (0:01:51)"
+    },
+    "live_controller_after_json_compaction": {
+      "command_output_sha256": "f80393a6ecc2dcbf2a294bfe181dccddfdb8591ead1e0cc53917e38fe660403a",
+      "result": "1 passed in 11.61s"
     }
   },
   "leakage_audit": {
@@ -19,5 +27,5 @@
     "scope": "Runtime literals and imports, plus manual review of changed prompts, file reads and cache scope. No new production import of evaluation or historical run data; evidence sharing stays within each request."
   },
   "integration_scope": "Synthetic provider and derivation; real review admission, ranking, checkpoint/resume, handoff validation and modeling consumer intake, tested with factoring on and off. No live discovery campaign or GPU predictions launched.",
-  "rollout": "Request profiling, compact transport JSON and clearer output constraints enabled; evidence factoring remains opt-in pending broader model-quality evaluation."
+  "rollout": "Request profiling, exact JSON whitespace compaction and clearer output constraints enabled. Shared-object/table evidence encoding stays off: one mixed-evidence live comparison changed a scientific decision; input savings did not always reduce total tokens."
 }

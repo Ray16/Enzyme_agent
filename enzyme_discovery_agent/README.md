@@ -506,6 +506,31 @@ responses without provider usage; `accounting_complete` remains false for those
 responses or a resumed legacy ledger whose earlier accounting was incomplete.
 Older campaign token totals cannot be reconstructed from missing telemetry.
 
+Each backend attempt also emits `llm_request_profile`: compact-JSON character
+counts for messages and tool schemas, with per-message categories and hashes.
+Successful `llm_call` records link back through `request_profile_id`. These are
+measurements before provider transport, not token counts or billing estimates;
+provider-added context and internal retries are not separately profiled. Profiles
+contain no source text. Exact JSON formatting whitespace is removed from tool
+results and generated state on the sent copy only; source strings, numeric text,
+duplicate keys, signed messages and the durable transcript are preserved.
+
+`ENZYME_TARGET_REVIEW_FACTOR_EVIDENCE=1` enables an experimental representation
+with shared evidence objects and tables. It is **off by default**: saved-packet
+round trips were exact, but live comparisons did not establish equivalent
+scientific decisions. Smaller input can also cause longer output. Keep it for
+isolated evaluation until broader quality testing supports rollout. Canonical
+evidence and admission rules remain unchanged; review artifacts retain the exact
+candidate request in `request_projection`.
+
+Offline representation checks use
+`python -m enzyme_discovery_agent.eval.request_efficiency --run RUN_DIR --output REPORT.json`.
+Explicit live comparisons use
+`python -m enzyme_discovery_agent.eval.request_efficiency_live --batch BATCH.json --output-dir NEW_DIR --model PROVIDER:MODEL --max-total-tokens LIMIT`.
+The latter consumes model usage without modifying the source campaign or
+launching discovery/modeling jobs. Saved evidence is development data; neither
+round-trip fidelity nor decision agreement establishes held-out discovery quality.
+
 ## Rolling discovery and resource checkpoints
 
 The default research state now includes saved modeling/proxy observations and
