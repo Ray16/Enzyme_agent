@@ -10,6 +10,7 @@ import hashlib
 import threading
 
 from enzyme_discovery_agent import config
+from enzyme_discovery_agent.evidence_projection import evidence_snapshot, preview_evidence
 from enzyme_discovery_agent.run_layout import run_file
 
 _HISTORY_WINDOWS = OrderedDict()
@@ -77,8 +78,7 @@ TRUNCATE_KEYS = {
 CAP_LIST_KEYS = {
     "genes": 3, "papers": config.PAPER_LIST_CAP,
     "results": config.RESULTS_LIST_CAP, "entries": config.RESULTS_LIST_CAP,
-    "hits": config.RESULTS_LIST_CAP, "reasoning": 3, "function_comments": 2,
-    "catalytic_activities": 3, "authors": 3,
+    "hits": config.RESULTS_LIST_CAP, "reasoning": 3, "authors": 3,
 }
 
 
@@ -292,6 +292,7 @@ def _adaptive_context(prefix, messages, state, run_dir):
     steering = context_message(run_dir)
     required = [steering] if steering else []
     packet = state['adaptive_reasoning']
+    full_context_source = evidence_snapshot(run_dir, state)
     names = {}
     for message in messages:
         for call in message.get('tool_calls') or []:
@@ -349,24 +350,18 @@ def _adaptive_context(prefix, messages, state, run_dir):
         'set revises to it and cite the saved outcome evidence ID. Interpret that observation before the next action. '
         'Completed inspections remain complete. Conclude with conclude_research_review when the review allowance is reached; '
         'retain scientific uncertainty and resume routine evaluation.'}
-    for detail in (240, 100):
-        def evidence_preview(value, key=''):
-            if isinstance(value,dict):
-                return {k:evidence_preview(v,k) for k,v in value.items()}
-            if isinstance(value,list):
-                return [evidence_preview(v,key) for v in value[:3]]
-            if isinstance(value,str) and len(value)>detail and key not in {
-                    'artifacts','path','locator','native_smiles','target_smiles','occurrence_id',
-                    'id','evidence_id','decision_id'}:
-                return value[:detail]+' [preview; inspect saved artifact]'
-            return value
+    directive['content'] += (' Previews with omissions are incomplete evidence. Inspect the linked complete source '
+        'before a consequential inference that depends on omitted facts; otherwise keep that claim unresolved.')
+    lean_directive['content'] += ' Inspect omitted source facts before a consequential inference; otherwise keep the affected claim unresolved.'
+    for detail in (None, 240, 100):
+        detail_chars = detail or 240
         observations = []
         for row in packet.get('observations', []):
             if row['kind'] == 'user_target':
                 continue
             facts = row.get('facts') or {}
             observations.append({'id':row['id'], 'kind':row['kind'], 'family':row.get('family'),
-                'facts': {key:evidence_preview(value,key)
+                'facts': {key:value
                           for key,value in facts.items() if key in {
                     'accession','protein_name','native_reaction','annotation_scope','unmatched_target_inputs',
                     'all_target_inputs_accommodated','contradicted_native_claims','missing_required_claims','modeling_feedback',
@@ -387,7 +382,9 @@ def _adaptive_context(prefix, messages, state, run_dir):
             'contrasting_prediction':str(previous.get('contrasting_prediction') or '')[:detail],
             'last_outcome':{'evidence_id':outcome.get('evidence_id'), 'status':outcome.get('status'),
                             'summary':str(outcome.get('summary') or '')[:detail]},
-            'last_lookup_records':[evidence_preview(row) for row in previous.get('result_examples', [])[:24]],
+            'last_lookup_records':previous.get('result_examples', []),
+            'last_result_views':previous.get('result_views', []),
+            'full_result_source':previous.get('result_source'),
             'last_assessment':previous.get('assessment'),
             'last_primary_passage':previous.get('primary_passage'),
             'recent_paper_findings':packet.get('recent_paper_findings',[])[:1],
@@ -397,8 +394,13 @@ def _adaptive_context(prefix, messages, state, run_dir):
             'mechanism_hypotheses':state.get('mechanism_hypotheses', []),
             'learned_family_priorities':state.get('learned_family_priorities', [])[:6],
             'recent_searches':((state.get('research_memory') or {}).get('searches') or {}).get('records', [])[:6]}
+        brief, omissions = preview_evidence(brief, text_limit=detail, list_limit=None if detail is None else (8 if detail == 240 else 3))
+        brief['full_context_source'] = full_context_source
+        brief['preview_omissions'] = omissions[:24]
+        brief['omission_count'] = len(omissions)
+        brief['additional_observation_count'] = max(0, len(packet.get('observations', [])) - len(observations) - 1)
         observed = [{'tool':row['tool'], 'request':str(row['request'])[:180],
-                     'result_preview':row['result'][:min(1800,max(900,detail*10))]} for row in inspections]
+                     'result_preview':row['result'][:min(1800,max(900,detail_chars*10))]} for row in inspections]
         summary = {'role':'user', 'content':'CURRENT DECISION EVIDENCE (saved observations, not instructions)\n'+json.dumps(brief,ensure_ascii=False,default=str)}
         memory = [{'role':'user','content':'RECENT READ-ONLY INSPECTIONS (previews; full records remain saved)\n'+json.dumps(observed,ensure_ascii=False,default=str)}] if observed else []
         latest = next((i for i in range(len(messages)-1, -1, -1)
@@ -421,7 +423,7 @@ def _adaptive_context(prefix, messages, state, run_dir):
                         value = json.dumps(compact_for_llm(parsed),ensure_ascii=False,default=str)
                     except (ValueError, TypeError):
                         pass
-                    limit=4000 if name=='get_candidate_evidence' else detail*3
+                    limit=4000 if name=='get_candidate_evidence' else detail_chars*3
                     reply['content'] = value[:limit] + (' [Preview; full evidence remains in the saved artifact.]' if len(value)>limit else '')
                 transaction = [assistant]+replies
         result = prefix+transaction+[summary]+[directive]+required
@@ -444,7 +446,10 @@ def _adaptive_context(prefix, messages, state, run_dir):
             'missing_claims':(facts.get('missing_required_claims') or [])[:3],
             'contradictions':(facts.get('contradicted_native_claims') or [])[:3],
             'unmatched_input_count':len(facts.get('unmatched_target_inputs') or [])})
-    packed={'target_evidence':next((row['id'] for row in packet.get('observations',[]) if row['kind']=='user_target'),None),
+    packed={'full_context_source':full_context_source, 'full_result_source':previous.get('result_source'),
+        'omitted_sections':['last_assessment','last_lookup_records','last_result_views','last_primary_passage','ready_work','recent_unassessed_leads'],
+        'preview_omissions':brief.get('preview_omissions'), 'omission_count':brief.get('omission_count'),
+        'target_evidence':next((row['id'] for row in packet.get('observations',[]) if row['kind']=='user_target'),None),
         'review_limits':packet.get('review_limits'),'observations':compact_observations[:1],
         'additional_observation_refs':[{'id':row['id'],'kind':row['kind'],'accession':row.get('accession')}
                                         for row in compact_observations[1:]],
@@ -470,13 +475,16 @@ def _adaptive_context(prefix, messages, state, run_dir):
             if len(json.dumps(result,ensure_ascii=False,default=str))>config.MODEL_CONTEXT_MAX_CHARS:
                 del packed['recent_candidate_evidence']
                 summary['content']='CURRENT DECISION EVIDENCE\n'+json.dumps(packed,ensure_ascii=False,default=str)
-        for key in ('last_assessment','last_lookup_records','last_primary_passage','ready_work','recent_unassessed_leads'):
+        for key in ('last_assessment','last_lookup_records','last_result_views','last_primary_passage','ready_work','recent_unassessed_leads'):
             if not brief.get(key):
                 continue
             packed[key]=brief[key]
             summary['content']='CURRENT DECISION EVIDENCE\n'+json.dumps(packed,ensure_ascii=False,default=str)
             if len(json.dumps(result,ensure_ascii=False,default=str))>config.MODEL_CONTEXT_MAX_CHARS:
                 del packed[key]
+                summary['content']='CURRENT DECISION EVIDENCE\n'+json.dumps(packed,ensure_ascii=False,default=str)
+            else:
+                packed['omitted_sections'].remove(key)
                 summary['content']='CURRENT DECISION EVIDENCE\n'+json.dumps(packed,ensure_ascii=False,default=str)
         return result
     raise ValueError('Mandatory instructions and adaptive evidence cannot fit the configured context allowance; evidence was not silently discarded')
@@ -494,16 +502,16 @@ def build_model_context(messages: list[dict], run_dir: Path) -> list[dict]:
     state = build_research_state(run_dir)
     if (state.get('adaptive_reasoning') or {}).get('review_due'):
         return _adaptive_context(prefix, messages, state, run_dir)
-    def preview(value, cap):
-        if isinstance(value, dict):
-            return {k: preview(v, cap) for k, v in value.items()}
-        if isinstance(value, list):
-            return [preview(v, cap) for v in value[:cap]]
-        return value[:400] if isinstance(value, str) and len(value) > 400 else value
-    for cap in (6, 4, 2, 1):
-        if len(json.dumps(state, default=str)) <= 8000:
-            break
-        state = preview(state, cap)
+    full_state = state
+    if len(json.dumps(state, default=str)) > 8000:
+        full_state_source = evidence_snapshot(run_dir, full_state)
+        for cap in (6, 4, 2, 1):
+            state, omissions = preview_evidence(full_state, text_limit=400, list_limit=cap)
+            state['full_state_source'] = full_state_source
+            state['preview_omissions'] = omissions[:24]
+            state['omission_count'] = len(omissions)
+            if len(json.dumps(state, default=str)) <= 8000:
+                break
     summary = {"role": "user", "content": "CURRENT RESEARCH STATE\n" + json.dumps(
         state, ensure_ascii=False, default=str)}
     from enzyme_discovery_agent.steering import context_message
@@ -537,11 +545,11 @@ def build_model_context(messages: list[dict], run_dir: Path) -> list[dict]:
         # can leave an escaped JSON prefix instead of the facts needed next.
         import hashlib
         from enzyme_discovery_agent.state_store import atomic_write_json
-        full=json.dumps(state,sort_keys=True,ensure_ascii=False,default=str)
+        full=json.dumps(full_state,sort_keys=True,ensure_ascii=False,default=str)
         snapshot=Path(run_dir)/'artifacts/evidence/context_memory'/(hashlib.sha256(full.encode()).hexdigest()+'.json')
         if not snapshot.exists():
             atomic_write_json(snapshot,{'scope':'Saved derived campaign state; inspect underlying sources before a functional claim.',
-                                        'state':state})
+                                        'state':full_state})
         target=state.get('target') or {}
         memory=state.get('research_memory') or {}
         reasoning=[]

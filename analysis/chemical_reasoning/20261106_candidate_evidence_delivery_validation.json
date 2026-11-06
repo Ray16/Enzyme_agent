@@ -1,0 +1,41 @@
+{
+  "scope": "Candidate-level evidence delivery, revision memory, explicit preview omissions and response-linked review accounting.",
+  "source_sha256": {
+    "context.py": "cd83cb1a5f98499b0af06c4026022e53ac748c261ea58470e6d278a23dbfd21f",
+    "evidence_projection.py": "2ce63319bdbde7ee2b5a2836ea499ed298b59aa0e5110d6988e8e61d574d5958",
+    "llm_client.py": "6aa45e7e9ed6d8f7d9112a0535e6df45393d7ec02c403efc5084c7ab8a594076",
+    "models/candidate_evidence.py": "c8913370d0da4f15e8caea49ae921246f2c108abcf6e23bca0e90912a9e5c222",
+    "models/expansion.py": "2a951b4e29019af901e4003eaeb3f2a12caafaef13e08b78fb6a66ff5bd96c47",
+    "models/research_decisions.py": "08751bf46e3b01349928bd6eb0e7d6a07787c56cbd1dc8552569d16ccb687f77",
+    "models/research_memory.py": "72b3e040dd7c4850d247614436ec19d9bc8955cc7b9c995f1ccd184a859b8de1",
+    "models/target_review.py": "ad6a9af12ad79db490572c0db6e33b898ca5ce088b143c9570d31780fa1f7919",
+    "output/report_generator.py": "bb1b9742b31ff183372f932ef0fae82876e45674664f3d389c0a6b87d7dc68ff",
+    "output/trace_audit.py": "14467055ba851a9d0b5dea1004129107fa4aff4f07ac9f4901cf88a1a79abd40",
+    "tools/reasoning.py": "2457d1e7420e97763a771638f11f332728204b1e4dfb331e17bb146b9df30765",
+    "tools/research_decisions.py": "3bfa958eb287295437b16f53248b92d625a3df7677deb2b598f463661be8dddc"
+  },
+  "validation": {
+    "full_suite": "1281 passed, 8 skipped, 74 subtests passed; two existing dependency warnings.",
+    "full_suite_log_sha256": "e0026cb116bbdd4392551f6fcc06fea8303db24b29607867bd6c4c6624d5d2dc",
+    "leakage_audit": "145 runtime files; no findings. Generic chemistry vocabulary exceptions reviewed.",
+    "leakage_audit_sha256": "34152991444e2a4206feed70996c3017272ccc9cdc9bcaba70e37b5d825a17ce"
+  },
+  "new_tests": [
+    "Complete legacy native-reaction lists and explicit later corrections.",
+    "Target judgment recall by accession, new-control invalidation, and recorded revision.",
+    "Batched primary passages, paginated memory and source failures.",
+    "Contradictory observations at positions 1, 4 and 10.",
+    "Bounded context with omission notices and successful retrieval of omitted evidence.",
+    "Indivisible molecular strings and identifiers.",
+    "Exact response-specific usage linked to saved candidate assessments and review batches.",
+    "Deduplicated review request costs in trace exports.",
+    "Source-only corrections change the controller evidence signal."
+  ],
+  "scientific_limits": [
+    "Tests establish delivery, provenance and executed saved-state transitions, not chemical entailment.",
+    "No family-level verdict sharing enabled. Exact evidence factoring remains disabled.",
+    "The previous production run is unchanged and does not test these fixes."
+  ],
+  "bounded_live_comparison": "20261106_evidence_factoring_review/summary.json",
+  "leakage_scope": "Reviewed changed runtime literals, imports, field ownership and read paths. Production reads only current-run state and requested source artifacts; evaluations remain separate."
+}

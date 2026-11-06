@@ -77,3 +77,17 @@ def test_assessment_links_use_explicit_inspected_accessions(tmp_path):
     details, _ = enrich_trace(tmp_path, [event], [inspected, other])
     assert details['prediction_registered:one']['candidate_assessments'][0]['event_id'] == 'assessment'
     assert details['prediction_registered:other']['candidate_assessments'] == []
+
+
+def test_review_costs_join_exact_requests_without_double_counting_candidate_records(tmp_path):
+    (tmp_path/'token_usage.json').write_text(json.dumps({'total_tokens': 150, 'calls': [
+        {'request_id': 'review', 'total_tokens': 100}, {'request_id': 'other', 'total_tokens': 50}]}))
+    events = [{'id': str(i), 'type': 'target_assessment_recorded', 'record': {
+        'accession': 'SYNTH_'+str(i), 'model_provenance': {'request': {'request_id': 'review'}}}}
+        for i in range(2)]
+    events.append({'id': 'batch', 'type': 'target_review_batch_recorded',
+                   'record': {'request_usage': {'request_id': 'review'}}})
+    details, summary = enrich_trace(tmp_path, events, [])
+    assert summary['target_review_linked_requests'] == 1
+    assert summary['target_review_linked_tokens'] == summary['all_linked_request_tokens'] == 100
+    assert details['batch']['request_usage']['request_id'] == 'review'

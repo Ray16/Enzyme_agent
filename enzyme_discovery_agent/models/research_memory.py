@@ -1,5 +1,6 @@
 """Retrieve campaign-local research history without model-written summaries."""
 
+from enzyme_discovery_agent.models.candidate_evidence import candidate_record
 import json
 import re
 from pathlib import Path
@@ -85,7 +86,18 @@ def memory_records(run_dir, topic):
                 journal_sources.add(artifact)
             metadata=(registry.get(value.get('accession')) or {}).get('metadata') or {}
             current=artifact in {metadata.get('reaction_role_artifact'),metadata.get('reaction_step_artifact')} if artifact else False
-            current_data={**metadata,**(metadata.get('evaluation_data') or {})}
+            current_data=candidate_record(metadata)
+            if event['type'] == 'target_assessment_recorded':
+                from enzyme_discovery_agent.models.target_review import assessment_receipt
+                assessment = {key: item for key, item in value.items() if key != 'source'}
+                receipt = assessment_receipt(root, value.get('accession'), metadata,
+                                             assessment, artifact)
+                records.append({'kind': event['type'], 'id': event['id'],
+                    'accession': value.get('accession'), 'protein_name': receipt.get('protein_name'),
+                    'assessment_receipt': receipt, 'source': artifact,
+                    'event_sequence': event['sequence'], 'event_sha256': event['event_sha256'],
+                    'evidence_status': 'Saved target interpretation; inspect freshness before reuse.'})
+                continue
             records.append({'kind':event['type'],'id':event['id'],
                 **{key:value.get(key) for key in ('id','decision_id','scope','hypothesis','alternative','prediction',
                     'contrasting_prediction','revision_trigger','tool_name','evidence_refs','revises',
@@ -101,7 +113,7 @@ def memory_records(run_dir, topic):
         # outside a controller-mediated prediction transaction.
         for accession,entry in registry.items():
             metadata=entry.get('metadata') or {}
-            data={**metadata,**(metadata.get('evaluation_data') or {})}
+            data=candidate_record(metadata)
             if data.get('reaction_roles') or data.get('reaction_step'):
                 artifact=metadata.get('reaction_step_artifact') or metadata.get('reaction_role_artifact')
                 if artifact in journal_sources:

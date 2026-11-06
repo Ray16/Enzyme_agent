@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enzyme_discovery_agent.models.candidate_evidence import candidate_record
 import json
 import hashlib
 import math
@@ -107,7 +108,7 @@ def expansion_assessments(run_dir, candidates, policy, method):
 
 def seed_evidence(accession: str, entry: dict) -> dict:
     metadata = entry.get("metadata") or {}
-    return {**(metadata.get("evaluation_data") or {}), **metadata, "accession": accession}
+    return {**candidate_record(metadata), "accession": accession}
 
 
 def seed_eligible(entry: dict) -> bool:

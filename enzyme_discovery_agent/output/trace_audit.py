@@ -107,14 +107,23 @@ def enrich_trace(root, events, cases):
                   'provenance': 'Derived from checksummed saved plan/result artifacts and exact ledger request IDs; original journal unchanged.'}
         case['audit'] = detail
         details['prediction_registered:'+case['decision_id']] = detail
+    review_requests = set()
     for event in events:
-        if event['type'] != 'target_assessment_recorded':
+        if event['type'] not in {'target_assessment_recorded', 'target_review_batch_recorded'}:
             continue
         record = event['record']
+        recorded_usage = (record.get('request_usage') or
+                          ((record.get('model_provenance') or {}).get('request')) or {})
+        request_id = recorded_usage.get('request_id')
+        call = calls.get(request_id)
+        if call:
+            review_requests.add(request_id)
         sources = record.get('sources') or {}
         names = [v.get('protein_name') for v in sources.values() if isinstance(v, dict) and v.get('protein_name')]
         details[event['id']] = {'candidate_name': names[0] if names else None,
-                               'accession': record.get('accession')}
+                               'accession': record.get('accession'),
+                               'request_usage': dict(call) if call else None,
+                               'usage_scope': 'Whole review request; shared across its candidate assessments and batch record.'}
     linked = {((case.get('audit') or {}).get('request_usage') or {}).get('request_id') for case in cases}
     linked.discard(None)
     summary = {'registered_decisions': len(cases),
@@ -122,6 +131,9 @@ def enrich_trace(root, events, cases):
                'decisions_with_usage': sum(c['audit']['request_usage'] is not None for c in cases),
                'unique_linked_requests': len(linked),
                'linked_request_tokens': sum(calls[key].get('total_tokens', 0) for key in linked),
+               'target_review_linked_requests': len(review_requests),
+               'target_review_linked_tokens': sum(calls[key].get('total_tokens', 0) for key in review_requests),
+               'all_linked_request_tokens': sum(calls[key].get('total_tokens', 0) for key in linked | review_requests),
                'run_tokens': usage.get('total_tokens'),
                'assessment_decisions': dict(Counter(e['record'].get('decision') for e in events
                                                     if e['type']=='target_assessment_recorded')),

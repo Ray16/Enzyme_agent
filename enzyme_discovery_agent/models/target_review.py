@@ -1,4 +1,5 @@
 """Source-bound target relevance review, separate from native annotation retrieval."""
+from enzyme_discovery_agent.models.candidate_evidence import candidate_record
 import hashlib
 import json
 from pathlib import Path
@@ -51,7 +52,7 @@ def compact_record(record):
 
 
 def scientific_record(metadata):
-    data={**(metadata.get('evaluation_data') or {}),**metadata}
+    data=candidate_record(metadata)
     result={key:data.get(key) for key in ('accession','protein_name','gene_names','organism','sequence',
         'identity_resolution','claim_validation','catalytic_activities','native_substrates','function_comments',
         'interpro_family','domain_architecture','mechanism_evidence','literature_evidence','source_function_evidence',
@@ -60,6 +61,35 @@ def scientific_record(metadata):
     if result.get('claim_validation'):
         result['claim_validation']={k:v for k,v in result['claim_validation'].items() if k!='validated_at'}
     return result
+
+
+def assessment_receipt(root, accession, metadata, assessment=None, source=None):
+    """Recall a scoped judgment with explicit freshness, never as primary evidence."""
+    value = assessment if assessment is not None else metadata.get('target_assessment')
+    if not value:
+        return None
+    current = metadata.get('target_assessment') or {}
+    path = source or (metadata.get('target_assessment_artifact') if value.get('id') == current.get('id') else None)
+    record_matches = value.get('record_sha256') == digest(scientific_record(metadata))
+    target_matches = value.get('target_sha256') == digest(target_contract(root))
+    verified = False
+    if path:
+        artifact = (Path(root) / path).resolve()
+        if artifact.is_relative_to(Path(root).resolve()) and artifact.is_file():
+            try:
+                verified = json.loads(artifact.read_text()) == value
+            except (OSError, ValueError):
+                pass
+    return {**{key: value.get(key) for key in (
+        'id', 'created_at', 'decision', 'evidence_level', 'reason', 'mechanism_and_step',
+        'target_roles', 'strengths', 'constraints', 'unknowns', 'revisit_when',
+        'source_refs', 'record_sha256', 'target_sha256')},
+        'accession': accession, 'protein_name': candidate_record(metadata).get('protein_name'),
+        'artifact': path, 'artifact_verified': verified,
+        'record_matches': record_matches, 'target_matches': target_matches,
+        'is_latest': bool(value.get('id') and value == current),
+        'is_current': bool(verified and record_matches and target_matches and value == current),
+        'scope': 'Saved agent interpretation, not primary evidence. Reassess when the target or scientific record changes.'}
 
 
 # Structural modeling runs after the discovery review and writes its findings back onto
@@ -231,7 +261,7 @@ def review_queue(root,limit=4,accessions=None,force=False):
     return [by_accession[acc] for acc in selected]
 
 
-def save_assessment(root,packet,result):
+def save_assessment(root,packet,result,model_provenance=None):
     for field in ('accession','reason','mechanism_and_step','revisit_when'):
         if not isinstance(result.get(field),str) or not result[field].strip():
             raise ValueError(f'Assessment requires nonempty {field}')
@@ -272,6 +302,7 @@ def save_assessment(root,packet,result):
         decision='investigate'
     identifier=uuid.uuid4().hex
     record={**result,'id':identifier,'created_at':datetime.now(timezone.utc).isoformat(),
+            'model_provenance':model_provenance,
             'target_sha256':row['target_sha256'],'record_sha256':row['record_sha256'],
             'eligibility_sha256':row['eligibility_sha256'],
             'sources':{row['source_id']:row['record']},'scope':'Source-bound agent interpretation; entailment and target activity are not automatically verified.'}
@@ -373,6 +404,8 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
         {'role':'user','content':serialized(candidate_request)}],
         tools=[tool],timeout=180,usage_label='target_relevance_batch')
     output={'assessed':[],'errors':[],'provider_faults':[]}
+    request_usage = getattr(response, '_enzyme_request_usage', None) if response is not None else None
+    model_provenance = {'request': request_usage} if isinstance(request_usage, dict) else None
     candidate_errors={}
     candidate_responses={}
     resource_deferred = response is None and bool(
@@ -397,7 +430,7 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
                 accession=result['accession']
                 candidate_responses[accession]=result
                 if result['accession'] in output['assessed']:raise ValueError('Duplicate candidate assessment')
-                save_assessment(root,packet,result);output['assessed'].append(result['accession'])
+                save_assessment(root,packet,result,model_provenance=model_provenance);output['assessed'].append(result['accession'])
             except UnparsedToolInput as exc:output['provider_faults'].append(str(exc))
             except (ValueError,KeyError,TypeError) as exc:
                 output['errors'].append(str(exc))
@@ -428,6 +461,7 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
                           else 'incomplete; new evidence or explicit repair required')}
             attempts_by_candidate[row['accession']]=attempt
     atomic_write_json(path,{'id':identifier,'created_at':datetime.now(timezone.utc).isoformat(),
+        'request_usage':request_usage if isinstance(request_usage, dict) else None,
         'packet':packet,'result':output,'attempts':attempts_by_candidate,
         'request_projection':candidate_request,
         'response':response.choices[0].message.model_dump() if response else None})

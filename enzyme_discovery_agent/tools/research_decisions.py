@@ -1,4 +1,5 @@
 """Controller-mediated research decisions and their campaign-local evidence."""
+from enzyme_discovery_agent.models.candidate_evidence import candidate_record
 from enzyme_discovery_agent.tool_registry import tool
 from enzyme_discovery_agent.models.research_decisions import BRIEF_FIELD_LIMIT, REVIEW_CONCLUSION_LIMIT
 
@@ -220,6 +221,7 @@ def assess_next_batch(run_dir, llm_client=None, limit=20, accessions=None, famil
     stats['screening_outcomes'] = screening
     stats['scope_limit'] = 'This batch cannot refute families or mechanisms it did not sample.'
     if selected:
+        from enzyme_discovery_agent.models.target_review import assessment_receipt
         existing = []
         attempted_accessions = set(stats.get('accessions_attempted', []))
         for accession in sorted(selected - attempted_accessions):
@@ -227,11 +229,12 @@ def assess_next_batch(run_dir, llm_client=None, limit=20, accessions=None, famil
             if not entry:
                 continue
             metadata = entry.get('metadata') or {}
-            data = {**(metadata.get('evaluation_data') or {}), **metadata}
+            data = candidate_record(metadata)
             existing.append({'accession':accession,'status':discovery_status(entry),
                              'protein_name':data.get('protein_name'),
                              'native_reactions':data.get('catalytic_activities') or [],
                              'work_status':'not_evaluated_in_this_batch',
+                             'assessment_receipt':assessment_receipt(root, accession, metadata),
                              'missing_claims':(data.get('claim_validation') or {}).get('blocking_claims') or []})
         if existing:
             stats['existing_assessments'] = existing

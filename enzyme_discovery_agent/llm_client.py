@@ -488,6 +488,9 @@ class LLMClient:
                         and backend.model in config.GEMINI_FREE_MODEL_PRIORITY)
                         or (backend.name == "argo" and backend.model == config.ARGO_MODEL)):
                     call["reasoning_effort"] = "high"
+                # Bind usage to this response, not a mutable client's last call.
+                # Concurrent requests and retries can finish in a different order.
+                setattr(response, '_enzyme_request_usage', dict(call))
                 append_event(self._usage_run_dir, "llm_call", **call,
                              cumulative_tokens=usage.total_tokens,
                              accounting="client_boundary")

@@ -6,6 +6,7 @@ successful biological test. No model-written thought is promoted to evidence.
 """
 from __future__ import annotations
 
+from enzyme_discovery_agent.models.candidate_evidence import candidate_record
 import hashlib
 import json
 from datetime import datetime, timezone
@@ -132,7 +133,8 @@ def _native_facts(accession, data, metadata):
             'all_target_inputs_accommodated':accommodation.get('all_target_substrates_accommodated'),
             'role_transfer_status':roles['status'],'participant_roles':roles,
             'agent_priority_assessment':{key:priority.get(key) for key in ('decision','reason','weaknesses','unknowns','revisit_when')} if priority else None,
-            'native_evidence_signature':_hash({key:data.get(key) for key in ('catalytic_activities','native_substrates','literature_evidence')}),
+            'native_evidence_signature':_hash({key:data.get(key) for key in ('catalytic_activities','native_substrates','literature_evidence',
+                    'function_comments','source_function_evidence','mechanism_evidence')}),
             'indirect_donor_roles':[{key:item.get(key) for key in ('native_substrate','target_smiles','role')}
                 for item in accommodation.get('indirect_donor_role_mappings') or []],
             'contradicted_native_claims':sorted(c.get('claim_type','') for c in claims.get('claims') or []
@@ -159,7 +161,7 @@ def observations(run_dir):
             continue
         assessed += 1
         metadata = entry.get('metadata') or {}
-        data = {**metadata, **(metadata.get('evaluation_data') or {})}
+        data = candidate_record(metadata)
         accommodation = (data.get('substrate_similarity') or {}).get('accommodation') or {}
         roles = role_transfer_summary(data)
         priority=data.get('priority_assessment') or {}
@@ -176,7 +178,8 @@ def observations(run_dir):
         signature = (family, group, tuple(unmatched or []), tuple(contradicted),
                      accommodation.get('all_target_substrates_accommodated'), topology,
                      tuple(sorted(claims.get('blocking_claims') or [])), _hash(roles),_hash(priority_view),
-                     _hash({key:data.get(key) for key in ('catalytic_activities','native_substrates','literature_evidence')}))
+                     _hash({key:data.get(key) for key in ('catalytic_activities','native_substrates','literature_evidence',
+                    'function_comments','source_function_evidence','mechanism_evidence')}))
         duplicate_native = signature in seen
         seen.add(signature)
         rows.append({'kind': 'native_analogue_evidence', 'family': family,
@@ -278,33 +281,35 @@ def decision_context(run_dir, limit=6):
         payload = actual.get('data')
         examples = []
         assessment = None
+        result_views = []
+        candidate_fields = ('accession','protein_name','name','gene_names','ec_numbers','organism','reviewed','is_swissprot',
+            'pmid','doi','title','year','url','source_tool','source_status','abstract',
+            'catalytic_activities','function_comments','native_substrates','critical_warnings',
+            'literature_evidence','source_function_evidence','mechanism_evidence','claim_validation',
+            'reaction_roles','reaction_step','priority_assessment','assessment_receipt','full_evidence_source')
         if isinstance(payload, list):
-            hits = []
             for hit in payload:
-                if isinstance(hit, dict) and 'tool_name' in hit and isinstance(hit.get('data'), list):
-                    hits.extend({**record, 'source_tool':hit['tool_name']}
-                                for record in hit['data'][:3] if isinstance(record, dict))
-                elif (isinstance(hit, dict) and 'tool_name' in hit and isinstance(hit.get('data'), dict)
-                      and hit['data'].get('accession')):
-                    hits.append({**hit['data'], 'source_tool': hit['tool_name'], 'source_status': hit.get('status')})
-                else:
-                    hits.append(hit)
-            for hit in hits[:24]:
-                if isinstance(hit, dict):
-                    examples.append({key:hit.get(key) for key in
-                        ('accession','protein_name','name','gene_names','ec_numbers','organism','reviewed','is_swissprot',
-                         'pmid','doi','title','year','url','source_tool','source_status','abstract',
-                         'catalytic_activities','function_comments','native_substrates',
-                         'critical_warnings') if hit.get(key) is not None})
+                wrapped = isinstance(hit, dict) and 'tool_name' in hit
+                data = hit.get('data') if wrapped else hit
+                provenance = {'source_tool': hit['tool_name'], 'source_status': hit.get('status')} if wrapped else {}
+                if isinstance(data, list):
+                    examples.extend({**{k: row[k] for k in candidate_fields if k in row}, **provenance}
+                                    for row in data if isinstance(row, dict))
+                elif isinstance(data, dict) and data.get('accession'):
+                    examples.append({**{k: data[k] for k in candidate_fields if k in data}, **provenance})
+                elif wrapped:
+                    result_views.append({**provenance, 'arguments': hit.get('arguments'),
+                        'summary': hit.get('summary'), 'data': data})
+                elif isinstance(data, dict):
+                    examples.append({k: data[k] for k in candidate_fields if k in data})
         elif isinstance(payload, dict) and payload.get('accession'):
-            examples.append({key: payload[key] for key in ('accession','protein_name','organism','reviewed','is_swissprot',
-                'catalytic_activities','function_comments','native_substrates','critical_warnings') if key in payload})
+            examples.append({key: payload[key] for key in candidate_fields if key in payload})
         elif isinstance(payload, dict) and 'actual_sample' in payload:
             registry = load_candidate_registry(Path(run_dir))['candidates']
             records = []
             for item in payload.get('actual_sample', []):
                 metadata = (registry.get(item.get('accession')) or {}).get('metadata') or {}
-                data = {**metadata, **(metadata.get('evaluation_data') or {})}
+                data = candidate_record(metadata)
                 validation = data.get('claim_validation') or {}
                 records.append({'accession':item.get('accession'), 'status':item.get('status'),
                                 'protein_name':data.get('protein_name'),
@@ -318,6 +323,11 @@ def decision_context(run_dir, limit=6):
             assessment['records'] = records
             assessment['limit'] = ('These are native-evidence processing states, not target-activity verdicts. '
                                    'Missing annotation is not evidence of inactivity; untested mechanisms remain unresolved.')
+        elif payload is not None and not (isinstance(payload, dict) and payload.get('text_available')):
+            result_views.append({'source_tool': plan.get('tool_name'), 'source_status': actual.get('status'),
+                                 'summary': actual.get('summary'), 'data': payload})
+        from enzyme_discovery_agent.evidence_projection import evidence_snapshot
+        result_source = evidence_snapshot(run_dir, actual, 'decision_results')
         previous = {'id': state['last_decision'], 'hypothesis': plan.get('hypothesis'),
                     'alternative': plan.get('alternative'),
                     'prediction': plan.get('prediction'), 'action': plan.get('tool_name'),
@@ -325,9 +335,10 @@ def decision_context(run_dir, limit=6):
                     'revision_trigger': plan.get('revision_trigger'),
                     'action_kind': plan.get('action_kind', action_kind(plan.get('tool_name', ''))),
                     'result_examples': examples,
+                    'result_views': result_views, 'result_source': result_source,
                     'assessment': assessment,
                     'primary_passage': ({'paper':payload.get('paper'),
-                        'passage':str(payload.get('passage') or '')[:600],
+                        'passage':str(payload.get('passage') or ''),
                         'accessions':payload.get('mentioned_uniprot_accessions'),
                         'source_path':payload.get('source_path'),'text_sha256':payload.get('text_sha256')}
                         if isinstance(payload,dict) and payload.get('text_available') else None),
@@ -434,7 +445,7 @@ def proposal_repair_context(run_dir, proposal=None):
         source=evidence.get('source') or {};accession=source.get('accession')
         if source.get('record_sha256') and accession:
             entry=load_candidate_registry(Path(run_dir),strict=True)['candidates'].get(accession,{})
-            meta=entry.get('metadata') or {};current={**meta,**(meta.get('evaluation_data') or {})}
+            meta=entry.get('metadata') or {};current=candidate_record(meta)
             if _hash(current)!=source['record_sha256']:
                 stale.append({'previous_evidence_id':ref,'accession':accession,
                               'current_candidate_evidence':candidate_priority_repair_context(run_dir,accession)['candidate_evidence']})
@@ -659,7 +670,7 @@ def validate_plan(run_dir, proposal, allowed_tools, *, field_limits=None, prospe
         if source.get('record_sha256') and source.get('accession'):
             entry = load_candidate_registry(Path(run_dir), strict=True)['candidates'].get(source['accession'])
             metadata = (entry or {}).get('metadata') or {}
-            current = {**metadata, **(metadata.get('evaluation_data') or {})}
+            current = candidate_record(metadata)
             if not entry or _hash(current) != source['record_sha256']:
                 same_native_facts=(entry and evidence.get('kind')=='native_analogue_evidence'
                     and _scientific_native_facts(evidence['facts'])==
@@ -792,7 +803,7 @@ def start_decision(run_dir, proposal, allowed_tools, *, model_provenance=None):
         source = evidence.get('source') or {}
         if source.get('record_sha256') and source.get('accession'):
             metadata = (registry.get(source['accession']) or {}).get('metadata') or {}
-            if _hash({**metadata, **(metadata.get('evaluation_data') or {})}) != source['record_sha256']:
+            if _hash(candidate_record(metadata)) != source['record_sha256']:
                 historical.append(reference)
     record['historical_evidence_refs'] = historical
     atomic_write_json(_root(run_dir) / identifier / 'plan.json', record)

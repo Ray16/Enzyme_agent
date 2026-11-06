@@ -131,3 +131,43 @@ Native-evidence status is explicitly distinguished from target activity. A copie
 saved-result replay restored three prior records previously absent from context.
 Tests cover skipped, mixed and batch-limited work; no claim of reduced live model
 repetition follows from these data-retention tests alone.
+
+## Complete candidate evidence and explicit previews
+
+The next implementation pass separates complete scientific records from historical
+display summaries. New evaluations store every native reaction. A shared record
+builder recovers a legacy three-reaction prefix only when it exactly matches the
+complete evaluation snapshot; current non-prefix corrections and explicit empty
+values remain authoritative. Target review, candidate reads and controller source
+hashes use this same projection. Historical assessments whose scientific record
+changes remain recorded but must be reviewed again.
+
+Candidate reads and reasoning-memory recall now expose a target-assessment receipt:
+the prior decision, partner roles, constraints, unresolved questions, reopening
+condition, target/evidence fingerprints, artifact verification and current/stale
+status. These receipts remain agent interpretations. Candidate inspection avoids
+resending embedded copies of the previous assessment and evaluation while keeping
+the complete record in an inspectable, checksummed artifact.
+
+Batched source passages, paginated memory and failed retrievals retain their own
+status and data in decision context. Scientific lists are preserved when the
+context allowance permits; constrained previews report omitted fields/items and
+provide complete source paths. Molecular strings and identifiers are never sliced.
+Sequential tests cover correction after new controls, historical-judgment recall,
+late native reactions, reordered contradictory observations and retrieval of facts
+omitted under context pressure. These verify evidence delivery and state changes,
+not general chemical judgment quality.
+
+Review usage now travels with the actual model response and is saved on both the
+batch and its candidate assessments. Trace totals join exact request IDs and count
+a shared review request once. No association is guessed for historical batches
+that lack those identifiers.
+
+The bounded representation comparison in
+`analysis/chemical_reasoning/20261106_evidence_factoring_review` completed one pair
+with five candidates (67,774 tokens total); a second pair was budget-deferred.
+All five decision/evidence-level labels agreed. Factoring used 5.6% fewer tokens,
+but partner evidence labels and constraint classifications differed. Order/cache
+effects and stochastic variation were not controlled by replication. Factoring
+therefore remains optional and disabled; these data establish neither scientific
+noninferiority nor full-campaign savings.

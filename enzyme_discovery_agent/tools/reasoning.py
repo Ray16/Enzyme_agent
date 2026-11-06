@@ -50,8 +50,16 @@ def get_candidate_evidence(accession: str, run_dir: str = "") -> dict:
     if not entry:
         return {"status": "empty", "data": None, "summary": "Candidate is not registered in this run."}
     from enzyme_discovery_agent.models.expansion import seed_evidence
+    from enzyme_discovery_agent.models.target_review import assessment_receipt
+    from enzyme_discovery_agent.evidence_projection import evidence_snapshot
+    data = seed_evidence(accession, entry)
+    full_source = evidence_snapshot(run_dir, data, 'candidate_records')
+    data = {'accession': accession, 'protein_name': data.get('protein_name'),
+            'full_evidence_source': full_source,
+            'assessment_receipt': assessment_receipt(run_dir, accession, entry.get('metadata') or {}),
+            **{key: value for key, value in data.items() if key not in {'evaluation_data', 'target_assessment', 'assessment_receipt', 'full_evidence_source'}}}
     return {"status": "success", "summary": f"Saved candidate evidence for {accession}; no new evaluation performed.",
-            "data": seed_evidence(accession, entry)}
+            "data": data}
 
 
 @tool(description="Inspect this campaign's complete saved exploration frontier, modeling observations and unresolved questions. Supports bounded pagination beyond the examples in working context. This read-only view does not rank candidates, establish global saturation, approve an interpretation or authorize compute.",
@@ -1456,7 +1464,7 @@ def evaluate_candidate(
         "organism": organism,
         "sequence_length": seq_length,
         "ec_numbers": ec_numbers,
-        "catalytic_activities": catalytic_activities[:3],
+        "catalytic_activities": catalytic_activities,
         "required_cofactors": required_cofactors,
         "cofactor_notes": cofactor_notes,
         "is_enzyme": is_enzyme,

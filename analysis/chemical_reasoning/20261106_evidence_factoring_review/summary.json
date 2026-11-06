@@ -1,0 +1,26 @@
+{
+  "status": "completed_one_pair_remaining_pair_budget_deferred",
+  "model": "claude-code:claude-sonnet-5-5",
+  "tokens": 67774,
+  "comparison_sha256": "cc95b376e34bdc38fb0044de7527a4dc3fa46afe182a4e81e3544c8a8f13df34",
+  "batch_selection": "Two smallest saved batches with at least four candidates; only the first pair fit the bounded allowance.",
+  "roundtrip_equal": true,
+  "candidate_count": 5,
+  "decision_and_level_agreement": 5,
+  "partner_basis_agreement": 4,
+  "tokens_by_arm": {
+    "baseline": 34863,
+    "factored": 32911
+  },
+  "contract_errors": {
+    "baseline": [],
+    "factored": []
+  },
+  "token_reduction_fraction": 0.05599059174482979,
+  "deployment_decision": "Keep factoring opt-in and disabled for the new campaign.",
+  "limitations": [
+    "One development batch and one execution per arm; not a held-out scientific evaluation.",
+    "Arm order was not counterbalanced because the second pair was budget-deferred.",
+    "Partner evidence bases and constraint severity/basis differ despite matching candidate decisions; scientific noninferiority is not established."
+  ]
+}
