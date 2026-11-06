@@ -111,8 +111,8 @@
     },
     {
       "path": "docs/ROLLING_MODELING.md",
-      "bytes": 6525,
-      "sha256": "c545c89790bc93bbdfdf16ef3928907965a9cb9dae861ff183b6ecce9c941dca"
+      "bytes": 6978,
+      "sha256": "9220928996c8995d5f698aae883d3e26cebe8b46a04e5c249ce3dc538f53a098"
     },
     {
       "path": "docs/discovery_agent_framework.md",
@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/review_validation.json",
-      "bytes": 4576,
-      "sha256": "13e585821ec457b5aed0b56911d4751bb433d30189ee0ab4d802c5d23b57e384"
+      "bytes": 4821,
+      "sha256": "d7041f7eb88be45bd5613939a6e4af026433814d12f5f75f1becb0ae21f6fa1e"
     },
     {
       "path": "docs/rolling_modeling_validation_20261104.json",
@@ -2246,8 +2246,8 @@
     },
     {
       "path": "structural_modeling_agent/family_analysis.py",
-      "bytes": 5766,
-      "sha256": "7f8b9c22dcab59a4719c89180b521430d2d90c594935295be171b0f649691bb4"
+      "bytes": 11503,
+      "sha256": "de5238b9733bd34e11849798d21aef9ced073b4f2f5a1c8efa067d0fa6542866"
     },
     {
       "path": "structural_modeling_agent/family_cofold.py",
@@ -2668,6 +2668,11 @@
       "path": "structural_modeling_agent/tests/test_existing_prediction_review.py",
       "bytes": 3938,
       "sha256": "c8087fc3b13b40d13f161125a7dd1e42704da3ec97e79cd78ef9c6b9815b843f"
+    },
+    {
+      "path": "structural_modeling_agent/tests/test_family_analysis.py",
+      "bytes": 1520,
+      "sha256": "47e76b01a3b331e436fc5fff64d631c94ad712c12608d45dc769dcc9b3207d6c"
     },
     {
       "path": "structural_modeling_agent/tests/test_family_cofold.py",

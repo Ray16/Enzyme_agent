@@ -85,6 +85,13 @@ latest-run pointer. Results, inputs and reports stay beneath its `family_cofold`
 - `analysis/pose_geometry.csv`, `analysis/ensemble_summary.csv`, per-ensemble
   plots and separate step comparisons, refreshed after completed ensembles.
 
+Comparison figures give each enzyme its own named row, with aligned weighted
+angle and harmonic-distance panels. Plot labels use enzyme symbols or specific
+enzyme names; organism names distinguish homologs. Accessions remain in the
+underlying identity records and tables but are omitted from plot labels.
+The distance axis is explicitly logarithmic. Numerical values and metric
+definitions are unchanged, and vector SVG comparisons accompany the PNGs.
+
 The existing metric remains `sum(angle/distance)/sum(1/distance)`, with harmonic
 mean distance alongside it. Every pose is retained. No sigmoid, fitted cutoff,
 or assay-activity claim is introduced. Different reaction steps and numerical

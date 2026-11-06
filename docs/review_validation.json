@@ -140,5 +140,11 @@
       "wall_seconds": 1.15
     },
     "full_release_collection_limit": "Unrelated enzyme_design_agent test imports missing campaign module merge_analysis; no source patch made to unrelated scientific campaign."
+  },
+  "named_comparison_plots_20261106": {
+    "passed": 9,
+    "wall_seconds": 2.67,
+    "scope": "Enzyme-name labels and dedicated comparison rows; frozen angle and distance calculations unchanged.",
+    "saved_ensemble_metrics_verified": 65
   }
 }
