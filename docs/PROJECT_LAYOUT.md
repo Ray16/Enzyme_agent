@@ -4,7 +4,9 @@
 
 `enzyme_discovery_agent` is the maintained discovery source directory. The older
 `enzyme_discovery_agent_2026_0916` implementation is preserved under
-`0_prev_agent_archive/`. Run the maintained checks with:
+`archive/cleanup_20261105/legacy_agents/`. The former
+`0_prev_agent_archive/` path is a local compatibility symlink for historical
+provenance references. Run the maintained checks with:
 
 ```bash
 pytest -q
@@ -37,7 +39,8 @@ Nylon hydrolase cofolds and experimental analyses remain under
 `exp_data/nylon_hydrolase/`. Current manuscript figure masters live in
 `exp_data/<study>/figures/candidacy/`; Overleaf receives published copies.
 Historical fixed-campaign launchers, one-off plots and retired figures are under
-`0_prev_agent_archive/structural_modeling/cleanup_20261008/`, with a path/hash manifest.
+`archive/cleanup_20261105/legacy_agents/structural_modeling/cleanup_20261008/`,
+with a path/hash manifest.
 See [`structural_modeling_agent/README.md`](../structural_modeling_agent/README.md) for the active
 workflow and ownership map. Large model outputs are not copied into reusable code.
 
@@ -122,7 +125,7 @@ Publication figure of a run's explored candidates — embeds every candidate acr
 GPUs (parallel, sharded via `gpu_reserve`), then UMAP with numbered top-ranked candidates:
 
 ```bash
-python enzyme_discovery_agent_2026_0916/figures/plot_esm_embedding_map.py <run_dir> \
+python enzyme_discovery_agent/figures/plot_esm_embedding_map.py <run_dir> \
   --title "..." --top 10        # add --no-embed to re-plot from a cached store
                                 # add --show-expansion to mark esm_expansion leads
                                 #   with a diamond and a leader back to their seed
@@ -133,17 +136,34 @@ python enzyme_discovery_agent_2026_0916/figures/plot_esm_embedding_map.py <run_d
 Out-of-tree studies that validate a design idea before (if ever) wiring it into the agent — keep
 them here rather than embedding experimental logic in the package:
 
-- `Interpro_exhaustive/` — exhaustive reviewed EC 6.3.- recall sweep.
-- `Reaction_anchored_retrieval/` — reaction- (Rhea/RDKit) vs EC/InterPro-anchored retrieval.
-- `Rhea_anchored_coverage/` — Rhea-anchored deterministic fold-coverage (recall floor).
-- `Literature_selection_validation/` — full-text paper-selection precision.
+- `archive/Interpro_exhaustive/` — exhaustive reviewed EC 6.3.- recall sweep.
+- `archive/Reaction_anchored_retrieval/` — reaction- (Rhea/RDKit) vs EC/InterPro-anchored retrieval.
+- `archive/Rhea_anchored_coverage/` — Rhea-anchored deterministic fold-coverage (recall floor).
+- `archive/Literature_selection_validation/` — full-text paper-selection precision.
+
+Completed November validation workspaces and their copied source trees live in
+`archive/cleanup_20261105/discovery_validation/`. A local `discovery_validation/`
+compatibility symlink preserves the paths recorded in existing validation reports.
 
 ## Target profiles
 
 Use `--target-profile` to provide a JSON description of the reaction, substrate state, enzyme
 requirements, and required structural checks. The workflow applies the same schema to any enzyme
 class; it contains no target-specific rules and produces no composite score. See
-[`enzyme_discovery_agent_2026_0916/target_profile.example.json`](../enzyme_discovery_agent_2026_0916/target_profile.example.json).
+[`enzyme_discovery_agent/target_profile.example.json`](../enzyme_discovery_agent/target_profile.example.json).
+
+## Archived clutter
+
+The [November cleanup manifest](../archive/cleanup_20261105/MANIFEST.md) records
+the original and archived locations of legacy agents, manuscript backup copies,
+completed validation workspaces, historical decks, retired discovery figures,
+old local configuration backups, and generated build/cache files. File contents,
+permissions, directory membership and symlink targets were checked after each
+move; the local archive contains the detailed SHA-256 inventory.
+
+The active source packages, tests, campaign and run directories, shared data,
+model assets, current figure masters and separate Overleaf checkout remain in
+place. Generated `build/`, bytecode and test caches may reappear during normal use.
 
 ## Naming rules
 

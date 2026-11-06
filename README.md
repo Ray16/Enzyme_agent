@@ -61,3 +61,9 @@ support, remaining uncertainties and a discriminating structural question.
 Large run histories, prediction ensembles, MSAs, model weights and local caches
 remain external artifacts. The review guide explains what was included for
 review and how to interpret the compact campaign checkpoint.
+
+Superseded source snapshots, completed validation workspaces, backups and retired
+figures live in [archive/](archive/MANIFEST.md). The
+[November cleanup manifest](archive/cleanup_20261105/MANIFEST.md) records their
+locations and recovery instructions. Historical agent and validation paths remain
+local compatibility links; current code, campaigns and research data stay in place.
