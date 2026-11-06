@@ -1,0 +1,246 @@
+{
+  "status": "passed",
+  "scope": "paired_software_cost_only",
+  "order": [
+    "plumed",
+    "native"
+  ],
+  "reports": {
+    "plumed": {
+      "status": "passed",
+      "scope": "software_performance_only_no_kinetic_claim",
+      "runtime": {
+        "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+        "packages": {
+          "numpy": "2.4.6",
+          "ase": "3.29.0",
+          "torch": null,
+          "jax": null,
+          "jaxlib": null,
+          "so3lr": null,
+          "orb-models": null,
+          "fairchem-core": null,
+          "pymbar": "4.0.3"
+        },
+        "host": "lambda4",
+        "pid": 2337827,
+        "process_start": "11451521",
+        "affinity": [
+          62,
+          63
+        ],
+        "threads": {
+          "OMP_NUM_THREADS": "1",
+          "OMP_THREAD_LIMIT": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1"
+        }
+      },
+      "openmm_version": "8.6.1",
+      "atoms": 4010,
+      "worker_index": 1,
+      "seed": 73110,
+      "barostat_worker_seeds": [
+        83109,
+        83110
+      ],
+      "profile_sha256": "1fd0de32a72714ba1a0faa7331aa40cd0cf87a9d89858f675cec2ae3dbd92b44",
+      "context_construction_seconds": 0.3409047520108288,
+      "plumed_monitoring": {
+        "script": "d: DISTANCE ATOMS=1,2\nb: RESTRAINT ARG=d AT=0.4 KAPPA=0\n",
+        "purpose": "zero-strength restraint evaluates a CV with exactly zero additional potential/forces; no free-energy estimate"
+      },
+      "monitoring_potential_zero_checked": true,
+      "first_energy_force_seconds": 0.005512952004210092,
+      "rows": [
+        {
+          "steps": 100,
+          "repeat": 0,
+          "dynamics_and_monitoring_seconds": 0.2575007090053987,
+          "checkpoint_io_seconds": 0.03517854899109807,
+          "resource_monitoring_seconds": 0.15718235200620256,
+          "dynamics_and_reporter_seconds": 0.10031835699919611,
+          "endpoint_validation_seconds": 0.0006670550064882264,
+          "energy_kJ_per_mol": -54384.91894854524
+        },
+        {
+          "steps": 100,
+          "repeat": 1,
+          "dynamics_and_monitoring_seconds": 0.2721719580003992,
+          "checkpoint_io_seconds": 0.03422019800927956,
+          "resource_monitoring_seconds": 0.17601238400675356,
+          "dynamics_and_reporter_seconds": 0.09615957399364561,
+          "endpoint_validation_seconds": 0.0006865960021968931,
+          "energy_kJ_per_mol": -54111.73629212272
+        },
+        {
+          "steps": 1000,
+          "repeat": 0,
+          "dynamics_and_monitoring_seconds": 0.9292027180053992,
+          "checkpoint_io_seconds": 0.03593336199992336,
+          "resource_monitoring_seconds": 0.35006276998319663,
+          "dynamics_and_reporter_seconds": 0.5791399480222026,
+          "endpoint_validation_seconds": 0.0006210349965840578,
+          "energy_kJ_per_mol": -54599.519885901274
+        },
+        {
+          "steps": 1000,
+          "repeat": 1,
+          "dynamics_and_monitoring_seconds": 0.9238204389985185,
+          "checkpoint_io_seconds": 0.0338286159967538,
+          "resource_monitoring_seconds": 0.3717617079964839,
+          "dynamics_and_reporter_seconds": 0.5520587310020346,
+          "endpoint_validation_seconds": 0.0006836740067228675,
+          "energy_kJ_per_mol": -54203.34778672503
+        },
+        {
+          "steps": 4000,
+          "repeat": 0,
+          "dynamics_and_monitoring_seconds": 3.446649496007012,
+          "checkpoint_io_seconds": 0.034335120013565756,
+          "resource_monitoring_seconds": 1.3396690170193324,
+          "dynamics_and_reporter_seconds": 2.10698047898768,
+          "endpoint_validation_seconds": 0.0007743909955024719,
+          "energy_kJ_per_mol": -54253.32516862414
+        },
+        {
+          "steps": 4000,
+          "repeat": 1,
+          "dynamics_and_monitoring_seconds": 3.429385197989177,
+          "checkpoint_io_seconds": 0.045882979000452906,
+          "resource_monitoring_seconds": 1.3425915030093165,
+          "dynamics_and_reporter_seconds": 2.0867936949798604,
+          "endpoint_validation_seconds": 0.0007776590064167976,
+          "energy_kJ_per_mol": -53914.705233030865
+        }
+      ],
+      "persistent_contexts": 1,
+      "timestep_ps": 0.002,
+      "entrypoint_seconds": 11.346209794006427,
+      "process_wall_at_case_end_seconds": 12.833707094192505,
+      "peak_device_allocated_bytes": null,
+      "peak_device_reserved_bytes": null,
+      "scheduler_wait_seconds": null,
+      "physical_rate": null,
+      "rng_policy": "One independent seeded stream per direct worker; portable state resets do not reset the worker stream."
+    },
+    "native": {
+      "status": "passed",
+      "scope": "software_performance_only_no_kinetic_claim",
+      "runtime": {
+        "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+        "packages": {
+          "numpy": "2.4.6",
+          "ase": "3.29.0",
+          "torch": null,
+          "jax": null,
+          "jaxlib": null,
+          "so3lr": null,
+          "orb-models": null,
+          "fairchem-core": null,
+          "pymbar": "4.0.3"
+        },
+        "host": "lambda4",
+        "pid": 2337827,
+        "process_start": "11451521",
+        "affinity": [
+          62,
+          63
+        ],
+        "threads": {
+          "OMP_NUM_THREADS": "1",
+          "OMP_THREAD_LIMIT": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1"
+        }
+      },
+      "openmm_version": "8.6.1",
+      "atoms": 4010,
+      "worker_index": 1,
+      "seed": 73110,
+      "barostat_worker_seeds": [
+        83109,
+        83110
+      ],
+      "profile_sha256": "0c989b042689e0173befeac7a91c015a3253d5c58c918be2b9242bae30820d0b",
+      "context_construction_seconds": 0.25191688899940345,
+      "plumed_monitoring": null,
+      "monitoring_potential_zero_checked": false,
+      "first_energy_force_seconds": 0.005549990004510619,
+      "rows": [
+        {
+          "steps": 100,
+          "repeat": 0,
+          "dynamics_and_monitoring_seconds": 0.2533113840036094,
+          "checkpoint_io_seconds": 0.039264361999812536,
+          "resource_monitoring_seconds": 0.16910197300603613,
+          "dynamics_and_reporter_seconds": 0.08420941099757329,
+          "endpoint_validation_seconds": 0.0005386370030464604,
+          "energy_kJ_per_mol": -54384.91894854515
+        },
+        {
+          "steps": 100,
+          "repeat": 1,
+          "dynamics_and_monitoring_seconds": 0.2689582640014123,
+          "checkpoint_io_seconds": 0.052770427995710634,
+          "resource_monitoring_seconds": 0.1748247130017262,
+          "dynamics_and_reporter_seconds": 0.09413355099968612,
+          "endpoint_validation_seconds": 0.000666430001729168,
+          "energy_kJ_per_mol": -54111.736292122485
+        },
+        {
+          "steps": 1000,
+          "repeat": 0,
+          "dynamics_and_monitoring_seconds": 0.7966624939872418,
+          "checkpoint_io_seconds": 0.03717888800019864,
+          "resource_monitoring_seconds": 0.31155857400153764,
+          "dynamics_and_reporter_seconds": 0.4851039199857041,
+          "endpoint_validation_seconds": 0.000652438000543043,
+          "energy_kJ_per_mol": -54599.51988590136
+        },
+        {
+          "steps": 1000,
+          "repeat": 1,
+          "dynamics_and_monitoring_seconds": 0.7865992430015467,
+          "checkpoint_io_seconds": 0.03361979300098028,
+          "resource_monitoring_seconds": 0.3051224039954832,
+          "dynamics_and_reporter_seconds": 0.48147683900606353,
+          "endpoint_validation_seconds": 0.0005557620024774224,
+          "energy_kJ_per_mol": -54203.34778672503
+        },
+        {
+          "steps": 4000,
+          "repeat": 0,
+          "dynamics_and_monitoring_seconds": 3.1493696460092906,
+          "checkpoint_io_seconds": 0.03303143700759392,
+          "resource_monitoring_seconds": 1.370489559994894,
+          "dynamics_and_reporter_seconds": 1.7788800860143965,
+          "endpoint_validation_seconds": 0.0006155119917821139,
+          "energy_kJ_per_mol": -54253.325168624084
+        },
+        {
+          "steps": 4000,
+          "repeat": 1,
+          "dynamics_and_monitoring_seconds": 3.053407534986036,
+          "checkpoint_io_seconds": 0.03431533099501394,
+          "resource_monitoring_seconds": 1.290863518952392,
+          "dynamics_and_reporter_seconds": 1.7625440160336439,
+          "endpoint_validation_seconds": 0.0006212320004124194,
+          "energy_kJ_per_mol": -53914.70523303104
+        }
+      ],
+      "persistent_contexts": 1,
+      "timestep_ps": 0.002,
+      "entrypoint_seconds": 10.051976269998704,
+      "process_wall_at_case_end_seconds": 23.118419408798218,
+      "peak_device_allocated_bytes": null,
+      "peak_device_reserved_bytes": null,
+      "scheduler_wait_seconds": null,
+      "physical_rate": null,
+      "rng_policy": "One independent seeded stream per direct worker; portable state resets do not reset the worker stream."
+    }
+  },
+  "process_wall_seconds": 23.207059144973755
+}

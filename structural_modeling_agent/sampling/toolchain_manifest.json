@@ -25,7 +25,7 @@
       "name": "amide-sampling-20261105",
       "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-sampling-20261105/bin/python",
       "lock": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/environments/validation.lock",
-      "lock_sha256": "3cbdd21a39a1ca5a0b5ff4a4f0a866f6c629633e7c34fe1aea8f693a93b48c84"
+      "lock_sha256": "d2773b658ece96037de8f29fd25c21966b8ddc110a27d02f200eecacdd788e04"
     },
     {
       "name": "amide-uma-20261105",
@@ -379,6 +379,68 @@
         "No joint multistate optimization or catalytic/processivity validation.",
         "Future workloads require current scheduler/resource preflight and exact input/weight review."
       ]
+    },
+    {
+      "id": "reference_efficiency_and_persistent_workers",
+      "status": "passed_within_stated_scope",
+      "scope": "Matched V100 reference timings, persistent-context software adapter, paired zero-force PLUMED, 50 actual hybrid force calls/model, committed HDF5 verification and cross-host H100 restart",
+      "evidence": [
+        {
+          "path": "validation_20261106/efficiency/summary.json",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/summary.json",
+          "sha256": "74790c0cf8dcd80847fa9026621968dce53ab6d9506d78cfe86acac75cced38a"
+        },
+        {
+          "path": "validation_20261106/efficiency/integrity.json",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/integrity.json",
+          "sha256": "323c00eb0bb8099edda21c2f65cda1a862926f91b6dcd496496b4f1be6efdcdf"
+        },
+        {
+          "path": "validation_20261106/efficiency/cleanup.json",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/final-cleanup.json",
+          "sha256": "4068a9fcb0024b812a6f90567ff0bbe74f0209978e9e1a482d3a34b3c87a648a"
+        },
+        {
+          "path": "validation_20261106/efficiency/project-tests.xml",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/project-tests.xml",
+          "sha256": "22b5ed14f632e0ca6ab0ae57905403f63149544a73eecc3010decbdfc3a8d222"
+        },
+        {
+          "path": "validation_20261106/efficiency/runtime-tests.xml",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/runtime-tests.xml",
+          "sha256": "a01cb36fb35bfbb9c785d2557270c9dec65a9ead24557a58f32bd08d7e73df6e"
+        },
+        {
+          "path": "validation_20261106/efficiency/model_uma.json",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/mlmm/uma/report.json",
+          "sha256": "a74fdf0dae4052e9ec32bd1422dee89341d0c3c4075404762ed0deff400b3ae3"
+        },
+        {
+          "path": "validation_20261106/efficiency/model_orb.json",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/mlmm/orb/report.json",
+          "sha256": "e532e576441e43963cd4ffda6c246de5bb0d24c86be17fe7b1963426ca5a2dd7"
+        },
+        {
+          "path": "validation_20261106/efficiency/model_so3lr.json",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/mlmm/so3lr/report.json",
+          "sha256": "66b121229f0b383ecf840c67845fd4d7c97f2a04a04ba7f3ffc38b7d8b08dcb7"
+        },
+        {
+          "path": "validation_20261106/efficiency/paired_worker_0.json",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/paired/worker-0/report.json",
+          "sha256": "54c06194ea58e61fc984abc4038a4277f656865522ead0d59611e782e4ad2323"
+        },
+        {
+          "path": "validation_20261106/efficiency/paired_worker_1.json",
+          "origin_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency/paired/worker-1/report.json",
+          "sha256": "d2bfd2ba5a7357aa1a789e7c40f2c7fa0c9ed106310f232e2678eaf175b46321"
+        }
+      ],
+      "limits": [
+        "Software-reference costs only; no enzyme sampler efficiency, physical rate or reaction accuracy inferred.",
+        "Persistent adapter remains restricted to software fixtures and one distance CV with endpoint resampling.",
+        "V100 comparisons exclude the final H100 restart."
+      ]
     }
   ],
   "implementation": {
@@ -402,5 +464,5 @@
   "processivity_demonstrated": false,
   "automatic_model_choice": false,
   "evidence_policy": "Committed immutable report snapshots; origin_path points to full local run. Digest checks apply to snapshots, not live installed software or hardware.",
-  "performance_selection_status": "Representative sampler and end-to-end efficiency benchmarks requested; pending. Software compatibility does not select a production method."
+  "performance_selection_status": "Reference computational cost measured and worker overhead reduced. Representative enzyme sampler/kinetic efficiency and reaction accuracy remain unresolved."
 }

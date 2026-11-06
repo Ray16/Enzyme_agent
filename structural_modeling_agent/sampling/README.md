@@ -356,3 +356,30 @@ or [wepy's REVO/WExplore alternatives](https://adicksonlab.github.io/wepy/_sourc
 wepy has been reviewed as an alternative; it is not installed or benchmarked in
 this configuration pass. The agent retains sampler choice as an explicit
 decision rather than embedding WESTPA in every scientific protocol.
+
+## Measured worker overhead
+
+The efficiency pass adds `efficiency` for bounded reference benchmarks and
+`westpa_controller` for completion validation. The controller checks committed
+HDF5 iterations, segment status, finite coordinates and the protocol's declared
+probability total; a zero CLI exit code alone is insufficient. Set
+`WESTPA_EXPECTED_TOTAL_PROBABILITY` explicitly for a compatible ensemble protocol.
+Heartbeat tolerance must cover measured segment/startup time and scheduling
+jitter; the one-second tutorial setting expired on longer benchmark segments.
+
+The experimental `openmm_worker.PersistentOpenMMPropagator` reuses a context in
+each GPU worker and computes the progress coordinate in-process. Separate,
+recorded integrator/barostat streams belong to worker contexts; cloned walkers
+receive ordinary portable states while the RNG streams continue. A shared atomic
+seed registry prevents reuse on worker restart. Completed segment caches bind
+parent state, profile, implementation, runtime and output hashes, so recovery
+cannot silently accept changed artifacts. The reserved-node watchdog remains
+active; redundant `nvidia-smi` checks are rate-limited to ten seconds.
+
+This adapter accepts **software-performance fixtures only**, currently with one
+distance coordinate and endpoint resampling. It has not been qualified for
+enzyme first-passage kinetics, continuous boundary detection, multiple CVs or
+ligand parameter correctness. Its measured speedup is a worker implementation
+improvement; it does not establish WESTPA as the most efficient scientific
+sampler. Results, input identities and limitations are summarized in
+[`VALIDATION_20261106.md`](VALIDATION_20261106.md).

@@ -1,0 +1,267 @@
+{
+  "cases": {
+    "westpa/steps-000100": {
+      "complete": true,
+      "problems": [],
+      "iterations": [
+        {
+          "iteration": 1,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 2,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        }
+      ],
+      "current_iteration": 3,
+      "requested_iterations": 2
+    },
+    "westpa/steps-001000": {
+      "complete": true,
+      "problems": [],
+      "iterations": [
+        {
+          "iteration": 1,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 2,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        }
+      ],
+      "current_iteration": 3,
+      "requested_iterations": 2
+    },
+    "westpa/steps-004000": {
+      "complete": true,
+      "problems": [],
+      "iterations": [
+        {
+          "iteration": 1,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 2,
+          "segments": 4,
+          "completed": 4,
+          "weight_sum": 1.0
+        }
+      ],
+      "current_iteration": 3,
+      "requested_iterations": 2
+    },
+    "persistent/two-gpu-000100": {
+      "complete": true,
+      "problems": [],
+      "iterations": [
+        {
+          "iteration": 1,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 2,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 3,
+          "segments": 4,
+          "completed": 4,
+          "weight_sum": 1.0
+        }
+      ],
+      "current_iteration": 4,
+      "requested_iterations": 3,
+      "contexts": [
+        {
+          "host": "lambda4",
+          "pid": 2351346,
+          "gpu": "4",
+          "affinity": [
+            60,
+            61
+          ],
+          "integrator_seed": 181065060,
+          "barostat_seed": 1154699623,
+          "segments": 4,
+          "context_reused_segments": 3
+        },
+        {
+          "host": "lambda4",
+          "pid": 2351347,
+          "gpu": "5",
+          "affinity": [
+            62,
+            63
+          ],
+          "integrator_seed": 116324274,
+          "barostat_seed": 234038033,
+          "segments": 4,
+          "context_reused_segments": 3
+        }
+      ]
+    },
+    "persistent/two-gpu-001000": {
+      "complete": true,
+      "problems": [],
+      "iterations": [
+        {
+          "iteration": 1,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 2,
+          "segments": 4,
+          "completed": 4,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 3,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        }
+      ],
+      "current_iteration": 4,
+      "requested_iterations": 3,
+      "contexts": [
+        {
+          "host": "lambda4",
+          "pid": 2353488,
+          "gpu": "5",
+          "affinity": [
+            62,
+            63
+          ],
+          "integrator_seed": 1886459227,
+          "barostat_seed": 242539670,
+          "segments": 4,
+          "context_reused_segments": 3
+        },
+        {
+          "host": "lambda4",
+          "pid": 2353474,
+          "gpu": "4",
+          "affinity": [
+            60,
+            61
+          ],
+          "integrator_seed": 1951992201,
+          "barostat_seed": 1933382269,
+          "segments": 4,
+          "context_reused_segments": 3
+        }
+      ]
+    },
+    "persistent/two-gpu-004000": {
+      "complete": true,
+      "problems": [],
+      "iterations": [
+        {
+          "iteration": 1,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 2,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 3,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        },
+        {
+          "iteration": 4,
+          "segments": 2,
+          "completed": 2,
+          "weight_sum": 1.0
+        }
+      ],
+      "current_iteration": 5,
+      "requested_iterations": 4,
+      "contexts": [
+        {
+          "host": "lambda4",
+          "pid": 2354112,
+          "gpu": "4",
+          "affinity": [
+            60,
+            61
+          ],
+          "integrator_seed": 287637661,
+          "barostat_seed": 581175389,
+          "segments": 3,
+          "context_reused_segments": 2
+        },
+        {
+          "host": "lambda4",
+          "pid": 2354124,
+          "gpu": "5",
+          "affinity": [
+            62,
+            63
+          ],
+          "integrator_seed": 333874796,
+          "barostat_seed": 1629445403,
+          "segments": 3,
+          "context_reused_segments": 2
+        },
+        {
+          "host": "lambda13",
+          "pid": 378113,
+          "gpu": "0",
+          "affinity": [
+            60,
+            61
+          ],
+          "integrator_seed": 68837045,
+          "barostat_seed": 614507881,
+          "segments": 1,
+          "context_reused_segments": 0
+        },
+        {
+          "host": "lambda13",
+          "pid": 378112,
+          "gpu": "1",
+          "affinity": [
+            62,
+            63
+          ],
+          "integrator_seed": 338179267,
+          "barostat_seed": 156975102,
+          "segments": 1,
+          "context_reused_segments": 0
+        }
+      ]
+    }
+  },
+  "source_modules": {
+    "efficiency.py": "77c6a3019d1cce55354cfb922b9f3e291f27efdb804a725d2c965cfa64951510",
+    "openmm_worker.py": "1f17c165d5de1bbf051618d1ac33896ed840f959681071b78ef8aea666512d90",
+    "westpa_controller.py": "24f4f5d823cb7d07fd68d0ddf103b72ad84c64e9017e10f72658c5683d42be8f",
+    "westpa_gpu_worker.py": "f8271f65d6fe2443bcda1d421121c603031472475ed89026df581a3b31d51e5e",
+    "persistent_calculator.py": "9cf5e87cffd6307b911a77e066e285c44543e1e28fb08cec2e9f6b3dd3a22b20",
+    "toolchain_validation.py": "e35e272c6958d02f72062ccea5067a24ce77c14cb307a58b9c25494c5b229895"
+  },
+  "scope": "execution_integrity_only_no_kinetic_validation"
+}

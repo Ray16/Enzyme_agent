@@ -35,6 +35,9 @@ def test_persistent_environment_bridge_preserves_forces_and_process(tmp_path, mo
         reference.positions[:] = atoms.positions
         assert atoms.get_potential_energy() == pytest.approx(reference.get_potential_energy(), abs=1e-12)
         assert bridge.process.pid == pid
+        assert bridge.requests_completed == 2
+        assert bridge.last_model_metrics["energy_force_compute_seconds"] >= 0
+        assert bridge.server_runtime["python"]
         atoms.info["multiplicity"] = 2
         with pytest.raises(ValueError, match="disagrees"):
             atoms.get_forces()

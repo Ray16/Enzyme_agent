@@ -88,20 +88,25 @@ def md_check(pdb, output, platform_name):
     return report
 
 
-def hybrid_check(pdb, parm7, model_pdb, output, device, profile, second_pdb=None):
+def hybrid_check(pdb, parm7, model_pdb, output, device, profile, second_pdb=None, force_calls=0):
+    started = time.monotonic()
     from ase.io import read
     from ase.md.verlet import VelocityVerlet
     from ase import units
     from mlmm.backends.mlmm_calc import MLMMCore, MLMMASECalculator
     import os
+    imports_seconds = time.monotonic() - started
 
     resource_check(device == "cuda")
+    if type(force_calls) is not int or not 0 <= force_calls <= 200:
+        raise ValueError("Bounded force-call count must be between zero and 200")
     out = Path(output).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
     os.environ["SAMPLING_HIGH_LEVEL_PROFILE"] = str(Path(profile).resolve(strict=True))
     spec = json.loads(Path(profile).read_text())
     # Fixture charge/layers come from the authors' smoke input, explicitly supplied.
     calc_file = Path(__file__).with_name("persistent_calculator.py")
+    construction_started = time.monotonic()
     core = MLMMCore(input_pdb=str(Path(pdb).resolve(strict=True)),
                     real_parm7=str(Path(parm7).resolve(strict=True)),
                     model_pdb=str(Path(model_pdb).resolve(strict=True)),
@@ -109,6 +114,7 @@ def hybrid_check(pdb, parm7, model_pdb, output, device, profile, second_pdb=None
                     backend="custom", calc_file=str(calc_file), ml_device=device,
                     mm_backend="openmm", mm_device="cpu", mm_threads=1,
                     xtb_ncores=1, embedcharge=False, print_timing=False, print_vram=False)
+    construction_seconds = time.monotonic() - construction_started
     calculator = MLMMASECalculator(core)
     atoms = read(pdb)
     atoms.calc = calculator
@@ -120,7 +126,9 @@ def hybrid_check(pdb, parm7, model_pdb, output, device, profile, second_pdb=None
         # Include every layer and a covalent boundary when present, without guessing atom names.
         selected = sorted(set([0, len(atoms) - 1, *core.selection_indices[:1],
                                *[i - 1 for pair in core.mlmm_links for i in pair]]))
+        validation_started = time.monotonic()
         fd = force_check(atoms, calculator, selected, step=1e-3)
+        validation_seconds = time.monotonic() - validation_started
         assert np.isfinite(forces).all() and np.isfinite(energy) and fd < 0.02
         atoms.set_velocities(np.zeros((len(atoms), 3)))
         dyn = VelocityVerlet(atoms, timestep=0.05 * units.fs)
@@ -136,6 +144,8 @@ def hybrid_check(pdb, parm7, model_pdb, output, device, profile, second_pdb=None
                       model_profile_sha256=digest(profile), energy_eV=energy, atom_count=len(atoms),
                       selected_force_check_atoms=selected, force_check_max_error_eV_per_A=fd,
                       first_force_seconds=warmup, md_steps=3, timestep_fs=0.05,
+                      imports_seconds=imports_seconds, core_construction_seconds=construction_seconds,
+                      force_validation_seconds=validation_seconds,
                       nve_total_energy_drift_eV=drift, md_seconds=time.monotonic() - t,
                       embedding="mechanical_ONIOM", mm_backend="openmm", enzyme_accuracy=None,
                       activation_free_energy=None, processivity_demonstrated=False)
@@ -154,6 +164,28 @@ def hybrid_check(pdb, parm7, model_pdb, output, device, profile, second_pdb=None
             report["path_interface"] = dict(images=3, second_input_sha256=digest(second_pdb),
                 finite_projected_forces=True, converged=False, activation_free_energy=None,
                 scope="single_band_force_evaluation_only_no_transition_state_claim")
+        if force_calls:
+            bridge = core._ml_backend._ase_calc
+            timings, server_timings = [], []
+            probe_atom = core.selection_indices[0]
+            x = atoms.positions[probe_atom, 0]
+            requests_before = bridge.requests_completed
+            for i in range(force_calls):
+                atoms.positions[probe_atom, 0] = x + (1e-4 if i % 2 else -1e-4)
+                before = time.monotonic()
+                atoms.get_forces()
+                timings.append(time.monotonic() - before)
+                server_timings.append(bridge.last_model_metrics["energy_force_compute_seconds"])
+            atoms.positions[probe_atom, 0] = x
+            assert bridge.requests_completed - requests_before == force_calls
+            report["performance"] = dict(force_calls=force_calls,
+                perturbed_ML_atom_index=probe_atom, displacement_A=1e-4,
+                confirmed_model_requests=bridge.requests_completed-requests_before,
+                full_hybrid_force_seconds=timings, high_level_server_compute_seconds=server_timings,
+                mean_full_force_seconds=float(np.mean(timings)), median_full_force_seconds=float(np.median(timings)),
+                mean_server_compute_seconds=float(np.mean(server_timings)),
+                model_process_metrics=bridge.last_model_metrics, model_process_runtime=bridge.server_runtime,
+                scope="same_small_reference_region_numerical_performance_only_no_enzyme_throughput_extrapolation")
         atomic_json(out, report)
         return report
     finally:
@@ -165,6 +197,7 @@ def hybrid_check(pdb, parm7, model_pdb, output, device, profile, second_pdb=None
 
 
 def main():
+    entrypoint_started = time.monotonic()
     import faulthandler
     faulthandler.dump_traceback_later(60, repeat=True)
     p = argparse.ArgumentParser(description=__doc__)
@@ -178,11 +211,17 @@ def main():
         hybrid.add_argument(f"--{arg}", required=True)
     hybrid.add_argument("--device", choices=["cpu", "cuda"], required=True)
     hybrid.add_argument("--second-pdb")
+    hybrid.add_argument("--force-calls", type=int, default=0)
     a = p.parse_args()
     if a.command == "md":
         report = md_check(a.pdb, a.output, a.platform)
     else:
-        report = hybrid_check(a.pdb, a.parm7, a.model_pdb, a.output, a.device, a.profile, a.second_pdb)
+        report = hybrid_check(a.pdb, a.parm7, a.model_pdb, a.output, a.device, a.profile, a.second_pdb, a.force_calls)
+    import psutil
+    report.update(entrypoint_seconds=time.monotonic() - entrypoint_started,
+                  process_wall_seconds=time.time() - psutil.Process().create_time(),
+                  scheduler_wait_seconds=None)
+    atomic_json(a.output, report)
     faulthandler.cancel_dump_traceback_later()
     print(json.dumps(report, indent=2))
 

@@ -8,3 +8,4 @@ gemmi==0.7.5
 PyYAML==6.0.3
 requests==2.34.2
 biopython==1.88
+h5py==3.16.0

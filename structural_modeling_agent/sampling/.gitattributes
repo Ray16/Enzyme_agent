@@ -1,0 +1,2 @@
+# Preserve the exact bytes of hashed external reports, including their spacing.
+validation_20261106/** -whitespace

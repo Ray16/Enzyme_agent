@@ -1,0 +1,451 @@
+{
+  "status": "software_efficiency_benchmark_complete",
+  "scope": "validated_reference_systems_only_no_enzyme_kinetics_or_processivity_claim",
+  "hardware": {
+    "main_host": "lambda4",
+    "main_GPUs": [
+      4,
+      5
+    ],
+    "type": "V100-SXM2-32GB",
+    "worker_CPU_sets": [
+      [
+        60,
+        61
+      ],
+      [
+        62,
+        63
+      ]
+    ],
+    "native_threads": 1,
+    "coordinator": {
+      "host": "lambda2",
+      "CPUs": [
+        76
+      ]
+    }
+  },
+  "MD_atoms": 4010,
+  "MD_timestep_ps": 0.002,
+  "md": [
+    {
+      "steps_per_segment": 100,
+      "simulated_ps_per_segment": 0.2,
+      "native": {
+        "dynamics_and_reporter_seconds": {
+          "n": 4,
+          "mean": 0.08887660699838307,
+          "median": 0.08858173299813643,
+          "minimum": 0.08420941099757329,
+          "maximum": 0.09413355099968612
+        },
+        "monitoring_seconds": {
+          "n": 4,
+          "mean": 0.1719483182496333,
+          "median": 0.17196334300388116,
+          "minimum": 0.15592011700209696,
+          "maximum": 0.18794646998867393
+        },
+        "total_propagation_seconds": {
+          "n": 4,
+          "mean": 0.26082492524801637,
+          "median": 0.26113482400251087,
+          "minimum": 0.24582941699190997,
+          "maximum": 0.2752006359951338
+        }
+      },
+      "plumed": {
+        "dynamics_and_reporter_seconds": {
+          "n": 4,
+          "mean": 0.09387974374476471,
+          "median": 0.09386922599514946,
+          "minimum": 0.0874621659895638,
+          "maximum": 0.10031835699919611
+        },
+        "monitoring_seconds": {
+          "n": 4,
+          "mean": 0.17820287875656504,
+          "median": 0.1798109280061908,
+          "minimum": 0.15718235200620256,
+          "maximum": 0.196007307007676
+        },
+        "total_propagation_seconds": {
+          "n": 4,
+          "mean": 0.27208262250132975,
+          "median": 0.2716217979977955,
+          "minimum": 0.2575007090053987,
+          "maximum": 0.2875861850043293
+        }
+      },
+      "subprocess_WE": {
+        "full_segment_wall_seconds": {
+          "n": 4,
+          "mean": 3.0310047268867493,
+          "median": 3.0413681268692017,
+          "minimum": 2.986643075942993,
+          "maximum": 3.0546395778656006
+        },
+        "actual_segments_by_iteration": [
+          2,
+          2
+        ],
+        "completed": true
+      },
+      "persistent_WE": {
+        "full_segment_wall_seconds": {
+          "n": 8,
+          "mean": 0.3570129289983015,
+          "median": 0.16428534799342742,
+          "minimum": 0.15973868699802551,
+          "maximum": 0.9392831360019045
+        },
+        "actual_segments_by_iteration": [
+          2,
+          2,
+          4
+        ],
+        "completed": true,
+        "warm_segment_wall_seconds": {
+          "n": 6,
+          "mean": 0.1665606298314136,
+          "median": 0.1636158209948917,
+          "minimum": 0.15973868699802551,
+          "maximum": 0.18752403200778645
+        }
+      },
+      "warm_propagation_speedup": 18.19760606065562
+    },
+    {
+      "steps_per_segment": 1000,
+      "simulated_ps_per_segment": 2.0,
+      "native": {
+        "dynamics_and_reporter_seconds": {
+          "n": 4,
+          "mean": 0.4817497692529287,
+          "median": 0.4832903794958838,
+          "minimum": 0.4690231280110311,
+          "maximum": 0.49139519000891596
+        },
+        "monitoring_seconds": {
+          "n": 4,
+          "mean": 0.32007046824583085,
+          "median": 0.3197786629971233,
+          "minimum": 0.3051224039954832,
+          "maximum": 0.3356021429935936
+        },
+        "total_propagation_seconds": {
+          "n": 4,
+          "mean": 0.8018202374987595,
+          "median": 0.7968421869954909,
+          "minimum": 0.7865992430015467,
+          "maximum": 0.8269973330025095
+        }
+      },
+      "plumed": {
+        "dynamics_and_reporter_seconds": {
+          "n": 4,
+          "mean": 0.5552910185033397,
+          "median": 0.5494599430021481,
+          "minimum": 0.5431042399868602,
+          "maximum": 0.5791399480222026
+        },
+        "monitoring_seconds": {
+          "n": 4,
+          "mean": 0.36772153074707603,
+          "median": 0.37275297949963715,
+          "minimum": 0.35006276998319663,
+          "maximum": 0.3753173940058332
+        },
+        "total_propagation_seconds": {
+          "n": 4,
+          "mean": 0.9230125492504158,
+          "median": 0.9229994940033066,
+          "minimum": 0.9168484909896506,
+          "maximum": 0.9292027180053992
+        }
+      },
+      "subprocess_WE": {
+        "full_segment_wall_seconds": {
+          "n": 4,
+          "mean": 3.5245564579963684,
+          "median": 3.445340633392334,
+          "minimum": 3.3575944900512695,
+          "maximum": 3.849950075149536
+        },
+        "actual_segments_by_iteration": [
+          2,
+          2
+        ],
+        "completed": true
+      },
+      "persistent_WE": {
+        "full_segment_wall_seconds": {
+          "n": 8,
+          "mean": 0.7486519540016161,
+          "median": 0.5472280019967002,
+          "minimum": 0.5391623430041363,
+          "maximum": 1.3937268500012578
+        },
+        "actual_segments_by_iteration": [
+          2,
+          4,
+          2
+        ],
+        "completed": true,
+        "warm_segment_wall_seconds": {
+          "n": 6,
+          "mean": 0.5540947593350817,
+          "median": 0.5460391675005667,
+          "minimum": 0.5391623430041363,
+          "maximum": 0.6056995520048076
+        }
+      },
+      "warm_propagation_speedup": 6.360927257687594
+    },
+    {
+      "steps_per_segment": 4000,
+      "simulated_ps_per_segment": 8.0,
+      "native": {
+        "dynamics_and_reporter_seconds": {
+          "n": 4,
+          "mean": 1.766633018014545,
+          "median": 1.7637285065138713,
+          "minimum": 1.7601949730160413,
+          "maximum": 1.7788800860143965
+        },
+        "monitoring_seconds": {
+          "n": 4,
+          "mean": 1.3295751217374345,
+          "median": 1.330676539473643,
+          "minimum": 1.265098725009011,
+          "maximum": 1.3918486829934409
+        },
+        "total_propagation_seconds": {
+          "n": 4,
+          "mean": 3.0962081397519796,
+          "median": 3.1013885904976632,
+          "minimum": 3.0300117220031098,
+          "maximum": 3.152043656009482
+        }
+      },
+      "plumed": {
+        "dynamics_and_reporter_seconds": {
+          "n": 4,
+          "mean": 2.08921284524331,
+          "median": 2.0859517464923556,
+          "minimum": 2.0779674090008484,
+          "maximum": 2.10698047898768
+        },
+        "monitoring_seconds": {
+          "n": 4,
+          "mean": 1.324848335756542,
+          "median": 1.3411302600143244,
+          "minimum": 1.2528322160069365,
+          "maximum": 1.3643006069905823
+        },
+        "total_propagation_seconds": {
+          "n": 4,
+          "mean": 3.414061180999852,
+          "median": 3.4380173469980946,
+          "minimum": 3.330799625007785,
+          "maximum": 3.449410404995433
+        }
+      },
+      "subprocess_WE": {
+        "full_segment_wall_seconds": {
+          "n": 6,
+          "mean": 5.781224489212036,
+          "median": 5.714094877243042,
+          "minimum": 5.607287406921387,
+          "maximum": 6.159652948379517
+        },
+        "actual_segments_by_iteration": [
+          2,
+          4
+        ],
+        "completed": true
+      },
+      "persistent_WE": {
+        "full_segment_wall_seconds": {
+          "n": 6,
+          "mean": 2.075609872333492,
+          "median": 1.8595824724980048,
+          "minimum": 1.8247134470002493,
+          "maximum": 2.5458642239973415
+        },
+        "actual_segments_by_iteration": [
+          2,
+          2,
+          2
+        ],
+        "completed": true,
+        "warm_segment_wall_seconds": {
+          "n": 4,
+          "mean": 1.8452750072501658,
+          "median": 1.8480070590012474,
+          "minimum": 1.8247134470002493,
+          "maximum": 1.8603724639979191
+        }
+      },
+      "warm_propagation_speedup": 3.1329880188575436
+    }
+  ],
+  "models": {
+    "uma": {
+      "real_atoms": 122,
+      "ML_atoms": 46,
+      "link_H": 2,
+      "precision": "float64",
+      "force_latency_seconds": {
+        "n": 50,
+        "mean": 0.09479824464069679,
+        "median": 0.09447824850212783,
+        "minimum": 0.09322221000911668,
+        "maximum": 0.10596105600416195
+      },
+      "server_compute_seconds": {
+        "n": 50,
+        "mean": 0.09156644970062189,
+        "median": 0.0912333850064897,
+        "minimum": 0.09003410399600398,
+        "maximum": 0.10274135999497958
+      },
+      "process_wall_seconds": 48.835888624191284,
+      "imports_seconds": 3.8525173380039632,
+      "core_construction_seconds": 6.081183715999941,
+      "model_first_force_seconds": 27.48436453299655,
+      "force_validation_seconds": 3.3268922319984995,
+      "model_memory": {
+        "energy_force_compute_seconds": 0.09157808500458486,
+        "peak_device_allocated_bytes": 2568422912,
+        "peak_device_reserved_bytes": 2617245696
+      },
+      "source_report_sha256": "a74fdf0dae4052e9ec32bd1422dee89341d0c3c4075404762ed0deff400b3ae3"
+    },
+    "orb": {
+      "real_atoms": 122,
+      "ML_atoms": 46,
+      "link_H": 2,
+      "precision": "float64",
+      "force_latency_seconds": {
+        "n": 50,
+        "mean": 0.04434571057994617,
+        "median": 0.0443284919965663,
+        "minimum": 0.03635558800306171,
+        "maximum": 0.05673892900813371
+      },
+      "server_compute_seconds": {
+        "n": 50,
+        "mean": 0.04066610849928111,
+        "median": 0.04053808849857887,
+        "minimum": 0.033217117001186125,
+        "maximum": 0.05318519999855198
+      },
+      "process_wall_seconds": 31.65051555633545,
+      "imports_seconds": 3.8785747439978877,
+      "core_construction_seconds": 0.43912101301248185,
+      "model_first_force_seconds": 15.480336371998419,
+      "force_validation_seconds": 2.4843533520033816,
+      "model_memory": {
+        "energy_force_compute_seconds": 0.03928352599905338,
+        "peak_device_allocated_bytes": 415491072,
+        "peak_device_reserved_bytes": 459276288
+      },
+      "source_report_sha256": "e532e576441e43963cd4ffda6c246de5bb0d24c86be17fe7b1963426ca5a2dd7"
+    },
+    "so3lr": {
+      "real_atoms": 122,
+      "ML_atoms": 46,
+      "link_H": 2,
+      "precision": "float64",
+      "force_latency_seconds": {
+        "n": 50,
+        "mean": 0.010587915520591195,
+        "median": 0.01037489600275876,
+        "minimum": 0.01012699400598649,
+        "maximum": 0.012045851995935664
+      },
+      "server_compute_seconds": {
+        "n": 50,
+        "mean": 0.007942050060082693,
+        "median": 0.007758357503917068,
+        "minimum": 0.007490251999115571,
+        "maximum": 0.009026369996718131
+      },
+      "process_wall_seconds": 19.24814009666443,
+      "imports_seconds": 3.786750399012817,
+      "core_construction_seconds": 0.16022234999400098,
+      "model_first_force_seconds": 11.477496036997763,
+      "force_validation_seconds": 0.8994559120037593,
+      "model_memory": {
+        "energy_force_compute_seconds": 0.0077066039957571775,
+        "peak_device_allocated_bytes": null,
+        "peak_device_reserved_bytes": null,
+        "jax_peak_bytes_in_use": 113284096
+      },
+      "source_report_sha256": "66b121229f0b383ecf840c67845fd4d7c97f2a04a04ba7f3ffc38b7d8b08dcb7"
+    }
+  },
+  "checks": {
+    "cross_host_restart": {
+      "passed": true,
+      "completed_iterations": 4,
+      "initial_host": "lambda4",
+      "restart_host": "lambda13",
+      "restart_GPU_type": "H100 NVL",
+      "excluded_from_timing_comparison": true,
+      "allocation_measurements": [
+        "elapsed_seconds=28.01 user_seconds=4.69 system_seconds=9.64 max_RSS_KiB=312504 exit_code=0",
+        "elapsed_seconds=28.12 user_seconds=4.77 system_seconds=9.63 max_RSS_KiB=310860 exit_code=0"
+      ]
+    },
+    "plumed_zero_potential": true,
+    "independent_worker_streams": true,
+    "heartbeat_failure_preserved_and_resumed": true,
+    "controller_rejects_incomplete_zero_exit": true
+  },
+  "limitations": [
+    "Tiny, short reference tests; no statistical claim about sampling efficiency on an enzyme.",
+    "Different sampler trajectories visit different configurations; actual walker counts are reported.",
+    "Per-segment speedups are steady propagation costs, not a universal whole-pipeline speedup.",
+    "Restart on H100 is excluded from V100 timing aggregates.",
+    "Periodic electrostatic QM/MM, chemically correct amide states and complete multistate enzyme-cycle validation remain pending."
+  ],
+  "filesystem": {
+    "root": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/efficiency",
+    "files": 677,
+    "allocated_file_bytes": 73941000,
+    "output_policy": "single run subtree with nested archive; no top-level project scratch outputs"
+  },
+  "evidence": [
+    {
+      "path": "mlmm/orb/report.json",
+      "sha256": "e532e576441e43963cd4ffda6c246de5bb0d24c86be17fe7b1963426ca5a2dd7"
+    },
+    {
+      "path": "mlmm/so3lr/report.json",
+      "sha256": "66b121229f0b383ecf840c67845fd4d7c97f2a04a04ba7f3ffc38b7d8b08dcb7"
+    },
+    {
+      "path": "mlmm/uma/report.json",
+      "sha256": "a74fdf0dae4052e9ec32bd1422dee89341d0c3c4075404762ed0deff400b3ae3"
+    },
+    {
+      "path": "paired/worker-0/report.json",
+      "sha256": "54c06194ea58e61fc984abc4038a4277f656865522ead0d59611e782e4ad2323"
+    },
+    {
+      "path": "paired/worker-1/report.json",
+      "sha256": "d2bfd2ba5a7357aa1a789e7c40f2c7fa0c9ed106310f232e2678eaf175b46321"
+    },
+    {
+      "path": "project-tests.xml",
+      "sha256": "22b5ed14f632e0ca6ab0ae57905403f63149544a73eecc3010decbdfc3a8d222"
+    },
+    {
+      "path": "runtime-tests.xml",
+      "sha256": "a01cb36fb35bfbb9c785d2557270c9dec65a9ead24557a58f32bd08d7e73df6e"
+    }
+  ]
+}

@@ -54,6 +54,9 @@ class PersistentCalculator(Calculator):
         self.process = None
         self.log_handle = None
         self.last_resource_check = 0.0
+        self.server_runtime = None
+        self.last_model_metrics = None
+        self.requests_completed = 0
 
     def _reply(self):
         ready, _, _ = select.select([self.process.stdout], [], [], self.profile["timeout_seconds"])
@@ -81,7 +84,9 @@ class PersistentCalculator(Calculator):
              "--serve", self.profile_path], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=self.log_handle, text=True, bufsize=1,
         )
-        if self._reply().get("ready") is not True:
+        ready = self._reply()
+        self.server_runtime = ready.get("runtime")
+        if ready.get("ready") is not True:
             self.close()
             raise RuntimeError("Model server did not complete initialization")
 
@@ -100,6 +105,8 @@ class PersistentCalculator(Calculator):
                                             "pbc": atoms.pbc.tolist()}) + "\n")
         self.process.stdin.flush()
         reply = self._reply()
+        self.requests_completed += 1
+        self.last_model_metrics = reply.get("metrics")
         e, f = float(reply["energy_eV"]), np.asarray(reply["forces_eV_per_A"], dtype=float)
         if not np.isfinite(e) or f.shape != (len(atoms), 3) or not np.isfinite(f).all():
             self.close()
@@ -150,7 +157,8 @@ def serve(path):
         resource_check(c["require_gpu"])
         module, name = c["factory"].rsplit(":", 1)
         calc = getattr(importlib.import_module(module), name)(**c["kwargs"])
-        protocol.write(json.dumps({"ready": True}) + "\n")
+        from structural_modeling_agent.sampling.pilot import runtime
+        protocol.write(json.dumps({"ready": True, "runtime": runtime()}) + "\n")
         last_check = time.monotonic()
         for line in sys.stdin:
             if time.monotonic() - last_check > 10:
@@ -161,9 +169,21 @@ def serve(path):
                           cell=q["cell_A"], pbc=q["pbc"])
             bind_electronic_state(atoms, c["charge"], c["multiplicity"])
             atoms.calc = calc
+            started = time.monotonic()
             forces = atoms.get_forces()
-            protocol.write(json.dumps({"energy_eV": float(atoms.get_potential_energy()),
-                                       "forces_eV_per_A": forces.tolist()}, allow_nan=False) + "\n")
+            energy = float(atoms.get_potential_energy())
+            metrics = {"energy_force_compute_seconds": time.monotonic() - started,
+                       "peak_device_allocated_bytes": None, "peak_device_reserved_bytes": None}
+            torch = sys.modules.get("torch")
+            if torch is not None and torch.cuda.is_initialized():
+                metrics.update(peak_device_allocated_bytes=torch.cuda.max_memory_allocated(),
+                               peak_device_reserved_bytes=torch.cuda.max_memory_reserved())
+            jax = sys.modules.get("jax")
+            if jax is not None and c["require_gpu"]:
+                stats = jax.devices()[0].memory_stats() or {}
+                metrics["jax_peak_bytes_in_use"] = stats.get("peak_bytes_in_use")
+            protocol.write(json.dumps({"energy_eV": energy,
+                                       "forces_eV_per_A": forces.tolist(), "metrics": metrics}, allow_nan=False) + "\n")
     except Exception as exc:
         protocol.write(json.dumps({"error": f"{type(exc).__name__}: {exc}"}) + "\n")
         raise

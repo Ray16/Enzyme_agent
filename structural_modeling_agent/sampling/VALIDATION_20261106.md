@@ -103,7 +103,71 @@ null and first release absorbing, so rebinding cannot count as continuous growth
 No full-cycle enzyme trajectory or new molecular demonstration of processivity
 has been produced. No shorter/wider tunnel designs were launched in this phase.
 
-## Earlier ASE pilot baseline
+## Efficiency benchmark follow-up
+
+All new raw outputs are grouped under
+`runs/amide_sampling_pilot_20261105/efficiency/`, with `INDEX.json` and a nested
+archive of initial attempts. Compact, hashed reports are in
+[`validation_20261106/efficiency`](validation_20261106/efficiency/).
+The main comparisons used two V100s with disjoint CPU sets and one coordinator;
+comparison cases ran sequentially on that allocation. Independent workers ran
+concurrently. The exact 4,010-atom reference Hamiltonian was checked across the
+direct and subprocess paths.
+
+| MD steps per segment | Original WESTPA subprocess, mean full segment (s) | Persistent worker, mean warm segment (s) | Warm propagation improvement |
+| ---: | ---: | ---: | ---: |
+| 100 | 3.031 | 0.167 | 18.2× |
+| 1,000 | 3.525 | 0.554 | 6.36× |
+| 4,000 | 5.781 | 1.849 | 3.13× |
+
+These are measured propagation costs, including each implementation's monitoring
+and output handling. They are **not whole-pipeline or scientific sampling
+speedups**. One-time initialization, coordination, different realized walker
+counts, resampling and failed attempts are recorded separately. Short runs and
+different visited configurations limit the precision of timing comparisons.
+
+The improvements came from keeping one OpenMM context per worker, moving CV
+evaluation into the worker, and removing repeated process/import overhead and
+redundant GPU-status queries. Three-iteration two-GPU tests verified context
+reuse, finite trajectories, normalized weights and independent streams for
+cloned initial conditions. A fourth iteration resumed successfully on available
+H100s after the original V100 slots became occupied. H100 timing is excluded from
+the V100 comparison. Reservation checks refused overlap, and final worker/helper
+cleanup passed.
+
+The paired direct-MD/PLUMED test reverses mode order across the two workers,
+records distinct thermostat/barostat seeds, and separates monitoring time from
+dynamics/reporting. A zero-strength restraint evaluates the PLUMED CV while an
+explicit energy/force check confirms zero added potential. On this reference,
+mean dynamics/reporting times for native versus PLUMED were 0.089/0.094 s at
+100 steps, 0.482/0.555 s at 1,000, and 1.767/2.089 s at 4,000. Real biases and
+larger systems require their own tests; these numbers do not measure PMF quality.
+
+The matched hybrid test confirms **50 real model requests**, with a perturbed
+ML-region atom preventing cache-only timing. All three retain their gradient
+checks. Full process time includes imports, construction, reference-force checks,
+MD, force benchmarking and cleanup.
+
+| High-level model | Mean full hybrid force (ms) | Benchmark process wall (s) | Peak allocated/in-use device memory |
+| --- | ---: | ---: | ---: |
+| Ordinary UMA-S-1.2.1 FP64 | 94.8 | 48.84 | 2.39 GiB, Torch allocated |
+| OrbMol-v2 FP64 | 44.4 | 31.65 | 0.387 GiB, Torch allocated |
+| SO3LR Tauri-M FP64 | 10.6 | 19.25 | 0.106 GiB, JAX in-use |
+
+These small-region costs favor SO3LR for throughput in this benchmark; they do
+not establish chemical accuracy or justify ranking enzyme activity. The cost
+breakdown supports reusing loaded models rather than reloading them for every
+window/image. GPU allocator metrics differ between Torch and JAX.
+
+The final project suite passed **428 tests**, with one optional WESTPA runtime
+module skipped in the lightweight environment. The dedicated MD environment
+passed all **9 runtime checks**, including seed collisions, changed-artifact cache
+rejection, lifecycle cleanup and false-success detection. RFD4 generation,
+multistate refolding, reaction reference accuracy and a representative enzyme
+access/release efficiency comparison remain separate scientific work; prior
+Aurora RFD4 qualification is retained in the inventory.
+
+## Earlier ASE pilot baseline (historical)
 
 The ordinary newest small base UMA checkpoint (`uma-s-1p2p1`) is configured and
 has completed an energy/force compatibility probe on a Tesla V100-SXM2-32GB.
