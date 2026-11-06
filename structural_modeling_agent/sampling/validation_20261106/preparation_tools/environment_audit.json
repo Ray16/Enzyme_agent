@@ -1,0 +1,73 @@
+{
+  "scope": "Live CPU import checks; no model inference or GPU qualification",
+  "environments": [
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/.venv/bin/python",
+      "modules": {
+        "numpy": "imported",
+        "openai": "imported",
+        "rdkit": "imported",
+        "Bio": "imported",
+        "gemmi": "imported",
+        "requests": "imported"
+      }
+    },
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-sampling-20261105/bin/python",
+      "modules": {
+        "ase": "imported",
+        "pymbar": "imported"
+      }
+    },
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+      "modules": {
+        "openmm": "imported",
+        "openmmplumed": "imported",
+        "westpa": "imported",
+        "pyKVFinder": "imported"
+      }
+    },
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-qmmm-20261106/bin/python",
+      "modules": {
+        "mlmm": "imported",
+        "pyscf": "imported"
+      }
+    },
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-uma-20261105/bin/python",
+      "modules": {
+        "torch": "imported",
+        "fairchem.core": "imported"
+      }
+    },
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-orb-20261105/bin/python",
+      "modules": {
+        "torch": "imported",
+        "orb_models": "imported"
+      }
+    },
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-so3lr-20261105/bin/python",
+      "modules": {
+        "jax": "imported",
+        "so3lr": "imported"
+      }
+    },
+    {
+      "python": "/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/mlmm-toolkit/bin/python",
+      "modules": {
+        "openmm": "imported",
+        "pdbfixer": "imported",
+        "rdkit": "ModuleNotFoundError: No module named 'rdkit'"
+      }
+    }
+  ],
+  "ambertools_binaries": {
+    "antechamber": true,
+    "parmchk2": true,
+    "tleap": true
+  }
+}

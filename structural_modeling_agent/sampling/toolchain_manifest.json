@@ -464,5 +464,64 @@
   "processivity_demonstrated": false,
   "automatic_model_choice": false,
   "evidence_policy": "Committed immutable report snapshots; origin_path points to full local run. Digest checks apply to snapshots, not live installed software or hardware.",
-  "performance_selection_status": "Reference computational cost measured and worker overhead reduced. Representative enzyme sampler/kinetic efficiency and reaction accuracy remain unresolved."
+  "performance_selection_status": "Reference computational cost measured and worker overhead reduced. Representative enzyme sampler/kinetic efficiency and reaction accuracy remain unresolved.",
+  "preparation_operator_profiles": [
+    {
+      "id": "chemical_graph",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/.venv/bin/python",
+      "capabilities": [
+        "RDKit chemical graphs, charges, stereochemistry",
+        "Gemmi/Biopython structure inspection"
+      ],
+      "limits": [
+        "No ASE in this controller environment; use the ASE profile for ASE operations"
+      ]
+    },
+    {
+      "id": "protein_repair_and_ambertools",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/mlmm-toolkit/bin/python",
+      "capabilities": [
+        "PDBFixer/OpenMM protein repair",
+        "AmberTools antechamber, parmchk2 and tleap binaries"
+      ],
+      "limits": [
+        "RDKit is absent; perform chemical-graph preparation in the chemical_graph profile and exchange hashed files",
+        "Explicit AMBERHOME required for AmberTools; molecular parameters still need scientific review"
+      ]
+    },
+    {
+      "id": "ase_and_mbar",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/amide-sampling-20261105/bin/python",
+      "capabilities": [
+        "ASE coordinates and analysis",
+        "PyMBAR"
+      ],
+      "limits": [
+        "No OpenAI client; this is not the decision-agent environment"
+      ]
+    },
+    {
+      "id": "solvated_md",
+      "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/bin/python",
+      "capabilities": [
+        "OpenMM",
+        "OpenMM-PLUMED",
+        "WESTPA",
+        "pyKVFinder"
+      ],
+      "limits": [
+        "GPU runs require reservations and a separate execution adapter"
+      ]
+    }
+  ],
+  "preparation_configuration_evidence": [
+    {
+      "path": "validation_20261106/preparation_tools/environment_audit.json",
+      "sha256": "7fb4d8fec65a3d4cf385d1f5c2113a1c1558ffa0b26799e2cad60fb5f9b084e2"
+    },
+    {
+      "path": "validation_20261106/preparation_tools/reference_tool_audit.json",
+      "sha256": "5299d6c3f7264f90b415a1aae734466e1f88bd2030495d02e13ecf413c764302"
+    }
+  ]
 }

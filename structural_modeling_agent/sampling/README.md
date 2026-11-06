@@ -383,3 +383,45 @@ ligand parameter correctness. Its measured speedup is a worker implementation
 improvement; it does not establish WESTPA as the most efficient scientific
 sampler. Results, input identities and limitations are summarized in
 [`VALIDATION_20261106.md`](VALIDATION_20261106.md).
+
+## Agent-owned preparation studies
+
+A standalone task with `objective: "prepare_sampling"` enters a preparation
+completion gate rather than the cofold completion gate. Optional
+`preparation_instructions` and explicitly authorized `evidence_paths` stay in
+context across turns. The agent uses `inspect_preparation_contract`,
+`inspect_preparation_structure`, `declare_preparation_study` and
+`inspect_preparation_study` to investigate and revise alternative preparations.
+Each variant binds an exact sampling setup and records chemical state,
+parameters, solvation, minimization, equilibration and pilot review. Missing
+measurements, failed alternatives, changed sources/artifacts or changed baseline
+model context prevent readiness. Conditional chemistry can be investigated;
+there is no default protonation, metal count or force-field recipe.
+
+`run_preparation_operator` executes an explicitly supplied Python script in an
+explicit environment for at most 60 seconds on one CPU. Inputs are authorized
+and hashed; expected output paths are relative to a fresh attempt directory.
+The script reads `request.json` and writes those outputs in its working directory.
+The tool retains source, logs, input/output identities and failure records,
+limits native thread pools, separates controller/worker affinity, hides GPUs,
+and terminates the process group at completion or timeout. It is a code-execution
+tool, not a security sandbox. Use reserved external execution for larger work.
+Successful execution is only `operator_complete_requires_review`; the agent must
+inspect numerical evidence and explicitly assess scientific criteria afterward.
+
+Preparation studies and operator histories survive checkpoints. The result index
+links study artifacts; live inspection rechecks their dependencies. A study can
+be `ready_for_sampling_review` only after every declared alternative has completed
+its required stages. This is a traceability/agent-review status, not independent
+proof of the chemistry or production convergence. Partial studies retain concrete
+next actions. Separate proton inventories remain separate studies/variants; their
+raw energies must not be used to infer pH-dependent populations.
+
+Preparation context is limited to 24,000 serialized characters and uses a focused
+prompt/tool set. `record_preparation_findings` preserves up to 6,000 characters of
+scientific working notes with source hashes and a concrete next action; source
+changes are flagged on reuse. Identical notes and unchanged declarations do not
+count as progress. After two turns without a preparation-state change, the agent
+must update findings/decisions or return an explicit inconclusive result before
+more investigation. Full sources and inspection history remain on disk. This
+limits repeated reading without treating incomplete evidence as resolved chemistry.

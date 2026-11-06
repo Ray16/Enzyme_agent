@@ -96,3 +96,12 @@ neutral acetamide AM1-BCC/GAFF2 → tleap → OpenMM test is recorded. Its SQM c
 rounding required a documented 0.000222333 e per-atom normalization to preserve
 the declared total charge. This is a benchmark-specific correction, not a
 general ligand-charge policy or validation of ATP/Mg/product parameters.
+
+The preparation-tool audit on 2026-11-06 verified the decision `.venv` has RDKit,
+Gemmi and Biopython, while the existing `mlmm-toolkit` environment has PDBFixer,
+OpenMM and AmberTools binaries **but no RDKit**. Use the former for chemical-graph
+operations and exchange hashed files with the latter for repair/parameterization.
+Do not assume all preparation packages share one interpreter. The toolchain
+inventory exposes these explicit operator profiles and the saved import audit.
+The ASE environment lacks the OpenAI client; run the decision agent in the project
+`.venv` and numerical operators in their declared environments.

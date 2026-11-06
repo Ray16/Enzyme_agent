@@ -39,6 +39,7 @@ def contract():
         "statuses": sorted(STATUSES),
         "source_required": ["id", "category", "path", "sha256", "quote", "interpretation", "reviewed"],
         "source_categories": sorted(SOURCE_CATEGORIES),
+        "agent_identity_binding": "declare_sampling_setup fills sequence_sha256 and target_sha256 when omitted. Do not calculate or invent hashes; explicit mismatches are rejected.",
         "conditional_required": "A discriminating_test explaining how the conditional choice will be challenged",
         "execution_choice_formats": {
             "conditions": "choice contains explicit pH and temperature_K",
@@ -174,3 +175,21 @@ def validate_execution_binding(config, preparation, config_path):
             config["max_wall_seconds"] > budget["max_wall_seconds_per_task"]):
         raise ValueError("Execution exceeds the agent's declared resource bounds")
     return report
+
+
+def declaration_schema():
+    """Expose the actual ledger shape to tool callers, not an opaque object."""
+    decision = {"type": "object", "properties": {
+        "status": {"type": "string", "enum": sorted(STATUSES)}, "choice": {},
+        "rationale": {"type": "string"}, "evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "alternatives": {"type": "array", "items": {"type": "object", "required": ["choice", "rationale"]}},
+        "assumptions": {"type": "array", "items": {"type": "string"}},
+        "uncertainties": {"type": "array", "items": {"type": "string"}},
+        "discriminating_test": {"type": "string"}},
+        "required": ["status", "choice", "rationale", "evidence_ids", "alternatives", "assumptions", "uncertainties"]}
+    return {"type": "object", "description": "Exact ledger; identity hashes are filled by the tool when omitted. Unresolved decisions may have null choice and empty evidence_ids.",
+            "properties": {"schema_version": {"type": "string", "enum": ["sampling-setup-1.0"]},
+                "question": {"type": "string"},
+                "sources": {"type": "array", "items": {"type": "object", "required": ["id", "category", "path", "sha256", "quote", "interpretation", "reviewed"]}},
+                "decisions": {"type": "object", "required": list(DECISIONS), "additionalProperties": decision}},
+            "required": ["schema_version", "question", "sources", "decisions"]}

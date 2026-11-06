@@ -32,6 +32,46 @@ from .scientific_reasoning import (assess_reasoning, execution_reasoning_errors,
 CONTEXT_ALLOWANCE = 48000
 SETUP_ANCHOR_LIMIT = 24000
 
+PREPARATION_PROMPT = """You are the structural-modeling agent performing molecular preparation.
+Own scientific investigation, preparation, validation and revision for the exact
+candidate sequence, target and supplied conditions. This objective is prepare_sampling.
+Use inspect_candidate and the supplied evidence; inspect the preparation and sampling
+contracts. Record an initial sampling setup and preparation study EARLY, with unresolved
+choices and pending stages where evidence is missing. Do not wait for all questions to
+be answered before saving actionable decisions. Then choose the next operation that
+resolves a consequential gap. Update the study after inspecting each numerical result.
+Use record_preparation_findings to persist concise findings with source hashes and the
+next action. After two investigation-only turns the available tools require a decision
+or working-memory update. Reuse these notes and do not reread unchanged pages. If a
+source changed, re-investigate the affected finding. Saving a provisional unresolved
+setup is useful progress and does not authorize execution.
+
+Investigate assembly, exact ligand chemical graphs/atom mapping, protonation of residues
+and ligands, metal stoichiometry/hydration, compatible parameters, solvent/ions and
+boundary conditions. Distinguish primary evidence from homolog transfers, predicted
+structures and apo pKa diagnostics. Propose supported conditional alternatives with
+discriminating tests; do not invent a unique tautomer or native state. Each consequential
+microstate needs its own setup. Do not select different proton inventories by raw energies.
+Inspect current toolchain validation before selecting model precision or runtime.
+
+Use run_preparation_operator for short CPU Python diagnostics and preparation in an
+explicit installed interpreter, with authorized hashed inputs and declared outputs.
+Read request.json for input paths and write outputs under the attempt working directory.
+These scripts are code execution, not a sandbox; preserve source inputs, do not access
+credentials, install packages, launch remote work or bypass resource limits. Large or
+GPU operations require a separate reserved adapter and remain explicit pending actions.
+A zero exit status is not scientific validation. Inspect results against explicit
+criteria before marking a stage passed. Never create passing measurements or impose
+restraints merely to preserve favorable substrate geometry. Keep failed alternatives.
+
+Use declare_preparation_study and inspect_preparation_study to preserve the loop. The
+completion gate requires measured preparation and pilot validation, not a proposal.
+If an operation is unavailable or chemistry remains unresolved, save the partial study
+with concrete next actions and finish honestly as incomplete. This task does not require
+new cofold predictions or design. All new artifacts belong under this run. Use only
+sources supplied in the task or retrieved by tools, and retain source hashes and quotes.
+"""
+
 SYSTEM_PROMPT = """You are the structural-modeling agent. Own the scientific modeling
 decisions for the supplied target and candidate sequences. Discovery evidence is
 input evidence, not an approved setup. Use tools to investigate, propose a model,
@@ -89,6 +129,18 @@ state. A complete decision ledger is preparation readiness only. Prepared-atom,
 force, runtime and convergence checks still apply before results can be used.
 An unsupported chosen method needs another tool or investigation, never a silent
 replacement with the method the current runner happens to implement.
+
+For molecular preparation, use inspect_preparation_contract, inspect_preparation_structure,
+declare_preparation_study and inspect_preparation_study. Own the investigation,
+preparation, validation and revision loop. Use run_preparation_operator for short
+CPU diagnostics/preparation with explicit scripts, interpreter, hashed inputs and
+outputs; inspect its reports before declaring scientific success. Larger numerical
+work needs a reserved execution adapter. Keep alternative chemical microstates in
+separate sampling setups and retain failed variants. Never select proton inventories
+by raw energies or stabilize favorable geometry by unjustified restraints. Review
+ligand chemistry, all relevant acid/base residues, Mg hydration, parameters and
+solvent together. Update stale engine/precision choices using current validation.
+A preparation task cannot complete by merely declaring a ledger or proposing a cofold.
 
 For processivity, use inspect_processivity_contract and assess_processivity_network
 to connect transport, orientation, chemical extension and release. Define a
@@ -315,6 +367,7 @@ def _controller_lock(run_dir):
 
 
 def tool_schemas():
+    from .sampling.setup import declaration_schema
     from enzyme_discovery_agent.tools import structural_proxy_planning
     from enzyme_discovery_agent.tool_registry import get_tool_info
     acc = {"accession": _string("Candidate identifier from this task")}
@@ -348,13 +401,26 @@ def tool_schemas():
         _schema("inspect_result_locations", "Find this system/run's output destinations, current revisions and recorded result paths; folder existence is not completion", acc),
         _schema("inspect_workflow_policy", "Inspect default cofolding and the distinct scientific purposes of optional dynamics and de novo design", acc, ("accession",)),
         _schema("inspect_mlmm_engine_options", "Inspect reviewed UMA/Nitro, precision and embedding options and the separate evidence needed before a chemical-energetics run; no model loading"),
+        _schema("record_preparation_findings", "Persist compact scientific working memory with verified source references and the next concrete action; replaces current notes, history is retained", {
+            **acc, "summary": _string("Evidence-based findings, unresolved alternatives and decisions; maximum 6000 characters"),
+            "sources": {"type": "array", "items": {"type": "object"}},
+            "next_action": _string("Next discriminating preparation or investigation operation")}, ("accession", "summary", "sources", "next_action")),
+        _schema("inspect_preparation_contract", "Inspect the preparation/validation loop and alternative-state evidence contract"),
+        _schema("inspect_preparation_structure", "Inspect an authorized single-model PDB for hydrogens, waters and metal neighbors; observations only", {"path": _string("Authorized PDB path")}, ("path",)),
+        _schema("declare_preparation_study", "Record preparation alternatives, measured validation, failures and concrete next actions", {**acc, "study": {"type": "object"}}, ("accession", "study")),
+        _schema("inspect_preparation_study", "Recheck latest preparation evidence and upstream dependencies", acc, ("accession",)),
+        _schema("run_preparation_operator", "Run a short CPU Python preparation or diagnostic operator; saves code, inputs, logs and outputs for review. Not a GPU launcher.", {
+            **acc, "python": _string("Absolute validated Python interpreter"), "code": _string("Explicit Python source; reads request.json inputs and writes declared outputs in cwd"),
+            "inputs": {"type": "array", "items": {"type": "object"}},
+            "outputs": {"type": "array", "items": {"type": "string"}},
+            "seconds": {"type": "integer", "minimum": 1, "maximum": 60}}, ("accession", "python", "code", "inputs", "outputs", "seconds")),
         _schema("inspect_sampling_setup_contract", "Inspect the evidence ledger for agent-selected MD/enhanced-sampling protocols; supplies questions, no chemical defaults"),
         _schema("inspect_processivity_toolchain", "Inspect configured MD, enhanced sampling, tunnel, QM/MM and ML/MM tools and exact validation scope; no model loading or submission"),
         _schema("inspect_processivity_contract", "Inspect the transport/chemistry/release network contract and limits of processivity claims"),
         _schema("assess_processivity_network", "Evaluate a source-grounded kinetic network without filling unknown rates or counting release/rebinding as continuation", {
             **acc, "network": {"type": "object", "description": "processivity-network-1.0 declaration with exact sequence_sha256 and target_sha256"}}, ("accession", "network")),
         _schema("declare_sampling_setup", "Save candidate-specific MD setup decisions, alternatives, source evidence and pending questions; does not submit compute", {
-            **acc, "setup": {"type": "object", "description": "sampling-setup-1.0 declaration from inspect_sampling_setup_contract"}}, ("accession", "setup")),
+            **acc, "setup": declaration_schema()}, ("accession", "setup")),
         _schema("inspect_sampling_setup", "Recheck an agent-selected sampling setup against current evidence and model context; paginate the full declaration", {
             **acc, "setup_id": _string("Saved setup ID; omit for latest"),
             "offset": {"type": "integer", "minimum": 0}}, ("accession",)),
@@ -410,8 +476,8 @@ def tool_schemas():
             "identifier": _string("Authoritative accession, structure identifier or open full-text identifier")}, ("kind", "identifier")),
         _schema("search_literature", "Find literature addressing a modeling uncertainty", {
             "query": _string("Evidence-derived search query")}, ("query",)),
-        _schema("assess_assembly", "Gather assembly/site evidence; suggestions remain provisional", {
-            **acc, "ligand_heavy_atoms": {"type": "integer", "minimum": 1},
+        _schema("assess_assembly", "Gather assembly/site evidence using a UniProt accession; NCBI identifiers require an explicit sequence-matched UniProt mapping. Suggestions remain provisional", {
+            **acc, "uniprot_accession": _string("Optional explicit UniProt mapping for the candidate; exact sequence is verified"), "ligand_heavy_atoms": {"type": "integer", "minimum": 1},
             "catalytic_position": {"type": "integer", "minimum": 1}}, ("accession", "ligand_heavy_atoms")),
         _schema("propose_model", "Save or revise a model with rationale, alternatives and a validation plan", {
             **acc, "modeling_input": {"type": "object"}, "rationale": _string("Evidence-based reasons and unresolved issues"),
@@ -494,7 +560,7 @@ class ModelingAgent:
             ids = [c.get("accession") for c in candidates]
             if any(not isinstance(a, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+", a) or a in {".", ".."} for a in ids) or len(set(ids)) != len(ids):
                 raise ValueError("candidate identifiers must be unique safe path components")
-            if self.task.get("objective", "model_and_validate") not in {"prepare_inputs", "model_and_validate"}:
+            if self.task.get("objective", "model_and_validate") not in {"prepare_inputs", "prepare_sampling", "model_and_validate"}:
                 raise ValueError("unknown modeling objective")
             from .result_layout import new_layout
             result_layout = new_layout(self.task, run_dir=run_dir, results_root=results_root, system_id=system_id)
@@ -784,6 +850,13 @@ class ModelingAgent:
                 current = None
             return {**result, "controller_environment_fairchem_version": current,
                     "execution_environment": "External engine environments must be inspected independently; this tool does not test runtime capability."}
+        if name == "inspect_preparation_contract":
+            from .sampling.preparation import contract
+            return contract()
+        if name == "inspect_preparation_structure":
+            from .sampling.preparation import inspect_pdb
+            result = inspect_pdb(self._authorized_evidence(args["path"]))
+            return {"artifact": self._artifact("preparation_structure", result), **result}
         if name == "inspect_sampling_setup_contract":
             from .sampling.setup import contract
             return contract()
@@ -859,8 +932,15 @@ class ModelingAgent:
             return search_europepmc(args["query"], max_results=8)
         if name == "assess_assembly":
             from .modeling_reasoning.modeling_unit import assess, gather_evidence
-            evidence, facts = gather_evidence(args["accession"], catalytic_position=args.get("catalytic_position"),
+            identifier = args.get("uniprot_accession", args["accession"])
+            if not re.fullmatch(r"(?:[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})", identifier):
+                return {"status": "needs_identity_mapping", "accession": args["accession"],
+                        "next_action": "Resolve an exact-sequence UniProt mapping or investigate assembly from explicitly identified experimental structures; no monomer assumption is made."}
+            evidence, facts = gather_evidence(identifier, catalytic_position=args.get("catalytic_position"),
                                              cache_dir=str(self.run_dir / "reference_structures"))
+            if facts.get("sequence") != self._candidate(args["accession"])["sequence"]:
+                return {"status": "sequence_mismatch", "accession": args["accession"],
+                        "mapped_accession": identifier, "next_action": "Resolve mapping/construct differences before transferring assembly evidence."}
             return {"evidence": asdict(evidence), "facts": facts,
                     "provisional_assessment": assess(evidence, args["ligand_heavy_atoms"])}
         if name == "finish_task":
@@ -899,6 +979,56 @@ class ModelingAgent:
             errors = baseline_errors(revisions[-1]) if revisions else ["no primary cofold decision yet"]
             return {"default": "cofolding", "tool_purposes": TOOL_PURPOSES,
                     "cofold_baseline_errors": errors, "followups_available": not errors}
+        if name == "record_preparation_findings":
+            summary = args["summary"]
+            if not isinstance(summary, str) or not summary.strip() or len(summary) > 6000 or not args["next_action"].strip():
+                raise ValueError("Provide compact findings and a concrete next action")
+            for source in args["sources"]:
+                path = self._authorized_evidence(source["path"])
+                if not source.get("sha256"):
+                    source["sha256"] = file_digest(path)
+                # Stale references can be recorded as unresolved working notes.
+                # Live context flags them; this does not make them scientific evidence.
+            note = {"summary": summary, "sources": copy.deepcopy(args["sources"]), "next_action": args["next_action"]}
+            state = self.state["candidates"][acc]
+            previous = state.get("preparation_findings", {})
+            if all(previous.get(key) == note[key] for key in note):
+                return {"status": "unchanged", **previous}
+            note["artifact"] = self._artifact(f"preparation_findings_{acc}", note)
+            state.setdefault("preparation_findings_history", []).append(note["artifact"])
+            state["preparation_findings"] = note
+            return note
+        if name == "run_preparation_operator":
+            from .sampling.preparation import run_operator
+            folder = self.run_dir / "artifacts" / f"preparation_{acc}_{uuid.uuid4().hex}"
+            result = run_operator(folder, args["python"], args["code"], args["inputs"],
+                                  args["outputs"], args["seconds"], self._authorized_evidence)
+            self.state["candidates"][acc].setdefault("preparation_operators", []).append(result)
+            return result
+        if name in {"declare_preparation_study", "inspect_preparation_study"}:
+            from .sampling.preparation import evaluate
+            state = self.state["candidates"][acc]
+            studies = state.setdefault("preparation_studies", {})
+            if name == "declare_preparation_study":
+                study = copy.deepcopy(args["study"])
+            else:
+                if not studies:
+                    raise ValueError("No preparation study declared")
+                study = copy.deepcopy(next(reversed(studies.values()))["study"])
+            result = evaluate(study, state.get("sampling_setups", {}), candidate["sequence"],
+                              self.task["target"], self._authorized_evidence)
+            revisions = state["revisions"]
+            basis = fingerprint(revisions[-1]["modeling_input"]) if revisions else None
+            for variant in result["variants"]:
+                if state["sampling_setups"][variant["setup_id"]]["basis_model_sha256"] != basis:
+                    result["status"] = "needs_preparation"
+                    variant["ready"] = False
+                    variant["gaps"].append({"stage": "setup", "reason": "Model context changed; redeclare setup applicability"})
+            identity = fingerprint(study)[:16]
+            if name == "declare_preparation_study" and identity not in studies:
+                artifact = self._artifact(f"preparation_{acc}", {"study": study, "assessment": result})
+                studies[identity] = {"study": study, "artifact": artifact}
+            return {"id": identity, "artifact": studies[identity]["artifact"], **result}
         if name in {"declare_sampling_setup", "inspect_sampling_setup"}:
             from .sampling.setup import assess
             from .result_layout import revision_dir
@@ -908,6 +1038,12 @@ class ModelingAgent:
             setups = state.setdefault("sampling_setups", {})
             if name == "declare_sampling_setup":
                 setup = copy.deepcopy(args["setup"])
+                identities = {"sequence_sha256": hashlib.sha256(candidate["sequence"].encode()).hexdigest(),
+                              "target_sha256": fingerprint(self.task["target"])}
+                for key, expected in identities.items():
+                    if key in setup and setup[key] != expected:
+                        raise ValueError(f"{key} mismatch; use {expected} or omit this bookkeeping field for automatic binding")
+                    setup[key] = expected
                 for source in setup.get("sources", []):
                     self._authorize_reasoning_source(source)
                 assessment = assess(setup, candidate["sequence"], self.task["target"])
@@ -1330,6 +1466,14 @@ class ModelingAgent:
         missing = []
         for candidate in self.task["candidates"]:
             acc = candidate["accession"]
+            if self.task.get("objective") == "prepare_sampling":
+                try:
+                    result = self.dispatch("inspect_preparation_study", {"accession": acc})
+                    if result["status"] != "ready_for_sampling_review":
+                        missing.append(f"{acc}: preparation or validation remains unresolved")
+                except (ValueError, OSError, KeyError) as exc:
+                    missing.append(f"{acc}: {exc}")
+                continue
             existing=self.state['candidates'][acc].get('existing_prediction_review')
             if existing:
                 from .reuse import checked_evidence
@@ -1391,7 +1535,7 @@ class ModelingAgent:
                 groups.append([])
             groups[-1].append(message)
         prefix=copy.deepcopy(self.messages[:2])
-        prefix[0]={"role":"system","content":SYSTEM_PROMPT}
+        prefix[0]={"role":"system","content":PREPARATION_PROMPT if self.task.get("objective") == "prepare_sampling" else SYSTEM_PROMPT}
         # Scientific field definitions must survive ordinary history compaction.
         # Otherwise a model can spend every turn rereading a truncated schema.
         cached_only=all((candidate.get('evidence') or {}).get('do_not_recofold')
@@ -1400,15 +1544,21 @@ class ModelingAgent:
                      'action':'review_existing_predictions','required':['accession','setup_id','applicability','interpretation','unresolved'],
                      'scope':'Source checks and frozen measurements remain attributed to the original model. Assess applicability and uncertainties; activity is not established. No new proposal or cofold is required.'}
                     if cached_only else self.dispatch("inspect_validation_contract", {"section": "all" if self.task.get('workflow_mode')=='production_cofold' else "scientific_reasoning"}))
+        if self.task.get("objective") == "prepare_sampling":
+            contract = self.dispatch("inspect_preparation_contract", {})
+            prefix.append({"role": "user", "content": json.dumps({
+                "preparation_instructions": self.task.get("preparation_instructions", "Investigate and validate the requested molecular preparation."),
+                "evidence_paths": self.state.get("authorized_evidence_paths", []),
+                "objective": "prepare_sampling"})})
         prefix[0]["content"] += "\n\nScientific record field contract (trusted tool schema):\n" + json.dumps(contract)
         # Before the first proposal the candidate record is task input, not conversational
         # history. It does not fit the per-turn tool-result allowance, so re-reading it
         # returns another truncated preview and the setup stage cannot converge. Anchor it
         # for exactly the same reason the field contract above is anchored.
-        anchor=self.state.get('setup_anchor') if self._before_proposal() else None
+        anchor=self.state.get('setup_anchor') if self._before_proposal() and self.task.get('objective') != 'prepare_sampling' else None
         if anchor:
             prefix[0]["content"] += "\n\nCandidate record under setup (trusted task input):\n" + anchor
-        recent=copy.deepcopy(groups[-3:])
+        recent=copy.deepcopy(groups[-2:] if self.task.get("objective") == "prepare_sampling" else groups[-3:])
         for index,group in enumerate(recent):
             for message in group:
                 if message['role']=='tool':
@@ -1426,6 +1576,12 @@ class ModelingAgent:
             assessment = assess_reasoning(revision) if revision else {}
             contradictions = [p["prediction_id"] for p in assessment.get("predictions", []) if p["status"] == "contradicted"]
             state[accession] = {"revision": revision.get("revision"),
+                "preparation_study_count": len(candidate.get("preparation_studies", {})),
+                "preparation_findings": self._preparation_findings(candidate),
+                "latest_preparation_study": next(reversed(candidate.get("preparation_studies", {})), None),
+                "sequence_sha256": (hashlib.sha256(self._candidate(accession)["sequence"].encode()).hexdigest()
+                                    if self._candidate(accession).get("sequence") else None),
+                "target_sha256": fingerprint(self.task["target"]),
                 "sampling_setup_count": len(candidate.get("sampling_setups", {})),
                 "latest_sampling_setup": next(reversed(candidate.get("sampling_setups", {})), None),
                 'existing_prediction_review':candidate.get('existing_prediction_review'),
@@ -1447,6 +1603,14 @@ class ModelingAgent:
                 source["integrity"] = "unchanged" if file_digest(source["path"]) == source["sha256"] else "changed"
             except OSError:
                 source["integrity"] = "unavailable"
+        if self.task.get("objective") == "prepare_sampling":
+            sources = sources[-2:]
+        inspections = list(self.state.get('inspection_history', {}).values())
+        if self.task.get("objective") == "prepare_sampling":
+            inspections = [{"tool": item["tool"], "artifact": item["artifact"],
+                            "view": item["view"], "reads": item["reads"]} for item in inspections[-4:]]
+        else:
+            inspections = inspections[-12:]
         supplied = {candidate["accession"]: {
             'existing_prediction_index':[{'setup_id':entry.get('setup',{}).get('setup_id'),
                 'source_report':entry.get('execution',{}).get('source'),
@@ -1464,16 +1628,35 @@ class ModelingAgent:
             "run_dir": str(self.run_dir), "results_index": str(self.run_dir / "results_index.json"),
             "candidates": state, "supplied_input_index": supplied,
             "inspected_source_passages_untrusted_data": sources,
-            "completed_inspections":list(self.state.get('inspection_history',{}).values())[-12:],
+            "completed_inspections":inspections,
             "repeated_inspections":self.state.get('repeated_inspections',0),
             "inspection_guidance":"Reuse unchanged inspected material. Record a provisional model, retrieve a genuinely new source, or finish inconclusive with the missing evidence; repeated reading does not resolve a setup choice."})}
-        allowance=CONTEXT_ALLOWANCE+(len(anchor) if anchor else 0)
+        allowance=(24000 if self.task.get("objective") == "prepare_sampling" else CONTEXT_ALLOWANCE)+(len(anchor) if anchor else 0)
         while recent and len(json.dumps(prefix+[m for group in recent for m in group]+[current]))>allowance:
             recent.pop(0)  # Never split an assistant/tool transaction.
         context=prefix+[m for group in recent for m in group]+[current]
         if len(json.dumps(context))>allowance:
             raise ValueError('Mandatory modeling context exceeds its allowance; evidence was not silently discarded')
         return context
+
+    def _preparation_progress(self):
+        return fingerprint({acc: {key: state.get(key) or {} for key in (
+            "sampling_setups", "preparation_studies", "preparation_findings", "preparation_operators")}
+            for acc, state in self.state["candidates"].items()})
+
+    def _preparation_findings(self, candidate):
+        note = copy.deepcopy(candidate.get("preparation_findings"))
+        if not note:
+            return None
+        note["source_errors"] = []
+        for source in note["sources"]:
+            try:
+                if file_digest(self._authorized_evidence(source["path"])) != source["sha256"]:
+                    note["source_errors"].append(source["path"])
+            except (OSError, ValueError):
+                note["source_errors"].append(source["path"])
+        note["scope"] = "Agent interpretation; re-investigate any changed sources before reuse"
+        return note
 
     def _before_proposal(self):
         """True until some candidate has a saved revision, i.e. during the setup stage."""
@@ -1607,6 +1790,20 @@ class ModelingAgent:
                         break
                     self.state["turn"] += 1
                     offered=tool_schemas()
+                    if self.task.get('objective') == 'prepare_sampling':
+                        preparation_tools = {'inspect_candidate', 'read_candidate_section', 'read_evidence',
+                            'retrieve_reference', 'search_literature', 'assess_assembly', 'inspect_molecule',
+                            'inspect_result_locations', 'inspect_mlmm_engine_options', 'inspect_preparation_contract',
+                            'inspect_preparation_structure', 'declare_preparation_study', 'inspect_preparation_study',
+                            'run_preparation_operator', 'inspect_sampling_setup_contract', 'inspect_processivity_toolchain',
+                            'declare_sampling_setup', 'inspect_sampling_setup', 'record_preparation_findings', 'finish_task'}
+                        offered = [t for t in offered if t['function']['name'] in preparation_tools]
+                        if self.state.get('preparation_read_turns', 0) >= 2:
+                            decision_tools = {'record_preparation_findings', 'declare_sampling_setup',
+                                              'declare_preparation_study', 'finish_task'}
+                            offered = [t for t in offered if t['function']['name'] in decision_tools]
+
+
                     if self.task.get('workflow_mode')=='production_cofold':
                         before_proposal=not any(c['revisions'] for c in self.state['candidates'].values())
                         cached_only=all((candidate.get('evidence') or {}).get('do_not_recofold')
@@ -1666,6 +1863,7 @@ class ModelingAgent:
                     self.messages.append(dumped)
                     self._event("decision", rationale=content or "", tools=[
                         c.function.name if hasattr(c, "function") else c["function"]["name"] for c in calls])
+                    preparation_before = self._preparation_progress()
                     for call in calls:
                         function = call.function if hasattr(call, "function") else call["function"]
                         name = function.name if hasattr(function, "name") else function["name"]
@@ -1676,7 +1874,9 @@ class ModelingAgent:
                             if name not in offered_names:
                                 result={'status':'blocked','reason':'Choose a new evidence action, provisional proposal, or explicit inconclusive outcome after repeated unchanged inspections.'}
                                 self.state.update(status='inspection_stalled',checkpoint_reason=result['reason'])
-                            elif budget_reason() or self.state["status"] != "running":
+                            elif self.state["status"] != "running" or (budget_reason() and not (
+                                    self.task.get("objective") == "prepare_sampling" and name in {
+                                        "record_preparation_findings", "declare_sampling_setup", "declare_preparation_study", "finish_task"})):
                                 result = {"status": "deferred", "reason": "resource boundary or task already finished"}
                             else:
                                 result = self.dispatch(name, arguments)
@@ -1693,6 +1893,9 @@ class ModelingAgent:
                         if (self.task.get('workflow_mode')=='production_cofold' and name=='render_inputs'
                                 and result.get('status')=='rendered'):
                             self.state.update(status='ready_for_native_execution')
+                    if self.task.get('objective') == 'prepare_sampling':
+                        changed = self._preparation_progress() != preparation_before
+                        self.state['preparation_read_turns'] = 0 if changed else self.state.get('preparation_read_turns', 0) + 1
                     if not calls:
                         self.messages.append({"role": "user", "content": "Use tools to investigate/revise, or finish_task with a supported outcome. Prose alone does not complete this task."})
                     if self.state["status"] != "running":
@@ -1715,6 +1918,11 @@ class ModelingAgent:
         for acc, state in self.state["candidates"].items():
             current = state["revisions"][-1] if state["revisions"] else {}
             candidates.append({"accession": acc, "revision": current.get("revision"),
+                               "preparation_studies": [{"id": key, "artifact": value["artifact"]}
+                                                       for key, value in state.get("preparation_studies", {}).items()],
+                               "preparation_operators": [{"artifact": value["artifact"], "status": value["status"]}
+                                                         for value in state.get("preparation_operators", [])],
+
                                'existing_prediction_review':state.get('existing_prediction_review'),
                                "input_derivation": current.get("input_derivation"),
                                "bioemu2_preparation": current.get("bioemu2_preparation"),
@@ -1758,7 +1966,9 @@ class ModelingAgent:
                   "usage": self.state["usage"], "candidates": candidates,
                   "code_snapshots": self.state.get("code_snapshots", []),
                   "environment": self.state.get("environment"),
-                  "evidence_scope": "Setup consistency and declared pose checks; no activity prediction or automatic discovery reranking."}
+                  "evidence_scope": ("Preparation evidence and agent-reviewed validation; no production dynamics or chemical accuracy claim."
+                                     if self.task.get("objective") == "prepare_sampling" else
+                                     "Setup consistency and declared pose checks; no activity prediction or automatic discovery reranking.")}
         if self.task.get("kind") == "discovery_handoff":
             report["sequence_identity_requirement"] = "exact_uniprot_primary"
             report["discovery_handoff"] = {

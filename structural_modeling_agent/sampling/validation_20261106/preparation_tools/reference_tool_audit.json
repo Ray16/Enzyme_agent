@@ -1,0 +1,18 @@
+{
+  "uniprot": {
+    "status": "retrieved",
+    "characters": 241776
+  },
+  "pdb": {
+    "status": "retrieved",
+    "characters": 14394
+  },
+  "paper": {
+    "status": "retrieved",
+    "characters": 88038
+  },
+  "search": {
+    "status": "returned",
+    "result_type": "dict"
+  }
+}

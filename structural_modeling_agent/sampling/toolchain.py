@@ -6,7 +6,7 @@ occur here. Revalidate evidence bytes before reporting a recorded check current.
 from pathlib import Path
 import json
 
-from .pilot import digest
+from ..validation import file_digest as digest
 
 
 def inspect_toolchain(manifest_path=None):
@@ -31,8 +31,21 @@ def inspect_toolchain(manifest_path=None):
     for env in manifest["environments"]:
         entrypoint = ("interpreter_available", "python") if "python" in env else ("executable_available", "executable")
         environments.append({**env, entrypoint[0]: Path(env[entrypoint[1]]).is_file()})
+    configuration_errors = []
+    for evidence in manifest.get("preparation_configuration_evidence", []):
+        try:
+            location = Path(evidence["path"])
+            location = location if location.is_absolute() else path.parent / location
+            if digest(location) != evidence["sha256"]:
+                configuration_errors.append(f"Changed preparation configuration evidence: {location}")
+        except OSError:
+            configuration_errors.append(f"Unavailable preparation configuration evidence: {location}")
+    profiles = [{**profile, "interpreter_available": Path(profile["python"]).is_file()}
+                for profile in manifest.get("preparation_operator_profiles", [])]
     return {**manifest, "checks": results, "environments": environments,
-            "recorded_evidence_current": all(c["evidence_current"] for c in results),
+            "preparation_operator_profiles": profiles, "configuration_errors": configuration_errors,
+
+            "recorded_evidence_current": all(c["evidence_current"] for c in results) and not configuration_errors,
             "live_hardware_tested_now": False, "execution_authorized": False,
             "chemistry_validated": False, "processivity_demonstrated": False,
             "interpretation": "Recorded software/numerical scope only. Agent-selected chemical setup, reference accuracy and convergence remain separate gates."}

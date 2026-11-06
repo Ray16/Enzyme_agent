@@ -110,6 +110,8 @@ def results_index(run_dir, state):
                                  "sampling_setups": [{"id": key, "artifact": value["artifact"],
                                                       "recorded_status": value["assessment"]["status"]}
                                                      for key, value in candidate.get("sampling_setups", {}).items()],
+                                 "preparation_studies": [{"id": key, "artifact": value["artifact"]}
+                                                         for key, value in candidate.get("preparation_studies", {}).items()],
                                  "kinetic_networks": [{"id": key, **value}
                                                       for key, value in candidate.get("kinetic_networks", {}).items()],
                                  "revisions": revisions,

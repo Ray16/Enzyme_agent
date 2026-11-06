@@ -1,0 +1,39 @@
+{
+  "scope": "Preparation workflow/software configuration review, not scientific readiness",
+  "run": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/preparation/AS9/preparation_loop_v1",
+  "status": "budget_exhausted",
+  "calls": 23,
+  "total_model_tokens": 517517,
+  "initial_17_calls_tokens": 440696,
+  "three_turn_efficiency_check_tokens": 43581,
+  "remaining_debug_calls_tokens": 33240,
+  "saved_context_replay_characters": {
+    "earlier_logged": 47497,
+    "revised": 18242
+  },
+  "tests": {
+    "full_suite_passed": 444,
+    "full_suite_optional_skipped": 1,
+    "subsequent_targeted_checks": "See test records / conversation; new progress regression also passed"
+  },
+  "live_findings": [
+    "Lightweight inventory no longer imports ASE",
+    "Assembly lookup requires valid UniProt mapping and exact sequence",
+    "RDKit belongs in project .venv, not AmberTools environment",
+    "PLUMED CLI returned 2.10",
+    "Public reference retrieval and literature search succeeded"
+  ],
+  "limitations": [
+    "AS9 preparation incomplete",
+    "No new enzyme MD or GPU runtime qualification",
+    "Live model exposed malformed declarations; explicit declaration schema added afterward",
+    "Findings from final paid response recovered without another model call; stale references remain flagged",
+    "No end-to-end scientific-efficiency claim"
+  ],
+  "artifacts": [
+    {
+      "path": "AS9_agent_findings.json",
+      "sha256": "5cc65ad8cf836dddf979b6d10c4b4f11fe3d5756e669be451a6dd6d362df73de"
+    }
+  ]
+}

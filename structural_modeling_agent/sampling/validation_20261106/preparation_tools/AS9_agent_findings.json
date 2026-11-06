@@ -1,0 +1,16 @@
+{
+  "summary": "Provisional only. No numerical preparation has been run in this loop; no stage has been measured or passed. Evidence in hand: (1) the Boltz-2 step1_1mg model_18 PDB is a predicted structure with one Mg, not primary evidence for stoichiometry or hydration. (2) The apo PB/MC pKa output is explicitly labeled 'diagnostic_complete_not_a_bound_state_assignment' and omits ATP, adipate, Mg and waters. (3) The environments README was last seen with integrity 'changed', so toolchain statements need re-verification before choosing a runtime. The earlier ledger is stale. Conditional alternatives are declared in the sampling setup: ATP4- versus HATP3-, adipate dianion versus monoprotonated, 1 versus 2 Mg, and unresolved hydration and His tautomers. Each alternative needs its own setup. The diamine is deferred to the later reaction stage. Gaps: ligand atom mapping, Mg coordination geometry, bound-state residue protonation, ATP/Mg/adipate parameters compatible with the water model, and net charge and counterions.",
+  "sources": [
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/amide_sampling_pilot_20261105/preparation/AS9/pypka_apo_extended/pypka_states.json",
+      "sha256": "a77913c590dec4cba916e8b9b9f77879a268a63db1b311a00245abd6c16211f9",
+      "quote": "diagnostic_complete_not_a_bound_state_assignment"
+    },
+    {
+      "path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/sampling/environments/README.md",
+      "sha256": "24a04ce43684318da59a12ff5f5a5b536a3387dcbcbbc532a9f1ca1a2684ed96",
+      "quote": "processivity-md-20261106 | Solvated MD, PLUMED, WESTPA, cavity and trajectory analysis | OpenMM 8.6.1/CUDA 12 (integrity flagged changed)"
+    }
+  ],
+  "next_action": "Re-read the changed environments README and VALIDATION_20261106.md. Then run a short CPU diagnostic on model_18 to enumerate ATP/adipate/Mg atoms, Mg-ligand distances and coordination count, and nearby residues within 5 \u00c5 of Palpha. Use the results to decide the Mg count and hydration alternatives."
+}
