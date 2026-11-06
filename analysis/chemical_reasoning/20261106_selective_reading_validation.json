@@ -1,0 +1,29 @@
+{
+  "scope": "Question-driven paper selection including validation of existing claims.",
+  "source_sha256": {
+    "models/literature_reading.py": "5f866dcfcf9d5c614af5bdd9a6161a2142c7141d784f6a03f3b856f2fa0f0e16",
+    "tools/literature_extraction.py": "ca4e359d5b4ea2f9241be8515397d3b1537730f0320073de89278011c7a5e6ab",
+    "tools/fulltext.py": "7c8360deddb5bd40f4a8c8b8c7a8178df04875b694eac32c515ff9bd5b8aea39",
+    "gates/literature_harvest.py": "3ba463f545233390bbfba0d40eadbc8c0a212f1adfdd76bd398d14ec46ea53ba"
+  },
+  "validation": {
+    "focused": "40 passed",
+    "full_suite": "1287 passed, 8 skipped, 74 subtests passed; one unrelated packaging failure",
+    "full_suite_failure": "test_packaging.py::PackagingConfigTest::test_no_declared_package_is_stale: enzyme_design_agent.tools.rfd4_campaign was moved separately into a runs directory; no packaging changes made in this work.",
+    "leakage_audit": "145 runtime files, no findings"
+  },
+  "verified_behavior": [
+    "Unselected papers are deferred rather than appended automatically.",
+    "A valid empty selection produces no reading; failed selections preserve the eligible pool.",
+    "Source and campaign-need changes reopen deferred work; unexamined papers are not deferred.",
+    "Reading objectives carry purpose, subject, question and expected effect into extraction.",
+    "Fact-check outcomes are retained even without new enzyme names.",
+    "Absent or invented quotes leave the scoped answer unresolved."
+  ],
+  "limits": [
+    "No live comparison of scientific judgment quality or full-run token savings.",
+    "The running campaign keeps its loaded code. Its controller accepted the agreed reading policy through steering.",
+    "Legacy index-only selector outputs remain supported and are explicitly marked as lacking objectives."
+  ],
+  "live_instruction": "20261106_selective_reading_steering.json"
+}

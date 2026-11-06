@@ -849,8 +849,9 @@ def _register_named_enzymes_from_fulltext(
             text_hash = hashlib.sha256(text.encode()).hexdigest()
             cursor = int(previous.get("cursor", 0)) if previous.get("text_sha256") == text_hash else 0
             end = min(len(text), cursor + 12000)
+            kwargs = {'reading_objective': meta['reading_objective']} if meta.get('reading_objective', {}).get('question') else {}
             result = extract_from_paper(text[cursor:end], "", "", llm_client,
-                                        query=query, discovery_only=True) or {}
+                                        query=query, discovery_only=True, **kwargs) or {}
             if getattr(llm_client, "budget_exhausted", False):
                 return (meta, None)
             sequence_leads = sequence_name_leads(text) if cursor == 0 else []
@@ -897,6 +898,21 @@ def _register_named_enzymes_from_fulltext(
             "source": meta.get("source", ""), "format": meta.get("format", ""),
             "enzymes": [], "homologs": [],
         }
+        if meta.get('reading_objective', {}).get('question'):
+            answer = obj.get('reading_answer') or {}
+            quote = answer.get('evidence_quote') if isinstance(answer, dict) else None
+            chunk = obj.get('_chunk') or {}
+            raw = (dest/meta['text_file']).read_text(errors='ignore')
+            supplied = raw[chunk.get('start', 0):chunk.get('end', len(raw))]
+            quote_verified = isinstance(quote, str) and bool(quote.strip()) and quote in supplied
+            outcome = {'paper': doi, 'objective': meta['reading_objective'],
+                'reported_answer': answer, 'quote_verified': quote_verified,
+                'status': answer.get('status') if isinstance(answer, dict) and quote_verified and answer.get('status') in {'supported','contradicted','unresolved'} else 'unresolved',
+                'source_path': str(dest/meta['text_file']), 'text_sha256': hashlib.sha256(raw.encode()).hexdigest(),
+                'passage_scope': chunk,
+                'scope': 'Passage-scoped model interpretation; quote presence does not establish entailment or activity.'}
+            rec.setdefault('reading_outcomes', []).append(outcome)
+            stats.setdefault('reading_outcomes', []).append(outcome)
 
         # (a) Enzymes whose sequence this paper DEPOSITED: attach the paper's
         #     name to the candidate the deposited-accession miner already
@@ -1038,7 +1054,8 @@ def _register_named_enzymes_from_fulltext(
         seen_relevant = old.get("seen_relevant", False) or obj.get("paper_relevant") is True or bool(enzymes or homologs)
         all_irrelevant = (old.get("all_irrelevant", True) and obj.get("paper_relevant") is False
                           and not seen_relevant)
-        status = ("partial" if not complete else "done" if seen_relevant or obj.get("sequence_identifier_leads")
+        objective_answered = bool(meta.get('reading_objective', {}).get('question') and isinstance(obj.get('reading_answer'), dict))
+        status = ("partial" if not complete else "done" if seen_relevant or obj.get("sequence_identifier_leads") or objective_answered
                   else "irrelevant" if all_irrelevant else "empty")
         reading["extractions"][key] = {"status": status, "attempts": 0 if status == "partial" else old.get("attempts", 0) + 1,
                                        "cursor": chunk.get("end", 0), "text_sha256": chunk.get("text_sha256"),
@@ -1236,9 +1253,12 @@ def mine_and_register_fulltext_accessions(
     # On rolling harvests, select among unread papers. Selecting from the full
     # pool first lets the same already-read favorites consume every selection,
     # so a later search never contributes new characterization evidence.
-    from enzyme_discovery_agent.models.literature_reading import reading_state, save_reading_state
+    from enzyme_discovery_agent.models.literature_reading import reading_state, save_reading_state, deferred_papers, paper_signature
     reading = reading_state(run)
+    model = str(getattr(llm_client, 'active_label', None) or getattr(llm_client, 'model_name', None) or type(llm_client).__name__)
+    deferred = deferred_papers(run, model=model)
     papers = [p for p in papers if (key := _fulltext_key(p)) is not None and key not in done
+              and paper_signature(p) not in deferred
               and reading["downloads"].get(key, {}).get("attempts", 0) < 2]
 
     # 1. Read the full text of a SMALL number of the most-relevant DOWNLOADABLE
@@ -1326,6 +1346,14 @@ def mine_and_register_fulltext_accessions(
         for (paper, _), rec in zip(plan, recs):
             reading["downloads"][_fulltext_key(paper)]["status"] = "acquired" if rec else "unavailable"
             if rec and fetched < target_reads:
+                reading_priority = {}
+                try:
+                    reading_priority = json.loads((run/'agent_state/literature_paper_priority.json').read_text())
+                except (OSError, ValueError):
+                    pass
+                objective = reading_priority.get('objectives', {}).get(paper_signature(paper))
+                if objective:
+                    rec['reading_objective'] = objective
                 manifest.append(rec)
                 done.add(rec["key"])
                 fetched += 1

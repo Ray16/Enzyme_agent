@@ -214,6 +214,7 @@ def extract_from_paper(
     paper_text: str, deposited_accession: str, protein_name: str, llm_client,
     query: str = "", organism: str = "", max_chars: int = 48000,
     discovery_only: bool = False,
+    reading_objective: dict | None = None,
 ) -> dict:
     """LLM-extract from a paper's full text, in one focused pass:
 
@@ -245,6 +246,12 @@ def extract_from_paper(
         f"Query reaction of interest: {query or 'enzymatic reaction'}\n\n"
         f"{target}\n\nPAPER:\n{excerpt}"
     )
+    if reading_objective:
+        user += ('\nREADING OBJECTIVE (a question, not evidence):\n' + json.dumps(reading_objective) +
+            '\nAlso return reading_answer with status supported, contradicted or unresolved, '
+            'a concise finding, and an exact evidence_quote from this supplied passage. '
+            'Address the stated subject and conditions. If this passage cannot answer the question, '
+            'use unresolved and an empty quote; do not infer absence from missing text.')
     from enzyme_discovery_agent import config
     response = llm_client.call(
         messages=[{"role": "system", "content": _DISCOVERY_EXTRACT_SYSTEM if discovery_only else _EXTRACT_SYSTEM},
@@ -376,44 +383,32 @@ def is_paper_relevant(title: str, abstract: str, query: str, llm_client) -> tupl
 
 
 _SELECT_SYSTEM = (
-    "You choose which scientific papers are most worth reading IN FULL to discover "
-    "ENZYMES that catalyse a stated target reaction. You receive the target reaction "
-    "described by its REACTION TYPE (not any specific answer) and a numbered list of "
-    "candidate papers (title + abstract).\n\n"
-    "Select the papers whose FULL TEXT would best help identify or characterise "
-    "enzymes that catalyse the target reaction — prefer PRIMARY studies that "
-    "discover, characterise, engineer, or resolve the mechanism or structure of such "
-    "enzymes. Do NOT select: purely chemical, organometallic, or catalyst-free "
-    "synthesis papers; materials-science papers; reviews or perspectives; papers on "
-    "unrelated reactions; or papers only about inhibitors. Judge a recent preprint "
-    "on its content and never penalise it for being a preprint.\n\n"
-    "You are given both the target REACTION TYPE and the APPLICATION CONTEXT from the "
-    "request. Rank primarily by relevance to the target reaction, but among otherwise "
-    "comparable papers give ADDITIONAL weight to those relevant to the stated "
-    "application or end-use — a paper that both concerns the right enzymatic "
-    "transformation and targets the application is the most valuable to read. Select "
-    "FEWER papers rather than padding the list with weakly-relevant ones.\n\n"
-    "Respond with STRICT JSON only: {\"selected\": [<paper indices, most relevant "
-    "first>]}."
+    "Choose scientific papers whose reading has a concrete purpose for the supplied target. "
+    "Relevance alone is insufficient. Use retrieved titles, abstracts and current campaign claims. "
+    "A useful reading can verify an existing fact, resolve identity, examine substrate scope, "
+    "check assay controls, challenge a mechanism or identify a distinct plausible route. "
+    "Validation can strengthen an existing conclusion; a changed verdict is not required. "
+    "State the subject, exact question and how its answer would support, weaken, revise or "
+    "bound a candidate judgment or search hypothesis. Do not infer assay results from titles. "
+    "When candidates are not yet known, a specific route-discovery question is valid. "
+    "Prefer primary sources for validating observations; reviews may identify routes and citations. "
+    "Do not pad the list, invent source content or equate missing evidence with inactivity. "
+    "An empty selection is valid. Deferred papers remain searchable and can be reconsidered "
+    "when evidence or campaign needs change. Return STRICT JSON: "
+    '{"selected":[{"index":0,"purpose":"validate_claim","subject":"candidate or route",'
+    '"question":"specific fact or uncertainty","expected_effect":"how the answer informs the judgment"}]}. '
+    "Purpose must be resolve_identity, validate_claim, substrate_scope, assay_controls, mechanism or distinct_route."
 )
 
 
 def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
                           prefilter=60):
-    """LLM-reasoned selection of which candidate papers to read in full.
+    """Select reading by its expected value for current claims and questions.
 
-    The agent (not a keyword scorer) decides which retrieved papers are most
-    relevant to the DERIVED target reaction, so it can recognise on-topic primary
-    biology and reject chemical-synthesis / materials / review / off-topic papers
-    that merely share surface vocabulary.  Answer-agnostic: the target is described
-    only by its reaction type (``mechanism_gate_query``), never by any answer entity.
-
-    Robust by construction: pre-trims the pool to ``prefilter`` by the cheap
-    enzymology ranker (to bound tokens), then asks for a priority-ordered pick.  On a
-    missing client, an empty pool, or any error it returns ``fallback()`` — so it can
-    never do worse than the prior selection.  Returns a priority-ordered list of
-    papers; the caller downloads down the list until its read budget is met, so a
-    paywalled pick is backfilled by the next-most-relevant one.
+    Valid empty selections defer work. Deferred sources remain retrievable and
+    reopen when campaign needs or source evidence changes. Provider/schema failures
+    leave the pool eligible under the existing bounded fallback. Stored objectives
+    are model judgments about reading value, not biological evidence.
     """
     if not papers:
         return []
@@ -421,14 +416,15 @@ def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
         return fallback()
     from enzyme_discovery_agent.state_store import atomic_write_json
     target = mechanism_gate_query(run_dir, query)
-    context = {"target": target, "query": query, "prompt": _SELECT_SYSTEM,
+    from enzyme_discovery_agent.models.literature_reading import reading_needs, paper_signature, content_signature
+    needs = reading_needs(run_dir)
+    needs_hash = content_signature(needs)
+    context = {"needs_signature": needs_hash, "target": target, "query": query, "prompt": _SELECT_SYSTEM,
                "model": str(getattr(llm_client, "active_label", None)
                             or getattr(llm_client, "model_name", None)
                             or type(llm_client).__name__), "k": k, "prefilter": prefilter}
     signature = hashlib.sha256(json.dumps(context, sort_keys=True).encode()).hexdigest()
     serving_model = [context["model"]]
-    def paper_signature(paper):
-        return hashlib.sha256(json.dumps(paper, sort_keys=True, default=str).encode()).hexdigest()
     memo_path = Path(run_dir) / "agent_state" / "literature_paper_priority.json"
     try:
         memo = json.loads(memo_path.read_text())
@@ -436,17 +432,22 @@ def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
         memo = {}
     order = {key: rank for rank, key in enumerate(memo.get("order", []))}
     keys = [paper_signature(p) for p in papers]
-    if memo.get("context_signature") == signature and set(keys) <= set(order):
+    if memo.get("context_signature") == signature and set(keys) <= set(memo.get("considered", [])):
         # A changing download queue does not invalidate a recorded relevance
         # judgement. New or changed evidence and target/model changes do.
-        return [p for _, p in sorted(zip(keys, papers), key=lambda row: order[row[0]])]
+        return [p for key, p in sorted(zip(keys, papers), key=lambda row: order.get(row[0], len(order))) if key in order]
 
-    def remember(ranked):
+    def remember(ranked, objectives):
         ranked_keys = [paper_signature(p) for p in ranked]
-        if set(keys) <= set(ranked_keys) and not getattr(llm_client, "budget_exhausted", False):
+        if not getattr(llm_client, "budget_exhausted", False):
             actual_signature = hashlib.sha256(json.dumps(
                 {**context, "model": serving_model[0]}, sort_keys=True).encode()).hexdigest()
-            atomic_write_json(memo_path, {"context_signature": actual_signature, "order": ranked_keys})
+            atomic_write_json(memo_path, {"context_signature": actual_signature,
+                "needs_signature": needs_hash, "model": serving_model[0],
+                "considered": [paper_signature(p) for p in pre], "order": ranked_keys,
+                "deferred": [paper_signature(p) for p in pre if paper_signature(p) not in set(ranked_keys)],
+                "objectives": objectives,
+                "scope": "Reading priorities, not biological verdicts. Deferred papers remain available."})
         return ranked
 
     from enzyme_discovery_agent.tools.paper_relevance import rank_papers_by_enzymology
@@ -465,11 +466,13 @@ def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
     user = (
         f"Target reaction (what the enzyme must catalyse): {target}\n"
         f"Application context (from the request; SECONDARY signal): {query}\n\n"
-        "Candidate papers:\n" + "\n\n".join(listing) +
+        "Current campaign claims and uncertainties (interpretations to verify):\n" +
+        json.dumps({"candidate_needs": needs["candidate_needs"][:16], "total": len(needs["candidate_needs"])}, default=str) +
+        "\nCandidate papers:\n" + "\n\n".join(listing) +
         f"\n\nSelect up to {want} papers most useful for discovering enzymes for the "
         "target reaction; among strong matches, give additional weight to papers "
-        "relevant to the application context. Fewer if few are relevant; most "
-        "relevant first, as their indices."
+        "that can answer a concrete question. Give a reading objective for each selected paper; "
+        "defer relevant background that adds no present decision value."
     )
     from enzyme_discovery_agent import config
     try:
@@ -482,26 +485,34 @@ def select_papers_to_read(run_dir, papers, k, llm_client, query, fallback,
         serving_model[0] = getattr(response, "_enzyme_serving_model", None) or serving_model[0]
         content = response.choices[0].message.content or ""
         obj = json.loads(re.search(r"\{.*\}", content, re.DOTALL).group())
-        idxs = obj.get("selected") or []
-        chosen, seen = [], set()
-        for i in idxs:
-            if isinstance(i, bool):
+        idxs = obj.get("selected")
+        if not isinstance(idxs, list):
+            raise ValueError('Selection requires a list')
+        chosen, seen, objectives = [], set(), {}
+        purposes = {'resolve_identity','validate_claim','substrate_scope','assay_controls','mechanism','distinct_route'}
+        for item in idxs:
+            i = item.get('index') if isinstance(item, dict) else item
+            if isinstance(i, bool) or not isinstance(i, int) or not 0 <= i < len(pre) or i in seen:
                 continue
-            if isinstance(i, int) and 0 <= i < len(pre) and i not in seen:
-                seen.add(i)
-                chosen.append(pre[i])
-        if chosen:
-            # Model choices affect order, not recall. A weak model returning one
-            # favorite must not hide every other unread primary paper.
-            pre_ids = {id(p) for p in pre}
-            return remember(chosen + [p for i, p in enumerate(pre) if i not in seen]
-                            + [p for p in papers if id(p) not in pre_ids])
-    except Exception as exc:  # noqa: BLE001 - fail safe to the keyword order
+            if isinstance(item, dict):
+                if item.get('purpose') not in purposes or any(
+                        not isinstance(item.get(key), str) or not item[key].strip()
+                        for key in ('subject','question','expected_effect')):
+                    raise ValueError('Each selected paper requires a specific reading objective')
+                objectives[paper_signature(pre[i])] = {key: item[key] for key in
+                    ('purpose','subject','question','expected_effect')}
+            else:
+                # Older providers may still emit the former index-only contract.
+                # It supplies no scientific justification; keep that limitation visible.
+                objectives[paper_signature(pre[i])] = {'status':'legacy_selection_without_reading_objective'}
+            seen.add(i)
+            chosen.append(pre[i])
+        if idxs and not chosen:
+            raise ValueError('No valid paper indices returned')
+        return remember(chosen, objectives)
+    except Exception as exc:  # unavailable/invalid selection leaves the pool eligible
         logger.debug("LLM paper selection error (falling back): %s", exc)
-    # Empty model selections still retain the full evidence pool. Cache the
-    # fallback order for a valid response; transient call failures remain retryable.
-    ranked = fallback()
-    return remember(ranked) if 'response' in locals() and response is not None else ranked
+    return fallback()
 
 
 def _match_enzyme_record(

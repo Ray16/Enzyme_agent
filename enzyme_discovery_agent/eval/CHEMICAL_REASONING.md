@@ -171,3 +171,28 @@ but partner evidence labels and constraint classifications differed. Order/cache
 effects and stochastic variation were not controlled by replication. Factoring
 therefore remains optional and disabled; these data establish neither scientific
 noninferiority nor full-campaign savings.
+
+## Reading for uncertainty resolution and fact validation
+
+Paper selection now asks what reading could establish, validate or challenge for a
+candidate or catalytic route. Its inputs include current identity gaps, existing
+claims, partner roles and uncertainties. Selected sources carry a question, subject,
+purpose and expected effect; fact validation is a useful outcome even when the
+candidate decision does not change. Sparse initial campaigns may select sources
+for a concrete route-discovery question.
+
+The previous selector appended every unselected paper back to its output, and an
+explicit empty selection invoked the fallback. It therefore ordered reading but
+could not defer it. Model selections now control the eligible reading set. Deferred
+sources remain retrievable and reopen when their source metadata or campaign needs
+change; papers outside the bounded selection window are not silently deferred.
+Provider/schema failures retain the bounded fallback and cannot establish that a
+paper lacks value. Legacy index-only responses are labeled as lacking objectives.
+
+Reading objectives pass through acquisition to extraction. Passage-scoped answers,
+exact quotes, text fingerprints and reading objectives are saved and surfaced to
+the controller even when no new enzyme names are extracted. An absent or invented
+quote leaves the reported answer unresolved. Quote presence alone does not verify
+scientific entailment. Tests exercise selection, deferral, reconsideration and
+saved fact-check outcomes; general reading quality and token savings still require
+prospective measurement. Existing campaign processes keep their loaded code.

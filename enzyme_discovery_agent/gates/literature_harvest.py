@@ -145,6 +145,9 @@ class LiteratureHarvestGate:
             "Keep the distinct seeds distinct — do not collapse them into one "
             "family or converge on a single mechanism."
         )
+        if stats.get('reading_outcomes'):
+            guidance += ('\nReading objectives and passage-scoped outcomes (verify source entailment before '
+                         'using them as candidate evidence):\n' + json.dumps(stats['reading_outcomes']))
         return GateResult(
             intercept=True,
             new_messages=[
