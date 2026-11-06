@@ -219,21 +219,28 @@ def assess_next_batch(run_dir, llm_client=None, limit=20, accessions=None, famil
     stats['requested_family_scopes'] = family_scopes or []
     stats['screening_outcomes'] = screening
     stats['scope_limit'] = 'This batch cannot refute families or mechanisms it did not sample.'
-    if not stats.get('attempted') and selected:
+    if selected:
         existing = []
-        for accession in sorted(selected):
+        attempted_accessions = set(stats.get('accessions_attempted', []))
+        for accession in sorted(selected - attempted_accessions):
             entry = registry.get(accession)
             if not entry:
                 continue
             metadata = entry.get('metadata') or {}
+            data = {**(metadata.get('evaluation_data') or {}), **metadata}
             existing.append({'accession':accession,'status':discovery_status(entry),
-                             'missing_claims':(metadata.get('claim_validation') or {}).get('blocking_claims') or []})
-        if existing and not screening:
+                             'protein_name':data.get('protein_name'),
+                             'native_reactions':data.get('catalytic_activities') or [],
+                             'work_status':'not_evaluated_in_this_batch',
+                             'missing_claims':(data.get('claim_validation') or {}).get('blocking_claims') or []})
+        if existing:
             stats['existing_assessments'] = existing
+        if not stats.get('attempted') and existing and not screening:
             stats['new_evidence'] = False
             return {'status':'skipped','summary':
-                'Requested records were already assessed or remain evidence-pending; this fresh-batch call did not retest them. '
-                'Read existing candidate evidence, or obtain new primary evidence before reevaluation. Repeating this call adds no evidence.',
+                'No requested candidate was evaluated in this call. Saved states distinguish completed work, '
+                'unresolved evidence and candidates not yet evaluated. Inspect those states before choosing the next action. '
+                'This call supplies no new evaluation evidence.',
                 'count':0,'data':stats}
     return {'status': 'success' if stats.get('attempted') else 'partial',
             'summary': ('Batch assessed; native annotation does not demonstrate target activity.' if stats.get('attempted') else

@@ -84,6 +84,7 @@ packages = [
     "structural_modeling_agent.mlmm",
     "structural_modeling_agent.modeling_reasoning",
     "structural_modeling_agent.proxies",
+    "structural_modeling_agent.sampling",
     "structural_modeling_agent.scripts",
 ]
 package-dir = {"campaign_catalog" = "campaign_catalog", "enzyme_discovery_agent" = "enzyme_discovery_agent", "enzyme_design_agent" = "enzyme_design_agent", "structural_modeling_agent" = "structural_modeling_agent"}

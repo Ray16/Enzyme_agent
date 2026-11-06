@@ -313,8 +313,11 @@ def decision_context(run_dir, limit=6):
                                 'missing_required_claims':validation.get('blocking_claims') or [],
                                 'native_reaction_available':bool(data.get('catalytic_activities'))})
             assessment = {key:payload.get(key) for key in ('attempted','supported','evidence_pending','rejected','failed','sampled_family_groups')}
+            assessment.update({key:payload[key] for key in
+                ('existing_assessments','new_evidence','scope_limit','sampling_method') if key in payload})
             assessment['records'] = records
-            assessment['limit'] = 'Missing annotation is not evidence of inactivity; untested mechanisms remain unresolved.'
+            assessment['limit'] = ('These are native-evidence processing states, not target-activity verdicts. '
+                                   'Missing annotation is not evidence of inactivity; untested mechanisms remain unresolved.')
         previous = {'id': state['last_decision'], 'hypothesis': plan.get('hypothesis'),
                     'alternative': plan.get('alternative'),
                     'prediction': plan.get('prediction'), 'action': plan.get('tool_name'),

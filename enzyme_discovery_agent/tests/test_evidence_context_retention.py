@@ -49,3 +49,52 @@ def test_multiple_candidate_objects_and_search_lists_survive_the_same_batch(tmp_
     rows = decisions.decision_context(tmp_path)['previous_test']['result_examples']
     assert [row['accession'] for row in rows] == ['SYNTH_A', 'SYNTH_B', 'SYNTH_C']
     assert rows[1]['function_comments'] == ['Contrasting observation B.']
+
+
+@pytest.mark.parametrize('fresh', [False, True])
+def test_prior_assessments_remain_visible_after_skipped_or_partial_batch(tmp_path, monkeypatch, fresh):
+    from enzyme_discovery_agent.tools.research_decisions import assess_next_batch
+    from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
+    from enzyme_discovery_agent.context import build_model_context
+    update_candidate_registry(tmp_path, 'SYNTH_OLD', 'evaluated', {
+        'protein_name': 'Previously evaluated catalyst', 'catalytic_activities': ['Recorded native transformation.']})
+    update_candidate_registry(tmp_path, 'SYNTH_PENDING', 'evidence_pending', {
+        'protein_name': 'Unresolved catalyst', 'evaluation_data': {'claim_validation': {'blocking_claims': ['native_reaction']}}})
+    selected = ['SYNTH_OLD', 'SYNTH_PENDING']
+    if fresh:
+        selected.extend(['SYNTH_NEW', 'SYNTH_WAIT'])
+        update_candidate_registry(tmp_path, 'SYNTH_NEW', 'screened', {'protein_name': 'New catalyst'})
+        update_candidate_registry(tmp_path, 'SYNTH_WAIT', 'screened', {'protein_name': 'Waiting catalyst'})
+    def evaluate(root, **kwargs):
+        assert kwargs['fresh_only'] is True
+        kwargs['stats'].update(attempted=int(fresh), supported=int(fresh), evidence_pending=0,
+                               rejected=0, failed=0, accessions_attempted=['SYNTH_NEW'] if fresh else [])
+        if fresh:
+            update_candidate_registry(root, 'SYNTH_NEW', 'evaluated', {'catalytic_activities': ['New native observation.']})
+    monkeypatch.setattr('enzyme_discovery_agent.gates.ec_triage._auto_evaluate_all', evaluate)
+    result = assess_next_batch(tmp_path, accessions=selected)
+    assert result['status'] == ('success' if fresh else 'skipped')
+    assert result['data']['attempted'] == int(fresh)
+    existing = result['data']['existing_assessments']
+    assert {row['accession'] for row in existing} == ({'SYNTH_OLD', 'SYNTH_PENDING', 'SYNTH_WAIT'}
+                                                    if fresh else {'SYNTH_OLD', 'SYNTH_PENDING'})
+    if fresh:
+        assert next(row for row in existing if row['accession']=='SYNTH_WAIT')['status'] == 'screened'
+    assert all(row['protein_name'] and row['work_status'] == 'not_evaluated_in_this_batch' for row in existing)
+    assert next(row for row in existing if row['accession']=='SYNTH_PENDING')['missing_claims'] == ['native_reaction']
+    if not fresh:
+        assert result['data']['new_evidence'] is False
+    identifier = decisions.start_decision(tmp_path, proposal(tmp_path), {'synthetic_retrieval'})
+    decisions.finish_decision(tmp_path, identifier, result)
+    packet = decisions.decision_context(tmp_path)
+    assert packet['previous_test']['assessment']['existing_assessments'] == existing
+    packet['review_due'] = True
+    monkeypatch.setattr('enzyme_discovery_agent.context.build_research_state',
+                        lambda root: {'adaptive_reasoning': copy.deepcopy(packet)})
+    context = build_model_context([{'role':'system','content':'Keep evidence scoped.'},
+                                   {'role':'user','content':'Review the saved work.'}], tmp_path)
+    sent = json.dumps(context)
+    assert 'Previously evaluated catalyst' in sent and 'Unresolved catalyst' in sent
+    assert 'not_evaluated_in_this_batch' in sent
+    if not fresh:
+        assert '"new_evidence": false' in '\n'.join(m.get('content','') for m in context)

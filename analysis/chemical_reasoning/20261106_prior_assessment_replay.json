@@ -1,0 +1,21 @@
+{
+  "baseline_revision": "5d76ee51",
+  "source_run": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261106_000850_Find_enzymes_that_ligate_glutarate_and_cadaverine_Production_objective_deliver_a",
+  "results": [
+    {
+      "decision_id": "72ac63b64d7b4796a8b161d5e4202b19",
+      "baseline_visible_prior_records": 0,
+      "fixed_visible_prior_records": 3,
+      "attempted_before": 0,
+      "attempted_after": 0,
+      "new_evidence_after": false
+    }
+  ],
+  "scope": "Projection replay in temporary copies; source campaign unchanged. Does not establish reduced repeated model actions.",
+  "validation": {
+    "focused": "43 tests and 11 subtests passed, including context, decision loop, pipeline and packaging checks.",
+    "full_suite_before_packaging_fix": "1269 passed; one missing structural_modeling_agent.sampling package declaration failed. Declaration fixed; packaging checks then passed.",
+    "leakage_audit": "143 runtime files; no findings.",
+    "limits": "Projection correctness verified. Reduced live repetition or improved discovery yield has not been measured."
+  }
+}

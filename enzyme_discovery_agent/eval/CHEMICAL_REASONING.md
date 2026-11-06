@@ -2,6 +2,11 @@
 
 Status: evaluation foundation. No new reasoning policy is enabled in production.
 
+Current scope: candidate-level chemical reasoning, evidence retention, and explicit
+handling of previously completed versus unresolved work. A separate family-level
+decision system and presentation demonstrations are deferred. Shared mechanism
+knowledge remains contextual evidence, not an inherited candidate verdict.
+
 The objective is reliable chemical decisions under incomplete evidence. Longer
 explanations, valid JSON, successful retrieval and candidate counts are insufficient
 measures. The live campaign has exposed evidence lost between decisions, repeated
@@ -115,4 +120,14 @@ five empty previews. The fix preserves their reaction, function, substrate and
 warning fields, source tool and status. An offline replay recovered all five;
 synthetic tests cover single and batched responses through the actual next-context
 builder. This is an evidence-delivery fix, not a new chemical assertion or a changed
-ranking rule. The currently running process has not been restarted to load it.
+ranking rule. The completed campaign used its originally loaded code and was not
+restarted to load this fix.
+
+A second retention gap affected prior-work bookkeeping. Partially executed batches
+did not list the other requested records, and the next-context projection omitted
+`existing_assessments` and `new_evidence`. The fix returns the recorded states of
+unattempted requested candidates and preserves them through model-context assembly.
+Native-evidence status is explicitly distinguished from target activity. A copied
+saved-result replay restored three prior records previously absent from context.
+Tests cover skipped, mixed and batch-limited work; no claim of reduced live model
+repetition follows from these data-retention tests alone.
