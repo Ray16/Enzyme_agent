@@ -483,3 +483,30 @@ def test_sole_candidate_accession_defaults_and_unknown_is_clear(tmp_path):
         assert False, "expected a clear error for an unknown accession"
     except ValueError as exc:
         assert "SYNTHETIC1" in str(exc)
+
+
+def test_preparation_operator_stays_offered_after_investigation_turns(tmp_path):
+    (tmp_path / "reference.txt").write_text("Synthetic reference for testing decision traceability; not enzyme evidence.")
+    task = tmp_path / "task.json"
+    task.write_text(json.dumps({"schema_version": "1.0", "objective": "prepare_sampling",
+        "target": {"reaction": "synthetic target transformation"},
+        "evidence_paths": [str(tmp_path / "reference.txt")],
+        "candidates": [{"accession": "SYNTHETIC1", "sequence": "AG", "evidence": {}}]}))
+    seen = []
+
+    class Recorder(Client):
+        def call(self, **kwargs):
+            seen.append({tool["function"]["name"] for tool in kwargs["tools"]})
+            return super().call(**kwargs)
+
+    # Two investigation-only turns trip the decision gate; the third turn must still
+    # offer run_preparation_operator, the only tool that produces measured stage evidence.
+    client = Recorder([
+        [("read_evidence", {"path": str(tmp_path / "reference.txt")})],
+        [("inspect_preparation_contract", {})],
+        [("finish_task", {"outcome": "inconclusive", "rationale": "Nothing measured yet."})],
+    ])
+    agent = ModelingAgent(task_path=task, run_dir=tmp_path / "agent", llm_client=client)
+    agent.run(max_turns=3, token_budget=10_000_000)
+    assert "run_preparation_operator" in seen[2], "the operator must remain available to make measured progress"
+    assert "read_evidence" not in seen[2], "pure re-reads are still gated out after investigation turns"

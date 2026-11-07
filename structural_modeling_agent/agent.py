@@ -1825,8 +1825,12 @@ class ModelingAgent:
                             'declare_sampling_setup', 'inspect_sampling_setup', 'record_preparation_findings', 'finish_task'}
                         offered = [t for t in offered if t['function']['name'] in preparation_tools]
                         if self.state.get('preparation_read_turns', 0) >= 2:
+                            # Force forward motion after repeated investigation-only turns, but
+                            # run_preparation_operator produces the measured artifacts a stage needs
+                            # to advance from pending to passed, so it is progress, not re-reading,
+                            # and must stay available or the loop can never complete a study.
                             decision_tools = {'record_preparation_findings', 'declare_sampling_setup',
-                                              'declare_preparation_study', 'finish_task'}
+                                              'declare_preparation_study', 'run_preparation_operator', 'finish_task'}
                             offered = [t for t in offered if t['function']['name'] in decision_tools]
 
 
