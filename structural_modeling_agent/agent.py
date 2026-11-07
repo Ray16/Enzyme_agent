@@ -31,6 +31,15 @@ from .scientific_reasoning import (assess_reasoning, execution_reasoning_errors,
 # with the system prefix rather than with conversational history.
 CONTEXT_ALLOWANCE = 48000
 SETUP_ANCHOR_LIMIT = 24000
+# Tools whose output is static or already in context: repeating one is re-reading, not
+# progress. The static contract inspectors are included so that re-fetching an unchanging
+# contract increments the repeated-inspection guard instead of resetting it.
+_REPEATABLE_READERS = frozenset({
+    'inspect_candidate', 'inspect_validation_contract', 'inspect_workflow_policy',
+    'read_candidate_section', 'read_evidence', 'read_reasoning_section',
+    'inspect_preparation_contract', 'inspect_sampling_setup_contract',
+    'inspect_processivity_contract', 'inspect_processivity_toolchain',
+    'inspect_mlmm_engine_options'})
 
 PREPARATION_PROMPT = """You are the structural-modeling agent performing molecular preparation.
 Own scientific investigation, preparation, validation and revision for the exact
@@ -1695,8 +1704,7 @@ class ModelingAgent:
             # Only anchor a record that is actually carried whole; a truncated anchor
             # would reproduce the very preview the model keeps trying to escape.
             self.state['setup_anchor']=body if len(body)<=SETUP_ANCHOR_LIMIT else None
-        readers={'inspect_candidate','inspect_validation_contract','inspect_workflow_policy',
-                 'read_candidate_section','read_evidence','read_reasoning_section'}
+        readers=_REPEATABLE_READERS
         if name not in readers:
             self.state['repeated_inspections']=0
             return
@@ -1875,9 +1883,7 @@ class ModelingAgent:
                                 self._event('setup_closing_turn',turn=self.state['turn'],setup_turn_limit=setup_limit)
                         offered=[tool for tool in offered if tool['function']['name'] in setup_tools]
                     if self.state.get('repeated_inspections',0)>=3:
-                        readers={'inspect_candidate','inspect_validation_contract','inspect_workflow_policy',
-                                 'read_candidate_section','read_evidence','read_reasoning_section'}
-                        offered=[tool for tool in offered if tool['function']['name'] not in readers]
+                        offered=[tool for tool in offered if tool['function']['name'] not in _REPEATABLE_READERS]
                     offered_names={tool['function']['name'] for tool in offered}
                     response = self.llm.call(messages=self._context(), tools=offered, timeout=120,
                                              usage_label=f"modeling_{self.state['turn']}")
