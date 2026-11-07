@@ -1032,6 +1032,8 @@ class ModelingAgent:
             state = self.state["candidates"][acc]
             studies = state.setdefault("preparation_studies", {})
             if name == "declare_preparation_study":
+                if not isinstance(args.get("study"), dict):
+                    raise ValueError("declare_preparation_study requires a 'study' object; inspect_preparation_contract shows its shape")
                 study = copy.deepcopy(args["study"])
             else:
                 if not studies:
@@ -1059,6 +1061,8 @@ class ModelingAgent:
             basis = fingerprint(revisions[-1]["modeling_input"]) if revisions else None
             setups = state.setdefault("sampling_setups", {})
             if name == "declare_sampling_setup":
+                if not isinstance(args.get("setup"), dict):
+                    raise ValueError("declare_sampling_setup requires a 'setup' object; inspect_sampling_setup_contract shows its shape")
                 setup = copy.deepcopy(args["setup"])
                 identities = {"sequence_sha256": hashlib.sha256(candidate["sequence"].encode()).hexdigest(),
                               "target_sha256": fingerprint(self.task["target"])}

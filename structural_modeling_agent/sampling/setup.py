@@ -29,6 +29,27 @@ DECISIONS = {
 STATUSES = {"resolved", "conditional", "unresolved", "not_applicable"}
 SOURCE_CATEGORIES = {"primary_literature", "curated_annotation", "experimental_structure",
                      "user_conditions", "method_output", "structural_observation"}
+SOURCE_CATEGORY_DESCRIPTIONS = {
+    "primary_literature": "A published experimental study (paper, SI) measured on this or a stated homolog.",
+    "curated_annotation": "A curated database record (UniProt, Rhea, InterPro) summarizing prior evidence.",
+    "experimental_structure": "An experimentally determined structure (X-ray/cryo-EM/NMR deposition).",
+    "user_conditions": "Assay or task-supplied conditions (pH, temperature, substrates, buffer).",
+    "method_output": "Any computed/predicted result: cofold poses, pKa/pypka diagnostics, docking, toolchain reports. Not independent native-state proof.",
+    "structural_observation": "A geometric observation read directly off coordinates (distances, contacts, counts).",
+}
+# The agent often reaches for intuitive labels for computed evidence; map them to the
+# one enum value that covers every method/diagnostic output rather than rejecting the call.
+SOURCE_CATEGORY_SYNONYMS = {
+    "diagnostic": "method_output", "computational": "method_output", "computed": "method_output",
+    "prediction": "method_output", "predicted": "method_output", "toolchain": "method_output",
+    "software": "method_output", "simulation": "method_output", "pka": "method_output",
+    "cofold": "method_output", "docking": "method_output", "model_output": "method_output",
+    "literature": "primary_literature", "paper": "primary_literature",
+    "annotation": "curated_annotation", "database": "curated_annotation",
+    "structure": "experimental_structure", "pdb": "experimental_structure",
+    "conditions": "user_conditions", "assay": "user_conditions",
+    "observation": "structural_observation", "geometry": "structural_observation",
+}
 
 
 def contract():
@@ -38,7 +59,7 @@ def contract():
         "decision_required": ["status", "choice", "rationale", "evidence_ids", "alternatives", "assumptions", "uncertainties"],
         "statuses": sorted(STATUSES),
         "source_required": ["id", "category", "path", "sha256", "quote", "interpretation", "reviewed"],
-        "source_categories": sorted(SOURCE_CATEGORIES),
+        "source_categories": SOURCE_CATEGORY_DESCRIPTIONS,
         "agent_identity_binding": "declare_sampling_setup fills sequence_sha256 and target_sha256 when omitted. Do not calculate or invent hashes; explicit mismatches are rejected.",
         "conditional_required": "A discriminating_test explaining how the conditional choice will be challenged",
         "execution_choice_formats": {
@@ -88,8 +109,14 @@ def assess(setup, sequence, target):
             _text(source.get(field), f"source.{field}")
         if source["id"] in sources:
             raise ValueError(f"Duplicate source id {source['id']!r}; each source needs a unique id")
-        if source.get("category") not in SOURCE_CATEGORIES:
-            raise ValueError(f"source {source['id']!r} category must be one of {sorted(SOURCE_CATEGORIES)}")
+        category = source.get("category")
+        if category not in SOURCE_CATEGORIES:
+            mapped = SOURCE_CATEGORY_SYNONYMS.get(str(category).strip().lower()) if category else None
+            if mapped is None:
+                raise ValueError(
+                    f"source {source['id']!r} category {category!r} is not recognized; use one of "
+                    f"{sorted(SOURCE_CATEGORIES)} (computed/predicted/diagnostic evidence is 'method_output')")
+            source["category"] = category = mapped
         errors = []
         if source.get("reviewed") is not True:
             errors.append("source interpretation not reviewed")

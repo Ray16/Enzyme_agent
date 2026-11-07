@@ -128,3 +128,19 @@ def test_execution_cannot_replace_agent_selected_conditions_or_method(tmp_path):
     preparation["agent_setup_sha256"] = fingerprint(setup)
     with pytest.raises(ValueError, match="no automatic substitution"):
         validate_execution_binding(config, preparation, tmp_path / "config.json")
+
+
+def test_category_synonyms_are_accepted_and_unknown_is_clear(tmp_path):
+    # A computed pKa diagnostic labeled 'diagnostic' maps to method_output rather than failing.
+    setup = declaration(tmp_path)
+    setup["sources"][0]["category"] = "diagnostic"
+    report = assess(setup, "AG", TARGET)
+    assert any(s["category"] == "method_output" for s in report["sources"])
+    # The contract now documents each category.
+    assert isinstance(contract()["source_categories"], dict)
+    assert "method_output" in contract()["source_categories"]
+    # A genuinely unknown category still fails, naming the method_output hint.
+    setup2 = declaration(tmp_path)
+    setup2["sources"][0]["category"] = "nonsense"
+    with pytest.raises(ValueError, match="method_output"):
+        assess(setup2, "AG", TARGET)
