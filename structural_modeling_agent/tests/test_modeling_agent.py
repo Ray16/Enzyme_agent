@@ -471,3 +471,15 @@ def test_the_last_setup_turn_forces_a_provisional_proposal_instead_of_a_stall(tm
     assert seen[1] == {"propose_model", "finish_task"}
     assert any("last setup turn" in str(m.get("content") or "") for m in agent.messages)
     assert agent.state["status"] != "setup_stalled"
+
+
+def test_sole_candidate_accession_defaults_and_unknown_is_clear(tmp_path):
+    agent = make_agent(tmp_path)
+    # A single-candidate run resolves the accession when the tool call omits it.
+    assert agent.dispatch("inspect_candidate", {})["candidate"]["accession"] == "SYNTHETIC1"
+    # An explicit wrong accession names the valid choices instead of a bare KeyError.
+    try:
+        agent.dispatch("inspect_candidate", {"accession": "NOPE"})
+        assert False, "expected a clear error for an unknown accession"
+    except ValueError as exc:
+        assert "SYNTHETIC1" in str(exc)

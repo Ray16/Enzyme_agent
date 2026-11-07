@@ -56,7 +56,8 @@ Inspect current toolchain validation before selecting model precision or runtime
 
 Use run_preparation_operator for short CPU Python diagnostics and preparation in an
 explicit installed interpreter, with authorized hashed inputs and declared outputs.
-Read request.json for input paths and write outputs under the attempt working directory.
+Each declared input is hash-verified and exposed to the script as inputs/<name>; open
+those local paths, and write the declared outputs in the attempt working directory.
 These scripts are code execution, not a sandbox; preserve source inputs, do not access
 credentials, install packages, launch remote work or bypass resource limits. Large or
 GPU operations require a separate reserved adapter and remain explicit pending actions.
@@ -410,8 +411,14 @@ def tool_schemas():
         _schema("declare_preparation_study", "Record preparation alternatives, measured validation, failures and concrete next actions", {**acc, "study": {"type": "object"}}, ("accession", "study")),
         _schema("inspect_preparation_study", "Recheck latest preparation evidence and upstream dependencies", acc, ("accession",)),
         _schema("run_preparation_operator", "Run a short CPU Python preparation or diagnostic operator; saves code, inputs, logs and outputs for review. Not a GPU launcher.", {
-            **acc, "python": _string("Absolute validated Python interpreter"), "code": _string("Explicit Python source; reads request.json inputs and writes declared outputs in cwd"),
-            "inputs": {"type": "array", "items": {"type": "object"}},
+            **acc, "python": _string("Absolute validated Python interpreter"),
+            "code": _string("Explicit Python source; opens each declared input at inputs/<name> and writes the declared outputs in the working directory"),
+            "inputs": {"type": "array", "description": "Hash-verified evidence files, each exposed to the script as inputs/<name>",
+                       "items": {"type": "object", "properties": {
+                           "path": _string("Authorized absolute evidence path"),
+                           "sha256": _string("Expected digest of that file"),
+                           "name": _string("Local file name under inputs/; defaults to the path basename")},
+                           "required": ["path", "sha256"]}},
             "outputs": {"type": "array", "items": {"type": "string"}},
             "seconds": {"type": "integer", "minimum": 1, "maximum": 60}}, ("accession", "python", "code", "inputs", "outputs", "seconds")),
         _schema("inspect_sampling_setup_contract", "Inspect the evidence ledger for agent-selected MD/enhanced-sampling protocols; supplies questions, no chemical defaults"),
@@ -827,6 +834,14 @@ class ModelingAgent:
             if name == "inspect_experimental_proxy_bundle":
                 args = {**args, "bundle_path": str(self._authorized_evidence(args["bundle_path"]))}
             return getattr(structural_proxy_planning, name)(**args)
+        # A single-candidate run (e.g. a preparation task) has one unambiguous accession;
+        # default it so per-candidate tools do not fail with a bare KeyError when it is omitted,
+        # and turn an explicit unknown accession into a message that names the valid choices.
+        if isinstance(args, dict):
+            if "accession" not in args and len(self.state["candidates"]) == 1:
+                args = {**args, "accession": next(iter(self.state["candidates"]))}
+            elif args.get("accession") is not None and args["accession"] not in self.state["candidates"]:
+                raise ValueError(f"unknown accession {args['accession']!r}; choose one of {list(self.state['candidates'])}")
         if name == "inspect_validation_contract":
             contract = json.loads((Path(__file__).parent / "validation_contract.json").read_text())
             section = args.get("section", "all")
@@ -958,7 +973,14 @@ class ModelingAgent:
                 return {"status": "waiting_for_backend", "reason": "job ownership must be reconciled on resume"}
             self.state.update(status=args["outcome"], conclusion=args["rationale"])
             return {"status": self.state["status"], "rationale": args["rationale"]}
-        acc = args["accession"]
+        acc = args.get("accession")
+        if acc is None:
+            ids = list(self.state["candidates"])
+            if len(ids) != 1:
+                raise ValueError(f"accession is required; choose one of {ids}")
+            acc = ids[0]  # Sole candidate (e.g. a single-system preparation run) is unambiguous.
+        elif acc not in self.state["candidates"]:
+            raise ValueError(f"unknown accession {acc!r}; choose one of {list(self.state['candidates'])}")
         candidate = self._candidate(acc)
         if name == "assess_processivity_network":
             from .sampling.kinetics import evaluate

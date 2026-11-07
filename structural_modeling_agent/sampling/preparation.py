@@ -12,6 +12,9 @@ from ..validation import file_digest, fingerprint
 from .setup import assess
 
 STAGES = ('chemical_state', 'parameters', 'solvation', 'minimization', 'equilibration', 'pilot_review')
+INPUT_DIR = 'inputs'
+RESERVED_NAMES = frozenset({'preparation_step.py', 'launch_preparation.py', 'environment.json',
+                            'request.json', 'inputs.json', 'stdout.log', 'stderr.log', 'result.json'})
 
 
 def contract():
@@ -154,14 +157,22 @@ def run_operator(folder, python, code, inputs, outputs, seconds, authorize):
     if not outputs or len(set(outputs)) != len(outputs):
         raise ValueError('Declare distinct expected output files')
     for name in outputs:
-        if Path(name).is_absolute() or '..' in Path(name).parts or name in {'preparation_step.py','launch_preparation.py','environment.json','request.json','stdout.log','stderr.log','result.json'}:
-            raise ValueError('Output must be a safe relative path')
+        if Path(name).is_absolute() or '..' in Path(name).parts or name in RESERVED_NAMES or Path(name).parts[0] == INPUT_DIR:
+            raise ValueError('Output must be a safe relative path outside the reserved operator files')
     bound = []
+    local_names = set()
     for item in inputs:
         path = authorize(item['path'])
         if file_digest(path) != item['sha256']:
             raise ValueError('Operator input changed')
-        bound.append(dict(path=str(path), sha256=item['sha256']))
+        # The verified bytes must be what the script actually opens, so each input is
+        # exposed under an explicit local name instead of an absolute path the
+        # script could silently bypass.
+        local = item.get('name') or path.name
+        if not isinstance(local, str) or '/' in local or local in {'', '.', '..'} or local in local_names:
+            raise ValueError('Each operator input needs a unique simple local file name')
+        local_names.add(local)
+        bound.append(dict(path=str(path), sha256=item['sha256'], local_path=f'{INPUT_DIR}/{local}'))
     cpus = sorted(os.sched_getaffinity(0))
     if len(cpus) < 2 or os.getloadavg()[0] + 2 > os.cpu_count():
         raise RuntimeError('Insufficient verified CPU capacity for controller and operator')
@@ -177,6 +188,11 @@ def run_operator(folder, python, code, inputs, outputs, seconds, authorize):
     request = dict(python=python, python_sha256=file_digest(python), inputs=bound, outputs=outputs,
                    seconds=seconds, worker_cpu=cpus[-1], script_sha256=file_digest(folder/'preparation_step.py'))
     (folder/'request.json').write_text(json.dumps(request, indent=2))
+    (folder/INPUT_DIR).mkdir()
+    for item in bound:
+        (folder/item['local_path']).symlink_to(item['path'])
+    (folder/'inputs.json').write_text(json.dumps(
+        {Path(item['local_path']).name: item for item in bound}, indent=2))
     env = dict(os.environ, CUDA_VISIBLE_DEVICES='', JAX_PLATFORMS='cpu')
     for name in ('OMP_NUM_THREADS','OMP_THREAD_LIMIT','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','NUMEXPR_NUM_THREADS','VECLIB_MAXIMUM_THREADS','BLIS_NUM_THREADS','OPENMM_CPU_THREADS'):
         env[name] = '1'

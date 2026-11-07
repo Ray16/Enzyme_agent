@@ -89,3 +89,34 @@ def test_operator_rejects_changed_input_before_creating_attempt(tmp_path):
     with pytest.raises(ValueError,match='input changed'):
         run_operator(tmp_path/'attempt',sys.executable,'pass',[item],['out'],5,Path)
     assert not (tmp_path/'attempt').exists()
+
+
+def test_operator_exposes_verified_inputs_to_the_script(tmp_path,monkeypatch):
+    cpus=sorted(os.sched_getaffinity(0))
+    if len(cpus)<2: pytest.skip('Requires two available CPU affinity slots')
+    monkeypatch.setattr(os,'getloadavg',lambda:(0,0,0))
+    source=tmp_path/'evidence.pdb';source.write_text('HETATM bound bytes\n')
+    item=dict(path=str(source),sha256=file_digest(source))
+    code=("from pathlib import Path\n"
+          "Path('out.txt').write_text(Path('inputs/evidence.pdb').read_text())\n")
+    result=run_operator(tmp_path/'bound',sys.executable,code,[item],['out.txt'],5,Path)
+    assert result['status']=='operator_complete_requires_review',result['errors']
+    assert (tmp_path/'bound'/'out.txt').read_text()=='HETATM bound bytes\n'
+    assert json.loads((tmp_path/'bound'/'inputs.json').read_text())['evidence.pdb']['sha256']==item['sha256']
+    named=dict(item,name='renamed.pdb')
+    code=("from pathlib import Path\n"
+          "Path('out.txt').write_text(Path('inputs/renamed.pdb').read_text())\n")
+    assert run_operator(tmp_path/'named',sys.executable,code,[named],['out.txt'],5,Path)['status']=='operator_complete_requires_review'
+
+
+def test_operator_rejects_colliding_input_names_and_reserved_outputs(tmp_path):
+    source=tmp_path/'evidence.pdb';source.write_text('x')
+    item=dict(path=str(source),sha256=file_digest(source))
+    with pytest.raises(ValueError,match='unique simple local file name'):
+        run_operator(tmp_path/'dup',sys.executable,'pass',[item,dict(item)],['out'],5,Path)
+    with pytest.raises(ValueError,match='unique simple local file name'):
+        run_operator(tmp_path/'slash',sys.executable,'pass',[dict(item,name='a/b')],['out'],5,Path)
+    for bad in ('inputs/out.txt','inputs.json','request.json'):
+        with pytest.raises(ValueError,match='safe relative path'):
+            run_operator(tmp_path/'reserved',sys.executable,'pass',[],[bad],5,Path)
+    assert not (tmp_path/'dup').exists() and not (tmp_path/'reserved').exists()

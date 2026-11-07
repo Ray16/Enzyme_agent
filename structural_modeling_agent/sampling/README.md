@@ -401,7 +401,10 @@ there is no default protonation, metal count or force-field recipe.
 `run_preparation_operator` executes an explicitly supplied Python script in an
 explicit environment for at most 60 seconds on one CPU. Inputs are authorized
 and hashed; expected output paths are relative to a fresh attempt directory.
-The script reads `request.json` and writes those outputs in its working directory.
+Each hash-verified input is linked into the attempt as `inputs/<name>` (the `name`
+field, defaulting to the path basename) and listed in `inputs.json`, so the bytes
+the tool verified are the bytes the script opens; it writes its declared outputs in
+the working directory.
 The tool retains source, logs, input/output identities and failure records,
 limits native thread pools, separates controller/worker affinity, hides GPUs,
 and terminates the process group at completion or timeout. It is a code-execution

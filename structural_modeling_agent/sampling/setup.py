@@ -86,8 +86,10 @@ def assess(setup, sequence, target):
     for source in setup["sources"]:
         for field in ("id", "path", "sha256", "quote", "interpretation"):
             _text(source.get(field), f"source.{field}")
-        if source["id"] in sources or source.get("category") not in SOURCE_CATEGORIES:
-            raise ValueError("Source IDs must be unique and categories explicit")
+        if source["id"] in sources:
+            raise ValueError(f"Duplicate source id {source['id']!r}; each source needs a unique id")
+        if source.get("category") not in SOURCE_CATEGORIES:
+            raise ValueError(f"source {source['id']!r} category must be one of {sorted(SOURCE_CATEGORIES)}")
         errors = []
         if source.get("reviewed") is not True:
             errors.append("source interpretation not reviewed")
