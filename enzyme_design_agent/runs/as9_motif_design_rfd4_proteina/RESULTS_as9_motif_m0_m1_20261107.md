@@ -55,17 +55,31 @@ labelled designs do not differ on any metric (motif RMSD p=0.680, bb p=0.878,
 A p=0.541, d_h p=0.106, frac p=0.789), so the recovery path is not distorting
 results. Arm comparisons above are also reported on the labels-only subset.
 
-## Open: ligand charge-state confound
+## RESOLVED: the charge-state confound is refuted
 
 The Oct-27 WT anchor used CCD ATP + neutral adipate `O=C(O)CCCCC(=O)O`; this
-campaign uses ATP(4-) + adipate(2-), one Mg, no hydration. Recomputing the Oct-27
-ensembles with this pipeline's geometry definition reproduces the recorded anchors
-exactly (WT_AS9 164.74 / 4.288 / 20%; WT_AS1 143.78 / 3.781 / 70%), so the metric
-is not at fault -- but the two setups are chemically different and the current
-`molecule_maps()` cannot even parse the neutral ligands.
+campaign uses ATP(4-) + adipate(2-), one Mg, no hydration. Both WT sequences were
+re-run under the campaign chemistry (same Oct-27 sequences and MSAs, same FP32
+`stock_fp32_serial` settings, 50 poses, only the charge states changed).
+`wt_controls_charged_20261107/`, 50/50 poses each, complete ensembles.
 
-Single-variable controls (`wt_controls_charged_20261107/`) re-run both WT sequences
-with the same Oct-27 MSAs and the same FP32 settings, changing only the charge
-states. **Until these return, the absolute comparison of designs against the
-164.7 deg anchor is uninterpretable.** The M0-vs-M1 null above is internal to this
-campaign and does not depend on the control.
+| system | ligands | A (deg) | d_h (A) | frac d<4A |
+|---|---|---|---|---|
+| WT_AS9 | neutral (Oct 27) | 164.7 | 4.288 | 20% |
+| WT_AS9 | **ATP(4-)/adipate(2-)** | **156.6** | **4.242** | **28%** |
+| WT_AS1 | neutral (Oct 27) | 143.8 | 3.781 | 70% |
+| WT_AS1 | **ATP(4-)/adipate(2-)** | **135.8** | **3.853** | **56%** |
+
+Charging the ligands moves the wild types by ~8 deg in angle and <0.08 A in
+harmonic distance. **It does not expel adipate from the active site.** The
+hypothesis that a dianionic substrate against an anionic triphosphate explained
+the panel-wide docking failure is wrong.
+
+## Conclusion
+
+Under identical chemistry, wild-type AS9 reaches A 156.6 deg / d_h 4.24 A / 28%
+of poses within 4 A, while the design panel sits at ~90 deg / 8.8 A / 6%. The
+designs genuinely fail to reconstruct a productive adenylation geometry, and
+they fail whether or not they refold well. The four designs listed above
+(d_h 4.25-4.48 A) do match WT docking distance, so 4/100 succeed on that axis --
+two from each arm, consistent with the M0-vs-M1 null.
