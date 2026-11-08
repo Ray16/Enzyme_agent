@@ -61,7 +61,7 @@ sits 8–15 Å from the adipate.
 ---
 
 ## M2 — substrate-pocket motif (the fix M1/M0 implied)
-**Campaign:** `as9_motif_m2_substrate_20261107` · **Status:** generating (target n=100)
+**Campaign:** `as9_motif_m2_substrate_20261107` · **Status:** complete (n=100) — NULL
 
 **Reasoning:** The M0/M1 panel pinned ATP tightly and left the substrate unanchored,
 so scaffolds build a good ATP site and park adipate off-axis. Fix the *coverage*,
@@ -91,6 +91,25 @@ than motif coverage (e.g. the scaffold cannot hold the two subsites in register)
 
 **Provenance guard:** M2 is a **distinct new campaign**; the M0/M1 campaign at
 `as9_motif_m0_m1_20261106` is untouched and its results are not M2's.
+
+**Outcome (2026-11-08, `RESULTS_20261108.md`):** NULL, and the falsifier fired.
+M2 docks at A 93.2° / d_h 9.35 Å / 4.9% near — statistically identical to the M0/M1
+panel (A p=0.46, d_h p=0.44, frac p=0.70; all under the 2.67° noise floor) and nowhere
+near the WT anchor (156.6°/4.24 Å/28%). The decisive signal: **0/100 M2 designs
+reproduce the 20-residue motif <1.5 Å** (vs M0 10/50, M1 5/50), and the 6 that reach
+<2.0 Å still dock at d_h 10.55 Å. Conditioning the substrate pocket did not grip the
+substrate — it gave the generator a second subsite it could not hold in register with
+the ATP machinery. **The limit is deeper than motif coverage:** RFD4-Proteina cannot
+co-register the ATP clamp and the adipate carboxylate pocket into one catalytic scaffold
+for this 516-aa enzyme. One lottery design (`AS9D_21957b74d5eb`, M2_pose6) both
+reproduces the motif (1.56 Å) and docks well (143°/4.28 Å/12 near-attack poses) — a
+candidate, but 1/100, consistent with the null's 2–4/100 WT-distance rate.
+
+**Where this leaves the campaign line:** motif-coverage edits are exhausted (M0 ATP-only,
+M1 weak gesture, M2 full pocket — all null). The next lever is not the motif but the
+generator/scaffold: either a model that can hold two subsites in register, or seeding
+from the WT backbone (partial diffusion / scaffold-fixed) rather than de novo motif
+scaffolding.
 
 ---
 
