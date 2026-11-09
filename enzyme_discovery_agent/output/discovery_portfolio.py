@@ -4,6 +4,7 @@ import csv
 import hashlib
 import io
 import json
+import re
 from pathlib import Path
 
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry, discovery_status
@@ -120,9 +121,16 @@ def write_discovery_portfolio(run_dir, *, limit=48):
             'structural_question':row['structural_question'],
             'limits':'Exploration proposal only. No independent target assessment is required for discovery admission. '
                 'Identity, molecular setup and source applicability must be validated before structural compute.'}
-        fingerprint=digest(proposal)
+        # One current proposal per accession, overwritten in place. The filename
+        # was a content hash, so every rolling re-publication whose content had
+        # changed wrote a new file and left the old one: 806 files for 690
+        # accessions in run 20261106_165013, with no "current" pointer. An
+        # accession slug (+ short digest to keep name-keyed leads unambiguous)
+        # gives a stable, de-duplicated artifact per candidate.
+        slug=re.sub(r'[^A-Za-z0-9_.-]','_',accession)[:48]
+        fingerprint=f"{slug}_{hashlib.sha1(accession.encode()).hexdigest()[:8]}"
         path=root/'artifacts/discovery_proposals'/(fingerprint+'.json')
-        if not path.exists():atomic_write_json(path,proposal)
+        atomic_write_json(path,proposal)
         row['proposal_source']=str(path.relative_to(root))
         preference=(annotation['native_activity_evidence']!='experimental_evidence_cited',
                     not reviewed,assessment.get('decision')!='prioritize',accession)

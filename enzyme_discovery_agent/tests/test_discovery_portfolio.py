@@ -125,3 +125,24 @@ def test_an_unassessed_proposal_says_so_instead_of_looking_reasoned(tmp_path):
     assert recorded['decision']=='not_assessed'
     assert 'no candidate-specific reasoning was recorded' in recorded['scope']
     assert 'artifact' not in recorded
+
+
+def test_rolling_republication_overwrites_one_proposal_per_accession(tmp_path):
+    # The deliverable must not accumulate a stale file every time a candidate's
+    # proposal content changes; one current proposal per accession.
+    import json as _json
+    setup(tmp_path); candidate(tmp_path,'SYNTH_A','Synthetic catalyst','FOLD_A')
+    write_discovery_portfolio(tmp_path)
+    proposals=tmp_path/'artifacts/discovery_proposals'
+    first=sorted(p.name for p in proposals.glob('*.json'))
+    assert len(first)==1
+    # A later publication with changed content must reuse the same file.
+    from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
+    update_candidate_registry(tmp_path,'SYNTH_A',None,
+        {'target_assessment':{'decision':'investigate','reason':'new evidence'}})
+    write_discovery_portfolio(tmp_path)
+    second=sorted(p.name for p in proposals.glob('*.json'))
+    assert second==first, 'republication created a duplicate instead of overwriting'
+    row,=write_discovery_portfolio(tmp_path)['candidates']
+    assert row['accession']=='SYNTH_A'
+    assert (tmp_path/row['proposal_source']).exists()
