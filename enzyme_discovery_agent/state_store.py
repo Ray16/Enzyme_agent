@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import errno
 import fcntl
 import json
 import os
@@ -15,6 +16,26 @@ import threading
 _guard = threading.Lock()
 _locks: dict[str, threading.RLock] = {}
 _local = threading.local()
+
+# A full or over-quota filesystem is not a transient tool error. Callers around
+# the loop catch OSError and carry on, so an exhausted volume otherwise reads as
+# a long series of individually survivable warnings while every result the run
+# produces is silently discarded. Record it once, durably, so the controller can
+# stop instead of spending its remaining allowance on unsaveable work.
+_STORAGE_FAULT: dict = {}
+_STORAGE_ERRNOS = frozenset(
+    code for code in (getattr(errno, name, None) for name in ("ENOSPC", "EDQUOT", "EROFS"))
+    if code is not None)
+
+
+def storage_fault() -> dict:
+    """Return the first unrecoverable storage failure seen, or an empty dict."""
+    return dict(_STORAGE_FAULT)
+
+
+def clear_storage_fault() -> None:
+    """Forget the recorded fault; for tests and for an operator-repaired volume."""
+    _STORAGE_FAULT.clear()
 
 
 @contextmanager
@@ -77,11 +98,16 @@ def _atomic_write(path: str | Path, writer) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix="." + path.name + ".", dir=path.parent)
     try:
-        with os.fdopen(fd, "w") as handle:
-            writer(handle)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(tmp, path)
+        try:
+            with os.fdopen(fd, "w") as handle:
+                writer(handle)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp, path)
+        except OSError as exc:
+            if exc.errno in _STORAGE_ERRNOS and not _STORAGE_FAULT:
+                _STORAGE_FAULT.update(errno=exc.errno, strerror=exc.strerror, path=str(path))
+            raise
         directory_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
         try:
             os.fsync(directory_fd)

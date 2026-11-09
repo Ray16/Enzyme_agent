@@ -187,6 +187,10 @@ class EnzymeAgent:
         self._gate_pipeline = GatePipeline([
             EntityExtractionGate(),
             DiscoveryCoverageGate(),
+            # Order is load-bearing: gates[2]/gates[3] are referenced positionally
+            # elsewhere in the loop (gates[2]=evaluation, gates[3]=expansion), and
+            # the manual gate loop already runs expansion before evaluation. The
+            # reserved cadence lives in HomologExpansionGate.should_fire, not here.
             ECTriageGate(self.llm),
             HomologExpansionGate(self.llm),
         ])
@@ -825,6 +829,15 @@ class EnzymeAgent:
         return changed
 
     def _budget_reason(self) -> str | None:
+        # An exhausted volume is terminal, not a tool error. Every result after
+        # the first failed write is discarded, so continuing spends the remaining
+        # allowance on work that cannot be kept. This sits ahead of the budget
+        # checks because it also gates the LLM client's own budget_check.
+        from enzyme_discovery_agent.state_store import storage_fault
+        fault = storage_fault()
+        if fault:
+            return (f"Run state cannot be persisted ({fault.get('strerror') or 'storage error'}"
+                    f" writing {fault.get('path')}); stopping so completed work is not overwritten")
         provider_reason = getattr(getattr(self, "llm", None), "resource_stop_reason", None)
         if isinstance(provider_reason, str) and provider_reason:
             return provider_reason
@@ -1224,6 +1237,18 @@ class EnzymeAgent:
                     result = ready_gate.execute(self._gate_state, messages)
                     iteration, intercepted = self._apply_gate_result(
                         "evaluation_backlog", result, iteration, messages, discard_assistant=False)
+                    if intercepted:
+                        continue
+                # A fresh evaluation backlog always drains first (above). Only when
+                # nothing is ready to evaluate this turn is expansion offered, and
+                # then only on its reserved cadence, so breadth fills the gaps
+                # between evaluation instead of being starved by it. This is the
+                # block that reliably fires, so expansion was previously unreached.
+                expansion_gate = self._gate_pipeline.gates[3]
+                if expansion_gate.should_fire(self._gate_state, False, messages):
+                    result = expansion_gate.execute(self._gate_state, messages)
+                    iteration, intercepted = self._apply_gate_result(
+                        "homolog_expansion", result, iteration, messages, discard_assistant=False)
                     if intercepted:
                         continue
             if getattr(self, '_invalid_research_decisions', 0) >= 2:
