@@ -263,6 +263,32 @@ def require_evaluated_seed(run_dir: Path | str, accession: str, *, method="") ->
             "summary": f"Expansion deferred: {accession} must be evaluated and eligible in the current run first."}
 
 
+def expansion_due(run_dir: Path | str, interval: int) -> bool:
+    """Has evaluation progressed far enough to owe expansion a reserved turn?
+
+    Deepening (evaluation) would otherwise intercept every turn while a backlog
+    exists, so breadth never runs. This reserves one expansion pass per ``interval``
+    evaluation batches: a floor that keeps expansion reachable, not a cap on the
+    agent, which can still expand on its own initiative through the search tools.
+    Measured from the durable event log so it survives a resume.
+    """
+    if interval <= 0:
+        return True
+    from enzyme_discovery_agent.models.event_log import read_events
+    eval_batches = expansions = 0
+    for event in read_events(run_dir):
+        if event.get("type") != "gate":
+            continue
+        gate = event.get("gate")
+        if gate in {"evaluation_backlog", "pre_evaluation"}:
+            eval_batches += 1
+        elif gate == "homolog_expansion":
+            expansions += 1
+    # Reserve the next pass once evaluation has advanced a full interval beyond
+    # what the expansions already run have been paid for.
+    return eval_batches >= (expansions + 1) * interval
+
+
 def searched_seeds(run_dir: Path | str, method: str) -> set[str]:
     try:
         document = json.loads((Path(run_dir) / "agent_state" / "expansion_searches.json").read_text())

@@ -107,26 +107,50 @@ class TestExpansionPriority(unittest.TestCase):
 
 
 class TestRollingWork(unittest.TestCase):
-    def test_foldseek_rank_first_then_skip_completed_and_pick_new_top(self):
-        with tempfile.TemporaryDirectory() as d, patch("enzyme_discovery_agent.config.MAX_STRUCTURAL_EXPANSION_SEEDS", 1):
+    def test_expansion_surfaces_the_decision_to_the_agent_without_running_a_search(self):
+        # The gate must not expand on its own: it ranks the supported seeds and
+        # hands the choice to the model, naming the tools to act with.
+        with tempfile.TemporaryDirectory() as d, \
+                patch("enzyme_discovery_agent.config.MAX_STRUCTURAL_EXPANSION_SEEDS", 1):
             root = Path(d)
             add(root, "A00001", .1)
             add(root, "Z00001", .9)
             state = AgentState(root, critique_injected=True)
             gate = HomologExpansionGate()
-            fake = Mock(return_value={"status": "success", "count": 0, "data": {"homologs": []}})
-            with patch("enzyme_discovery_agent.gates.homolog_expansion.search_structural_homologs", fake):
+            fake = Mock()
+            with patch("enzyme_discovery_agent.tools.structural_homolog_search."
+                       "search_structural_homologs", fake):
                 result = gate.execute(state, [])
-                self.assertEqual(fake.call_args.args[0], "Z00001")
-                for key, value in result.state_updates.items():
-                    setattr(state, key, value)
-                self.assertFalse(gate.should_fire(state, False, []))
-                self.assertFalse(HomologExpansionGate().should_fire(state, False, []))
-                add(root, "P12345", .99)
-                self.assertTrue(gate.should_fire(state, False, []))
-                gate.execute(state, [])
-                self.assertEqual(fake.call_args.args[0], "P12345")
-                self.assertEqual(fake.call_count, 2)
+            fake.assert_not_called()
+            self.assertTrue(result.intercept)
+            advisory = result.new_messages[0]["content"]
+            # Strongest seed is offered; the agent decides, and the tools are named.
+            self.assertIn("Z00001", advisory)
+            self.assertIn("search_structural_homologs", advisory)
+            self.assertIn("set_family_focus", advisory)
+
+    def test_expansion_waits_for_its_reserved_cadence_then_becomes_due(self):
+        from enzyme_discovery_agent.models.event_log import append_event
+        from enzyme_discovery_agent.models.expansion import expansion_due
+        with tempfile.TemporaryDirectory() as d, \
+                patch("enzyme_discovery_agent.config.EXPANSION_EVAL_INTERVAL", 3):
+            root = Path(d)
+            add(root, "Z00001", .9)
+            state = AgentState(root, critique_injected=True)
+            gate = HomologExpansionGate()
+            # No evaluation has happened yet: breadth does not pre-empt it.
+            self.assertFalse(expansion_due(root, 3))
+            self.assertFalse(gate.should_fire(state, False, []))
+            for _ in range(3):
+                append_event(root, "gate", gate="evaluation_backlog")
+            # After a full interval of evaluation, the reserved pass is due.
+            self.assertTrue(expansion_due(root, 3))
+            self.assertTrue(gate.should_fire(state, False, []))
+            # It never pre-empts the model's own tool calls on their turn.
+            self.assertFalse(gate.should_fire(state, True, []))
+            # Once it fires, the next pass waits another full interval.
+            append_event(root, "gate", gate="homolog_expansion")
+            self.assertFalse(expansion_due(root, 3))
 
     def test_literature_selects_strongest_in_each_family_and_revisits_new_top(self):
         with tempfile.TemporaryDirectory() as d:

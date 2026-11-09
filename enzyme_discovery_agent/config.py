@@ -187,6 +187,11 @@ DISCOVERY_RESEARCH_INTERVAL = 10
 LITERATURE_DISCOVERY_PAPERS_PER_STEP = 2
 EVALUATIONS_PER_STEP = 20
 EXPANSION_SEEDS_PER_STEP = 2
+# Reserve one structural-expansion pass per this many evaluation batches, so
+# broadening the search is never starved by a persistent evaluation backlog.
+# An overridable default, not a ceiling: the agent can still expand on its own
+# initiative via the search tools. 0 disables the reservation.
+EXPANSION_EVAL_INTERVAL = 3
 ENABLE_EXPANSION_FEEDBACK = True
 DISCOVERY_EXTRACTION_TIMEOUT = 90
 FINALIZATION_RESERVE_ITERATIONS = 8  # retained for compatibility; no turn-based cutoff

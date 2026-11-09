@@ -1,24 +1,21 @@
-"""Gate 3: Foldseek expansion for a small set of qualified evaluated seeds."""
+"""Gate 3: surface a structural/embedding expansion decision for qualified seeds.
+
+The agent decides whether to broaden from supported seeds, using the search
+tools; this gate only puts that choice in front of it on a reserved cadence so
+a persistent evaluation backlog cannot keep breadth off the table entirely.
+"""
 
 from __future__ import annotations
 
 import logging
-from concurrent.futures import ThreadPoolExecutor
-
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.gates import AgentState, GateResult
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
-from enzyme_discovery_agent.models.candidate_registry import register_structural_homologs
 from enzyme_discovery_agent.models.expansion import (
-    select_expansion_seeds, searched_seeds, record_seed_search,
+    select_expansion_seeds, searched_seeds, expansion_due,
 )
-from enzyme_discovery_agent.tools.structural_homolog_search import search_structural_homologs
 
 logger = logging.getLogger("enzyme_agent")
-
-# Each search is a remote queue wait on the shared public Foldseek server (~40 s);
-# a small pool overlaps them without hammering it.
-_FOLDSEEK_WORKERS = 3
 
 class HomologExpansionGate:
     """Expand qualified seeds structurally; similarity remains candidate generation only."""
@@ -27,12 +24,19 @@ class HomologExpansionGate:
         self.llm = llm_client
 
     def should_fire(self, state: AgentState, has_eval_calls: bool, messages: list[dict]) -> bool:
-        if not state.critique_injected or has_eval_calls:
+        if not state.critique_injected:
             return False
-        # ECTriageGate may auto-evaluate candidates and replace the triggering
-        # tool call with a compact summary, so message-history inspection is
-        # not reliable.  The gate state is the durable completion signal.
-        return bool(self._seeds(state.run_dir)) or not state.homolog_expansion_done
+        # Never pre-empt the model's own actions on the turn it took them.
+        if has_eval_calls:
+            return False
+        if not self._seeds(state.run_dir):
+            return False
+        # The evaluation backlog used to intercept every remaining turn, so this
+        # gate (placed after it) never ran: 0 expansions across a full run. Fire
+        # only on the reserved cadence, so evaluation keeps most turns while
+        # breadth is guaranteed a share. Targeting is unchanged: _seeds draws
+        # only from already-supported, promotion-eligible candidates.
+        return expansion_due(state.run_dir, config.EXPANSION_EVAL_INTERVAL)
 
     def _seeds(self, run_dir, *, record_selection=False):
         candidates = load_candidate_registry(run_dir).get("candidates", {})
@@ -43,60 +47,52 @@ class HomologExpansionGate:
                 for acc in top if acc not in searched]
 
     def execute(self, state: AgentState, messages: list[dict]) -> GateResult:
-        # Rank first, then remove searched seeds. Lower-ranked candidates do not
-        # consume searches merely because the current leaders were already tried.
+        # Surface the decision; the agent chooses whether and how to broaden from
+        # these supported seeds, rather than the gate executing a search blindly.
+        # Ranked first so the strongest, least-redundant seeds lead the list.
         seeds = self._seeds(state.run_dir, record_selection=True)[:config.EXPANSION_SEEDS_PER_STEP]
         if not seeds:
-            return GateResult(
-                intercept=False,
-                state_updates={"homolog_expansion_done": True},
-            )
+            return GateResult(intercept=False)
 
-        def _search(seed: tuple[str, str]) -> dict:
-            check = getattr(self.llm, "budget_check", None)
-            reason = check() if callable(check) else None
-            if isinstance(reason, str):
-                return {"status": "skipped", "count": 0, "summary": reason,
-                        "deferred_for_budget": True}
-            try:
-                return search_structural_homologs(seed[0], max_hits=10, min_tm_score=0.5,
-                                                  run_dir=str(state.run_dir))
-            except Exception as exc:
-                logger.warning("Structural expansion failed for %s: %s", seed[0], exc)
-                return {"status": "error", "count": 0, "summary": str(exc)}
+        candidates = load_candidate_registry(state.run_dir).get("candidates", {})
 
-        with ThreadPoolExecutor(max_workers=_FOLDSEEK_WORKERS) as pool:
-            search_results = list(pool.map(_search, seeds))
+        def _describe(acc: str, name: str) -> str:
+            meta = candidates.get(acc, {}).get("metadata", {}) or {}
+            data = {**(meta.get("evaluation_data") or {}), **meta}
+            family = data.get("interpro_family_id") or data.get("mechanism_family") or "family unrecorded"
+            fit = data.get("substrate_fit")
+            fit_txt = f", substrate_fit {fit}" if fit not in (None, "") else ""
+            return f"  - {name} ({acc}) — {family}{fit_txt}"
 
-        # Registry writes stay serial and in seed order.
-        results = []
-        known = set(load_candidate_registry(state.run_dir).get("candidates", {}))
-        for (accession, name), result in zip(seeds, search_results):
-            if result.get("status") in {"success", "partial"}:
-                returned = register_structural_homologs(state.run_dir, result)
-                result["new_accessions"] = [acc for acc in returned if acc not in known]
-                known.update(returned)
-            if not result.get("deferred_for_budget"):
-                record_seed_search(state.run_dir, "foldseek", accession, result)
-            results.append((accession, name, result.get("count", 0), result.get("summary", "")))
-        lines = "\n".join(f"  - {name} ({acc}): {count} Foldseek homologs — {summary}" for acc, name, count, summary in results)
-        logger.info("Structural homolog expansion completed for %d seeds", len(seeds))
-
-        new_messages = [
-            {
-                "role": "user",
-                "content": (
-                    "Foldseek structural-homolog expansion completed for qualified evaluated seeds. "
-                    "These are candidate-generation results only; do not treat structural similarity as "
-                    "reaction evidence. Evaluate any homolog before promotion:\n"
-                    f"{lines}"
-                ),
-            },
+        listed = "\n".join(_describe(acc, name) for acc, name in seeds)
+        # Name only the expansion tools actually registered in this run, so the
+        # advice never points at one filtered out of the current process.
+        from enzyme_discovery_agent import tool_registry
+        blurbs = [
+            ("search_structural_homologs", "remote structural homologs of a seed"),
+            ("search_esm_atlas_homologs", "sequence neighbours from the metagenomic ESM Atlas, which reach unannotated enzymes"),
+            ("expand_candidates_esm", "embedding neighbours scored against the pool"),
         ]
-
+        available = [f"{tool} ({why})" for tool, why in blurbs if tool in tool_registry._TOOLS]
+        tools_line = ("broaden from it with " + "; or ".join(available) + ". "
+                      if available else
+                      "broaden from it with the available homology/embedding search tools. ")
+        advisory = (
+            "EXPANSION OPPORTUNITY. These candidates have cleared evaluation and are "
+            "supported, so they are sound seeds for broadening the search beyond "
+            "keyword/annotation retrieval. Decide, from the current evidence, whether "
+            "widening the net around any of them is worthwhile now:\n"
+            f"{listed}\n"
+            "If a seed's family still has unexplored members or its native chemistry is a "
+            "strong analogue of the target, " + tools_line +
+            "These are candidate-generation only: a homolog is not reaction evidence and must be "
+            "evaluated before promotion. If a family instead looks saturated or off-target, record "
+            "that with set_family_focus rather than expanding it. Expanding is optional; skip it "
+            "when the evidence does not warrant it."
+        )
+        logger.info("Surfaced structural-expansion opportunity for %d seed(s)", len(seeds))
         return GateResult(
             intercept=True,
-            new_messages=new_messages,
-            log_message=f"Structural homolog expansion: {len(seeds)} seeds",
-            state_updates={"homolog_expansion_done": True},
+            new_messages=[{"role": "user", "content": advisory}],
+            log_message=f"Expansion opportunity surfaced: {len(seeds)} seed(s)",
         )
