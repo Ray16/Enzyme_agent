@@ -80,3 +80,27 @@ def test_parallel_trace_appends_have_unbroken_sequence(tmp_path):
     events=read_scientific_trace(tmp_path)
     assert len(events)==12
     assert len({event['id'] for event in events})==12
+
+
+def test_export_surfaces_controller_turns_and_family_state_decisions(tmp_path):
+    # The unified trace must include the two reasoning dimensions that live
+    # outside the scientific-trace journal, so one reader shows the whole picture.
+    plan=proposal(tmp_path)
+    identifier=decisions.start_decision(tmp_path,plan,{'synthetic_retrieval'})
+    decisions.finish_decision(tmp_path,identifier,{'status':'unavailable','summary':'none'})
+    from enzyme_discovery_agent.models.event_log import append_event
+    append_event(tmp_path,'assistant_decision',iteration=1,tools=['search_uniprot'],
+                 reasoning='Two folds remain; broaden the stronger one.',reasoning_source='thinking',
+                 reasoning_chars=41)
+    (tmp_path/'agent_state').mkdir(exist_ok=True)
+    (tmp_path/'agent_state'/'family_learning.json').write_text(json.dumps({'families':{
+        'ipr:IPR000001':{'name':'Synthetic ligase fold','state':'deprioritized',
+            'state_basis':{'basis':'all_assessed_members_deprioritized','members_assessed':3,
+                           'from_agent_decision':False,'agent_reason':None}}}}))
+    result=export_trace(tmp_path)
+    assert result['controller_decisions'][0]['reasoning'].startswith('Two folds remain')
+    assert result['controller_decisions'][0]['reasoning_source']=='thinking'
+    assert result['family_state_decisions'][0]['state']=='deprioritized'
+    text=(tmp_path/'reasoning/trace.md').read_text()
+    assert 'Controller turn decisions' in text and 'Two folds remain' in text
+    assert 'Family-state decisions' in text and 'all_assessed_members_deprioritized' in text

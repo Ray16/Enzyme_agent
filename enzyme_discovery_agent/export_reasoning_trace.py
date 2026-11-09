@@ -193,11 +193,63 @@ def export_trace(run_dir, *, reconstruct_missing=True):
                 '**Activation assessment:** '+(value.get('activation_assessment') or 'Not recorded.'), '',
                 '**Continuation assessment:** '+(value.get('continuation_assessment') or 'Not recorded.'), '',
                 f"[Complete saved interpretation](../{record['source']['path']})",''])
+    # Two reasoning dimensions live outside the scientific-trace journal: the
+    # controller's per-turn deliberation (events.jsonl) and the family-state
+    # decisions (family_learning.json). Surface both here so this one export is
+    # the whole picture, not just the hypothesis/assessment journal.
+    turn_decisions=_controller_decisions(root)
+    result['controller_decisions']=turn_decisions
+    if turn_decisions:
+        lines.extend(['## Controller turn decisions','',
+            'The model\'s own deliberation and the tools it chose each turn. Empty '
+            'reasoning means none was offered that turn, not a lost record.',''])
+        for row in turn_decisions:
+            lines.extend([f"### Iteration {row['iteration']} · {', '.join(row['tools']) or 'no tool call'}",'',
+                f"Reasoning ({row['reasoning_source']}): {row['reasoning'] or '(none recorded)'}",''])
+    family_states=_family_state_decisions(root)
+    result['family_state_decisions']=family_states
+    if family_states:
+        lines.extend(['## Family-state decisions','',
+            'Why each family was kept, set aside or left unresolved. "absence" means '
+            'a candidate-count rollup, not an agent judgement or a contradiction.',''])
+        for row in family_states:
+            basis=row.get('state_basis') or {}
+            lines.extend([f"- **{row['name']}** → {row['state']} "
+                f"({basis.get('basis','unrecorded')}; {basis.get('members_assessed','?')} assessed"
+                + (f"; agent: {basis['agent_reason']}" if basis.get('agent_reason') else '')+")"])
+        lines.append('')
     lines.extend(['## Verification limits','']+['- '+limit for limit in result['limits']]+[''])
     (destination/'trace.md').write_text('\n'.join(lines))
     from enzyme_discovery_agent.output.reasoning_viewer import write_reasoning_viewer
     write_reasoning_viewer(destination,result)
     return result
+
+
+def _controller_decisions(root):
+    """The per-turn deliberation recorded in the event log, for the unified trace."""
+    from enzyme_discovery_agent.models.event_log import read_events
+    rows=[]
+    for event in read_events(root):
+        if event.get('type')!='assistant_decision':
+            continue
+        rows.append({'iteration':event.get('iteration'),'tools':event.get('tools') or [],
+            'reasoning':event.get('reasoning') or '','reasoning_source':event.get('reasoning_source') or 'none',
+            'reasoning_chars':event.get('reasoning_chars')})
+    return rows
+
+
+def _family_state_decisions(root):
+    """Family keep/set-aside/unresolved decisions with their recorded basis."""
+    try:
+        document=json.loads((root/'agent_state'/'family_learning.json').read_text())
+    except (OSError,ValueError):
+        return []
+    rows=[]
+    for family in (document.get('families') or {}).values():
+        rows.append({'name':family.get('name') or family.get('family'),'state':family.get('state'),
+            'state_basis':family.get('state_basis'),'agent_decision':family.get('agent_decision')})
+    rows.sort(key=lambda r:(r['state'] or '',r['name'] or ''))
+    return rows
 
 
 def main():
