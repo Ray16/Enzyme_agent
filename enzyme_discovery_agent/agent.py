@@ -1593,7 +1593,11 @@ class EnzymeAgent:
                 "user_steering_ids": delivered_ids,
                 "n_tool_calls": len(tool_calls),
                 "tools": [_tc_name(tc) for tc in tool_calls],
-                "reasoning": reasoning[:800],
+                # Only ever counted on resume, never returned to the model, so a
+                # longer record costs disk rather than tokens. 800 chars cut most
+                # deliberations mid-sentence, which is the opposite of auditable.
+                "reasoning": reasoning[:4000],
+                "reasoning_chars": len(reasoning),
                 # Distinguish "the model gave no rationale" from "we failed to
                 # capture one": most tool-calling turns carry empty content, so an
                 # empty reasoning field is expected, not a logging bug.

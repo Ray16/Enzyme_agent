@@ -98,10 +98,25 @@ def write_discovery_portfolio(run_dir, *, limit=48):
             'uniprot_url':'https://www.uniprot.org/uniprotkb/'+accession+'/entry',
             'group_alternatives':'','group_priority_status':'','proposal_source':'',
         }
+        # The recorded assessment is this proposal's only candidate-specific
+        # reasoning; without it the artifact is a retrieved record beside a
+        # family hypothesis and a fixed question, and cannot say why THIS enzyme
+        # was proposed. It is already on disk, so carrying it costs no model call.
+        recorded_assessment=({key:assessment[key] for key in (
+            'decision','evidence_level','reason','mechanism_and_step','strengths','unknowns',
+            'constraints','target_roles','revisit_when','source_refs','created_at','scope')
+            if key in assessment} if assessment else {'decision':'not_assessed',
+            'scope':'Admitted without an individual target assessment; no candidate-specific '
+                    'reasoning was recorded for this proposal.'})
+        if assessment.get('target_assessment_artifact'):
+            recorded_assessment['artifact']=assessment['target_assessment_artifact']
+        elif meta.get('target_assessment_artifact'):
+            recorded_assessment['artifact']=meta['target_assessment_artifact']
         proposal={'accession':accession,'target_sha256':digest(target_contract(root)),
             'source_record':data,'native_annotation_provenance':annotation,
             'family_hypotheses':hypotheses,'selection_scope':row['proposal_basis'],
             'discovery_nomination':nomination,
+            'recorded_assessment':recorded_assessment,
             'structural_question':row['structural_question'],
             'limits':'Exploration proposal only. No independent target assessment is required for discovery admission. '
                 'Identity, molecular setup and source applicability must be validated before structural compute.'}

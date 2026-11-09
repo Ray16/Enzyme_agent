@@ -113,12 +113,22 @@ def build_family_learning(candidates, landscape, decisions, target, searches=Non
         verdict = (survey.get("family_claim_validation") or {}).get("verdict")
         fits = [row["fit"] for row in rows if row["state"] == "supported" and row["fit"] is not None]
         decision = decisions.get(fid.removeprefix("ipr:"), {}).get("decision")
+        # Record what moved the family, not just where it landed. A family can be
+        # dropped here by a candidate-count rollup with no agent judgment behind
+        # it, and the stored row could not previously tell that apart from a
+        # surveyed contradiction or an explicit stop.
         if counts["supported"]:
-            state = "supported"
-        elif (counts["deprioritized"] and not counts["unresolved"]) or verdict == "contradicted_family_hypothesis":
-            state = "deprioritized"
+            state, state_basis = "supported", "supported_member_assessments"
+        elif verdict == "contradicted_family_hypothesis":
+            state, state_basis = "deprioritized", "survey_contradicted_family_hypothesis"
+        elif counts["deprioritized"] and not counts["unresolved"]:
+            state, state_basis = "deprioritized", "all_assessed_members_deprioritized"
         else:
-            state = "unresolved"
+            state, state_basis = "unresolved", "no_member_resolved_either_way"
+        state_basis = {"basis": state_basis, "from_agent_decision": decision is not None,
+                       "members_assessed": len(rows), "supported": counts["supported"],
+                       "unresolved": counts["unresolved"], "deprioritized": counts["deprioritized"],
+                       "agent_reason": decisions.get(fid.removeprefix("ipr:"), {}).get("reason")}
         families[fid] = {"family": fid, "name": survey.get("fold_name") or names.get(fid, fid),
                          "state": state, "independent_enzymes_assessed": len(rows),
                          "label_groups_assessed": len(rows),
@@ -130,6 +140,7 @@ def build_family_learning(candidates, landscape, decisions, target, searches=Non
                          "supported_fraction": counts["supported"] / len(rows) if rows else None,
                          "survey_verdict": verdict, "direction_counts": survey.get("direction_vs_target_counts"),
                          "survey_fit": survey.get("holistic_fit"), "agent_decision": decision,
+                         "state_basis": state_basis,
                          "mechanism_hypothesis": (survey.get("derived_family_hypothesis") or {}).get("name"),
                          "expansion_attempts": 0, "new_supported_groups": 0}
 

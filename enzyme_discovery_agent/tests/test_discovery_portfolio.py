@@ -90,3 +90,38 @@ def test_relaxed_lookup_cannot_substitute_an_unrelated_family():
             {'accession':'IPR_SYNTH','name':'Unrelated scavenger','type':'family'}]}
     assert resolve_family_folds({'name':'Zorvik family','descriptors':['Zorvik enzyme']},
                                 {'IPR_SYNTH':5},search)==[]
+
+
+def test_a_proposal_carries_the_candidate_specific_reasoning_already_recorded(tmp_path):
+    """Without this the artifact cannot say why THIS enzyme was proposed."""
+    setup(tmp_path); candidate(tmp_path,'SYNTH_A','Synthetic catalyst','FOLD_A')
+    assessment={'decision':'investigate','evidence_level':'mechanistic_transfer',
+                'reason':'Native donor resembles the requested one at the reacting end.',
+                'mechanism_and_step':'Activates the carboxylate before amine attack.',
+                'strengths':['Reported tolerance of a longer donor'],
+                'unknowns':['Acceptance of the requested acceptor is untested'],
+                'constraints':[{'finding':'Acceptor is longer','basis':'missing_evidence','severity':'minor'}],
+                'target_roles':[{'participant':'T1','role':'donor','basis':'transfer'}],
+                'revisit_when':'A kinetic measurement on the requested acceptor appears.',
+                'source_refs':['R1'],'created_at':'2026-11-08T00:00:00+00:00'}
+    update_candidate_registry(tmp_path,'SYNTH_A',None,{'target_assessment':assessment,
+        'target_assessment_artifact':'artifacts/target_reviews/synthetic.json'})
+    row,=write_discovery_portfolio(tmp_path)['candidates']
+    recorded=json.loads((tmp_path/row['proposal_source']).read_text())['recorded_assessment']
+    assert recorded['decision']=='investigate'
+    assert recorded['reason']==assessment['reason']
+    assert recorded['mechanism_and_step']==assessment['mechanism_and_step']
+    assert recorded['strengths']==assessment['strengths']
+    assert recorded['unknowns']==assessment['unknowns']
+    assert recorded['revisit_when']==assessment['revisit_when']
+    # The full record stays inspectable rather than being summarized away.
+    assert recorded['artifact']=='artifacts/target_reviews/synthetic.json'
+
+
+def test_an_unassessed_proposal_says_so_instead_of_looking_reasoned(tmp_path):
+    setup(tmp_path); candidate(tmp_path,'SYNTH_A','Synthetic catalyst','FOLD_A')
+    row,=write_discovery_portfolio(tmp_path)['candidates']
+    recorded=json.loads((tmp_path/row['proposal_source']).read_text())['recorded_assessment']
+    assert recorded['decision']=='not_assessed'
+    assert 'no candidate-specific reasoning was recorded' in recorded['scope']
+    assert 'artifact' not in recorded

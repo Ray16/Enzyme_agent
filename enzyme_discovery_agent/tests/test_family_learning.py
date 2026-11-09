@@ -45,6 +45,27 @@ class FamilyLearningTest(unittest.TestCase):
             self.assertEqual(policy["candidates"]["P12345"]["state"], "deprioritized")
             self.assertEqual(policy["priority_order"][0], "ipr:IPR000002")
 
+    def test_family_state_records_what_moved_it_not_only_where_it_landed(self):
+        """A dropped family must say whether an agent judged it or a rollup dropped it."""
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            self.prepare(root)
+            policy = refresh_family_learning(root)
+            dropped = policy["families"]["ipr:IPR000001"]
+            self.assertEqual(dropped["state"], "deprioritized")
+            basis = dropped["state_basis"]
+            self.assertEqual(basis["basis"], "all_assessed_members_deprioritized")
+            # The distinction the stored row could not previously express.
+            self.assertFalse(basis["from_agent_decision"])
+            self.assertIsNone(basis["agent_reason"])
+            self.assertEqual(basis["members_assessed"], 1)
+            kept = policy["families"]["ipr:IPR000002"]
+            self.assertEqual(kept["state_basis"]["basis"], "supported_member_assessments")
+            # Auditable detail must not ride along into the model's context.
+            with patch("enzyme_discovery_agent.context.build_research_state", build_research_state):
+                state = build_research_state(root)
+            self.assertNotIn("state_basis", json.dumps(state.get("learned_family_priorities", [])))
+
     def test_unknown_is_not_rejected_and_a_favorable_exception_reopens_family(self):
         unknown = candidate_feedback({"protein_name": "Unknown", "is_enzyme": True}, TARGET)
         self.assertEqual(unknown["state"], "unresolved")

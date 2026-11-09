@@ -74,6 +74,11 @@ class Message:
     content: str | None
     tool_calls: list[dict] | None
     role: str = "assistant"
+    # The model's own deliberation for this turn. Kept out of model_dump so it
+    # reaches the decision log without ever re-entering the conversation: it is
+    # already paid for in the response, and resending it would cost input tokens
+    # on every later turn.
+    reasoning: str | None = None
 
     def model_dump(self):
         return {"role": self.role, "content": self.content, "tool_calls": self.tool_calls}
@@ -162,13 +167,21 @@ def _parse_output(stdout: str, allowed_names: set[str], model: str, *, defer_too
         if event.get("type") == "assistant" and not event.get("parent_tool_use_id"):
             message = event.get("message") or {}
             blocks.extend(message.get("content") or [])
-    calls, content = [], []
+    calls, content, thinking = [], [], []
     ids = set()
     for block in blocks:
         if not isinstance(block, dict):
             continue
         if block.get("type") == "text" and isinstance(block.get("text"), str):
             content.append(block["text"])
+        elif block.get("type") == "thinking" and isinstance(block.get("thinking"), str):
+            # A tool-calling turn usually carries no prose, so without this the
+            # decision log records no rationale at all for most turns.
+            thinking.append(block["thinking"])
+        elif block.get("type") == "redacted_thinking":
+            # The provider withheld the text. Record that deliberation happened
+            # rather than letting it read as a turn taken without any.
+            thinking.append("[redacted_thinking]")
         elif block.get("type") == "tool_use":
             full_name = block.get("name", "")
             prefix = "mcp__discovery__"
@@ -203,7 +216,8 @@ def _parse_output(stdout: str, allowed_names: set[str], model: str, *, defer_too
         raise ClaudeTransportError(f"Claude Code did not complete the request ({label})", usage)
     if not calls and not content:
         raise ClaudeTransportError("Claude Code returned an empty response", usage)
-    return Response([Choice(Message("\n".join(content) or None, calls or None),
+    return Response([Choice(Message("\n".join(content) or None, calls or None,
+                                    reasoning="\n".join(thinking) or None),
                             "tool_calls" if calls else "stop")], usage)
 
 

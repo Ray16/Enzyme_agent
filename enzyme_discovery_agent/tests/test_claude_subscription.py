@@ -239,3 +239,26 @@ def test_a_backend_without_a_prompt_breakdown_is_unchanged():
     assert payload["total_tokens"] == 12
     assert "total_cache_read_tokens" not in payload
     assert "cache_read_fraction_of_prompt" not in payload
+
+
+def test_thinking_is_captured_for_the_decision_log_but_never_resent():
+    """A tool-calling turn carries its deliberation, at no cost to later turns."""
+    blocks = ({"type": "thinking", "thinking": "Two folds remain; the survey contradicts one."},
+              {"type": "redacted_thinking", "data": "opaque"},
+              tool())
+    message = _parse_output(stream(*blocks), {"probe"}, "claude-sonnet-5").choices[0].message
+    assert "Two folds remain" in message.reasoning
+    assert "[redacted_thinking]" in message.reasoning
+    # The response already paid for these tokens; putting them back in the
+    # conversation would charge for them again on every subsequent turn.
+    assert "reasoning" not in message.model_dump()
+    assert message.content is None
+    from enzyme_discovery_agent.agent import _extract_reasoning
+    assert _extract_reasoning(message, message.content or "").startswith("Two folds remain")
+
+
+def test_a_turn_with_no_thinking_still_reports_no_rationale():
+    message = _parse_output(stream(tool()), {"probe"}, "claude-sonnet-5").choices[0].message
+    assert message.reasoning is None
+    from enzyme_discovery_agent.agent import _extract_reasoning
+    assert _extract_reasoning(message, "") == ""
