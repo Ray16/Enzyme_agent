@@ -181,7 +181,7 @@ def test_live_replay_capture_uses_same_prompt_and_evidence_without_writes(tmp_pa
     baseline = capture_request(packet, False)
     factored = capture_request(packet, True)
     assert baseline['tools'] == factored['tools']
-    assert baseline['messages'][:2] == factored['messages'][:2]
+    assert baseline['messages'][:-1] == factored['messages'][:-1]
     assert expand_evidence(json.loads(baseline['messages'][-1]['content'])) == expand_evidence(
         json.loads(factored['messages'][-1]['content']))
     assert packet == before

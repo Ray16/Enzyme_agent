@@ -48,7 +48,8 @@ def response_contract_errors(message, request):
     import jsonschema
     candidates = expand_evidence(json.loads(request['messages'][-1]['content']))
     expected = {row['accession']: row['source_id'] for row in candidates}
-    participants = {row['id'] for row in json.loads(request['messages'][1]['content'])['target_inputs']}
+    contract = target_review.target_block_contract(request['messages'][0]['content'])
+    participants = {row['id'] for row in contract['target_inputs']}
     schema = request['tools'][0]['function']['parameters']
     errors, seen = [], set()
     for call in message.get('tool_calls') or []:

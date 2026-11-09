@@ -11,6 +11,25 @@ from enzyme_discovery_agent.run_layout import run_file
 from enzyme_discovery_agent.state_store import atomic_write_json
 
 
+# The requested transformation is constant for a run, so it travels in the
+# instruction block ahead of the per-batch candidate evidence. Readers split the
+# serialized contract back out on this exact header.
+TARGET_BLOCK_HEADER = ('\n\nREQUESTED TRANSFORMATION (run-authored contract, not retrieved '
+                       'content). Assess the supplied candidates against it:\n')
+
+
+def target_block(common):
+    return TARGET_BLOCK_HEADER + json.dumps(common, separators=(',', ':'))
+
+
+def target_block_contract(system):
+    """Recover the contract a review request carried, for replay and auditing."""
+    head, marker, tail = system.rpartition(TARGET_BLOCK_HEADER)
+    if not marker:
+        raise ValueError('Review instructions carry no target contract')
+    return json.loads(tail)
+
+
 def digest(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,default=str).encode()).hexdigest()
 
@@ -399,8 +418,12 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
     candidate_request = {'candidates': request['candidates']}
     if config.TARGET_REVIEW_FACTOR_EVIDENCE:
         candidate_request = factor_evidence(request['candidates'])
-    response=llm.call(messages=[{'role':'system','content':prompt},
-        {'role':'user','content':json.dumps(common,separators=(',',':'))},
+    # The requested transformation is identical for every batch in a run, while the
+    # candidate evidence changes. Carrying it in the instruction block keeps the
+    # provider's cached prefix covering it instead of rebuilding it per batch. The
+    # same split matches the trust boundary already stated in the instructions:
+    # the target contract is run-authored, retrieved candidate content is not.
+    response=llm.call(messages=[{'role':'system','content':prompt+target_block(common)},
         {'role':'user','content':serialized(candidate_request)}],
         tools=[tool],timeout=180,usage_label='target_relevance_batch')
     output={'assessed':[],'errors':[],'provider_faults':[]}

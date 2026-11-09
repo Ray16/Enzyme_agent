@@ -33,7 +33,16 @@ def test_assessment_schemas_and_common_context_are_stable_across_batches(tmp_pat
     assert review.run_review(tmp_path,client,accessions=['SYNTH1'])['assessed']==['SYNTH1']
     assert review.run_review(tmp_path,client,accessions=['SYNTH2'])['assessed']==['SYNTH2']
     assert calls[0]['tools']==calls[1]['tools']
-    assert calls[0]['messages'][:2]==calls[1]['messages'][:2]
+    # The cached prefix is the instruction block plus the run's target contract.
+    # Only the candidate evidence may differ between batches, so everything ahead
+    # of it must stay byte-identical rather than merely equivalent.
+    assert calls[0]['messages'][:-1]==calls[1]['messages'][:-1]
+    assert [m['role'] for m in calls[0]['messages']]==['system','user']
+    system=calls[0]['messages'][0]['content']
+    target=json.loads(json.dumps(review.target_contract(tmp_path)))
+    assert json.dumps({'target':target},separators=(',',':'))[1:-1] in system
+    assert '"target_inputs":' in system
+    assert 'target_inputs' not in calls[0]['messages'][-1]['content']
     assert calls[0]['messages'][-1]!=calls[1]['messages'][-1]
     assert 'enum' not in calls[0]['tools'][0]['function']['parameters']['properties']['accession']
 
