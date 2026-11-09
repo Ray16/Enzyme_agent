@@ -103,15 +103,23 @@ def main():
         raw = path.read_bytes()
         packet = json.loads(raw)['packet']
         requests = {mode: capture_request(packet, mode == 'factored') for mode in ('baseline', 'factored')}
+        # The replicate re-sends byte-identical baseline input. Its disagreement with
+        # baseline is this comparison's noise floor: without it, a factored difference
+        # cannot be told apart from ordinary sampling variation.
+        requests['baseline_replicate'] = copy.deepcopy(requests['baseline'])
         views = {mode: expand_evidence(json.loads(request['messages'][-1]['content']))
                  for mode, request in requests.items()}
         if views['baseline'] != views['factored']:
             raise ValueError('Representations do not contain exactly the same evidence')
+        if serialized(requests['baseline']) != serialized(requests['baseline_replicate']):
+            raise ValueError('Replicate input is not byte-identical to baseline')
         pair = {'source_batch': str(path), 'source_sha256': hashlib.sha256(raw).hexdigest(),
                 'round_trip_equal': True, 'responses': {}}
         comparisons.append(pair)
-        # Alternate order to avoid always warming the common prefix for one arm.
-        for mode in (('baseline', 'factored') if index % 2 == 0 else ('factored', 'baseline')):
+        # Rotate arm order so no arm always runs first: ordering affects both provider
+        # cache warmth and which arm absorbs a mid-replay outage.
+        order = ('baseline', 'baseline_replicate', 'factored')
+        for mode in order[index % 3:] + order[:index % 3]:
             request = requests[mode]
             # Conservative preflight guard, not reported as measured token usage.
             # Reserve output plus one token per UTF-8 byte of the supplied payload.
