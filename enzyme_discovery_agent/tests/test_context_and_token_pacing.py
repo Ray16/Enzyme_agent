@@ -35,6 +35,27 @@ class ContextTest(unittest.TestCase):
         self.assertLess(len(json.dumps(projected)),4000)
         self.assertEqual(len(payload['irrelevant_history']),140000)
 
+    def test_absence_blocked_pending_leads_are_flagged_as_resolvable(self):
+        # A candidate blocked only by missing annotation must read as a lead to
+        # resolve, not a rejected one, so the agent can decide to pursue it.
+        from enzyme_discovery_agent.context import build_research_state
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            update_candidate_registry(root, "P_ABSENT", "evidence_pending", {
+                "protein_name": "Uncharacterized protein",
+                "claim_validation": {"blocking_claims": ["native_reaction"],
+                                     "blocked_only_by_absence": True,
+                                     "blocked_by_absence": ["native_reaction"]}})
+            update_candidate_registry(root, "P_WRONG", "evidence_pending", {
+                "protein_name": "Opposite-direction hydrolase",
+                "claim_validation": {"blocking_claims": ["reaction_direction"],
+                                     "blocked_only_by_absence": False,
+                                     "blocked_by_absence": []}})
+            rows = {r["accession"]: r for r in build_research_state(root)["evidence_pending_examples"]}
+            self.assertTrue(rows["P_ABSENT"]["blocked_only_by_absence"])
+            self.assertEqual(rows["P_ABSENT"]["resolvable_missing_annotation"], ["native_reaction"])
+            self.assertFalse(rows["P_WRONG"]["blocked_only_by_absence"])
+
     def test_old_gate_and_report_history_is_replaced_without_mutating_audit(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

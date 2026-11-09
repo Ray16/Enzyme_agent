@@ -198,11 +198,17 @@ def build_research_state(run_dir: Path) -> dict:
     for acc, entry in sorted(registry.items(), key=lambda item: not bool((item[1].get("metadata") or {}).get("is_literature_lead"))):
         if discovery_status(entry) == "evidence_pending":
             data = entry.get("metadata") or {}
+            validation = data.get("claim_validation") or {}
             pending.append({"accession": acc, "name": str(data.get("protein_name") or "")[:120],
                             "organism": str(data.get("organism") or "")[:120],
                             "identity_status": data.get("identity_resolution_status"),
                             "source_paper": (data.get("literature_lead") or {}).get("paper"),
-                            "missing_claims": (data.get("claim_validation") or {}).get("blocking_claims")})
+                            "missing_claims": validation.get("blocking_claims"),
+                            # A candidate blocked only by absent annotation is a lead to
+                            # resolve (read its paper, or expand from a homolog), not a
+                            # rejected one; the agent decides whether to pursue it.
+                            "blocked_only_by_absence": validation.get("blocked_only_by_absence"),
+                            "resolvable_missing_annotation": validation.get("blocked_by_absence")})
         if len(pending) >= 12:
             break
     families = _read_state(run_file(run_dir, 'mechanism_families.json'), [])
@@ -568,7 +574,8 @@ def build_model_context(messages: list[dict], run_dir: Path) -> list[dict]:
             'ready_records':(state.get('adaptive_reasoning') or {}).get('ready_records'),
             'candidate_examples':[{key:row.get(key) for key in ('accession','name','family')}
                                   for row in state.get('promising_evaluated_candidates',[])[:2]],
-            'pending_examples':[{key:row.get(key) for key in ('accession','identity_status','missing_claims')}
+            'pending_examples':[{key:row.get(key) for key in
+                                 ('accession','identity_status','missing_claims','blocked_only_by_absence')}
                                 for row in state.get('evidence_pending_examples',[])[:2]],
             'mechanism_hypotheses':[str(row.get('name') or '')[:70] for row in state.get('mechanism_hypotheses',[])[:6]],
             'reasoning_memory':reasoning,'full_state_artifact':str(snapshot.relative_to(run_dir)),
