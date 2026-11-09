@@ -87,19 +87,44 @@ def prepare_msas_and_inputs(root,cfg,records):
     if not node['free_cpus'] or node['load']+1>node['online']:
         raise RuntimeError('No verified CPU capacity for batched MSA search')
     msa_cpu=cfg['msa_cpu'] if cfg['msa_cpu'] in node['free_cpus'] else node['free_cpus'][-1]
+    # Resilient batched MSA: small chunks + retries so a congested/flaky ColabFold
+    # server degrades to a resume rather than a total loss. Completed chunks cache by
+    # sequence hash; each retry (and batch_msa's own per-chunk retries) only fetches
+    # what is still uncached. Correctness gate is cache COMPLETENESS, not index.tsv
+    # existence (batch_msa writes index.tsv even on a partial run).
     command=['taskset','-c',str(msa_cpu),cfg['boltz_python'],'-u',str(root/'producer/batch_msa.py'),
-             '--fasta',str(root/'sequences.fasta'),'--out',str(root/'msa'),'--chunk','101','--also-a3m']
-    if not (root/'msa/index.tsv').exists():
+             '--fasta',str(root/'sequences.fasta'),'--out',str(root/'msa'),
+             '--chunk',str(cfg.get('msa_chunk',25)),'--also-a3m']
+    def _unique_hashes():
+        import hashlib as _h
+        seqs=set();cur=None;buf=''
+        for ln in (root/'sequences.fasta').read_text().splitlines():
+            if ln.startswith('>'):
+                if cur is not None:seqs.add(_h.sha1(buf.encode()).hexdigest()[:16])
+                cur=ln;buf=''
+            elif cur is not None:buf+=ln.strip()
+        if cur is not None:seqs.add(_h.sha1(buf.encode()).hexdigest()[:16])
+        return seqs
+    want=_unique_hashes()
+    cached=lambda:sum(1 for h in want if (root/'msa'/(h+'.csv')).exists())
+    attempts=int(cfg.get('msa_attempts',8))
+    for attempt in range(1,attempts+1):
+        if cached()>=len(want):break
         with (root/f'msa_{time.time_ns()}.log').open('x') as log:
             process=subprocess.Popen(command,env=env,stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
-            save(root/'msa_owner.json',dict(pid=process.pid,argv=command,started=time.time()))
+            save(root/'msa_owner.json',dict(pid=process.pid,argv=command,started=time.time(),attempt=attempt))
             try:rc=process.wait(timeout=cfg['msa_timeout_seconds'])
             except BaseException:
                 os.killpg(process.pid,signal.SIGTERM)
                 try:process.wait(timeout=10)
                 except subprocess.TimeoutExpired:os.killpg(process.pid,signal.SIGKILL);process.wait()
                 raise
-        if rc:raise RuntimeError('Batched MSA search failed; no single-sequence fallback')
+        status(root,'searching_fresh_batched_MSAs',designs=len(records),msa_attempt=attempt,
+               msa_cached=cached(),msa_expected=len(want),last_rc=rc)
+        if rc==0 and cached()>=len(want):break
+        if attempt<attempts:time.sleep(min(30*attempt,180))
+    if cached()<len(want):
+        raise RuntimeError(f'Batched MSA search incomplete after {attempts} attempts: {cached()}/{len(want)} unique sequences cached')
     index={r['id']:r for r in csv.DictReader((root/'msa/index.tsv').open(),delimiter='\t')}
     out=[]
     for record in records:
