@@ -1,0 +1,138 @@
+{
+  "model": "claude-code:claude-sonnet-5-5",
+  "calls": [
+    {
+      "iteration": "replay_0_baseline",
+      "prompt_tokens": 50954,
+      "completion_tokens": 13028,
+      "total_tokens": 63982,
+      "input_tokens": 2,
+      "cache_creation_tokens": 50952,
+      "cache_read_tokens": 0,
+      "request_id": "e365da6be2d841c28f1372fc06afd125",
+      "backend": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "request_profile_id": "a37c843b0c7f4238a7b7da272d8588a0"
+    },
+    {
+      "iteration": "replay_0_baseline_replicate",
+      "prompt_tokens": 50954,
+      "completion_tokens": 13667,
+      "total_tokens": 64621,
+      "input_tokens": 2,
+      "cache_creation_tokens": 312,
+      "cache_read_tokens": 50640,
+      "request_id": "908c5e8dda1444f595f0772e1fa908c4",
+      "backend": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "request_profile_id": "4e721dffb5e84d8f9365b52c171028bf"
+    },
+    {
+      "iteration": "replay_0_factored",
+      "prompt_tokens": 44350,
+      "completion_tokens": 11094,
+      "total_tokens": 55444,
+      "input_tokens": 2,
+      "cache_creation_tokens": 36667,
+      "cache_read_tokens": 7681,
+      "request_id": "15842b53fecd43feaca8a338420645f4",
+      "backend": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "request_profile_id": "7ea8cb6e6e1142059eb899ca73ff2af5"
+    },
+    {
+      "iteration": "replay_1_baseline_replicate",
+      "prompt_tokens": 47054,
+      "completion_tokens": 11911,
+      "total_tokens": 58965,
+      "input_tokens": 2,
+      "cache_creation_tokens": 39371,
+      "cache_read_tokens": 7681,
+      "request_id": "00913addcb9f4932a357689213691f53",
+      "backend": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "request_profile_id": "f2d17f9ca01c4b2e823c2762960b6f6b"
+    },
+    {
+      "iteration": "replay_1_factored",
+      "prompt_tokens": 37987,
+      "completion_tokens": 11968,
+      "total_tokens": 49955,
+      "input_tokens": 2,
+      "cache_creation_tokens": 30304,
+      "cache_read_tokens": 7681,
+      "request_id": "4a1c23a19f8d483089119ad9a8d97adb",
+      "backend": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "request_profile_id": "9e66ea3a4e43486fb075e1c812c1e17b"
+    },
+    {
+      "iteration": "replay_1_baseline",
+      "prompt_tokens": 47054,
+      "completion_tokens": 12806,
+      "total_tokens": 59860,
+      "input_tokens": 2,
+      "cache_creation_tokens": 313,
+      "cache_read_tokens": 46739,
+      "request_id": "3615bd102f144d6fb0a223ed85e9bdd7",
+      "backend": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "request_profile_id": "37939f3610444be099a5516e5f53e750"
+    },
+    {
+      "iteration": "replay_2_factored",
+      "prompt_tokens": 35808,
+      "completion_tokens": 11559,
+      "total_tokens": 47367,
+      "input_tokens": 2,
+      "cache_creation_tokens": 28125,
+      "cache_read_tokens": 7681,
+      "request_id": "0e860b3f68d6463ea945ca7cf89de937",
+      "backend": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "request_profile_id": "1f1df89b98bf487f98676748563c34de"
+    },
+    {
+      "iteration": "replay_2_baseline",
+      "prompt_tokens": 41154,
+      "completion_tokens": 11490,
+      "total_tokens": 52644,
+      "input_tokens": 2,
+      "cache_creation_tokens": 33471,
+      "cache_read_tokens": 7681,
+      "request_id": "d53828fc03d140e2ad7d5d94e4afe1da",
+      "backend": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "request_profile_id": "caa15d5e8b1e404d8488001df24bdc7d"
+    },
+    {
+      "iteration": "replay_2_baseline_replicate",
+      "prompt_tokens": 41152,
+      "completion_tokens": 14159,
+      "total_tokens": 55311,
+      "input_tokens": 2,
+      "cache_creation_tokens": 312,
+      "cache_read_tokens": 40838,
+      "request_id": "e6c8538346d640409c2b20b5030310bf",
+      "backend": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "request_profile_id": "951c95a0d14c444791d21200ad3b8673"
+    }
+  ],
+  "total_prompt_tokens": 396467,
+  "total_completion_tokens": 111682,
+  "total_tokens": 508149,
+  "unmetered_calls": 0,
+  "legacy_accounting": false,
+  "accounting_complete": true,
+  "total_input_tokens": 18,
+  "total_cache_creation_tokens": 219827,
+  "total_cache_read_tokens": 176622,
+  "cache_read_fraction_of_prompt": 0.4455,
+  "request_counts": {
+    "claude-code": 9
+  },
+  "model_request_counts": {
+    "claude-code:claude-sonnet-5-5": 9
+  }
+}

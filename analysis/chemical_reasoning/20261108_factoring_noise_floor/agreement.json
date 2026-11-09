@@ -1,0 +1,33 @@
+{
+ "model": "claude-code:claude-sonnet-5-5",
+ "source": "analysis/chemical_reasoning/20261108_factoring_noise_floor/comparison.json",
+ "candidates_compared": 24,
+ "counts": {
+  "decision": {
+   "replicate_differs": 1,
+   "factored_differs": 3
+  },
+  "evidence_level": {
+   "replicate_differs": 1,
+   "factored_differs": 2
+  },
+  "role_bases": {
+   "replicate_differs": 9,
+   "factored_differs": 2
+  },
+  "constraint_bases": {
+   "replicate_differs": 17,
+   "factored_differs": 20
+  }
+ },
+ "verdicts": {
+  "decision": "exceeds_noise",
+  "evidence_level": "exceeds_noise",
+  "role_bases": "within_noise",
+  "constraint_bases": "exceeds_noise"
+ },
+ "unmatched_assessments": [],
+ "contract_errors": {},
+ "passes_preregistered_rule": false,
+ "scope": "Behavioral agreement on saved evidence packets. Not a discovery-benefit measurement and not powered to exclude a small effect."
+}

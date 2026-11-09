@@ -196,3 +196,42 @@ quote leaves the reported answer unresolved. Quote presence alone does not verif
 scientific entailment. Tests exercise selection, deferral, reconsideration and
 saved fact-check outcomes; general reading quality and token savings still require
 prospective measurement. Existing campaign processes keep their loaded code.
+
+## Representation factoring fails its noise-floor comparison
+
+The bounded comparison above could not interpret its own result. A three-arm
+replay repeated it with a replicate arm receiving byte-identical baseline input,
+scored by a rule committed before any arm ran
+(`eval/factoring_agreement.py`, commit 21ff552c). Inputs were three eight-candidate
+packets saved by run 20261106_165013; artifacts are under
+`analysis/chemical_reasoning/20261108_factoring_noise_floor` (508,149 tokens).
+
+Factoring is lossless on these packets: all eighteen saved batches round-trip
+byte-identically, and the shared form is 19.3% smaller (8,354 to 6,739 chars per
+candidate). The reviewer nevertheless decided differently.
+
+| Field | Replicate differs | Factored differs | Verdict |
+|---|---|---|---|
+| decision | 1/24 | 3/24 | exceeds noise |
+| evidence_level | 1/24 | 2/24 | exceeds noise |
+| role_bases | 9/24 | 2/24 | within noise |
+| constraint_bases | 17/24 | 20/24 | exceeds noise |
+
+Factoring therefore stays disabled, and this is a result rather than a deferral.
+Lossless representation equality does not imply decision equality; a compression
+argued only from preserved content is not validated.
+
+Read the margins honestly. At eight candidates the primary fields had a zero
+noise floor, which overstated the separation; across twenty-four the decision
+margin is three against one. The rule fails and the direction is unfavorable in
+three of four fields, but these counts cannot size the effect, and no
+significance test is reported. All four decision changes were adjacent moves at
+the prioritize/investigate/defer boundary, in both directions, including one in
+the replicate arm; one promoted a candidate the completed campaign had ranked.
+Both representations produced complete, schema-valid assessments.
+
+Consequence for coverage: the campaign assessed 106 of 807 discovered candidates
+at roughly 8,000 tokens each, so per-candidate packet size bounds coverage. That
+bound cannot be relaxed by this lossless restructuring. A cheaper packet must
+drop audit scaffolding rather than reshape evidence, and must clear this same
+three-arm comparison before use.
