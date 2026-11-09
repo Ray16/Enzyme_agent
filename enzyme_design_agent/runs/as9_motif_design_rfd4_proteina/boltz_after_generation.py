@@ -108,8 +108,10 @@ def prepare_msas_and_inputs(root,cfg,records):
     want=_unique_hashes()
     cached=lambda:sum(1 for h in want if (root/'msa'/(h+'.csv')).exists())
     attempts=int(cfg.get('msa_attempts',8))
+    # Always invoke batch_msa at least once even when every MSA is already cached:
+    # it is instant with nothing to fetch but (re)writes a COMPLETE index.tsv for all
+    # ids. Skipping it here would leave a stale/partial index.tsv and KeyError later.
     for attempt in range(1,attempts+1):
-        if cached()>=len(want):break
         with (root/f'msa_{time.time_ns()}.log').open('x') as log:
             process=subprocess.Popen(command,env=env,stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
             save(root/'msa_owner.json',dict(pid=process.pid,argv=command,started=time.time(),attempt=attempt))
