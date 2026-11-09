@@ -412,6 +412,17 @@ def validate_uniprot_claims(
     topo_claim = by_type.get("substrate_topology")
     if topo_claim is not None and topo_claim["verdict"] == "contradicted":
         blocking.append(topo_claim)
+    # Record WHY each blocking claim blocks. A required claim can fail either
+    # because the record contradicts the target (a real mismatch) or because the
+    # record is simply unannotated (insufficient_evidence) -- the uncharacterised
+    # and metagenomic enzymes whose function lives in papers, not UniProt. These
+    # need different handling: a contradiction is a genuine negative; an absence is
+    # a lead to resolve. promotion_eligible is unchanged here (both still block),
+    # but the distinction is now visible so absence can be routed, not buried.
+    blocked_by_absence = sorted(c["claim_type"] for c in blocking
+                                if c.get("verdict") == "insufficient_evidence")
+    blocked_by_contradiction = sorted(c["claim_type"] for c in blocking
+                                      if c.get("verdict") == "contradicted")
     return {
         "schema_version": SCHEMA_VERSION,
         "subject": subject,
@@ -421,4 +432,9 @@ def validate_uniprot_claims(
         "required_claims": sorted(required),
         "promotion_eligible": not blocking,
         "blocking_claims": [c["claim_type"] for c in blocking],
+        "blocked_by_absence": blocked_by_absence,
+        "blocked_by_contradiction": blocked_by_contradiction,
+        # True when nothing is contradicted and the only barrier is missing
+        # annotation: a candidate to resolve (literature, homology) rather than reject.
+        "blocked_only_by_absence": bool(blocking) and not blocked_by_contradiction,
     }

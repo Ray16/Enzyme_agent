@@ -80,6 +80,11 @@ class TestAtomicClaimVerdicts(unittest.TestCase):
                          "insufficient_evidence")
         self.assertEqual(_claim(result, "reaction_direction")["verdict"],
                          "insufficient_evidence")
+        # An unannotated record is blocked by absence, not contradiction: a lead
+        # to resolve, not a rejected candidate. The distinction must be visible.
+        self.assertTrue(result["blocked_only_by_absence"])
+        self.assertIn("native_reaction", result["blocked_by_absence"])
+        self.assertEqual(result["blocked_by_contradiction"], [])
 
     def test_wrong_fold_is_contradicted(self):
         result = validate_uniprot_claims(
@@ -105,6 +110,9 @@ class TestAtomicClaimVerdicts(unittest.TestCase):
         )
         self.assertEqual(_claim(result, "reaction_direction")["verdict"], "contradicted")
         self.assertFalse(result["promotion_eligible"])
+        # A real mismatch must not be mistaken for a mere absence of annotation.
+        self.assertFalse(result["blocked_only_by_absence"])
+        self.assertIn("reaction_direction", result["blocked_by_contradiction"])
 
     def test_verbose_target_bond_phrase_matches_amide_native_reaction(self):
         # Regression: the target bond type is stored as a human-readable phrase
