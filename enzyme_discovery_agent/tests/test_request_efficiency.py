@@ -219,3 +219,50 @@ def test_behavior_comparison_does_not_treat_matching_failures_as_success(tmp_pat
     assert not result['both_arms_passed']
     assert sent == ['{ "fact": 1 }', '{"fact":1}']
     assert request_efficiency.compact_json_messages is original
+
+
+def validation_record(accession, reviewed):
+    """A record shaped like a real review packet: uniform validated claims.
+
+    Sharing is only worth measuring on the shape production actually sends, where
+    every candidate carries the same claim types with candidate-specific values.
+    """
+    scope = ('Evidence attached to native-reaction annotations. This does not establish '
+             'target activity; inspect the cited study and exact protein identity.')
+    claims = []
+    for index, (claim_type, locator) in enumerate((
+            ('accession_identity', 'primaryAccession'),
+            ('record_active', 'entryType/inactiveReason'),
+            ('reviewed_status', 'entryType'),
+            ('family_membership', 'uniProtKBCrossReferences[database=InterPro]'),
+            ('native_reaction', 'comments[SYNTHETIC ACTIVITY].reaction.name'),
+            ('reaction_direction', 'proteinDescription.*.ecNumbers'),
+            ('bond_type', 'comments[SYNTHETIC ACTIVITY].reaction'),
+            ('substrate_topology', 'comments[SYNTHETIC ACTIVITY].reaction.participants'))):
+        claims.append({'claim_type': claim_type, 'subject': accession,
+                       'asserted_value': f'{claim_type} assertion {index}',
+                       'verdict': 'supported' if reviewed else 'insufficient_evidence',
+                       'evidence': {'source': 'SyntheticDB', 'locator': locator,
+                                    'observed_value': f'{accession} observed {index}',
+                                    'annotation_provenance': {'accession': accession,
+                                                              'record_status': 'synthetic',
+                                                              'scope': scope}},
+                       'reason': 'synthetic deterministic validation outcome'})
+    return {'accession': accession, 'source_id': 'R' + accession[-1],
+            'record': {'accession': accession, 'claim_validation': {'schema_version': '1.0',
+                       'subject': accession, 'source': 'SyntheticDB', 'claims': claims},
+                       'native_substrates': [{'name': 'synthetic substrate', 'smiles': 'CCO'}]}}
+
+
+def test_evidence_factoring_is_byte_identical_after_expansion_and_actually_shrinks():
+    candidates = [validation_record('SYNTH%d' % index, index % 2 == 0) for index in range(1, 9)]
+    before = copy.deepcopy(candidates)
+    factored = factor_evidence(candidates)
+    # Losslessness is the precondition for ever enabling this in production: the
+    # reviewer must receive the same evidence, not a summary of it.
+    assert serialized(expand_evidence(factored)) == serialized(candidates)
+    assert candidates == before
+    baseline = len(serialized({'candidates': candidates}))
+    assert len(serialized(factored)) < baseline * 0.95
+    # A molecular string must never be replaced by a pointer the reader has to resolve.
+    assert serialized(factored).count('"CCO"') == len(candidates)
