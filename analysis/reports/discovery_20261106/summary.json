@@ -1,0 +1,49 @@
+{
+  "run_id": "20261106_000850_Find_enzymes_that_ligate_glutarate_and_cadaverine_Production_objective_deliver_a",
+  "discovery_wall_seconds": 6397.72,
+  "total_tokens": 3009366,
+  "registered_lead_records": 989,
+  "ranked_candidate_accessions": 59,
+  "registry_family_ids": 30,
+  "ranked_family_labels": 11,
+  "registry_latest_status_counts": {
+    "evidence_pending": 58,
+    "evaluated": 168,
+    "screened": 7,
+    "discovered": 734,
+    "rejected": 22
+  },
+  "exported_tiers": {
+    "prioritized hypothesis": 2,
+    "candidate to investigate": 48,
+    "deprioritized analogue": 9
+  },
+  "ranked_target_evidence": {
+    "mechanistic_transfer": 59
+  },
+  "ranked_mechanism_labels": {
+    "NRPS-independent siderophore (NIS) synthetase fold: ATP-dependent carboxylate-amine/alcohol ligase": 23,
+    "Glutamine synthetase-fold \u03b3-glutamyl-polyamine ligase (GlnA-like)": 28,
+    "ATP-grasp carboxylate\u2013amine ligase (acylphosphate mechanism)": 6,
+    "CoA-thioester coupled route: acyl-CoA ligase/CoA-transferase plus BAHD or GNAT-type N-acyltransferase": 1
+  },
+  "checks": {
+    "calls_match_events": true,
+    "request_ids_match": true,
+    "token_sum_matches": true,
+    "token_components_match": true,
+    "prompt_components_match": true,
+    "coverage_matches_registry": true,
+    "ranked_accessions_unique": true,
+    "ranked_families_partition": true,
+    "source_files_unchanged": true
+  },
+  "caveats": [
+    "Accounting covers the original discovery phase only. Later structural modeling, GPU time, and visualization generation are excluded; their cost cannot be inferred from this token ledger.",
+    "Token totals count prompt plus completion tokens, including repeated cache reads. They are not unique text tokens or monetary cost. Cache reads must not be added to the prompt total a second time.",
+    "A registry record is a lead, not necessarily a unique sequence. The manifest evaluation counter, latest registry statuses, and pending-checkpoint list have different scopes and do not form a single funnel.",
+    "Family coverage uses recorded InterPro IDs and family labels, which can describe domains, families, or superfamilies. The registry ID count does not establish an equal number of independent mechanisms or experimental coverage.",
+    "Recorded target-activity evidence counts: {'mechanistic_transfer': 59}. Native characterization and target activity are distinct. Recorded broad mechanism assignments are reproduced without reclassification and may be coarse.",
+    "Deprioritized analogue entries are retained in the full table. Exported tier and target-assessment decision are separate fields; the original values are preserved in candidates.csv."
+  ]
+}

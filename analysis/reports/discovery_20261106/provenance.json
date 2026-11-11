@@ -1,0 +1,18 @@
+{
+  "run_path": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261106_000850_Find_enzymes_that_ligate_glutarate_and_cadaverine_Production_objective_deliver_a",
+  "source_sha256": {
+    "manifest.json": "da96910731b324eee6e6c15e533c9d7314be023ebeebe89260808aaa9cdcb403",
+    "ranked_candidates.csv": "98b803a4a1764da8ba615c226fe416e7dfe629c0c92e0af7d85945a04120ceb0",
+    "candidate_coverage.csv": "3a40ba308e35d6bbd60ed00c3de40ac53c4ae2df2d387b4efe882dd91c23cf88",
+    "agent_state/token_usage.json": "cb0bcadddd520f8c1062ed524b039b3b1a44629ffd518b17ebb2ede4bac6a983",
+    "agent_state/candidate_registry.json": "107b8f7591a3aeb87a12da9846e24727f8a94956d1cbde6fbb38eba71a7367c9",
+    "agent_state/budget_checkpoint.json": "586815e1bef687197fe9cc65cf58794154ee647691b415ae0c8f0186c5dae763",
+    "agent_state/mechanism_families.json": "b9aae5734c0ab5c48c1ac7e1aafd8fd67c6d5ff4241a6dec0e177e1998304939",
+    "agent_state/family_landscape.json": "4c23b2bd8518aed21036833d17db9bd98daacb9e81b977093de3dbaa36f92538",
+    "logs/events.jsonl": "d2376782fc0603b9bc083bb2aaaf3ea7d628c0fdbfb47c4236776af1a1f9bc7a"
+  },
+  "generator": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/analysis/discovery_run_visualizations.py",
+  "generator_sha256": "70f997b8a280def30748eecc45abc47389e0cbcf847e788e8f841be7db766546",
+  "matplotlib_version": "3.10.8",
+  "scope": "Retrospective discovery-phase accounting; no new discovery or modeling"
+}

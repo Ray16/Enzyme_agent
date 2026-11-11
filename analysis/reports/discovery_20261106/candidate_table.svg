@@ -1,0 +1,933 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1088.39952pt" height="620.39952pt" viewBox="0 0 1088.39952 620.39952" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-11T14:58:21.647504</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 620.39952
+L 1088.39952 620.39952
+L 1088.39952 0
+L 0 0
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="table_1">
+    <g id="patch_2">
+     <path d="M 7.2 131.454883
+L 60.899976 131.454883
+L 60.899976 100.465462
+L 7.2 100.465462
+z
+" style="fill: #e8f2fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_1">
+     <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="118.719547" transform="rotate(-0 12.569998 118.719547)">Rank</text>
+    </g>
+    <g id="patch_3">
+     <path d="M 60.899976 131.454883
+L 522.71977 131.454883
+L 522.71977 100.465462
+L 60.899976 100.465462
+z
+" style="fill: #e8f2fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_2">
+     <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="118.680485" transform="rotate(-0 107.081955 118.680485)">Enzyme / protein</text>
+    </g>
+    <g id="patch_4">
+     <path d="M 522.71977 131.454883
+L 683.819698 131.454883
+L 683.819698 100.465462
+L 522.71977 100.465462
+z
+" style="fill: #e8f2fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_3">
+     <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="118.719547" transform="rotate(-0 538.829762 118.719547)">Accession</text>
+    </g>
+    <g id="patch_5">
+     <path d="M 683.819698 131.454883
+L 823.439635 131.454883
+L 823.439635 100.465462
+L 683.819698 100.465462
+z
+" style="fill: #e8f2fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_4">
+     <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="118.680485" transform="rotate(-0 697.781691 118.680485)">Family ID</text>
+    </g>
+    <g id="patch_6">
+     <path d="M 823.439635 131.454883
+L 1081.19952 131.454883
+L 1081.19952 100.465462
+L 823.439635 100.465462
+z
+" style="fill: #e8f2fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_5">
+     <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="849.215624" y="118.719547" transform="rotate(-0 849.215624 118.719547)">Exported tier</text>
+    </g>
+    <g id="patch_7">
+     <path d="M 7.2 162.444304
+L 60.899976 162.444304
+L 60.899976 131.454883
+L 7.2 131.454883
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_6">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="149.708968" transform="rotate(-0 12.569998 149.708968)">1</text>
+    </g>
+    <g id="patch_8">
+     <path d="M 60.899976 162.444304
+L 522.71977 162.444304
+L 522.71977 131.454883
+L 60.899976 131.454883
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_7">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="149.708968" transform="rotate(-0 107.081955 149.708968)">Putrebactin synthase</text>
+    </g>
+    <g id="patch_9">
+     <path d="M 522.71977 162.444304
+L 683.819698 162.444304
+L 683.819698 131.454883
+L 522.71977 131.454883
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_8">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="149.708968" transform="rotate(-0 538.829762 149.708968)">P0DXD6</text>
+    </g>
+    <g id="patch_10">
+     <path d="M 683.819698 162.444304
+L 823.439635 162.444304
+L 823.439635 131.454883
+L 683.819698 131.454883
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_9">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="149.708968" transform="rotate(-0 697.781691 149.708968)">IPR037455</text>
+    </g>
+    <g id="patch_11">
+     <path d="M 823.439635 162.444304
+L 1081.19952 162.444304
+L 1081.19952 131.454883
+L 823.439635 131.454883
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_10">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="849.215624" y="149.708968" transform="rotate(-0 849.215624 149.708968)">prioritized hypothesis</text>
+    </g>
+    <g id="patch_12">
+     <path d="M 7.2 193.433725
+L 60.899976 193.433725
+L 60.899976 162.444304
+L 7.2 162.444304
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_11">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="180.69839" transform="rotate(-0 12.569998 180.69839)">2</text>
+    </g>
+    <g id="patch_13">
+     <path d="M 60.899976 193.433725
+L 522.71977 193.433725
+L 522.71977 162.444304
+L 60.899976 162.444304
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_12">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="180.69839" transform="rotate(-0 107.081955 180.69839)">Putrebactin synthase</text>
+    </g>
+    <g id="patch_14">
+     <path d="M 522.71977 193.433725
+L 683.819698 193.433725
+L 683.819698 162.444304
+L 522.71977 162.444304
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_13">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="180.69839" transform="rotate(-0 538.829762 180.69839)">Q0HWI9</text>
+    </g>
+    <g id="patch_15">
+     <path d="M 683.819698 193.433725
+L 823.439635 193.433725
+L 823.439635 162.444304
+L 683.819698 162.444304
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_14">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="180.69839" transform="rotate(-0 697.781691 180.69839)">IPR037455</text>
+    </g>
+    <g id="patch_16">
+     <path d="M 823.439635 193.433725
+L 1081.19952 193.433725
+L 1081.19952 162.444304
+L 823.439635 162.444304
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_15">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="849.215624" y="180.69839" transform="rotate(-0 849.215624 180.69839)">prioritized hypothesis</text>
+    </g>
+    <g id="patch_17">
+     <path d="M 7.2 224.423146
+L 60.899976 224.423146
+L 60.899976 193.433725
+L 7.2 193.433725
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_16">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="211.687811" transform="rotate(-0 12.569998 211.687811)">3</text>
+    </g>
+    <g id="patch_18">
+     <path d="M 60.899976 224.423146
+L 522.71977 224.423146
+L 522.71977 193.433725
+L 60.899976 193.433725
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_17">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="211.687811" transform="rotate(-0 107.081955 211.687811)">Gamma-glutamylputrescine synthetase PuuA</text>
+    </g>
+    <g id="patch_19">
+     <path d="M 522.71977 224.423146
+L 683.819698 224.423146
+L 683.819698 193.433725
+L 522.71977 193.433725
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_18">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="211.687811" transform="rotate(-0 538.829762 211.687811)">A0A1C9WBW9</text>
+    </g>
+    <g id="patch_20">
+     <path d="M 683.819698 224.423146
+L 823.439635 224.423146
+L 823.439635 193.433725
+L 683.819698 193.433725
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_19">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="211.687811" transform="rotate(-0 697.781691 211.687811)">IPR008146</text>
+    </g>
+    <g id="patch_21">
+     <path d="M 823.439635 224.423146
+L 1081.19952 224.423146
+L 1081.19952 193.433725
+L 823.439635 193.433725
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_20">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 206.088904)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 217.286717)">investigate</text>
+    </g>
+    <g id="patch_22">
+     <path d="M 7.2 255.412567
+L 60.899976 255.412567
+L 60.899976 224.423146
+L 7.2 224.423146
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_21">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="242.677232" transform="rotate(-0 12.569998 242.677232)">4</text>
+    </g>
+    <g id="patch_23">
+     <path d="M 60.899976 255.412567
+L 522.71977 255.412567
+L 522.71977 224.423146
+L 60.899976 224.423146
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_22">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="242.677232" transform="rotate(-0 107.081955 242.677232)">Gamma-glutamylpolyamine synthetase GlnA2</text>
+    </g>
+    <g id="patch_24">
+     <path d="M 522.71977 255.412567
+L 683.819698 255.412567
+L 683.819698 224.423146
+L 522.71977 224.423146
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_23">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="242.677232" transform="rotate(-0 538.829762 242.677232)">Q9RDS6</text>
+    </g>
+    <g id="patch_25">
+     <path d="M 683.819698 255.412567
+L 823.439635 255.412567
+L 823.439635 224.423146
+L 683.819698 224.423146
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_24">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="242.677232" transform="rotate(-0 697.781691 242.677232)">IPR004809</text>
+    </g>
+    <g id="patch_26">
+     <path d="M 823.439635 255.412567
+L 1081.19952 255.412567
+L 1081.19952 224.423146
+L 823.439635 224.423146
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_25">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 237.078325)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 248.276138)">investigate</text>
+    </g>
+    <g id="patch_27">
+     <path d="M 7.2 286.401988
+L 60.899976 286.401988
+L 60.899976 255.412567
+L 7.2 255.412567
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_26">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="273.666653" transform="rotate(-0 12.569998 273.666653)">5</text>
+    </g>
+    <g id="patch_28">
+     <path d="M 60.899976 286.401988
+L 522.71977 286.401988
+L 522.71977 255.412567
+L 60.899976 255.412567
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_27">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="273.666653" transform="rotate(-0 107.081955 273.666653)">Gamma-glutamylputrescine synthetase PuuA</text>
+    </g>
+    <g id="patch_29">
+     <path d="M 522.71977 286.401988
+L 683.819698 286.401988
+L 683.819698 255.412567
+L 522.71977 255.412567
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_28">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="273.666653" transform="rotate(-0 538.829762 273.666653)">P78061</text>
+    </g>
+    <g id="patch_30">
+     <path d="M 683.819698 286.401988
+L 823.439635 286.401988
+L 823.439635 255.412567
+L 683.819698 255.412567
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_29">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="273.666653" transform="rotate(-0 697.781691 273.666653)">IPR008146</text>
+    </g>
+    <g id="patch_31">
+     <path d="M 823.439635 286.401988
+L 1081.19952 286.401988
+L 1081.19952 255.412567
+L 823.439635 255.412567
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_30">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 268.067747)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 279.265559)">investigate</text>
+    </g>
+    <g id="patch_32">
+     <path d="M 7.2 317.391409
+L 60.899976 317.391409
+L 60.899976 286.401988
+L 7.2 286.401988
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_31">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="304.656074" transform="rotate(-0 12.569998 304.656074)">6</text>
+    </g>
+    <g id="patch_33">
+     <path d="M 60.899976 317.391409
+L 522.71977 317.391409
+L 522.71977 286.401988
+L 60.899976 286.401988
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_32">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="304.656074" transform="rotate(-0 107.081955 304.656074)">Desferrioxamine E synthetase DesD</text>
+    </g>
+    <g id="patch_34">
+     <path d="M 522.71977 317.391409
+L 683.819698 317.391409
+L 683.819698 286.401988
+L 522.71977 286.401988
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_33">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="304.656074" transform="rotate(-0 538.829762 304.656074)">A0ABN1NGB5</text>
+    </g>
+    <g id="patch_35">
+     <path d="M 683.819698 317.391409
+L 823.439635 317.391409
+L 823.439635 286.401988
+L 683.819698 286.401988
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_34">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="304.656074" transform="rotate(-0 697.781691 304.656074)">IPR037455</text>
+    </g>
+    <g id="patch_36">
+     <path d="M 823.439635 317.391409
+L 1081.19952 317.391409
+L 1081.19952 286.401988
+L 823.439635 286.401988
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_35">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 299.057168)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 310.25498)">investigate</text>
+    </g>
+    <g id="patch_37">
+     <path d="M 7.2 348.380831
+L 60.899976 348.380831
+L 60.899976 317.391409
+L 7.2 317.391409
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_36">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="335.645495" transform="rotate(-0 12.569998 335.645495)">7</text>
+    </g>
+    <g id="patch_38">
+     <path d="M 60.899976 348.380831
+L 522.71977 348.380831
+L 522.71977 317.391409
+L 60.899976 317.391409
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_37">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="335.645495" transform="rotate(-0 107.081955 335.645495)">Putative acid--amine ligase YgiC</text>
+    </g>
+    <g id="patch_39">
+     <path d="M 522.71977 348.380831
+L 683.819698 348.380831
+L 683.819698 317.391409
+L 522.71977 317.391409
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_38">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="335.645495" transform="rotate(-0 538.829762 335.645495)">P0ADT5</text>
+    </g>
+    <g id="patch_40">
+     <path d="M 683.819698 348.380831
+L 823.439635 348.380831
+L 823.439635 317.391409
+L 683.819698 317.391409
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_39">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="335.645495" transform="rotate(-0 697.781691 335.645495)">IPR005494</text>
+    </g>
+    <g id="patch_41">
+     <path d="M 823.439635 348.380831
+L 1081.19952 348.380831
+L 1081.19952 317.391409
+L 823.439635 317.391409
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_40">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 330.046589)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 341.244401)">investigate</text>
+    </g>
+    <g id="patch_42">
+     <path d="M 7.2 379.370252
+L 60.899976 379.370252
+L 60.899976 348.380831
+L 7.2 348.380831
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_41">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="366.634916" transform="rotate(-0 12.569998 366.634916)">8</text>
+    </g>
+    <g id="patch_43">
+     <path d="M 60.899976 379.370252
+L 522.71977 379.370252
+L 522.71977 348.380831
+L 60.899976 348.380831
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_42">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="366.634916" transform="rotate(-0 107.081955 366.634916)">Acyl-CoA synthetase</text>
+    </g>
+    <g id="patch_44">
+     <path d="M 522.71977 379.370252
+L 683.819698 379.370252
+L 683.819698 348.380831
+L 522.71977 348.380831
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_43">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="366.634916" transform="rotate(-0 538.829762 366.634916)">Q5CD72</text>
+    </g>
+    <g id="patch_45">
+     <path d="M 683.819698 379.370252
+L 823.439635 379.370252
+L 823.439635 348.380831
+L 683.819698 348.380831
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_44">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="366.634916" transform="rotate(-0 697.781691 366.634916)">IPR051087</text>
+    </g>
+    <g id="patch_46">
+     <path d="M 823.439635 379.370252
+L 1081.19952 379.370252
+L 1081.19952 348.380831
+L 823.439635 348.380831
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_45">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 361.03601)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 372.233822)">investigate</text>
+    </g>
+    <g id="patch_47">
+     <path d="M 7.2 410.359673
+L 60.899976 410.359673
+L 60.899976 379.370252
+L 7.2 379.370252
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_46">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="397.624337" transform="rotate(-0 12.569998 397.624337)">9</text>
+    </g>
+    <g id="patch_48">
+     <path d="M 60.899976 410.359673
+L 522.71977 410.359673
+L 522.71977 379.370252
+L 60.899976 379.370252
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_47">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="397.624337" transform="rotate(-0 107.081955 397.624337)">Desferrioxamine E synthetase DesD</text>
+    </g>
+    <g id="patch_49">
+     <path d="M 522.71977 410.359673
+L 683.819698 410.359673
+L 683.819698 379.370252
+L 522.71977 379.370252
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_48">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="397.624337" transform="rotate(-0 538.829762 397.624337)">A0ABN1RQI0</text>
+    </g>
+    <g id="patch_50">
+     <path d="M 683.819698 410.359673
+L 823.439635 410.359673
+L 823.439635 379.370252
+L 683.819698 379.370252
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_49">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="397.624337" transform="rotate(-0 697.781691 397.624337)">IPR037455</text>
+    </g>
+    <g id="patch_51">
+     <path d="M 823.439635 410.359673
+L 1081.19952 410.359673
+L 1081.19952 379.370252
+L 823.439635 379.370252
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_50">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 392.025431)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 403.223243)">investigate</text>
+    </g>
+    <g id="patch_52">
+     <path d="M 7.2 441.349094
+L 60.899976 441.349094
+L 60.899976 410.359673
+L 7.2 410.359673
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_51">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="428.613758" transform="rotate(-0 12.569998 428.613758)">10</text>
+    </g>
+    <g id="patch_53">
+     <path d="M 60.899976 441.349094
+L 522.71977 441.349094
+L 522.71977 410.359673
+L 60.899976 410.359673
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_52">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="428.613758" transform="rotate(-0 107.081955 428.613758)">Putative acid--amine ligase YjfC</text>
+    </g>
+    <g id="patch_54">
+     <path d="M 522.71977 441.349094
+L 683.819698 441.349094
+L 683.819698 410.359673
+L 522.71977 410.359673
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_53">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="428.613758" transform="rotate(-0 538.829762 428.613758)">P33222</text>
+    </g>
+    <g id="patch_55">
+     <path d="M 683.819698 441.349094
+L 823.439635 441.349094
+L 823.439635 410.359673
+L 683.819698 410.359673
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_54">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="428.613758" transform="rotate(-0 697.781691 428.613758)">IPR005494</text>
+    </g>
+    <g id="patch_56">
+     <path d="M 823.439635 441.349094
+L 1081.19952 441.349094
+L 1081.19952 410.359673
+L 823.439635 410.359673
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_55">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 423.014852)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 434.212665)">investigate</text>
+    </g>
+    <g id="patch_57">
+     <path d="M 7.2 472.338515
+L 60.899976 472.338515
+L 60.899976 441.349094
+L 7.2 441.349094
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_56">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="459.603179" transform="rotate(-0 12.569998 459.603179)">11</text>
+    </g>
+    <g id="patch_58">
+     <path d="M 60.899976 472.338515
+L 522.71977 472.338515
+L 522.71977 441.349094
+L 60.899976 441.349094
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_57">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="459.603179" transform="rotate(-0 107.081955 459.603179)">Desferrioxamine E synthetase DesD</text>
+    </g>
+    <g id="patch_59">
+     <path d="M 522.71977 472.338515
+L 683.819698 472.338515
+L 683.819698 441.349094
+L 522.71977 441.349094
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_58">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="459.603179" transform="rotate(-0 538.829762 459.603179)">A0ABN1TCT3</text>
+    </g>
+    <g id="patch_60">
+     <path d="M 683.819698 472.338515
+L 823.439635 472.338515
+L 823.439635 441.349094
+L 683.819698 441.349094
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_59">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="459.603179" transform="rotate(-0 697.781691 459.603179)">IPR037455</text>
+    </g>
+    <g id="patch_61">
+     <path d="M 823.439635 472.338515
+L 1081.19952 472.338515
+L 1081.19952 441.349094
+L 823.439635 441.349094
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_60">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 454.004273)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 465.202086)">investigate</text>
+    </g>
+    <g id="patch_62">
+     <path d="M 7.2 503.327936
+L 60.899976 503.327936
+L 60.899976 472.338515
+L 7.2 472.338515
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_61">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="490.592601" transform="rotate(-0 12.569998 490.592601)">12</text>
+    </g>
+    <g id="patch_63">
+     <path d="M 60.899976 503.327936
+L 522.71977 503.327936
+L 522.71977 472.338515
+L 60.899976 472.338515
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_62">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="490.592601" transform="rotate(-0 107.081955 490.592601)">Desferrioxamine E synthetase DesD</text>
+    </g>
+    <g id="patch_64">
+     <path d="M 522.71977 503.327936
+L 683.819698 503.327936
+L 683.819698 472.338515
+L 522.71977 472.338515
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_63">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="490.592601" transform="rotate(-0 538.829762 490.592601)">A0ABN3J2R9</text>
+    </g>
+    <g id="patch_65">
+     <path d="M 683.819698 503.327936
+L 823.439635 503.327936
+L 823.439635 472.338515
+L 683.819698 472.338515
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_64">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="490.592601" transform="rotate(-0 697.781691 490.592601)">IPR037455</text>
+    </g>
+    <g id="patch_66">
+     <path d="M 823.439635 503.327936
+L 1081.19952 503.327936
+L 1081.19952 472.338515
+L 823.439635 472.338515
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_65">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 484.993694)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 496.191507)">investigate</text>
+    </g>
+    <g id="patch_67">
+     <path d="M 7.2 534.317357
+L 60.899976 534.317357
+L 60.899976 503.327936
+L 7.2 503.327936
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_66">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="521.582022" transform="rotate(-0 12.569998 521.582022)">13</text>
+    </g>
+    <g id="patch_68">
+     <path d="M 60.899976 534.317357
+L 522.71977 534.317357
+L 522.71977 503.327936
+L 60.899976 503.327936
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_67">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="521.582022" transform="rotate(-0 107.081955 521.582022)">Desferrioxamine E synthetase DesD</text>
+    </g>
+    <g id="patch_69">
+     <path d="M 522.71977 534.317357
+L 683.819698 534.317357
+L 683.819698 503.327936
+L 522.71977 503.327936
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_68">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="521.582022" transform="rotate(-0 538.829762 521.582022)">A0ABP3H6S0</text>
+    </g>
+    <g id="patch_70">
+     <path d="M 683.819698 534.317357
+L 823.439635 534.317357
+L 823.439635 503.327936
+L 683.819698 503.327936
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_69">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="521.582022" transform="rotate(-0 697.781691 521.582022)">IPR037455</text>
+    </g>
+    <g id="patch_71">
+     <path d="M 823.439635 534.317357
+L 1081.19952 534.317357
+L 1081.19952 503.327936
+L 823.439635 503.327936
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_70">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 515.983115)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 527.180928)">investigate</text>
+    </g>
+    <g id="patch_72">
+     <path d="M 7.2 565.306778
+L 60.899976 565.306778
+L 60.899976 534.317357
+L 7.2 534.317357
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_71">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="552.571443" transform="rotate(-0 12.569998 552.571443)">14</text>
+    </g>
+    <g id="patch_73">
+     <path d="M 60.899976 565.306778
+L 522.71977 565.306778
+L 522.71977 534.317357
+L 60.899976 534.317357
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_72">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="552.571443" transform="rotate(-0 107.081955 552.571443)">Desferrioxamine E synthetase DesD</text>
+    </g>
+    <g id="patch_74">
+     <path d="M 522.71977 565.306778
+L 683.819698 565.306778
+L 683.819698 534.317357
+L 522.71977 534.317357
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_73">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="552.571443" transform="rotate(-0 538.829762 552.571443)">A0ABP3RUX6</text>
+    </g>
+    <g id="patch_75">
+     <path d="M 683.819698 565.306778
+L 823.439635 565.306778
+L 823.439635 534.317357
+L 683.819698 534.317357
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_74">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="552.571443" transform="rotate(-0 697.781691 552.571443)">IPR037455</text>
+    </g>
+    <g id="patch_76">
+     <path d="M 823.439635 565.306778
+L 1081.19952 565.306778
+L 1081.19952 534.317357
+L 823.439635 534.317357
+z
+" style="fill: #f6f8fa; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_75">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 546.972536)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 558.170349)">investigate</text>
+    </g>
+    <g id="patch_77">
+     <path d="M 7.2 596.296199
+L 60.899976 596.296199
+L 60.899976 565.306778
+L 7.2 565.306778
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_76">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="12.569998" y="583.560864" transform="rotate(-0 12.569998 583.560864)">15</text>
+    </g>
+    <g id="patch_78">
+     <path d="M 60.899976 596.296199
+L 522.71977 596.296199
+L 522.71977 565.306778
+L 60.899976 565.306778
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_77">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="107.081955" y="583.560864" transform="rotate(-0 107.081955 583.560864)">Desferrioxamine E synthetase DesD</text>
+    </g>
+    <g id="patch_79">
+     <path d="M 522.71977 596.296199
+L 683.819698 596.296199
+L 683.819698 565.306778
+L 522.71977 565.306778
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_78">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="538.829762" y="583.560864" transform="rotate(-0 538.829762 583.560864)">A0ABP5A0Y5</text>
+    </g>
+    <g id="patch_80">
+     <path d="M 683.819698 596.296199
+L 823.439635 596.296199
+L 823.439635 565.306778
+L 683.819698 565.306778
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_79">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start" x="697.781691" y="583.560864" transform="rotate(-0 697.781691 583.560864)">IPR037455</text>
+    </g>
+    <g id="patch_81">
+     <path d="M 823.439635 596.296199
+L 1081.19952 596.296199
+L 1081.19952 565.306778
+L 823.439635 565.306778
+z
+" style="fill: #ffffff; stroke: #e1e7ed; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_80">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 577.961958)">candidate to</text>
+     <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(849.215624 589.15977)">investigate</text>
+    </g>
+   </g>
+   <g id="text_81">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'DejaVu Sans'" transform="translate(7.2 16.318125)">First 15 of 59 exported candidates</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'DejaVu Sans'" transform="translate(7.2 29.7555)">Original discovery order; target activity is a mechanistic-transfer hypothesis</text>
+   </g>
+  </g>
+ </g>
+</svg>

@@ -1,0 +1,25 @@
+metric,value,definition
+Discovery wall time,1 h 46 min 38 s,Manifest start → finish; later modeling excluded
+Started,2026-11-06T00:08:53.353078-06:00,Timestamp includes UTC offset
+Finished,2026-11-06T01:55:31.075536-06:00,Timestamp includes UTC offset
+Run status,budget_exhausted,Resumable; token budget reached
+Model,claude-code:claude-sonnet-5-5,As recorded by the run
+Total tokens,"3,009,366","Prompt + completion, including cached prompt reads"
+Prompt tokens,"2,589,931",New input + cache creation + cache reads
+Completion tokens,"419,435",Recorded model output
+New input tokens,166,Uncached input category; cache creation reported separately
+Cache creation tokens,"1,848,125",Included in prompt tokens
+Cache read tokens,"741,640",28.64% of prompt tokens
+Model calls,83,Unmetered calls: 0; accounting complete: True
+Controller iterations used,75,Manifest counter; distinct from model-call count
+Token budget / overrun,"3,000,000 / 9,366",Final call crossed the budget
+Registered lead records,989,Registry records; not deduplicated proteins or validated hits
+Evaluation operations,183,Manifest result counter; not final status count
+Latest status: evaluated,168,Final registry snapshot
+Pending checkpoint entries,799,Checkpoint scope; not derived from registry status subtraction
+Ranked candidates,59,Unique accessions in ranked_candidates.csv
+Ranked InterPro families,11,Recorded family labels; no taxonomy normalization
+Registry family IDs,30,"Primary annotated ID, otherwise screening ID; one per record"
+Landscape fold IDs,16,Initial exploration landscape; separate scope
+Mechanism hypotheses,6,Reasoned hypotheses; not experimental coverage
+Ranked mechanism labels,4,Recorded broad assignments; 1 candidates unassigned
