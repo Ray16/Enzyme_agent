@@ -65,6 +65,9 @@ the MM remainder, and smooth LJ/C4 switching from 10 to 12 Å. Earlier CPU MM
 profiles showed finite-difference noise on real enzyme snapshots and a hard
 cutoff energy jump; they remain diagnostic controls. The setup review records
 the compatible OpenMM plugin path and current validation jobs.
+All eight selected real-enzyme DFT/MM derivative checks pass for AS9 and
+GlnA3 glutarate; the maximum error is 2.23e-4 eV/Å against a 0.002 eV/Å limit.
+This is numerical validation of the stated finite model, not a barrier result.
 
 The present model has a **finite, fixed embedding sphere**, nonperiodic
 reaction-field MM interactions, and a fixed membership mobile region. It does

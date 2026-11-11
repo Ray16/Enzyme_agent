@@ -2,9 +2,10 @@
 
 Review date: 2026-11-11. Scope: the actual AS9 and GlnA3 activation snapshots
 currently used for embedded DFT diagnostics. The atom lists, point charges and
-constructed MM Hamiltonians pass the structural checks below. **This is not a
-certification of quantitative barriers.** Real-enzyme DFT force checks are
-running; radius, boundary and basis sensitivity remain necessary.
+constructed MM Hamiltonians pass the structural checks below, and all eight
+selected real-enzyme DFT/MM force derivatives pass. **This verifies the numerical
+implementation, not quantitative barriers.** Radius, boundary and basis
+sensitivity remain necessary.
 
 ## 🔬 Actual molecular partitions
 
@@ -78,10 +79,10 @@ including moving-grid response terms. This has passed CPU tests through a
 covalent QM/MM link and a GPU wB97M-V test (largest selected derivative error
 7.31e-6 eV/Å). The original frozen geometry pilots and v1 derivative controls
 use the installed PySCF default `grid_response=False`; they are preserved for
-comparison. The corrected production profile additionally uses CUDA double
+comparison. The corrected numerical profile additionally uses CUDA double
 precision for MM and a smooth LJ/C4 switch from 10 to 12 Å. Its real-enzyme
-validation is running as v3 jobs. Grid convergence remains necessary before
-DFT saddle certification.
+v3 checks pass for AS9 and GlnA3 target. Grid convergence remains necessary
+before DFT saddle certification.
 
 Coordinates sent to the embedding interface are in Å; charges are in elementary
 charge. Quantum energies/gradients are converted from Hartree and Hartree/Bohr
@@ -182,10 +183,29 @@ An analytic test verifies the link Jacobian, and an actual SCF boundary test
 verifies QM, MM link-parent and MM point-charge derivatives with grid response
 both disabled and enabled. Native AM1/D real-enzyme
 derivatives have passed for AS9, GlnA3 target and GlnA3 native. DFT derivatives
-on the actual AS9 and GlnA3 target enzyme snapshots are now running for four
-components each: nucleophile, Mg, MM link parent and a nearby MM embedding
-charge. The threshold is 0.002 eV/Å at displacement ±0.0001 Å. They are pending,
-not counted as passes in this review.
+on the actual enzyme snapshots test four components: nucleophile, Mg, MM link
+parent and a nearby MM embedding charge. All eight pass the unchanged
+0.002 eV/Å threshold at displacement ±0.0001 Å:
+
+| Component | AS9 error (eV/Å) | GlnA3 glutarate error (eV/Å) |
+|---|---:|---:|
+| QM nucleophile | 5.552e-5 | 5.840e-5 |
+| QM Mg | 5.540e-5 | 2.220e-4 |
+| MM link parent | 2.214e-6 | 3.455e-6 |
+| MM embedding charge | 5.976e-7 | 2.414e-6 |
+
+Mg first-shell coverage was also checked in the relaxed reactants/products
+and all constrained seed images: all 61 geometries retain every observed
+first-shell N/O/S donor inside the fixed QM region. These are coverage checks,
+not proof that the imposed paths contain transition states.
+
+The corrected MM-only Hamiltonians pass 24 derivative checks: four atoms at
+both ±0.0001 and ±0.001 Å for AS9, GlnA3 target and GlnA3 native. Their maximum
+errors are 8.17e-6, 1.55e-6 and 1.64e-6 eV/Å respectively. Independent CPU PySCF
+and GPU4PySCF embedded wB97M-V/def2-SVP water calculations agree within
+1.98e-7 eV in energy, 1.59e-6 eV/Å for QM forces and 3.41e-8 eV/Å for MM forces.
+The source test suite passes 36 tests; three additional RDKit chemistry tests
+pass in their separate environment. XML/log evidence is saved in the run root.
 
 The earlier AS9 control **without grid response** has a passing nucleophile
 derivative (error 0.001078 eV/Å) and failing Mg (0.002251 eV/Å) and MM-charge
@@ -199,7 +219,7 @@ A larger-step Mg control also exposed an energy jump at the original hard
 LJ/C4 cutoff. Both terms now switch smoothly from 10 to 12 Å; a dedicated test
 checks vanishing energy/force at the cutoff. This intentionally changes the
 finite MM numerical/model profile. Earlier outputs are retained as controls;
-the combined v3 profile must pass direct tests before acceptance. The real-
+the combined v3 profile has now passed the direct tests above. The real-
 enzyme force threshold remains 0.002 eV/Å; it has not been loosened.
 
 Before adding the switch, the extracted MM audit builder was compared against
@@ -228,6 +248,14 @@ Each audit directory contains `audit.json`, `qm_atoms.csv`,
 coordinates and actual charge values. Both zero-based and one-based QM atom
 indices are supplied. `region.json` in each snapshot gives the full selection,
 formal-charge entries and MM-charge updates; `input.json` hashes every input.
+CSV coordinates are the snapshot seeds; each evaluation's actual coordinates
+are identified in its configuration. Membership and charge values remain fixed
+while the selected coordinates move during optimization.
+`EE_VALIDATION_STATUS.json` gives the current numerical-check status.
+`remaining_mm_smooth_double_checks_v3.json`,
+`ee_CPU_GPU_quantum_equivalence.json`, `ee_unit_tests_v3.xml` and
+`ee_chemistry_tests_v3.xml` contain the corresponding checks. Runtime package
+versions and the CUDA plugin binary hash are in `ee_runtime_profile_v3.json`.
 
 Reproduce an audit without reserving a GPU:
 
@@ -259,8 +287,9 @@ fallback for the GPU target profile.
 
 The user review can assess these concrete choices now: the finite versus
 periodic target, charge redistribution, fixed-ratio caps and the QM selections.
-Implementation validation additionally needs the pending real-enzyme DFT
-derivatives. Scientific convergence needs larger QM/embedding selections,
+The numerical implementation checks above are complete for this tested profile.
+Changed chemistry, partitions or numerical profiles require revalidation.
+Scientific convergence needs larger QM/embedding selections,
 boundary and basis checks, SCF solution stability, a matched reference/target
 Hamiltonian and an ensemble correction with adequate overlap. Transition-state
 connectivity and free-energy sampling validation follow; none is established
