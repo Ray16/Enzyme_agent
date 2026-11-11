@@ -5,6 +5,9 @@ target-level electronic structure, and validation. **No validated AS9 or GlnA3
 activation free energy is available yet.** The Nov-10 campaign is in
 `runs/barrier_maturation_20261110`; earlier results remain unchanged.
 
+The [electrostatic embedding setup review](EE_SETUP_REVIEW.md) records the actual
+QM partitions, charges, boundary policy, tested invariants and pending checks.
+
 ## Implemented operators
 
 | Operator | Purpose | Scientific scope |
@@ -20,6 +23,8 @@ activation free energy is available yet.** The Nov-10 campaign is in
 | `path` | Alternative constrained reference-potential paths, with mobile MM atoms | Input generation; actual optimization convergence is recorded |
 | `stationary` module | Chemistry-based endpoint identification, unrestrained endpoint relaxation, dimer saddle refinement | A converged dimer candidate still needs Hessian index and connectivity checks |
 | `qmmm geometry-diagnostics` | Hashed reference geometries evaluated with DFT/MM energies and forces | Does not subtract mismatched periodic/finite Hamiltonians or claim a barrier |
+| `embedding_audit` module | Export actual QM atoms/point charges and inspect the constructed MM Hamiltonian | Structural invariants, not a physical convergence certificate |
+| `embedding_forces` module | Selected real-enzyme DFT/MM energy–force finite differences | Tests QM, Mg, MM charge and link-parent derivatives |
 | `umbrella` | Conservative bond/proton CVs and restartable sampling chunks | Reference ensembles; never a final DFT barrier by themselves |
 | `analyze` | OPES reweighting with all declared biases and sampling checks | Projected PMF estimates with explicit failures |
 | `free_energy` Python API | MBAR overlap and sparse target-level reweighting | Requires decorrelated data and known inclusion probabilities |

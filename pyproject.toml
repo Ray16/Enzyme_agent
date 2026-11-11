@@ -96,7 +96,7 @@ package-dir = {"campaign_catalog" = "campaign_catalog", "enzyme_discovery_agent"
 # Deliberately excluded: data/mechanism_coordinate_cache.json -- a mutable runtime
 # artifact, not an asset (it must not be written inside site-packages).
 [tool.setuptools.package-data]
-enzyme_barrier = ["specs/*.json", "QMMM_BARRIER_PROTOCOL.md", "README.md"]
+enzyme_barrier = ["specs/*.json", "QMMM_BARRIER_PROTOCOL.md", "README.md", "EE_SETUP_REVIEW.md"]
 enzyme_discovery_agent = [
     "target_profile.example.json",
     "campaign_inputs/*.json",

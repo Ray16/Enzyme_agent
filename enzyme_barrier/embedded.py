@@ -59,41 +59,54 @@ def _numpy(x):
     return np.asarray(x.get() if hasattr(x,'get') else x)
 
 
+def build_mm_system(parm,region,*,mm_cutoff_nm=1.2,require_magnesium_c4=True):
+    """The exact remaining-MM Hamiltonian, inspectable without a QM/GPU context."""
+    import openmm as mm
+    import openmm.app as app
+    from openmm import unit
+    from .parameters import require_c4
+    if require_magnesium_c4:require_c4(parm)
+    system=parm.createSystem(nonbondedMethod=app.CutoffNonPeriodic,
+                nonbondedCutoff=mm_cutoff_nm*unit.nanometer,
+                constraints=None,rigidWater=False,removeCMMotion=False)
+    for f in system.getForces():
+        if isinstance(f,mm.NonbondedForce):
+            original=[f.getParticleParameters(i)[0].value_in_unit(unit.elementary_charge) for i in range(f.getNumParticles())]
+            updated=original.copy()
+            for key,val in region.get('mm_charge_updates',{}).items():
+                i=int(key);q,s,e=f.getParticleParameters(i)
+                f.setParticleParameters(i,val*unit.elementary_charge,s,e);updated[i]=val
+            for k in range(f.getNumExceptions()):
+                i,j,q,s,e=f.getExceptionParameters(k)
+                if original[i]*original[j]!=0:
+                    q=q*(updated[i]*updated[j])/(original[i]*original[j])
+                elif updated[i]*updated[j]!=0:
+                    close={at.idx for at in parm.atoms[i].bond_partners}
+                    close.update(at.idx for neighbor in parm.atoms[i].bond_partners for at in neighbor.bond_partners)
+                    if j not in close:
+                        raise ValueError('New nonzero 1-4 charge product needs an explicit scaling policy')
+                f.setExceptionParameters(k,i,j,q,s,e)
+    return remove_qm_terms(system,region['indices'])
+
+
 class EmbeddedDFTMM(Calculator):
     implemented_properties=['energy','forces']
 
     def __init__(self, parm, region, *, xc='wb97m-v', basis='def2-tzvpd',
                  engine='gpu', platform='CPU', grid_level=3, conv_tol=1e-9,
-                 max_cycle=150, mm_cutoff_nm=1.2, require_magnesium_c4=True, **kwargs):
+                 max_cycle=150, mm_cutoff_nm=1.2, require_magnesium_c4=True, grid_response=True, **kwargs):
         super().__init__(**kwargs)
         import openmm as mm
         import openmm.app as app
         from openmm import unit
-        from .parameters import require_c4
-        if require_magnesium_c4:require_c4(parm)
         self.parm,self.region=parm,region
         self.xc,self.basis,self.engine=xc,basis,engine
         self.grid_level,self.conv_tol,self.max_cycle=grid_level,conv_tol,max_cycle
+        self.grid_response=bool(grid_response)
         self.dm=None;self.last_components={};self.evaluations=0
         # Nonperiodic RF MM environment. QM Coulomb uses the explicit fixed
         # charge sphere instead; its convergence must be checked separately.
-        system=parm.createSystem(nonbondedMethod=app.CutoffNonPeriodic,
-                    nonbondedCutoff=mm_cutoff_nm*unit.nanometer,
-                    constraints=None,rigidWater=False,removeCMMotion=False)
-        # Apply the SAME boundary redistribution to MM energy and QM embedding.
-        for f in system.getForces():
-            if isinstance(f,mm.NonbondedForce):
-                original=[f.getParticleParameters(i)[0].value_in_unit(unit.elementary_charge) for i in range(f.getNumParticles())]
-                updated=original.copy()
-                for key,val in region.get('mm_charge_updates',{}).items():
-                    i=int(key);q,s,e=f.getParticleParameters(i)
-                    f.setParticleParameters(i,val*unit.elementary_charge,s,e);updated[i]=val
-                for k in range(f.getNumExceptions()):
-                    i,j,q,s,e=f.getExceptionParameters(k)
-                    if original[i]*original[j]!=0:
-                        q=q*(updated[i]*updated[j])/(original[i]*original[j])
-                    f.setExceptionParameters(k,i,j,q,s,e)
-        remove_qm_terms(system,region['indices'])
+        system=build_mm_system(parm,region,mm_cutoff_nm=mm_cutoff_nm,require_magnesium_c4=require_magnesium_c4)
         self.integrator=mm.VerletIntegrator(0.5*unit.femtosecond)
         props={'Precision':'double'} if platform=='CUDA' else ({'Threads':'1'} if platform=='CPU' else {})
         self.context=mm.Context(system,self.integrator,mm.Platform.getPlatformByName(platform),props)
@@ -121,6 +134,7 @@ class EmbeddedDFTMM(Calculator):
         qforce=mmforce=None
         if need_forces:
             grad=mf.nuc_grad_method()
+            grad.grid_response=self.grid_response
             qforce=-_numpy(grad.kernel())*Hartree/Bohr
             if len(mmpos):
                 mmgrad=_numpy(grad.grad_hcore_mm(self.dm))+_numpy(grad.grad_nuc_mm())
@@ -146,4 +160,4 @@ class EmbeddedDFTMM(Calculator):
         self.evaluations+=1
         self.last_components=dict(high_embedded_eV=energy,mm_remaining_eV=emm,
              wall_s=time.monotonic()-t0,scf_converged=True,n_qm=nq,n_links=len(self.region['links']),
-             n_embedding=len(emb),evaluation=self.evaluations)
+             n_embedding=len(emb),evaluation=self.evaluations,grid_response=self.grid_response)

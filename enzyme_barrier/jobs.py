@@ -154,7 +154,7 @@ def evaluate_geometries(config_path):
     atomic_json(out/'result.json',result);return result
 
 
-def gpu_smoke(out,engine='gpu',platform='CPU'):
+def gpu_smoke(out,engine='gpu',platform='CPU',grid_response=False):
     from ase import Atoms
     from .fixtures import water_pair
     from .embedded import EmbeddedDFTMM
@@ -162,13 +162,13 @@ def gpu_smoke(out,engine='gpu',platform='CPU'):
                            embedding_indices=[3,4,5],embedding_charges=[-.834,.417,.417])
     a=Atoms(numbers=[v.atomic_number for v in p.atoms],positions=p.coordinates)
     a.calc=EmbeddedDFTMM(p,r,engine=engine,platform=platform,
-                  xc='wb97m-v',basis='def2-svp',grid_level=2,conv_tol=1e-10,require_magnesium_c4=False)
+                  xc='wb97m-v',basis='def2-svp',grid_level=2,conv_tol=1e-10,require_magnesium_c4=False,grid_response=grid_response)
     f=a.get_forces();energy=a.get_potential_energy();errors=[]
     for i,k in [(0,2),(3,2),(4,0)]:
         x=a.positions.copy();a.positions[i,k]+=1e-4;ep=a.get_potential_energy()
         a.positions[:]=x;a.positions[i,k]-=1e-4;em=a.get_potential_energy();a.positions[:]=x
         errors.append(abs(float(f[i,k]+(ep-em)/2e-4)))
-    result=dict(engine=engine,platform=platform,energy_eV=energy,finite_difference_errors_eV_A=errors,
+    result=dict(engine=engine,platform=platform,grid_response=grid_response,energy_eV=energy,finite_difference_errors_eV_A=errors,
                 passed=max(errors)<0.002,components=a.calc.last_components)
     atomic_json(out,result)
     if not result['passed']:raise RuntimeError(f'Energy/force consistency failed: {errors}')
@@ -187,11 +187,12 @@ def main(argv=None):
     e.add_argument('--potential',default='dft',choices=['dft','uma-xtb'])
     b=s.add_parser('geometry-diagnostics');b.add_argument('config')
     g=s.add_parser('smoke');g.add_argument('--out',required=True);g.add_argument('--engine',default='gpu');g.add_argument('--platform',default='CPU')
+    g.add_argument('--grid-response',action='store_true')
     a=p.parse_args(argv)
     if a.cmd=='snapshot':v=snapshot(a.prmtop,a.coords,a.spec,a.out,radius=a.radius,embedding_radius=a.embedding_radius)
     elif a.cmd=='evaluate':v=evaluate(a.snapshot,a.out,xc=a.xc,basis=a.basis,engine=a.engine,platform=a.platform,forces=not a.energy_only,potential=a.potential)
     elif a.cmd=='geometry-diagnostics':v=evaluate_geometries(a.config)
-    else:v=gpu_smoke(a.out,a.engine,a.platform)
+    else:v=gpu_smoke(a.out,a.engine,a.platform,a.grid_response)
     print(json.dumps(v,indent=2),flush=True)
 
 

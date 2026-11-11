@@ -65,3 +65,49 @@ def test_cpu_embedded_qm_and_mm_forces_are_energy_derivatives():
         pos=a.positions.copy();a.positions[atom,axis]+=1e-4;ep=a.get_potential_energy()
         a.positions[:]=pos;a.positions[atom,axis]-=1e-4;em=a.get_potential_energy();a.positions[:]=pos
         assert force[atom,axis]==pytest.approx(-(ep-em)/2e-4,abs=3e-4)
+
+
+def test_embedding_field_changes_QM_density_not_only_classical_energy():
+    from enzyme_barrier.embedded import EmbeddedDFTMM
+    p=water_pair();r=dict(indices=[0,1,2],links=[],charge=0,multiplicity=1,
+        embedding_indices=[3,4,5],embedding_charges=[-.834,.417,.417])
+    calc=EmbeddedDFTMM(p,r,engine='cpu',platform='CPU',xc='pbe',basis='sto-3g',
+        grid_level=1,conv_tol=1e-11,require_magnesium_c4=False)
+    q=p.coordinates[:3];positions=p.coordinates[3:]
+    vacuum=calc.high_energy_forces(['O','H','H'],q,positions,np.zeros(3),False)[0]
+    dm_vacuum=np.asarray(calc.dm).copy()
+    embedded=calc.high_energy_forces(['O','H','H'],q,positions,np.array(r['embedding_charges']),False)[0]
+    assert abs(embedded-vacuum)>1e-4
+    assert np.linalg.norm(np.asarray(calc.dm)-dm_vacuum)>1e-4
+
+
+@pytest.mark.parametrize('grid_response',[False,True])
+def test_actual_SCF_link_and_embedding_forces(grid_response):
+    import parmed as pmd
+    from parmed.topologyobjects import Atom,AtomType,Bond,BondType,Angle,AngleType
+    from ase import Atoms
+    from enzyme_barrier.embedded import EmbeddedDFTMM
+    from enzyme_barrier.embedding_forces import force_checks
+    p=pmd.Structure();ct=AtomType('CT',1,12,6);ct.set_lj_params(.1094,1.908)
+    ht=AtomType('HC',2,1,1);ht.set_lj_params(.0157,1.487)
+    for name,z,typ in [('CB',6,ct),('CA',6,ct)]+[(f'H{i}',1,ht) for i in range(6)]:
+        atom=Atom(name=name,type=typ.name,atomic_number=z,mass=typ.mass,charge=0)
+        atom.atom_type=typ;p.add_atom(atom,'ETH',1)
+    p.coordinates=np.array([[0,0,0],[1.54,0,0],[-.36,1.027,0],[-.36,-.5135,.8894],[-.36,-.5135,-.8894],
+        [1.90,-1.027,0],[1.90,.5135,.8894],[1.90,.5135,-.8894]])
+    neighbors={0:[1,2,3,4],1:[0,5,6,7]}
+    for i,j in [(0,1),(0,2),(0,3),(0,4),(1,5),(1,6),(1,7)]:
+        typ=BondType(310 if j==1 else 340,1.54 if j==1 else 1.09);p.bond_types.append(typ)
+        p.bonds.append(Bond(p.atoms[i],p.atoms[j],type=typ))
+    import itertools
+    for center,ids in neighbors.items():
+        for i,j in itertools.combinations(ids,2):
+            typ=AngleType(40,109.5);p.angle_types.append(typ);p.angles.append(Angle(p.atoms[i],p.atoms[center],p.atoms[j],type=typ))
+    water=water_pair()[':1'];water.coordinates+=np.array([0,0,3.2]);p=p+water
+    r=dict(indices=[0,2,3,4],links=[dict(qm=0,mm=1,local=0,ratio=1.09/1.54)],charge=0,multiplicity=1,
+        embedding_indices=[8,9,10],embedding_charges=[-.834,.417,.417])
+    a=Atoms(numbers=[at.atomic_number for at in p.atoms],positions=p.coordinates)
+    a.calc=EmbeddedDFTMM(p,r,engine='cpu',platform='CPU',xc='pbe',basis='sto-3g',grid_level=2,
+        conv_tol=1e-11,require_magnesium_c4=False,grid_response=grid_response)
+    result=force_checks(a,[dict(atom_zero_based=i,axis=j) for i,j in [(0,0),(1,1),(8,2)]],tolerance_eV_A=.002)
+    assert result['passed'],result
