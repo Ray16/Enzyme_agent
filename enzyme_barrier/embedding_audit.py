@@ -41,12 +41,15 @@ def audit_snapshot(snapshot,out):
     pairs=set(itertools.combinations(sorted(qm),2))
     checks['QM_internal_LJ_pairs_excluded']=pairs<=exception_pairs and bad_qm_lj==0
     checks['QM_classical_Coulomb_exceptions_zero']=bad_qm_coulomb==0
+    checks['LJ_switch_enabled']=nb.getUseSwitchingFunction()
     checks['C4_QM_internal_pairs_excluded']=True
+    checks['C4_switch_enabled']=True
     checks['QM_internal_bonded_terms_removed']=True
     c4_count=0
     for force in system.getForces():
         if isinstance(force,mm.CustomNonbondedForce):
             c4_count+=1
+            checks['C4_switch_enabled'] &= force.getUseSwitchingFunction()
             exclusions={tuple(sorted(force.getExclusionParticles(k))) for k in range(force.getNumExclusions())}
             checks['C4_QM_internal_pairs_excluded'] &= pairs<=exclusions
         if isinstance(force,mm.HarmonicBondForce):
@@ -87,6 +90,7 @@ def audit_snapshot(snapshot,out):
         embedding_policy=dict(cutoff_A=r['embedding_radius_A'],selection='fixed union of whole MM residues within cutoff of any real QM atom at snapshot creation',
             charge_units='elementary charge',coordinate_units='angstrom',polarization='QM density responds to fixed MM charges; no mutual MM polarization',
             periodic=False,MM_cutoff_A=12,MM_Coulomb='OpenMM CutoffNonPeriodic reaction field',
+            MM_LJ_C4_switch_A=nb.getSwitchingDistance().value_in_unit(unit.angstrom),
             MM_reaction_field_dielectric=nb.getReactionFieldDielectric(),mobile_radius_A=r['mobile_radius_A']),
         nearest_point_charge_to_QM_or_cap=dict(distance_A=closest[0],MM_index_zero_based=closest[1],QM_or_cap_local_index=closest[2]),
         validated_activation_free_energy=False,

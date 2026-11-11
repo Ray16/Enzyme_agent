@@ -59,7 +59,7 @@ def test_cpu_embedded_qm_and_mm_forces_are_energy_derivatives():
     p=water_pair();r={'indices':[0,1,2],'links':[],'charge':0,'multiplicity':1,
                       'embedding_indices':[3,4,5],'embedding_charges':[-.834,.417,.417]}
     a=Atoms(numbers=[x.atomic_number for x in p.atoms],positions=p.coordinates)
-    a.calc=EmbeddedDFTMM(p,r,engine='cpu',platform='Reference',xc='pbe',basis='sto-3g',grid_level=1,conv_tol=1e-11,require_magnesium_c4=False)
+    a.calc=EmbeddedDFTMM(p,r,engine='cpu',platform='CPU',xc='pbe',basis='sto-3g',grid_level=1,conv_tol=1e-11,require_magnesium_c4=False)
     force=a.get_forces()
     for atom,axis in [(0,2),(3,2),(4,0)]:
         pos=a.positions.copy();a.positions[atom,axis]+=1e-4;ep=a.get_potential_energy()
@@ -79,6 +79,21 @@ def test_embedding_field_changes_QM_density_not_only_classical_energy():
     embedded=calc.high_energy_forces(['O','H','H'],q,positions,np.array(r['embedding_charges']),False)[0]
     assert abs(embedded-vacuum)>1e-4
     assert np.linalg.norm(np.asarray(calc.dm)-dm_vacuum)>1e-4
+
+
+def test_complete_embedded_system_preserves_translation_and_total_force():
+    from ase import Atoms
+    from enzyme_barrier.embedded import EmbeddedDFTMM
+    p=water_pair();r=dict(indices=[0,1,2],links=[],charge=0,multiplicity=1,
+        embedding_indices=[3,4,5],embedding_charges=[-.834,.417,.417])
+    a=Atoms(numbers=[at.atomic_number for at in p.atoms],positions=p.coordinates)
+    a.calc=EmbeddedDFTMM(p,r,engine='cpu',platform='CPU',xc='pbe',basis='sto-3g',grid_level=2,
+        conv_tol=1e-11,require_magnesium_c4=False,grid_response=True)
+    forces=a.get_forces();energy=a.get_potential_energy()
+    assert np.linalg.norm(forces.sum(axis=0))<1e-6
+    a.positions+=np.array([3.,-4.,2.])
+    assert a.get_potential_energy()==pytest.approx(energy,abs=1e-6)
+    assert np.allclose(a.get_forces(),forces,atol=1e-6)
 
 
 @pytest.mark.parametrize('grid_response',[False,True])

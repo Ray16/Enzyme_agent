@@ -92,7 +92,7 @@ def import_cluster_path(prmtop,full_coords,atom_map,geometries,spec_path,out,*,r
     return snapshots
 
 
-def evaluate(path,out,*,xc='wb97m-v',basis='def2-tzvpd',engine='gpu',platform='CPU',forces=True,potential='dft'):
+def evaluate(path,out,*,xc='wb97m-v',basis='def2-tzvpd',engine='gpu',platform=None,forces=True,potential='dft'):
     from .embedded import EmbeddedDFTMM
     p,r,a,d=load_snapshot(path)
     if potential=='dft':factory=EmbeddedDFTMM
@@ -107,7 +107,7 @@ def evaluate(path,out,*,xc='wb97m-v',basis='def2-tzvpd',engine='gpu',platform='C
     e=a.get_potential_energy()
     result=dict(energy_eV=float(e),components=a.calc.last_components,
         snapshot=str(Path(path).resolve()),input_sha256=sha256(Path(path)/'input.json'),
-        xc=xc,basis=basis,engine=engine,platform=platform,wall_s=time.monotonic()-t0,
+        xc=xc,basis=basis,engine=engine,platform=getattr(a.calc,'mm_platform',platform),wall_s=time.monotonic()-t0,
         potential=potential,high_diagnostics=getattr(a.calc,'high_diagnostics',{}),
         quantity='embedded_electronic_energy',validated_activation_free_energy=False)
     if forces:
@@ -131,7 +131,7 @@ def evaluate_geometries(config_path):
         if positions.shape!=a.positions.shape or not np.isfinite(positions).all():raise ValueError('Invalid geometry')
     out.mkdir(parents=True,exist_ok=False)
     a.calc=EmbeddedDFTMM(p,r,xc=cfg.get('xc','wb97m-v'),basis=cfg.get('basis','def2-svp'),
-        engine=cfg.get('engine','gpu'),platform='CPU')
+        engine=cfg.get('engine','gpu'),platform=cfg.get('mm_platform','CUDA'))
     for point in cfg['geometries']:
         if sha256(point['positions'])!=point['sha256']:raise ValueError('Geometry changed')
         positions=np.load(point['positions'])
@@ -147,6 +147,7 @@ def evaluate_geometries(config_path):
     result=dict(status='geometry_diagnostics_complete',points=rows,config_sha256=sha256(config_path),
         snapshot=str(Path(cfg['snapshot']).resolve()),snapshot_sha256=sha256(Path(cfg['snapshot'])/'input.json'),
         xc=cfg.get('xc','wb97m-v'),basis=cfg.get('basis','def2-svp'),
+        mm_platform=cfg.get('mm_platform','CUDA'),
         quantity='finite_embedding_DFT_MM_diagnostics_on_reference_geometries',validated_activation_free_energy=False,
         limitations=['Reference geometries are not stationary on the DFT/MM surface',
             'SVP pilot requires basis and QM-region/embedding sensitivity checks',
@@ -183,7 +184,7 @@ def main(argv=None):
     e=s.add_parser('evaluate');e.add_argument('--snapshot',required=True);e.add_argument('--out',required=True)
     e.add_argument('--basis',default='def2-tzvpd');e.add_argument('--xc',default='wb97m-v')
     e.add_argument('--engine',default='gpu',choices=['gpu','cpu']);e.add_argument('--energy-only',action='store_true')
-    e.add_argument('--platform',default='CPU')
+    e.add_argument('--platform',default=None)
     e.add_argument('--potential',default='dft',choices=['dft','uma-xtb'])
     b=s.add_parser('geometry-diagnostics');b.add_argument('config')
     g=s.add_parser('smoke');g.add_argument('--out',required=True);g.add_argument('--engine',default='gpu');g.add_argument('--platform',default='CPU')

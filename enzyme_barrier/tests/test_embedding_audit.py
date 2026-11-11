@@ -51,3 +51,27 @@ def test_changing_zero_charge_keeps_12_and_13_Coulomb_excluded():
     for k in range(nb.getNumExceptions()):
         i,j,q,_,_=nb.getExceptionParameters(k)
         if {i,j}<={3,4,5}:assert q.value_in_unit(unit.elementary_charge**2)==0
+
+
+def test_LJ_C4_energy_and_force_vanish_smoothly_at_cutoff():
+    import openmm as mm
+    from openmm import unit as u
+    from enzyme_barrier.embedded import configure_mm_switching
+    s=mm.System();s.addParticle(12);s.addParticle(12)
+    nb=mm.NonbondedForce();nb.setNonbondedMethod(nb.CutoffNonPeriodic);nb.setCutoffDistance(1.2)
+    for _ in range(2):nb.addParticle(0,.3,.5)
+    s.addForce(nb)
+    c4=mm.CustomNonbondedForce('-.001/r^4');c4.setNonbondedMethod(c4.CutoffNonPeriodic);c4.setCutoffDistance(1.2)
+    c4.addParticle([]);c4.addParticle([]);s.addForce(c4);configure_mm_switching(s)
+    integrator=mm.VerletIntegrator(.001);ctx=mm.Context(s,integrator,mm.Platform.getPlatformByName('CPU'),{'Threads':'1'})
+    def evaluate(r):
+        ctx.setPositions([[0,0,0],[r,0,0]]*u.nanometer)
+        st=ctx.getState(getEnergy=True,getForces=True)
+        return st.getPotentialEnergy().value_in_unit(u.kilojoule_per_mole),st.getForces(asNumpy=True).value_in_unit(u.kilojoule_per_mole/u.nanometer)
+    for radius in [1.199999,1.2,1.200001]:
+        energy,force=evaluate(radius)
+        # The CPU kernels evaluate some nonbonded arithmetic in float32.
+        # These limits are still >10,000-fold below the unswitched energy jump.
+        assert abs(energy)<1e-8 and np.max(np.abs(force))<1e-6
+    e,f=evaluate(1.1999);numeric=-(evaluate(1.2)[0]-evaluate(1.1998)[0])/.0002
+    assert abs(numeric-f[1,0])<2e-5

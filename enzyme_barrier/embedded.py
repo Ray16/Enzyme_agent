@@ -59,7 +59,19 @@ def _numpy(x):
     return np.asarray(x.get() if hasattr(x,'get') else x)
 
 
-def build_mm_system(parm,region,*,mm_cutoff_nm=1.2,require_magnesium_c4=True):
+def configure_mm_switching(system,cutoff_nm=1.2,switch_nm=1.0):
+    import openmm as mm
+    from openmm import unit
+    if switch_nm is None:return system
+    if not 0<switch_nm<cutoff_nm:raise ValueError('MM switch must lie inside the cutoff')
+    for force in system.getForces():
+        if isinstance(force,(mm.NonbondedForce,mm.CustomNonbondedForce)):
+            force.setUseSwitchingFunction(True)
+            force.setSwitchingDistance(switch_nm*unit.nanometer)
+    return system
+
+
+def build_mm_system(parm,region,*,mm_cutoff_nm=1.2,mm_switch_nm=1.0,require_magnesium_c4=True):
     """The exact remaining-MM Hamiltonian, inspectable without a QM/GPU context."""
     import openmm as mm
     import openmm.app as app
@@ -69,6 +81,7 @@ def build_mm_system(parm,region,*,mm_cutoff_nm=1.2,require_magnesium_c4=True):
     system=parm.createSystem(nonbondedMethod=app.CutoffNonPeriodic,
                 nonbondedCutoff=mm_cutoff_nm*unit.nanometer,
                 constraints=None,rigidWater=False,removeCMMotion=False)
+    configure_mm_switching(system,mm_cutoff_nm,mm_switch_nm)
     for f in system.getForces():
         if isinstance(f,mm.NonbondedForce):
             original=[f.getParticleParameters(i)[0].value_in_unit(unit.elementary_charge) for i in range(f.getNumParticles())]
@@ -93,20 +106,22 @@ class EmbeddedDFTMM(Calculator):
     implemented_properties=['energy','forces']
 
     def __init__(self, parm, region, *, xc='wb97m-v', basis='def2-tzvpd',
-                 engine='gpu', platform='CPU', grid_level=3, conv_tol=1e-9,
-                 max_cycle=150, mm_cutoff_nm=1.2, require_magnesium_c4=True, grid_response=True, **kwargs):
+                 engine='gpu', platform=None, grid_level=3, conv_tol=1e-9,
+                 max_cycle=150, mm_cutoff_nm=1.2, mm_switch_nm=1.0, require_magnesium_c4=True, grid_response=True, **kwargs):
         super().__init__(**kwargs)
         import openmm as mm
         import openmm.app as app
         from openmm import unit
+        if platform is None:platform='CUDA' if engine=='gpu' else 'CPU'
         self.parm,self.region=parm,region
         self.xc,self.basis,self.engine=xc,basis,engine
         self.grid_level,self.conv_tol,self.max_cycle=grid_level,conv_tol,max_cycle
         self.grid_response=bool(grid_response)
+        self.mm_platform=platform;self.mm_switch_nm=mm_switch_nm
         self.dm=None;self.last_components={};self.evaluations=0
         # Nonperiodic RF MM environment. QM Coulomb uses the explicit fixed
         # charge sphere instead; its convergence must be checked separately.
-        system=build_mm_system(parm,region,mm_cutoff_nm=mm_cutoff_nm,require_magnesium_c4=require_magnesium_c4)
+        system=build_mm_system(parm,region,mm_cutoff_nm=mm_cutoff_nm,mm_switch_nm=mm_switch_nm,require_magnesium_c4=require_magnesium_c4)
         self.integrator=mm.VerletIntegrator(0.5*unit.femtosecond)
         props={'Precision':'double'} if platform=='CUDA' else ({'Threads':'1'} if platform=='CPU' else {})
         self.context=mm.Context(system,self.integrator,mm.Platform.getPlatformByName(platform),props)
@@ -160,4 +175,6 @@ class EmbeddedDFTMM(Calculator):
         self.evaluations+=1
         self.last_components=dict(high_embedded_eV=energy,mm_remaining_eV=emm,
              wall_s=time.monotonic()-t0,scf_converged=True,n_qm=nq,n_links=len(self.region['links']),
-             n_embedding=len(emb),evaluation=self.evaluations,grid_response=self.grid_response)
+             n_embedding=len(emb),evaluation=self.evaluations,grid_response=self.grid_response,
+             mm_platform=self.mm_platform,mm_precision='double' if self.mm_platform=='CUDA' else 'platform-dependent',
+             mm_switch_nm=self.mm_switch_nm)

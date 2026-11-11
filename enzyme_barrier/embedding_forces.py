@@ -36,14 +36,16 @@ def run(config_path):
     if positions.shape!=a.positions.shape or not np.isfinite(positions).all():raise ValueError('Invalid geometry')
     a.positions[:]=positions;out=Path(cfg['out']);out.mkdir(parents=True,exist_ok=False)
     a.calc=EmbeddedDFTMM(p,r,xc=cfg.get('xc','wb97m-v'),basis=cfg.get('basis','def2-svp'),
-        engine=cfg.get('engine','gpu'),platform='CPU',conv_tol=1e-10,grid_response=cfg.get('grid_response',True))
+        engine=cfg.get('engine','gpu'),platform=cfg.get('mm_platform','CUDA'),conv_tol=1e-10,
+        grid_response=cfg.get('grid_response',True),mm_switch_nm=cfg.get('mm_switch_nm',1.0))
     t0=time.monotonic()
     def save(rows):atomic_json(out/'progress.json',dict(checks=rows,wall_s=time.monotonic()-t0))
     result=force_checks(a,cfg['checks'],step_A=cfg.get('step_A',1e-4),
         tolerance_eV_A=cfg.get('tolerance_eV_A',.002),on_result=save)
     result.update(config_sha256=sha256(config_path),snapshot_sha256=sha256(Path(cfg['snapshot'])/'input.json'),
         positions_sha256=cfg['positions_sha256'],xc=cfg.get('xc','wb97m-v'),basis=cfg.get('basis','def2-svp'),
-        grid_response=cfg.get('grid_response',True),wall_s=time.monotonic()-t0,validated_activation_free_energy=False)
+        grid_response=cfg.get('grid_response',True),mm_platform=cfg.get('mm_platform','CUDA'),
+        mm_switch_nm=cfg.get('mm_switch_nm',1.0),wall_s=time.monotonic()-t0,validated_activation_free_energy=False)
     atomic_json(out/'result.json',result);return result
 
 

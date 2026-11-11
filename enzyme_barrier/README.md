@@ -56,8 +56,15 @@ E = E_DFT(QM + link H; redistributed MM point charges)
 QM-internal classical terms and QM classical Coulomb interactions (including
 exceptions) are removed. MM charges polarize the electronic density. Forces on
 QM atoms, MM point charges and both link-atom parents are included. Water-pair
-finite differences pass on CPU and GPU; the GPU wB97M-V/def2-SVP maximum tested
-error was 2.8e-6 eV/Å. Larger partitions and boundary cases need further checks.
+finite differences pass on CPU and GPU. The full-grid-response GPU
+wB97M-V/def2-SVP water test has a maximum tested error of 7.4e-6 eV/Å.
+Larger partitions and boundary cases need further checks.
+
+The current GPU target uses full DFT grid response, CUDA double precision for
+the MM remainder, and smooth LJ/C4 switching from 10 to 12 Å. Earlier CPU MM
+profiles showed finite-difference noise on real enzyme snapshots and a hard
+cutoff energy jump; they remain diagnostic controls. The setup review records
+the compatible OpenMM plugin path and current validation jobs.
 
 The present model has a **finite, fixed embedding sphere**, nonperiodic
 reaction-field MM interactions, and a fixed membership mobile region. It does
@@ -89,8 +96,10 @@ additional target sampling, or a trained correction; do not hide it in an error 
 Use the existing managed `processivity-qmmm-20261106` environment for DFT/UMA and
 `processivity-md-20261106` for CUDA classical MD. Do not silently replace these
 with a system Python. Environment inventories and preflights belong in the run
-directory. The quantum environment's MM backend currently uses CPU; its DFT
-backend uses the reserved GPU. The classical environment provides CUDA OpenMM.
+directory. The current target loads the compatible CUDA OpenMM plugin from the
+classical environment, so its double-precision MM and DFT calculations share
+the same reserved GPU within one worker. The plugin path is recorded in the
+manifest; CPU MM remains an explicit diagnostic option.
 
 The installed Amber environment also supplies native `sander`, `sqm`, and 3OB
 parameters. The native adapter uses a separate Amber Python process, explicit
@@ -115,7 +124,7 @@ does not infer bonds from OpenMM's extended PDB atom serials.
 python -m enzyme_barrier qmmm snapshot --prmtop reviewed.prmtop \
   --coords equilibrated.pdb --spec reaction.json --out snapshot
 python -m enzyme_barrier qmmm evaluate --snapshot snapshot \
-  --out embedded.json --basis def2-tzvpd --platform CPU
+  --out embedded.json --basis def2-tzvpd --platform CUDA
 python -m enzyme_barrier.umbrella reviewed_window.json
 ```
 
