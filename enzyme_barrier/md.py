@@ -63,7 +63,7 @@ def resolve_attack_geometry(parm,spec):
     return i,j,k,angle_atom,angle_kind
 
 
-def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,temperature=303.15):
+def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,temperature=303.15,strip_water=False):
     import parmed as pmd
     import openmm as mm
     import openmm.app as app
@@ -120,24 +120,29 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     # kept-water set is static (chosen at t0); waters exchange over the run, so this shows the FATE
     # of the t0 catalytic waters, not a continuously-resolved shell. Metal coordination NUMBER is
     # logged every frame regardless. Set WATER_SHELL_A=0 for solute-only, large for all water.
-    WATER_SHELL_A=6.0
-    keep=set(a.idx for a in parm.atoms if a.residue.name not in _WATER and a.residue.name not in _IONS)
-    kept_wat=[]
-    if WATER_SHELL_A>0:
-        rc=positions_A[[i,j]]                      # nucleophile + electrophile coords (t0)
-        for r in parm.residues:
-            if r.name in _WATER:
-                ridx=[a.idx for a in r.atoms]
-                if np.linalg.norm(positions_A[ridx][:,None,:]-rc[None,:,:],axis=2).min()<WATER_SHELL_A:
-                    keep.update(ridx); kept_wat.append(r.idx+1)
-    keep=sorted(keep)
-    solute_mask='!(:'+','.join(sorted(_WATER|_IONS))+')'
-    mask=solute_mask if not kept_wat else f'({solute_mask})|(:'+','.join(map(str,kept_wat))+')'
-    dry=parm[mask]
-    dry.save(str(out/'complex_dry.prmtop'),overwrite=True)
-    print(f'DCD subset: {len(keep)} atoms (solute + {len(kept_wat)} active-site waters within {WATER_SHELL_A} A)',flush=True)
-    sim.reporters.append(SolventStrippedDCDReporter(
-        str(out/'production.dcd'),5000,np.array(keep),dry.topology,0.002*u.picosecond))
+    # DEFAULT: store the FULL solvated system (water kept). Opt in to a solvent-stripped
+    # trajectory (solute + active-site waters within WATER_SHELL_A of the reactive centre,
+    # ~8x smaller) with strip_water=True / --strip-water when disk is the concern.
+    if strip_water:
+        WATER_SHELL_A=6.0
+        keep=set(a.idx for a in parm.atoms if a.residue.name not in _WATER and a.residue.name not in _IONS)
+        kept_wat=[]
+        if WATER_SHELL_A>0:
+            rc=positions_A[[i,j]]                   # nucleophile + electrophile coords (t0)
+            for r in parm.residues:
+                if r.name in _WATER:
+                    ridx=[a.idx for a in r.atoms]
+                    if np.linalg.norm(positions_A[ridx][:,None,:]-rc[None,:,:],axis=2).min()<WATER_SHELL_A:
+                        keep.update(ridx); kept_wat.append(r.idx+1)
+        keep=sorted(keep)
+        solute_mask='!(:'+','.join(sorted(_WATER|_IONS))+')'
+        mask=solute_mask if not kept_wat else f'({solute_mask})|(:'+','.join(map(str,kept_wat))+')'
+        dry=parm[mask]; dry.save(str(out/'complex_dry.prmtop'),overwrite=True)
+        print(f'DCD subset: {len(keep)} atoms (solute + {len(kept_wat)} active-site waters within {WATER_SHELL_A} A)',flush=True)
+        sim.reporters.append(SolventStrippedDCDReporter(
+            str(out/'production.dcd'),5000,np.array(keep),dry.topology,0.002*u.picosecond))
+    else:
+        sim.reporters.append(app.DCDReporter(str(out/'production.dcd'),5000))
     sim.reporters.append(app.StateDataReporter(str(out/'thermodynamics.csv'),5000,step=True,potentialEnergy=True,temperature=True,density=True))
     total=int(round(production_ns*500000));done=0;observations=[]
     with (out/'geometry.jsonl').open('w') as log:
