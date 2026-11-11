@@ -14,6 +14,35 @@ def write_state_pdb(topology,state,path):
     with Path(path).open('w') as f:app.PDBFile.writeFile(topology,state.getPositions(),f)
 
 
+_WATER={'WAT','HOH','TIP3','T3P'}
+_IONS={'Na+','Cl-','NA','CL','K+','K','NA+','CL-'}
+
+
+class SolventStrippedDCDReporter:
+    """DCD reporter that writes ONLY the solute (protein+ligands+metal; bulk water/ions dropped).
+    Keeps the trajectory ~8x smaller at the same stride -- the Mg first-shell coordination number
+    is already logged per frame in geometry.jsonl, and contact analysis never needs bulk water.
+    Writes unwrapped positions (molecules stay whole); analysis applies the triclinic minimum
+    image itself."""
+    def __init__(self,path,interval,keep_idx,subset_topology,dt):
+        import openmm.app as app
+        self._out=open(path,'wb')
+        self._dcd=app.DCDFile(self._out,subset_topology,dt)
+        self._interval=int(interval)
+        self._idx=keep_idx
+    def describeNextReport(self,sim):
+        steps=self._interval-sim.currentStep%self._interval
+        # (steps, positions, velocities, forces, energy, wrapPositions)
+        return (steps,True,False,False,False,False)
+    def report(self,sim,state):
+        from openmm import unit as u
+        pos=state.getPositions(asNumpy=True).value_in_unit(u.angstrom)[self._idx]
+        self._dcd.writeModel(pos*u.angstrom,periodicBoxVectors=state.getPeriodicBoxVectors())
+    def __del__(self):
+        try:self._out.close()
+        except Exception:pass
+
+
 def resolve_attack_geometry(parm,spec):
     """Resolve and validate angle atoms before creating an expensive MD context."""
     from .carve import _resolve
@@ -85,7 +114,30 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     write_state_pdb(sim.topology,equil_state,out/'equilibrated.pdb')
     metals=[a.idx for a in parm.atoms if a.atomic_number==12]
     donors=[a.idx for a in parm.atoms if a.atomic_number in (7,8,16)]
-    sim.reporters.append(app.DCDReporter(str(out/'production.dcd'),5000))
+    # Trajectory = solute (protein+ligands+metal) PLUS active-site waters within WATER_SHELL_A of
+    # the reactive centre (nucleophile/electrophile) at t0 -- keeps Mg inner-shell, bridging and
+    # water-mediated-contact waters for mechanism, while dropping distant bulk (~8x smaller). The
+    # kept-water set is static (chosen at t0); waters exchange over the run, so this shows the FATE
+    # of the t0 catalytic waters, not a continuously-resolved shell. Metal coordination NUMBER is
+    # logged every frame regardless. Set WATER_SHELL_A=0 for solute-only, large for all water.
+    WATER_SHELL_A=6.0
+    keep=set(a.idx for a in parm.atoms if a.residue.name not in _WATER and a.residue.name not in _IONS)
+    kept_wat=[]
+    if WATER_SHELL_A>0:
+        rc=positions_A[[i,j]]                      # nucleophile + electrophile coords (t0)
+        for r in parm.residues:
+            if r.name in _WATER:
+                ridx=[a.idx for a in r.atoms]
+                if np.linalg.norm(positions_A[ridx][:,None,:]-rc[None,:,:],axis=2).min()<WATER_SHELL_A:
+                    keep.update(ridx); kept_wat.append(r.idx+1)
+    keep=sorted(keep)
+    solute_mask='!(:'+','.join(sorted(_WATER|_IONS))+')'
+    mask=solute_mask if not kept_wat else f'({solute_mask})|(:'+','.join(map(str,kept_wat))+')'
+    dry=parm[mask]
+    dry.save(str(out/'complex_dry.prmtop'),overwrite=True)
+    print(f'DCD subset: {len(keep)} atoms (solute + {len(kept_wat)} active-site waters within {WATER_SHELL_A} A)',flush=True)
+    sim.reporters.append(SolventStrippedDCDReporter(
+        str(out/'production.dcd'),5000,np.array(keep),dry.topology,0.002*u.picosecond))
     sim.reporters.append(app.StateDataReporter(str(out/'thermodynamics.csv'),5000,step=True,potentialEnergy=True,temperature=True,density=True))
     total=int(round(production_ns*500000));done=0;observations=[]
     with (out/'geometry.jsonl').open('w') as log:
