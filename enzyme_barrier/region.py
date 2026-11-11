@@ -12,7 +12,8 @@ WATER = {'WAT','HOH','TIP3'}
 
 
 def build_region(parm, coordinates, reaction_atoms, ligand_charges, radius=4.0,
-                 embedding_radius=20.0, mobile_radius=8.0,force_residues=()):
+                 embedding_radius=20.0, mobile_radius=8.0,force_residues=(),
+                 cap_charge_delete_A=None):
     xyz = np.asarray(coordinates, float)
     center = xyz[list(reaction_atoms)]
     # Whole ligands + complete metal coordination shells, then catalytic sidechains.
@@ -77,6 +78,27 @@ def build_region(parm, coordinates, reaction_atoms, ligand_charges, radius=4.0,
     residual=float(charges.sum()+qtot-sum(a.charge for a in parm.atoms))
     if abs(residual)>0.005:
         raise ValueError('QM/MM boundary charge conservation failed')
+    # Optional boundary safety for diffuse-basis energies: the Z1 scheme above
+    # zeroes only the M1 (CA) charge, leaving the CA-bonded backbone N (~-0.45 e)
+    # and C (~+0.6 e) ~1.7 A from the link-H cap. A diffuse QM basis spills
+    # electron density onto such close point charges. When cap_charge_delete_A is
+    # set, delete every MM point charge within that distance of any cap and spread
+    # the removed charge uniformly over the remaining non-QM atoms, conserving the
+    # total. This presumes the full neutral cell is embedded so the redistributed
+    # charge is retained; it is logged, not silently applied (default: off).
+    cap_deleted=[]
+    if cap_charge_delete_A:
+        caps=capped_coordinates(xyz, dict(indices=indices, links=links))[len(indices):]
+        if len(caps):
+            nonqm=np.array([a.idx for a in parm.atoms if a.idx not in selected])
+            dcap=np.linalg.norm(xyz[nonqm][:,None,:]-caps[None,:,:],axis=2).min(axis=1)
+            near=nonqm[dcap<=cap_charge_delete_A]
+            removed=float(charges[near].sum()); charges[near]=0.0
+            cap_deleted=sorted(int(i) for i in near)
+            pool=np.array([i for i in nonqm if i not in set(cap_deleted)])
+            if len(pool): charges[pool]+=removed/len(pool)
+            if abs(float(charges.sum()+qtot-sum(a.charge for a in parm.atoms)))>0.005:
+                raise ValueError('cap-charge deletion broke charge conservation')
     emb=[];mobile=set(indices)
     qxyz=xyz[indices]
     for r in parm.residues:
@@ -91,6 +113,8 @@ def build_region(parm, coordinates, reaction_atoms, ligand_charges, radius=4.0,
                 mobile_indices=sorted(mobile),radius_A=radius,embedding_radius_A=embedding_radius,
                 mobile_radius_A=mobile_radius,reaction_atoms=list(reaction_atoms),
                 forced_protein_residues_zero_based=sorted(forced),
+                cap_charge_delete_A=cap_charge_delete_A,
+                cap_deleted_mm_indices=cap_deleted,
                 mm_charge_updates={str(i):float(charges[i]) for i,a in enumerate(parm.atoms) if abs(charges[i]-a.charge)>1e-12},
                 net_mm_charge=float(charges.sum()),original_net_charge=float(sum(a.charge for a in parm.atoms)),
                 charge_rounding_residual_e=residual,

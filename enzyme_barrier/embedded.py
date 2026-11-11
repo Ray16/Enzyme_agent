@@ -107,7 +107,8 @@ class EmbeddedDFTMM(Calculator):
 
     def __init__(self, parm, region, *, xc='wb97m-v', basis='def2-tzvpd',
                  engine='gpu', platform=None, grid_level=3, conv_tol=1e-9,
-                 max_cycle=150, mm_cutoff_nm=1.2, mm_switch_nm=1.0, require_magnesium_c4=True, grid_response=True, **kwargs):
+                 max_cycle=150, mm_cutoff_nm=1.2, mm_switch_nm=1.0, require_magnesium_c4=True, grid_response=True,
+                 level_shift=0.0, damp=0.0, diis_space=None, soscf=False, **kwargs):
         super().__init__(**kwargs)
         import openmm as mm
         import openmm.app as app
@@ -117,6 +118,11 @@ class EmbeddedDFTMM(Calculator):
         self.xc,self.basis,self.engine=xc,basis,engine
         self.grid_level,self.conv_tol,self.max_cycle=grid_level,conv_tol,max_cycle
         self.grid_response=bool(grid_response)
+        # SCF stabilization for hard anionic / strong-embedding cases (default off,
+        # so the validated DIIS behavior is unchanged). soscf uses a second-order
+        # (Newton) solver, robust when DIIS oscillates on multiply-charged anions.
+        self.level_shift=float(level_shift);self.damp=float(damp)
+        self.diis_space=diis_space;self.soscf=bool(soscf)
         self.mm_platform=platform;self.mm_switch_nm=mm_switch_nm
         self.dm=None;self.last_components={};self.evaluations=0
         # Nonperiodic RF MM environment. QM Coulomb uses the explicit fixed
@@ -140,6 +146,10 @@ class EmbeddedDFTMM(Calculator):
         mf=dft.RKS(mol).density_fit();mf.xc=self.xc
         mf.grids.level=self.grid_level;mf.conv_tol=self.conv_tol;mf.max_cycle=self.max_cycle
         if len(mmpos):mf=mm_charge(mf,mmpos,mmcharges,unit='Angstrom')
+        if self.diis_space:mf.diis_space=int(self.diis_space)
+        if self.damp:mf.damp=self.damp
+        if self.level_shift:mf.level_shift=self.level_shift
+        if self.soscf:mf=mf.newton()
         def progress(env):
             print(f"SCF cycle={env.get('cycle')} E_Ha={env.get('e_tot')} elapsed_s={time.monotonic()-scf_start:.1f}",flush=True)
         scf_start=time.monotonic();mf.callback=progress

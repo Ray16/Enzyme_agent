@@ -16,7 +16,7 @@ def atomic_json(path,value):
 def sha256(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def snapshot(prmtop,coordinates,spec_path,out,*,radius=3.0,embedding_radius=20.0,fixed_region=None,force_residues=()):
+def snapshot(prmtop,coordinates,spec_path,out,*,radius=3.0,embedding_radius=20.0,fixed_region=None,force_residues=(),cap_charge_delete_A=None):
     import parmed as pmd
     from .carve import _resolve
     from .spec import ReactionSpec
@@ -33,7 +33,8 @@ def snapshot(prmtop,coordinates,spec_path,out,*,radius=3.0,embedding_radius=20.0
         if np.linalg.norm(x[b.atom1.idx]-x[b.atom2.idx])>2.2:
             raise ValueError(f'Long nonreactive covalent bond {b.atom1.idx}-{b.atom2.idx}; unwrap or review chemistry')
     region=fixed_region or build_region(p,x,[i,j,k],dict(spec.ligands)|dict.fromkeys(spec.metals,2),
-                                       radius=radius,embedding_radius=embedding_radius,force_residues=force_residues)
+                                       radius=radius,embedding_radius=embedding_radius,force_residues=force_residues,
+                                       cap_charge_delete_A=cap_charge_delete_A)
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
     np.save(out/'positions.npy',x)
     atomic_json(out/'region.json',region)
@@ -61,6 +62,153 @@ def load_snapshot(path):
     p=pmd.load_file(d['prmtop']);region=json.loads((root/'region.json').read_text());x=np.load(root/'positions.npy')
     a=Atoms(numbers=[at.atomic_number for at in p.atoms],positions=x)
     return p,region,a,d
+
+
+def _box_matrix(parm):
+    """Lattice-vector rows (row-major) from a ParmEd box [a,b,c,alpha,beta,gamma],
+    or None if the system is non-periodic. Handles truncated-octahedron cells."""
+    if parm.box is None:return None
+    a,b,c,al,be,ga=parm.box
+    al,be,ga=np.radians([al,be,ga])
+    v1=np.array([a,0.0,0.0])
+    v2=np.array([b*np.cos(ga),b*np.sin(ga),0.0])
+    cx=c*np.cos(be);cy=c*(np.cos(al)-np.cos(be)*np.cos(ga))/np.sin(ga)
+    cz=np.sqrt(max(c*c-cx*cx-cy*cy,0.0))
+    return np.vstack([v1,v2,np.array([cx,cy,cz])])
+
+
+def _min_image(delta,H):
+    """Nearest periodic image of displacement rows `delta` under lattice `H`
+    (searching +-1 in each lattice vector, which spans the truncated-octahedron
+    Wigner-Seitz cell). `H=None` -> identity (non-periodic)."""
+    if H is None:return delta
+    import itertools
+    shifts=np.array([np.array(t)@H for t in itertools.product((-1,0,1),repeat=3)])
+    cand=delta[:,None,:]+shifts[None,:,:]
+    j=np.argmin(np.linalg.norm(cand,axis=2),axis=1)
+    return cand[np.arange(len(delta)),j]
+
+
+def consistent_path_positions(path_dir,*,transplant_radius=None,guard_radius=4.0,guard_tol=0.3):
+    """Positions for every point of a barrier path sharing ONE environment.
+
+    A barrier must isolate the reaction coordinate (and the enzyme's local
+    response to it) against a single fixed environment. Legacy multi-frame paths
+    can carry inconsistent environments: periodic re-imaging (atoms wrapped to
+    different images, tens of A apart) and frame-to-frame bulk differences. Under
+    the backend's non-periodic reaction-field MM (or a finite explicit cluster)
+    those corrupt the energy difference even though the chemistry is fine -- the
+    AS9 pilot blew up to +154 kcal/mol from exactly this, entirely from bulk
+    beyond ~33 A, while the active site was identical across R/TS/P.
+
+    Construction: keep each frame's own ACTIVE-SITE geometry (the atoms within
+    `transplant_radius` of the QM region -- the real reaction coordinate plus the
+    enzyme's local relaxation, min-imaged onto the reference), and replace all
+    the distant bulk with the single reference frame. Frozen bulk is then
+    identical across points and cancels exactly in dE. By default the transplant
+    set is the region's methodology-defined `mobile_indices`; pass a radius to
+    override.
+
+    Safety: it REFUSES if any atom OUTSIDE the transplant set but within
+    `guard_radius` of it genuinely moves (after min-imaging) by more than
+    `guard_tol` -- that means real motion spills past the transplant shell and
+    freezing it would discard genuine active-site response. Re-imaging jumps and
+    distant bulk differences do not trip this (they are far from the shell and
+    intended to be frozen).
+
+    Returns (parm, region, reference_label, {label: positions (natom,3)}).
+    Generalizable: no enzyme-specific assumptions; reference is 'R' if present,
+    else the first snapshot in path.json.
+    """
+    import parmed as pmd
+    root=Path(path_dir)
+    path=json.loads((root/'path.json').read_text())
+    snaps=path['snapshots']
+    labels=list(snaps);ref=labels[0] if 'R' not in snaps else 'R'
+    region=json.loads((Path(snaps[ref])/'region.json').read_text())
+    man=json.loads((Path(snaps[ref])/'input.json').read_text())
+    parm=pmd.load_file(man['prmtop'])
+    qm=np.array(sorted(set(region['indices'])))
+    natom=len(parm.atoms)
+    H=_box_matrix(parm)
+    xref=np.load(Path(snaps[ref])/'positions.npy')
+    if transplant_radius is None and region.get('mobile_indices'):
+        transplant=np.array(sorted(set(region['mobile_indices'])|set(qm.tolist())))
+    else:
+        r=float(transplant_radius if transplant_radius is not None else region.get('mobile_radius_A',8.0))
+        dq=np.linalg.norm(xref[:,None,:]-xref[qm][None,:,:],axis=2).min(axis=1)
+        transplant=np.where(dq<=r)[0]
+    tset=set(transplant.tolist())
+    # guard shell: atoms just outside the transplant set, near it
+    others=np.array([i for i in range(natom) if i not in tset])
+    dshell=np.linalg.norm(xref[others][:,None,:]-xref[transplant][None,:,:],axis=2).min(axis=1)
+    guard=others[dshell<=guard_radius]
+    frames={}
+    for label in labels:
+        x=np.load(Path(snaps[label])/'positions.npy')
+        if label==ref:frames[label]=xref.copy();continue
+        dg=np.linalg.norm(_min_image(x[guard]-xref[guard],H),axis=1) if len(guard) else np.zeros(0)
+        bad=guard[dg>guard_tol] if len(guard) else np.array([],int)
+        if len(bad):
+            res=sorted({f"{parm.atoms[i].residue.name}{parm.atoms[i].residue.idx}" for i in bad})
+            raise ValueError(
+                f"Frame {label!r}: {len(bad)} atoms just outside the transplant "
+                f"shell moved >{guard_tol} A vs {ref!r} (max {dg.max():.2f} A); "
+                f"residues {res[:12]}. Genuine motion spills past the transplant "
+                "radius -- widen transplant_radius or rebuild the path; do not freeze.")
+        out=xref.copy()
+        out[transplant]=xref[transplant]+_min_image(x[transplant]-xref[transplant],H)
+        frames[label]=out
+    region=dict(region,consistent_env_transplant=sorted(int(i) for i in transplant),
+                consistent_env_reference=ref)
+    return parm,region,ref,frames
+
+
+def validate_geometry(parm,positions,*,reaction_atoms=(),bond_max=2.2,bond_min=0.4,
+                      clash=0.9,raise_on_fail=True):
+    """Structural sanity for an input geometry before any (expensive) energy.
+
+    The barrier is only as good as the structure, so every geometry fed to a
+    backend should pass: finite coordinates, an (approximately) integer total
+    charge, no over-stretched or collapsed covalent bonds, and no non-bonded
+    steric clashes. A bond may exceed `bond_max` (or fall below `bond_min`) only
+    if BOTH its atoms are reaction atoms -- that is the bond being made/broken.
+    This catches periodic re-imaging that tears molecules, bad transplants, and
+    overlapping atoms, none of which the MLIP/DFT would flag on its own.
+
+    Returns a report dict; raises ValueError on any violation when
+    raise_on_fail (default). Generalizable: reaction_atoms is the only
+    chemistry-specific input and defaults to none.
+    """
+    from scipy.spatial import cKDTree
+    x=np.asarray(positions,float);rset=set(int(i) for i in reaction_atoms);fails=[]
+    if not np.isfinite(x).all():fails.append('non-finite coordinates')
+    qtot=float(sum(a.charge for a in parm.atoms))
+    if abs(qtot-round(qtot))>0.02:fails.append(f'total charge {qtot:.3f} is not integer')
+    bonded=set()
+    bad_bonds=[]
+    for b in parm.bonds:
+        i,j=b.atom1.idx,b.atom2.idx;bonded.add((min(i,j),max(i,j)))
+        d=float(np.linalg.norm(x[i]-x[j]))
+        if (d>bond_max or d<bond_min) and not({i,j}<=rset):
+            bad_bonds.append((i,j,round(d,2)))
+    if bad_bonds:
+        ex=[f"{parm.atoms[i].residue.name}{parm.atoms[i].residue.idx}:{parm.atoms[i].name}-"
+            f"{parm.atoms[j].name}={d}A" for i,j,d in sorted(bad_bonds,key=lambda t:-t[2])[:8]]
+        fails.append(f'{len(bad_bonds)} covalent bond(s) out of [{bond_min},{bond_max}]A '
+                     f'not at the reaction center: {ex}')
+    pairs=cKDTree(x).query_pairs(clash)
+    clashes=[(i,j) for i,j in pairs if (min(i,j),max(i,j)) not in bonded and not({i,j}<=rset)]
+    if clashes:
+        ex=[f"{parm.atoms[i].residue.name}{parm.atoms[i].residue.idx}:{parm.atoms[i].name}.."
+            f"{parm.atoms[j].residue.name}{parm.atoms[j].residue.idx}:{parm.atoms[j].name}="
+            f"{np.linalg.norm(x[i]-x[j]):.2f}A" for i,j in clashes[:8]]
+        fails.append(f'{len(clashes)} non-bonded clash(es) <{clash}A: {ex}')
+    report=dict(n_atoms=len(x),total_charge=qtot,n_bad_bonds=len(bad_bonds),
+                n_clashes=len(clashes),passed=not fails,failures=fails)
+    if fails and raise_on_fail:
+        raise ValueError('Geometry validation failed: '+'; '.join(fails))
+    return report
 
 
 def import_cluster_path(prmtop,full_coords,atom_map,geometries,spec_path,out,*,radius=4.0,embedding_radius=20.0):
