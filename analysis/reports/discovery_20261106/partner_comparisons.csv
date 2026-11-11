@@ -1,0 +1,44 @@
+accession,protein_name,rank,tier,partner_1_fit,partner_2_fit
+P0DXD6,Putrebactin synthase,1,prioritized hypothesis,0.4583333333333333,0.4053333333333333
+Q0HWI9,Putrebactin synthase,2,prioritized hypothesis,0.4583333333333333,0.4053333333333333
+Q9RDS6,Gamma-glutamylpolyamine synthetase GlnA2,4,candidate to investigate,0.48933333333333334,0.857
+P78061,Gamma-glutamylputrescine synthetase PuuA,5,candidate to investigate,0.48933333333333334,0.857
+Q9KZC7,Gamma-glutamylpolyamine synthetase GlnA3,21,candidate to investigate,0.48933333333333334,0.6056666666666667
+A0A1H4U7K7,Putative glutamate--cysteine ligase 2,22,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0A2S2BQ12,Putative glutamate--cysteine ligase 2,23,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0A402C1H7,Putative glutamate--cysteine ligase 2,24,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0A974ZV78,Putative glutamate--cysteine ligase 2,25,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0A9X4LYF5,Putative glutamate--cysteine ligase 2,26,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0AAX3YF65,Putative glutamate--cysteine ligase 2,27,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0ABP8NYC7,Putative glutamate--cysteine ligase 2,28,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0ABT1QIZ7,Putative glutamate--cysteine ligase 2,29,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0ABU4CP25,Putative glutamate--cysteine ligase 2,30,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0ABU7L824,Putative glutamate--cysteine ligase 2,31,candidate to investigate,0.48933333333333334,0.48633333333333334
+Q0S8V5,Putative glutamate--cysteine ligase 2-3,32,candidate to investigate,0.48933333333333334,0.48633333333333334
+X0PN35,Putative glutamate--cysteine ligase 2,33,candidate to investigate,0.48933333333333334,0.48633333333333334
+A0A0F7RJ52,Spermidine-citrate ligase,34,candidate to investigate,0.34366666666666673,0.6056666666666667
+Q2FW70,D-ornithine--citrate ligase,35,candidate to investigate,0.34366666666666673,0.49033333333333334
+Q2G1M9,"L-2,3-diaminopropanoate--citrate ligase",36,candidate to investigate,0.34366666666666673,0.48933333333333334
+A0A0S2IKQ5,Asparagine synthetase [glutamine-hydrolyzing],37,candidate to investigate,0.4633333333333333,0.3423333333333333
+A0A1D5SUB6,Asparagine synthetase [glutamine-hydrolyzing],38,candidate to investigate,0.4633333333333333,0.3423333333333333
+A0A1I2XEU9,asparagine synthase (glutamine-hydrolyzing),39,candidate to investigate,0.4633333333333333,0.3423333333333333
+A0A2K1IVM2,Asparagine synthetase [glutamine-hydrolyzing],40,candidate to investigate,0.4633333333333333,0.3423333333333333
+A0A4U0MRF2,asparagine synthase (glutamine-hydrolyzing),41,candidate to investigate,0.4633333333333333,0.3423333333333333
+A0A4Z0G8S2,asparagine synthase (glutamine-hydrolyzing),42,candidate to investigate,0.4633333333333333,0.3423333333333333
+P19251,"Asparagine synthetase, nodule [glutamine-hydrolyzing]",43,candidate to investigate,0.4633333333333333,0.3423333333333333
+P54420,Asparagine synthetase [glutamine-hydrolyzing] 1,44,candidate to investigate,0.4633333333333333,0.3423333333333333
+P9WN33,Putative asparagine synthetase [glutamine-hydrolyzing],45,candidate to investigate,0.4633333333333333,0.3423333333333333
+Q2G1M8,2-[(L-alanin-3-ylcarbamoyl)methyl]-3-(2-aminoethylcarbamoyl)-2-hydroxypropanoate synthase,46,candidate to investigate,0.29133333333333333,0.48933333333333334
+O60993,Trypanothione synthetase,47,candidate to investigate,0.26066666666666666,0.6056666666666667
+P90518,Glutathionylspermidine synthase,48,candidate to investigate,0.26066666666666666,0.6056666666666667
+Q2FW72,Staphyloferrin A synthase,49,candidate to investigate,0.34366666666666673,0.13566666666666669
+Q9L9F6,8-demethylnovobiocic acid synthase,50,candidate to investigate,0.3,0.0
+P39641,Alanine--anticapsin ligase,51,deprioritized analogue,0.455,0.52
+Q47316,N(2)-citryl-N(6)-acetyl-N(6)-hydroxylysine synthase,52,deprioritized analogue,0.34366666666666673,0.4053333333333333
+Q76BS7,N(2)-citryl-N(6)-acetyl-N(6)-hydroxylysine synthase,53,deprioritized analogue,0.34366666666666673,0.4053333333333333
+A0A5J9TLB9,Asparagine synthetase [glutamine-hydrolyzing],54,deprioritized analogue,0.4633333333333333,0.3423333333333333
+P0AES1,Bifunctional glutathionylspermidine synthetase/amidase,55,deprioritized analogue,0.26066666666666666,0.6056666666666667
+Q81RQ8,"Citryl-spermidine/3,4-dihydroxybenzoyl-citryl-spermidine:spermidine ligase",56,deprioritized analogue,0.254,0.6056666666666667
+P9WN36,Glutamine synthetase,57,deprioritized analogue,0.48933333333333334,0.0
+Q0W4L8,Formate-dependent phosphoribosylglycinamide formyltransferase,58,deprioritized analogue,0.319,0.14466666666666664
+Q2G1N1,Staphyloferrin B synthase,59,deprioritized analogue,0.21166666666666667,0.2956666666666667

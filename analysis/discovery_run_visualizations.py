@@ -20,6 +20,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+from discovery_search_story import render_search_story
 
 
 BLUE, ORANGE, GREEN, GRAY = "#0072B2", "#E69F00", "#009E73", "#697586"
@@ -76,7 +77,8 @@ def main():
     sources = ["manifest.json", "ranked_candidates.csv", "candidate_coverage.csv",
                "agent_state/token_usage.json", "agent_state/candidate_registry.json",
                "agent_state/budget_checkpoint.json", "agent_state/mechanism_families.json",
-               "agent_state/family_landscape.json", "logs/events.jsonl"]
+               "agent_state/family_landscape.json", "logs/events.jsonl",
+               "reasoning/trace.jsonl", "agent_state/literature_reading.json"]
     source_hashes = {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in sources}
     manifest = load(root / "manifest.json")
     usage = load(root / "agent_state/token_usage.json")
@@ -218,7 +220,7 @@ def main():
     ax.set_xlim(0, max(tiers.values()) * 1.15); ax.invert_yaxis(); ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_xlabel("Ranked candidates"); ax.set_title("D  Exported portfolio tiers", loc="left")
     fig.suptitle(title + "\nDiscovery phase • recorded accounting and hypotheses", fontsize=15)
-    save(fig, out, "overview")
+    save(fig, out, "accounting_overview")
 
     fig, axes = plt.subplots(1, 2, figsize=(16, 14), sharey=True, layout="constrained", gridspec_kw={"width_ratios": [1, 1]})
     y = list(range(len(family_rows)))
@@ -256,6 +258,19 @@ def main():
     ax.set_title(f"First {len(top)} of {len(ranked)} exported candidates\nOriginal discovery order; target activity is a mechanistic-transfer hypothesis", loc="left", pad=20)
     save(fig, out, "candidate_table")
 
+    search, research, activity = render_search_story(root, out, manifest, registry, ranked,
+                                                    family_rows, events, call_rows, save, write_rows)
+    metric_rows += [
+        ("Target-assessed registry records", str(search["target_assessed_records"]), "Final records with a target_assessment; one per accession"),
+        ("Leads without target assessment", str(search["no_target_assessment"]), "No recorded target review; not an experimental negative"),
+        ("Recorded tool calls / tool types", f"{search['tool_calls']} / {search['tool_types']}", "Explicit tool_call events; internal helper activity excluded"),
+        ("Paper records encountered", str(search["paper_records"]), "Checkpoint count; not a count of fully read or unique publications"),
+        ("Full-text acquired / attempted identifiers", f"{search['fulltext_download_statuses'].get('acquired', 0)} / {search['fulltext_download_identifiers']}", "Download ledger; unavailable papers are not negative evidence"),
+        ("Numeric partner-pair comparisons", f"{search['numeric_partner_comparisons']} / {len(ranked)}", "Both required partners have recorded analogue_fit values"),
+        ("Registry leads without a family ID", str(search["unassigned_family_records"]), "Included explicitly in the family review coverage figure"),
+    ]
+    write_rows(out / "run_metrics.csv", [dict(zip(["metric", "value", "definition"], r)) for r in metric_rows])
+
     caveats = [
         "Accounting covers the original discovery phase only. Later structural modeling, GPU time, and visualization generation are excluded; their cost cannot be inferred from this token ledger.",
         "Token totals count prompt plus completion tokens, including repeated cache reads. They are not unique text tokens or monetary cost. Cache reads must not be added to the prompt total a second time.",
@@ -263,6 +278,10 @@ def main():
         "Family coverage uses recorded InterPro IDs and family labels, which can describe domains, families, or superfamilies. The registry ID count does not establish an equal number of independent mechanisms or experimental coverage.",
         f"Recorded target-activity evidence counts: {dict(target_evidence)}. Native characterization and target activity are distinct. Recorded broad mechanism assignments are reproduced without reclassification and may be coarse.",
         "Deprioritized analogue entries are retained in the full table. Exported tier and target-assessment decision are separate fields; the original values are preserved in candidates.csv.",
+        "The new overview uses final-registry target assessments, not the manifest evaluation counter. Exported accessions were verified to equal the prioritize/investigate subset of those assessments. Earlier review revisions are not counted again.",
+        "Lead-growth timing uses registry first_seen timestamps; target-review timing uses the first journal assessment for each final assessed accession. Final source tags describe the recorded source and are not a reconstruction of every discovery route.",
+        "Partner resemblance is the run's recorded analogue_fit, not measured binding or activity. Identical points are grouped by exported tier and marker area encodes their count. Missing numeric comparisons are omitted from the scatter and reported explicitly; no values are imputed.",
+        "The evidence-gap panel uses three different denominators: all registered records, all ranked accessions, and identifiers in the full-text download ledger. Those bars are not sequential stage-conversion rates.",
     ]
     headers = ["Rank", "Enzyme / protein", "Accession", "Gene", "Organism", "InterPro family", "Family ID", "Tier", "Target evidence", "Native evidence", "Rationale / uncertainty"]
     candidate_rows = [[x["rank"],x["protein_name"],x["accession"],x["gene"],x["organism"],x["interpro_family"],x["family_id"],x["tier_label"],x["target_activity_evidence"],x["native_activity_evidence"],x["priority_rationale"] + " Uncertainties: " + x["weaknesses"]] for x in ranked]
@@ -270,15 +289,23 @@ def main():
         # Drop XML/DTD prologue for inline HTML.
         return "<svg" + (out / f"{name}.svg").read_text().split("<svg", 1)[1]
     sections = [f"<h1>{html.escape(title)}</h1><p>Discovery run • {html.escape(root.name)}<br>Source snapshot: {html.escape(manifest['timing']['finished_at'])}</p>",
-                '<nav><a href="#metrics">Metrics</a> · <a href="#families">Families</a> · <a href="#candidates">Candidates</a> · <a href="#definitions">Definitions</a></nav>',
-                svg("overview"), '<h2 id="metrics">Timing and token accounting</h2>', table(["Metric", "Value", "Definition"], metric_rows), svg("token_accounting"),
+                '<nav><a href="#search">Search story</a> · <a href="#timeline">Timeline</a> · <a href="#metrics">Metrics</a> · <a href="#families">Families</a> · <a href="#candidates">Candidates</a> · <a href="#definitions">Definitions</a></nav>',
+                '<h2 id="search">From a broad search to testable candidates</h2>',
+                f"<p><strong>{len(registry):,} registered leads → {search['target_assessed_records']} target-assessed records → {len(ranked)} ranked accessions.</strong> {search['no_target_assessment']} leads have no recorded target assessment; defer/exclude decisions account for the other assessed leads. These relationships were checked against exact accessions.</p>",
+                svg("overview"),
+                '<h2 id="timeline">Search activity over time</h2>', svg("search_timeline"),
+                f"<p>{search['tool_calls']} explicit tool calls across {search['tool_types']} tool types. The checkpoint recorded {search['paper_records']} paper records; the download ledger contains {search['fulltext_download_identifiers']} attempted identifiers. These counts describe different units.</p>",
+                '<details><summary>Inspect the recorded search queries and tool calls</summary>' + table(["Minute", "Tool", "Status", "Query / arguments"], [[f"{r['elapsed_minutes']:.1f}", r['tool'], r['status'], r['query_or_arguments']] for r in activity]) + '</details>',
+                '<details><summary>Read the recorded research decisions</summary>' + table(["Minute", "Action", "Hypothesis", "Prediction", "Reason for action"], [[f"{r['elapsed_minutes']:.1f}", r['action'], r['hypothesis'], r['prediction'], r['reasoning']] for r in research]) + '</details>',
+                '<h2 id="metrics">Timing and token accounting</h2>', table(["Metric", "Value", "Definition"], metric_rows), svg("token_accounting"),
                 "<h3>Model stages</h3>", table(list(stages[0]), [list(x.values()) for x in stages]),
-                '<h2 id="families">Family coverage</h2>', svg("family_coverage"),
+                '<h2 id="families">Which families were reviewed or left unresolved?</h2>', svg("family_review_coverage"),
+                '<details><summary>Compare full registered and ranked family counts</summary>' + svg("family_coverage") + '</details>',
                 table(list(family_rows[0]), [list(x.values()) for x in family_rows]),
                 '<h2 id="candidates">Discovered candidate portfolio</h2><p>All exported candidates; click column headers to sort. Original rank is preserved in the first column. No new scientific ranking was calculated.</p>',
                 table(headers, candidate_rows, "candidates-table", searchable=True),
                 '<h2 id="definitions">Definitions and limits</h2><ul>' + "".join(f"<li>{html.escape(x)}</li>" for x in caveats) + "</ul>",
-                "<p>Companion files: README.md, run_metrics.csv, candidates.csv, family_coverage.csv, token_stages.csv, token_calls.csv, summary.json, provenance.json, and PNG/SVG figure exports.</p>"]
+                "<p>Companion files: README.md, run_metrics.csv, candidates.csv, family_coverage.csv, family_review_outcomes.csv, search_activity.csv, search_progress.csv, research_decisions.csv, partner_comparisons.csv, token_stages.csv, token_calls.csv, search_summary.json, summary.json, provenance.json, and PNG/SVG figure exports.</p>"]
     css = "body{font:16px/1.5 system-ui,sans-serif;color:#172b40;max-width:1480px;margin:36px auto;padding:0 24px;background:#fff}h1{font-size:30px}h2{margin-top:48px}nav a{color:#0072B2}svg{width:100%;height:auto;margin:24px 0}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid #dce4ec}th{background:#e8f2fa;cursor:pointer;position:sticky;top:0}tr:nth-child(even){background:#f7f9fb}.table-wrap{overflow:auto;max-height:750px}#candidates-table{min-width:1950px}#candidates-table td:nth-child(2){min-width:220px}#candidates-table td:last-child{min-width:480px}input{padding:10px;width:min(480px,90%);font:inherit}li{margin:10px 0}@media print{.table-wrap{max-height:none;overflow:visible}nav,input{display:none}}"
     js = """const tbl=document.querySelector('#candidates-table');const body=tbl.tBodies[0];const count=document.querySelector('#visible-count');function update(){const q=document.querySelector('#search').value.toLowerCase();let n=0;[...body.rows].forEach(r=>{r.hidden=!r.textContent.toLowerCase().includes(q);if(!r.hidden)n++});count.textContent=n+' of '+body.rows.length+' candidates shown'}document.querySelector('#search').addEventListener('input',update);[...tbl.tHead.rows[0].cells].forEach((h,i)=>{let asc=true;function sort(){const rows=[...body.rows];rows.sort((a,b)=>{let x=a.cells[i].textContent,y=b.cells[i].textContent;return (i===0?Number(x)-Number(y):x.localeCompare(y))*(asc?1:-1)});rows.forEach(r=>body.appendChild(r));[...h.parentElement.cells].forEach(c=>c.removeAttribute('aria-sort'));h.setAttribute('aria-sort',asc?'ascending':'descending');asc=!asc}h.addEventListener('click',sort);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();sort()}})});update();"""
     (out / "index.html").write_text('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Discovery run visualization</title><style>' + css + '</style><body>' + "\n".join(sections) + '<script>' + js + '</script></body></html>')
@@ -287,14 +314,16 @@ def main():
                "registry_family_ids": len(families), "ranked_family_labels": len(ranked_labels),
                "registry_latest_status_counts": dict(statuses), "exported_tiers": dict(tiers),
                "ranked_target_evidence": dict(target_evidence), "ranked_mechanism_labels": dict(mechanism_labels),
-               "checks": checks, "caveats": caveats}
+               "search": search, "checks": checks, "caveats": caveats}
     (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     (out / "provenance.json").write_text(json.dumps({"run_path": str(root), "source_sha256": source_hashes,
               "generator": str(Path(__file__).resolve()), "generator_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+              "search_renderer_sha256": hashlib.sha256(Path(__file__).with_name('discovery_search_story.py').read_bytes()).hexdigest(),
               "matplotlib_version": matplotlib.__version__, "scope": "Retrospective discovery-phase accounting; no new discovery or modeling"}, indent=2) + "\n")
     md = [f"# {title}", "", "Open [the self-contained dashboard](index.html) for the searchable candidate table and figures.", "", "## Timing, tokens and coverage", "", "| Metric | Value | Definition |", "|---|---|---|"]
     md += ["| " + " | ".join(str(x).replace("|", "\\|") for x in row) + " |" for row in metric_rows]
-    md += ["", "## Figures", "", "- [Overview](overview.png) ([SVG](overview.svg))", "- [Family coverage](family_coverage.png) ([SVG](family_coverage.svg))", "- [Token accounting](token_accounting.png) ([SVG](token_accounting.svg))", "- [First 15 candidates](candidate_table.png) ([SVG](candidate_table.svg))", "", "## All ranked candidates", "", "Original export order; hypotheses rather than demonstrated target activity.", "", "| Rank | Enzyme / protein | Accession | Family ID | Tier |", "|---|---|---|---|---|"]
+    decisions = search['target_review_decisions']
+    md += ["", "## Search story", "", "The relationships below are verified against the final registry and exported accessions. Counts are records, except for the unique exported accessions.", "", "```mermaid", "flowchart LR", f'  all["{len(registry)} registered leads"] --> reviewed["{search["target_assessed_records"]} target-assessed"]', f'  all --> pending["{search["no_target_assessment"]} no recorded target assessment"]', f'  reviewed --> deferred["{decisions.get("defer", 0)} deferred"]', f'  reviewed --> excluded["{decisions.get("exclude", 0)} excluded"]', f'  reviewed --> ranked["{len(ranked)} ranked accessions"]', "```", "", "## Figures", "", "- [Search overview: growth, routes, reviews, families, partner fit and evidence gaps](overview.png) ([SVG](overview.svg))", "- [Detailed search timeline](search_timeline.png) ([SVG](search_timeline.svg))", "- [Review outcomes for every family, including unassigned leads](family_review_coverage.png) ([SVG](family_review_coverage.svg))", "- [Accounting overview](accounting_overview.png) ([SVG](accounting_overview.svg))", "- [Full family counts](family_coverage.png) ([SVG](family_coverage.svg))", "- [Token accounting](token_accounting.png) ([SVG](token_accounting.svg))", "- [First 15 candidates](candidate_table.png) ([SVG](candidate_table.svg))", "", "## All ranked candidates", "", "Original export order; hypotheses rather than demonstrated target activity.", "", "| Rank | Enzyme / protein | Accession | Family ID | Tier |", "|---|---|---|---|---|"]
     md += ["| " + " | ".join(str(v).replace("|", "\\|") for v in [x["rank"], x["protein_name"], x["accession"], x["family_id"], x["tier_label"]]) + " |" for x in ranked]
     md += ["", "## Definitions and limits", ""] + [f"- {x}" for x in caveats]
     md += ["", "## Reproduce", "", "Run from the repository root using Python with matplotlib and NumPy installed:", "", "```bash", f"OMP_NUM_THREADS=1 OMP_THREAD_LIMIT=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 python analysis/discovery_run_visualizations.py '{root}' --out '{out}'", "```", "", "All data and biological labels are read from the supplied run; the generator imports no discovery code. `provenance.json` records source hashes. `summary.json` records accounting checks. Plots are descriptive counts and provider accounting; no inferential error bars or significance tests apply.", ""]

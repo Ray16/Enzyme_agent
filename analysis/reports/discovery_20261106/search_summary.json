@@ -1,0 +1,39 @@
+{
+  "target_assessed_records": 203,
+  "no_target_assessment": 786,
+  "target_review_decisions": {
+    "defer": 141,
+    "investigate": 57,
+    "prioritize": 2,
+    "exclude": 3
+  },
+  "recorded_lead_source_groups": {
+    "Literature / full-text leads": 25,
+    "Family substrate screening": 885,
+    "Direct database lookup": 79
+  },
+  "numeric_partner_comparisons": 43,
+  "missing_numeric_partner_comparisons": 16,
+  "fulltext_download_identifiers": 9,
+  "fulltext_download_statuses": {
+    "acquired": 2,
+    "unavailable": 7
+  },
+  "paper_records": 242,
+  "tool_calls": 58,
+  "tool_status_counts": {
+    "partial": 3,
+    "success": 53,
+    "error": 1,
+    "skipped": 1
+  },
+  "tool_types": 17,
+  "research_decisions": 13,
+  "unassigned_family_records": 31,
+  "checks": {
+    "exported_accessions_equal_prioritize_or_investigate_reviews": true,
+    "first_review_timestamps_cover_assessed_records": true,
+    "source_groups_partition_registry": true,
+    "family_outcomes_partition_registry": true
+  }
+}

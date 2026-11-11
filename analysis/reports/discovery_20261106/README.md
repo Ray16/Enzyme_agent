@@ -30,11 +30,34 @@ Open [the self-contained dashboard](index.html) for the searchable candidate tab
 | Landscape fold IDs | 16 | Initial exploration landscape; separate scope |
 | Mechanism hypotheses | 6 | Reasoned hypotheses; not experimental coverage |
 | Ranked mechanism labels | 4 | Recorded broad assignments; 1 candidates unassigned |
+| Target-assessed registry records | 203 | Final records with a target_assessment; one per accession |
+| Leads without target assessment | 786 | No recorded target review; not an experimental negative |
+| Recorded tool calls / tool types | 58 / 17 | Explicit tool_call events; internal helper activity excluded |
+| Paper records encountered | 242 | Checkpoint count; not a count of fully read or unique publications |
+| Full-text acquired / attempted identifiers | 2 / 9 | Download ledger; unavailable papers are not negative evidence |
+| Numeric partner-pair comparisons | 43 / 59 | Both required partners have recorded analogue_fit values |
+| Registry leads without a family ID | 31 | Included explicitly in the family review coverage figure |
+
+## Search story
+
+The relationships below are verified against the final registry and exported accessions. Counts are records, except for the unique exported accessions.
+
+```mermaid
+flowchart LR
+  all["989 registered leads"] --> reviewed["203 target-assessed"]
+  all --> pending["786 no recorded target assessment"]
+  reviewed --> deferred["141 deferred"]
+  reviewed --> excluded["3 excluded"]
+  reviewed --> ranked["59 ranked accessions"]
+```
 
 ## Figures
 
-- [Overview](overview.png) ([SVG](overview.svg))
-- [Family coverage](family_coverage.png) ([SVG](family_coverage.svg))
+- [Search overview: growth, routes, reviews, families, partner fit and evidence gaps](overview.png) ([SVG](overview.svg))
+- [Detailed search timeline](search_timeline.png) ([SVG](search_timeline.svg))
+- [Review outcomes for every family, including unassigned leads](family_review_coverage.png) ([SVG](family_review_coverage.svg))
+- [Accounting overview](accounting_overview.png) ([SVG](accounting_overview.svg))
+- [Full family counts](family_coverage.png) ([SVG](family_coverage.svg))
 - [Token accounting](token_accounting.png) ([SVG](token_accounting.svg))
 - [First 15 candidates](candidate_table.png) ([SVG](candidate_table.svg))
 
@@ -112,6 +135,10 @@ Original export order; hypotheses rather than demonstrated target activity.
 - Family coverage uses recorded InterPro IDs and family labels, which can describe domains, families, or superfamilies. The registry ID count does not establish an equal number of independent mechanisms or experimental coverage.
 - Recorded target-activity evidence counts: {'mechanistic_transfer': 59}. Native characterization and target activity are distinct. Recorded broad mechanism assignments are reproduced without reclassification and may be coarse.
 - Deprioritized analogue entries are retained in the full table. Exported tier and target-assessment decision are separate fields; the original values are preserved in candidates.csv.
+- The new overview uses final-registry target assessments, not the manifest evaluation counter. Exported accessions were verified to equal the prioritize/investigate subset of those assessments. Earlier review revisions are not counted again.
+- Lead-growth timing uses registry first_seen timestamps; target-review timing uses the first journal assessment for each final assessed accession. Final source tags describe the recorded source and are not a reconstruction of every discovery route.
+- Partner resemblance is the run's recorded analogue_fit, not measured binding or activity. Identical points are grouped by exported tier and marker area encodes their count. Missing numeric comparisons are omitted from the scatter and reported explicitly; no values are imputed.
+- The evidence-gap panel uses three different denominators: all registered records, all ranked accessions, and identifiers in the full-text download ledger. Those bars are not sequential stage-conversion rates.
 
 ## Reproduce
 

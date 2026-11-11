@@ -23,3 +23,10 @@ Registry family IDs,30,"Primary annotated ID, otherwise screening ID; one per re
 Landscape fold IDs,16,Initial exploration landscape; separate scope
 Mechanism hypotheses,6,Reasoned hypotheses; not experimental coverage
 Ranked mechanism labels,4,Recorded broad assignments; 1 candidates unassigned
+Target-assessed registry records,203,Final records with a target_assessment; one per accession
+Leads without target assessment,786,No recorded target review; not an experimental negative
+Recorded tool calls / tool types,58 / 17,Explicit tool_call events; internal helper activity excluded
+Paper records encountered,242,Checkpoint count; not a count of fully read or unique publications
+Full-text acquired / attempted identifiers,2 / 9,Download ledger; unavailable papers are not negative evidence
+Numeric partner-pair comparisons,43 / 59,Both required partners have recorded analogue_fit values
+Registry leads without a family ID,31,Included explicitly in the family review coverage figure

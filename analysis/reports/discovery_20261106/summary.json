@@ -27,6 +27,45 @@
     "ATP-grasp carboxylate\u2013amine ligase (acylphosphate mechanism)": 6,
     "CoA-thioester coupled route: acyl-CoA ligase/CoA-transferase plus BAHD or GNAT-type N-acyltransferase": 1
   },
+  "search": {
+    "target_assessed_records": 203,
+    "no_target_assessment": 786,
+    "target_review_decisions": {
+      "defer": 141,
+      "investigate": 57,
+      "prioritize": 2,
+      "exclude": 3
+    },
+    "recorded_lead_source_groups": {
+      "Literature / full-text leads": 25,
+      "Family substrate screening": 885,
+      "Direct database lookup": 79
+    },
+    "numeric_partner_comparisons": 43,
+    "missing_numeric_partner_comparisons": 16,
+    "fulltext_download_identifiers": 9,
+    "fulltext_download_statuses": {
+      "acquired": 2,
+      "unavailable": 7
+    },
+    "paper_records": 242,
+    "tool_calls": 58,
+    "tool_status_counts": {
+      "partial": 3,
+      "success": 53,
+      "error": 1,
+      "skipped": 1
+    },
+    "tool_types": 17,
+    "research_decisions": 13,
+    "unassigned_family_records": 31,
+    "checks": {
+      "exported_accessions_equal_prioritize_or_investigate_reviews": true,
+      "first_review_timestamps_cover_assessed_records": true,
+      "source_groups_partition_registry": true,
+      "family_outcomes_partition_registry": true
+    }
+  },
   "checks": {
     "calls_match_events": true,
     "request_ids_match": true,
@@ -44,6 +83,10 @@
     "A registry record is a lead, not necessarily a unique sequence. The manifest evaluation counter, latest registry statuses, and pending-checkpoint list have different scopes and do not form a single funnel.",
     "Family coverage uses recorded InterPro IDs and family labels, which can describe domains, families, or superfamilies. The registry ID count does not establish an equal number of independent mechanisms or experimental coverage.",
     "Recorded target-activity evidence counts: {'mechanistic_transfer': 59}. Native characterization and target activity are distinct. Recorded broad mechanism assignments are reproduced without reclassification and may be coarse.",
-    "Deprioritized analogue entries are retained in the full table. Exported tier and target-assessment decision are separate fields; the original values are preserved in candidates.csv."
+    "Deprioritized analogue entries are retained in the full table. Exported tier and target-assessment decision are separate fields; the original values are preserved in candidates.csv.",
+    "The new overview uses final-registry target assessments, not the manifest evaluation counter. Exported accessions were verified to equal the prioritize/investigate subset of those assessments. Earlier review revisions are not counted again.",
+    "Lead-growth timing uses registry first_seen timestamps; target-review timing uses the first journal assessment for each final assessed accession. Final source tags describe the recorded source and are not a reconstruction of every discovery route.",
+    "Partner resemblance is the run's recorded analogue_fit, not measured binding or activity. Identical points are grouped by exported tier and marker area encodes their count. Missing numeric comparisons are omitted from the scatter and reported explicitly; no values are imputed.",
+    "The evidence-gap panel uses three different denominators: all registered records, all ranked accessions, and identifiers in the full-text download ledger. Those bars are not sequential stage-conversion rates."
   ]
 }

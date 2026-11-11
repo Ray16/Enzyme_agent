@@ -9,10 +9,13 @@
     "agent_state/budget_checkpoint.json": "586815e1bef687197fe9cc65cf58794154ee647691b415ae0c8f0186c5dae763",
     "agent_state/mechanism_families.json": "b9aae5734c0ab5c48c1ac7e1aafd8fd67c6d5ff4241a6dec0e177e1998304939",
     "agent_state/family_landscape.json": "4c23b2bd8518aed21036833d17db9bd98daacb9e81b977093de3dbaa36f92538",
-    "logs/events.jsonl": "d2376782fc0603b9bc083bb2aaaf3ea7d628c0fdbfb47c4236776af1a1f9bc7a"
+    "logs/events.jsonl": "d2376782fc0603b9bc083bb2aaaf3ea7d628c0fdbfb47c4236776af1a1f9bc7a",
+    "reasoning/trace.jsonl": "09bffa034a57233c64bf55313f7cf278373755b12481830bf7a81ca728edc786",
+    "agent_state/literature_reading.json": "0c4f68f291661bb590128b635dda4667bdb6c6771109895679802d057018c25c"
   },
   "generator": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/analysis/discovery_run_visualizations.py",
-  "generator_sha256": "70f997b8a280def30748eecc45abc47389e0cbcf847e788e8f841be7db766546",
+  "generator_sha256": "15fc623d34849d2eb144f8b8b04c9604abd5ab8991b9d4f5b080667db0643aa2",
+  "search_renderer_sha256": "93be2f8b0feb73a14cf0a1b8b4649790b05b1b95bdfe40252e4252cc1e064791",
   "matplotlib_version": "3.10.8",
   "scope": "Retrospective discovery-phase accounting; no new discovery or modeling"
 }

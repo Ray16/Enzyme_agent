@@ -1,0 +1,32 @@
+family_id,family_name,no_target_assessment,defer,exclude,exported
+IPR037455,"Aerobactin siderophore biosynthesis, IucA/IucC-like",0,7,0,23
+IPR002933,Peptidase M20,0,1,0,12
+IPR006426,"Asparagine synthase, glutamine-hydrolyzing",0,34,0,10
+IPR008146,"Glutamine synthetase, catalytic domain",0,3,1,4
+IPR051705,Glutathionylspermidine Synthetase/Amidase,0,2,0,3
+IPR005494,"Glutathionylspermidine synthase, pre-ATP-grasp-like domain",0,0,0,2
+IPR000873,AMP-dependent synthetase/ligase domain,4,8,0,1
+IPR005862,Formate-dependent phosphoribosylglycinamide formyltransferase,0,12,0,1
+IPR004809,Glutamine synthetase type I,0,2,0,1
+IPR011761,ATP-grasp fold,0,1,0,1
+IPR051087,Mitochondrial Acyl-CoA Synthetase Medium-Chain,0,0,0,1
+IPR003135,"ATP-grasp fold, ATP-dependent carboxylate-amine ligase-type",457,9,0,0
+IPR011698,Name not recorded (screening assignment),236,0,0,0
+IPR004484,"Cobyrinate/Hydrogenobyrinate a,c-diamide synthase CbiA/CobB",0,57,0,0
+IPR017932,Name not recorded (screening assignment),34,0,0,0
+IPR052033,Glutaryl-CoA dehydrogenase,6,0,0,0
+IPR003480,Transferase,5,0,0,0
+IPR002586,Name not recorded (screening assignment),4,0,0,0
+IPR018317,Queuosine biosynthesis protein QueC,2,2,0,0
+IPR008288,Poly [ADP-ribose] polymerase,2,0,0,0
+IPR001204,Phosphate transporter,0,0,1,0
+IPR002305,"Aminoacyl-tRNA synthetase, class Ic",1,0,0,0
+IPR003200,Nicotinate-nucleotide-dimethylbenzimidazole phosphoribosyltransferase,0,1,0,0
+IPR004610,Bacterial RecJ exonuclease,0,1,0,0
+IPR005814,Aminotransferase class-III,1,0,0,0
+IPR011904,Acetate-CoA ligase,1,0,0,0
+IPR016376,Histone acetyltransferase GCN5/PCAF,1,0,0,0
+IPR050097,Ferredoxin--NADP / Thioredoxin reductase,1,0,0,0
+IPR050237,ATP-dependent AMP-binding enzyme,0,1,0,0
+IPR053269,L-aspartate--L-methionine ligase/Tyramine--L-glutamate ligase-like,0,0,1,0
+Unassigned,No recorded family ID,31,0,0,0
