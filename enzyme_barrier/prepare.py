@@ -24,9 +24,9 @@ def prepare(cofold,out,spec_path,polarizabilities,*,ph=8.0,overrides=None):
     param_substrate(sub,atp,out,substrate,ligands[substrate],ph=ph)
     _,top,coords=build_tleap(out,substrate,polarizabilities=polarizabilities,pol_overrides=overrides)
     check=validate_prepared(top,coords,spec_path)
-    status=('parameterized_metal_coordination_ok_requires_equilibration_review'
-            if check['metal_octahedral_ok']
-            else 'parameterized_metal_UNDERCOORDINATED_review')
+    status=('parameterized_physically_valid_requires_equilibration_review'
+            if check['physically_valid']
+            else 'parameterized_PHYSICAL_CHECK_FAILED_review')
     result=dict(source=str(Path(cofold).resolve()),source_sha256=sha256(cofold),
       spec=str(Path(spec_path).resolve()),spec_sha256=sha256(spec_path),ph=ph,
       magnesium_count=len(metals),substrate_charge=ligands[substrate],

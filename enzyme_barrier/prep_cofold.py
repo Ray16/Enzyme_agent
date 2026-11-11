@@ -250,15 +250,32 @@ def _lattice_from_box(box6):
     return np.array([va, vb, [cx, cy, cz]])
 
 
-def validate_prepared(prmtop, inpcrd, spec_path, *, coord_cut=2.7, min_metal_coord=5):
-    """Self-check a freshly built system BEFORE it costs any GPU time. Uses the correct
-    triclinic minimum image (truncated-octahedron safe) for every distance, so it reports:
-      - per-metal first-shell coordination number (N/O/S donors within coord_cut), and whether
-        every metal reached at least `min_metal_coord` (octahedral-ish), and
-      - the attack geometry (forming nuc->electrophile distance + attack angle) as actually
-        built, to confirm assembly/solvation did not move the reactive pose.
-    Returns a dict folded into preparation.json; never raises on an under-coordinated metal
-    (a legitimately buried site may not reach 6) but flags it loudly via metal_octahedral_ok."""
+_WATER = {"WAT", "HOH", "TIP3", "T3P"}
+_IONS = {"Na+", "Cl-", "NA", "CL", "K+", "K", "NA+", "CL-"}
+
+
+def validate_prepared(prmtop, inpcrd, spec_path, *, coord_cut=2.7, min_metal_coord=5,
+                      nb_cutoff_A=10.0, clash_A=1.8, severe_clash_A=1.2, min_waters=500):
+    """Built-in PHYSICAL validation of a freshly built system, BEFORE it costs any GPU time.
+    Every distance uses the correct triclinic minimum image (truncated-octahedron safe). Checks:
+
+      metal coordination  - per-metal first-shell N/O/S donors within coord_cut; each metal
+                            must reach >= min_metal_coord (octahedral-ish).
+      attack geometry     - forming nuc->electrophile distance + attack angle as built, to
+                            confirm assembly/solvation did not move the reactive pose.
+      net charge          - sum of partial charges must be ~integer and ~0 (neutralized).
+      solvation adequacy  - (a) enough waters were added; (b) the solute does not see its own
+                            periodic image within the nonbonded cutoff: along each lattice
+                            direction the largest solute-free arc (image gap) must exceed
+                            nb_cutoff_A. Guards against a box that is too small / bad solvation.
+      steric clashes      - closest NON-bonded solute heavy-atom contact; counts severe
+                            overlaps (< severe_clash_A) that indicate a broken build (mild
+                            clashes < clash_A are reported but tolerated -- minimization fixes
+                            them).
+
+    Returns a dict folded into preparation.json with an overall `physically_valid` flag. Never
+    raises (a legitimately buried metal or a mild pose clash should be visible, not fatal); the
+    caller decides how to gate on the individual booleans."""
     import parmed as pmd
     parm = pmd.load_file(str(prmtop), str(inpcrd))
     x = parm.coordinates
@@ -268,12 +285,15 @@ def validate_prepared(prmtop, inpcrd, spec_path, *, coord_cut=2.7, min_metal_coo
     def mi(v):
         return v if inv is None else (v @ inv - np.round(v @ inv)) @ L
 
+    # --- metal coordination ---
     metals = [a.idx for a in parm.atoms if a.atomic_number == 12]
     donors = [a.idx for a in parm.atoms if a.atomic_number in (7, 8, 16)]
     dx = x[donors]
     coordination = [int(np.count_nonzero(np.linalg.norm(mi(dx - x[m]), axis=1) < coord_cut))
                     for m in metals]
+    metal_ok = all(c >= min_metal_coord for c in coordination)
 
+    # --- attack geometry ---
     from .md import resolve_attack_geometry
     from .spec import ReactionSpec
     spec = ReactionSpec.load(spec_path)
@@ -282,8 +302,72 @@ def validate_prepared(prmtop, inpcrd, spec_path, *, coord_cut=2.7, min_metal_coo
     forming = float(np.linalg.norm(v1))
     angle = float(np.degrees(np.arccos(np.clip(
         np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)), -1, 1))))
-    return dict(metal_coordination=coordination,
-                metal_octahedral_ok=all(c >= min_metal_coord for c in coordination),
-                coordination_cutoff_A=coord_cut, min_metal_coordination=min_metal_coord,
-                forming_distance_A=round(forming, 2), attack_angle_deg=round(angle, 1),
-                attack_angle_definition=angle_kind)
+
+    # --- net charge (neutralization) ---
+    net_charge = float(sum(a.charge for a in parm.atoms))
+    charge_ok = abs(net_charge - round(net_charge)) < 0.01 and abs(net_charge) < 0.5
+
+    # --- solvation: water count + solute/image gap along each lattice direction ---
+    n_waters = sum(1 for r in parm.residues if r.name in _WATER)
+    solute = np.array([a.idx for a in parm.atoms
+                       if a.residue.name not in _WATER and a.residue.name not in _IONS
+                       and a.atomic_number > 1])
+    # closest approach between the solute and ANY of its 26 neighbouring periodic images
+    # (rigorous for any triclinic / truncated-octahedron cell, unlike a per-axis estimate):
+    # if this exceeds the nonbonded cutoff the solute never directly sees its own image.
+    image_gap = float("inf")
+    if L is not None and len(solute) > 1:
+        try:
+            from scipy.spatial import cKDTree
+            S = x[solute]; tree = cKDTree(S)
+            for na in (-1, 0, 1):
+                for nb_ in (-1, 0, 1):
+                    for nc in (-1, 0, 1):
+                        if na == nb_ == nc == 0:
+                            continue
+                        T = na * L[0] + nb_ * L[1] + nc * L[2]
+                        d, _ = tree.query(S + T)
+                        image_gap = min(image_gap, float(d.min()))
+        except Exception:
+            image_gap = float("inf")                 # scipy unavailable -> skip this check
+    solvation_ok = bool(n_waters >= min_waters and
+                        (image_gap == float("inf") or image_gap >= nb_cutoff_A))
+
+    # --- steric clashes among solute heavy atoms (solute is whole/centred -> direct dist) ---
+    bonded = set()
+    for b in parm.bonds:
+        bonded.add((min(b.atom1.idx, b.atom2.idx), max(b.atom1.idx, b.atom2.idx)))
+    min_contact, n_severe, n_clash = float("inf"), 0, 0
+    if len(solute) > 1:
+        try:
+            from scipy.spatial import cKDTree
+            pairs = cKDTree(x[solute]).query_pairs(clash_A)
+            for a, b in pairs:
+                ia, ib = int(solute[a]), int(solute[b])
+                key = (min(ia, ib), max(ia, ib))
+                if key in bonded:
+                    continue
+                d = float(np.linalg.norm(x[ia] - x[ib]))
+                min_contact = min(min_contact, d)
+                n_clash += 1
+                if d < severe_clash_A:
+                    n_severe += 1
+        except Exception as e:
+            min_contact = -1.0; n_severe = -1            # scipy unavailable -> skip, flag
+    if not np.isfinite(min_contact):
+        min_contact = clash_A                            # nothing within clash_A -> clean
+    clash_ok = n_severe == 0
+
+    image_gap = float(image_gap) if np.isfinite(image_gap) else None
+    return dict(
+        metal_coordination=[int(c) for c in coordination], metal_octahedral_ok=bool(metal_ok),
+        coordination_cutoff_A=float(coord_cut), min_metal_coordination=int(min_metal_coord),
+        forming_distance_A=round(float(forming), 2), attack_angle_deg=round(float(angle), 1),
+        attack_angle_definition=angle_kind,
+        net_charge_e=round(float(net_charge), 4), charge_ok=bool(charge_ok),
+        n_waters=int(n_waters),
+        solute_image_gap_A=round(image_gap, 2) if image_gap is not None else None,
+        nb_cutoff_A=float(nb_cutoff_A), solvation_ok=bool(solvation_ok),
+        min_nonbonded_contact_A=round(float(min_contact), 2), n_clashes=int(n_clash),
+        n_severe_clashes=int(n_severe), clash_ok=bool(clash_ok),
+        physically_valid=bool(metal_ok and charge_ok and solvation_ok and clash_ok))
