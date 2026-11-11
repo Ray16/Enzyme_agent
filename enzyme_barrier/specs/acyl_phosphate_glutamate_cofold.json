@@ -1,0 +1,11 @@
+{
+  "reaction_id": "acyl_phosphate_glutamate",
+  "ligands": [["ATP", -4], ["SUB", -1]],
+  "metals": ["MG"],
+  "nucleophile": {"resname": "SUB", "atom": "AUTO"},
+  "electrophile": {"resname": "ATP", "atom": "PG"},
+  "leaving": {"resname": "ATP", "atom": "O3B"},
+  "multiplicity": 1,
+  "r_lig": 6.0,
+  "free_r": 6.0
+}

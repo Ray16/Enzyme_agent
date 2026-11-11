@@ -1,14 +1,15 @@
 # QM/MM Activation-Barrier Protocol (UMA + PySCF)
 
 **Objective:** a *reproducible computational method* for enzymatic reaction barriers of ATP-dependent
-amide/acyl chemistry — not four barrier numbers. Validated on GlnA3 (Q9KZC7) with AS9 as an independent
+amide/acyl chemistry — not four barrier numbers. To be validated on GlnA3 (Q9KZC7) with AS9 as an independent
 reference, GlnA2 (Q9RDS6) as a budget-limited substrate-specificity comparison.
 
 **Three quantities, reported separately** (one does not establish another):
 1. **Reaction free energy ΔG°** per chemical step (is the step thermodynamically favorable?).
 2. **Activation free energy ΔG‡** per step (free-energy cost to the TS).
 3. **Catalytic effect** = enzyme ΔG‡ − *solution-phase* ΔG‡ for the same reaction. **Required** to claim
-   GlnA3 catalyzes the non-native glutarate reaction; a plausible enzyme-bound barrier alone does NOT.
+   a predicted catalytic acceleration over solution. Experimental product formation can establish
+   activity independently; a plausible enzyme-bound barrier alone does not establish activity.
 
 **Pathway-first.** Establish a chemically valid reactive complex + mechanism BEFORE any TS optimization
 or production PMF. A relaxed-scan or PMF maximum is NOT automatically a transition state.
@@ -59,11 +60,26 @@ GS QM/MM found step-2 rate-limiting (19.2 kcal — a mechanistic reference, not 
 | Classical MD (equilibration, replicate) | OpenMM (`Tool/envs/processivity-md-20261106`) |
 | Reactive-region potential (sampling) | **UMA / fairchem** (`uma-s-1p2`) + ASE, `Tool/envs/processivity-qmmm-20261106` |
 | DFT correction / single points | **pyscf** (same qmmm env); ωB97M-V/def2-TZVPD (match AS9 DFT-on-path) |
+| Conventional QM/MM reference, under validation | Native **sander** Python API in `envs/mlmm-toolkit`; DFTB3/3OB and AM1/D are installed; verify the chosen model per system |
 | Enhanced sampling | PLUMED OPES/umbrella (`Tool/envs/processivity-plumed-20261106`); reuse AS9 OPES drivers |
 
-No turnkey sander-QM/MM or AM1/d-PhoT is installed. Method = **UMA as the reactive-region potential
-embedded in explicit solvent** (cures the vacuum-cluster charge-screening artifact that gave the discarded
-+55 kcal), with **pyscf DFT** as the accuracy check/correction. Report MM, UMA, and DFT energies distinctly.
+The implemented validation backend is **additive electrostatically embedded DFT/MM**
+(`enzyme_barrier.embedded`), with gradients on both QM atoms and MM charges. It removes
+QM-internal classical terms and QM classical Coulomb interactions, includes link-force
+projection and boundary-charge redistribution, and checks actual C4 coefficients.
+The initial model uses a fixed finite embedding sphere and a nonperiodic MM environment;
+embedding radius, mobile region, boundary treatment, and QM region require sensitivity checks.
+It is not a periodic electrostatic QM/MM calculation.
+
+`enzyme_barrier.sampler` implements an **exploratory reference Hamiltonian**,
+UMA(in vacuo) + [GFN2/MM embedding − GFN2(in vacuo)] + remaining MM energy. Its
+explicit IEEE FP32 settings avoid changing upstream inference defaults. It does not
+inherit DFT accuracy automatically. The initial AS9 R/path-maximum diagnostic on
+legacy geometries differs from embedded DFT/SVP by about 13 kcal/mol. These are
+not a validated path; repeat calibration on cell-verified ensembles.
+It may generate reference ensembles, with target-level DFT reweighting only where
+overlap/ESS support it; otherwise use intermediate Hamiltonians, retrain, or resample.
+The legacy `scan` CLI remains isolated-cluster exploration and labels its outputs accordingly.
 
 ---
 
@@ -79,10 +95,12 @@ Rules:
    *self-consistent* models, each with its own reactant reference.
 2. **Model selection (pilot):** prefer the config that (a) keeps stable metal coordination through replicate
    equilibration, and (b) reproduces the crystallographic occupancy pattern (2BVC n1/n2/n3 geometry).
-3. **Cross-composition comparison requires the Mg²⁺ chemical potential.** To place 2-Mg and 3-Mg ΔG‡ on a
-   common free-energy scale — or to model the 3rd metal binding specifically at the TS/intermediate — compute
+3. **Conditional barriers may be compared with their occupancies stated**, each relative to its own
+   reactant. Predicting the populated pathway or observable rate — or modeling the 3rd metal binding
+   specifically at the TS/intermediate — requires
    the **Mg²⁺ binding/transfer free energy from bulk** (alchemical insertion / TI, or grand-canonical
-   treatment) and add it explicitly. Never subtract barriers across compositions without this term.
+   treatment), bulk Mg activity, and occupancy-weighted kinetics. Do not infer occupancy from
+   a lower conditional barrier.
 4. Report every barrier with its metal composition stated.
 
 ---
@@ -93,7 +111,12 @@ Each stage: **Procedure → Acceptance criteria → If it fails.** Do not advanc
 criteria are unmet.
 
 ### Stage 1 — Structure preparation
-**Procedure.** Superpose template **2BVC** (cross-check 1FPY) onto the GlnA3 structural model; transplant
+**Procedure.** Establish the oligomeric active-site context first. The closer polyamine-synthetase
+template **4HPP** supports an adjacent-subunit assembly hypothesis for GlnA3; the Nov-10 fit
+retains 320 core residues at 1.11 Å RMSD and adds the neighboring target subunit. This is a
+template-supported hypothesis, not a measured GlnA3 oligomer. Use **2BVC** (cross-check 1FPY)
+only after verifying a reliable local metal-site correspondence; do not transplant coordinates
+from a failed global alignment. For a supported transfer, transplant
 ADP + metal cluster (n1/n2 for the 2-Mg model; n1/n2/n3 for the 3-Mg model) into crystallographic positions;
 graft the substrate (P3S marks it: PA/O1A/O2A/O3A = transferring phosphoryl, NE = nucleophile locus,
 CA/N/C/OT = glutamate backbone → glutarate keeps the activated carboxylate + chain, deletes the α-amino);
@@ -116,9 +139,11 @@ single assumed concerted path.
 ### Stage 3 — Pilot calculations
 **Procedure.** Short independent equilibration MD (≥3 replicas, e.g. 3×20 ns) of each pilot system; then
 relaxed scans along the Stage-1-step CVs in the solvated reactive region (UMA).
-**Acceptance.** Metal coordination number stable (±~0.5) and substrate carboxylate retained in the inner
-shell across replicas; relaxed scan yields a **finite, single-maximum** barrier with the intermediate as a
-minimum (NOT monotonic, NOT >>25 kcal).
+**Acceptance.** Assess coordination identity/geometry and substrate retention across independent
+replicas, with uncertainty. A substrate need not directly coordinate a metal unless the mechanism
+requires it. Verify optimizer convergence and chemical connectivity. Multiple maxima, a monotonic
+elementary step, or a high barrier can be legitimate; do not select mechanisms to force a preferred
+barrier range. Resolve suspicious profiles using alternate coordinates and electronic-structure checks.
 **If it fails.** Substrate drifts / coordination breaks → binding-pose or composition problem (that may itself
 be the scientific answer for glutarate — record it); monotonic/absurd scan → CV or mechanism wrong, return to
 Stage 2.
@@ -139,10 +164,12 @@ complex (this is where AS9's replicate divergence must be controlled).
 ### Stage 6 — TS validation
 **Procedure.** Sample configs around the PMF maximum; pyscf DFT optimization where feasible; vibrational
 analysis; committor analysis where feasible.
-**Acceptance.** A single imaginary mode corresponding to the intended bond-making/breaking event; committor
-≈0.5 at the putative TS.
-**If it fails.** The CV does not capture the TS → add the missing coordinate and return to Stage 5. A PMF max
-without a validated saddle is not reported as a barrier.
+**Acceptance.** For a static potential-energy saddle: a converged stationary point, one chemical
+imaginary mode, and correct forward/reverse connectivity. For a finite-temperature PMF:
+validated basin connectivity and a transition-state ensemble with committor near 0.5.
+An individual PMF-maximum snapshot need not be a stationary point or have one imaginary mode.
+**If it fails.** Investigate missing coordinates or incorrect chemical connectivity and return to Stage 5.
+A projected PMF maximum without transition-state ensemble validation remains provisional.
 
 ### Stage 7 — Method validation
 **Procedure.** UMA-vs-pyscf-DFT single points along the minimum-energy path (characterize systematic offset;

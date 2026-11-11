@@ -1,0 +1,11 @@
+{
+  "reaction_id": "adenylation_adipate",
+  "ligands": [["ATP", -4], ["DP2", -2]],
+  "metals": ["MG"],
+  "nucleophile": {"resname": "DP2", "atom": "O4"},
+  "electrophile": {"resname": "ATP", "atom": "PA"},
+  "leaving": {"resname": "ATP", "atom": "O3A"},
+  "multiplicity": 1,
+  "r_lig": 6.0,
+  "free_r": 6.0
+}
