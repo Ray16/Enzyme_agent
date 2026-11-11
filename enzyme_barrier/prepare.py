@@ -9,7 +9,7 @@ from .jobs import atomic_json,sha256
 
 
 def prepare(cofold,out,spec_path,polarizabilities,*,ph=8.0,overrides=None):
-    from .prep_cofold import split_cofold,param_substrate,build_tleap
+    from .prep_cofold import split_cofold,param_substrate,build_tleap,validate_prepared
     from .spec import ReactionSpec
     spec=ReactionSpec.load(spec_path);ligands=dict(spec.ligands)
     substrate=spec.nucleophile.resname
@@ -23,12 +23,16 @@ def prepare(cofold,out,spec_path,polarizabilities,*,ph=8.0,overrides=None):
     _,atp,metals,sub=split_cofold(cofold,out)
     param_substrate(sub,atp,out,substrate,ligands[substrate],ph=ph)
     _,top,coords=build_tleap(out,substrate,polarizabilities=polarizabilities,pol_overrides=overrides)
+    check=validate_prepared(top,coords,spec_path)
+    status=('parameterized_metal_coordination_ok_requires_equilibration_review'
+            if check['metal_octahedral_ok']
+            else 'parameterized_metal_UNDERCOORDINATED_review')
     result=dict(source=str(Path(cofold).resolve()),source_sha256=sha256(cofold),
       spec=str(Path(spec_path).resolve()),spec_sha256=sha256(spec_path),ph=ph,
       magnesium_count=len(metals),substrate_charge=ligands[substrate],
       prmtop=str(top.resolve()),coords=str(coords.resolve()),
       prmtop_sha256=sha256(top),coords_sha256=sha256(coords),
-      status='parameterized_requires_protonation_assembly_equilibration_review',
+      status=status,validation=check,
       polarizability_overrides=overrides or {})
     atomic_json(out/'preparation.json',result);return result
 
