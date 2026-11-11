@@ -16,7 +16,7 @@ def atomic_json(path,value):
 def sha256(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def snapshot(prmtop,coordinates,spec_path,out,*,radius=3.0,embedding_radius=20.0,fixed_region=None):
+def snapshot(prmtop,coordinates,spec_path,out,*,radius=3.0,embedding_radius=20.0,fixed_region=None,force_residues=()):
     import parmed as pmd
     from .carve import _resolve
     from .spec import ReactionSpec
@@ -33,7 +33,7 @@ def snapshot(prmtop,coordinates,spec_path,out,*,radius=3.0,embedding_radius=20.0
         if np.linalg.norm(x[b.atom1.idx]-x[b.atom2.idx])>2.2:
             raise ValueError(f'Long nonreactive covalent bond {b.atom1.idx}-{b.atom2.idx}; unwrap or review chemistry')
     region=fixed_region or build_region(p,x,[i,j,k],dict(spec.ligands)|dict.fromkeys(spec.metals,2),
-                                       radius=radius,embedding_radius=embedding_radius)
+                                       radius=radius,embedding_radius=embedding_radius,force_residues=force_residues)
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
     np.save(out/'positions.npy',x)
     atomic_json(out/'region.json',region)
@@ -116,6 +116,44 @@ def evaluate(path,out,*,xc='wb97m-v',basis='def2-tzvpd',engine='gpu',platform='C
     atomic_json(out,result);return result
 
 
+def evaluate_geometries(config_path):
+    """DFT diagnostics at named reference geometries, without cross-model subtraction."""
+    from .embedded import EmbeddedDFTMM
+    cfg=json.loads(Path(config_path).read_text());out=Path(cfg['out'])
+    p,r,a,d=load_snapshot(cfg['snapshot']);rows=[];labels=set()
+    if not cfg['geometries']:raise ValueError('No diagnostic geometries')
+    for point in cfg['geometries']:
+        label=point['label']
+        if not label or not all(c.isalnum() or c in '_-' for c in label) or label in labels:raise ValueError('Invalid or repeated geometry label')
+        labels.add(label)
+        if sha256(point['positions'])!=point['sha256']:raise ValueError('Geometry changed')
+        positions=np.load(point['positions'])
+        if positions.shape!=a.positions.shape or not np.isfinite(positions).all():raise ValueError('Invalid geometry')
+    out.mkdir(parents=True,exist_ok=False)
+    a.calc=EmbeddedDFTMM(p,r,xc=cfg.get('xc','wb97m-v'),basis=cfg.get('basis','def2-svp'),
+        engine=cfg.get('engine','gpu'),platform='CPU')
+    for point in cfg['geometries']:
+        if sha256(point['positions'])!=point['sha256']:raise ValueError('Geometry changed')
+        positions=np.load(point['positions'])
+        if positions.shape!=a.positions.shape or not np.isfinite(positions).all():raise ValueError('Invalid geometry')
+        a.positions[:]=positions;t0=time.monotonic()
+        force=a.get_forces();energy=float(a.get_potential_energy())
+        np.save(out/(point['label']+'.forces.npy'),force)
+        row=dict(point,energy_eV=energy,components=a.calc.last_components.copy(),wall_s=time.monotonic()-t0,
+            max_qm_force_eV_A=float(np.linalg.norm(force[r['indices']],axis=1).max()),
+            max_mobile_force_eV_A=float(np.linalg.norm(force[r['mobile_indices']],axis=1).max()))
+        rows.append(row);atomic_json(out/'progress.json',dict(points=rows,requested=len(cfg['geometries'])))
+        print(json.dumps(row),flush=True)
+    result=dict(status='geometry_diagnostics_complete',points=rows,config_sha256=sha256(config_path),
+        snapshot=str(Path(cfg['snapshot']).resolve()),snapshot_sha256=sha256(Path(cfg['snapshot'])/'input.json'),
+        xc=cfg.get('xc','wb97m-v'),basis=cfg.get('basis','def2-svp'),
+        quantity='finite_embedding_DFT_MM_diagnostics_on_reference_geometries',validated_activation_free_energy=False,
+        limitations=['Reference geometries are not stationary on the DFT/MM surface',
+            'SVP pilot requires basis and QM-region/embedding sensitivity checks',
+            'Periodic native reference and finite DFT/MM must not be subtracted without matched decomposition'])
+    atomic_json(out/'result.json',result);return result
+
+
 def gpu_smoke(out,engine='gpu',platform='CPU'):
     from ase import Atoms
     from .fixtures import water_pair
@@ -147,10 +185,12 @@ def main(argv=None):
     e.add_argument('--engine',default='gpu',choices=['gpu','cpu']);e.add_argument('--energy-only',action='store_true')
     e.add_argument('--platform',default='CPU')
     e.add_argument('--potential',default='dft',choices=['dft','uma-xtb'])
+    b=s.add_parser('geometry-diagnostics');b.add_argument('config')
     g=s.add_parser('smoke');g.add_argument('--out',required=True);g.add_argument('--engine',default='gpu');g.add_argument('--platform',default='CPU')
     a=p.parse_args(argv)
     if a.cmd=='snapshot':v=snapshot(a.prmtop,a.coords,a.spec,a.out,radius=a.radius,embedding_radius=a.embedding_radius)
     elif a.cmd=='evaluate':v=evaluate(a.snapshot,a.out,xc=a.xc,basis=a.basis,engine=a.engine,platform=a.platform,forces=not a.energy_only,potential=a.potential)
+    elif a.cmd=='geometry-diagnostics':v=evaluate_geometries(a.config)
     else:v=gpu_smoke(a.out,a.engine,a.platform)
     print(json.dumps(v,indent=2),flush=True)
 

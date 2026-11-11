@@ -4,7 +4,7 @@ pytest.importorskip('ase')
 pytest.importorskip('parmed')
 from enzyme_barrier.fixtures import water_pair
 from enzyme_barrier.coordinates import reimage_molecules
-from enzyme_barrier.sander_backend import scc_converged
+from enzyme_barrier.sander_backend import scc_converged,electronic_converged
 
 
 def test_reimaging_preserves_molecules_and_recovers_nearby_water():
@@ -18,6 +18,12 @@ def test_scc_reset_is_not_convergence():
     assert not scc_converged('SCC-DFTB FOR STEP 1 DID NOT CONVERGE AFTER 70 cycles. Resetting Broyden mixing.')
     assert scc_converged('SCC-DFTB FOR STEP 1 DID NOT CONVERGE AFTER 70 cycles.\nSCC-DFTB for step 1 converged in 90 cycles.')
     assert not scc_converged('The calculation will continue, but energies and forces will not be accurate.')
+
+
+def test_nddo_energy_line_cannot_hide_scf_failure():
+    assert electronic_converged('QMMM: SCF Converged to 0.1000E-08 in: 65 Cycles','AM1/D')
+    assert not electronic_converged('QMMM: SCF Energy = -2877.0','AM1/D')
+    assert not electronic_converged('QMMM: Job will continue with unconverged SCF.\nQMMM: SCF Energy = -2877.0','AM1/D')
 
 
 def test_pdb_writer_uses_current_barostat_cell(tmp_path):

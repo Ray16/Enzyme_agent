@@ -17,12 +17,49 @@ def distance_cv(positions,terms):
 
     Covers forming-minus-breaking and donor-H-minus-H-acceptor coordinates.
     """
-    x=np.asarray(positions);gradient=np.zeros_like(x);value=0.
+    x=np.asarray(positions,float);gradient=np.zeros_like(x);value=0.
     for term in terms:
         i,j,coefficient=term;v=x[i]-x[j];distance=float(np.linalg.norm(v))
         if distance<1e-8:raise ValueError('Coincident CV atoms')
         value+=coefficient*distance;g=coefficient*v/distance;gradient[i]+=g;gradient[j]-=g
     return value,gradient
+
+
+def coordination_cv(positions,terms,*,r0_A=1.25,power=12):
+    """Sum c/(1+(r/r0)**n), invariant to equivalent H permutations.
+
+    Use all donor hydrogens in a declared, fixed proton inventory. Both donor
+    and acceptor coordination terms can be combined without assigning one H
+    to the transfer. This is a dimensionless coordinate, not a bond order.
+    """
+    if not np.isfinite(r0_A) or r0_A<=0 or not np.isfinite(power) or power<2:
+        raise ValueError('Invalid coordination switching parameters')
+    x=np.asarray(positions,float);gradient=np.zeros_like(x);value=0.;seen=set()
+    for i,j,coefficient in terms:
+        if i==j or tuple(sorted((i,j))) in seen:raise ValueError('Self or duplicate coordination pair')
+        seen.add(tuple(sorted((i,j))))
+        if not np.isfinite(coefficient):raise ValueError('Nonfinite CV coefficient')
+        v=x[i]-x[j];distance=float(np.linalg.norm(v));ratio=distance/r0_A
+        # Reciprocal branch avoids overflow for remote pairs.
+        if ratio<=1:
+            t=ratio**power;s=1/(1+t)
+            derivative=-power*ratio**(power-1)*s*s/r0_A
+        else:
+            t=ratio**(-power);s=t/(1+t)
+            derivative=-power*s*(1-s)/distance
+        value+=coefficient*s
+        if distance>1e-12:
+            g=coefficient*derivative*v/distance;gradient[i]+=g;gradient[j]-=g
+    return float(value),gradient
+
+
+def evaluate_cv(positions,coordinate):
+    if isinstance(coordinate,list):return distance_cv(positions,coordinate)
+    kind=coordinate.get('kind')
+    if kind=='distance':return distance_cv(positions,coordinate['terms'])
+    if kind=='coordination':return coordination_cv(positions,coordinate['terms'],
+        r0_A=coordinate.get('r0_A',1.25),power=coordinate.get('power',12))
+    raise ValueError(f'Unknown CV kind: {kind}')
 
 
 class UmbrellaCalculator(Calculator):
@@ -31,6 +68,8 @@ class UmbrellaCalculator(Calculator):
         super().__init__();self.base=base;self.coordinates=coordinates
         self.centers=np.asarray(centers,float);self.springs=np.asarray(springs,float)/23.06054783
         if len(self.coordinates)!=len(self.centers) or self.centers.shape!=self.springs.shape:raise ValueError('CV dimensions differ')
+        if not len(self.coordinates) or not np.isfinite(self.centers).all() or not np.isfinite(self.springs).all() or (self.springs<=0).any():
+            raise ValueError('Umbrellas need finite centers and positive springs')
     def calculate(self,atoms=None,properties=('energy',),system_changes=all_changes):
         super().calculate(atoms,properties,system_changes)
         self.base.calculate(atoms,properties,system_changes)
@@ -38,7 +77,7 @@ class UmbrellaCalculator(Calculator):
         if force is not None:force=force.copy()
         bias=0.;values=[]
         for cv,center,spring in zip(self.coordinates,self.centers,self.springs):
-            value,gradient=distance_cv(atoms.positions,cv);values.append(value);d=value-center
+            value,gradient=evaluate_cv(atoms.positions,cv);values.append(value);d=value-center
             bias+=.5*spring*d*d
             if force is not None:force-=spring*d*gradient
         self.unbiased_energy_eV=energy;self.bias_eV=bias;self.cv_values=values
@@ -56,7 +95,12 @@ def sample(config_path):
     if cfg.get('sampling_role')!='reference_only':raise ValueError('Reference sampler requires explicit reference_only scope')
     p,r,a,d=load_snapshot(cfg['snapshot']);identity=sha256(config_path)
     mobile=r['mobile_indices'];frozen=sorted(set(range(len(a)))-set(mobile));a.set_constraint(FixAtoms(indices=frozen))
-    a.calc=UmbrellaCalculator(EmbeddedUMAXTB(p,r,platform='CPU'),cfg['coordinates'],cfg['centers'],cfg['springs_kcal_A2'])
+    if 'springs_kcal_A2' in cfg and 'springs_kcal_per_cv2' in cfg:raise ValueError('Specify only one spring convention')
+    springs=cfg.get('springs_kcal_per_cv2',cfg.get('springs_kcal_A2'))
+    if springs is None:raise ValueError('Umbrella springs are missing')
+    units_cv=['dimensionless' if isinstance(cv,dict) and cv.get('kind')=='coordination' else 'angstrom' for cv in cfg['coordinates']]
+    if 'springs_kcal_A2' in cfg and 'dimensionless' in units_cv:raise ValueError('Coordination CVs require springs_kcal_per_cv2')
+    a.calc=UmbrellaCalculator(EmbeddedUMAXTB(p,r,platform='CPU'),cfg['coordinates'],cfg['centers'],springs)
     rng=np.random.default_rng(cfg['seed']);done=0;chunk=0
     previous=out/'checkpoint.json'
     producer={name:sha256(Path(__file__).with_name(name)) for name in ['umbrella.py','embedded.py','sampler.py','region.py']}
@@ -97,7 +141,7 @@ def sample(config_path):
     result=dict(status='window_complete' if done==requested else 'partial_wall_budget',completed_steps=done,
        requested_steps=requested,chunks=chunk,config_sha256=identity,snapshot_sha256=sha256(Path(cfg['snapshot'])/'input.json'),
        mobile_indices=mobile,temperature_K=cfg.get('temperature_K',303.15),coordinates=cfg['coordinates'],centers=cfg['centers'],
-       springs_kcal_A2=cfg['springs_kcal_A2'],quantity='reference_umbrella_samples',validated_activation_free_energy=False,
+       springs_kcal_per_cv2=springs,cv_units=units_cv,quantity='reference_umbrella_samples',validated_activation_free_energy=False,
        limitations=['requires equilibration/decorrelation analysis','requires DFT ensemble corrections and overlap checks'])
     atomic_json(out/'result.json',result);return result
 

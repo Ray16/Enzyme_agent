@@ -16,6 +16,7 @@ from .jobs import atomic_json,sha256
 
 
 THREAD_VARS=('OMP_NUM_THREADS','OMP_THREAD_LIMIT','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','NUMEXPR_NUM_THREADS','VECLIB_MAXIMUM_THREADS')
+RUNTIME_THREAD_VARS=('OPENMM_CPU_THREADS','POCL_MAX_PTHREAD_COUNT','POCL_CPU_MAX_CU_COUNT')
 
 
 def gpu_processes(index):
@@ -48,12 +49,17 @@ def run(manifest):
     if max(os.getloadavg())+len(cpus)>os.cpu_count():raise RuntimeError('CPU capacity unavailable')
     for v in THREAD_VARS:
         if os.environ.get(v)!=str(threads):raise ValueError(f'Missing thread limit {v}')
+    # OpenMM and POCL do not honor OMP/BLAS limits. Set these before importing
+    # either runtime in a child (including CUDA workflows' CPU fallbacks).
+    for v in RUNTIME_THREAD_VARS:
+        if v in os.environ and os.environ[v]!=str(threads):raise ValueError(f'Conflicting thread limit {v}')
+        os.environ[v]=str(threads)
     occupied=gpu_processes(gpu) if gpu is not None else set()
     if occupied:raise RuntimeError(f'GPU occupied before task: {occupied}')
     owner=dict(host=socket.gethostname(),pid=os.getpid(),process_start=Path(f'/proc/{os.getpid()}/stat').read_text().rsplit(')',1)[1].split()[19],
                gpu=gpu,cpus=sorted(cpus),threads=threads,manifest_sha256=sha256(path),started_at=time.time(),
                source_sha256={str(f.resolve()):sha256(f) for f in Path(__file__).parent.glob('*.py')},
-               thread_limits={v:os.environ.get(v) for v in THREAD_VARS})
+               thread_limits={v:os.environ.get(v) for v in THREAD_VARS+RUNTIME_THREAD_VARS})
     owner_file=root/(f'worker_gpu{gpu}.json' if gpu is not None else f'worker_{path.stem}.json')
     atomic_json(owner_file,owner)
     failed=0;stop=[False];child=[None]

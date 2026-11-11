@@ -14,6 +14,26 @@ def write_state_pdb(topology,state,path):
     with Path(path).open('w') as f:app.PDBFile.writeFile(topology,state.getPositions(),f)
 
 
+def resolve_attack_geometry(parm,spec):
+    """Resolve and validate angle atoms before creating an expensive MD context."""
+    from .carve import _resolve
+    j=_resolve(parm,spec.electrophile);k=_resolve(parm,spec.leaving)
+    i=_resolve(parm,spec.nucleophile,near_xyz=parm.coordinates[j],xyz=parm.coordinates)
+    if parm.atoms[j].atomic_number==6:
+        if spec.carbonyl_oxygen is None:
+            raise ValueError('Carbonyl attack requires the double-bonded oxygen, distinct from the leaving atom')
+        angle_atom=_resolve(parm,spec.carbonyl_oxygen)
+        oxygen=parm.atoms[angle_atom]
+        heavy=[a.idx for a in oxygen.bond_partners if a.atomic_number>1]
+        if angle_atom==k or oxygen.atomic_number!=8 or heavy!=[j]:
+            raise ValueError('Carbonyl oxygen must be a distinct terminal oxygen bonded to the electrophile')
+        angle_kind='nucleophile-carbonylC-carbonylO'
+    elif parm.atoms[j].atomic_number==15:
+        angle_atom=k;angle_kind='nucleophile-phosphorus-leavingO'
+    else:raise ValueError('Unsupported electrophile for attack-angle reporting')
+    return i,j,k,angle_atom,angle_kind
+
+
 def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,temperature=303.15):
     import parmed as pmd
     import openmm as mm
@@ -21,9 +41,12 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     from openmm import unit as u
     from .parameters import require_c4
     from .spec import ReactionSpec
-    from .carve import _resolve
+    from .coordinates import load_system
     t0=time.monotonic();out=Path(out);out.mkdir(parents=True,exist_ok=False)
-    parm=pmd.load_file(str(prmtop),str(coordinates));require_c4(parm)
+    if production_ns<=0 or temperature<=0:raise ValueError('Production duration and temperature must be positive')
+    parm=load_system(prmtop,coordinates);require_c4(parm)
+    spec=ReactionSpec.load(spec_path)
+    i,j,k,angle_atom,angle_kind=resolve_attack_geometry(parm,spec)
     positions_A=parm.coordinates.copy()
     print(f'Loaded {len(parm.atoms)} atoms in {time.monotonic()-t0:.1f}s',flush=True)
     system=parm.createSystem(nonbondedMethod=app.PME,nonbondedCutoff=1*u.nanometer,
@@ -60,8 +83,6 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     sim.saveCheckpoint(str(out/'equilibrated.chk'))
     equil_state=sim.context.getState(getPositions=True)
     write_state_pdb(sim.topology,equil_state,out/'equilibrated.pdb')
-    spec=ReactionSpec.load(spec_path);j=_resolve(parm,spec.electrophile);k=_resolve(parm,spec.leaving)
-    i=_resolve(parm,spec.nucleophile,near_xyz=parm.coordinates[j],xyz=parm.coordinates)
     metals=[a.idx for a in parm.atoms if a.atomic_number==12]
     donors=[a.idx for a in parm.atoms if a.atomic_number in (7,8,16)]
     sim.reporters.append(app.DCDReporter(str(out/'production.dcd'),5000))
@@ -74,7 +95,7 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
             box=np.array(st.getPeriodicBoxVectors(asNumpy=True).value_in_unit(u.angstrom));inv=np.linalg.inv(box)
             def vec(a,b):
                 v=x[a]-x[b];return (v@inv-np.round(v@inv))@box
-            v1=vec(i,j);v2=vec(k,j);angle=np.degrees(np.arccos(np.clip(np.dot(v1,v2)/np.linalg.norm(v1)/np.linalg.norm(v2),-1,1)))
+            v1=vec(i,j);v2=vec(angle_atom,j);angle=np.degrees(np.arccos(np.clip(np.dot(v1,v2)/np.linalg.norm(v1)/np.linalg.norm(v2),-1,1)))
             coordination=[]
             for m in metals:
                 v=x[donors]-x[m];v=(v@inv-np.round(v@inv))@box
@@ -98,6 +119,7 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     result=dict(status='pilot_complete_requires_scientific_review',seed=seed,temperature_K=temperature,
         production_ns=production_ns,equilibration_ns=0.4,n_atoms=len(parm.atoms),magnesium_count=len(metals),
         coordination_definition='N/O/S donor atoms within 2.7 A (minimum image)',
+        attack_angle_definition=angle_kind,
         c4_initial_kcal=initial_c4,metal_coordination_mean=coords.mean(axis=0).tolist(),metal_coordination_std=coords.std(axis=0).tolist(),
         forming_distance_mean_A=float(dist.mean()),forming_distance_std_A=float(dist.std()),
         unrestrained_production=True,wall_s=time.monotonic()-t0,

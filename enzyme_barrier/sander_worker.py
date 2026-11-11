@@ -32,11 +32,13 @@ def main():
     import sander
     cfg=receive(sys.stdin.buffer)
     options=sander.pme_input() if cfg.get('periodic',True) else sander.gas_input(0)
-    options.cut=cfg.get('cutoff_A',10.0);options.lj1264=1
+    options.cut=cfg.get('cutoff_A',10.0);options.lj1264=cfg.get('lj1264',1)
+    options.ntf=cfg.get('ntf',1)
     options.ifqnt=1
     qm=sander.QmInputOptions();qm.qm_theory=cfg.get('method','DFTB3')
     qm.qmmask='@'+','.join(str(i+1) for i in cfg['qm_indices'])
     qm.qmcharge=cfg['charge'];qm.spin=cfg.get('multiplicity',1);qm.qmshake=0
+    qm.adjust_q=cfg.get('adjust_q',2)
     qm.qmcut=cfg.get('qmcut_A',12.0);qm.qm_ewald=1 if cfg.get('periodic',True) else 0
     qm.qm_pme=1 if cfg.get('periodic',True) else 0
     qm.scfconv=1e-9;qm.tight_p_conv=1;qm.verbosity=1

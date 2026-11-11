@@ -47,7 +47,9 @@ def build_assembly(monomer,template,out,*,max_rmsd=3.0,min_aligned=200,neighbor_
     ligands=[ln for ln in lines if ln.startswith('HETATM')]
     ligand_xyz=np.array([[float(ln[30:38]),float(ln[38:46]),float(ln[46:54])] for ln in ligands])
     prot_xyz=np.array([[float(ln[30:38]),float(ln[38:46]),float(ln[46:54])] for ln in protein])
-    chain_labels='AFGHIJKLMNOPQRSTUVWXYZ' # preserve original ligand chains B--E
+    ligand_chains={line[21] for line in ligands}
+    chain_labels=''.join(c for c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if c not in ligand_chains)
+    if len(chain_labels)<len(copies):raise ValueError('Insufficient distinct chain identifiers')
     result=[];records=[];serial=0
     for k,copy in enumerate(copies):
         cr=residues(copy)

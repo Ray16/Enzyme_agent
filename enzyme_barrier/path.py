@@ -18,9 +18,9 @@ def explore(snapshot,out,*,route='concerted',images=9,max_steps=60,wall_seconds=
     from .sampler import EmbeddedUMAXTB
     p,r,a,meta=load_snapshot(snapshot);out=Path(out);out.mkdir(parents=True,exist_ok=False)
     if engine=='uma-xtb':a.calc=EmbeddedUMAXTB(p,r,platform='CPU')
-    elif engine=='dftb3':
+    elif engine in {'dftb3','am1d'}:
         from .sander_backend import SanderQMMM
-        a.calc=SanderQMMM(meta['prmtop'],a.positions,meta['box_lengths_angles'],r,workdir=str(out.resolve()))
+        a.calc=SanderQMMM(meta['prmtop'],a.positions,meta['box_lengths_angles'],r,workdir=str(out.resolve()),method='DFTB3' if engine=='dftb3' else 'AM1/D')
     else:raise ValueError('Unknown reference engine')
     mobile=set(r['mobile_indices']);frozen=[i for i in range(len(a)) if i not in mobile]
     i,j,k=r['reaction_atoms'];t0=time.monotonic()
@@ -66,7 +66,7 @@ def explore(snapshot,out,*,route='concerted',images=9,max_steps=60,wall_seconds=
         np.save(out/f'image{image:03d}.positions.npy',a.positions)
         row=dict(image=image,forming_A=float(a.get_distance(i,j)),breaking_A=float(a.get_distance(j,k)),
                  energy_eV=float(a.get_potential_energy()),optimization_converged=converged,
-                 steps=opt.nsteps,components=a.calc.last_components,high_diagnostics=getattr(a.calc,'high_diagnostics',{'potential':'DFTB3/3OB/MM'}),
+                 steps=opt.nsteps,components=a.calc.last_components,high_diagnostics=getattr(a.calc,'high_diagnostics',{'potential':getattr(a.calc,'method',engine)+'/MM'}),
                  positions=str((out/f'image{image:03d}.positions.npy').resolve()))
         records.append(row);atomic_json(out/'progress.json',dict(images=records,wall_s=time.monotonic()-t0))
         print(json.dumps(row),flush=True)
@@ -76,7 +76,7 @@ def explore(snapshot,out,*,route='concerted',images=9,max_steps=60,wall_seconds=
        all_optimizations_converged=complete and all(x['optimization_converged'] for x in records),
        status='path_exploration_complete' if complete else 'partial_wall_budget',
        validated_activation_free_energy=False,quantity='reference_potential_constrained_path',
-       limitations=['imposed seed path','uncalibrated reference potential','finite embedding sphere'],wall_s=time.monotonic()-t0)
+       limitations=['imposed seed path','uncalibrated reference potential']+(['finite embedding sphere'] if engine=='uma-xtb' else ['periodic native QM/MM model']),wall_s=time.monotonic()-t0)
     if records:result['diagnostic_max_gap_kcal']=(max(x['energy_eV'] for x in records)-records[0]['energy_eV'])*23.06054783
     atomic_json(out/'result.json',result)
     if hasattr(a.calc,'close'):a.calc.close()
@@ -87,7 +87,7 @@ def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--snapshot',required=True);p.add_argument('--out',required=True)
     p.add_argument('--route',default='concerted',choices=['concerted','form-first','break-first'])
     p.add_argument('--images',type=int,default=9);p.add_argument('--max-steps',type=int,default=60);p.add_argument('--wall-seconds',type=int,default=3600)
-    p.add_argument('--engine',default='uma-xtb',choices=['uma-xtb','dftb3'])
+    p.add_argument('--engine',default='uma-xtb',choices=['uma-xtb','dftb3','am1d'])
     a=p.parse_args(argv);print(json.dumps(explore(a.snapshot,a.out,route=a.route,images=a.images,max_steps=a.max_steps,wall_seconds=a.wall_seconds,engine=a.engine),indent=2))
 
 

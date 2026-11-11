@@ -57,6 +57,7 @@ class ReactionSpec:
     nac_k_angle: float = 50.0                    # NAC angle-restraint force const (kcal/mol/rad^2)
     ion_charges: tuple[tuple[str, int], ...] = (("Na+", 1), ("Cl-", -1))
     water_resnames: tuple[str, ...] = ("WAT", "HOH")
+    carbonyl_oxygen: AtomRef | None = None
 
     @property
     def bond_changes(self) -> tuple[BondChange, ...]:
@@ -72,6 +73,7 @@ class ReactionSpec:
         d = json.loads(Path(path).read_text())
         for k in ("nucleophile", "electrophile", "leaving"):
             d[k] = AtomRef(**d[k])
+        if d.get('carbonyl_oxygen') is not None:d['carbonyl_oxygen']=AtomRef(**d['carbonyl_oxygen'])
         d["ligands"] = tuple(tuple(x) for x in d["ligands"])
         d["metals"] = tuple(d["metals"])
         if "ion_charges" in d:

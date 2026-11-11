@@ -12,11 +12,21 @@ def scc_converged(output):
     return bool(re.search(r'SCC-DFTB for step\s+\d+\s+converged in\s+\d+\s+cycles',output,re.IGNORECASE))
 
 
+def electronic_converged(output,method):
+    if method=='DFTB3':return scc_converged(output)
+    if method=='AM1/D':
+        # Native NDDO can continue after failure, so an energy line alone is
+        # insufficient. Require its explicit final convergence message.
+        return bool(re.search(r'QMMM:\s*SCF Converged to\s+[-+0-9.EeDd]+\s+in:\s*\d+\s+Cycles',output,re.IGNORECASE)) and not bool(re.search(r'unconverged SCF|No convergence in SCF|Unable to achieve self consistency',output,re.IGNORECASE))
+    return False
+
+
 class SanderQMMM(Calculator):
     implemented_properties=['energy','forces']
     def __init__(self,prmtop,positions,box,region,*,workdir,method='DFTB3',native_python=None,electronic_temperature=0.0,max_scc_iterations=200):
         super().__init__()
-        if method!='DFTB3':raise ValueError('Only DFTB3 convergence/status parsing is validated by this adapter')
+        if method not in {'DFTB3','AM1/D'}:raise ValueError('Unsupported native QM method/status parser')
+        self.method=method
         self.logfile=Path(workdir)/'sander_native.log';self.logfile.parent.mkdir(parents=True,exist_ok=True)
         self.log=self.logfile.open('a');env=os.environ.copy()
         prefix=Path(os.environ.get('BARRIER_AMBERHOME','/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/mlmm-toolkit'))
@@ -37,7 +47,9 @@ class SanderQMMM(Calculator):
         result=receive(self.proc.stdout)
         if result is None:raise RuntimeError(f'SANDER force call failed; inspect {self.logfile}')
         with self.logfile.open('rb') as log:log.seek(offset);scf_output=log.read().decode(errors='replace')
-        if not scc_converged(scf_output):raise RuntimeError(f'No positive SCC convergence evidence; reject energy/forces: {self.logfile}')
+        if not electronic_converged(scf_output,self.method):raise RuntimeError(f'No positive electronic convergence evidence; reject energy/forces: {self.logfile}')
+        if not np.isfinite(result['energy_kcal']) or not np.isfinite(result['forces_kcal_A']).all():
+            raise RuntimeError(f'Nonfinite native energy/forces: {self.logfile}')
         self.results=dict(energy=result['energy_kcal']/23.06054783,forces=result['forces_kcal_A']/23.06054783)
         self.last_components=result['components_kcal']|{'wall_s':result['wall_s']}
     def close(self):
@@ -46,7 +58,7 @@ class SanderQMMM(Calculator):
         self.log.close()
 
 
-def benchmark(snapshot,out,force_check=False,electronic_temperature=0.0):
+def benchmark(snapshot,out,force_check=False,electronic_temperature=0.0,method='DFTB3'):
     import json,time
     from .jobs import load_snapshot,atomic_json
     p,r,a,d=load_snapshot(snapshot)
@@ -59,14 +71,14 @@ def benchmark(snapshot,out,force_check=False,electronic_temperature=0.0):
         # against the exact truncated-octahedron angle.
         box[3:]=np.degrees(np.arccos(-1/3))
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
-    calc=SanderQMMM(d['prmtop'],a.positions,box,r,workdir=str(out.resolve()),electronic_temperature=electronic_temperature);a.calc=calc
+    calc=SanderQMMM(d['prmtop'],a.positions,box,r,workdir=str(out.resolve()),electronic_temperature=electronic_temperature,method=method);a.calc=calc
     rows=[]
     try:
         for k in range(4):
             t0=time.monotonic()
             if k:a.positions[r['indices'][0],0]+=0.001
             f=a.get_forces();e=a.get_potential_energy();rows.append(dict(energy_eV=e,max_force_eV_A=float(np.linalg.norm(f,axis=1).max()),wall_s=time.monotonic()-t0,components=calc.last_components))
-        result=dict(method='DFTB3/3OB/MM',setup=calc.setup,evaluations=rows,validated_activation_free_energy=False)
+        result=dict(method=method+'/MM',setup=calc.setup,evaluations=rows,validated_activation_free_energy=False)
         if force_check:
             reference=a.positions.copy();analytic=a.get_forces().copy();checks=[]
             ids=[r['reaction_atoms'][0]]
@@ -118,6 +130,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--snapshot',required=True);p.add_argument('--out',required=True);p.add_argument('--force-check',action='store_true')
     p.add_argument('--electronic-temperature',type=float,default=0.0)
     p.add_argument('--initialization-probe',action='store_true')
+    p.add_argument('--method',default='DFTB3',choices=['DFTB3','AM1/D'])
     a=p.parse_args()
     if a.initialization_probe:initialization_probe(a.snapshot,a.out,a.electronic_temperature)
-    else:benchmark(a.snapshot,a.out,force_check=a.force_check,electronic_temperature=a.electronic_temperature)
+    else:benchmark(a.snapshot,a.out,force_check=a.force_check,electronic_temperature=a.electronic_temperature,method=a.method)

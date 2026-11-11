@@ -12,11 +12,13 @@ WATER = {'WAT','HOH','TIP3'}
 
 
 def build_region(parm, coordinates, reaction_atoms, ligand_charges, radius=4.0,
-                 embedding_radius=20.0, mobile_radius=8.0):
+                 embedding_radius=20.0, mobile_radius=8.0,force_residues=()):
     xyz = np.asarray(coordinates, float)
     center = xyz[list(reaction_atoms)]
     # Whole ligands + complete metal coordination shells, then catalytic sidechains.
     selected, entries = set(), []
+    forced=set(force_residues)
+    if not forced<=set(range(len(parm.residues))):raise ValueError('Forced QM residue index out of range')
     metals = [a.idx for a in parm.atoms if a.atomic_number == 12]
     shell_res = set()
     for m in metals:
@@ -31,14 +33,14 @@ def build_region(parm, coordinates, reaction_atoms, ligand_charges, radius=4.0,
             ids = [a.idx for a in r.atoms]; charge = ligand_charges[r.name]; mode='whole'
         elif r.name in WATER and (near or r.idx in shell_res):
             ids = [a.idx for a in r.atoms]; charge=0; mode='whole'
-        elif r.name in FORMAL and (near or r.idx in shell_res):
+        elif r.name in FORMAL and (near or r.idx in shell_res or r.idx in forced):
             ids = [a.idx for a in r.atoms if a.name not in BACKBONE]
             charge=FORMAL[r.name]; mode='sidechain'
             if r.idx in shell_res:
                 for a in r.atoms:
                     if a.name in BACKBONE and a.atomic_number in (7,8) and any(np.linalg.norm(xyz[a.idx]-xyz[m]) < 2.7 for m in metals):
                         raise ValueError(f'Backbone metal ligand in residue {r.idx}: review QM boundary')
-        elif r.idx in shell_res or (near and r.name in {'PRO','CYX','HIS'}):
+        elif r.idx in shell_res or r.idx in forced or (near and r.name in {'PRO','CYX','HIS'}):
             raise ValueError(f'Residue {r.idx}:{r.name} needs an explicit QM boundary/protonation decision')
         else: continue
         if not ids: continue
@@ -88,6 +90,7 @@ def build_region(parm, coordinates, reaction_atoms, ligand_charges, radius=4.0,
                 entries=entries,embedding_indices=emb,embedding_charges=charges[emb].tolist(),
                 mobile_indices=sorted(mobile),radius_A=radius,embedding_radius_A=embedding_radius,
                 mobile_radius_A=mobile_radius,reaction_atoms=list(reaction_atoms),
+                forced_protein_residues_zero_based=sorted(forced),
                 mm_charge_updates={str(i):float(charges[i]) for i,a in enumerate(parm.atoms) if abs(charges[i]-a.charge)>1e-12},
                 net_mm_charge=float(charges.sum()),original_net_charge=float(sum(a.charge for a in parm.atoms)),
                 charge_rounding_residual_e=residual,

@@ -10,13 +10,16 @@ activation free energy is available yet.** The Nov-10 campaign is in
 | Operator | Purpose | Scientific scope |
 |---|---|---|
 | `prepare` | Amber/GAFF2 cofold preparation with explicit C4 installation | Input preparation; protonation/assembly still require review |
+| `ligands` / `components` modules | Named molecular graphs, explicit charges, SDF export, and checked multi-ligand Amber setup | Keeps source chemistry and proton inventory; graph/pose construction is a hypothesis |
 | `assembly` | Exact target subunit copies fitted to an experimental assembly | Structural hypothesis, not measured oligomeric state |
 | `md` | Independently seeded, unrestrained classical pilots with checkpoints | Pose, hydration and metal-shell investigation |
 | `qmmm snapshot` | Fixed, hashed QM/MM partition with complete Mg shells | Same partition must be retained along a path |
 | `qmmm smoke` | CPU/GPU energy–force finite differences | Implementation validation on a small system |
 | `qmmm evaluate` | Embedded DFT/MM energies and forces | Electronic structure at stated geometries; not a free energy |
-| `sander_backend` | Native periodic DFTB3/3OB/MM diagnostics | AS9 derivative checks pass; GlnA3 SCC stability remains under investigation |
+| `sander_backend` | Native electrostatically embedded periodic AM1/D or DFTB3/MM | AM1/D real-enzyme force checks pass; DFTB3 GlnA3 SCC/initialization remains unresolved |
 | `path` | Alternative constrained reference-potential paths, with mobile MM atoms | Input generation; actual optimization convergence is recorded |
+| `stationary` module | Chemistry-based endpoint identification, unrestrained endpoint relaxation, dimer saddle refinement | A converged dimer candidate still needs Hessian index and connectivity checks |
+| `qmmm geometry-diagnostics` | Hashed reference geometries evaluated with DFT/MM energies and forces | Does not subtract mismatched periodic/finite Hamiltonians or claim a barrier |
 | `umbrella` | Conservative bond/proton CVs and restartable sampling chunks | Reference ensembles; never a final DFT barrier by themselves |
 | `analyze` | OPES reweighting with all declared biases and sampling checks | Projected PMF estimates with explicit failures |
 | `free_energy` Python API | MBAR overlap and sparse target-level reweighting | Requires decorrelated data and known inclusion probabilities |
@@ -26,6 +29,15 @@ activation free energy is available yet.** The Nov-10 campaign is in
 The legacy `carve`, `scan`, and `run` operators are retained for compatibility.
 Their isolated-cluster gaps are explicitly exploratory, including the optional
 qRRHO correction. Do not use them as an enzyme activation-free-energy ranking.
+Keep historical vacuum results on a relative-only reporting basis. A matched
+enzyme/substrate pair may reduce systematic errors, but cancellation is a
+hypothesis to test with embedding, not an accuracy certificate. The present
+GlnA3 native glutamate model is -1 and glutarate is -2; their common-protein QM
+regions have charges -4 and -5 respectively. Check historical charge assignments
+before transferring any claim of equal-charge error cancellation. Cross-enzyme
+comparisons require a consistent embedding, electronic-structure protocol,
+converged sampling and explicitly defined bound-state references. Different
+implicit-solvent responses demonstrate sensitivity, not calibrated corrections.
 
 ## Hamiltonians
 
@@ -77,7 +89,11 @@ backend uses the reserved GPU. The classical environment provides CUDA OpenMM.
 
 The installed Amber environment also supplies native `sander`, `sqm`, and 3OB
 parameters. The native adapter uses a separate Amber Python process, explicit
-DFTB3 settings and positive SCC-convergence evidence on every accepted force call.
+method settings and positive electronic-convergence evidence on every accepted force call.
+AM1/D uses Amber's AM1/d-PhoT H/O/P and AM1/d Mg parameters. Actual AS9, GlnA3
+target and native-control force derivatives pass. This validates numerical
+derivatives, not the method's accuracy for their activation barriers. AM1/D is
+the current reference path/saddle potential; DFT benchmarking remains necessary.
 The optional `dftb_3rd_order` field selects a diagonal DFTB2 correction/file; it is
 not the switch for full DFTB3. The AS9 real-enzyme derivative check passes at the
 nucleophile, MM link parent and Mg (maximum error about 1.3e-5 eV/Å). GlnA3 solver
@@ -137,13 +153,32 @@ also require Mg binding thermodynamics and solution activity.
 GlnA3 aminolysis retains **cadaverine**, AS9 retains **1,6-hexanediamine**. The saved
 GlnA3 step-2 cofold uses mono-protonated cadaverine (one neutral reactive N).
 That is a conditional microstate; it does not include the pH-dependent cost of
-creating that reactive amine. Coupled proton-transfer CVs are implemented, but
-the atom-mapped aminolysis systems and competing proton pathways still require
-setup investigation before production submission. A CE structural alignment now
+creating that reactive amine. Mapped aminolysis systems are now parameterized,
+including ADP3- explicitly and an L-glutamyl-phosphate native-control pose.
+The primary pH-8 setup hypothesis uses diprotonated cadaverine/HMDA and therefore
+requires two N-H transfers to reach an amide NH. Its classical pilots have
+unrestrained production; they do not validate this protonation hypothesis.
+AS9's supplied aminolysis pose has released PPi: this conditional intermediate
+must not be combined with activation energies without release thermodynamics.
+Competing acceptors and relay pathways still require chemical review before
+reactive production. A CE structural alignment now
 matches the two existing GlnA3 Mg positions to 2BVC within 0.86 Å and supplies a
 third-site hypothesis. Its initial ATP overlap was explicitly recorded and had
 to resolve during minimization before pilot dynamics. Reactant occupancy and
 stability remain to be established. Native controls supplement requested substrates.
+
+Distance CVs retain their original list syntax. A hydrogen-permutation-invariant
+proton coordinate can instead sum donor and acceptor coordination terms:
+
+```json
+{"kind":"coordination","terms":[[0,2,1],[0,3,1],[1,2,-1],[1,3,-1]],"r0_A":1.25,"power":12}
+```
+
+Here 0/1 are donor/acceptor and 2/3 are the entire declared exchangeable-H group.
+The smooth switch is `1/(1+(r/r0)^power)`. Such CVs are dimensionless: use
+`springs_kcal_per_cv2`, with one center/spring per CV. An atom inventory, fixed
+QM partition and chemically justified acceptors remain required. Never compare
+raw energies across different hydrogen counts as if they shared a reference.
 
 ## Checks
 
