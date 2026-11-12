@@ -123,7 +123,7 @@ enzyme_discovery_agent = [
     "structural_proxy_catalog.json",
 ]
 structural_modeling_agent = ["validation_contract.json", "knowledge/*.json", "modeling_reasoning/knowledge/*.json", "developability/knowledge/*.json"]
-"structural_modeling_agent.barrier" = ["specs/*.json", "QMMM_BARRIER_PROTOCOL.md", "README.md", "EE_SETUP_REVIEW.md", "REVIEW_20261111.md"]
+"structural_modeling_agent.barrier" = ["specs/*.json", "backends/*.json", "QMMM_BARRIER_PROTOCOL.md", "README.md", "EE_SETUP_REVIEW.md", "REVIEW_20261111.md"]
 
 [project.scripts]
 enzyme-barrier = "structural_modeling_agent.barrier.__main__:main"

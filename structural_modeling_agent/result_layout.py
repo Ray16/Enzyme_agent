@@ -76,6 +76,7 @@ def followup_paths(run_dir, accession, number, purpose, identity):
 
 
 def results_index(run_dir, state):
+    from .barrier.workflow import summary as barrier_summary
     root = Path(run_dir).resolve()
     layout = state.get("result_layout") or {"schema_version": "legacy", "run_dir": str(root),
                                              "system": system_identity(state["task"])}
@@ -107,6 +108,8 @@ def results_index(run_dir, state):
                     "registered_prediction_files": [{"path": p["path"], "sha256": p.get("sha256")} for p in poses],
                     "validation_artifact": record.get("validation_artifact")}, "followups": studies})
         candidates[accession] = {"current_revision": revisions[-1]["revision"] if revisions else None,
+                                 "barrier_studies":barrier_summary(candidate.get('barrier_studies',{})),
+                                 "barrier_preparations": candidate.get('barrier_preparations',[]),
                                  "sampling_setups": [{"id": key, "artifact": value["artifact"],
                                                       "recorded_status": value["assessment"]["status"]}
                                                      for key, value in candidate.get("sampling_setups", {}).items()],

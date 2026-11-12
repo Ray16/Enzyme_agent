@@ -39,6 +39,16 @@ def descendants(pid):
     return found
 
 
+def producer_hashes(root):
+    """Fingerprint actual numerical sources, including the canonical submodule."""
+    root=Path(root)
+    package=root/'structural_modeling_agent'/'barrier'
+    if not package.is_dir():package=root/'enzyme_barrier'
+    files=sorted(package.glob('*.py'))
+    if not files:raise ValueError('Producer directory has no barrier implementation')
+    return {str(f.relative_to(root)):sha256(f) for f in files}
+
+
 def run(manifest):
     path=Path(manifest).resolve();cfg=json.loads(path.read_text());root=path.parent
     gpu=None if cfg.get('device')=='cpu' else int(cfg['gpu'])
@@ -56,6 +66,17 @@ def run(manifest):
         os.environ[v]=str(threads)
     occupied=gpu_processes(gpu) if gpu is not None else set()
     if occupied:raise RuntimeError(f'GPU occupied before task: {occupied}')
+    if cfg.get('preflight_argv'):
+        producer_root=Path(cfg.get('producer_directory',Path(__file__).resolve().parents[2]))
+        preflight_env=os.environ.copy();preflight_env['PYTHONPATH']=str(producer_root)
+        completed=subprocess.run(cfg['preflight_argv'],cwd=producer_root,env=preflight_env,
+                                 capture_output=True,text=True,timeout=120,check=False)
+        report_path=Path(cfg['preflight_result'])
+        if completed.returncode or not report_path.exists() or not json.loads(report_path.read_text()).get('passed'):
+            if not report_path.exists():atomic_json(report_path,dict(passed=False,returncode=completed.returncode,
+                stdout=completed.stdout,stderr=completed.stderr))
+            raise RuntimeError(f'Worker preflight failed before claiming a task: {report_path}')
+        if gpu is not None and gpu_processes(gpu):raise RuntimeError('GPU occupied after dependency preflight')
     owner=dict(host=socket.gethostname(),pid=os.getpid(),process_start=Path(f'/proc/{os.getpid()}/stat').read_text().rsplit(')',1)[1].split()[19],
                gpu=gpu,cpus=sorted(cpus),threads=threads,manifest_sha256=sha256(path),started_at=time.time(),
                source_sha256={str(f.resolve()):sha256(f) for f in Path(__file__).parent.glob('*.py')},
@@ -70,9 +91,9 @@ def run(manifest):
     for task in cfg['tasks']:
         if stop[0] or failed>=3:break
         tid=task['id'];directory=root/'tasks'/tid;directory.mkdir(parents=True,exist_ok=True)
-        producer_root=Path(cfg.get('producer_directory',Path(__file__).resolve().parent.parent))
-        producer_hashes={str(f.relative_to(producer_root)):sha256(f) for f in (producer_root/'enzyme_barrier').glob('*.py')}
-        identity=__import__('hashlib').sha256(json.dumps(dict(task=task,producer=producer_hashes),sort_keys=True).encode()).hexdigest()
+        producer_root=Path(cfg.get('producer_directory',Path(__file__).resolve().parents[2]))
+        hashes=producer_hashes(producer_root)
+        identity=__import__('hashlib').sha256(json.dumps(dict(task=task,producer=hashes),sort_keys=True).encode()).hexdigest()
         state=directory/'state.json'
         if state.exists():
             previous=json.loads(state.read_text())
@@ -87,10 +108,12 @@ def run(manifest):
         except FileExistsError:raise RuntimeError(f'Unresolved task claim {claim}; inspect owner before recovery')
         atomic_json(claim/'owner.json',owner)
         attempt=previous.get('attempts',0)+1
-        record=dict(identity=identity,status='running',attempts=attempt,argv=task['argv'],owner=owner,started_at=time.time(),producer_sha256=producer_hashes)
+        launch_number=previous.get('launches',previous.get('attempts',0))+1
+        record=dict(identity=identity,status='running',attempts=attempt,launches=launch_number,
+            argv=task['argv'],owner=owner,started_at=time.time(),producer_sha256=hashes)
         atomic_json(state,record)
         try:
-            with (directory/f'attempt{attempt}.log').open('x') as log:
+            with (directory/f'attempt{launch_number}.log').open('x') as log:
                 child_env=os.environ.copy()
                 if cfg.get('producer_directory'):child_env['PYTHONPATH']=str(producer_root)
                 proc=subprocess.Popen(task['argv'],cwd=str(producer_root) if cfg.get('producer_directory') else cfg['cwd'],env=child_env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)

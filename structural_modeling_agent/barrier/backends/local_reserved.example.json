@@ -1,0 +1,22 @@
+{
+  "provider": "local_reserved",
+  "host": "localhost",
+  "supported_methods": ["dft", "uma", "uma-xtb"],
+  "python": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-qmmm-20261106/bin/python",
+  "gpu_reserve": "/nfs/lambda_stor_01/homes/rzhu/bin/gpu_reserve",
+  "gpu": 0,
+  "controller_cpus": [0, 1, 2],
+  "cpus": [3, 4],
+  "threads": 2,
+  "minimum_gpu_memory_GiB": 24,
+  "minimum_host_memory_GiB": 32,
+  "queue_wall_seconds": 21600,
+  "resource_policy": {
+    "reservation_managed": true,
+    "max_jobs": 1,
+    "max_wall_seconds": 14400
+  },
+  "environment": {
+    "OPENMM_PLUGIN_DIR": "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/processivity-md-20261106/lib/python3.12/site-packages/OpenMM.libs/lib/plugins"
+  }
+}

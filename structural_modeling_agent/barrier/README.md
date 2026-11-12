@@ -12,10 +12,101 @@ python -m structural_modeling_agent barrier --help
 python -m enzyme_barrier --help
 ```
 
-The structural controller exposes `inspect_barrier_contract`,
-`prepare_barrier_inputs` and `inspect_barrier_result`. Preparation uses its
-existing bounded CPU operator with authorized, hashed inputs. Potential
-evaluations and fleet submissions continue through reserved workers.
+The structural controller exposes contract inspection, preparation, planning,
+submission, status reconciliation, result inspection and assessment tools.
+Preparation uses its bounded CPU operator with authorized, hashed inputs.
+Calculations run in a separate configured runtime through reserved workers.
+
+## Calling barriers from the agent
+
+For an explicit barrier task, set `objective: "evaluate_barriers"`. Supply the
+exact candidate sequence, target question, prepared topology/coordinates,
+reaction specification and setup evidence through the task's authorized
+`evidence_paths`. This objective accepts existing prepared systems directly;
+it does not require a new cofold prediction. The normal discovery/cofold workflow
+still inspects its primary cofold before submitting an optional barrier study.
+
+The agent follows this tool lifecycle:
+
+1. `inspect_barrier_contract` exposes method policy and backend gaps.
+2. `prepare_barrier_inputs` selects `embedded` or `cluster` explicitly and returns
+   a `preparation.json` with source and prepared-file hashes.
+3. `plan_barrier_calculation` records the chemical review, conditional
+   proton/metal/spin state, rationale, explicit method, number of images,
+   optimization-step budget and wall allowance. It freezes the numerical code.
+4. `submit_barrier_calculation` submits that saved study once.
+5. `check_barrier_calculation` reconciles its receipt and verifies output hashes.
+6. `inspect_barrier_result` exposes the numerical result, supporting JSON paths
+   and the separate activation-free-energy reporting gate.
+7. `record_barrier_assessment` saves interpretation, limitations and the next
+   action. A finished process alone cannot complete a barrier task.
+
+The main assessment route is **embedded DFT/MM**, when a reviewed setup and
+resources support it. **Cluster/UMA** is available for explicitly justified
+exploratory mechanism/path screening. **UMA-xTB** is an embedded reference
+potential and must not be described as DFT. Missing parameters, runtime support
+or resources remain explicit gaps; there is no silent switch to a vacuum model.
+
+These tools are offered in preparation workflows and normal production-cofold
+workflows, subject to the existing final setup-turn and cached-evidence guards.
+The preparation progress guard retains barrier mutations and status checks.
+An explicit `evaluate_barriers` task has its own tool set and completion gate.
+
+### Execution configuration
+
+Configure a barrier backend separately from the cofold provider:
+
+```bash
+OMP_NUM_THREADS=1 OMP_THREAD_LIMIT=1 OPENBLAS_NUM_THREADS=1 \
+MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
+python -m structural_modeling_agent --task barrier_task.json \
+  --barrier-backend reviewed_barrier_backend.json --output-dir barrier_agent_run
+```
+
+The same configuration can be nested under `barrier` in the existing `--backend`
+JSON. A cofold adapter is not assumed to understand barrier requests. If no
+barrier backend is configured, the agent can investigate and prepare inputs,
+but reports the submission gap instead of bypassing resource checks.
+
+The [local backend template](backends/local_reserved.example.json) uses the
+managed quantum interpreter, shared `gpu_reserve` and compatible CUDA OpenMM
+plugin. Review its GPU index, CPU assignments, memory requirement and wall
+limits before deployment. The template's 24 GiB GPU and 32 GiB available-host-memory
+thresholds are deployment requirements, not memory estimates for every QM region.
+Host memory is checked before launch and again before a scientific task claim. Cached UMA weights and
+xTB are additionally required when selecting their methods. Reserved jobs run
+with Hugging Face offline mode; UMA checkpoint/reference-table resolution is
+checked before a task claim, and checkpoint hashes are retained. Model cache
+installation remains a separate preparation action.
+
+The local provider owns one declared GPU. `controller_cpus[:-1]` supplies at
+least two CPUs for the agent and its bounded preparation operators; the final
+controller CPU runs the queue. `cpus` is a disjoint calculation worker set.
+The agent can therefore prepare a later study while another is running, without
+overlapping either the queue or the GPU worker. Existing narrow Python bindings and node load are checked before
+launch, and the shared GPU gate arbitrates the actual reservation. Dependency
+and reserved-device preflight runs before a scientific task is claimed. A
+preflight failure stops that job without consuming scientific attempts.
+
+For another scheduler/provider, supply an explicit adapter `argv`, declare
+`supported_methods`, and set resource-policy limits including
+`reservation_managed: true`, `max_jobs` and `max_wall_seconds`. The adapter
+receives JSON with operation (`submit` or `status`), idempotency key, immutable
+plan path/hash and trusted configuration. It returns the same key and one of
+`queued`, `running`, `complete`, `failed`, `unknown` or `not_found`. Completion
+requires the expected result-file hash and its supporting output fingerprints.
+
+Queued work can outlive the controller. `finish_task` checkpoints active work as
+`waiting_for_backend`; `--resume` reconciles outstanding barrier receipts before
+asking for another modeling decision. Lost replies remain uncertain and cannot
+cause blind resubmission. Plans, code and outputs are immutable per study;
+changed protocols or intentional retries use a new explicit study version.
+Neither claims nor GPU reservations are reclaimed by age.
+
+Study plans, receipts, numerical results and assessments appear in the agent's
+checkpoint, `report.json` and `results_index.json`. Completed constrained
+profiles remain provisional energy observations: saddle connectivity,
+environmental convergence and activation-free-energy validation are separate.
 
 The [implementation review](REVIEW_20261111.md) records the defects corrected
 during the review and the limits of the verification.

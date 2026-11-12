@@ -1,7 +1,7 @@
-"""Lightweight structural-agent interface to preparation and evidence review.
+"""Lightweight structural-agent contracts and preparation interfaces.
 
-This layer does not load a potential or submit a compute job. Numerical work
-continues through the barrier CLI and the existing reservation-managed workers.
+Job planning, submission and reconciliation live in ``workflow``. Heavy
+calculators run in a separate, explicitly configured reserved runtime.
 """
 import json
 from pathlib import Path
@@ -17,6 +17,14 @@ def contract():
         spec_fields=['ligands with integer charges', 'metals with explicit metal_charges except legacy Mg2+',
                      'multiplicity', 'metal_shell_A', 'forming_distance_A', 'breaking_distance_A'],
         preparation_modes=['embedded', 'cluster'],
+        method_policy={
+            'default_assessment': 'embedded DFT/MM after chemical setup review',
+            'cluster': 'Explicit exploratory mechanism/path screening; justify omission of the environment',
+            'uma-xtb': 'Embedded reference-potential exploration; not a DFT barrier',
+            'no_silent_fallback': 'Missing parameters or unavailable DFT remain unresolved; do not silently switch to a vacuum cluster'},
+        agent_workflow=['prepare_barrier_inputs','plan_barrier_calculation',
+                        'submit_barrier_calculation','check_barrier_calculation',
+                        'inspect_barrier_result','record_barrier_assessment'],
         stages=['chemical setup review', 'fixed partition or cluster preparation', 'reference path exploration',
                 'electronic structure and force validation', 'saddle/connectivity checks or ensemble sampling',
                 'separate static-energy and activation-free-energy reporting'],
@@ -43,8 +51,14 @@ def prepare_inputs(prmtop, coordinates, spec_path, out, *, mode='embedded', enzy
     else:
         from .carve import carve
         result=carve(spec,prmtop,coordinates,enzyme_id,out)
+    from .jobs import sha256
+    output=Path(out).resolve()
+    files=([output/name for name in ('input.json','region.json','positions.npy')] if mode=='embedded' else
+           [output/f'cluster_{enzyme_id}.{suffix}' for suffix in ('xyz','meta.json','map.json')])
     return dict(status='inputs_prepared_requires_chemical_review',mode=mode,
                 output_dir=str(Path(out).resolve()),result=result,
+                input_sha256={str(Path(p).resolve()):sha256(p) for p in (prmtop,coordinates,spec_path)},
+                output_sha256={str(p):sha256(p) for p in files},
                 validated_activation_free_energy=False)
 
 
@@ -59,6 +73,9 @@ def review_result(path):
     validation=validate_profile(evidence)
     return dict(source=str(path.resolve()),quantity=result.get('quantity','unspecified'),
                 reported_activation_gap_kcal=result.get('dE_act_kcal'),
+                calculation_status=result.get('calculation_status'),mode=result.get('mode'),method=result.get('method'),
+                settings=result.get('settings'),calculation_limitations=result.get('limitations',[]),
+                numerical_outputs=[dict(path=p,sha256=h) for p,h in result.get('output_sha256',{}).items() if p.endswith('.json')],
                 stored_validation_claim=result.get('validated_activation_free_energy',False),
                 validation=validation,
                 validated_activation_free_energy=validation['validated_activation_free_energy'],
@@ -71,6 +88,7 @@ def tool_schemas():
         return dict(type='function',function=dict(name=name,description=description,
             parameters=dict(type='object',properties=properties,required=list(required))))
     string=lambda description:dict(type='string',description=description)
+    from .workflow import tool_schemas as job_schemas
     return [
         schema('inspect_barrier_contract','Inspect the generic reaction-barrier submodule, setup requirements and validation limits',{}),
         schema('prepare_barrier_inputs','Prepare one explicit embedded snapshot or isolated cluster in a bounded CPU operator; does not run a potential or submit GPU work',{
@@ -83,7 +101,7 @@ def tool_schemas():
             'seconds':dict(type='integer',minimum=1,maximum=60)},
             ('accession','prmtop','coordinates','spec_path','python','mode','seconds')),
         schema('inspect_barrier_result','Inspect an authorized barrier result and its separate evidence-validation gate',{
-            'path':string('Authorized numerical result JSON')},('path',))]
+            'path':string('Authorized numerical result JSON')},('path',))] + job_schemas()
 
 
 def prepare_for_agent(agent,args):

@@ -82,6 +82,44 @@ new cofold predictions or design. All new artifacts belong under this run. Use o
 sources supplied in the task or retrieved by tools, and retain source hashes and quotes.
 """
 
+BARRIER_GUIDANCE = """
+Reaction-barrier tools are callable scientific follow-ups. Inspect
+inspect_barrier_contract, then prepare_barrier_inputs for a chemically reviewed
+topology, coordinates and reaction specification. Select embedded DFT/MM for the
+main enzyme energy assessment when the molecular setup and resources support it.
+Use an isolated cluster/UMA calculation only for explicitly justified exploratory
+mechanism/path screening. UMA-xTB is an embedded reference potential, not DFT.
+Never silently replace embedding with a cluster when parameters or compute fail.
+Record the exact conditional proton/metal/spin state and source-backed setup review.
+
+Use plan_barrier_calculation to save the scientific question, explicit method and
+bounded images/optimization/wall budget. Submit its ID with
+submit_barrier_calculation; reconcile with check_barrier_calculation, inspect the
+returned result path, then record_barrier_assessment with limitations and the next
+action. Submission receipts, calculation completion and scientific validity are
+different states. Do not resubmit uncertain jobs or alter an active plan. Missing
+backend/runtime/resources remain explicit gaps; do not bypass reserved workers
+through a preparation script. No constrained scan maximum establishes a certified
+saddle, activation free energy or experimental activity. Preserve failed and partial
+calculations. Finish inconclusively when the declared question remains unresolved.
+For queued/running work, finish_task with an inconclusive checkpoint preserves a
+waiting-for-backend state; resume reconciles the receipt before more decisions.
+"""
+
+BARRIER_PROMPT = """You are the structural-modeling agent evaluating reaction energetics.
+This task explicitly requests evaluate_barriers from supplied prepared systems;
+new cofold predictions are not a prerequisite. Own chemical investigation,
+conditional molecular setup, method choice, execution and result interpretation.
+Use inspect_candidate and authorized evidence; resolve missing topology/coordinate
+or reaction-specification inputs through reviewed preparation operators. Do not
+invent passing chemical checks or infer a unique physiological microstate.
+Completion requires every declared study to have fingerprinted results and an
+assessment answering its stated static/exploratory question. It does not imply a
+validated activation free energy. Do not create a cofold proposal merely to satisfy
+an unrelated workflow gate.
+""" + BARRIER_GUIDANCE
+PREPARATION_PROMPT += BARRIER_GUIDANCE
+
 SYSTEM_PROMPT = """You are the structural-modeling agent. Own the scientific modeling
 decisions for the supplied target and candidate sequences. Discovery evidence is
 input evidence, not an approved setup. Use tools to investigate, propose a model,
@@ -541,7 +579,8 @@ def tool_schemas():
 
 class ModelingAgent:
     def __init__(self, *, task_path=None, run_dir=None, model=None, backend_path=None,
-                 resume=False, llm_client=None, discovery_run_path=None, results_root=None, system_id=None):
+                 resume=False, llm_client=None, discovery_run_path=None, results_root=None, system_id=None,
+                 barrier_backend_path=None):
         self._discovery_run_path = discovery_run_path
         if resume:
             if results_root is not None or system_id is not None:
@@ -584,7 +623,7 @@ class ModelingAgent:
             ids = [c.get("accession") for c in candidates]
             if any(not isinstance(a, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+", a) or a in {".", ".."} for a in ids) or len(set(ids)) != len(ids):
                 raise ValueError("candidate identifiers must be unique safe path components")
-            if self.task.get("objective", "model_and_validate") not in {"prepare_inputs", "prepare_sampling", "model_and_validate"}:
+            if self.task.get("objective", "model_and_validate") not in {"prepare_inputs", "prepare_sampling", "model_and_validate", "evaluate_barriers"}:
                 raise ValueError("unknown modeling objective")
             from .result_layout import new_layout
             result_layout = new_layout(self.task, run_dir=run_dir, results_root=results_root, system_id=system_id)
@@ -624,6 +663,11 @@ class ModelingAgent:
         if resume and backend_path and self.state.get("backend") and self.backend != self.state["backend"]:
             raise ValueError("resume cannot silently replace the saved provider adapter")
         self.state["backend"] = self.backend
+        self.barrier_backend = (json.loads(Path(barrier_backend_path).read_text()) if barrier_backend_path
+                                else self.state.get('barrier_backend'))
+        if resume and barrier_backend_path and self.state.get('barrier_backend') and self.barrier_backend!=self.state['barrier_backend']:
+            raise ValueError('Resume cannot silently replace the saved barrier backend')
+        self.state['barrier_backend']=self.barrier_backend
         with _controller_lock(self.run_dir):
             if not resume and any((self.run_dir / name).exists() for name in ("checkpoint.json", "agent_state.json")):
                 raise ValueError("another controller already initialized this run")
@@ -848,13 +892,27 @@ class ModelingAgent:
         """The model chooses tools; tools enforce scientific and resource boundaries."""
         if name == 'inspect_barrier_contract':
             from .barrier.api import contract
-            return contract()
+            from .barrier.workflow import backend_config
+            result=contract()
+            try:result['configured_backend']=backend_config(self)
+            except ValueError as exc:result['backend_gap']=str(exc)
+            return result
         if name == 'prepare_barrier_inputs':
             from .barrier.api import prepare_for_agent
             return prepare_for_agent(self,args)
         if name == 'inspect_barrier_result':
             from .barrier.api import review_result
             return review_result(self._authorized_evidence(args['path']))
+        if name == 'plan_barrier_calculation':
+            from .barrier.workflow import plan
+            return plan(self,args)
+        if name in {'submit_barrier_calculation','check_barrier_calculation'}:
+            from .barrier.workflow import reconcile
+            return reconcile(self,args['accession'],args['study_id'],
+                             'submit' if name=='submit_barrier_calculation' else 'status')
+        if name == 'record_barrier_assessment':
+            from .barrier.workflow import assess
+            return assess(self,args)
         if name in {"get_structural_proxy_guidance", "validate_structural_proxy_plan", "inspect_experimental_proxy_bundle"}:
             from enzyme_discovery_agent.tools import structural_proxy_planning
             if name == "inspect_experimental_proxy_bundle":
@@ -997,6 +1055,11 @@ class ModelingAgent:
                    for c in self.state["candidates"].values() for r in c["revisions"]):
                 self.state.update(status="waiting_for_backend", conclusion=args["rationale"])
                 return {"status": "waiting_for_backend", "reason": "job ownership must be reconciled on resume"}
+            from .barrier.workflow import ACTIVE
+            if any(s.get('job',{}).get('status') in ACTIVE for c in self.state['candidates'].values()
+                   for s in c.get('barrier_studies',{}).values()):
+                self.state.update(status='waiting_for_backend',conclusion=args['rationale'])
+                return dict(status='waiting_for_backend',reason='Barrier job ownership must be reconciled on resume')
             self.state.update(status=args["outcome"], conclusion=args["rationale"])
             return {"status": self.state["status"], "rationale": args["rationale"]}
         acc = args.get("accession")
@@ -1518,6 +1581,10 @@ class ModelingAgent:
         missing = []
         for candidate in self.task["candidates"]:
             acc = candidate["accession"]
+            from .barrier.workflow import completion_errors as barrier_errors
+            missing.extend(f'{acc}: {error}' for error in barrier_errors(self,acc,
+                required=self.task.get('objective')=='evaluate_barriers'))
+            if self.task.get('objective')=='evaluate_barriers':continue
             if self.task.get("objective") == "prepare_sampling":
                 try:
                     result = self.dispatch("inspect_preparation_study", {"accession": acc})
@@ -1587,7 +1654,9 @@ class ModelingAgent:
                 groups.append([])
             groups[-1].append(message)
         prefix=copy.deepcopy(self.messages[:2])
-        prefix[0]={"role":"system","content":PREPARATION_PROMPT if self.task.get("objective") == "prepare_sampling" else SYSTEM_PROMPT}
+        objective=self.task.get('objective')
+        prefix[0]={"role":"system","content":(BARRIER_PROMPT if objective=='evaluate_barriers' else
+                    PREPARATION_PROMPT if objective=='prepare_sampling' else SYSTEM_PROMPT+BARRIER_GUIDANCE)}
         # Scientific field definitions must survive ordinary history compaction.
         # Otherwise a model can spend every turn rereading a truncated schema.
         cached_only=all((candidate.get('evidence') or {}).get('do_not_recofold')
@@ -1602,12 +1671,18 @@ class ModelingAgent:
                 "preparation_instructions": self.task.get("preparation_instructions", "Investigate and validate the requested molecular preparation."),
                 "evidence_paths": self.state.get("authorized_evidence_paths", []),
                 "objective": "prepare_sampling"})})
+        if objective=='evaluate_barriers':
+            from .barrier.workflow import summary as barrier_summary
+            contract=self.dispatch('inspect_barrier_contract',{})
+            prefix.append(dict(role='user',content=json.dumps(dict(
+                objective=objective,barrier_studies={acc:barrier_summary(value.get('barrier_studies',{}))
+                    for acc,value in self.state['candidates'].items()}))))
         prefix[0]["content"] += "\n\nScientific record field contract (trusted tool schema):\n" + json.dumps(contract)
         # Before the first proposal the candidate record is task input, not conversational
         # history. It does not fit the per-turn tool-result allowance, so re-reading it
         # returns another truncated preview and the setup stage cannot converge. Anchor it
         # for exactly the same reason the field contract above is anchored.
-        anchor=self.state.get('setup_anchor') if self._before_proposal() and self.task.get('objective') != 'prepare_sampling' else None
+        anchor=self.state.get('setup_anchor') if self._before_proposal() and objective not in {'prepare_sampling','evaluate_barriers'} else None
         if anchor:
             prefix[0]["content"] += "\n\nCandidate record under setup (trusted task input):\n" + anchor
         recent=copy.deepcopy(groups[-2:] if self.task.get("objective") == "prepare_sampling" else groups[-3:])
@@ -1693,7 +1768,8 @@ class ModelingAgent:
 
     def _preparation_progress(self):
         return fingerprint({acc: {key: state.get(key) or {} for key in (
-            "sampling_setups", "preparation_studies", "preparation_findings", "preparation_operators")}
+            "sampling_setups", "preparation_studies", "preparation_findings", "preparation_operators",
+            "barrier_preparations", "barrier_studies")}
             for acc, state in self.state["candidates"].items()})
 
     def _preparation_findings(self, candidate):
@@ -1774,6 +1850,7 @@ class ModelingAgent:
                 if fingerprint(self.task) != self.state["task_sha256"]:
                     raise ValueError("saved target/candidate task changed after initialization")
                 self.state["backend"] = self.backend
+                self.state['barrier_backend']=self.barrier_backend
                 self._repair_interrupted_transcript()
                 if self.task.get("kind") == "discovery_handoff":
                     previous = self.state.get("discovery_currentness", {})
@@ -1832,6 +1909,17 @@ class ModelingAgent:
                             # Preserve the previous pending state: an unavailable
                             # status endpoint is not evidence that a job vanished.
                             self._event("job_reconciliation_failed", error=f"{type(exc).__name__}: {exc}")
+            if self._resume_requested:
+                from .barrier.workflow import ACTIVE,reconcile
+                for accession,candidate_state in self.state['candidates'].items():
+                    for identifier,study in candidate_state.get('barrier_studies',{}).items():
+                        if budget_reason():break
+                        if study.get('job',{}).get('status') not in ACTIVE:continue
+                        try:
+                            reply=reconcile(self,accession,identifier,'status')
+                            self._event('barrier_job_reconciled',study_id=identifier,status=reply['status'])
+                        except Exception as exc:
+                            self._event('barrier_job_reconciliation_failed',study_id=identifier,error=str(exc))
             self.state["status"] = "running"
             try:
                 for _ in range(max_turns):
@@ -1841,6 +1929,7 @@ class ModelingAgent:
                         break
                     self.state["turn"] += 1
                     offered=tool_schemas()
+                    from .barrier.workflow import TOOLS as barrier_tools
                     if self.task.get('objective') == 'prepare_sampling':
                         preparation_tools = {'inspect_candidate', 'read_candidate_section', 'read_evidence',
                             'retrieve_reference', 'search_literature', 'assess_assembly', 'inspect_molecule',
@@ -1848,6 +1937,7 @@ class ModelingAgent:
                             'inspect_preparation_structure', 'declare_preparation_study', 'inspect_preparation_study',
                             'run_preparation_operator', 'inspect_sampling_setup_contract', 'inspect_processivity_toolchain',
                             'declare_sampling_setup', 'inspect_sampling_setup', 'record_preparation_findings', 'finish_task'}
+                        preparation_tools |= barrier_tools
                         offered = [t for t in offered if t['function']['name'] in preparation_tools]
                         if self.state.get('preparation_read_turns', 0) >= 2:
                             # Force forward motion after repeated investigation-only turns, but
@@ -1856,10 +1946,11 @@ class ModelingAgent:
                             # and must stay available or the loop can never complete a study.
                             decision_tools = {'record_preparation_findings', 'declare_sampling_setup',
                                               'declare_preparation_study', 'run_preparation_operator', 'finish_task'}
+                            decision_tools |= barrier_tools-{'inspect_barrier_contract','inspect_barrier_result'}
                             offered = [t for t in offered if t['function']['name'] in decision_tools]
 
 
-                    if self.task.get('workflow_mode')=='production_cofold':
+                    if self.task.get('workflow_mode')=='production_cofold' and self.task.get('objective') not in {'evaluate_barriers','prepare_sampling'}:
                         before_proposal=not any(c['revisions'] for c in self.state['candidates'].values())
                         cached_only=all((candidate.get('evidence') or {}).get('do_not_recofold')
                                         and (candidate.get('evidence') or {}).get('existing_cofolds') for candidate in self.task['candidates'])
@@ -1898,7 +1989,16 @@ class ModelingAgent:
                                     'defensible proposal, finish the task as inconclusive and state what is missing. '
                                     'Do not retrieve or read further.'})
                                 self._event('setup_closing_turn',turn=self.state['turn'],setup_turn_limit=setup_limit)
+                        if not (before_proposal and not cached_only and self.state['turn']>=setup_limit):
+                            setup_tools |= ({'inspect_barrier_contract','check_barrier_calculation','inspect_barrier_result'}
+                                            if cached_only else barrier_tools)
                         offered=[tool for tool in offered if tool['function']['name'] in setup_tools]
+                    if self.task.get('objective')=='evaluate_barriers':
+                        allowed=barrier_tools|{'inspect_candidate','read_candidate_section','read_evidence',
+                            'retrieve_reference','search_literature','assess_assembly','inspect_molecule',
+                            'inspect_result_locations','run_preparation_operator','inspect_preparation_structure',
+                            'inspect_preparation_contract','record_preparation_findings','finish_task'}
+                        offered=[tool for tool in offered if tool['function']['name'] in allowed]
                     if self.state.get('repeated_inspections',0)>=3:
                         offered=[tool for tool in offered if tool['function']['name'] not in _REPEATABLE_READERS]
                     offered_names={tool['function']['name'] for tool in offered}
@@ -1971,6 +2071,8 @@ class ModelingAgent:
         for acc, state in self.state["candidates"].items():
             current = state["revisions"][-1] if state["revisions"] else {}
             candidates.append({"accession": acc, "revision": current.get("revision"),
+                               "barrier_studies":copy.deepcopy(state.get('barrier_studies',{})),
+                               "barrier_preparations":copy.deepcopy(state.get('barrier_preparations',[])),
                                "preparation_studies": [{"id": key, "artifact": value["artifact"]}
                                                        for key, value in state.get("preparation_studies", {}).items()],
                                "preparation_operators": [{"artifact": value["artifact"], "status": value["status"]}
@@ -2011,6 +2113,7 @@ class ModelingAgent:
                                "decision_artifact": current.get("decision_artifact"),
                                "validation_artifact": current.get("validation_artifact")})
         report = {"schema_version": "modeling-agent-1.0", "status": self.state["status"], "run_dir": str(self.run_dir),
+                  "objective":self.task.get('objective','model_and_validate'),
                   "decision_origin":self.state.get('decision_origin'),
                   "result_layout": self.state.get("result_layout"), "results_index": str(self.run_dir / "results_index.json"),
                   "target": self.task.get("target"), "task_sha256": self.state["task_sha256"],
@@ -2019,7 +2122,9 @@ class ModelingAgent:
                   "usage": self.state["usage"], "candidates": candidates,
                   "code_snapshots": self.state.get("code_snapshots", []),
                   "environment": self.state.get("environment"),
-                  "evidence_scope": ("Preparation evidence and agent-reviewed validation; no production dynamics or chemical accuracy claim."
+                  "evidence_scope": ("Barrier execution and reviewed constrained-energy observations; no activation-free-energy or activity claim."
+                                     if self.task.get('objective')=='evaluate_barriers' else
+                                     "Preparation evidence and agent-reviewed validation; no production dynamics or chemical accuracy claim."
                                      if self.task.get("objective") == "prepare_sampling" else
                                      "Setup consistency and declared pose checks; no activity prediction or automatic discovery reranking.")}
         if self.task.get("kind") == "discovery_handoff":

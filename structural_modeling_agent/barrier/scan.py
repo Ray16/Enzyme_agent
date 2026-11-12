@@ -18,7 +18,7 @@ KCAL = uma_helper.KCAL_MOL_PER_EV
 
 
 def _relax_held(atoms, q, s, calc, scan_bond, dval, held_bonds, frozen, fmax, steps,
-                moving_group=None):
+                moving_group=None,deadline=None):
     """Relax with the scanned bond fixed at dval AND any `held_bonds` [(i,j,val),...] fixed;
     `frozen` atoms via FixAtoms. Returns (energy_eV, relaxed_atoms)."""
     a = atoms
@@ -30,7 +30,12 @@ def _relax_held(atoms, q, s, calc, scan_bond, dval, held_bonds, frozen, fmax, st
     if frozen:
         cons.append(FixAtoms(indices=frozen))
     a.set_constraint(cons)
-    converged = LBFGS(a, logfile=None).run(fmax=fmax, steps=steps)
+    optimizer=LBFGS(a,logfile=None)
+    if deadline is not None:
+        def budget():
+            if time.monotonic()>deadline:raise TimeoutError('Cluster path wall budget reached')
+        optimizer.attach(budget,interval=1)
+    converged = optimizer.run(fmax=fmax, steps=steps)
     e = a.get_potential_energy()
     if not converged or not np.isfinite(e):
         raise RuntimeError('Cluster scan image did not converge to a finite energy')
@@ -39,7 +44,7 @@ def _relax_held(atoms, q, s, calc, scan_bond, dval, held_bonds, frozen, fmax, st
 
 
 def _two_leg(atoms, q, s, model, i_nuc, i_elec, i_leav, d0, fmax, steps, traj_path, frozen,
-             form_end=1.6, break_end=3.0, moving_groups=None):
+             form_end=1.6, break_end=3.0, moving_groups=None,images=None,deadline=None):
     """Form-then-break reaction path to a UNIFORM product (PPi fully departed), so barriers
     are comparable across enzymes regardless of concerted vs stepwise timing.
     Leg 1: drive forming bond d(nuc-elec) NAC->~1.6 (breaking bond free).
@@ -52,21 +57,29 @@ def _two_leg(atoms, q, s, model, i_nuc, i_elec, i_leav, d0, fmax, steps, traj_pa
     d2 = lambda g: float(np.linalg.norm(g.positions[i_elec] - g.positions[i_leav]))
     a = atoms.copy(); a.info.update(charge=q, spin=s)
     # Leg 1: forming bond
-    dists1 = np.linspace(d0, form_end, max(2,int(np.ceil(abs(d0-form_end)/.2))+1)).tolist()
+    nform=max(2,images//2) if images is not None else max(2,int(np.ceil(abs(d0-form_end)/.2))+1)
+    dists1 = np.linspace(d0, form_end,nform).tolist()
     E1, G1 = [], []
     for d in dists1:
-        e, g = _relax_held(a, q, s, calc, (i_nuc, i_elec), d, [], frozen, fmax, steps,moving_groups[0])
+        try:e, g = _relax_held(a, q, s, calc, (i_nuc, i_elec), d, [], frozen, fmax, steps,moving_groups[0],deadline)
+        except TimeoutError:
+            if traj_path:np.save(str(traj_path)+'.partial.npy',a.positions)
+            raise
         E1.append(e); G1.append(g); a = g.copy()
         if traj: traj.write(g)
         print(f"  L1 d(nuc-elec)={d:.2f} d(elec-leav)={d2(g):.2f} E={(e-E1[0])*KCAL:+.2f}", flush=True)
     # Leg 2: hold forming bond at its leg-1 end value, drive breaking bond out
     bf = dists1[-1]                      # ~1.6
     r2_start = d2(G1[-1])
-    d2_grid = np.linspace(r2_start, max(r2_start,break_end),
-                         max(2,int(np.ceil(abs(break_end-r2_start)/.2))+1)).tolist()
+    nbreak=images-nform+1 if images is not None else max(2,int(np.ceil(abs(break_end-r2_start)/.2))+1)
+    d2_grid = np.linspace(r2_start,max(r2_start,break_end),nbreak).tolist()
+    if images is not None:d2_grid=d2_grid[1:]
     a = G1[-1].copy(); E2, G2 = [], []
     for d in d2_grid:
-        e, g = _relax_held(a, q, s, calc, (i_elec, i_leav), d, [(i_nuc, i_elec, bf)], frozen, fmax, steps,moving_groups[1])
+        try:e, g = _relax_held(a, q, s, calc, (i_elec, i_leav), d, [(i_nuc, i_elec, bf)], frozen, fmax, steps,moving_groups[1],deadline)
+        except TimeoutError:
+            if traj_path:np.save(str(traj_path)+'.partial.npy',a.positions)
+            raise
         E2.append(e); G2.append(g); a = g.copy()
         if traj: traj.write(g)
         print(f"  L2 d(elec-leav)={d:.2f} d(nuc-elec)={float(np.linalg.norm(g.positions[i_nuc]-g.positions[i_elec])):.2f} "
@@ -76,7 +89,7 @@ def _two_leg(atoms, q, s, model, i_nuc, i_elec, i_leav, d0, fmax, steps, traj_pa
 
 
 def _concerted(atoms, q, s, model, i_nuc, i_elec, i_leav, d0_form, d0_break, fmax, steps,
-               traj_path, frozen, form_end=1.65, break_end=3.0, n=13,moving_groups=None):
+               traj_path, frozen, form_end=1.65, break_end=3.0, n=13,moving_groups=None,deadline=None):
     """CONCERTED antisymmetric path: drive the forming bond d(nuc-elec) DOWN and the breaking
     bond d(elec-leav) UP simultaneously along a single progress variable lam (reactant->product),
     both held each step, everything else relaxed. Avoids the pentacoordinate-phosphorane trap the
@@ -88,6 +101,7 @@ def _concerted(atoms, q, s, model, i_nuc, i_elec, i_leav, d0_form, d0_break, fma
     a = atoms.copy(); a.info.update(charge=q, spin=s)
     Df, Db, E, G = [], [], [], []
     for L in np.linspace(0.0, 1.0, n):
+        if deadline is not None and time.monotonic()>deadline:raise TimeoutError('Cluster path wall budget reached')
         df = float(d0_form + (form_end - d0_form) * L)
         db = float(d0_break + (break_end - d0_break) * L)
         # physically move atoms to BOTH target distances (as the two-leg scan does), else a hard
@@ -99,7 +113,13 @@ def _concerted(atoms, q, s, model, i_nuc, i_elec, i_leav, d0_form, d0_break, fma
         if frozen:
             cons.append(FixAtoms(indices=frozen))
         a.set_constraint(cons)
-        converged = LBFGS(a, logfile=None).run(fmax=fmax, steps=steps)
+        optimizer=LBFGS(a,logfile=None)
+        if deadline is not None:
+            def budget():
+                if traj_path:np.save(str(traj_path)+'.partial.npy',a.positions)
+                if time.monotonic()>deadline:raise TimeoutError('Cluster path wall budget reached')
+            optimizer.attach(budget,interval=1)
+        converged = optimizer.run(fmax=fmax, steps=steps)
         e = a.get_potential_energy()
         if not converged or not np.isfinite(e):
             raise RuntimeError('Cluster scan image did not converge to a finite energy')
@@ -116,7 +136,10 @@ def _concerted(atoms, q, s, model, i_nuc, i_elec, i_leav, d0_form, d0_break, fma
 
 def scan_barrier(meta_path: str | Path, model: str = "uma-s-1p2", fast: bool = True,
                  dg: bool = False, wt: float | None = None, T: float = 303.15,
-                 concerted: bool = False) -> dict:
+                 concerted: bool = False,images=None,max_steps=None,wall_seconds=None) -> dict:
+    if images is not None and (type(images) is not int or images<3):raise ValueError('At least three scan images required')
+    if max_steps is not None and (type(max_steps) is not int or max_steps<1):raise ValueError('Positive optimizer step budget required')
+    if wall_seconds is not None and (not np.isfinite(wall_seconds) or wall_seconds<=0):raise ValueError('Positive wall budget required')
     meta_path = Path(meta_path)
     meta = json.load(open(meta_path))
     base = meta_path.parent
@@ -141,6 +164,8 @@ def scan_barrier(meta_path: str | Path, model: str = "uma-s-1p2", fast: bool = T
           f"d(nuc-elec)={d0:.2f}", flush=True)
 
     fmax, steps = (0.10, 80) if fast else (0.08, 120)
+    if max_steps is not None:steps=max_steps
+    deadline=time.monotonic()+wall_seconds if wall_seconds is not None else None
     t0 = time.time()
     coordinate = "concerted_antisym" if concerted else "form_then_break"
     dne = lambda g: float(np.linalg.norm(g.positions[i] - g.positions[j]))
@@ -150,7 +175,8 @@ def scan_barrier(meta_path: str | Path, model: str = "uma-s-1p2", fast: bool = T
         d0b = float(np.linalg.norm(atoms.positions[j] - atoms.positions[k]))
         Df, Db, E, G = _concerted(atoms, q, s, model, i, j, k, d0, d0b, fmax, steps,
                                   f"{prefix}_scan.traj", frozen,
-                                  form_end=definition['forming_distance_A'],break_end=definition['breaking_distance_A'],moving_groups=moving_groups)
+                                  form_end=definition['forming_distance_A'],break_end=definition['breaking_distance_A'],moving_groups=moving_groups,
+                                  n=images or 13,deadline=deadline)
         geoms = list(G); energies = np.asarray(E)
         dne_all = [dne(g) for g in geoms]; d2_all = [d2_at(g) for g in geoms]
         n1 = 0
@@ -160,7 +186,8 @@ def scan_barrier(meta_path: str | Path, model: str = "uma-s-1p2", fast: bool = T
         # two-leg form-then-break path to a UNIFORM product (PPi departed) -> comparable barriers
         dists1, E1, G1, d2grid, E2, G2 = _two_leg(atoms, q, s, model, i, j, k, d0, fmax, steps,
                                                   f"{prefix}_scan.traj", frozen,
-                                                  form_end=definition['forming_distance_A'],break_end=definition['breaking_distance_A'],moving_groups=moving_groups)
+                                                  form_end=definition['forming_distance_A'],break_end=definition['breaking_distance_A'],moving_groups=moving_groups,
+                                                  images=images,deadline=deadline)
         geoms = list(G1) + list(G2); energies = np.asarray(list(E1) + list(E2))
         dne_all = [dne(g) for g in geoms]; d2_all = [d2_at(g) for g in geoms]
         n1 = len(G1)
@@ -191,6 +218,7 @@ def scan_barrier(meta_path: str | Path, model: str = "uma-s-1p2", fast: bool = T
              for n in range(len(geoms))]
     out = dict(reaction_id=meta["reaction_id"], enzyme_id=tag, model=model, T=T, coordinate=coordinate,
                inference_settings=uma_helper.PROFILE,
+               requested_images=images,optimizer_max_steps=steps,wall_budget_seconds=wall_seconds,
                path_definition=definition,
                quantity="constrained_cluster_electronic_energy_gap",
                all_optimizations_converged=True, transition_state_certified=False,

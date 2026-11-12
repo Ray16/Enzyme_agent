@@ -15,7 +15,9 @@ available to the agent.
 Reaction-barrier calculations live in the [barrier submodule](barrier/README.md).
 It provides generic reaction specifications, cluster and embedded potentials,
 path/sampling operators and separate evidence gates. The controller exposes
-barrier contract, preparation and result-review tools. Run
+barrier preparation, planning, reserved submission, status and assessment tools.
+Use `objective: "evaluate_barriers"` and `--barrier-backend` for an explicit
+energetics task; optional cofold follow-ups retain their primary-evidence gate. Run
 `python -m structural_modeling_agent barrier --help`; historical
 `python -m enzyme_barrier` commands remain compatible.
 

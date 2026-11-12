@@ -40,7 +40,8 @@ def main():
     parser.add_argument("--max-turns", type=int, default=30, help="decision-turn allowance for this invocation")
     parser.add_argument("--token-budget", type=int, default=100000)
     parser.add_argument("--runtime-budget-seconds", type=float, default=1800)
-    parser.add_argument("--backend", type=Path, help="explicit provider adapter configuration; omitted means no submissions")
+    parser.add_argument("--backend", type=Path, help="cofold provider adapter configuration; may include a separate barrier configuration under barrier")
+    parser.add_argument('--barrier-backend',type=Path,help='Reservation-aware barrier provider configuration; separate from the cofold provider')
     parser.add_argument("--check-discovery-run", type=Path, help="explicit trusted discovery run to check snapshot freshness")
     parser.add_argument("--lead-id", help="show one investigation-only lead with --inspect-handoff")
     parser.add_argument("--offset", type=int, default=0, help="character offset for lead inspection")
@@ -66,7 +67,8 @@ def main():
     from .agent import ModelingAgent
     agent = ModelingAgent(task_path=args.task, run_dir=args.resume or args.output_dir,
                           model=args.model, backend_path=args.backend, resume=bool(args.resume),
-                          discovery_run_path=args.check_discovery_run, results_root=args.results_root, system_id=args.system_id)
+                          discovery_run_path=args.check_discovery_run, results_root=args.results_root, system_id=args.system_id,
+                          barrier_backend_path=args.barrier_backend)
     if args.initialize_only:
         agent.state["status"] = "initialized"
         agent._save()

@@ -13,7 +13,7 @@ from .jobs import load_snapshot,atomic_json,sha256
 
 
 def explore(snapshot,out,*,route='concerted',images=9,max_steps=60,wall_seconds=3600,engine='uma-xtb',
-            basis='def2-svp',xc='wb97m-v',dft_engine='gpu',platform=None,ecp=None):
+            basis='def2-svp',xc='wb97m-v',dft_engine='gpu',platform=None,ecp=None,model='uma-s-1p2'):
     from ase.constraints import FixAtoms,FixBondLengths
     from ase.optimize import LBFGS
     from .sampler import EmbeddedUMAXTB
@@ -24,7 +24,7 @@ def explore(snapshot,out,*,route='concerted',images=9,max_steps=60,wall_seconds=
             raise ValueError('Non-phosphate paths require a reaction path_definition in the snapshot')
         definition=dict(forming_distance_A=1.65,breaking_distance_A=3.2)
     form_end=definition['forming_distance_A'];break_end=definition['breaking_distance_A']
-    if engine=='uma-xtb':a.calc=EmbeddedUMAXTB(p,r,platform='CPU')
+    if engine=='uma-xtb':a.calc=EmbeddedUMAXTB(p,r,platform='CPU',model=model)
     elif engine=='dft':
         from .embedded import EmbeddedDFTMM
         a.calc=EmbeddedDFTMM(p,r,basis=basis,xc=xc,engine=dft_engine,platform=platform,ecp=ecp)

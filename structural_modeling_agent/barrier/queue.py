@@ -48,10 +48,15 @@ def run(path):
                 record['jobs'][name]['status']='finished' if proc.returncode==0 else 'launch_or_worker_failed'
                 job=next(j for j in cfg['jobs'] if j['id']==name)
                 worker=json.loads(Path(job['manifest']).read_text())
-                states=[root/'tasks'/t['id']/'state.json' for t in worker['tasks']]
+                states=[Path(job['manifest']).parent/'tasks'/t['id']/'state.json' for t in worker['tasks']]
+                preflight=Path(worker['preflight_result']) if worker.get('preflight_result') else None
+                preflight_failed=preflight is not None and preflight.exists() and json.loads(preflight.read_text()).get('passed') is False
+                contention=any(p.exists() and json.loads(p.read_text()).get('status')=='contention_stopped' for p in states)
                 # A lost atomic reservation or transient preflight refusal is
                 # retried without consuming a scientific task attempt.
-                if proc.returncode!=0 and not any(s.exists() for s in states):
+                if preflight_failed:
+                    record['jobs'][name]['status']='preflight_failed';finished.add(name)
+                elif contention or (proc.returncode!=0 and not any(s.exists() for s in states)):
                     record['jobs'][name]['status']='preflight_or_reservation_retry'
                 else:finished.add(name)
                 del active[name]
