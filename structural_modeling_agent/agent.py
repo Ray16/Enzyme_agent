@@ -88,6 +88,13 @@ input evidence, not an approved setup. Use tools to investigate, propose a model
 check it, inspect results and revise choices when checks fail. You choose the
 next action; there is no prescribed sequence of modeling decisions.
 
+Reaction energetics belongs to your barrier submodule. Use inspect_barrier_contract
+for its setup requirements, prepare_barrier_inputs for a reviewed reaction setup,
+and inspect_barrier_result for separate numerical and evidence-validation status.
+Barrier preparation is optional follow-up work and does not replace primary cofold
+inspection. Compute uses reserved workers; a scan maximum is not a certified saddle
+or an activation free energy. Specify reaction steps and microstates explicitly.
+
 Treat entry into this queue as a request for scientific investigation, not an
 instruction to spend GPU time immediately. Weigh primary studies, reaction
 databases, sequence/domain evidence and available structures. Record conflicting
@@ -377,6 +384,7 @@ def _controller_lock(run_dir):
 
 
 def tool_schemas():
+    from .barrier.api import tool_schemas as barrier_schemas
     from .sampling.setup import declaration_schema
     from enzyme_discovery_agent.tools import structural_proxy_planning
     from enzyme_discovery_agent.tool_registry import get_tool_info
@@ -407,7 +415,7 @@ def tool_schemas():
         "required": ["id", "metric", "scope", "unit", "endpoint", "conditions", "value", "interpretation", "source"]}
     shared = [get_tool_info(name)["schema"] for name in (
         "get_structural_proxy_guidance", "validate_structural_proxy_plan", "inspect_experimental_proxy_bundle")]
-    return shared + [
+    return shared + barrier_schemas() + [
         _schema("inspect_result_locations", "Find this system/run's output destinations, current revisions and recorded result paths; folder existence is not completion", acc),
         _schema("inspect_workflow_policy", "Inspect default cofolding and the distinct scientific purposes of optional dynamics and de novo design", acc, ("accession",)),
         _schema("inspect_mlmm_engine_options", "Inspect reviewed UMA/Nitro, precision and embedding options and the separate evidence needed before a chemical-energetics run; no model loading"),
@@ -838,6 +846,15 @@ class ModelingAgent:
 
     def dispatch(self, name, args):
         """The model chooses tools; tools enforce scientific and resource boundaries."""
+        if name == 'inspect_barrier_contract':
+            from .barrier.api import contract
+            return contract()
+        if name == 'prepare_barrier_inputs':
+            from .barrier.api import prepare_for_agent
+            return prepare_for_agent(self,args)
+        if name == 'inspect_barrier_result':
+            from .barrier.api import review_result
+            return review_result(self._authorized_evidence(args['path']))
         if name in {"get_structural_proxy_guidance", "validate_structural_proxy_plan", "inspect_experimental_proxy_bundle"}:
             from enzyme_discovery_agent.tools import structural_proxy_planning
             if name == "inspect_experimental_proxy_bundle":

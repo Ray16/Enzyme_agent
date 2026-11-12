@@ -12,6 +12,13 @@ revises decisions in response to failed checks. Its controller does not invoke
 the discovery orchestrator. The existing modeling pipeline modules are tools
 available to the agent.
 
+Reaction-barrier calculations live in the [barrier submodule](barrier/README.md).
+It provides generic reaction specifications, cluster and embedded potentials,
+path/sampling operators and separate evidence gates. The controller exposes
+barrier contract, preparation and result-review tools. Run
+`python -m structural_modeling_agent barrier --help`; historical
+`python -m enzyme_barrier` commands remain compatible.
+
 ```bash
 python -m structural_modeling_agent --task modeling_task.json --system-id my_enzyme_system
 # Allocate and inspect destinations without model calls or compute submission:

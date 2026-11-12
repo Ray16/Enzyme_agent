@@ -18,6 +18,9 @@ def environment_diagnostics():
 
 
 def main():
+    if sys.argv[1:2]==['barrier']:
+        from .barrier.__main__ import main as barrier_main
+        return barrier_main(sys.argv[2:])
     if sys.argv[1:2]==['family-cofold']:
         from .family_cofold import main as family_main
         family_main(sys.argv[2:])

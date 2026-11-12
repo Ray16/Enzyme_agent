@@ -29,6 +29,17 @@ structural-modeling = [
     "gemmi>=0.6",
     "matplotlib>=3.5",
 ]
+# CPU preparation and embedded DFT diagnostics. GPU4PySCF, UMA and native Amber
+# use the separately managed, validated environments described by the submodule.
+barrier = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "ase>=3.23",
+    "parmed>=4",
+    "openmm>=8",
+    "pyscf>=2",
+    "matplotlib>=3.5",
+]
 scoring = [
     "torch>=2.0",
     "torch-geometric",
@@ -78,6 +89,7 @@ packages = [
     "enzyme_design_agent.tools",
     "enzyme_design_agent.tools.rfd4_campaign",
     "structural_modeling_agent",
+    "structural_modeling_agent.barrier",
     "structural_modeling_agent.cofold",
     "structural_modeling_agent.developability",
     "structural_modeling_agent.exploration",
@@ -88,7 +100,15 @@ packages = [
     "structural_modeling_agent.sampling",
     "structural_modeling_agent.scripts",
 ]
-package-dir = {"campaign_catalog" = "campaign_catalog", "enzyme_discovery_agent" = "enzyme_discovery_agent", "enzyme_design_agent" = "enzyme_design_agent", "structural_modeling_agent" = "structural_modeling_agent"}
+
+[tool.setuptools.package-dir]
+campaign_catalog = "campaign_catalog"
+enzyme_discovery_agent = "enzyme_discovery_agent"
+enzyme_design_agent = "enzyme_design_agent"
+structural_modeling_agent = "structural_modeling_agent"
+enzyme_barrier = "enzyme_barrier"
+"structural_modeling_agent.barrier" = "structural_modeling_agent/barrier"
+"enzyme_design_agent.tools.rfd4_campaign" = "enzyme_design_agent/tools/rfd4_campaign"
 
 # Non-.py files are NOT picked up by package discovery, so anything the installed
 # agent reads at runtime has to be listed here or it silently ships missing.
@@ -96,16 +116,17 @@ package-dir = {"campaign_catalog" = "campaign_catalog", "enzyme_discovery_agent"
 # Deliberately excluded: data/mechanism_coordinate_cache.json -- a mutable runtime
 # artifact, not an asset (it must not be written inside site-packages).
 [tool.setuptools.package-data]
-enzyme_barrier = ["specs/*.json", "QMMM_BARRIER_PROTOCOL.md", "README.md", "EE_SETUP_REVIEW.md"]
+enzyme_barrier = ["specs/*.json", "QMMM_BARRIER_PROTOCOL.md", "README.md", "EE_SETUP_REVIEW.md", "REVIEW_20261111.md"]
 enzyme_discovery_agent = [
     "target_profile.example.json",
     "campaign_inputs/*.json",
     "structural_proxy_catalog.json",
 ]
 structural_modeling_agent = ["validation_contract.json", "knowledge/*.json", "modeling_reasoning/knowledge/*.json", "developability/knowledge/*.json"]
+"structural_modeling_agent.barrier" = ["specs/*.json", "QMMM_BARRIER_PROTOCOL.md", "README.md", "EE_SETUP_REVIEW.md", "REVIEW_20261111.md"]
 
 [project.scripts]
-enzyme-barrier = "enzyme_barrier.__main__:main"
+enzyme-barrier = "structural_modeling_agent.barrier.__main__:main"
 enzyme-campaign-catalog = "campaign_catalog.cli:main"
 enzyme-discovery-agent = "enzyme_discovery_agent.__main__:main"
 enzyme-design-agent = "enzyme_design_agent.__main__:main"
@@ -114,7 +135,7 @@ structural-modeling-agent = "structural_modeling_agent.__main__:main"
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
 pythonpath = [".", "campaign_catalog/tests", "structural_modeling_agent/tests"]
-testpaths = ["campaign_catalog/tests", "enzyme_discovery_agent/tests", "enzyme_design_agent/tests", "structural_modeling_agent/tests", "structural_modeling_agent/modeling_reasoning/tests", "structural_modeling_agent/developability/tests", "structural_modeling_agent/exploration/tests", "structural_modeling_agent/loop/tests", "enzyme_barrier/tests"]
+testpaths = ["campaign_catalog/tests", "enzyme_discovery_agent/tests", "enzyme_design_agent/tests", "structural_modeling_agent/tests", "structural_modeling_agent/modeling_reasoning/tests", "structural_modeling_agent/developability/tests", "structural_modeling_agent/exploration/tests", "structural_modeling_agent/loop/tests", "structural_modeling_agent/barrier/tests"]
 # NOTE: this REPLACES pytest's defaults, so the defaults worth keeping (".*",
 # "*.egg", "node_modules") are restated -- otherwise `pytest <path>` walks into
 # .venv/ and benchmark/*/.venv/.

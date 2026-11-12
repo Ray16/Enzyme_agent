@@ -96,6 +96,20 @@ def test_complete_embedded_system_preserves_translation_and_total_force():
     assert np.allclose(a.get_forces(),forces,atol=1e-6)
 
 
+def test_open_shell_embedding_has_consistent_QM_and_MM_derivatives():
+    from ase import Atoms
+    from enzyme_barrier.embedded import EmbeddedDFTMM
+    from enzyme_barrier.embedding_forces import force_checks
+    p=water_pair();r=dict(indices=[0,1,2],links=[],charge=1,multiplicity=2,
+        embedding_indices=[3,4,5],embedding_charges=[-.834,.417,.417])
+    a=Atoms(numbers=[at.atomic_number for at in p.atoms],positions=p.coordinates)
+    a.calc=EmbeddedDFTMM(p,r,engine='cpu',platform='CPU',xc='pbe',basis='sto-3g',grid_level=2,
+        conv_tol=1e-11,require_magnesium_c4=False)
+    result=force_checks(a,[dict(atom_zero_based=i,axis=2) for i in (0,3)],tolerance_eV_A=.002)
+    assert a.calc.dm.ndim==3  # unrestricted alpha/beta density matrices
+    assert result['passed'],result
+
+
 @pytest.mark.parametrize('grid_response',[False,True])
 def test_actual_SCF_link_and_embedding_forces(grid_response):
     import parmed as pmd

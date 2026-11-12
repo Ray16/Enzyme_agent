@@ -1,16 +1,11 @@
-"""Reviewed chemical setups, embedded reaction pilots, and gated free energies.
+"""Compatibility imports for structural_modeling_agent.barrier.
 
-Legacy cluster scans remain exploratory. See README.md for implementation scope,
-validation evidence, and the outstanding AS9/GlnA3 method-validation work.
+The implementation is owned by the structural-modeling agent.
 """
-from .spec import ReactionSpec, AtomRef, BondChange
-__all__ = ["ReactionSpec", "AtomRef", "BondChange", "carve", "scan_barrier"]
+from structural_modeling_agent.barrier import ReactionSpec, AtomRef, BondChange
+from structural_modeling_agent.barrier import __all__
 
-def __getattr__(name):            # lazy: scan pulls in fairchem/ase, keep carve import light
-    if name == "carve":
-        from .carve import carve
-        return carve
-    if name == "scan_barrier":
-        from .scan import scan_barrier
-        return scan_barrier
-    raise AttributeError(name)
+
+def __getattr__(name):
+    from structural_modeling_agent import barrier
+    return getattr(barrier, name)

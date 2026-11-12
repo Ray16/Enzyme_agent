@@ -27,3 +27,15 @@ def test_disconnected_umbrellas_are_flagged():
     x=np.array([-10.,-10.1,10.,10.1]);centers=np.array([-10.,10.])
     result=mbar_bias_weights(100*(x[None,:]-centers[:,None])**2,[2,2])
     assert not result['overlap_connected']
+
+
+@pytest.mark.parametrize('probability',[[1,float('nan')],[1,float('inf')]])
+def test_nonfinite_sparse_inclusion_probability_is_rejected(probability):
+    with pytest.raises(ValueError,match='inclusion probability'):
+        target_weights([0,0],[0,0],selection_probability=probability)
+
+
+@pytest.mark.parametrize('temperature',[0,-1,float('nan'),float('inf')])
+def test_invalid_reweighting_temperature_is_rejected(temperature):
+    with pytest.raises(ValueError,match='Temperature'):
+        target_weights([0,0],[0,0],temperature=temperature)
