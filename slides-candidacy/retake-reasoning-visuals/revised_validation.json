@@ -1,0 +1,21 @@
+{
+  "checks": [
+    {
+      "name": "v2_01_native_chemistry_search",
+      "words": 44,
+      "text_outside_slide": []
+    },
+    {
+      "name": "v2_02_desd_scientific_puzzle",
+      "words": 54,
+      "text_outside_slide": []
+    },
+    {
+      "name": "v2_03_as9_mutation_questions",
+      "words": 62,
+      "text_outside_slide": []
+    }
+  ],
+  "pages": 3,
+  "scope": "Scientific questions and chemical identities; no new assay data or causal validation."
+}

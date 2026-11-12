@@ -1,0 +1,37 @@
+{
+  "checks": [
+    {
+      "name": "01_search_decision",
+      "svg_xml": true,
+      "pages": 1,
+      "size": [
+        1600,
+        900
+      ]
+    },
+    {
+      "name": "02_reaction_state_decision",
+      "svg_xml": true,
+      "pages": 1,
+      "size": [
+        1600,
+        900
+      ]
+    },
+    {
+      "name": "03_as9_retrospective_decision",
+      "svg_xml": true,
+      "pages": 1,
+      "size": [
+        1600,
+        900
+      ]
+    }
+  ],
+  "combined_pages": 3,
+  "molecule_carbon_counts": {
+    "putrescine": 4,
+    "hexamethylenediamine": 6
+  },
+  "scope": "Conceptual slide mockups, not new biological results."
+}

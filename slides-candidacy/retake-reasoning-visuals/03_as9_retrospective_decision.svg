@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:rdkit="http://www.rdkit.org/xml" width="1600" height="900" viewBox="0 0 1600 900"><style>text{font-family:Arial,Helvetica,sans-serif}</style>
+<rect x="0" y="0" width="1600" height="900" rx="0" fill="white" stroke="none" stroke-width="2"/>
+<rect x="65" y="65" width="9" height="58" rx="2" fill="#8D0000" stroke="none" stroke-width="2"/>
+<text x="98" y="108" fill="#172B3A" font-family="Helvetica" font-size="47" font-weight="700" text-anchor="start">AS9: turn a yield improvement into a test</text>
+<path d="M70,820 L1530,820" fill="none" stroke="#DCE5EB" stroke-width="2"/>
+<text x="1530" y="858" fill="#526774" font-family="Helvetica" font-size="22" font-weight="400" text-anchor="end">3</text>
+<rect x="70" y="185" width="440" height="575" rx="20" fill="#EEF7F3" stroke="none" stroke-width="2"/>
+<rect x="580" y="185" width="440" height="575" rx="20" fill="#FFF6E8" stroke="none" stroke-width="2"/>
+<rect x="1090" y="185" width="440" height="575" rx="20" fill="#EFF6FA" stroke="none" stroke-width="2"/>
+<text x="105" y="235" fill="#007E65" font-family="Helvetica" font-size="24" font-weight="700" text-anchor="start">OBSERVED</text>
+<text x="615" y="235" fill="#A86500" font-family="Helvetica" font-size="24" font-weight="700" text-anchor="start">HYPOTHESES</text>
+<text x="1125" y="235" fill="#0072B2" font-family="Helvetica" font-size="24" font-weight="700" text-anchor="start">PROPOSED TESTS</text>
+<text x="290" y="380" fill="#172B3A" font-family="Helvetica" font-size="44" font-weight="700" text-anchor="middle">Mutant yield</text>
+<text x="290" y="450" fill="#007E65" font-family="Helvetica" font-size="64" font-weight="700" text-anchor="middle">&gt;</text>
+<text x="290" y="515" fill="#172B3A" font-family="Helvetica" font-size="44" font-weight="700" text-anchor="middle">WT yield</text>
+<text x="290" y="675" fill="#526774" font-family="Helvetica" font-size="25" font-weight="400" text-anchor="middle">Retrospective starting point</text>
+<path d="M520,460 L570,460" fill="none" stroke="#0072B2" stroke-width="5"/>
+<polygon points="570.00,460.00 554.20,468.63 554.20,451.37" fill="#0072B2"/>
+<rect x="615" y="315" width="370" height="130" rx="20" fill="white" stroke="none" stroke-width="2"/>
+<text x="800" y="365" fill="#172B3A" font-family="Helvetica" font-size="29" font-weight="600" text-anchor="middle">Catalytic positioning</text>
+<text x="800" y="410" fill="#A86500" font-family="Helvetica" font-size="30" font-weight="600" text-anchor="middle">changes?</text>
+<rect x="615" y="505" width="370" height="130" rx="20" fill="white" stroke="none" stroke-width="2"/>
+<text x="800" y="555" fill="#172B3A" font-family="Helvetica" font-size="29" font-weight="600" text-anchor="middle">Expression / stability</text>
+<text x="800" y="600" fill="#A86500" font-family="Helvetica" font-size="30" font-weight="600" text-anchor="middle">changes?</text>
+<text x="800" y="705" fill="#526774" font-family="Helvetica" font-size="22" font-weight="400" text-anchor="middle">Compare matched WT–mutant models</text>
+<path d="M1030,460 L1080,460" fill="none" stroke="#0072B2" stroke-width="5" stroke-dasharray="10 8"/>
+<polygon points="1080.00,460.00 1064.20,468.63 1064.20,451.37" fill="#0072B2"/>
+<rect x="1120" y="330" width="380" height="80" rx="20" fill="white" stroke="none" stroke-width="2"/>
+<text x="1310" y="380" fill="#172B3A" font-family="Helvetica" font-size="25" font-weight="600" text-anchor="middle">Equal purified enzyme</text>
+<rect x="1120" y="440" width="380" height="80" rx="20" fill="white" stroke="none" stroke-width="2"/>
+<text x="1310" y="490" fill="#172B3A" font-family="Helvetica" font-size="25" font-weight="600" text-anchor="middle">Initial product-formation rates</text>
+<rect x="1120" y="550" width="380" height="80" rx="20" fill="white" stroke="none" stroke-width="2"/>
+<text x="1310" y="600" fill="#172B3A" font-family="Helvetica" font-size="25" font-weight="600" text-anchor="middle">Abundance / stability controls</text>
+<text x="1310" y="705" fill="#0072B2" font-family="Helvetica" font-size="22" font-weight="600" text-anchor="middle">Choose the next design from evidence</text>
+<text x="70" y="858" fill="#526774" font-family="Helvetica" font-size="20" font-weight="400" text-anchor="start">Conceptual layout • No assay values, mutant identities or structural changes are invented • Hypotheses and tests are proposed.</text>
+</svg>
