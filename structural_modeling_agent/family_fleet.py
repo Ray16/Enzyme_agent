@@ -117,7 +117,12 @@ def launch(run,specification,out,launch_workers=False):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run',type=Path,required=True);parser.add_argument('--specification',type=Path,required=True)
-    parser.add_argument('--out',type=Path,required=True);parser.add_argument('--launch',action='store_true')
+    parser.add_argument('--out',type=Path,required=True,
+        help="Arm output directory under the run. Convention: '<run>/cofolded' for the "
+             "unrestrained arm and '<run>/cofolded_restrained' for the pocket-guided step-2 "
+             "arm. The legacy names family_cofold / family_cofold_pocket_guided are still "
+             "scanned for cross-run cache reuse (see family_cofold.COFOLD_ARM_NAMES).")
+    parser.add_argument('--launch',action='store_true')
     args=parser.parse_args();report=launch(args.run,args.specification,args.out,args.launch)
     print(json.dumps({'workers':len(report['workers']),'hosts':list(report['node_preflight']),'unavailable':report['unavailable']}))
 

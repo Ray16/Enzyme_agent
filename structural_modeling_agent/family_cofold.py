@@ -23,6 +23,13 @@ from .modeling_reasoning.reaction import ReactionCoordinates
 from .modeling_reasoning.resolve_handoff import resolve_candidate, _load_family_metal
 from .msa import valid_csv
 from .memory_retry import MemoryRetryPending, is_memory_failure, record_failure, retry_backend
+
+# Arm-directory names scanned for cross-run cache reuse and in-flight dedup.
+# `cofolded` is the current convention (paired with `cofolded_restrained` for the
+# pocket-guided step-2 arm); `family_cofold` is the legacy name, kept here so runs
+# produced before the rename stay reusable. Only the unrestrained arm participates in
+# reuse/dedup (the restrained arm carries a pocket constraint -> different geometry).
+COFOLD_ARM_NAMES = ('cofolded', 'family_cofold')
 from .scripts.build_step1_inputs import enzyme_chains, modeled_substrates, yaml_for
 
 
@@ -317,8 +324,9 @@ def find_reusable(job,run,specification):
     import yaml
     from campaign_catalog.lookup import physical_system_key,lookup_exact_system
     document=yaml.safe_load(Path(job['input_yaml']).read_text());wanted=physical_system_key(document)
-    for path in Path(run).parent.glob('*/family_cofold/jobs/*/complete.json'):
-        if path.resolve()==(Path(run)/'family_cofold/jobs'/job['id']/'complete.json').resolve():continue
+    for arm in COFOLD_ARM_NAMES:
+      for path in Path(run).parent.glob('*/'+arm+'/jobs/*/complete.json'):
+        if path.resolve()==(Path(run)/arm/'jobs'/job['id']/'complete.json').resolve():continue
         saved=json.loads(path.read_text());old=saved.get('reuse_source_job') or saved['job']
         old.setdefault('discovery_run_id',Path(saved.get('reuse_source') or path).parents[3].name)
         input_path=Path(old['input_yaml'])
@@ -462,7 +470,7 @@ def main(argv=None):
             specification=json.loads(args.specification.read_text())
             if args.pocket_guided_from:
                 from .family_pockets import prepare
-                jobs=prepare(args.run,args.pocket_guided_from,args.out,specification.get('pocket_max_distance_A',10.))
+                jobs=prepare(args.run,args.pocket_guided_from,args.out,specification.get('pocket_max_distance_A',10.),specification.get('pocket_rescue_all',False))
             elif args.memory_retries_only:
                 jobs=json.loads((args.out/'queue.json').read_text())['items']
             else:

@@ -61,6 +61,19 @@ def test_orphan_native_job_without_a_local_claim_still_blocks_other_runs(tmp_pat
     guard.release(own)
 
 
+def test_new_cofolded_arm_name_still_blocks_other_runs(tmp_path):
+    # The current convention renames the unrestrained arm family_cofold -> cofolded;
+    # reuse/dedup scans must recognize it, not only the legacy name.
+    old=tmp_path/'old';new=tmp_path/'new';a=job(old);b=job(new)
+    native=old/'cofolded/workers/one/provider/backend_jobs/same';native.mkdir(parents=True)
+    (native/'request.json').write_text(json.dumps(a))
+    (native/'receipt.json').write_text(json.dumps({'status':'running'}))
+    assert guard.acquire(new,b,'new') is None
+    (native/'receipt.json').write_text(json.dumps({'status':'failed'}))
+    own=guard.acquire(new,b,'new');assert own is not None
+    guard.release(own)
+
+
 def test_claim_is_not_visible_before_its_owner_is_written(tmp_path,monkeypatch):
     first=tmp_path/'first';candidate=job(first)
     published=[];write=guard.atomic_write_json

@@ -11,6 +11,7 @@ import time
 import yaml
 from campaign_catalog.lookup import physical_system_key
 from enzyme_discovery_agent.state_store import atomic_write_json,state_lock
+from .family_cofold import COFOLD_ARM_NAMES
 
 
 _QUEUES={}
@@ -32,21 +33,23 @@ def _live(owner):
 
 
 def _native_pending(run,job_id):
-    root=Path(run)/'family_cofold'
-    for path in root.glob('workers/*/provider/backend_jobs/'+job_id+'/receipt.json'):
-        try:receipt=json.loads(path.read_text())
-        except (OSError,ValueError):return True
-        if receipt.get('status') in {'queued','running','unknown'}:return True
-        if receipt.get('status')=='complete' and not (root/'jobs'/job_id/'complete.json').exists():return True
+    for arm in COFOLD_ARM_NAMES:
+        root=Path(run)/arm
+        for path in root.glob('workers/*/provider/backend_jobs/'+job_id+'/receipt.json'):
+            try:receipt=json.loads(path.read_text())
+            except (OSError,ValueError):return True
+            if receipt.get('status') in {'queued','running','unknown'}:return True
+            if receipt.get('status')=='complete' and not (root/'jobs'/job_id/'complete.json').exists():return True
     return False
 
 
 def _legacy_busy(parent,key):
-    for path in Path(parent).glob('*/family_cofold/claims/*/owner.json'):
+    for arm in COFOLD_ARM_NAMES:
+      for path in Path(parent).glob('*/'+arm+'/claims/*/owner.json'):
         try:
             owner=json.loads(path.read_text())
             if owner.get('host')==socket.gethostname() and owner.get('pid')==os.getpid():continue
-            run=path.parents[3];queue=run/'family_cofold/queue.json'
+            run=path.parents[3];queue=run/arm/'queue.json'
             stamp=(queue.stat().st_mtime_ns,queue.stat().st_size)
             if _QUEUES.get(str(queue),(None,None))[0]!=stamp:
                 _QUEUES[str(queue)]=(stamp,{j['id']:j for j in json.loads(queue.read_text())['items']})
@@ -63,7 +66,8 @@ def _legacy_busy(parent,key):
 
 
 def _unclaimed_native_busy(run,job,key):
-    for path in run.parent.glob('*/family_cofold/workers/*/provider/backend_jobs/*/request.json'):
+    for arm in COFOLD_ARM_NAMES:
+      for path in run.parent.glob('*/'+arm+'/workers/*/provider/backend_jobs/*/request.json'):
         source_run=path.parents[6]
         if source_run.resolve()==run.resolve() and path.parent.name==job['id']:continue
         try:
