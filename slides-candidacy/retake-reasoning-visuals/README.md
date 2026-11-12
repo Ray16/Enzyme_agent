@@ -1,5 +1,30 @@
 # Reasoning examples for the candidacy retake
 
+## ⭐ PRIMARY discovery example — `discovery_00_topology_over_similarity`
+
+This is the slide that answers "couldn't you just compare SMILES?" — **no**.
+Substrate-structure similarity ranked a **carrier-tethered** family highest
+(MptN, fit 0.83); chemical reasoning about **substrate topology** stopped it and
+expanded a lower-scoring **free-substrate** NIS synthetase (AsbA, fit 0.40). The
+similarity score was *inverted* by the decision. This is a **recorded** decision
+(canonical run `20260917_135330`): the free-small-molecule rule is in
+`target_context.json → target_reasoning` *before* the family scores, and the
+stop/expand calls + reasons are in `family_decisions.json`.
+
+- Build: `/homes/rzhu/miniforge3/envs/palm/bin/python build_topology_reasoning.py`
+- Delivery + honest boundaries: `discovery_00_speaker_notes.md`
+- Machine-readable provenance: `discovery_topology_sources.json`
+- Honest scope: shows *chemical reasoning > substrate similarity*; it does **not**
+  alone show *LLM agent > rule-based filter* (that is the proposed controlled
+  comparison). Stop = prioritization, not a tested exclusion.
+
+> The earlier `discovery_01`/`v2_01` PuuA ≈ HMDA slides are **reproducible by
+> similarity** and are demoted to backup/warm-up. Use `discovery_00` as the
+> discovery centerpiece.
+
+---
+
+
 The revised examples replace the initial generic workflow mockups with specific
 chemical comparisons. Open **`revised_reasoning_examples.pdf`** for the current
 three-slide review set or `revised_preview.png` for the overview. The `v2_*.svg`

@@ -1,0 +1,29 @@
+{
+  "claim": "Chemical reasoning about substrate topology overrode a substrate-similarity score: the highest-fit family (0.83) was stopped, a lower-fit family (0.40) expanded.",
+  "run": "20260917_135330 (canonical amide-synthetase discovery run)",
+  "evidence": {
+    "fit_scores": "family_landscape.json -> holistic_fit.median",
+    "decisions": "family_decisions.json -> decision + reason (timestamped)",
+    "rule_derived_up_front": "target_context.json -> target_reasoning: free_small_molecule topology, catalyst requiring different topology may not accept these inputs",
+    "members": "candidate_registry.json"
+  },
+  "stop_family": {
+    "id": "IPR041107",
+    "rep": "MptN tetrahydromethanopterin:L-glutamate ligase (Q8Q0M5)",
+    "holistic_fit": 0.832,
+    "reason": "carrier-protein-tethered / bulky-cofactor substrate"
+  },
+  "expand_family": {
+    "id": "IPR022770",
+    "rep": "AsbA spermidine-citrate ligase (A0A0F7RJ52)",
+    "holistic_fit": 0.397,
+    "reason": "free diamine + free diacid, acyl-adenylate"
+  },
+  "honest_scope": [
+    "Recorded decision, not retrospective: the free-topology rule is in target_reasoning before family scores.",
+    "Demonstrates chemical reasoning changes the search beyond substrate similarity.",
+    "Does NOT alone prove an LLM agent beats a rule-based filter that also encodes topology -- that is the proposed controlled comparison.",
+    "Stop/expand is prioritization; no member was experimentally tested against free adipate+HMDA.",
+    "The fit score is the agent's own substrate/size feature, used here as a stand-in for a similarity ranker."
+  ]
+}
