@@ -1,0 +1,22 @@
+{
+  "sources": [
+    "https://iubmb.qmul.ac.uk/enzyme/EC6/3/1/2.html",
+    "https://iubmb.qmul.ac.uk/enzyme/EC6/3/4/12.html",
+    "https://pubmed.ncbi.nlm.nih.gov/18495664/"
+  ],
+  "local_action_sources": [
+    "../reasoning-trace/audit/figure_provenance.json",
+    "../backup-finalization/speaker_notes.txt: Saved PuuA decision example"
+  ],
+  "scope": "Editorial reconstruction from existing audit. Original run path is no longer present. No new discovery run or performance comparison. Search-scope expansion does not assign PuuA specificity to all expanded members. Slide 2 is proposed.",
+  "checks": [
+    {
+      "slide": "discovery_01_search_decision",
+      "text_outside_slide": []
+    },
+    {
+      "slide": "discovery_02_next_investigation",
+      "text_outside_slide": []
+    }
+  ]
+}
