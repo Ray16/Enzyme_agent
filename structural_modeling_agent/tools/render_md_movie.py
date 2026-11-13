@@ -87,7 +87,7 @@ def stage_render(a):
     cmd.set("antialias", STYLE["antialias"]); cmd.set("label_size", 0)
     cmd.set("dash_color", STYLE["dash_color"]); cmd.set("dash_width", 4.0); cmd.set("dash_gap", 0.35)
     orient_sel = f"resn {a.cofactor_resn}+{a.substrate_resn}+{a.metal_resn}"
-    cmd.orient(orient_sel, state=1); cmd.zoom(orient_sel, 3.0, state=1)
+    cmd.orient(orient_sel, state=1); cmd.zoom(orient_sel, a.zoom, state=1)
     view = cmd.get_view()
     # pymol selection syntax uses `resn`; MDAnalysis-style `resname` is accepted here too.
     nuc = a.nuc.replace("resname", "resn"); elec = a.elec.replace("resname", "resn")
@@ -115,7 +115,8 @@ def stage_assemble(a):
 def stage_all(a):
     common = ["--workdir", a.workdir, "--prmtop", a.prmtop, "--traj", a.traj,
               "--nuc", a.nuc, "--elec", a.elec, "--cofactor-resn", a.cofactor_resn,
-              "--substrate-resn", a.substrate_resn, "--metal-resn", a.metal_resn]
+              "--substrate-resn", a.substrate_resn, "--metal-resn", a.metal_resn,
+              "--zoom", str(a.zoom)]
     me = ["-m", "structural_modeling_agent.tools.render_md_movie"]
     repo = str(Path(__file__).resolve().parents[2])
     subprocess.run([a.md_python, *me, "frames", *common, "--stride", str(a.stride)],
@@ -161,6 +162,7 @@ def build_parser():
     p.add_argument("--cofactor-resn", default="ATP"); p.add_argument("--substrate-resn", default="SUB")
     p.add_argument("--metal-resn", default="MG")
     p.add_argument("--stride", type=int, default=10); p.add_argument("--workers", type=int, default=8)
+    p.add_argument("--zoom", type=float, default=3.0, help="zoom buffer (A) around the reactive core; widen for substrates that dissociate")
     p.add_argument("--lo", type=int, default=1); p.add_argument("--hi", type=int, default=1)
     p.add_argument("--md-python", default=MD_PYTHON); p.add_argument("--pymol", default=PYMOL)
     p.add_argument("--pil-python", default=PIL_PYTHON)
