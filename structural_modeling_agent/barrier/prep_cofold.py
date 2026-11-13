@@ -7,6 +7,7 @@ its PA atom, metal by a lone metal atom, substrate = the remaining ligand), not 
 chains, so it transfers to any enzyme cofold of the same reaction family.
 """
 from __future__ import annotations
+import json
 import subprocess, shutil
 from pathlib import Path
 import numpy as np
@@ -226,8 +227,19 @@ def seed_metal_waters(out_dir, target_coord=6, mo_dist=2.10, exist_cut=2.6, clas
     return len(waters)
 
 
+def _count_waters(prmtop):
+    """Count solvent residues in a built prmtop (for salt-pair calculation)."""
+    import parmed as pmd
+    p = pmd.load_file(str(prmtop))
+    return sum(1 for r in p.residues if r.name in {"WAT", "HOH", "TIP3", "T3P"})
+
+
 def build_tleap(out_dir, resname, ion_set="1264", *, polarizabilities=None, pol_overrides=None,
-                seed_waters=True):
+                seed_waters=True, salt_molarity=0.15):
+    """Build the solvated holo prmtop. salt_molarity adds physiological NaCl ON TOP of neutralization
+    (default 0.15 M): counterion-only boxes have no ionic screening, which over-stabilizes the
+    arginine-carboxylate salt bridges that the substrate-register analysis depends on. The 12-6-4 ion
+    frcmod supplies matched params for the added Na+/Cl-. salt_molarity=0 recovers neutralize-only."""
     out = Path(out_dir)
     for a in ("ATP.lib", "ATP.frcmod"):
         shutil.copy(ASSET / a, out / a)
@@ -235,7 +247,11 @@ def build_tleap(out_dir, resname, ion_set="1264", *, polarizabilities=None, pol_
     frc = "frcmod.ions234lm_1264_tip3p" if ion_set == "1264" else "frcmod.ions234lm_126_tip3p"
     shell_load = "shell = loadpdb mg_shell_waters.pdb\n" if n_shell else ""
     combine = "combine {{prot atp mgu SUB{shell}}}".format(shell=" shell" if n_shell else "")
-    leap = f"""source leaprc.protein.ff14SB
+
+    def _leap(salt_pairs):
+        salt = (f"addIonsRand cmplx Na+ {salt_pairs}\naddIonsRand cmplx Cl- {salt_pairs}\n"
+                if salt_pairs else "")
+        return f"""source leaprc.protein.ff14SB
 source leaprc.gaff2
 source leaprc.water.tip3p
 loadamberparams {frc}
@@ -250,16 +266,30 @@ mgu = loadpdb metal.pdb
 solvateOct cmplx TIP3PBOX 12.0
 addIonsRand cmplx Na+ 0
 addIonsRand cmplx Cl- 0
-charge cmplx
+{salt}charge cmplx
 saveamberparm cmplx complex.prmtop complex.inpcrd
 quit
 """
-    (out / "build.leap").write_text(leap)
-    r = subprocess.run(["tleap", "-f", "build.leap"], cwd=out, capture_output=True, text=True)
-    (out / "build.log").write_text(r.stdout + "\n" + r.stderr)
-    r.check_returncode()
-    if not (out / "complex.prmtop").exists() or not (out / "complex.inpcrd").exists():
-        raise RuntimeError("tleap did not write both topology and coordinates; inspect build.log")
+
+    def _run(leap_text):
+        (out / "build.leap").write_text(leap_text)
+        r = subprocess.run(["tleap", "-f", "build.leap"], cwd=out, capture_output=True, text=True)
+        (out / "build.log").write_text(r.stdout + "\n" + r.stderr)
+        r.check_returncode()
+        if not (out / "complex.prmtop").exists() or not (out / "complex.inpcrd").exists():
+            raise RuntimeError("tleap did not write both topology and coordinates; inspect build.log")
+
+    # pass 1: neutralize-only, to learn the solvent count
+    _run(_leap(0))
+    salt_pairs = 0
+    if salt_molarity and salt_molarity > 0:
+        n_wat = _count_waters(out / "complex.prmtop")
+        salt_pairs = int(round(salt_molarity * n_wat / 55.56))  # 55.56 M = molarity of pure water
+        if salt_pairs > 0:
+            _run(_leap(salt_pairs))  # pass 2: rebuild with physiological NaCl
+    (out / "salt.json").write_text(json.dumps(
+        {"salt_molarity": salt_molarity, "salt_pairs_added": salt_pairs,
+         "n_waters": _count_waters(out / "complex.prmtop")}))
     topology = out / "complex.prmtop"
     if ion_set == "1264":
         from .parameters import install_c4

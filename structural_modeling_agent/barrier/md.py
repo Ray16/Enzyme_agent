@@ -64,10 +64,13 @@ def resolve_attack_geometry(parm,spec):
 
 
 def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,temperature=303.15,strip_water=False,
-                dt_ps=0.004,hydrogen_mass_amu=3.0,frame_ps=10.0):
+                dt_ps=0.004,hydrogen_mass_amu=3.0,frame_ps=10.0,dcd_ps=50.0,equilibration_ns=0.4):
     # HMR default: hydrogen mass 3.0 amu + 4 fs timestep (Hopkins et al. 2015), with HBonds constraints
     # and rigid water already in place -> ~2x throughput, validated for geometry/distance observables.
     # Pass dt_ps=0.002, hydrogen_mass_amu=1.008 to recover the legacy 2 fs engine exactly.
+    # frame_ps = cadence of the cheap geometry CV log (keep fine, 10 ps). dcd_ps = cadence of the heavy
+    # full-coordinate DCD snapshots (coarser, 50 ps default) -> ~5x smaller trajectory, same CV signal.
+    # equilibration_ns: total equilibration (staged restraint release over the first 50%, then free).
     import parmed as pmd
     import openmm as mm
     import openmm.app as app
@@ -90,9 +93,10 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     restraint=mm.CustomExternalForce('0.5*k*periodicdistance(x,y,z,x0,y0,z0)^2')
     restraint.addGlobalParameter('k',5*418.4)
     for name in ('x0','y0','z0'):restraint.addPerParticleParameter(name)
+    restraint_particles=[]  # (restraint_particle_index, atom_idx) -> reset reference to minimized coords below
     for a in parm.atoms:
         if a.atomic_number>1 and a.residue.name not in {'WAT','HOH','Na+','Cl-'}:
-            restraint.addParticle(a.idx,positions_A[a.idx]*0.1)
+            rp=restraint.addParticle(a.idx,positions_A[a.idx]*0.1);restraint_particles.append((rp,a.idx))
     system.addForce(restraint)
     barostat=mm.MonteCarloBarostat(1*u.bar,temperature*u.kelvin,25);barostat.setRandomNumberSeed(seed+10000);system.addForce(barostat)
     integ=mm.LangevinMiddleIntegrator(temperature*u.kelvin,1/u.picosecond,dt_ps*u.picosecond);integ.setRandomNumberSeed(seed)
@@ -101,6 +105,11 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     print(f'CUDA context ready after {time.monotonic()-t0:.1f}s; minimizing',flush=True)
     sim.minimizeEnergy(maxIterations=5000)
     minimized=sim.context.getState(getPositions=True).getPositions(asNumpy=True).value_in_unit(u.angstrom)
+    # Reset the restraint reference to the MINIMIZED structure so staged release relaxes around the
+    # minimized pose, not the pre-minimization input coordinates.
+    for rp,ai in restraint_particles:
+        restraint.setParticleParameters(rp,ai,minimized[ai]*0.1)
+    restraint.updateParametersInContext(sim.context)
     magnesium=[a.idx for a in parm.atoms if a.atomic_number==12]
     heavy=[a.idx for a in parm.atoms if a.atomic_number>1 and a.atomic_number!=12]
     for metal in magnesium:
@@ -110,13 +119,14 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     if not np.isfinite(initial_c4) or initial_c4>=0:raise ValueError('C4 energy is not finite and attractive')
     print(f'Minimized after {time.monotonic()-t0:.1f}s; C4={initial_c4:.2f} kcal/mol',flush=True)
     sim.context.setVelocitiesToTemperature(temperature*u.kelvin,seed)
-    # 200 ps staged release (4 x 50 ps), then 200 ps unrestrained equilibration -- defined in TIME so
-    # the physical equilibration is identical regardless of timestep (0.4 ns total).
-    stage_steps=int(round(50.0/dt_ps));free_steps=int(round(200.0/dt_ps))
+    # Equilibration defined in TIME (timestep-independent): first half = staged restraint release
+    # (4 equal windows, k=5->2->0.5->0 kcal/mol/A^2), second half = fully unrestrained.
+    total_equil_ps=equilibration_ns*1000.0
+    stage_steps=int(round(total_equil_ps*0.5/4/dt_ps));free_steps=int(round(total_equil_ps*0.5/dt_ps))
     for k in (5,2,0.5,0):sim.context.setParameter('k',k*418.4);sim.step(stage_steps)
     sim.step(free_steps)
-    equilibration_ns=(4*50.0+200.0)/1000.0
-    frame_steps=int(round(frame_ps/dt_ps))  # keep ~frame_ps (10 ps) between frames regardless of dt
+    frame_steps=int(round(frame_ps/dt_ps))  # geometry CV cadence (fine, ~10 ps)
+    dcd_steps=int(round(dcd_ps/dt_ps))       # heavy coordinate snapshot cadence (coarse, ~50 ps)
     sim.saveCheckpoint(str(out/'equilibrated.chk'))
     equil_state=sim.context.getState(getPositions=True)
     write_state_pdb(sim.topology,equil_state,out/'equilibrated.pdb')
@@ -148,10 +158,10 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
         dry=parm[mask]; dry.save(str(out/'complex_dry.prmtop'),overwrite=True)
         print(f'DCD subset: {len(keep)} atoms (solute + {len(kept_wat)} active-site waters within {WATER_SHELL_A} A)',flush=True)
         sim.reporters.append(SolventStrippedDCDReporter(
-            str(out/'production.dcd'),frame_steps,np.array(keep),dry.topology,dt_ps*u.picosecond))
+            str(out/'production.dcd'),dcd_steps,np.array(keep),dry.topology,dt_ps*u.picosecond))
     else:
-        sim.reporters.append(app.DCDReporter(str(out/'production.dcd'),frame_steps))
-    sim.reporters.append(app.StateDataReporter(str(out/'thermodynamics.csv'),frame_steps,step=True,potentialEnergy=True,temperature=True,density=True))
+        sim.reporters.append(app.DCDReporter(str(out/'production.dcd'),dcd_steps))
+    sim.reporters.append(app.StateDataReporter(str(out/'thermodynamics.csv'),dcd_steps,step=True,potentialEnergy=True,temperature=True,density=True))
     total=int(round(production_ns*1000.0/dt_ps));done=0;observations=[]
     with (out/'geometry.jsonl').open('w') as log:
         while done<total:
@@ -183,6 +193,7 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     coords=np.array([r['metal_coordination'] for r in observations]);dist=np.array([r['forming_A'] for r in observations])
     result=dict(status='pilot_complete_requires_scientific_review',seed=seed,temperature_K=temperature,
         production_ns=production_ns,equilibration_ns=equilibration_ns,timestep_fs=dt_ps*1000.0,hydrogen_mass_amu=hydrogen_mass_amu,
+        geometry_log_ps=frame_ps,dcd_snapshot_ps=dcd_ps,
         n_atoms=len(parm.atoms),magnesium_count=len(metals),
         coordination_definition='N/O/S donor atoms within 2.7 A (minimum image)',
         attack_angle_definition=angle_kind,
@@ -200,9 +211,13 @@ def main(argv=None):
     p.add_argument('--seed',type=int,default=17);p.add_argument('--ns',type=float,default=2)
     p.add_argument('--dt-fs',type=float,default=4.0,help='integration timestep in fs (default 4 fs with HMR)')
     p.add_argument('--hydrogen-mass',type=float,default=3.0,help='repartitioned hydrogen mass in amu (default 3.0; use 1.008 to disable HMR)')
+    p.add_argument('--equil-ns',type=float,default=1.0,help='total equilibration ns (half staged restraint release, half free)')
+    p.add_argument('--frame-ps',type=float,default=10.0,help='geometry CV log cadence in ps')
+    p.add_argument('--dcd-ps',type=float,default=50.0,help='heavy DCD snapshot cadence in ps')
     p.add_argument('--strip-water',action='store_true')
     a=p.parse_args(argv);print(json.dumps(equilibrate(a.prmtop,a.coords,a.spec,a.out,seed=a.seed,production_ns=a.ns,
-        dt_ps=a.dt_fs/1000.0,hydrogen_mass_amu=a.hydrogen_mass,strip_water=a.strip_water),indent=2))
+        dt_ps=a.dt_fs/1000.0,hydrogen_mass_amu=a.hydrogen_mass,strip_water=a.strip_water,
+        frame_ps=a.frame_ps,dcd_ps=a.dcd_ps,equilibration_ns=a.equil_ns),indent=2))
 
 
 if __name__=='__main__':main()

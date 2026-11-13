@@ -24,7 +24,7 @@ def _protonation_audit(out,ph,substrate,top,coords):
 
 
 def prepare(cofold,out,spec_path,polarizabilities,*,ph=8.0,overrides=None,audit_protonation=True,
-            protonation_overrides=None):
+            protonation_overrides=None,salt_molarity=0.15):
     from .prep_cofold import split_cofold,param_substrate,build_tleap,validate_prepared,apply_protonation_overrides
     from .spec import ReactionSpec
     spec=ReactionSpec.load(spec_path);ligands=dict(spec.ligands)
@@ -39,7 +39,7 @@ def prepare(cofold,out,spec_path,polarizabilities,*,ph=8.0,overrides=None,audit_
     _,atp,metals,sub=split_cofold(cofold,out)
     applied_prot=apply_protonation_overrides(out/'protein_clean.pdb',protonation_overrides)
     param_substrate(sub,atp,out,substrate,ligands[substrate],ph=ph)
-    _,top,coords=build_tleap(out,substrate,polarizabilities=polarizabilities,pol_overrides=overrides)
+    _,top,coords=build_tleap(out,substrate,polarizabilities=polarizabilities,pol_overrides=overrides,salt_molarity=salt_molarity)
     check=validate_prepared(top,coords,spec_path)
     prot=_protonation_audit(out,ph,substrate,top,coords) if audit_protonation else None
     if not check['physically_valid']:
@@ -57,6 +57,7 @@ def prepare(cofold,out,spec_path,polarizabilities,*,ph=8.0,overrides=None,audit_
       prmtop_sha256=sha256(top),coords_sha256=sha256(coords),
       status=status,validation=check,protonation_audit=prot,
       protonation_overrides_applied=[{'resid':r,'from':o,'to':n} for r,o,n in applied_prot],
+      salt=json.loads((out/'salt.json').read_text()) if (out/'salt.json').is_file() else None,
       polarizability_overrides=overrides or {})
     atomic_json(out/'preparation.json',result);return result
 
@@ -71,10 +72,13 @@ def main(argv=None):
     p.add_argument('--protonation-overrides-json',
                    help='JSON mapping resid (protein_clean/PROPKA numbering) -> Amber resname, e.g. '
                         '{"265":"HIP","455":"GLH"}; forces protonation states before tleap')
+    p.add_argument('--salt-molarity',type=float,default=0.15,
+                   help='physiological NaCl added on top of neutralization (default 0.15 M; 0 = neutralize only)')
     a=p.parse_args(argv);overrides=json.loads(Path(a.overrides_json).read_text()) if a.overrides_json else None
     prot_ov=json.loads(Path(a.protonation_overrides_json).read_text()) if a.protonation_overrides_json else None
     print(json.dumps(prepare(a.cofold,a.out,a.spec,a.polarizabilities,ph=a.ph,overrides=overrides,
-                             audit_protonation=not a.no_protonation_audit,protonation_overrides=prot_ov),indent=2))
+                             audit_protonation=not a.no_protonation_audit,protonation_overrides=prot_ov,
+                             salt_molarity=a.salt_molarity),indent=2))
 
 
 if __name__=='__main__':main()
