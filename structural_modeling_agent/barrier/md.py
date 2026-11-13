@@ -63,7 +63,11 @@ def resolve_attack_geometry(parm,spec):
     return i,j,k,angle_atom,angle_kind
 
 
-def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,temperature=303.15,strip_water=False):
+def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,temperature=303.15,strip_water=False,
+                dt_ps=0.004,hydrogen_mass_amu=3.0,frame_ps=10.0):
+    # HMR default: hydrogen mass 3.0 amu + 4 fs timestep (Hopkins et al. 2015), with HBonds constraints
+    # and rigid water already in place -> ~2x throughput, validated for geometry/distance observables.
+    # Pass dt_ps=0.002, hydrogen_mass_amu=1.008 to recover the legacy 2 fs engine exactly.
     import parmed as pmd
     import openmm as mm
     import openmm.app as app
@@ -79,7 +83,7 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     positions_A=parm.coordinates.copy()
     print(f'Loaded {len(parm.atoms)} atoms in {time.monotonic()-t0:.1f}s',flush=True)
     system=parm.createSystem(nonbondedMethod=app.PME,nonbondedCutoff=1*u.nanometer,
-                           constraints=app.HBonds,rigidWater=True)
+                           constraints=app.HBonds,rigidWater=True,hydrogenMass=hydrogen_mass_amu*u.amu)
     c4=[f for f in system.getForces() if isinstance(f,mm.CustomNonbondedForce) and 'ccoef' in f.getEnergyFunction()]
     if not c4:raise ValueError('C4 topology did not produce a C4 force')
     for f in c4:f.setForceGroup(31)
@@ -91,7 +95,7 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
             restraint.addParticle(a.idx,positions_A[a.idx]*0.1)
     system.addForce(restraint)
     barostat=mm.MonteCarloBarostat(1*u.bar,temperature*u.kelvin,25);barostat.setRandomNumberSeed(seed+10000);system.addForce(barostat)
-    integ=mm.LangevinMiddleIntegrator(temperature*u.kelvin,1/u.picosecond,0.002*u.picosecond);integ.setRandomNumberSeed(seed)
+    integ=mm.LangevinMiddleIntegrator(temperature*u.kelvin,1/u.picosecond,dt_ps*u.picosecond);integ.setRandomNumberSeed(seed)
     sim=app.Simulation(parm.topology,system,integ,mm.Platform.getPlatformByName('CUDA'),{'Precision':'mixed'})
     sim.context.setPositions(parm.positions)
     print(f'CUDA context ready after {time.monotonic()-t0:.1f}s; minimizing',flush=True)
@@ -106,9 +110,13 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     if not np.isfinite(initial_c4) or initial_c4>=0:raise ValueError('C4 energy is not finite and attractive')
     print(f'Minimized after {time.monotonic()-t0:.1f}s; C4={initial_c4:.2f} kcal/mol',flush=True)
     sim.context.setVelocitiesToTemperature(temperature*u.kelvin,seed)
-    # 200 ps staged release, then 200 ps completely unrestrained equilibration.
-    for k in (5,2,0.5,0):sim.context.setParameter('k',k*418.4);sim.step(25000)
-    sim.step(100000)
+    # 200 ps staged release (4 x 50 ps), then 200 ps unrestrained equilibration -- defined in TIME so
+    # the physical equilibration is identical regardless of timestep (0.4 ns total).
+    stage_steps=int(round(50.0/dt_ps));free_steps=int(round(200.0/dt_ps))
+    for k in (5,2,0.5,0):sim.context.setParameter('k',k*418.4);sim.step(stage_steps)
+    sim.step(free_steps)
+    equilibration_ns=(4*50.0+200.0)/1000.0
+    frame_steps=int(round(frame_ps/dt_ps))  # keep ~frame_ps (10 ps) between frames regardless of dt
     sim.saveCheckpoint(str(out/'equilibrated.chk'))
     equil_state=sim.context.getState(getPositions=True)
     write_state_pdb(sim.topology,equil_state,out/'equilibrated.pdb')
@@ -140,14 +148,14 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
         dry=parm[mask]; dry.save(str(out/'complex_dry.prmtop'),overwrite=True)
         print(f'DCD subset: {len(keep)} atoms (solute + {len(kept_wat)} active-site waters within {WATER_SHELL_A} A)',flush=True)
         sim.reporters.append(SolventStrippedDCDReporter(
-            str(out/'production.dcd'),5000,np.array(keep),dry.topology,0.002*u.picosecond))
+            str(out/'production.dcd'),frame_steps,np.array(keep),dry.topology,dt_ps*u.picosecond))
     else:
-        sim.reporters.append(app.DCDReporter(str(out/'production.dcd'),5000))
-    sim.reporters.append(app.StateDataReporter(str(out/'thermodynamics.csv'),5000,step=True,potentialEnergy=True,temperature=True,density=True))
-    total=int(round(production_ns*500000));done=0;observations=[]
+        sim.reporters.append(app.DCDReporter(str(out/'production.dcd'),frame_steps))
+    sim.reporters.append(app.StateDataReporter(str(out/'thermodynamics.csv'),frame_steps,step=True,potentialEnergy=True,temperature=True,density=True))
+    total=int(round(production_ns*1000.0/dt_ps));done=0;observations=[]
     with (out/'geometry.jsonl').open('w') as log:
         while done<total:
-            step=min(5000,total-done);sim.step(step);done+=step
+            step=min(frame_steps,total-done);sim.step(step);done+=step
             st=sim.context.getState(getPositions=True);x=st.getPositions(asNumpy=True).value_in_unit(u.angstrom)
             box=np.array(st.getPeriodicBoxVectors(asNumpy=True).value_in_unit(u.angstrom));inv=np.linalg.inv(box)
             def vec(a,b):
@@ -157,9 +165,9 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
             for m in metals:
                 v=x[donors]-x[m];v=(v@inv-np.round(v@inv))@box
                 coordination.append(int(np.count_nonzero(np.linalg.norm(v,axis=1)<2.7)))
-            row=dict(time_ps=done*0.002,forming_A=float(np.linalg.norm(v1)),attack_angle_deg=float(angle),metal_coordination=coordination)
+            row=dict(time_ps=done*dt_ps,forming_A=float(np.linalg.norm(v1)),attack_angle_deg=float(angle),metal_coordination=coordination)
             observations.append(row);log.write(json.dumps(row)+'\n');log.flush()
-            if done%50000==0:
+            if (done//frame_steps)%20==0:
                 sim.saveCheckpoint(str(out/'latest.chk'))
                 atomic_json(out/'progress.json',dict(completed_steps=done,requested_steps=total,wall_s=time.monotonic()-t0,last_geometry=row))
                 print(json.dumps(row),flush=True)
@@ -174,7 +182,8 @@ def equilibrate(prmtop,coordinates,spec_path,out,*,seed=17,production_ns=2.0,tem
     write_state_pdb(sim.topology,final_state,out/'final.pdb')
     coords=np.array([r['metal_coordination'] for r in observations]);dist=np.array([r['forming_A'] for r in observations])
     result=dict(status='pilot_complete_requires_scientific_review',seed=seed,temperature_K=temperature,
-        production_ns=production_ns,equilibration_ns=0.4,n_atoms=len(parm.atoms),magnesium_count=len(metals),
+        production_ns=production_ns,equilibration_ns=equilibration_ns,timestep_fs=dt_ps*1000.0,hydrogen_mass_amu=hydrogen_mass_amu,
+        n_atoms=len(parm.atoms),magnesium_count=len(metals),
         coordination_definition='N/O/S donor atoms within 2.7 A (minimum image)',
         attack_angle_definition=angle_kind,
         c4_initial_kcal=initial_c4,metal_coordination_mean=coords.mean(axis=0).tolist(),metal_coordination_std=coords.std(axis=0).tolist(),
@@ -189,7 +198,11 @@ def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
     for flag in ['prmtop','coords','spec','out']:p.add_argument('--'+flag,required=True)
     p.add_argument('--seed',type=int,default=17);p.add_argument('--ns',type=float,default=2)
-    a=p.parse_args(argv);print(json.dumps(equilibrate(a.prmtop,a.coords,a.spec,a.out,seed=a.seed,production_ns=a.ns),indent=2))
+    p.add_argument('--dt-fs',type=float,default=4.0,help='integration timestep in fs (default 4 fs with HMR)')
+    p.add_argument('--hydrogen-mass',type=float,default=3.0,help='repartitioned hydrogen mass in amu (default 3.0; use 1.008 to disable HMR)')
+    p.add_argument('--strip-water',action='store_true')
+    a=p.parse_args(argv);print(json.dumps(equilibrate(a.prmtop,a.coords,a.spec,a.out,seed=a.seed,production_ns=a.ns,
+        dt_ps=a.dt_fs/1000.0,hydrogen_mass_amu=a.hydrogen_mass,strip_water=a.strip_water),indent=2))
 
 
 if __name__=='__main__':main()

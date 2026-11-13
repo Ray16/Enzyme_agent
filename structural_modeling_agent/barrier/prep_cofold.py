@@ -66,6 +66,41 @@ def split_cofold(cofold_pdb, out_dir):
     return out, atp, metals, sub
 
 
+_PROTONATION_RESNAMES = {"HIP", "HIE", "HID", "GLH", "ASH", "LYN", "CYM", "GLU", "ASP", "LYS", "HIS", "CYS"}
+
+
+def apply_protonation_overrides(protein_pdb, overrides):
+    """Force specific protonation states by renaming residues in the cleaned protein PDB BEFORE tleap
+    (tleap builds the correct protons from the residue name). `overrides` maps resid (in protein_clean
+    numbering, which matches PROPKA) -> target Amber resname, e.g. {265: 'HIP', 455: 'GLH'}.
+
+    This is the ONLY place protonation can be set: without it prep takes tleap/pdb4amber defaults
+    (His->HIE, Asp/Glu deprotonated, Lys +1), which are unchecked and structurally invisible when wrong.
+    Returns the list of (resid, old_resname, new_resname) actually applied."""
+    if not overrides:
+        return []
+    path = Path(protein_pdb)
+    want = {int(k): str(v).strip().upper() for k, v in overrides.items()}
+    for v in want.values():
+        if v not in _PROTONATION_RESNAMES:
+            raise ValueError(f"unsupported protonation target resname: {v}")
+    applied, out_lines = [], []
+    for line in path.read_text().splitlines():
+        if line.startswith(("ATOM", "HETATM")) and line[22:26].strip().isdigit():
+            resid = int(line[22:26]); new = want.get(resid)
+            if new:
+                old = line[17:20].strip()
+                line = line[:17] + f"{new:>3s}" + line[20:]
+                if not applied or applied[-1][0] != resid:
+                    applied.append((resid, old, new))
+        out_lines.append(line)
+    if len(applied) != len(want):
+        missing = set(want) - {a[0] for a in applied}
+        raise ValueError(f"protonation override resids not found in {path.name}: {sorted(missing)}")
+    path.write_text("\n".join(out_lines) + "\n")
+    return applied
+
+
 def param_substrate(sub_rows, atp_rows, out_dir, resname, net_charge, ph=8.0):
     """Protonate the acid substrate (obabel at `ph`; 8.0 = experimental assay pH) +
     antechamber GAFF2/AM1-BCC at the spec's formal charge. Returns the cofold atom name of
