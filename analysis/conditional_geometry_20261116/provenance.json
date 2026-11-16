@@ -1,0 +1,14 @@
+{
+  "threshold_A": 4.0,
+  "comparison": "strictly less than",
+  "conditional_angle": "sum(angle / distance) / sum(1 / distance), using step-1 poses with distance < 4 A only",
+  "angle_selection": false,
+  "bubble_area": "500 * step1_close_fraction points squared",
+  "y": "all step-2 pose distances; bubble at median",
+  "source_files": {
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261106_000850_Find_enzymes_that_ligate_glutarate_and_cadaverine_Production_objective_deliver_a/family_cofold_pocket_guided/analysis/pose_geometry.csv": "d3a96fa3f0f9e956f21ef37a687e14da298dd18a5201f0e377dd55f3af053ad5",
+    "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_discovery_agent/runs/20261106_000850_Find_enzymes_that_ligate_glutarate_and_cadaverine_Production_objective_deliver_a/family_cofold_pocket_guided/analysis/both_steps_summary.csv": "f167b72a01f3f88c71d2cf59b5b8f1b5fe7ba92c663b4f5a06d492b50a3c1857"
+  },
+  "n_candidates": 46,
+  "n_no_close_step1": 7
+}
