@@ -19,3 +19,11 @@ OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python analysis/conditional_g
 ```
 
 Verification: all ensemble sizes and identity flags checked; YjfC conditional angle independently matched to 167.77612327325429 degrees and its close-pose count to 16/50; PNG visually inspected for labels, size legend and undefined-angle handling.
+
+## Step-1 cutoff sensitivity: 6 Å
+
+The `step1_6A/` outputs change only the step-1 conditioning threshold and bubble-area fraction to distance <6 Å. All step-2 distances, medians, reported <4 Å fractions, and the horizontal 4 Å reference remain unchanged. AS9 is marked PA55-active based on the user’s experimental identification. Forty-five candidates have defined conditional angles; GlnA2 Q9RDS6 remains in the undefined strip.
+
+AS9: 18/50 poses (36%), conditional angle 166.1545°, median step-2 distance 9.8989 Å. YjfC: 50/50 poses (100%), conditional angle 138.0290°, median step-2 distance 12.3284 Å. This threshold sensitivity is descriptive and does not validate a new activity ranking.
+
+Reproduce with `--step1-cutoff 6`. The original 4 Å outputs are preserved. The revised script labels the threshold explicitly and keeps candidate colors stable across newly generated cutoff variants.
