@@ -140,28 +140,51 @@ def _contact_pairs(pose, resids):
     return out
 
 
-def _attack_pair(pose):
-    """The reaction coordinate, GENERICALLY: the closest (substrate nucleophile heteroatom O/N/S) <->
-    (cofactor electrophile) pair. Electrophile = cofactor phosphorus if present (phosphoryl transfer:
-    adenylation/acyl-phosphate), else cofactor carbon (carbonyl, e.g. thioester). No hardcoded atom
-    names, so it adapts to the chemistry. Returns (nuc_serial, elec_serial, elec_name, distance) or None."""
+def _attack_geometry(pose):
+    """The reaction coordinate for THIS pose, GENERICALLY: forming distance = closest (substrate
+    nucleophile O/N/S) <-> (cofactor electrophile) pair, and attack angle = nucleophile-P-leaving, where
+    the leaving atom is the P-bonded atom most ANTI to the nucleophile (the in-line displacement axis; an
+    ideal in-line attack -> ~180 deg). Electrophile = cofactor P if present (phosphoryl transfer), else C
+    (carbonyl). Returns dict(nuc, p, lg, dist, angle_deg, mid=(x,y,z)) or None."""
+    import math
     atoms = _parse_atoms(pose)
     cof, metals, substrate = _ligand_groups(atoms)
     elec = [a for a in cof if a[1][:1] == "P"] or [a for a in cof if a[1][:1] == "C"]
     nuc = [a for a in substrate if a[1][:1] in ("O", "N", "S")]
+    if not elec or not nuc:
+        return None
+
+    def _d(a, b):
+        return ((a[5]-b[5])**2 + (a[6]-b[6])**2 + (a[7]-b[7])**2) ** 0.5
     best = None
     for o in nuc:
         for p in elec:
-            d = ((o[5]-p[5])**2 + (o[6]-p[6])**2 + (o[7]-p[7])**2) ** 0.5
-            if best is None or d < best[-1]:
-                best = (o[0], p[0], p[1], d)
-    return best
+            d = _d(o, p)
+            if best is None or d < best[0]:
+                best = (d, o, p)
+    d, o, p = best
+
+    def _ang(a, b, c):   # angle a-b-c in degrees
+        v1 = (a[5]-b[5], a[6]-b[6], a[7]-b[7]); v2 = (c[5]-b[5], c[6]-b[6], c[7]-b[7])
+        dot = sum(i*j for i, j in zip(v1, v2))
+        n1 = sum(i*i for i in v1) ** 0.5; n2 = sum(i*i for i in v2) ** 0.5
+        return math.degrees(math.acos(max(-1.0, min(1.0, dot / (n1 * n2 + 1e-9)))))
+    bonded = [a for a in atoms if a[0] not in (p[0], o[0]) and _d(a, p) < 2.1]
+    lg, angle = None, None
+    for x in bonded:                    # leaving = P-substituent most anti to the nucleophile
+        an = _ang(o, p, x)
+        if angle is None or an > angle:
+            angle, lg = an, x
+    return {"nuc": o[0], "p": p[0], "lg": lg[0] if lg else None, "dist": d, "angle_deg": angle,
+            "mid": ((o[5]+p[5]) / 2, (o[6]+p[6]) / 2, (o[7]+p[7]) / 2)}
 
 
 # distinct saturated RGB tags for the locator pass -> one per anchor residue, recovered by colour
 # matching from a flat-lit render so each residue's 2D screen position is known exactly.
 _LOC_RGB = [(230, 25, 75), (60, 180, 75), (0, 130, 200), (245, 130, 48),
             (145, 30, 180), (70, 240, 240), (240, 50, 230), (210, 245, 60)]
+_ATTACK_RGB = (0, 255, 255)        # reserved locator tag for the reaction-coordinate midpoint
+_ATTACK_KEY = "__ATTACK__"
 _IMG_W, _IMG_H = 1200, 1050
 
 
@@ -210,15 +233,23 @@ def render_structure(pose, residues, out_png):
         loc_lines += [f"pseudoatom loc{rid}, pos=[{x:.3f}, {y:.3f}, {z:.3f}]",
                       f"set_color lc{rid}, [{rgb[0]/255:.3f}, {rgb[1]/255:.3f}, {rgb[2]/255:.3f}]",
                       f"color lc{rid}, loc{rid}"]
-    # reaction coordinate: reactive carboxylate O -> electrophilic P as a BLUE dash (NO numeric label;
-    # the figure banner already states the distance, and an in-scene number collides with the sticks).
-    ap = _attack_pair(pose)
-    if ap:
-        o_s, p_s, _pname, _dist = ap
+    # reaction coordinate: nucleophile -> electrophilic P as a BLUE dash. The pose's forming distance +
+    # attack angle are placed later in matplotlib (via a locator tag at the dash midpoint) so they never
+    # collide with the sticks. pymol's own distance label is hidden.
+    attack = None
+    ag = _attack_geometry(pose)
+    if ag:
+        attack = (ag["dist"], ag["angle_deg"])
+        o_s, p_s = ag["nuc"], ag["p"]
         pml += ["set_color attackblue, [0.12, 0.31, 0.85]",
                 f"distance attack, (id {o_s}), (id {p_s})",
                 "set dash_color, attackblue, attack", "set dash_radius, 0.045, attack",
                 "hide labels, attack"]
+        mx, my, mz = ag["mid"]
+        res_tag[_ATTACK_KEY] = _ATTACK_RGB
+        loc_lines += [f"pseudoatom locatk, pos=[{mx:.3f}, {my:.3f}, {mz:.3f}]",
+                      f"set_color lcatk, [{_ATTACK_RGB[0]/255:.3f}, {_ATTACK_RGB[1]/255:.3f}, {_ATTACK_RGB[2]/255:.3f}]",
+                      "color lcatk, locatk"]
     site = "substrate or metals" + "".join(f" or r{rid}" for rid in rids)
     pml += ["set cartoon_side_chain_helper, 1",
             f"select site, ({site})", "orient site", "zoom site, 1.0"]
@@ -239,13 +270,13 @@ def render_structure(pose, residues, out_png):
     f.write("\n".join(pml)); f.close()
     r = subprocess.run([PYMOL, "-cq", f.name], capture_output=True, text=True, timeout=300)
     if not os.path.exists(out_png):
-        return False, r.stderr[-500:], {}
+        return False, r.stderr[-500:], {}, None
     label_xy = _detect_label_positions(locator_png, res_tag)
     try:
         os.remove(locator_png)
     except OSError:
         pass
-    return True, "", label_xy
+    return True, "", label_xy, attack
 
 
 def _detect_label_positions(locator_png, res_tag, tol=60):
@@ -278,14 +309,17 @@ def _md_lookup(md_freq):
     return best
 
 
-def _place_residue_labels(axL, img, label_xy, residues):
-    """Draw anchor residue names on the structure panel at OPTIMISED positions (no leader lines):
-    seed each name at its residue's screen position, then repel names off the sticks (dark 'ink' of the
-    render) and off each other so text lands in clear space. His salt bridges get a protonation star."""
+def _place_residue_labels(axL, img, label_xy, residues, attack=None):
+    """Draw anchor residue names (+ the pose's forming distance / attack angle) on the structure panel at
+    OPTIMISED positions (no leader lines): seed each name just OUTSIDE its residue along the outward radial
+    direction (away from the active-site centre, where the sticks are), then let adjustText separate any
+    that still collide while a firm pull keeps each label hugging its residue. His salt bridges get a
+    protonation star; the reaction coordinate is labelled in blue at the dash midpoint."""
     import numpy as np
     import matplotlib.patheffects as pe
     if not label_xy:
         return
+    halo = [pe.withStroke(linewidth=3.0, foreground="white")]
     cat = {r["res"]: r["category"] for r in residues}
     H, W = img.shape[0], img.shape[1]
     rgb = img[..., :3] if img.ndim == 3 else np.dstack([img] * 3)
@@ -297,21 +331,38 @@ def _place_residue_labels(axL, img, label_xy, residues):
         k = np.random.default_rng(0).choice(len(xs), 600, replace=False)
         xs, ys = xs[k], ys[k]
 
+    attack_xy = label_xy.pop(_ATTACK_KEY, None)
+    # active-site centre = mean of all tagged positions; seed each label pushed radially outward from it
+    pts = list(label_xy.values()) + ([attack_xy] if attack_xy else [])
+    cx = sum(p[0] for p in pts) / len(pts); cy = sum(p[1] for p in pts) / len(pts)
+    off = 0.11 * (W + H) / 2              # modest outward nudge: clears the stick, stays beside the residue
+
     texts = []
     for lab, (px, py) in label_xy.items():
         name = lab + ("*" if (cat.get(lab) == "salt_bridge" and _resname(lab) == "HIS") else "")
         col = CAT_COLOR.get(cat.get(lab), "#333333")
-        t = axL.text(px, py, name, fontsize=11, fontweight="bold", color=col,
-                     ha="center", va="center", zorder=10,
-                     path_effects=[pe.withStroke(linewidth=3.0, foreground="white")])
-        texts.append(t)
+        dx, dy = px - cx, py - cy
+        n = (dx*dx + dy*dy) ** 0.5 or 1.0
+        sx = min(max(px + dx/n * off, 0.05*W), 0.95*W)
+        sy = min(max(py + dy/n * off, 0.05*H), 0.95*H)
+        texts.append(axL.text(sx, sy, name, fontsize=11, fontweight="bold", color=col,
+                              ha="center", va="center", zorder=10, path_effects=halo))
+    if attack_xy and attack and attack[0] is not None:
+        d, a = attack
+        txt = f"{d:.1f} Å" + (f"  ∠{a:.0f}°" if a is not None else "")
+        dx, dy = attack_xy[0] - cx, attack_xy[1] - cy
+        n = (dx*dx + dy*dy) ** 0.5 or 1.0
+        texts.append(axL.text(min(max(attack_xy[0] + dx/n*off, 0.05*W), 0.95*W),
+                              min(max(attack_xy[1] + dy/n*off, 0.05*H), 0.95*H),
+                              txt, fontsize=10.5, fontweight="bold", color="#1431c8",
+                              ha="center", va="center", zorder=11, path_effects=halo))
     try:
         from adjustText import adjust_text
-        # strong text<->text repulsion, weak pull back to seed, light obstacle force: separates
-        # co-located anchors (e.g. two residues projecting to the same spot) while clearing the sticks.
+        # firm pull keeps each label beside its residue; text-text force separates co-located anchors;
+        # light obstacle force nudges off the sticks. Seeds already sit outside the cluster.
         adjust_text(texts, x=xs, y=ys, ax=axL, avoid_self=True,
-                    force_text=(1.2, 1.6), force_static=(0.1, 0.2), force_pull=(0.01, 0.01),
-                    expand=(1.6, 1.9), ensure_inside_axes=True, only_move="xy")
+                    force_text=(0.5, 0.7), force_static=(0.12, 0.2), force_pull=(0.5, 0.5),
+                    expand=(1.25, 1.4), ensure_inside_axes=True, only_move="xy")
     except Exception:
         pass                               # fall back to seed positions if adjustText unavailable
     axL.set_xlim(0, W); axL.set_ylim(H, 0)
@@ -342,7 +393,7 @@ def build_figure(pose, freq, title, out_png, md_freq=None):
         dock_col = "#b23024"
     # ---- structural panel ----
     struct_png = out_png.replace(".png", "_struct.png")
-    ok, err, label_xy = render_structure(pose, residues, struct_png)
+    ok, err, label_xy, attack = render_structure(pose, residues, struct_png)
 
     order = {"reactive": 0, "secondary": 1}
     if docked:   # only claim "reactive / carboxylate activated" when the substrate is actually poised
@@ -362,7 +413,7 @@ def build_figure(pose, freq, title, out_png, md_freq=None):
     if ok:
         img = plt.imread(struct_png)
         axL.imshow(img); axL.axis("off")
-        _place_residue_labels(axL, img, label_xy, residues)
+        _place_residue_labels(axL, img, label_xy, residues, attack)
         axL.set_title("Representative active-site pose\n(substrate orange, ATP teal, metal green;\ngray dashes = contacts)",
                       fontsize=11, pad=4)
     else:
