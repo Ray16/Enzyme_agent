@@ -158,75 +158,112 @@ def _attack_pair(pose):
     return best
 
 
+# distinct saturated RGB tags for the locator pass -> one per anchor residue, recovered by colour
+# matching from a flat-lit render so each residue's 2D screen position is known exactly.
+_LOC_RGB = [(230, 25, 75), (60, 180, 75), (0, 130, 200), (245, 130, 48),
+            (145, 30, 180), (70, 240, 240), (240, 50, 230), (210, 245, 60)]
+_IMG_W, _IMG_H = 1200, 1050
+
+
 def render_structure(pose, residues, out_png):
-    """Headless pymol render of the pose; highlight residues colored by interaction category."""
+    """Headless pymol render of the pose (NO baked-in text), colouring anchor residues by interaction
+    category. Residue names are NOT drawn here -- instead a second 'locator' pass renders each anchor as
+    a uniquely-coloured flat sphere so its 2D screen position can be recovered by colour matching; the
+    caller places the names in matplotlib, in clear space, with no leader lines.
+    Returns (ok, err, label_xy) where label_xy maps the residue label -> (px, py) in the CLEAN image."""
+    cbs = _cb_coords(pose, [_resid(r["res"]) for r in residues])
+    pairs = _contact_pairs(pose, [_resid(r["res"]) for r in residues])
+    locator_png = out_png.replace(".png", "_locator.png")
+
     pml = [f"load {pose}, m", "hide everything", "bg_color white",
-           # strip water + neutralizing counter-ions outright (solvated MD structures bring ~10^4
-           # waters + Na/Cl that otherwise swamp the view).
            "remove solvent", "remove (resn WAT+HOH+SOL+TIP3+T3P+NA+CL+K)", "remove (elem Na+Cl+K)",
            "set ray_opaque_background, 0", "set cartoon_transparency, 0.9",
            "set stick_radius, 0.16", "set valence, 0",
-           # resname-agnostic ligand selection (cofold resn LIG OR MD resn ATP/SUB/MG).
-           # byres (NOT bychain): in single-chain MD structures bychain would grab the whole protein.
            "select atp_ch, byres (not polymer and elem P)",
            "select metals, (not polymer and elem Mg+Mn+Zn+Fe+Ca+Ni+Co+Cu)",
            "select substrate, (not polymer and not atp_ch and not metals)",
            "show cartoon, polymer", "color gray90, polymer",
            "show sticks, substrate", "util.cbao substrate", "set stick_radius, 0.28, substrate",
            "show sticks, atp_ch", "util.cbac atp_ch",
-           "show spheres, metals", "color forest, metals", "set sphere_scale, 0.45, metals"]
-    # interactions as THIN DASHED GRAY lines (residue <-> substrate/metal); residue names labelled
-    # OUTWARD (radially from the active-site centre) so text clears the sticks.
-    pml += ["set label_size, 16", "set label_color, black", "set label_outline_color, white",
-            "set label_font_id, 7",
-            "set dash_color, gray40", "set dash_radius, 0.045", "set dash_gap, 0.35",
-            "set dash_length, 0.25"]
-    cbs = _cb_coords(pose, [_resid(r["res"]) for r in residues])
-    pairs = _contact_pairs(pose, [_resid(r["res"]) for r in residues])
+           "show spheres, metals", "color forest, metals", "set sphere_scale, 0.45, metals",
+           "set dash_color, gray40", "set dash_radius, 0.045", "set dash_gap, 0.35",
+           "set dash_length, 0.25"]
     rids = []
-    if cbs:
-        cx = sum(v[0] for v in cbs.values()) / len(cbs)
-        cy = sum(v[1] for v in cbs.values()) / len(cbs)
-        cz = sum(v[2] for v in cbs.values()) / len(cbs)
-    for r in residues:
+    loc_lines = []          # pseudoatom + colour commands for the locator pass (created, then hidden)
+    res_tag = {}            # residue label -> locator RGB
+    for i, r in enumerate(residues):
         rid = _resid(r["res"])
-        if not rid:
+        if not rid or rid not in cbs:
             continue
         rids.append(rid)
         col = CAT_COLOR.get(r["category"], "#999999")
         pml += [f"select r{rid}, (polymer and resi {rid} and not name N+C+O)", f"show sticks, r{rid}",
                 f"set_color c{rid}, [{int(col[1:3],16)/255:.3f},{int(col[3:5],16)/255:.3f},{int(col[5:7],16)/255:.3f}]",
                 f"color c{rid}, r{rid} and elem C"]
-        if rid in pairs:  # ONE thin dashed line = the residue's single closest contact
+        if rid in pairs:    # ONE thin dashed line = the residue's single closest contact
             a1, serial = pairs[rid]
             pml += [f"distance dd{rid}, (polymer and resi {rid} and name {a1}), (id {serial})",
                     f"hide labels, dd{rid}"]
-        if rid in cbs:
-            v = cbs[rid]; dx, dy, dz = v[0] - cx, v[1] - cy, v[2] - cz
-            n = (dx * dx + dy * dy + dz * dz) ** 0.5 or 1.0
-            s = 2.3 / n   # modest outward offset: clears the stick yet stays inside the tight frame
-            pml.append(f"set label_position, ({dx*s:.2f}, {dy*s:.2f}, {dz*s:.2f}), r{rid}")
-        pml.append(f"label (polymer and resi {rid} and name CB), '{r['res']}'")
-    # THE reaction coordinate: reactive carboxylate O -> electrophilic P, as a BLUE dashed line
-    # (same thickness as the gray contact dashes), with its Angstrom value shown.
+        rgb = _LOC_RGB[i % len(_LOC_RGB)]
+        res_tag[r["res"]] = rgb
+        x, y, z = cbs[rid]
+        loc_lines += [f"pseudoatom loc{rid}, pos=[{x:.3f}, {y:.3f}, {z:.3f}]",
+                      f"set_color lc{rid}, [{rgb[0]/255:.3f}, {rgb[1]/255:.3f}, {rgb[2]/255:.3f}]",
+                      f"color lc{rid}, loc{rid}"]
+    # reaction coordinate: reactive carboxylate O -> electrophilic P as a BLUE dash (NO numeric label;
+    # the figure banner already states the distance, and an in-scene number collides with the sticks).
     ap = _attack_pair(pose)
     if ap:
-        o_s, p_s, pname, dist = ap
+        o_s, p_s, _pname, _dist = ap
         pml += ["set_color attackblue, [0.12, 0.31, 0.85]",
                 f"distance attack, (id {o_s}), (id {p_s})",
                 "set dash_color, attackblue, attack", "set dash_radius, 0.045, attack",
-                "set label_color, attackblue, attack"]
-    # frame the whole active site (substrate + metals + anchor residues) for a balanced composition
+                "hide labels, attack"]
     site = "substrate or metals" + "".join(f" or r{rid}" for rid in rids)
     pml += ["set cartoon_side_chain_helper, 1",
-            # per-candidate camera: orient looks down the site's thinnest axis (least occlusion),
-            # auto-adapting to each enzyme's geometry -- no fixed turns.
-            f"select site, ({site})", "orient site", "zoom site, 1.0",
-            f"ray 1200, 1050", f"png {out_png}, dpi=200", "quit"]
+            f"select site, ({site})", "orient site", "zoom site, 1.0"]
+    pml += loc_lines + ["hide everything, loc*"]     # create locator atoms AFTER orient; keep hidden
+    # two renders at one camera: CLEAN (final) then LOCATOR (flat-lit colour tags only)
+    pml += ["python",
+            "from pymol import cmd",
+            "v = cmd.get_view()",
+            f"cmd.png('{out_png}', width={_IMG_W}, height={_IMG_H}, dpi=200, ray=1)",
+            "cmd.hide('everything')", "cmd.bg_color('white')",
+            "cmd.show('spheres', 'loc*')", "cmd.set('sphere_scale', 0.9, 'loc*')",
+            "cmd.set('ambient', 1.0)", "cmd.set('direct', 0.0)", "cmd.set('spec_reflect', 0.0)",
+            "cmd.set('ray_shadows', 0)", "cmd.set('antialias', 0)",
+            "cmd.set_view(v)",
+            f"cmd.png('{locator_png}', width={_IMG_W}, height={_IMG_H}, dpi=200, ray=1)",
+            "python end", "quit"]
     f = tempfile.NamedTemporaryFile("w", suffix=".pml", delete=False)
     f.write("\n".join(pml)); f.close()
     r = subprocess.run([PYMOL, "-cq", f.name], capture_output=True, text=True, timeout=300)
-    return os.path.exists(out_png), r.stderr[-500:] if not os.path.exists(out_png) else ""
+    if not os.path.exists(out_png):
+        return False, r.stderr[-500:], {}
+    label_xy = _detect_label_positions(locator_png, res_tag)
+    try:
+        os.remove(locator_png)
+    except OSError:
+        pass
+    return True, "", label_xy
+
+
+def _detect_label_positions(locator_png, res_tag, tol=60):
+    """Recover each anchor residue's 2D screen position (pixel centroid of its colour tag)."""
+    if not os.path.exists(locator_png):
+        return {}
+    import numpy as np
+    from PIL import Image
+    arr = np.asarray(Image.open(locator_png).convert("RGB")).astype(int)
+    out = {}
+    for lab, (R, G, B) in res_tag.items():
+        mask = ((abs(arr[..., 0] - R) < tol) & (abs(arr[..., 1] - G) < tol) &
+                (abs(arr[..., 2] - B) < tol))
+        if mask.sum() < 4:
+            continue
+        ys, xs = np.nonzero(mask)
+        out[lab] = (float(xs.mean()), float(ys.mean()))
+    return out
 
 
 def _md_lookup(md_freq):
@@ -239,6 +276,45 @@ def _md_lookup(md_freq):
             num = "".join(ch for ch in c["res"] if ch.isdigit())
             best[num] = max(best.get(num, 0.0), c["frequency"])
     return best
+
+
+def _place_residue_labels(axL, img, label_xy, residues):
+    """Draw anchor residue names on the structure panel at OPTIMISED positions (no leader lines):
+    seed each name at its residue's screen position, then repel names off the sticks (dark 'ink' of the
+    render) and off each other so text lands in clear space. His salt bridges get a protonation star."""
+    import numpy as np
+    import matplotlib.patheffects as pe
+    if not label_xy:
+        return
+    cat = {r["res"]: r["category"] for r in residues}
+    H, W = img.shape[0], img.shape[1]
+    rgb = img[..., :3] if img.ndim == 3 else np.dstack([img] * 3)
+    if rgb.max() > 1.5:
+        rgb = rgb / 255.0
+    ink = rgb.min(axis=2) < 0.82          # sticks/spheres/dashes = darker than the near-white bg/cartoon
+    ys, xs = np.nonzero(ink)
+    if len(xs) > 600:                     # subsample the obstacle cloud for speed
+        k = np.random.default_rng(0).choice(len(xs), 600, replace=False)
+        xs, ys = xs[k], ys[k]
+
+    texts = []
+    for lab, (px, py) in label_xy.items():
+        name = lab + ("*" if (cat.get(lab) == "salt_bridge" and _resname(lab) == "HIS") else "")
+        col = CAT_COLOR.get(cat.get(lab), "#333333")
+        t = axL.text(px, py, name, fontsize=11, fontweight="bold", color=col,
+                     ha="center", va="center", zorder=10,
+                     path_effects=[pe.withStroke(linewidth=3.0, foreground="white")])
+        texts.append(t)
+    try:
+        from adjustText import adjust_text
+        # strong text<->text repulsion, weak pull back to seed, light obstacle force: separates
+        # co-located anchors (e.g. two residues projecting to the same spot) while clearing the sticks.
+        adjust_text(texts, x=xs, y=ys, ax=axL, avoid_self=True,
+                    force_text=(1.2, 1.6), force_static=(0.1, 0.2), force_pull=(0.01, 0.01),
+                    expand=(1.6, 1.9), ensure_inside_axes=True, only_move="xy")
+    except Exception:
+        pass                               # fall back to seed positions if adjustText unavailable
+    axL.set_xlim(0, W); axL.set_ylim(H, 0)
 
 
 def build_figure(pose, freq, title, out_png, md_freq=None):
@@ -266,7 +342,7 @@ def build_figure(pose, freq, title, out_png, md_freq=None):
         dock_col = "#b23024"
     # ---- structural panel ----
     struct_png = out_png.replace(".png", "_struct.png")
-    ok, err = render_structure(pose, residues, struct_png)
+    ok, err, label_xy = render_structure(pose, residues, struct_png)
 
     order = {"reactive": 0, "secondary": 1}
     if docked:   # only claim "reactive / carboxylate activated" when the substrate is actually poised
@@ -284,7 +360,9 @@ def build_figure(pose, freq, title, out_png, md_freq=None):
     outer = fig.add_gridspec(1, 2, width_ratios=[0.82, 1.18], wspace=0.22)
     axL = fig.add_subplot(outer[0])
     if ok:
-        axL.imshow(plt.imread(struct_png)); axL.axis("off")
+        img = plt.imread(struct_png)
+        axL.imshow(img); axL.axis("off")
+        _place_residue_labels(axL, img, label_xy, residues)
         axL.set_title("Representative active-site pose\n(substrate orange, ATP teal, metal green;\ngray dashes = contacts)",
                       fontsize=11, pad=4)
     else:

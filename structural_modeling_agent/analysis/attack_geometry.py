@@ -64,51 +64,82 @@ def _pretty_label(cand):
 
 
 def plot(cand_stats, out_png, near_d=4.0, near_ang=150.0, label_all=False):
-    """Distribution-aware dumbbell ranking: one dot per MD replicate at its NEAR-ATTACK FRACTION
-    (fraction of frames with d < near_d AND angle > near_ang), sorted by the MEDIAN replicate so
-    reproducible candidates outrank one-lucky-seed ones. The per-replicate spread shows seed
-    reproducibility; the shaded band marks the >= 0.5 'majority-of-frames poised' zone."""
+    """Publication dumbbell: one dot per MD replicate at its NEAR-ATTACK FRACTION (fraction of frames
+    with d < near_d AND angle > near_ang), sorted by the MEDIAN replicate. Design follows an EMPHASIS
+    scheme (not a value-ramp): the reproducibly-poised candidates (median >= 0.5) carry the single
+    accent colour and are directly value-labelled; every other candidate is kept for completeness but
+    de-emphasised in gray. All candidates are shown; nulls collapse onto the left axis without clutter."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    rows = []   # (label, nas, median, max) per candidate
+    import matplotlib.patheffects as pe
+    from matplotlib.lines import Line2D
+
+    ACCENT, ACCENT_DK = "#1b7837", "#0f5023"      # poised (emphasis)
+    MUTE, MUTE_DK = "#bdbdbd", "#8a8a8a"          # not poised (de-emphasised)
+    POISED = 0.5
+
+    rows = []   # (label, nas, median, max, poised) per candidate
     for cand, seeds in cand_stats.items():
         nas = [s["near_attack"] for s in seeds]
-        rows.append((_pretty_label(cand), nas, float(np.median(nas)), float(np.max(nas))))
-    # sort ascending by (median, max, mean) so the most reproducibly-poised candidate ends up on TOP
+        med = float(np.median(nas))
+        rows.append((_pretty_label(cand), nas, med, float(np.max(nas)), med >= POISED))
+    # sort ascending by (median, max, mean) so the most reproducibly-poised candidate lands on TOP
     rows.sort(key=lambda r: (r[2], r[3], float(np.mean(r[1]))))
-    cmap = plt.cm.RdYlGn
     n = len(rows)
-    fig, ax = plt.subplots(figsize=(9, max(4.0, 0.34 * n + 1.8)))
-    ax.axvspan(0.5, 1.03, color="#1b7837", alpha=0.08, zorder=0)
-    ax.axvline(0.5, ls=":", color="gray", lw=1, zorder=1)
-    ax.text(0.5, n - 0.3, " majority of frames poised →", ha="left", va="center",
-            fontsize=9, color="#1b7837", fontweight="bold")
-    for i, (lab, nas, med, mx) in enumerate(rows):
-        if len(nas) > 1:
-            ax.plot([min(nas), max(nas)], [i, i], color="#cccccc", lw=1.6, zorder=1)
-        ax.scatter(nas, [i] * len(nas), c=nas, cmap=cmap, vmin=0, vmax=1, s=70,
-                   edgecolor="black", linewidth=0.5, zorder=3)
-        # black tick = the MEDIAN replicate (the sort key), so the ranking metric is visible
-        ax.scatter([med], [i], marker="|", s=360, color="black", linewidth=1.3, zorder=4)
+
+    fig, ax = plt.subplots(figsize=(8.6, max(4.0, 0.32 * n + 1.9)))
+    # poised zone: a quiet band, no dashed rule (hairline anti-pattern)
+    ax.axvspan(POISED, 1.04, color=ACCENT, alpha=0.06, zorder=0)
+    for gx in (0.25, 0.5, 0.75, 1.0):             # recessive solid hairline grid
+        ax.axvline(gx, color="#ededed", lw=0.8, zorder=0)
+
+    for i, (lab, nas, med, mx, poised) in enumerate(rows):
+        c, cdk = (ACCENT, ACCENT_DK) if poised else (MUTE, MUTE_DK)
+        if poised and len(nas) > 1:               # spread bar only where it carries signal
+            ax.plot([min(nas), max(nas)], [i, i], color=c, lw=2.2, solid_capstyle="round", zorder=2)
+        ax.scatter(nas, [i] * len(nas), s=(84 if poised else 34), color=c,
+                   edgecolor="white", linewidth=(1.1 if poised else 0.6),
+                   zorder=4 if poised else 3)
+        ax.scatter([med], [i], marker="|", s=(300 if poised else 120),
+                   color=(cdk if poised else MUTE_DK), linewidth=(2.0 if poised else 1.0), zorder=5)
+        if poised:                                # selective direct labels — only the emphasis rows
+            ax.text(min(mx + 0.035, 1.02), i, f"{med:.2f}", va="center", ha="left",
+                    fontsize=10, fontweight="bold", color=ACCENT_DK)
+
     ax.set_yticks(range(n))
-    ax.set_yticklabels([r[0] for r in rows], fontsize=8.5)
-    for i, r in enumerate(rows):            # bold the reproducibly-poised candidates (median >= 0.5)
-        if r[2] >= 0.5:
-            ax.get_yticklabels()[i].set_fontweight("bold")
-            ax.get_yticklabels()[i].set_color("#1b5e20")
-    ax.set_xlim(-0.03, 1.03); ax.set_ylim(-0.8, n - 0.2)
-    ax.set_xlabel("near-attack fraction  (frames with d < %.0f Å AND ∠ > %.0f°)  —  one dot per MD replicate"
-                  % (near_d, near_ang), fontsize=10.5)
+    ax.set_yticklabels([r[0] for r in rows])
+    for i, r in enumerate(rows):
+        t = ax.get_yticklabels()[i]
+        if r[4]:
+            t.set_fontweight("bold"); t.set_color(ACCENT_DK); t.set_fontsize(10.5)
+        else:
+            t.set_color(MUTE_DK); t.set_fontsize(8.3)
+
+    ax.set_xlim(-0.03, 1.08); ax.set_ylim(-0.8, n + 0.3)
+    ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
+    ax.set_xlabel(f"near-attack fraction   (fraction of MD frames with d < {near_d:.0f} Å and ∠ > {near_ang:.0f}°)",
+                  fontsize=11)
+    ax.tick_params(axis="x", labelsize=10)
     for sp in ("top", "right"):
         ax.spines[sp].set_visible(False)
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(0, 1)); sm.set_array([])
-    cb = fig.colorbar(sm, ax=ax, fraction=0.035, pad=0.02)
-    cb.set_label("near-attack fraction", fontsize=10)
-    ax.set_title("Step-1 attack geometry — distribution-aware ranking\n"
-                 "(how OFTEN each candidate visits reactive geometry; black tick = median seed, "
-                 "spread = reproducibility)", fontsize=12, fontweight="bold")
-    fig.savefig(out_png, dpi=200, bbox_inches="tight", facecolor="white")
+    for sp in ("left", "bottom"):
+        ax.spines[sp].set_color("#cccccc")
+    # band header, above every row so it never collides with a data label
+    ax.text((POISED + 1.04) / 2, n + 0.15, "← majority of frames poised →", ha="center", va="center",
+            fontsize=9.5, color=ACCENT_DK, fontweight="bold")
+
+    ax.set_title("Step-1 attack geometry across candidates", fontsize=14, fontweight="bold", pad=18)
+    # compact emphasis legend (dot = one of 3 MD seeds; tick = median)
+    leg = [Line2D([0], [0], marker="o", color="none", markerfacecolor=ACCENT, markeredgecolor="white",
+                  markersize=9, label="reproducibly poised (median ≥ 0.5)"),
+           Line2D([0], [0], marker="o", color="none", markerfacecolor=MUTE, markeredgecolor="white",
+                  markersize=7, label="not poised"),
+           Line2D([0], [0], marker="|", color=ACCENT_DK, markersize=12, markeredgewidth=2,
+                  linestyle="none", label="median seed  ·  dots = 3 MD seeds")]
+    ax.legend(handles=leg, loc="lower right", frameon=False, fontsize=8.8,
+              handletextpad=0.4, borderaxespad=0.6)
+    fig.savefig(out_png, dpi=220, bbox_inches="tight", facecolor="white")
     print(f"wrote {out_png}")
 
 
