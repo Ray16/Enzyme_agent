@@ -209,7 +209,7 @@ def render_structure(pose, residues, out_png):
            "show sticks, substrate", "util.cbao substrate", "set stick_radius, 0.28, substrate",
            "show sticks, atp_ch", "util.cbac atp_ch",
            "show spheres, metals", "color forest, metals", "set sphere_scale, 0.45, metals",
-           "set dash_color, gray40", "set dash_radius, 0.045", "set dash_gap, 0.35",
+           "set dash_color, gray40", "set dash_radius, 0.058", "set dash_gap, 0.35",
            "set dash_length, 0.25"]
     rids = []
     loc_lines = []          # pseudoatom + colour commands for the locator pass (created, then hidden)
@@ -243,7 +243,7 @@ def render_structure(pose, residues, out_png):
         o_s, p_s = ag["nuc"], ag["p"]
         pml += ["set_color attackblue, [0.12, 0.31, 0.85]",
                 f"distance attack, (id {o_s}), (id {p_s})",
-                "set dash_color, attackblue, attack", "set dash_radius, 0.045, attack",
+                "set dash_color, attackblue, attack", "set dash_radius, 0.058, attack",
                 "hide labels, attack"]
         mx, my, mz = ag["mid"]
         res_tag[_ATTACK_KEY] = _ATTACK_RGB
@@ -347,15 +347,11 @@ def _place_residue_labels(axL, img, label_xy, residues, attack=None):
         sy = min(max(py + dy/n * off, 0.05*H), 0.95*H)
         texts.append(axL.text(sx, sy, name, fontsize=11, fontweight="bold", color=col,
                               ha="center", va="center", zorder=10, path_effects=halo))
-    if attack_xy and attack and attack[0] is not None:
-        d, a = attack
-        txt = f"{d:.1f} Å" + (f"  ∠{a:.0f}°" if a is not None else "")
-        dx, dy = attack_xy[0] - cx, attack_xy[1] - cy
-        n = (dx*dx + dy*dy) ** 0.5 or 1.0
-        texts.append(axL.text(min(max(attack_xy[0] + dx/n*off, 0.05*W), 0.95*W),
-                              min(max(attack_xy[1] + dy/n*off, 0.05*H), 0.95*H),
-                              txt, fontsize=10.5, fontweight="bold", color="#1431c8",
-                              ha="center", va="center", zorder=11, path_effects=halo))
+    if attack and attack[0] is not None:   # reserve the bottom-right corner for the attack read-out box
+        gx = np.linspace(0.60 * W, 0.99 * W, 9)
+        gy = np.linspace(0.82 * H, 0.99 * H, 6)
+        mesh = np.array([(x, y) for x in gx for y in gy])
+        xs = np.concatenate([xs, mesh[:, 0]]); ys = np.concatenate([ys, mesh[:, 1]])
     try:
         from adjustText import adjust_text
         # firm pull keeps each label beside its residue; text-text force separates co-located anchors;
@@ -414,6 +410,15 @@ def build_figure(pose, freq, title, out_png, md_freq=None):
         img = plt.imread(struct_png)
         axL.imshow(img); axL.axis("off")
         _place_residue_labels(axL, img, label_xy, residues, attack)
+        if attack and attack[0] is not None:   # pose's reaction coordinate, as a corner read-out
+            d, a = attack
+            txt = f"attack distance: {d:.1f} Å"
+            if a is not None:
+                txt += f"\nattack angle: {a:.0f}°"
+            axL.text(0.985, 0.015, txt, transform=axL.transAxes, ha="right", va="bottom",
+                     fontsize=10.5, fontweight="bold", color="#1431c8", linespacing=1.4,
+                     bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
+                               edgecolor="#1431c8", linewidth=1.0, alpha=0.9))
         axL.set_title("Representative active-site pose\n(substrate orange, ATP teal, metal green;\ngray dashes = contacts)",
                       fontsize=11, pad=4)
     else:
