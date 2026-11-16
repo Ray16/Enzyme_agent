@@ -415,10 +415,10 @@ def build_figure(pose, freq, title, out_png, md_freq=None):
             txt = f"attack distance: {d:.1f} Å"
             if a is not None:
                 txt += f"\nattack angle: {a:.0f}°"
-            axL.text(0.985, 0.015, txt, transform=axL.transAxes, ha="right", va="bottom",
-                     fontsize=10.5, fontweight="bold", color="#1431c8", linespacing=1.4,
+            axL.text(0.985, 0.015, txt, transform=axL.transAxes, ha="right", va="bottom", ma="left",
+                     fontsize=10.5, fontweight="bold", color="#1a1a1a", linespacing=1.4,
                      bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
-                               edgecolor="#1431c8", linewidth=1.0, alpha=0.9))
+                               edgecolor="#555555", linewidth=1.0, alpha=0.9))
         axL.set_title("Representative active-site pose\n(substrate orange, ATP teal, metal green;\ngray dashes = contacts)",
                       fontsize=11, pad=4)
     else:
