@@ -9,8 +9,8 @@ APPROVED FORMATTING (do not change per-figure; change here so all enzymes stay c
   * cofactor (ATP)     -> sticks, carbons DARK GRAY (gray25), heteroatoms by element
   * substrate          -> sticks (fatter), carbons ORANGE, heteroatoms by element
   * metals (Mg)        -> forest-green spheres
-  * forming bond       -> yellow dashed line (nucleophile -> electrophile), no distance label
-  * background white, no text overlays
+  * forming bond       -> yellow dashed line (nucleophile -> electrophile)
+  * background white; one overlay = live "attack distance: X.X A" per frame (green when < near_attack_A)
 
 Stages (each needs a different env, so `all` orchestrates by re-invoking itself):
   frames   -> MDAnalysis: align on protein CA, write stripped multiframe PDB (backbone + ligands)
@@ -41,7 +41,9 @@ STYLE = {
     "protein_color": "gray75", "cartoon_transparency": 0.35,
     "cofactor_carbon": "gray25", "substrate_carbon": "orange", "metal_color": "forest",
     "dash_color": "yellow", "background": "white",
-    "width": 1000, "height": 750, "antialias": 1, "duration_ms": 80,
+    # high-quality render: larger frame + stronger antialiasing (reuse for every enzyme so panels match)
+    "width": 1600, "height": 1200, "antialias": 2, "duration_ms": 80,
+    "near_attack_A": 4.0,   # forming distance below which the overlay turns green (reactive)
 }
 
 
@@ -54,15 +56,19 @@ def stage_frames(a):
     ligs = " ".join([a.cofactor_resn, a.substrate_resn, a.metal_resn])
     sel = f"(protein and backbone) or (resname {ligs} and not name H*)"
     render = u.select_atoms(sel)
+    nuc = u.select_atoms(a.nuc); elec = u.select_atoms(a.elec)   # for the per-frame forming distance
     out = Path(a.workdir) / "frames.pdb"
-    n = 0
+    n = 0; dists = []
     with mda.Writer(str(out), multiframe=True, n_atoms=render.n_atoms) as W:
         for i, ts in enumerate(u.trajectory):
             if i % a.stride:
                 continue
             align.alignto(u, ref, select="protein and name CA")
             W.write(render); n += 1
-    print(f"frames: wrote {n} states ({render.n_atoms} atoms) -> {out}")
+            if nuc.n_atoms and elec.n_atoms:   # distance is rigid-align invariant
+                dists.append(float(np.linalg.norm(nuc.center_of_geometry() - elec.center_of_geometry())))
+    (Path(a.workdir) / "distances.json").write_text(json.dumps(dists))
+    print(f"frames: wrote {n} states ({render.n_atoms} atoms), {len(dists)} forming-distances -> {out}")
 
 
 def stage_render(a):
@@ -101,11 +107,32 @@ def stage_render(a):
 
 def stage_assemble(a):
     import glob
-    from PIL import Image
+    from PIL import Image, ImageDraw, ImageFont
     pngs = sorted(glob.glob(str(Path(a.workdir) / "png" / "frame_*.png")))
     if not pngs:
         sys.exit("assemble: no PNG frames found")
-    imgs = [Image.open(p).convert("RGB") for p in pngs]
+    dpath = Path(a.workdir) / "distances.json"
+    dists = json.loads(dpath.read_text()) if dpath.exists() else []
+    # font: pull DejaVu Sans Bold from matplotlib (always present in the PIL env); fall back to default
+    font = None
+    if dists:
+        try:
+            from matplotlib import font_manager
+            font = ImageFont.truetype(font_manager.findfont("DejaVu Sans:bold"), 44)
+        except Exception:
+            font = ImageFont.load_default()
+    imgs = []
+    for i, p in enumerate(pngs):
+        im = Image.open(p).convert("RGB")
+        if font is not None and i < len(dists):
+            d = dists[i]
+            txt = f"attack distance: {d:.1f} Å"
+            col = (27, 120, 55) if d < STYLE["near_attack_A"] else (26, 26, 26)   # green when reactive
+            dr = ImageDraw.Draw(im); x, y = 26, 22
+            b = dr.textbbox((x, y), txt, font=font)
+            dr.rectangle([b[0] - 10, b[1] - 8, b[2] + 10, b[3] + 8], fill=(255, 255, 255))
+            dr.text((x, y), txt, fill=col, font=font)
+        imgs.append(im)
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     imgs[0].save(a.out, save_all=True, append_images=imgs[1:],
                  duration=STYLE["duration_ms"], loop=0, optimize=True)
