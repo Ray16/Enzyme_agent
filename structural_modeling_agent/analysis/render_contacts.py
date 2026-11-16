@@ -207,7 +207,8 @@ def render_structure(pose, residues, out_png):
            "select substrate, (not polymer and not atp_ch and not metals)",
            "show cartoon, polymer", "color gray90, polymer",
            "show sticks, substrate", "util.cbao substrate", "set stick_radius, 0.28, substrate",
-           "show sticks, atp_ch", "util.cbac atp_ch",
+           # ATP carbons DARK GRAY (match the movie house style; no cyan), heteroatoms by element
+           "show sticks, atp_ch", "color gray25, atp_ch", "util.cnc atp_ch",
            "show spheres, metals", "color forest, metals", "set sphere_scale, 0.45, metals",
            "set dash_color, gray40", "set dash_radius, 0.058", "set dash_gap, 0.35",
            "set dash_length, 0.25"]
@@ -419,7 +420,7 @@ def build_figure(pose, freq, title, out_png, md_freq=None):
                      fontsize=10.5, fontweight="bold", color="#1a1a1a", linespacing=1.4,
                      bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
                                edgecolor="#555555", linewidth=1.0, alpha=0.9))
-        axL.set_title("Representative active-site pose\n(substrate orange, ATP teal, metal green;\ngray dashes = contacts)",
+        axL.set_title("Representative active-site pose\n(substrate orange, ATP gray, metal green;\ngray dashes = contacts)",
                       fontsize=11, pad=4)
     else:
         axL.text(0.5, 0.5, "structural render unavailable", ha="center"); axL.axis("off")

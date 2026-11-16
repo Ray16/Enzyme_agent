@@ -43,7 +43,8 @@ STYLE = {
     "dash_color": "yellow", "background": "white",
     # high-quality render: larger frame + stronger antialiasing (reuse for every enzyme so panels match)
     "width": 1600, "height": 1200, "antialias": 2, "duration_ms": 80,
-    "near_attack_A": 4.0,   # forming distance below which the overlay turns green (reactive)
+    "near_attack_A": 4.0,     # forming distance below which the overlay turns green (reactive)
+    "near_angle_deg": 150.0,  # attack angle above which the overlay turns green (in-line)
 }
 
 
@@ -56,19 +57,39 @@ def stage_frames(a):
     ligs = " ".join([a.cofactor_resn, a.substrate_resn, a.metal_resn])
     sel = f"(protein and backbone) or (resname {ligs} and not name H*)"
     render = u.select_atoms(sel)
-    nuc = u.select_atoms(a.nuc); elec = u.select_atoms(a.elec)   # for the per-frame forming distance
+    nuc = u.select_atoms(a.nuc); elec = u.select_atoms(a.elec)   # forming distance + attack angle
+    # leaving atom for the attack angle = electrophile-bonded atom most ANTI to the nucleophile (the
+    # in-line displacement axis); determined once at frame 0 and held fixed across frames.
+    def _ang(p1, p2, p3):
+        v1 = p1 - p2; v2 = p3 - p2
+        c = float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-9))
+        return float(np.degrees(np.arccos(max(-1.0, min(1.0, c)))))
+    lg = None
+    if nuc.n_atoms and elec.n_atoms:
+        u.trajectory[0]; P = elec[0]; npos = nuc.center_of_geometry()
+        cand = [b for b in P.bonded_atoms if not (nuc.n_atoms == 1 and b.index == nuc[0].index)]
+        best = None
+        for b in cand:
+            an = _ang(npos, P.position, b.position)
+            if best is None or an > best[0]:
+                best = (an, b.index)
+        if best is not None:
+            lg = u.atoms[best[1]]
     out = Path(a.workdir) / "frames.pdb"
-    n = 0; dists = []
+    n = 0; dists = []; angles = []
     with mda.Writer(str(out), multiframe=True, n_atoms=render.n_atoms) as W:
         for i, ts in enumerate(u.trajectory):
             if i % a.stride:
                 continue
             align.alignto(u, ref, select="protein and name CA")
             W.write(render); n += 1
-            if nuc.n_atoms and elec.n_atoms:   # distance is rigid-align invariant
-                dists.append(float(np.linalg.norm(nuc.center_of_geometry() - elec.center_of_geometry())))
+            if nuc.n_atoms and elec.n_atoms:   # distance + angle are rigid-align invariant
+                dists.append(float(np.linalg.norm(nuc.center_of_geometry() - elec[0].position)))
+                if lg is not None:
+                    angles.append(_ang(nuc.center_of_geometry(), elec[0].position, lg.position))
     (Path(a.workdir) / "distances.json").write_text(json.dumps(dists))
-    print(f"frames: wrote {n} states ({render.n_atoms} atoms), {len(dists)} forming-distances -> {out}")
+    (Path(a.workdir) / "angles.json").write_text(json.dumps(angles))
+    print(f"frames: wrote {n} states ({render.n_atoms} atoms), {len(dists)} dist / {len(angles)} angle -> {out}")
 
 
 def stage_render(a):
@@ -111,8 +132,9 @@ def stage_assemble(a):
     pngs = sorted(glob.glob(str(Path(a.workdir) / "png" / "frame_*.png")))
     if not pngs:
         sys.exit("assemble: no PNG frames found")
-    dpath = Path(a.workdir) / "distances.json"
+    dpath = Path(a.workdir) / "distances.json"; apath = Path(a.workdir) / "angles.json"
     dists = json.loads(dpath.read_text()) if dpath.exists() else []
+    angles = json.loads(apath.read_text()) if apath.exists() else []
     # font: pull DejaVu Sans Bold from matplotlib (always present in the PIL env); fall back to default
     font = None
     if dists:
@@ -121,17 +143,26 @@ def stage_assemble(a):
             font = ImageFont.truetype(font_manager.findfont("DejaVu Sans:bold"), 44)
         except Exception:
             font = ImageFont.load_default()
+    GREEN, INK = (27, 120, 55), (26, 26, 26)
+
+    def _overlay(dr, x, y, txt, col):
+        b = dr.textbbox((x, y), txt, font=font)
+        dr.rectangle([b[0] - 10, b[1] - 8, b[2] + 10, b[3] + 8], fill=(255, 255, 255))
+        dr.text((x, y), txt, fill=col, font=font)
+        return b[3] - b[1]
+
     imgs = []
     for i, p in enumerate(pngs):
         im = Image.open(p).convert("RGB")
         if font is not None and i < len(dists):
+            dr = ImageDraw.Draw(im); y = 22
             d = dists[i]
-            txt = f"attack distance: {d:.1f} Å"
-            col = (27, 120, 55) if d < STYLE["near_attack_A"] else (26, 26, 26)   # green when reactive
-            dr = ImageDraw.Draw(im); x, y = 26, 22
-            b = dr.textbbox((x, y), txt, font=font)
-            dr.rectangle([b[0] - 10, b[1] - 8, b[2] + 10, b[3] + 8], fill=(255, 255, 255))
-            dr.text((x, y), txt, fill=col, font=font)
+            h = _overlay(dr, 26, y, f"attack distance: {d:.1f} Å",
+                         GREEN if d < STYLE["near_attack_A"] else INK)
+            if i < len(angles):   # second line: attack angle, green when in-line
+                ang = angles[i]
+                _overlay(dr, 26, y + h + 20, f"attack angle: {ang:.0f}°",
+                         GREEN if ang > STYLE["near_angle_deg"] else INK)
         imgs.append(im)
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     imgs[0].save(a.out, save_all=True, append_images=imgs[1:],
