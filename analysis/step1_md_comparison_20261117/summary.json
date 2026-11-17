@@ -1,0 +1,146 @@
+[
+  {
+    "candidate": "GlnA3",
+    "pose": 1,
+    "frames": 50,
+    "harmonic_distance_A": 3.7605093898726656,
+    "weighted_angle_deg": 130.03663931343186,
+    "fraction_distance_lt4": 0.94,
+    "fraction_distance_lt4_angle_gt150": 0.02
+  },
+  {
+    "candidate": "GlnA3",
+    "pose": 2,
+    "frames": 50,
+    "harmonic_distance_A": 3.652648501802486,
+    "weighted_angle_deg": 132.88370229480918,
+    "fraction_distance_lt4": 1.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "GlnA3",
+    "pose": 3,
+    "frames": 50,
+    "harmonic_distance_A": 3.762781341043295,
+    "weighted_angle_deg": 144.46293398765857,
+    "fraction_distance_lt4": 0.96,
+    "fraction_distance_lt4_angle_gt150": 0.22
+  },
+  {
+    "candidate": "BacD",
+    "pose": 1,
+    "frames": 50,
+    "harmonic_distance_A": 3.4910470648745773,
+    "weighted_angle_deg": 157.72622061594927,
+    "fraction_distance_lt4": 0.98,
+    "fraction_distance_lt4_angle_gt150": 0.8
+  },
+  {
+    "candidate": "BacD",
+    "pose": 2,
+    "frames": 50,
+    "harmonic_distance_A": 3.3581890919375463,
+    "weighted_angle_deg": 163.754030822959,
+    "fraction_distance_lt4": 1.0,
+    "fraction_distance_lt4_angle_gt150": 1.0
+  },
+  {
+    "candidate": "BacD",
+    "pose": 3,
+    "frames": 50,
+    "harmonic_distance_A": 4.088082688919205,
+    "weighted_angle_deg": 145.6047556484536,
+    "fraction_distance_lt4": 0.44,
+    "fraction_distance_lt4_angle_gt150": 0.1
+  },
+  {
+    "candidate": "AS9",
+    "pose": 1,
+    "frames": 50,
+    "harmonic_distance_A": 5.903442745734796,
+    "weighted_angle_deg": 125.47223212117187,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "PubC1",
+    "pose": 1,
+    "frames": 50,
+    "harmonic_distance_A": 6.123804105107437,
+    "weighted_angle_deg": 122.13198182751417,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "PubC1",
+    "pose": 2,
+    "frames": 50,
+    "harmonic_distance_A": 5.5008617527315975,
+    "weighted_angle_deg": 123.64081436187263,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "PubC1",
+    "pose": 3,
+    "frames": 50,
+    "harmonic_distance_A": 7.808645984134311,
+    "weighted_angle_deg": 149.44989933925905,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "PubC-Q0HWI9",
+    "pose": 1,
+    "frames": 50,
+    "harmonic_distance_A": 4.85196304195547,
+    "weighted_angle_deg": 150.69671090209536,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "PubC-Q0HWI9",
+    "pose": 2,
+    "frames": 50,
+    "harmonic_distance_A": 5.198465855192622,
+    "weighted_angle_deg": 152.44913695870255,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "PubC-Q0HWI9",
+    "pose": 3,
+    "frames": 50,
+    "harmonic_distance_A": 4.620280160429331,
+    "weighted_angle_deg": 154.07835908022963,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "AsbA",
+    "pose": 1,
+    "frames": 50,
+    "harmonic_distance_A": 5.868025964731371,
+    "weighted_angle_deg": 122.82485405330144,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "AsbA",
+    "pose": 2,
+    "frames": 50,
+    "harmonic_distance_A": 6.597240236770145,
+    "weighted_angle_deg": 112.63373467571193,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  },
+  {
+    "candidate": "AsbA",
+    "pose": 3,
+    "frames": 50,
+    "harmonic_distance_A": 5.449675065122044,
+    "weighted_angle_deg": 122.59627743310092,
+    "fraction_distance_lt4": 0.0,
+    "fraction_distance_lt4_angle_gt150": 0.0
+  }
+]
