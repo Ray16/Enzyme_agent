@@ -51,5 +51,11 @@
         65
       ]
     }
-  ]
+  ],
+  "code_sha256": {
+    "analysis/as9_matched_md_20261117/worker.py": "3410723d1b5f45e3766baba0483b3d98a9fa278fa2fbcbd90bf90831aac8aba4",
+    "structural_modeling_agent/barrier/md.py": "bee99427625d9776a17b9bf25929d1aa1d92751f12a8fc229cff2e44e9ead568",
+    "structural_modeling_agent/barrier/prepare.py": "8f0f56d57ea6b08f2689c19c4c6a1529bb76f4351356a28d32486f3901d5fcc4",
+    "structural_modeling_agent/barrier/specs/adenylation_adipate_cofold.json": "296b0da087fe165fa13c1ba7683f68b34cde84e1a860c02a7cd4702af1d5d7c1"
+  }
 }
