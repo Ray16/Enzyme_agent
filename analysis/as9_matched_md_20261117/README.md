@@ -7,3 +7,7 @@ Each pose receives standard preparation at pH 8 with the campaign ATP assets and
 Runtime output: `structural_modeling_agent/runs/as9_step1_multipose_md_20261117/`. The manifest records source hashes, host/GPU/CPU assignments. Each worker uses an atomic claim, one bounded attempt, physical-validation gate, shared GPU reservation, and contention monitoring that stops only its own process group. Existing partial outputs are preserved; they require explicit resume review. Runtime logs and preflight reports remain in the run directory.
 
 The standard preparation protonation audit is retained. A review flag is not evidence that the protonation model is validated; it must accompany downstream interpretation, as in the comparison campaign. Successful MD completion also requires scientific review.
+
+## Matched movies
+
+`render_movies.py` renders the three production trajectories into the existing multipose campaign's `movies` folder. Four PyMOL workers use disjoint CPU cores 60–63 on lambda1; the coordinator uses core 64. Movies are processed sequentially. Ten DCD snapshots cover production times 50–500 ps. The nucleophile is resolved from the same prepared coordinates and reaction specification as MD, and the angle uses the explicit O3A leaving atom. Every overlay is checked against the corresponding `geometry.jsonl` row before rendering. The prior single-pose benchmark is archived only after all replacements are verified.

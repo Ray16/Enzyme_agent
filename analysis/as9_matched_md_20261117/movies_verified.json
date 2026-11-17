@@ -1,0 +1,65 @@
+[
+  {
+    "file": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/glutarate_cadaverine_step1_multipose_md_20261117/movies/AS9_pose1_reactive_geometry.gif",
+    "sha256": "2a89fbc290029110653be04c3032d2f17b7e0b202adc3a6025b80a9d708b58c5",
+    "frames": 10,
+    "size": [
+      1600,
+      1200
+    ],
+    "times_ps": [
+      50,
+      100,
+      150,
+      200,
+      250,
+      300,
+      350,
+      400,
+      450,
+      500
+    ]
+  },
+  {
+    "file": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/glutarate_cadaverine_step1_multipose_md_20261117/movies/AS9_pose2_reactive_geometry.gif",
+    "sha256": "9e0ce3f139c855a66d09e811e27f06c2d27eb5f02d020ef15112785ad5656079",
+    "frames": 10,
+    "size": [
+      1600,
+      1200
+    ],
+    "times_ps": [
+      50,
+      100,
+      150,
+      200,
+      250,
+      300,
+      350,
+      400,
+      450,
+      500
+    ]
+  },
+  {
+    "file": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/glutarate_cadaverine_step1_multipose_md_20261117/movies/AS9_pose3_reactive_geometry.gif",
+    "sha256": "074e4d6dc9bd3f44551e8d50dfb2a8cc738c63936e3ff6f0ca4eebc28e51faee",
+    "frames": 10,
+    "size": [
+      1600,
+      1200
+    ],
+    "times_ps": [
+      50,
+      100,
+      150,
+      200,
+      250,
+      300,
+      350,
+      400,
+      450,
+      500
+    ]
+  }
+]
