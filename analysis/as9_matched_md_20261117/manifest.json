@@ -1,0 +1,55 @@
+{
+  "selection": "Three shortest O\u2013P\u03b1 distances among poses with O\u2013P\u03b1\u2013O3A angle >=120\u00b0, extending barrier.select_pose rule; not a candidate ranking metric",
+  "ensemble_poses": 50,
+  "setup": "WT AS9 + ATP(-4) + glutarate(-2) + 1 Mg; pH 8.0; standard prep; 12-6-4 Mg; HMR 3 amu; 4 fs",
+  "equilibration_ns": 0.5,
+  "production_ns": 0.5,
+  "seed": 17,
+  "geometry_interval_ps": 10,
+  "dcd_interval_ps": 50,
+  "git_revision": "b0c92a397dc667a565e50d8b8b3d6d72bbf2ff11",
+  "jobs": [
+    {
+      "label": "AS9_pose1",
+      "source": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/runs/rfd4_campaigns/as9_motif_m4_glutarate_partialdiff_20261109/wt_charged_control_20261109/ccdATP_outputs/boltz_results_WT_AS9_glutarate_ccdATP/predictions/WT_AS9_glutarate_ccdATP/WT_AS9_glutarate_ccdATP_model_16.pdb",
+      "source_sha256": "588cf12a01a6706f5a6e076df8fc2b88fd4d141b7d706bd6f3d64c51889bce4f",
+      "model": 16,
+      "distance_A": 4.744570897352046,
+      "angle_deg": 158.03624890100036,
+      "host": "lambda1",
+      "gpu": 3,
+      "cpus": [
+        60,
+        61
+      ]
+    },
+    {
+      "label": "AS9_pose2",
+      "source": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/runs/rfd4_campaigns/as9_motif_m4_glutarate_partialdiff_20261109/wt_charged_control_20261109/ccdATP_outputs/boltz_results_WT_AS9_glutarate_ccdATP/predictions/WT_AS9_glutarate_ccdATP/WT_AS9_glutarate_ccdATP_model_23.pdb",
+      "source_sha256": "24ce20b90200f1a38ed15f9deccfd3a6d98beaa4865483a17446119f2b1914f6",
+      "model": 23,
+      "distance_A": 4.8706265510712266,
+      "angle_deg": 160.70503902232682,
+      "host": "lambda1",
+      "gpu": 4,
+      "cpus": [
+        62,
+        63
+      ]
+    },
+    {
+      "label": "AS9_pose3",
+      "source": "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/enzyme_design_agent/runs/rfd4_campaigns/as9_motif_m4_glutarate_partialdiff_20261109/wt_charged_control_20261109/ccdATP_outputs/boltz_results_WT_AS9_glutarate_ccdATP/predictions/WT_AS9_glutarate_ccdATP/WT_AS9_glutarate_ccdATP_model_29.pdb",
+      "source_sha256": "7517de1c085dea0e4ec6d66001872b495f740755736adff6c9b52a12caae8d96",
+      "model": 29,
+      "distance_A": 4.986296521467612,
+      "angle_deg": 160.59038227156083,
+      "host": "lambda1",
+      "gpu": 6,
+      "cpus": [
+        64,
+        65
+      ]
+    }
+  ]
+}
