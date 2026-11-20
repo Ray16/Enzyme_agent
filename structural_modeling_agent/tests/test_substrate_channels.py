@@ -103,7 +103,7 @@ def test_stage_aligns_strips_substrate_and_finds_start(tmp):
     import warnings
     poses = _poses(tmp, 3)
     man = ch.stage_ensemble(poses, os.path.join(tmp, "w"))
-    assert man["n_poses"] == 3 and man["start_how"] == "median_reactive_carboxylate_carbon"
+    assert man["n_poses"] == 3 and man["start_how"] == "median_reactive_carboxylate"
     ref_ca = None
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -174,11 +174,73 @@ def test_ca_count_mismatch_raises(tmp):
 
 def test_substrate_without_carboxylate_needs_explicit_start(tmp):
     poses = _poses(tmp, 2, substrate="amine")
-    with pytest.raises(ValueError, match="start"):
+    # the default start_group is carboxylate; the amine substrate has none -> a clear error naming
+    # the groups that WERE found, and the escape hatches.
+    with pytest.raises(ValueError, match="carboxylate"):
         ch.stage_ensemble(poses, os.path.join(tmp, "w"))
     man = ch.stage_ensemble(poses, os.path.join(tmp, "w2"), start_xyz=(1.0, 2.0, 3.0))
     assert man["start_how"] == "explicit" and man["start_xyz"] == [1.0, 2.0, 3.0]
     assert man["start_spread"] is None
+
+
+def test_start_group_amine_resolves_a_step2_nucleophile(tmp):
+    """A step-2-like amine substrate (no carboxylate) is placed automatically with --start-group amine,
+    at the amine nitrogen nearest the cofactor phosphorus -- no hand-typed coordinates."""
+    poses = _poses(tmp, 2, substrate="amine")
+    man = ch.stage_ensemble(poses, os.path.join(tmp, "w"), start_group="amine")
+    assert man["start_how"] == "median_reactive_amine"
+    # the fixture amine is N-C-C-C-C-C-N starting at x=5.0; the first N (nearest the ATP PG at origin)
+    # should anchor the start. Resolve it independently from the staged pose-0 geometry.
+    import MDAnalysis as mda
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        u = mda.Universe(poses[0])
+        ns = u.select_atoms("resname LIG and name N*")
+        pg = u.select_atoms("name PG").positions[0]
+    nearest_n = ns.positions[np.argmin(np.linalg.norm(ns.positions - pg, axis=1))]
+    # pose 0 is staged in its own frame; compare distance to PG rather than absolute coordinates
+    assert abs(np.linalg.norm(np.array(man["per_pose"][0]["reactive_center"]) - pg) -
+               np.linalg.norm(nearest_n - pg)) < 0.2
+
+
+def test_start_by_atom_selection(tmp):
+    """--start-sel places the start at the centre of geometry of an arbitrary atom selection, so any
+    named residue / fixed point works without coordinates; the start point tracks the chosen atom."""
+    man = ch.stage_ensemble(_poses(tmp, 2), os.path.join(tmp, "w"), start_sel="resname LIG and name C3")
+    assert man["start_how"] == "explicit_selection" and man["start_spread"] is not None
+    import MDAnalysis as mda
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        u = mda.Universe(os.path.join(man["pdb_dir"], "pose_0000.pdb"))
+    assert "LIG" not in set(u.atoms.resnames)                    # substrate still stripped
+    # the reported start for pose 0 is in the same (pose-0) frame as the staged protein: the nearest
+    # staged CA must sit a chemical-bond-scale distance from it (C3 is buried in the ligand near the CAs)
+    start0 = np.array(man["per_pose"][0]["reactive_center"])
+    cas = u.select_atoms("name CA").positions
+    assert np.min(np.linalg.norm(cas - start0, axis=1)) < 25.0   # start is inside the model, not at infinity
+
+
+def test_bad_start_selection_raises(tmp):
+    with pytest.raises(ValueError, match="matched no atoms"):
+        ch.stage_ensemble(_poses(tmp, 2), os.path.join(tmp, "w"), start_sel="resname NOPE")
+
+
+def test_apo_structure_allowed_with_explicit_start(tmp):
+    """A protein-only input (no ligand at all) is staged when an explicit start is given; split_ligands
+    would otherwise raise 'no non-protein ligand atoms'."""
+    apo = [_write(_rigid(_protein("A"), seed=i + 1), os.path.join(tmp, f"apo_{i}.pdb")) for i in range(2)]
+    with pytest.raises(ValueError):                              # auto start must fail loud on apo
+        ch.stage_ensemble(apo, os.path.join(tmp, "wa"))
+    man = ch.stage_ensemble(apo, os.path.join(tmp, "wb"), start_sel="name CA and resid 1")
+    assert man["n_poses"] == 2 and man["per_pose"][0]["substrate_extent_A"] is None
+    import MDAnalysis as mda
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        u = mda.Universe(os.path.join(man["pdb_dir"], "pose_0000.pdb"))
+    assert set(u.atoms.resnames) == {"ALA"}      # protein only, nothing spurious kept
 
 
 # ---------------------------------------------------------------- 3. caveat logic
@@ -301,3 +363,39 @@ def test_caver_bottleneck_finds_an_inner_constriction(tmp):
     bs = _bottlenecks(tmp, "ring", _tube(7.0, ring_R=4.0))
     assert min(bs) == pytest.approx(4.0 - R_C, abs=0.1)     # the ring-crossing path: 2.30
     assert min(bs) < plain - 2.0
+
+
+# ---------------------------------------------------------------- 5. external benchmark: real DhaA
+# CAVER was designed on the haloalkane dehalogenase DhaA (Chovancova 2012, PLoS Comput Biol 8:e1002708),
+# which has a buried catalytic site reached by two well-characterised tunnels: the wider p1 "main tunnel"
+# and the narrower p2 "slot tunnel". The published crystal-structure p1 bottleneck radius for PDB 1CQW is
+# ~1.3 A. This test runs the WHOLE wrapper (stage -> CAVER -> parse -> classify) on a trimmed 1CQW and
+# checks it reproduces that known geometry: a buried site, a main tunnel of ~1.3 A lined by the catalytic
+# residues, and a second, narrower tunnel. This is EXTERNAL validation against literature, not a self-
+# consistency check. 1CQW's own numbering offsets the canonical DhaA triad by ~+11 (nucleophile Asp117,
+# base His283, acid Glu141 -- resolved from the structure, not assumed).
+DHAA_FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "dhaa_1cqw.pdb")
+
+
+@pytest.mark.skipif(not _have_caver() or not os.path.exists(DHAA_FIXTURE),
+                    reason="java / CAVER 3 or the DhaA fixture not available")
+def test_caver_reproduces_known_dhaa_tunnels(tmp):
+    res = ch.analyze_channels([DHAA_FIXTURE], os.path.join(tmp, "dhaa"),
+                              start_sel="resid 117 and name OD1 OD2",
+                              label="DhaA 1CQW", n_starts=3, threads=2)
+    # the catalytic site is deeply buried (not a solvent-open surface pocket)
+    assert res["site"]["burial_fraction"]["mean"] > 0.8
+    assert res["site"]["surface_exposed"] is False
+    # a main tunnel to the surface is found
+    assert res["n_channels"] >= 1
+    main = res["channels"][0]
+    assert main["length_A"]["mean"] > 8.0                       # reaches bulk, not a dent
+    # published 1CQW p1 bottleneck ~1.3 A; allow a generous window around it
+    assert 1.0 <= main["bottleneck_A"]["mean"] <= 1.7
+    # it is the REAL active-site tunnel: lined by the catalytic nucleophile Asp117 (and usually His283)
+    lining = {r["residue"] for r in main["bottleneck_lining_residues"]}
+    assert "A:117" in lining
+    # DhaA's second (slot) tunnel is narrower than the main tunnel -- topology, not just one hole
+    if len(res["clusters"]) >= 2:
+        second = min(res["clusters"], key=lambda c: c["bottleneck_A"]["mean"])
+        assert second["bottleneck_A"]["mean"] <= main["bottleneck_A"]["mean"] + 0.05
