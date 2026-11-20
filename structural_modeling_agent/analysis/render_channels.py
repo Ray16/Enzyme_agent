@@ -71,13 +71,13 @@ def _render_pose(run_dir, channels, out_png, draw_residues):
     if not hits:
         raise FileNotFoundError(f"no representative pose_*.pdb under {data} (was the run staged here?)")
     pose = hits[0]
+    # protein = a translucent CARTOON only (no protein surface: a surface would occlude the internal
+    # tunnels and wash them out). The tunnels are the subject and must read clearly through the ribbon.
     pml = [f"load {pose}, prot", "hide everything", "bg_color white",
            "set ray_opaque_background, 0", "set antialias, 2", "set ray_shadows, 0",
-           "set ambient, 0.4", "set specular, 0.2", "set cartoon_transparency, 0.55",
-           "show cartoon, prot", "color gray90, prot",
-           # a faint surface gives the sense of a solid body the tunnel pierces
-           "set transparency, 0.78", "set surface_quality, 1", "set solvent_radius, 1.4",
-           "show surface, prot", "set surface_color, gray80, prot",
+           "set ambient, 0.45", "set specular, 0.25", "set two_sided_lighting, 1",
+           "set cartoon_transparency, 0.6", "set ray_interior_color, grey70",
+           "show cartoon, prot", "color gray80, prot",
            "set cartoon_side_chain_helper, 1", "set stick_radius, 0.2"]
     # catalytic / bottleneck-lining residues as sticks (from the main channel)
     for rid in draw_residues:
@@ -90,8 +90,11 @@ def _render_pose(run_dir, channels, out_png, draw_residues):
             continue
         obj = f"t{ci}"
         tunnel_objs.append(obj)
+        # a VDW surface (solvent_radius 0) over the radius-sized spheres merges the "string of beads"
+        # into ONE smooth tube whose thickness is the local tunnel radius
         pml += [f"load {tp}, {obj}", f"hide everything, {obj}", f"alter {obj}, vdw=b", "rebuild",
-                f"show spheres, {obj}"]
+                f"set solvent_radius, 0, {obj}", f"set surface_quality, 2, {obj}",
+                f"show surface, {obj}"]
         cols = _sphere_colors(_radii(tp))
         for ai, (r, g, b) in enumerate(cols, start=1):
             pml += [f"set_color c_{obj}_{ai}, [{r:.3f},{g:.3f},{b:.3f}]",
