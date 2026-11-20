@@ -130,34 +130,24 @@ def _composite(render_png, res, out_png, title):
 
     chans = res.get("channels", [])
     main = chans[0] if chans else None
-    # radius colour-bar (matches the sphere colours exactly)
-    cax = fig.add_axes([0.06, 0.08, 0.025, 0.34])
+    # radius colour-bar (matches the sphere colours exactly) -- the only legend on the figure
+    cax = fig.add_axes([0.055, 0.12, 0.022, 0.30])
     sm = cm.ScalarMappable(mcolors.Normalize(RADIUS_VMIN, RADIUS_VMAX), CMAP)
     cb = fig.colorbar(sm, cax=cax)
-    cb.set_label("tunnel radius (Å)", fontsize=9)
+    cb.set_label("tunnel radius (Å)", fontsize=10)
     cb.ax.tick_params(labelsize=8)
-    cax.text(0.5, -0.11, "narrow = bottleneck", transform=cax.transAxes, ha="center", va="top",
-             fontsize=7.5, color="#b2182b")
-    cax.text(0.5, 1.04, "wide = open", transform=cax.transAxes, ha="center", va="bottom",
-             fontsize=7.5, color="#2166ac")
-    # measurement box (house style: bold, bottom-right)
-    lines = [f"channels: {res.get('n_channels', 0)} of {res.get('n_clusters', 0)} clusters",
-             f"burial: {res['site']['burial_fraction']['mean']:.2f}"
-             f"   surface-exposed: {res['site']['surface_exposed']}"]
+    # one compact line of numbers, bottom-right
     if main:
-        st = main.get("stability") or {}
-        sf = "" if st.get("fraction") is None else f"   stable {st['matched']}/{st['of']}"
-        lines += [f"main tunnel: bottleneck {main['bottleneck_A']['mean']:.2f} Å"
-                  f"   length {main['length_A']['mean']:.1f} Å{sf}"]
-    txt = "\n".join(lines)
-    ax.text(0.985, 0.03, txt, transform=ax.transAxes, ha="right", va="bottom", fontsize=10.5,
-            family="DejaVu Sans Mono", weight="bold", color="#222222",
-            bbox=dict(boxstyle="round,pad=0.5", fc="white", ec="#444444", lw=1.3, alpha=0.92))
+        n = res.get("n_channels", len(chans))
+        txt = (f"{n} channel{'s' if n != 1 else ''}   ·   bottleneck "
+               f"{main['bottleneck_A']['mean']:.2f} Å   ·   length {main['length_A']['mean']:.1f} Å")
+        ax.text(0.985, 0.03, txt, transform=ax.transAxes, ha="right", va="bottom", fontsize=11,
+                family="DejaVu Sans Mono", weight="bold", color="#222222",
+                bbox=dict(boxstyle="round,pad=0.45", fc="white", ec="#555555", lw=1.2, alpha=0.9))
     if title:
-        ax.text(0.5, 0.98, title, transform=ax.transAxes, ha="center", va="top", fontsize=16,
-                weight="bold", color="#222222")
-    ax.text(0.5, 0.945, "substrate access channels (CAVER 3)  ·  descriptive  ·  static lower bound",
-            transform=ax.transAxes, ha="center", va="top", fontsize=9, color="#777777")
+        ax.text(0.5, 0.985, title, transform=ax.transAxes, ha="center", va="top", fontsize=16,
+                weight="bold", color="#1a1a1a",
+                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="none", alpha=0.85))
     fig.savefig(out_png, dpi=200)
     plt.close(fig)
 
