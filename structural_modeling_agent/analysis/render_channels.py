@@ -83,7 +83,7 @@ def _split_ligand_pdbs(holo, tmpdir):
     return out
 
 
-def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=True):
+def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=True, publication=False):
     """PyMOL render. cutaway=True: a SOLID protein surface sliced open (front clipped) so you look into
     the active site, with the SUBSTRATE (from the holo cofold pose, same frame) shown in the pocket and
     the tunnels as opaque radius-coloured tubes. cutaway=False: translucent cartoon + see-through tubes.
@@ -96,7 +96,11 @@ def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=T
     if not hits:
         raise FileNotFoundError(f"no representative pose_*.pdb under {data} (was the run staged here?)")
 
-    pml = ["bg_color white", "set ray_opaque_background, 0", "set antialias, 2",
+    # FAST default (measured on a GlnA3 dimer, 5 tunnels: >8 min -> 38 s): no AA/shadows, coarse tunnel
+    # surfaces (the tunnel-surface build was the dominant cost).
+    # publication=True restores the slow high-quality settings.
+    pml = ["bg_color white", "set ray_opaque_background, 0", f"set antialias, {2 if publication else 1}",
+           "set max_threads, 8",   # courtesy: ray is multithreaded; cap so parallel renders don't oversubscribe
            "set two_sided_lighting, 1", "set specular, 0.3", "set field_of_view, 20"]
     lig = {}
     use_holo = bool(holo and os.path.exists(holo))
@@ -115,15 +119,15 @@ def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=T
                 "set cartoon_transparency, 0.55", "set ray_interior_color, grey80",
                 f"show cartoon, ({prot})", "color gray70, sysm", "set cartoon_side_chain_helper, 1"]
     # LIGANDS as separate objects, each a distinct representation/colour:
-    if "substrate" in lig:   # SUBSTRATE: magenta ball-and-stick (the acyl-acceptor)
+    if "substrate" in lig:   # SUBSTRATE: gray ball-and-stick (the acyl-acceptor)
         pml += [f"load {lig['substrate']}, substrate", "hide everything, substrate",
                 "show sticks, substrate", "set stick_radius, 0.28, substrate",
                 "show spheres, substrate", "set sphere_scale, 0.26, substrate",
-                "color magenta, substrate and elem C", "util.cnc substrate"]
-    if "cofactor" in lig:    # COFACTOR (ATP): orange sticks
+                "color gray40, substrate and elem C", "util.cnc substrate"]
+    if "cofactor" in lig:    # COFACTOR (ATP): thin gray sticks
         pml += [f"load {lig['cofactor']}, cofactor", "hide everything, cofactor",
                 "show sticks, cofactor", "set stick_radius, 0.18, cofactor",
-                "color orange, cofactor and elem C", "util.cnc cofactor"]
+                "color gray40, cofactor and elem C", "util.cnc cofactor"]
     if "metal" in lig:       # METAL (Mg): a few small green spheres -- NOT the ligand
         pml += [f"load {lig['metal']}, metal", "hide everything, metal",
                 "show spheres, metal", "color forest, metal", "set sphere_scale, 0.35, metal"]
@@ -137,7 +141,7 @@ def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=T
         obj = f"t{ci}"
         tunnel_objs.append(obj)
         pml += [f"load {tp}, {obj}", f"hide everything, {obj}", f"alter {obj}, vdw=b", "rebuild",
-                f"set solvent_radius, 0, {obj}", f"set surface_quality, 2, {obj}",
+                f"set solvent_radius, 0, {obj}", f"set surface_quality, {2 if publication else 1}, {obj}",
                 f"set transparency, {ttransp}, {obj}", f"show surface, {obj}"]
         for ai, (r, g, b) in enumerate(_sphere_colors(_radii(tp)), 1):
             pml += [f"set_color c_{obj}_{ai}, [{r:.3f},{g:.3f},{b:.3f}]",
@@ -155,16 +159,24 @@ def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=T
     else:
         # frame the tunnels + ligands with enough surrounding cartoon for context (readable, not a closeup
         # nor a tiny whole-dimer); clip generously so no cartoon is sliced away
-        pml += [f"orient ({tun} or ({site}))", "turn y, 12", f"zoom ({tun} or ({site})), 13",
+        # FULL ENZYME in view: orient on the tunnels + site (so the site faces the viewer), then frame the
+        # whole protein (all chains) so you see where the tunnels sit in the enzyme
+        pml += [f"orient ({tun} or ({site}))", "turn y, 12", f"zoom ({prot}), 2",
                 "clip slab, 1000"]
+    if not publication:
+        pml += ["set ray_shadows, 0"]
     pml += [f"png {out_png}, width={IMG_W}, height={IMG_H}, dpi=200, ray=1", "quit"]
     f = tempfile.NamedTemporaryFile("w", suffix=".pml", delete=False)
     f.write("\n".join(pml))
     f.close()
-    subprocess.run([PYMOL, "-cq", f.name], capture_output=True, text=True, timeout=600)
-    os.unlink(f.name)
+    try:
+        r = subprocess.run([PYMOL, "-cq", f.name], capture_output=True, text=True, timeout=600)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("pymol timed out after 600 s (try the fast default, not --publication)")
+    finally:
+        os.unlink(f.name)
     if not os.path.exists(out_png):
-        raise RuntimeError("pymol produced no image (see pymol output)")
+        raise RuntimeError(f"pymol produced no image:\n{((r.stdout or '') + (r.stderr or ''))[-1500:]}")
     return out_png
 
 
@@ -205,7 +217,8 @@ def _composite(render_png, res, out_png, title):
     plt.close(fig)
 
 
-def render(run_dir, out_png, title=None, all_clusters=False, max_residues=0, cutaway=False, holo=None):
+def render(run_dir, out_png, title=None, all_clusters=False, max_residues=0, cutaway=False, holo=None,
+           publication=False):
     """Default: a cutaway (solid protein sliced open) with the SUBSTRATE shown in the active site and the
     tunnels as opaque radius-coloured tubes. The substrate is read back from the original cofold pose
     (channels.json provenance, or --holo) because the channel run strips it. cutaway=False gives the
@@ -226,7 +239,7 @@ def render(run_dir, out_png, title=None, all_clusters=False, max_residues=0, cut
             draw.append(rid)
     tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False); tmp.close()
     try:
-        _render_pose(run_dir, channels, tmp.name, draw, holo=holo, cutaway=cutaway)
+        _render_pose(run_dir, channels, tmp.name, draw, holo=holo, cutaway=cutaway, publication=publication)
         _composite(tmp.name, res, out_png, title)
     finally:
         if os.path.exists(tmp.name):
@@ -245,9 +258,11 @@ def _cli(argv=None):
     ap.add_argument("--cutaway", action="store_true",
                     help="sliced-open solid surface instead of the default coloured cartoon (rough)")
     ap.add_argument("--holo", help="pose with the substrate to overlay (default: from channels.json provenance)")
+    ap.add_argument("--publication", action="store_true",
+                    help="slow high-quality ray trace (antialias 2, shadows, fine tunnel surfaces, full cartoon)")
     a = ap.parse_args(argv)
     print("wrote", render(a.run_dir, a.out, a.title, a.all_clusters, max_residues=a.show_residues,
-                          cutaway=a.cutaway, holo=a.holo))
+                          cutaway=a.cutaway, holo=a.holo, publication=a.publication))
     return 0
 
 
