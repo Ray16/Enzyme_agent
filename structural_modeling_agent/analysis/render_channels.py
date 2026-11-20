@@ -79,10 +79,11 @@ def _render_pose(run_dir, channels, out_png, draw_residues):
            "set cartoon_transparency, 0.6", "set ray_interior_color, grey70",
            "show cartoon, prot", "color gray80, prot",
            "set cartoon_side_chain_helper, 1", "set stick_radius, 0.2"]
-    # catalytic / bottleneck-lining residues as sticks (from the main channel)
+    # catalytic / bottleneck-lining residues as sticks (the active site) -- prominent so they read
+    # against the opaque tunnels
     for rid in draw_residues:
         pml += [f"select r{rid}, (prot and resi {rid} and not name C+N+O)", f"show sticks, r{rid}",
-                f"color gray40, r{rid} and elem C", f"util.cnc r{rid}"]
+                f"set stick_radius, 0.3, r{rid}", f"color gray25, r{rid} and elem C", f"util.cnc r{rid}"]
     tunnel_objs = []
     for ci, ch in enumerate(channels):
         tp = _tunnel_pdb(data, ch["cluster"])
@@ -94,16 +95,16 @@ def _render_pose(run_dir, channels, out_png, draw_residues):
         # into ONE smooth tube whose thickness is the local tunnel radius
         pml += [f"load {tp}, {obj}", f"hide everything, {obj}", f"alter {obj}, vdw=b", "rebuild",
                 f"set solvent_radius, 0, {obj}", f"set surface_quality, 2, {obj}",
-                f"show surface, {obj}"]
+                f"set transparency, 0.2, {obj}", f"show surface, {obj}"]   # ~20% see-through: active site shows through
         cols = _sphere_colors(_radii(tp))
         for ai, (r, g, b) in enumerate(cols, start=1):
             pml += [f"set_color c_{obj}_{ai}, [{r:.3f},{g:.3f},{b:.3f}]",
                     f"color c_{obj}_{ai}, {obj} and id {ai}"]
-    sel = "prot and (" + " or ".join(f"resi {r}" for r in draw_residues) + ")" if draw_residues else "prot"
-    pml += ["set field_of_view, 25",
-            f"orient ({' or '.join(tunnel_objs)})" if tunnel_objs else "orient prot",
-            "turn y, 10", "turn x, -8", "zoom (" + " or ".join(tunnel_objs + ['prot']) + "), -3"
-            if tunnel_objs else "zoom prot"]
+    # frame the tunnel bundle + active site (not the whole protein) so the site reads large
+    focus = " or ".join(tunnel_objs) if tunnel_objs else "prot"
+    pml += ["set field_of_view, 20",
+            f"orient ({focus})", "turn y, 10", "turn x, -8",
+            f"zoom ({focus}), 7"]
     pml += [f"png {out_png}, width={IMG_W}, height={IMG_H}, dpi=200, ray=1", "quit"]
     f = tempfile.NamedTemporaryFile("w", suffix=".pml", delete=False)
     f.write("\n".join(pml))
@@ -152,7 +153,10 @@ def _composite(render_png, res, out_png, title):
     plt.close(fig)
 
 
-def render(run_dir, out_png, title=None, all_clusters=False, max_residues=6):
+def render(run_dir, out_png, title=None, all_clusters=False, max_residues=0):
+    """Protein cartoon + tunnels only, by default. max_residues>0 overlays that many bottleneck-lining
+    residues as sticks (off by default -- keep the figure to the protein + channels unless the sticks
+    are genuinely needed)."""
     res = json.load(open(os.path.join(run_dir, "channels.json")))
     channels = res.get("clusters", []) if all_clusters else res.get("channels", [])
     if not channels:
@@ -180,8 +184,10 @@ def _cli(argv=None):
     ap.add_argument("--out", required=True)
     ap.add_argument("--title")
     ap.add_argument("--all-clusters", action="store_true", help="draw every cluster, not just channels")
+    ap.add_argument("--show-residues", type=int, default=0, metavar="N",
+                    help="overlay N bottleneck-lining residues as sticks (default 0 = none)")
     a = ap.parse_args(argv)
-    print("wrote", render(a.run_dir, a.out, a.title, a.all_clusters))
+    print("wrote", render(a.run_dir, a.out, a.title, a.all_clusters, max_residues=a.show_residues))
     return 0
 
 
