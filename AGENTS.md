@@ -20,3 +20,16 @@ native-only models cannot substitute for the requested non-native substrates.
 Keep source gathering, provisional hypotheses, structural observations and
 experimentally demonstrated activity distinct. Never seed discovery with
 historical candidate answers.
+
+## Default protein-structure plot style
+Every protein/active-site structure figure uses the house scheme from
+`structural_modeling_agent/analysis/render_contacts.py::render_structure` unless the
+user asks otherwise: white background; gray90 cartoon at `cartoon_transparency 0.9`
+(no `transparency_mode`, `backface_cull`, `ray_interior_color` or `ray_trace_mode 1`);
+ligand (substrate and ATP) carbons gray40 with element-coloured heteroatoms; forest Mg
+spheres (`sphere_scale 0.45`); thin dashes (radius 0.058, gap 0.35, length 0.25), blue
+`[0.12,0.31,0.85]` for the attack axis and gray40 otherwise; orient/zoom on the site; no
+baked-in PyMOL text. Put measurements in a bold, bottom-right white rounded box and labels
+in matplotlib. References: `structural_modeling_agent/runs/glutarate_cadaverine_correct_protonation_panel/analysis/contact_frequency/acsA_Q5CD72/acsA_Q5CD72_contact_frequency.png`
+and `structural_modeling_agent/runs/glutarate_cadaverine_glna2_dimer_20261117/analysis_email/render_failure_mode.py`.
+Exception: anchor-grid design figures keep their orange-substrate/teal-ATP scheme.
