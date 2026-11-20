@@ -217,7 +217,8 @@ def _pose_start(u, p, start_xyz, start_sel, start_group, reaction_center_sel,
 
 def stage_ensemble(pose_paths, workdir, start_xyz=None, start_sel=None, start_group="carboxylate",
                    reaction_center_sel=None, substrate_resnames=None, cofactor_resnames=None,
-                   hetero_sel=None, probe_radius=DEFAULT_PROBE_RADIUS):
+                   hetero_sel=None, probe_radius=DEFAULT_PROBE_RADIUS,
+                   keep_cofactor=True, keep_metals=True):
     """Align poses, strip substrate, write one PDB per pose for CAVER. Returns a manifest dict.
 
     Start point (priority): `start_xyz` (explicit coordinates) > `start_sel` (an MDAnalysis selection;
@@ -272,7 +273,14 @@ def stage_ensemble(pose_paths, workdir, start_xyz=None, start_sel=None, start_gr
                                      substrate_resnames, cofactor_resnames, hetero_sel)
                 if center is not None:
                     starts.append(center)
-                keep = u.select_atoms("protein") + cof + metals   # substrate STRIPPED
+                # substrate is ALWAYS stripped (its path is what we trace); cofactor + metals are kept
+                # as obstacles by default (tunnels route around bound ATP*Mg), or stripped for the
+                # bare-pocket topology
+                keep = u.select_atoms("protein")
+                if keep_cofactor:
+                    keep = keep + cof
+                if keep_metals:
+                    keep = keep + metals
                 keep.write(os.path.join(pdb_dir, f"pose_{i:04d}.pdb"))
                 obstacles.append((keep.positions.copy(), _radii_for(_elements(keep))))
                 prot = u.select_atoms("protein")
@@ -551,7 +559,8 @@ def analyze_channels(pose_paths, out_dir, start_xyz=None, probe_radius=DEFAULT_P
                      n_starts=DEFAULT_N_STARTS, start_radius=DEFAULT_START_RADIUS,
                      min_freq=DEFAULT_MIN_FREQ, margin=DEFAULT_MARGIN, start_sel=None,
                      start_group="carboxylate", reaction_center_sel=None, substrate_resnames=None,
-                     cofactor_resnames=None, hetero_sel=None, stability_poses=DEFAULT_STABILITY_POSES):
+                     cofactor_resnames=None, hetero_sel=None, stability_poses=DEFAULT_STABILITY_POSES,
+                     keep_cofactor=True, keep_metals=True):
     """Stage -> CAVER (primary + perturbed starts) -> parse -> classify -> stability ->
     out_dir/channels.json. n_starts=1 disables the start-point sensitivity runs. The primary run uses
     ALL poses (full statistics); each perturbed start-sensitivity run uses only `stability_poses` of
@@ -562,7 +571,8 @@ def analyze_channels(pose_paths, out_dir, start_xyz=None, probe_radius=DEFAULT_P
     man = stage_ensemble(pose_paths, out_dir, start_xyz=start_xyz, start_sel=start_sel,
                          start_group=start_group, reaction_center_sel=reaction_center_sel,
                          substrate_resnames=substrate_resnames, cofactor_resnames=cofactor_resnames,
-                         hetero_sel=hetero_sel, probe_radius=probe_radius)
+                         hetero_sel=hetero_sel, probe_radius=probe_radius,
+                         keep_cofactor=keep_cofactor, keep_metals=keep_metals)
     prot_r = protection_radius(caver_home)
     start = man["start_xyz"]
 
@@ -612,7 +622,10 @@ def analyze_channels(pose_paths, out_dir, start_xyz=None, probe_radius=DEFAULT_P
         "site": {"burial_fraction": man["burial"], "surface_exposed": exposed,
                  "protection_radius_A": prot_r},
         "substrate_extent_A_median": round(st.median(ext), 2) if ext else None,
-        "obstacles": "protein (all chains) + nucleotide cofactor + metals; substrate stripped",
+        "obstacles": "protein (all chains)"
+        + (" + nucleotide cofactor" if keep_cofactor else "")
+        + (" + metals" if keep_metals else "")
+        + "; substrate stripped" + ("" if (keep_cofactor and keep_metals) else " (bare-pocket: ligands stripped)"),
         "filters": {"min_frequency": min_freq, "min_length_A": prot_r,
                     "min_bottleneck_A": round(probe_radius + margin, 3),
                     "exit_match_tolerance_A": EXIT_MATCH_TOL},
@@ -672,6 +685,10 @@ def _cli(argv=None):
                    "always uses all poses; this only shrinks the cheap sensitivity checks")
     r.add_argument("--start-radius", type=float, default=DEFAULT_START_RADIUS)
     r.add_argument("--min-freq", type=float, default=DEFAULT_MIN_FREQ)
+    r.add_argument("--strip-cofactor", action="store_true", help="also strip the cofactor (ATP/ADP/...) obstacle")
+    r.add_argument("--strip-metals", action="store_true", help="also strip the metal (Mg/...) obstacle")
+    r.add_argument("--strip-all-ligands", action="store_true",
+                   help="bare-pocket: strip substrate + cofactor + metals (obstacles = protein only)")
     r.add_argument("--label")
     p = sub.add_parser("parse", help="re-parse an existing CAVER output dir (no JVM)")
     p.add_argument("--caver-out", required=True)
@@ -689,7 +706,9 @@ def _cli(argv=None):
                            reaction_center_sel=a.reaction_center_sel,
                            substrate_resnames=a.substrate_resnames,
                            cofactor_resnames=a.cofactor_resnames, hetero_sel=a.hetero_sel,
-                           stability_poses=a.stability_poses)
+                           stability_poses=a.stability_poses,
+                           keep_cofactor=not (a.strip_cofactor or a.strip_all_ligands),
+                           keep_metals=not (a.strip_metals or a.strip_all_ligands))
     b = res["site"]["burial_fraction"]
     print(f"{res['label'] or ''} n_poses={res['n_poses']} chains={res['n_protein_chains']} "
           f"start={res['start']['xyz']} burial={b['mean']:.2f} surface_exposed={res['site']['surface_exposed']} "

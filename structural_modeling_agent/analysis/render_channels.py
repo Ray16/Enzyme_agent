@@ -58,53 +58,105 @@ def _sphere_colors(radii):
     return [tuple(sm.to_rgba(r)[:3]) for r in radii]
 
 
-def _render_pose(run_dir, channels, out_png, draw_residues):
-    """PyMOL: translucent protein body + catalytic/lining sticks + tunnels coloured by radius.
-    Returns the path to the ray-traced RGBA png (transparent background)."""
+def _split_ligand_pdbs(holo, tmpdir):
+    """Write the substrate / cofactor / metal atom groups (from substrate_contacts.split_ligands) to
+    SEPARATE PDBs so each can be coloured distinctly. Selecting by resname does NOT work: Boltz names
+    every ligand 'LIG' (substrate, ATP and Mg share the resname, differing only by chain), so a resname
+    selection grabs all three at once. Returns {name: pdb_path} for the non-empty groups, in the holo
+    frame (= the tunnel frame)."""
+    import warnings
+    from . import substrate_channels as _sch, substrate_contacts as _sc
+    import MDAnalysis as mda
+    out = {}
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            u = mda.Universe(_sch._to_pdb(holo, tmpdir))
+            cof, metals, sub = _sc.split_ligands(u)
+        except (ValueError, Exception):   # noqa: BLE001 -- ligand overlay is best-effort
+            return out
+        for name, ag in (("substrate", sub), ("cofactor", cof), ("metal", metals)):
+            if len(ag):
+                p = os.path.join(tmpdir, f"lig_{name}.pdb")
+                ag.write(p)
+                out[name] = p
+    return out
+
+
+def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=True):
+    """PyMOL render. cutaway=True: a SOLID protein surface sliced open (front clipped) so you look into
+    the active site, with the SUBSTRATE (from the holo cofold pose, same frame) shown in the pocket and
+    the tunnels as opaque radius-coloured tubes. cutaway=False: translucent cartoon + see-through tubes.
+    Returns the ray-traced png path. Substrate overlay needs `holo` (an original pose with the ligand;
+    the channel run strips it, so it is read back from channels.json provenance)."""
     data = os.path.join(run_dir, "caver_out", "data")
-    # CAVER writes ONE representative snapshot to data/ (its name varies: pose_0000, pose_0025, ...);
-    # it is in the same frame as the tunnels, so prefer it over the staged inputs.
     import glob
-    hits = sorted(glob.glob(os.path.join(data, "pose_*.pdb")))
-    if not hits:
-        hits = sorted(glob.glob(os.path.join(run_dir, "pdb", "pose_*.pdb")))
+    hits = sorted(glob.glob(os.path.join(data, "pose_*.pdb"))) or \
+        sorted(glob.glob(os.path.join(run_dir, "pdb", "pose_*.pdb")))
     if not hits:
         raise FileNotFoundError(f"no representative pose_*.pdb under {data} (was the run staged here?)")
-    pose = hits[0]
-    # protein = a translucent CARTOON only (no protein surface: a surface would occlude the internal
-    # tunnels and wash them out). The tunnels are the subject and must read clearly through the ribbon.
-    pml = [f"load {pose}, prot", "hide everything", "bg_color white",
-           "set ray_opaque_background, 0", "set antialias, 2", "set ray_shadows, 0",
-           "set ambient, 0.45", "set specular, 0.25", "set two_sided_lighting, 1",
-           "set cartoon_transparency, 0.6", "set ray_interior_color, grey70",
-           "show cartoon, prot", "color gray80, prot",
-           "set cartoon_side_chain_helper, 1", "set stick_radius, 0.2"]
-    # catalytic / bottleneck-lining residues as sticks (the active site) -- prominent so they read
-    # against the opaque tunnels
-    for rid in draw_residues:
-        pml += [f"select r{rid}, (prot and resi {rid} and not name C+N+O)", f"show sticks, r{rid}",
-                f"set stick_radius, 0.3, r{rid}", f"color gray25, r{rid} and elem C", f"util.cnc r{rid}"]
+
+    pml = ["bg_color white", "set ray_opaque_background, 0", "set antialias, 2",
+           "set two_sided_lighting, 1", "set specular, 0.3", "set field_of_view, 20"]
+    lig = {}
+    use_holo = bool(holo and os.path.exists(holo))
+    if use_holo:
+        lig = _split_ligand_pdbs(holo, tempfile.mkdtemp())
+        pml += [f"load {holo}, sysm", "hide everything"]   # sysm -> protein only; ligands drawn separately
+    else:
+        pml += [f"load {hits[0]}, sysm", "hide everything"]
+    prot = "sysm and polymer"
+
+    if cutaway:   # solid body, sliced open to look into the pocket
+        pml += ["set ray_shadows, 1", "set ambient, 0.45", "set ray_interior_color, grey65",
+                f"show surface, ({prot})", "set surface_color, wheat, sysm", "set transparency, 0, sysm"]
+    else:         # DEFAULT: faint gray cartoon as light context; tunnels + ligands are the subject
+        pml += ["set ray_shadows, 1", "set ambient, 0.45", "set specular, 0.2",
+                "set cartoon_transparency, 0.55", "set ray_interior_color, grey80",
+                f"show cartoon, ({prot})", "color gray70, sysm", "set cartoon_side_chain_helper, 1"]
+    # LIGANDS as separate objects, each a distinct representation/colour:
+    if "substrate" in lig:   # SUBSTRATE: magenta ball-and-stick (the acyl-acceptor)
+        pml += [f"load {lig['substrate']}, substrate", "hide everything, substrate",
+                "show sticks, substrate", "set stick_radius, 0.28, substrate",
+                "show spheres, substrate", "set sphere_scale, 0.26, substrate",
+                "color magenta, substrate and elem C", "util.cnc substrate"]
+    if "cofactor" in lig:    # COFACTOR (ATP): orange sticks
+        pml += [f"load {lig['cofactor']}, cofactor", "hide everything, cofactor",
+                "show sticks, cofactor", "set stick_radius, 0.18, cofactor",
+                "color orange, cofactor and elem C", "util.cnc cofactor"]
+    if "metal" in lig:       # METAL (Mg): a few small green spheres -- NOT the ligand
+        pml += [f"load {lig['metal']}, metal", "hide everything, metal",
+                "show spheres, metal", "color forest, metal", "set sphere_scale, 0.35, metal"]
+
     tunnel_objs = []
+    ttransp = 0.35 if cutaway else 0.6   # cartoon: translucent tubes so the substrate molecule reads inside
     for ci, ch in enumerate(channels):
         tp = _tunnel_pdb(data, ch["cluster"])
         if not tp:
             continue
         obj = f"t{ci}"
         tunnel_objs.append(obj)
-        # a VDW surface (solvent_radius 0) over the radius-sized spheres merges the "string of beads"
-        # into ONE smooth tube whose thickness is the local tunnel radius
         pml += [f"load {tp}, {obj}", f"hide everything, {obj}", f"alter {obj}, vdw=b", "rebuild",
                 f"set solvent_radius, 0, {obj}", f"set surface_quality, 2, {obj}",
-                f"set transparency, 0.45, {obj}", f"show surface, {obj}"]   # see-through: interior / active site reads through
-        cols = _sphere_colors(_radii(tp))
-        for ai, (r, g, b) in enumerate(cols, start=1):
+                f"set transparency, {ttransp}, {obj}", f"show surface, {obj}"]
+        for ai, (r, g, b) in enumerate(_sphere_colors(_radii(tp)), 1):
             pml += [f"set_color c_{obj}_{ai}, [{r:.3f},{g:.3f},{b:.3f}]",
                     f"color c_{obj}_{ai}, {obj} and id {ai}"]
-    # frame the tunnel bundle + active site (not the whole protein) so the site reads large
-    focus = " or ".join(tunnel_objs) if tunnel_objs else "prot"
-    pml += ["set field_of_view, 20",
-            f"orient ({focus})", "turn y, 10", "turn x, -8",
-            f"zoom ({focus}), 7"]
+    for rid in draw_residues:
+        pml += [f"select r{rid}, ({prot} and resi {rid} and not name C+N+O)", f"show sticks, r{rid}",
+                f"set stick_radius, 0.3, r{rid}", f"color gray25, r{rid} and elem C", f"util.cnc r{rid}"]
+
+    tun = " or ".join(tunnel_objs) or prot
+    site = "substrate" if "substrate" in lig else tun   # centre on the substrate if we have it, else tunnels
+    if cutaway:
+        # HOLISTIC: frame the WHOLE protein, then cut a slab CENTRED ON THE ACTIVE SITE (clip's optional
+        # selection arg) so the whole body is in view but sliced open where the substrate + tunnels are
+        pml += [f"orient ({prot})", "turn y, 12", f"zoom ({prot}), 4", f"clip slab, 26, ({site})"]
+    else:
+        # frame the tunnels + ligands with enough surrounding cartoon for context (readable, not a closeup
+        # nor a tiny whole-dimer); clip generously so no cartoon is sliced away
+        pml += [f"orient ({tun} or ({site}))", "turn y, 12", f"zoom ({tun} or ({site})), 13",
+                "clip slab, 1000"]
     pml += [f"png {out_png}, width={IMG_W}, height={IMG_H}, dpi=200, ray=1", "quit"]
     f = tempfile.NamedTemporaryFile("w", suffix=".pml", delete=False)
     f.write("\n".join(pml))
@@ -153,15 +205,19 @@ def _composite(render_png, res, out_png, title):
     plt.close(fig)
 
 
-def render(run_dir, out_png, title=None, all_clusters=False, max_residues=0):
-    """Protein cartoon + tunnels only, by default. max_residues>0 overlays that many bottleneck-lining
-    residues as sticks (off by default -- keep the figure to the protein + channels unless the sticks
-    are genuinely needed)."""
+def render(run_dir, out_png, title=None, all_clusters=False, max_residues=0, cutaway=False, holo=None):
+    """Default: a cutaway (solid protein sliced open) with the SUBSTRATE shown in the active site and the
+    tunnels as opaque radius-coloured tubes. The substrate is read back from the original cofold pose
+    (channels.json provenance, or --holo) because the channel run strips it. cutaway=False gives the
+    translucent-cartoon + see-through-tubes view. max_residues>0 overlays bottleneck-lining sticks."""
     res = json.load(open(os.path.join(run_dir, "channels.json")))
     channels = res.get("clusters", []) if all_clusters else res.get("channels", [])
     if not channels:
         raise ValueError(f"no channels to draw in {run_dir}/channels.json "
                          f"(n_channels={res.get('n_channels')}); try --all-clusters")
+    if holo is None:        # the original pose (with the ligand) recorded by substrate_channels
+        poses = res.get("provenance", {}).get("poses", [])
+        holo = next((p for p in poses if os.path.exists(p)), None)
     main = channels[0]
     draw = []
     for r in main.get("bottleneck_lining_residues", [])[:max_residues]:
@@ -170,7 +226,7 @@ def render(run_dir, out_png, title=None, all_clusters=False, max_residues=0):
             draw.append(rid)
     tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False); tmp.close()
     try:
-        _render_pose(run_dir, channels, tmp.name, draw)
+        _render_pose(run_dir, channels, tmp.name, draw, holo=holo, cutaway=cutaway)
         _composite(tmp.name, res, out_png, title)
     finally:
         if os.path.exists(tmp.name):
@@ -186,8 +242,12 @@ def _cli(argv=None):
     ap.add_argument("--all-clusters", action="store_true", help="draw every cluster, not just channels")
     ap.add_argument("--show-residues", type=int, default=0, metavar="N",
                     help="overlay N bottleneck-lining residues as sticks (default 0 = none)")
+    ap.add_argument("--cutaway", action="store_true",
+                    help="sliced-open solid surface instead of the default coloured cartoon (rough)")
+    ap.add_argument("--holo", help="pose with the substrate to overlay (default: from channels.json provenance)")
     a = ap.parse_args(argv)
-    print("wrote", render(a.run_dir, a.out, a.title, a.all_clusters, max_residues=a.show_residues))
+    print("wrote", render(a.run_dir, a.out, a.title, a.all_clusters, max_residues=a.show_residues,
+                          cutaway=a.cutaway, holo=a.holo))
     return 0
 
 
