@@ -95,7 +95,7 @@ def _render_pose(run_dir, channels, out_png, draw_residues):
         # into ONE smooth tube whose thickness is the local tunnel radius
         pml += [f"load {tp}, {obj}", f"hide everything, {obj}", f"alter {obj}, vdw=b", "rebuild",
                 f"set solvent_radius, 0, {obj}", f"set surface_quality, 2, {obj}",
-                f"set transparency, 0.2, {obj}", f"show surface, {obj}"]   # ~20% see-through: active site shows through
+                f"set transparency, 0.45, {obj}", f"show surface, {obj}"]   # see-through: interior / active site reads through
         cols = _sphere_colors(_radii(tp))
         for ai, (r, g, b) in enumerate(cols, start=1):
             pml += [f"set_color c_{obj}_{ai}, [{r:.3f},{g:.3f},{b:.3f}]",
