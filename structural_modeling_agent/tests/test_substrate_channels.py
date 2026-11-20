@@ -309,6 +309,23 @@ def test_run_caver_missing_install_raises(tmp):
         ch.run_caver(tmp, (0, 0, 0), caver_home=os.path.join(tmp, "no_caver"))
 
 
+def test_subset_pdb_dir_symlinks_first_n(tmp):
+    """The perturbed-start speedup: a subset dir points at the first N staged poses (symlinks, not
+    copies), so a start-sensitivity run processes fewer poses. This is what cuts the n_starts multiplier."""
+    pdb = os.path.join(tmp, "pdb"); os.makedirs(pdb)
+    for i in range(50):
+        open(os.path.join(pdb, f"pose_{i:04d}.pdb"), "w").write("END\n")
+    open(os.path.join(pdb, "not_a_pose.txt"), "w").write("x")       # ignored
+    dest, n = ch.subset_pdb_dir(pdb, os.path.join(tmp, "sub"), 15)
+    files = sorted(os.listdir(dest))
+    assert n == 15 and len(files) == 15
+    assert files[0] == "pose_0000.pdb" and files[-1] == "pose_0014.pdb"
+    assert all(os.path.islink(os.path.join(dest, f)) for f in files)     # symlinks, not copies
+    # n larger than available, and n=0/None, both mean "all"
+    assert ch.subset_pdb_dir(pdb, os.path.join(tmp, "s2"), 999)[1] == 50
+    assert ch.subset_pdb_dir(pdb, os.path.join(tmp, "s3"), None)[1] == 50
+
+
 # ---------------------------------------------------------------- 4. CAVER vs analytic ground truth
 def _have_caver():
     return shutil.which("java") is not None and os.path.exists(os.path.join(ch.CAVER_HOME, "caver.jar"))

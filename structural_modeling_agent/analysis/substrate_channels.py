@@ -92,9 +92,13 @@ CAVER_HOME = os.environ.get(
     "CAVER_HOME",
     "/nfs/lambda_stor_01/homes/rzhu/Tool/processivity-toolchain-20261106/sources/caver/Caver3")
 DEFAULT_PROBE_RADIUS = 0.9     # CAVER's own default for protein tunnels
-DEFAULT_XMX_GB = 8
+DEFAULT_XMX_GB = 12            # dimers (~7k atoms x 50 poses) peg an 8 GB heap -> GC thrash; 12 clears it
 DEFAULT_THREADS = 4            # shared nodes: cap JVM CPU (global courtesy rule)
 DEFAULT_N_STARTS = 5           # primary start + 4 perturbed (tetrahedral)
+DEFAULT_STABILITY_POSES = 15   # perturbed-start runs use only this many poses (sensitivity, not stats);
+#                                None/0 = all poses. The costly 50-pose ensemble runs ONCE (the primary);
+#                                the 4 start-sensitivity runs only need to confirm the exit recurs, which
+#                                a subset answers -> cuts the 5x start multiplier to ~2x with no stat loss.
 DEFAULT_START_RADIUS = 2.0     # A, perturbation of the start point
 EXIT_MATCH_TOL = 4.0           # A, two channels are "the same" if their exits are this close
 DEFAULT_MIN_FREQ = 0.5         # a channel must occur in at least half the poses
@@ -335,11 +339,24 @@ def write_caver_config(path, start_xyz, probe_radius=DEFAULT_PROBE_RADIUS, caver
         fh.write(f"starting_point_coordinates {start_xyz[0]:.3f} {start_xyz[1]:.3f} {start_xyz[2]:.3f}\n")
 
 
+def subset_pdb_dir(pdb_dir, dest, n):
+    """A directory of symlinks to the first `n` staged pose PDBs, for a cheaper perturbed-start run
+    (CAVER processes every PDB in the -pdb dir, so fewer files = proportionally less work). Symlinks,
+    not copies -- the poses are already staged and immutable. Returns (dest, actual_count)."""
+    poses = sorted(f for f in os.listdir(pdb_dir) if f.startswith("pose_") and f.endswith(".pdb"))
+    keep = poses[:n] if n else poses
+    shutil.rmtree(dest, ignore_errors=True)
+    os.makedirs(dest)
+    for f in keep:
+        os.symlink(os.path.abspath(os.path.join(pdb_dir, f)), os.path.join(dest, f))
+    return dest, len(keep)
+
+
 def run_caver(workdir, start_xyz, probe_radius=DEFAULT_PROBE_RADIUS, xmx_gb=DEFAULT_XMX_GB,
-              threads=DEFAULT_THREADS, caver_home=CAVER_HOME, timeout=7200, tag=""):
-    """Run CAVER on workdir/pdb -> <run_dir>/caver_out. `tag` gives a perturbed-start run its own
-    directory (workdir/perturb_<tag>) so concurrent runs never share files; the staged PDBs are shared.
-    Exit code alone is NOT trusted: CAVER must print 'Finished successfully' and produce
+              threads=DEFAULT_THREADS, caver_home=CAVER_HOME, timeout=7200, tag="", pdb_dir=None):
+    """Run CAVER on `pdb_dir` (default workdir/pdb) -> <run_dir>/caver_out. `tag` gives a perturbed-start
+    run its own directory (workdir/perturb_<tag>) so concurrent runs never share files; the staged PDBs
+    are shared. Exit code alone is NOT trusted: CAVER must print 'Finished successfully' and produce
     tunnel_characteristics.csv. Returns (out_dir, warnings, log)."""
     jar = os.path.join(caver_home, "caver.jar")
     if not os.path.exists(jar):
@@ -354,7 +371,7 @@ def run_caver(workdir, start_xyz, probe_radius=DEFAULT_PROBE_RADIUS, xmx_gb=DEFA
     shutil.rmtree(out, ignore_errors=True)
     cmd = ["java", f"-Xmx{int(xmx_gb)}g", f"-XX:ActiveProcessorCount={int(threads)}",
            "-cp", f"{jar}:{os.path.join(caver_home, 'lib')}/*", "caver.ui.Launcher",
-           "-home", caver_home, "-pdb", os.path.join(workdir, "pdb"), "-conf", conf, "-out", out]
+           "-home", caver_home, "-pdb", pdb_dir or os.path.join(workdir, "pdb"), "-conf", conf, "-out", out]
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=run_dir, timeout=timeout)
     log = (r.stdout or "") + (r.stderr or "")
     chars = os.path.join(out, "analysis", "tunnel_characteristics.csv")
@@ -534,9 +551,11 @@ def analyze_channels(pose_paths, out_dir, start_xyz=None, probe_radius=DEFAULT_P
                      n_starts=DEFAULT_N_STARTS, start_radius=DEFAULT_START_RADIUS,
                      min_freq=DEFAULT_MIN_FREQ, margin=DEFAULT_MARGIN, start_sel=None,
                      start_group="carboxylate", reaction_center_sel=None, substrate_resnames=None,
-                     cofactor_resnames=None, hetero_sel=None):
+                     cofactor_resnames=None, hetero_sel=None, stability_poses=DEFAULT_STABILITY_POSES):
     """Stage -> CAVER (primary + perturbed starts) -> parse -> classify -> stability ->
-    out_dir/channels.json. n_starts=1 disables the start-point sensitivity runs. See stage_ensemble
+    out_dir/channels.json. n_starts=1 disables the start-point sensitivity runs. The primary run uses
+    ALL poses (full statistics); each perturbed start-sensitivity run uses only `stability_poses` of
+    them (None = all) -- the costly ensemble is processed once, not n_starts times. See stage_ensemble
     for how the start point and the substrate/cofactor split are resolved (start_sel, start_group,
     reaction_center_sel, substrate_resnames, cofactor_resnames, hetero_sel)."""
     os.makedirs(out_dir, exist_ok=True)
@@ -547,17 +566,25 @@ def analyze_channels(pose_paths, out_dir, start_xyz=None, probe_radius=DEFAULT_P
     prot_r = protection_radius(caver_home)
     start = man["start_xyz"]
 
-    def one(tag, s):
-        out, warns, _ = run_caver(out_dir, s, probe_radius, xmx_gb, threads, caver_home, tag=tag)
-        return classify_clusters(parse_caver_output(out, man["n_poses"]), probe_radius, prot_r,
+    def one(tag, s, pdb_dir=None, n=None):
+        out, warns, _ = run_caver(out_dir, s, probe_radius, xmx_gb, threads, caver_home, tag=tag,
+                                  pdb_dir=pdb_dir)
+        return classify_clusters(parse_caver_output(out, n or man["n_poses"]), probe_radius, prot_r,
                                  min_freq, margin), warns
 
-    primary, warns = one("", start)
+    primary, warns = one("", start)                       # full ensemble, all poses
     others, failures = [], []
+    n_stab = man["n_poses"]
     if n_starts > 1:
         offs = perturbed_starts(start, start_radius, n_starts - 1)
+        # perturbed runs only test start-point sensitivity -> a pose subset is enough and far cheaper
+        if stability_poses and stability_poses < man["n_poses"]:
+            sub_dir, n_stab = subset_pdb_dir(os.path.join(out_dir, "pdb"),
+                                             os.path.join(out_dir, "pdb_stability"), stability_poses)
+        else:
+            sub_dir = os.path.join(out_dir, "pdb")
         with ThreadPoolExecutor(max_workers=len(offs)) as ex:
-            futs = {i: ex.submit(one, f"s{i + 1}", s) for i, s in enumerate(offs)}
+            futs = {i: ex.submit(one, f"s{i + 1}", s, sub_dir, n_stab) for i, s in enumerate(offs)}
         for i, f in futs.items():
             try:
                 others.append(f.result()[0])
@@ -590,6 +617,7 @@ def analyze_channels(pose_paths, out_dir, start_xyz=None, probe_radius=DEFAULT_P
                     "min_bottleneck_A": round(probe_radius + margin, 3),
                     "exit_match_tolerance_A": EXIT_MATCH_TOL},
         "robustness": {"n_starts": n_starts, "start_radius_A": start_radius if n_starts > 1 else None,
+                       "stability_poses": n_stab if n_starts > 1 else None,
                        "n_perturbed_runs_ok": len(others), "n_perturbed_runs_failed": len(failures)},
         "n_clusters": len(primary), "n_channels": len(channels),
         "channels": channels, "clusters": primary, "notes": notes, "caver_warnings": warns,
@@ -638,7 +666,10 @@ def _cli(argv=None):
     r.add_argument("--xmx-gb", type=int, default=DEFAULT_XMX_GB)
     r.add_argument("--threads", type=int, default=DEFAULT_THREADS)
     r.add_argument("--n-starts", type=int, default=DEFAULT_N_STARTS,
-                   help="1 = no start-point sensitivity runs; default 5 = primary + 4 perturbed")
+                   help="1 = no start-point sensitivity runs (fastest); default 5 = primary + 4 perturbed")
+    r.add_argument("--stability-poses", type=int, default=DEFAULT_STABILITY_POSES,
+                   help="poses used by each perturbed-start run (0 = all; default 15). The primary run "
+                   "always uses all poses; this only shrinks the cheap sensitivity checks")
     r.add_argument("--start-radius", type=float, default=DEFAULT_START_RADIUS)
     r.add_argument("--min-freq", type=float, default=DEFAULT_MIN_FREQ)
     r.add_argument("--label")
@@ -657,7 +688,8 @@ def _cli(argv=None):
                            start_sel=a.start_sel, start_group=a.start_group,
                            reaction_center_sel=a.reaction_center_sel,
                            substrate_resnames=a.substrate_resnames,
-                           cofactor_resnames=a.cofactor_resnames, hetero_sel=a.hetero_sel)
+                           cofactor_resnames=a.cofactor_resnames, hetero_sel=a.hetero_sel,
+                           stability_poses=a.stability_poses)
     b = res["site"]["burial_fraction"]
     print(f"{res['label'] or ''} n_poses={res['n_poses']} chains={res['n_protein_chains']} "
           f"start={res['start']['xyz']} burial={b['mean']:.2f} surface_exposed={res['site']['surface_exposed']} "
