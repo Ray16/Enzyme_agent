@@ -544,6 +544,26 @@ proxy evaluation, and application to new candidates. Code runs from
 historical provenance. Experimental measurements remain in `exp_data` and are
 linked by paths and SHA-256 fingerprints rather than copied into model code.
 
+### Substrate channel analysis (`analysis/substrate_channels.py`)
+
+Active-site geometry says whether a substrate is poised; it does not say how a substrate reaches the
+site. This module wraps **CAVER 3.0** (Chovancova et al. 2012, PLoS Comput Biol 8:e1002708) to find
+transport pathways from the catalytic center to bulk solvent across a whole **ensemble** of poses, and
+reports per-cluster frequency, bottleneck radius, length, curvature, throughput and bottleneck-lining
+residues. It is descriptive only: no verdict, score or ranking (tunnel topology was a null ranking proxy
+here). Poses are superposed, the substrate is stripped, and protein (all chains) + nucleotide + metals are
+kept as obstacles. Pass the **full assembly**: in a controlled GlnA3 test, removing the partner subunit
+turned a protected site into a 1.8 A open "tunnel", so single-chain input is flagged in the output.
+
+```
+python -m structural_modeling_agent.analysis.substrate_channels run \
+    --poses-json analysis.json --out <run>/analysis/channels/<Gene_ACCESSION>   # or --poses a.cif b.cif
+python -m structural_modeling_agent.analysis.substrate_channels parse --caver-out <dir> --n-poses 50
+```
+
+Needs Java and CAVER 3 (`CAVER_HOME`). Tested (`tests/test_substrate_channels.py`) against analytic
+tube radii and by deliberate-bug injection.
+
 ## Folder organization
 
 | Location | Purpose |
