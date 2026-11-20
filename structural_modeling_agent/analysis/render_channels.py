@@ -29,6 +29,8 @@ PYMOL = "/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/pymol/bin/pymol"
 IMG_W, IMG_H = 1500, 1200
 RADIUS_VMIN, RADIUS_VMAX = 1.0, 2.6     # A; colour-bar range for tunnel radius
 CMAP = "RdYlBu"                          # narrow = red (bottleneck), wide = blue (open to solvent)
+TUNNEL_TRANSPARENCY = float(os.environ.get("TUNNEL_TRANSPARENCY", 0.0))   # 0 = solid tube
+RENDER_THREADS = int(os.environ.get("RENDER_THREADS", 8))   # PyMOL ray threads per render
 
 
 def _tunnel_pdb(data_dir, cluster_id):
@@ -96,11 +98,10 @@ def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=T
     if not hits:
         raise FileNotFoundError(f"no representative pose_*.pdb under {data} (was the run staged here?)")
 
-    # FAST default (measured on a GlnA3 dimer, 5 tunnels: >8 min -> 38 s): no AA/shadows, coarse tunnel
-    # surfaces (the tunnel-surface build was the dominant cost).
-    # publication=True restores the slow high-quality settings.
+    # Full quality by default (antialias 2, shadows): ~30 s for a GlnA3 dimer now that tunnels are solid
+    # spheres, not a molecular surface (that surface was >8 min). publication=False (--draft) = ~12 s.
     pml = ["bg_color white", "set ray_opaque_background, 0", f"set antialias, {2 if publication else 1}",
-           "set max_threads, 8",   # courtesy: ray is multithreaded; cap so parallel renders don't oversubscribe
+           f"set max_threads, {RENDER_THREADS}",   # courtesy cap: ray is multithreaded (env RENDER_THREADS)
            "set two_sided_lighting, 1", "set specular, 0.3", "set field_of_view, 20"]
     lig = {}
     use_holo = bool(holo and os.path.exists(holo))
@@ -133,7 +134,7 @@ def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=T
                 "show spheres, metal", "color forest, metal", "set sphere_scale, 0.35, metal"]
 
     tunnel_objs = []
-    ttransp = 0.35 if cutaway else 0.6   # cartoon: translucent tubes so the substrate molecule reads inside
+
     for ci, ch in enumerate(channels):
         tp = _tunnel_pdb(data, ch["cluster"])
         if not tp:
@@ -141,8 +142,11 @@ def _render_pose(run_dir, channels, out_png, draw_residues, holo=None, cutaway=T
         obj = f"t{ci}"
         tunnel_objs.append(obj)
         pml += [f"load {tp}, {obj}", f"hide everything, {obj}", f"alter {obj}, vdw=b", "rebuild",
-                f"set solvent_radius, 0, {obj}", f"set surface_quality, {2 if publication else 1}, {obj}",
-                f"set transparency, {ttransp}, {obj}", f"show surface, {obj}"]
+                # tunnel = CAVER's own (densely overlapping) spheres drawn solid: reads as a clean tube and
+                # ray-traces in seconds. A molecular SURFACE over them was the dominant cost (minutes) and,
+                # at fast settings, came out blotchy.
+                f"show spheres, {obj}", f"set sphere_scale, 1.0, {obj}",
+                f"set sphere_transparency, {TUNNEL_TRANSPARENCY}, {obj}"]
         for ai, (r, g, b) in enumerate(_sphere_colors(_radii(tp)), 1):
             pml += [f"set_color c_{obj}_{ai}, [{r:.3f},{g:.3f},{b:.3f}]",
                     f"color c_{obj}_{ai}, {obj} and id {ai}"]
@@ -218,7 +222,7 @@ def _composite(render_png, res, out_png, title):
 
 
 def render(run_dir, out_png, title=None, all_clusters=False, max_residues=0, cutaway=False, holo=None,
-           publication=False):
+           publication=True):
     """Default: a cutaway (solid protein sliced open) with the SUBSTRATE shown in the active site and the
     tunnels as opaque radius-coloured tubes. The substrate is read back from the original cofold pose
     (channels.json provenance, or --holo) because the channel run strips it. cutaway=False gives the
@@ -258,11 +262,11 @@ def _cli(argv=None):
     ap.add_argument("--cutaway", action="store_true",
                     help="sliced-open solid surface instead of the default coloured cartoon (rough)")
     ap.add_argument("--holo", help="pose with the substrate to overlay (default: from channels.json provenance)")
-    ap.add_argument("--publication", action="store_true",
-                    help="slow high-quality ray trace (antialias 2, shadows, fine tunnel surfaces, full cartoon)")
+    ap.add_argument("--draft", action="store_true",
+                    help="quicker lower-quality ray trace (antialias 1, no shadows); default is full quality")
     a = ap.parse_args(argv)
     print("wrote", render(a.run_dir, a.out, a.title, a.all_clusters, max_residues=a.show_residues,
-                          cutaway=a.cutaway, holo=a.holo, publication=a.publication))
+                          cutaway=a.cutaway, holo=a.holo, publication=not a.draft))
     return 0
 
 
