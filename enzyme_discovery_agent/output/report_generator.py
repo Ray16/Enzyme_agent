@@ -390,6 +390,18 @@ def _accommodation_facts_payload(data: dict) -> list[dict]:
     comps = sim.get("property_comparisons") or []
     subs = []
     for c in comps:
+        mw_t = c.get("mw_target")
+        mw_n = c.get("mw_native")
+        mw_ratio = (
+            round(mw_n / mw_t, 2)
+            if isinstance(mw_t, (int, float)) and isinstance(mw_n, (int, float)) and mw_t > 0
+            else None
+        )
+        pocket_rel = (
+            "larger_native_envelope" if mw_ratio is not None and mw_ratio >= 1.35 else
+            "smaller_native_envelope" if mw_ratio is not None and mw_ratio <= 0.70 else
+            "comparable_envelope" if mw_ratio is not None else None
+        )
         subs.append({
             "target_smiles":c.get('target_smiles'),
             "native_smiles":c.get('native_smiles'),
@@ -397,8 +409,9 @@ def _accommodation_facts_payload(data: dict) -> list[dict]:
             "native_fg_counts": {k: v for k, v in (c.get("functional_group_counts_native") or {}).items() if v},
             "target_aliphatic_chain": c.get("chain_length_target"),
             "native_aliphatic_chain": c.get("chain_length_native"),
-            "target_mw": c.get("mw_target"),
-            "native_mw": c.get("mw_native"),
+            "target_mw": mw_t,
+            "native_mw": mw_n,
+            **({"native_to_target_mw_ratio": mw_ratio, "pocket_size_relation": pocket_rel} if mw_ratio is not None else {}),
             "native_has_aromatic_target_lacks": c.get("aromaticity_match") is False,
             "native_has_ring_target_lacks": c.get("cyclicity_match") is False,
         })

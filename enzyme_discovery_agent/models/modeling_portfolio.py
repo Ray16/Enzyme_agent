@@ -28,9 +28,15 @@ def ranked_portfolio(root, max_candidates=None):
             'family':data.get('interpro_family_id') or accession,
             'modeling_setup_status':'requires_independent_source_and_target_setup_review'})
     if max_candidates is not None:rows=rows[:max_candidates]
-    atomic_write_json(root/'modeling_portfolio.json',{'selection':rows,'published_ranked_candidates':len(seen),
-        'policy':'All published ranked candidates reach the modeling agent. GPU submission still requires a source-grounded, informative target-specific setup; unresolved science remains pending.'})
-    return rows
+    from enzyme_discovery_agent import config
+    from enzyme_discovery_agent.models.ortholog import filter_highly_similar_orthologs
+    threshold = getattr(config, 'MODELING_ORTHOLOG_IDENTITY_THRESHOLD', 0.85)
+    kept, collapsed = filter_highly_similar_orthologs(rows, identity_threshold=threshold)
+    atomic_write_json(root/'modeling_portfolio.json',{'selection':kept,'published_ranked_candidates':len(seen),
+        'collapsed_near_identical_orthologs':collapsed,
+        'ortholog_identity_threshold':threshold,
+        'policy':'Comprehensive published ranked candidates reach the modeling agent across families and divergent orthologs; only highly similar sequences (>= threshold identity within a family) are collapsed as redundant. GPU submission still requires a source-grounded, informative target-specific setup.'})
+    return kept
 
 
 def select_modeling_portfolio(run_dir, *, max_candidates, protected_unannotated_slots=0):

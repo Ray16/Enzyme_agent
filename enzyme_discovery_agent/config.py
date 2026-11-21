@@ -188,6 +188,13 @@ AUTO_SCOPE_FOLLOWUP = os.environ.get("ENZYME_AGENT_AUTO_SCOPE_FOLLOWUP", "1") ==
 SCOPE_FOLLOWUP_MAX_CANDIDATES = int(
     os.environ.get("ENZYME_SCOPE_FOLLOWUP_MAX_CANDIDATES", "12")
 )
+# Sequence-identity threshold for collapsing near-identical orthologs in the
+# comprehensive modeling shortlist and comparative synthesis. Divergent orthologs
+# below this threshold are retained because they can differ in pocket shape,
+# loop plasticity, and substrate promiscuity.
+MODELING_ORTHOLOG_IDENTITY_THRESHOLD = float(
+    os.environ.get("ENZYME_MODELING_ORTHOLOG_IDENTITY_THRESHOLD", "0.85")
+)
 DISCOVERY_PORTFOLIO_SIZE = 48
 DISCOVERY_RESEARCH_INTERVAL = 10
 LITERATURE_DISCOVERY_PAPERS_PER_STEP = 2

@@ -138,6 +138,18 @@ def accommodation_facts(
             and native_c is not None
             and native_c < _SCAFFOLD_COMPARABILITY_RATIO * target_c)
         shares = bool(fg and fg > 0)
+        mw_t = cmp.get("mw_target")
+        mw_n = cmp.get("mw_native")
+        mw_ratio = (
+            round(mw_n / mw_t, 2)
+            if isinstance(mw_t, (int, float)) and isinstance(mw_n, (int, float)) and mw_t > 0
+            else None
+        )
+        pocket_size_relation = (
+            "larger_native_envelope" if mw_ratio is not None and mw_ratio >= 1.35 else
+            "smaller_native_envelope" if mw_ratio is not None and mw_ratio <= 0.70 else
+            "comparable_envelope" if mw_ratio is not None else None
+        )
         entry = {
             "target_smiles": t,
             "target_functional_groups": cmp.get("functional_groups_target"),
@@ -153,8 +165,10 @@ def accommodation_facts(
             "target_carbons": target_c,
             "native_is_cofactor_scale": minimal,
             "native_scaffold_comparable": not incomparable_scaffold,
-            "mw_target": cmp.get("mw_target"),
-            "mw_native": cmp.get("mw_native"),
+            "mw_target": mw_t,
+            "mw_native": mw_n,
+            "native_to_target_mw_ratio": mw_ratio,
+            "pocket_size_relation": pocket_size_relation,
             "chain_length_target": cmp.get("chain_length_target"),
             "chain_length_native": cmp.get("chain_length_native"),
         }

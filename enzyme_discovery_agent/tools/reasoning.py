@@ -1261,6 +1261,13 @@ def evaluate_candidate(
         }
     modeling_input = build_modeling_input(modeling_candidate, target_context)
 
+    from enzyme_discovery_agent.chemistry.protein_context import (
+        extract_architecture_and_tractability,
+        extract_promiscuity_indicators,
+    )
+    architecture_and_tractability = extract_architecture_and_tractability(entry, structural_data)
+    promiscuity_indicators = extract_promiscuity_indicators(entry, groups, literature)
+
     # Build evaluation result
     eval_data = {
         "accession": accession,
@@ -1291,6 +1298,8 @@ def evaluate_candidate(
         "native_substrate_reaction_scope": selected_reaction,
         "native_reaction_groups": groups,
         **({"reaction_center_analysis": reaction_center_analysis} if reaction_center_analysis else {}),
+        **({"architecture_and_tractability": architecture_and_tractability} if architecture_and_tractability else {}),
+        **({"promiscuity_indicators": promiscuity_indicators} if promiscuity_indicators else {}),
         "rhea_ids": rhea_ids,
         "identity_validation": identity_validation,
         "claim_validation": function_validation,

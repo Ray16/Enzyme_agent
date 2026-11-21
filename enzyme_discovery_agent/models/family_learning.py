@@ -161,10 +161,58 @@ def build_family_learning(candidates, landscape, decisions, target, searches=Non
     for fid, rows in returned.items():
         families[fid]["new_supported_groups"] = len(rows)
 
+    # Aggregate imported structural-modeling observations per family so cofold
+    # outcomes (passing pose geometry vs. consistent steric/setup failures) feed
+    # back into family-level exploration priorities.
+    struct_by_family: dict[str, list[dict]] = defaultdict(list)
+    for acc, entry in candidates.items():
+        meta = entry.get("metadata") or {}
+        modeled = meta.get("modeling_validation_evidence") or {}
+        if not isinstance(modeled, dict) or not modeled:
+            continue
+        fam = feedback.get(acc, {}).get("family") or family_label(meta, acc)
+        if fam not in families:
+            continue
+        pose = modeled.get("pose_validation") or {}
+        pfrac = pose.get("passing_fraction")
+        exec_status = modeled.get("execution_status")
+        sci_status = modeled.get("scientific_status")
+        struct_by_family[fam].append({
+            "accession": acc,
+            "passing_fraction": float(pfrac) if isinstance(pfrac, (int, float)) else None,
+            "complete": exec_status == "complete",
+            "failed_or_incompatible": sci_status in {"failed", "incompatible", "steric_clash"} or (
+                exec_status == "complete" and isinstance(pfrac, (int, float)) and pfrac == 0.0
+            ),
+        })
+    for fid, srows in struct_by_family.items():
+        fracs = [r["passing_fraction"] for r in srows if r["passing_fraction"] is not None]
+        n_passing = sum(1 for r in srows if (r["passing_fraction"] or 0.0) > 0.0)
+        n_failed = sum(1 for r in srows if r["failed_or_incompatible"])
+        families[fid]["structural_feedback"] = {
+            "n_modeled": len(srows),
+            "n_passing_geometry": n_passing,
+            "n_failed_or_incompatible": n_failed,
+            "best_passing_fraction": round(max(fracs), 3) if fracs else None,
+            "mean_passing_fraction": round(sum(fracs) / len(fracs), 3) if fracs else None,
+            "structural_warning": (
+                "multiple modeled members showed zero passing poses; consider shifting breadth to untested families"
+                if n_failed >= 2 and n_passing == 0 else None
+            ),
+            "scope": "Imported structural-modeling summary; pose geometry is not experimental activity.",
+        }
+
     def priority(fid):
         row = families[fid]
         state = 3 if row["agent_decision"] in {"stop", "defer"} else {"supported": 0, "unresolved": 1, "deprioritized": 2}[row["state"]]
-        return (state, -(row["best_supported_fit"] if row["best_supported_fit"] is not None else -1),
+        sf = row.get("structural_feedback") or {}
+        # Reward families with observed passing cofold geometry; softly penalize
+        # families where >=2 modeled members consistently failed with 0 passing poses.
+        struct_tier = (
+            -1 if sf.get("n_passing_geometry", 0) > 0 else
+            1 if sf.get("structural_warning") else 0
+        )
+        return (state, struct_tier, -(row["best_supported_fit"] if row["best_supported_fit"] is not None else -1),
                 -(row["supported_fraction"] or 0),
                 -(row["new_supported_groups"] / row["expansion_attempts"] if row["expansion_attempts"] else 0), fid)
     return {"schema_version": 1, "basis": "native-chemistry feedback; target activity remains unproven; label-based group counts are tentative and do not establish independence",

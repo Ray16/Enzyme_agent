@@ -19,7 +19,7 @@ from enzyme_discovery_agent.models.candidate_registry import (
     family_label,
     load_candidate_registry,
 )
-from enzyme_discovery_agent.models.ortholog import tentative_label_key
+from enzyme_discovery_agent.models.ortholog import filter_highly_similar_orthologs
 from enzyme_discovery_agent.models.target_review import eligible
 from enzyme_discovery_agent.state_store import atomic_write_json
 
@@ -32,31 +32,14 @@ def _evidence_rank(level: str) -> int:
     return {"direct_target_observation": 0, "mechanistic_transfer": 1, "speculative": 2}.get(level, 3)
 
 
-def _dedupe_orthologs(members: list[dict]) -> tuple[list[dict], list[dict]]:
-    """Keep the strongest representative per exact sequence or shared tentative gene key."""
-    representatives: list[dict] = []
-    collapsed: list[dict] = []
-    seen_seq: set[str] = set()
-    seen_gene: set[str] = set()
-
-    for member in members:
-        seq = member.get("_sequence") or ""
-        gkey = member.get("_gene_key") or ""
-        is_dup = (seq and seq in seen_seq) or (gkey and gkey in seen_gene)
-        if is_dup:
-            collapsed.append({
-                "accession": member["accession"],
-                "protein_name": member["protein_name"],
-                "decision": member["decision"],
-                "reason": "exact_sequence" if (seq and seq in seen_seq) else "shared_annotation_group",
-            })
-            continue
-        if seq:
-            seen_seq.add(seq)
-        if gkey:
-            seen_gene.add(gkey)
-        representatives.append(member)
-    return representatives, collapsed
+def _dedupe_orthologs(members: list[dict], identity_threshold: float = 0.85) -> tuple[list[dict], list[dict]]:
+    """Collapse only highly similar sequences (>= identity_threshold); retain divergent orthologs."""
+    return filter_highly_similar_orthologs(
+        members,
+        identity_threshold=identity_threshold,
+        seq_getter=lambda m: m.get("_sequence"),
+        family_getter=lambda m: "same_family",
+    )
 
 
 def build_comparative_brief(
@@ -104,7 +87,6 @@ def build_comparative_brief(
             "unknowns": (assessment.get("unknowns") or [])[:4],
             "revisit_when": assessment.get("revisit_when"),
             "_sequence": data.get("sequence") or "",
-            "_gene_key": tentative_label_key(data) or "",
         })
 
     family_rows = []
