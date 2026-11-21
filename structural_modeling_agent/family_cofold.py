@@ -1,5 +1,6 @@
 """Compile shared family protocols and execute cofolds without per-member LLM calls."""
 from collections import Counter, defaultdict
+from concurrent.futures import ProcessPoolExecutor
 import copy
 import csv
 import hashlib
@@ -17,6 +18,8 @@ import time
 
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
 from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+from .env_config import EXACT_BOLTZ_PYTHON
+from .io_utils import bounded_workers, file_digest, init_single_thread_worker
 from .modeling_reasoning.chemistry import characterize_smiles
 from .modeling_reasoning.literature import LiteratureKnowledge
 from .modeling_reasoning.reaction import ReactionCoordinates
@@ -34,11 +37,10 @@ from .scripts.build_step1_inputs import enzyme_chains, modeled_substrates, yaml_
 
 
 def digest(value):
-    return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
-def file_hash(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+file_hash = file_digest
 
 
 def target_key(smiles):
@@ -256,7 +258,7 @@ def provider_owner_live(receipt):
         path=Path('/proc/'+str(receipt['pid'])+'/stat')
         return ((path.exists() and path.read_text().rsplit(')',1)[1].split()[19]==receipt['process_start_ticks'])
                 or bool(receipt.get('predictor_pid') and Path('/proc/'+str(receipt['predictor_pid'])).exists()))
-    command=shlex.join(['/nfs/lambda_stor_01/homes/rzhu/boltz2-venv/bin/python','-c',code])
+    command = shlex.join([EXACT_BOLTZ_PYTHON, '-c', code])
     try:
         result=subprocess.run(['ssh','-o','BatchMode=yes','-o','ConnectTimeout=8',receipt['host'],command],
             input=json.dumps(receipt),text=True,capture_output=True,timeout=20,check=True)
@@ -319,29 +321,61 @@ def execute_job(job, backend, directory,resource_attempt=0):
     return receipt
 
 
-def find_reusable(job,run,specification):
+def build_reusable_index(run):
+    """Scan completed sibling runs once and index valid entries by physical_system_key."""
+    import yaml
+    from campaign_catalog.lookup import physical_system_key
+
+    index = defaultdict(list)
+    parent = Path(run).parent
+    for arm in COFOLD_ARM_NAMES:
+        for path in parent.glob('*/' + arm + '/jobs/*/complete.json'):
+            resolved = path.resolve()
+            try:
+                saved = json.loads(path.read_text())
+                old = saved.get('reuse_source_job') or saved['job']
+                old.setdefault('discovery_run_id', Path(saved.get('reuse_source') or path).parents[3].name)
+                input_path = Path(old['input_yaml'])
+                if not input_path.is_file() or file_hash(input_path) != old['input_sha256']:
+                    continue
+                key = physical_system_key(yaml.safe_load(input_path.read_text()))
+            except (OSError, ValueError, KeyError):
+                continue
+            index[key].append((resolved, saved, old))
+    return index
+
+
+def find_reusable(job, run, specification, *, reusable_index=None):
     """Consult completed family results and the existing registered prediction pools."""
     import yaml
-    from campaign_catalog.lookup import physical_system_key,lookup_exact_system
-    document=yaml.safe_load(Path(job['input_yaml']).read_text());wanted=physical_system_key(document)
-    for arm in COFOLD_ARM_NAMES:
-      for path in Path(run).parent.glob('*/'+arm+'/jobs/*/complete.json'):
-        if path.resolve()==(Path(run)/arm/'jobs'/job['id']/'complete.json').resolve():continue
-        saved=json.loads(path.read_text());old=saved.get('reuse_source_job') or saved['job']
-        old.setdefault('discovery_run_id',Path(saved.get('reuse_source') or path).parents[3].name)
-        input_path=Path(old['input_yaml'])
-        if not input_path.is_file() or file_hash(input_path)!=old['input_sha256']:continue
-        if physical_system_key(yaml.safe_load(input_path.read_text()))!=wanted:continue
-        if digest(old['modeling_input']['geometry'])!=digest(job['modeling_input']['geometry']):
-            return {'status':'exact_coordinates_available_analysis_pending','source':str(path),'saved':saved}
-        analysis=analyze_outputs(old,saved['receipt'])
-        return {'status':'reused','source':str(path),'job':old,'receipt':saved['receipt'],'analysis':analysis}
-    for pool in specification.get('prediction_pools',[]):
-        if not (Path(pool)/'catalog/current.json').is_file():continue
-        result=lookup_exact_system(pool,document)
+    from campaign_catalog.lookup import physical_system_key, lookup_exact_system
+
+    document = yaml.safe_load(Path(job['input_yaml']).read_text())
+    wanted = physical_system_key(document)
+    self_paths = {(Path(run) / arm / 'jobs' / job['id'] / 'complete.json').resolve() for arm in COFOLD_ARM_NAMES}
+    if reusable_index is not None:
+        candidates = reusable_index.get(wanted, ())
+    else:
+        candidates = build_reusable_index(run).get(wanted, ())
+    job_geom_digest = digest(job['modeling_input']['geometry'])
+    for resolved, saved, old in candidates:
+        if resolved in self_paths:
+            continue
+        if digest(old['modeling_input']['geometry']) != job_geom_digest:
+            return {'status': 'exact_coordinates_available_analysis_pending', 'source': str(resolved), 'saved': saved}
+        analysis = analyze_outputs(old, saved['receipt'])
+        return {'status': 'reused', 'source': str(resolved), 'job': old, 'receipt': saved['receipt'], 'analysis': analysis}
+    for pool in specification.get('prediction_pools', []):
+        if not (Path(pool) / 'catalog/current.json').is_file():
+            continue
+        result = lookup_exact_system(pool, document)
         if result['exact_system_matches']:
-            return {'status':'exact_coordinates_available_analysis_pending','pool':str(pool),
-                'matches':result['exact_system_matches'],'physical_system_key':wanted}
+            return {
+                'status': 'exact_coordinates_available_analysis_pending',
+                'pool': str(pool),
+                'matches': result['exact_system_matches'],
+                'physical_system_key': wanted,
+            }
     return None
 
 
@@ -370,73 +404,153 @@ def publish_results(directory,jobs):
         atomic_write_json(directory/'analysis_backend_pending.json',{'error':str(exc),'scope':'Plotting unavailable on this frontend; completed coordinates remain available for the central analyzer.'})
 
 
-def analyze_outputs(job,receipt):
-    """Measure every pose with the existing geometry metric; retain identity failures."""
-    from .validation import _read_structure,_protein_completeness
-    from .proxies.attack_angle import weighted_attack_angle
+def _analyze_single_prediction(args):
+    """Validate identity and compute attack geometry for one prediction file."""
+    (prediction, sequence_sha256, expected_protein_copies, entities, ccd_atoms,
+     ligand_atom_maps, center_ref, leaving_ref, donor_refs, pocket_protocol) = args
+    from .validation import _read_structure, _protein_completeness
     import numpy as np
+
+    path = Path(prediction['path'])
+    if file_hash(path) != prediction['sha256']:
+        raise ValueError('Prediction changed')
+    atoms, sequences = _read_structure(path)
+    by_chain = defaultdict(list)
+    by_chain_atom = defaultdict(list)
+    for key, val in atoms.items():
+        by_chain[key[0]].append((key, val))
+        by_chain_atom[(key[0], key[2])].append(val['xyz'])
+
+    issues = []
+    for chain, sequence in sequences.items():
+        if hashlib.sha256(sequence.encode()).hexdigest() != sequence_sha256:
+            issues.append('protein_sequence:' + chain)
+        if any(c['status'] != 'pass' for c in _protein_completeness(atoms, chain, {})):
+            issues.append('protein_heavy_atoms:' + chain)
+    if len(sequences) != expected_protein_copies:
+        issues.append('protein_copy_count')
+    observed = set(by_chain)
+    expected = set(sequences)
+    for entity in entities.values():
+        expected.update(entity if isinstance(entity, list) else [entity])
+    if observed != expected:
+        issues.append('entity_inventory')
+    for ccd, chains in ((k, v) for k, v in entities.items() if isinstance(v, list)):
+        expected_ccd = ccd_atoms.get(ccd)
+        for chain in chains:
+            actual = {k[2]: v['element'] for k, v in by_chain.get(chain, ())}
+            if actual != expected_ccd:
+                issues.append('cofactor_identity:' + chain)
+    for chain, definition in ligand_atom_maps.items():
+        actual = {k[2]: v['element'] for k, v in by_chain.get(chain, ())}
+        desired = {v['name']: v['element'] for v in definition['atoms'].values()}
+        if actual != desired:
+            issues.append('ligand_atom_inventory:' + chain)
+
+    def coordinate(ref):
+        matches = by_chain_atom.get(ref, ())
+        if len(matches) != 1:
+            raise ValueError('Missing/ambiguous reaction atom ' + str(ref))
+        return matches[0]
+
+    center = coordinate(center_ref)
+    axis = coordinate(leaving_ref) - center
+    donors = [(ref, coordinate(ref)) for ref in donor_refs]
+    ref, donor = min(donors, key=lambda pair: np.linalg.norm(pair[1] - center))
+    vector = donor - center
+    distance = float(np.linalg.norm(vector))
+    angle = math.degrees(math.acos(float(np.clip(np.dot(vector, axis) / (distance * np.linalg.norm(axis)), -1, 1))))
+    pose = {
+        'path': str(path),
+        'sha256': prediction['sha256'],
+        'distance_A': distance,
+        'angle_deg': angle,
+        'identity_issues': issues,
+        'nucleophile': ref,
+    }
+    if pocket_protocol:
+        contacts = {(chain, str(number)) for chain, number in pocket_protocol['contacts']}
+        pocket = np.array([value['xyz'] for key, value in atoms.items() if (key[0], key[1]) in contacts and value['protein']])
+        if not len(pocket):
+            raise ValueError('Mapped pocket residues are absent from guided prediction')
+        ligand = np.array([value['xyz'] for _, value in by_chain.get(ref[0], ())])
+        pose['nucleophile_to_pocket_A'] = float(np.linalg.norm(pocket - donor, axis=1).min())
+        pose['ligand_to_pocket_A'] = float(np.linalg.norm(ligand[:, None, :] - pocket[None, :, :], axis=2).min())
+        pose['pocket_localized'] = pose['ligand_to_pocket_A'] <= pocket_protocol['max_distance_A']
+    return pose
+
+
+def analyze_outputs(job, receipt, *, max_workers=None):
+    """Measure every pose with the existing geometry metric; retain identity failures."""
+    from .proxies.attack_angle import weighted_attack_angle
     import gemmi
-    source=json.loads(Path(receipt['prediction_manifest']).read_text())
-    if source['input_sha256']!=job['input_sha256']:raise ValueError('Producer input identity changed')
-    predictions=source['predictions']
-    if len(predictions)!=50:raise ValueError('Require the complete 50-pose ensemble')
-    poses=[];geometry=job['modeling_input']['geometry'];entities=job['entities'];ccd_atoms={}
-    for ccd,reference in source.get('chemical_component_sources',{}).items():
-        if file_hash(reference['path'])!=reference['sha256']:raise ValueError('CCD source changed')
-        block=gemmi.cif.read_file(reference['path']).sole_block()
-        ccd_atoms[ccd]={gemmi.cif.as_string(name):gemmi.cif.as_string(element).upper()
-                        for name,element in zip(block.find_values('_chem_comp_atom.atom_id'),block.find_values('_chem_comp_atom.type_symbol'))
-                        if gemmi.cif.as_string(element).upper() not in {'H','D'}}
+
+    source = json.loads(Path(receipt['prediction_manifest']).read_text())
+    if source['input_sha256'] != job['input_sha256']:
+        raise ValueError('Producer input identity changed')
+    predictions = source['predictions']
+    if len(predictions) != 50:
+        raise ValueError('Require the complete 50-pose ensemble')
+    geometry = job['modeling_input']['geometry']
+    entities = job['entities']
+    ccd_atoms = {}
+    for ccd, reference in source.get('chemical_component_sources', {}).items():
+        if file_hash(reference['path']) != reference['sha256']:
+            raise ValueError('CCD source changed')
+        block = gemmi.cif.read_file(reference['path']).sole_block()
+        ccd_atoms[ccd] = {
+            gemmi.cif.as_string(name): gemmi.cif.as_string(element).upper()
+            for name, element in zip(
+                block.find_values('_chem_comp_atom.atom_id'),
+                block.find_values('_chem_comp_atom.type_symbol'),
+            )
+            if gemmi.cif.as_string(element).upper() not in {'H', 'D'}
+        }
+
     def references(participant):
-        spec=geometry[participant]
-        if spec['kind']=='cofactor':return [(entities[spec['ccd']][0],spec['atom'])]
-        chain=entities[spec['role']];mapping=source['ligand_atom_maps'][chain]['atoms']
-        return [(chain,mapping[str(index)]['name']) for index in spec['reactive_atom_indices']]
-    for prediction in predictions:
-        path=Path(prediction['path'])
-        if file_hash(path)!=prediction['sha256']:raise ValueError('Prediction changed')
-        atoms,sequences=_read_structure(path);issues=[]
-        for chain,sequence in sequences.items():
-            if hashlib.sha256(sequence.encode()).hexdigest()!=job['sequence_sha256']:issues.append('protein_sequence:'+chain)
-            if any(c['status']!='pass' for c in _protein_completeness(atoms,chain,{})):issues.append('protein_heavy_atoms:'+chain)
-        if len(sequences)!=len(job['modeling_input']['enzyme_state']['chains']):issues.append('protein_copy_count')
-        observed={k[0] for k in atoms};expected=set(sequences)
-        for entity in entities.values():expected.update(entity if isinstance(entity,list) else [entity])
-        if observed!=expected:issues.append('entity_inventory')
-        for ccd,chains in ((k,v) for k,v in entities.items() if isinstance(v,list)):
-            for chain in chains:
-                actual={k[2]:v['element'] for k,v in atoms.items() if k[0]==chain}
-                if actual!=ccd_atoms.get(ccd):issues.append('cofactor_identity:'+chain)
-        for chain,definition in source.get('ligand_atom_maps',{}).items():
-            actual={k[2]:v['element'] for k,v in atoms.items() if k[0]==chain}
-            desired={v['name']:v['element'] for v in definition['atoms'].values()}
-            if actual!=desired:issues.append('ligand_atom_inventory:'+chain)
-        def coordinate(ref):
-            matches=[v['xyz'] for key,v in atoms.items() if key[0]==ref[0] and key[2]==ref[1]]
-            if len(matches)!=1:raise ValueError('Missing/ambiguous reaction atom '+str(ref))
-            return matches[0]
-        centers=references('electrophile');leaving=references('leaving_group')
-        if len(centers)!=1 or len(leaving)!=1:raise ValueError('Reaction center is ambiguous')
-        center=coordinate(centers[0]);axis=coordinate(leaving[0])-center
-        donors=[(ref,coordinate(ref)) for ref in references('nucleophile')]
-        ref,donor=min(donors,key=lambda pair:np.linalg.norm(pair[1]-center))
-        vector=donor-center;distance=float(np.linalg.norm(vector))
-        angle=math.degrees(math.acos(float(np.clip(np.dot(vector,axis)/(distance*np.linalg.norm(axis)),-1,1))))
-        pose={'path':str(path),'sha256':prediction['sha256'],'distance_A':distance,'angle_deg':angle,
-              'identity_issues':issues,'nucleophile':ref}
-        if job.get('pocket_protocol'):
-            protocol=job['pocket_protocol'];contacts={(chain,str(number)) for chain,number in protocol['contacts']}
-            pocket=np.array([value['xyz'] for key,value in atoms.items() if (key[0],key[1]) in contacts and value['protein']])
-            if not len(pocket):raise ValueError('Mapped pocket residues are absent from guided prediction')
-            ligand=np.array([value['xyz'] for key,value in atoms.items() if key[0]==ref[0]])
-            pose['nucleophile_to_pocket_A']=float(np.linalg.norm(pocket-donor,axis=1).min())
-            pose['ligand_to_pocket_A']=float(np.linalg.norm(ligand[:,None,:]-pocket[None,:,:],axis=2).min())
-            pose['pocket_localized']=pose['ligand_to_pocket_A']<=protocol['max_distance_A']
-        poses.append(pose)
-    score=weighted_attack_angle([p['distance_A'] for p in poses],[p['angle_deg'] for p in poses])
-    return {'poses':poses,'geometry':score,'identity_pass_poses':sum(not p['identity_issues'] for p in poses),
-        **({'pocket_localized_poses':sum(p['pocket_localized'] for p in poses)} if job.get('pocket_protocol') else {}),
-        'step':job['step'],'ideal_angle':geometry.get('ideal_angle'),'scope':'Raw step-specific structural observations; no enzyme-activity threshold or cross-step activity ranking.'}
+        spec = geometry[participant]
+        if spec['kind'] == 'cofactor':
+            return [(entities[spec['ccd']][0], spec['atom'])]
+        chain = entities[spec['role']]
+        mapping = source['ligand_atom_maps'][chain]['atoms']
+        return [(chain, mapping[str(index)]['name']) for index in spec['reactive_atom_indices']]
+
+    centers = references('electrophile')
+    leaving = references('leaving_group')
+    if len(centers) != 1 or len(leaving) != 1:
+        raise ValueError('Reaction center is ambiguous')
+    donor_refs = references('nucleophile')
+    expected_protein_copies = len(job['modeling_input']['enzyme_state']['chains'])
+    ligand_atom_maps = source.get('ligand_atom_maps', {})
+    pocket_protocol = job.get('pocket_protocol')
+    tasks = [
+        (
+            prediction, job['sequence_sha256'], expected_protein_copies, entities,
+            ccd_atoms, ligand_atom_maps, centers[0], leaving[0], donor_refs, pocket_protocol,
+        )
+        for prediction in predictions
+    ]
+    first_path = Path(predictions[0]['path']) if predictions else None
+    first_size = first_path.stat().st_size if first_path and first_path.is_file() else 0
+    if max_workers is None and (len(tasks) < 16 or first_size < 65536):
+        workers = 1
+    else:
+        workers = bounded_workers(max_workers, n_items=len(tasks), min_items_for_pool=8, max_cap=8)
+    if workers > 1:
+        with ProcessPoolExecutor(max_workers=workers, initializer=init_single_thread_worker) as pool:
+            poses = list(pool.map(_analyze_single_prediction, tasks))
+    else:
+        poses = [_analyze_single_prediction(t) for t in tasks]
+    score = weighted_attack_angle([p['distance_A'] for p in poses], [p['angle_deg'] for p in poses])
+    return {
+        'poses': poses,
+        'geometry': score,
+        'identity_pass_poses': sum(not p['identity_issues'] for p in poses),
+        **({'pocket_localized_poses': sum(p['pocket_localized'] for p in poses)} if pocket_protocol else {}),
+        'step': job['step'],
+        'ideal_angle': geometry.get('ideal_angle'),
+        'scope': 'Raw step-specific structural observations; no enzyme-activity threshold or cross-step activity ranking.',
+    }
 
 
 def main(argv=None):
@@ -505,18 +619,23 @@ def main(argv=None):
             if args.max_protein_length:
                 import yaml
                 selected=[j for j in selected if max(len(e['protein']['sequence']) for e in yaml.safe_load(Path(j['input_yaml']).read_text())['sequences'] if e.get('protein'))<=args.max_protein_length]
-            selected.sort(key=lambda j:(j['rank'],j['step']))
-            deferred=[]
-            for job in {j['id']:j for j in selected}.values():
-                if job['id'] in seen:continue
-                folder=args.out/'jobs'/job['id'];folder.mkdir(parents=True,exist_ok=True)
-                complete=folder/'complete.json'
+            selected.sort(key=lambda j: (j['rank'], j['step']))
+            deferred = []
+            reusable_index = build_reusable_index(args.run)
+            for job in {j['id']: j for j in selected}.values():
+                if job['id'] in seen:
+                    continue
+                folder = args.out / 'jobs' / job['id']
+                folder.mkdir(parents=True, exist_ok=True)
+                complete = folder / 'complete.json'
                 if complete.exists():
-                    saved=json.loads(complete.read_text())
-                    if saved['job']['input_sha256']!=job['input_sha256']:raise ValueError('Cached input identity changed')
-                    analyze_outputs(saved.get('reuse_source_job') or job,saved['receipt'])
-                    seen.add(job['id']);continue
-                reused=find_reusable(job,args.run,specification)
+                    saved = json.loads(complete.read_text())
+                    if saved['job']['input_sha256'] != job['input_sha256']:
+                        raise ValueError('Cached input identity changed')
+                    analyze_outputs(saved.get('reuse_source_job') or job, saved['receipt'])
+                    seen.add(job['id'])
+                    continue
+                reused = find_reusable(job, args.run, specification, reusable_index=reusable_index)
                 if reused:
                     if reused['status']=='reused':
                         atomic_write_json(complete,{'job':job,'reuse_source_job':reused['job'],'receipt':reused['receipt'],

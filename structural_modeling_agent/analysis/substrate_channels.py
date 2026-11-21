@@ -305,7 +305,11 @@ def stage_ensemble(pose_paths, workdir, start_xyz=None, start_sel=None, start_gr
         spread = {
             "max_A": round(float(d.max()), 2), "median_A": round(float(np.median(d)), 2),
             "frac_within_4A": round(float((d <= 4.0).mean()), 3)}
-    bur = [burial_fraction(start, xyz, r, probe=probe_radius) for xyz, r in obstacles]
+    if len(obstacles) >= 4:
+        with ThreadPoolExecutor(max_workers=min(8, len(obstacles))) as ex:
+            bur = list(ex.map(lambda item: burial_fraction(start, item[0], item[1], probe=probe_radius), obstacles))
+    else:
+        bur = [burial_fraction(start, xyz, r, probe=probe_radius) for xyz, r in obstacles]
     for pp, b in zip(per_pose, bur):
         pp["burial_fraction"] = round(b, 3)
     return {"pdb_dir": pdb_dir, "n_poses": len(per_pose), "start_xyz": [round(float(x), 3) for x in start],
@@ -315,12 +319,7 @@ def stage_ensemble(pose_paths, workdir, start_xyz=None, start_sel=None, start_gr
 
 
 # --------------------------------------------------------------------------- CAVER
-def _file_sha256(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
+from ..io_utils import file_digest as _file_sha256
 
 
 def protection_radius(caver_home=CAVER_HOME):

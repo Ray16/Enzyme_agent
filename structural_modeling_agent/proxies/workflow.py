@@ -23,8 +23,13 @@ class MissingInput(ValueError):
     pass
 
 
-def atom_selection(pose: Pose, selectors: list[dict]):
-    index = {a.key: a for a in pose.atoms}
+def _atom_index(pose: Pose) -> dict[tuple[str, str, str], object]:
+    return {a.key: a for a in pose.atoms}
+
+
+def atom_selection(pose: Pose, selectors: list[dict], *, index: dict | None = None):
+    if index is None:
+        index = _atom_index(pose)
     keys = [(str(s["chain"]), str(s["residue"]), str(s["atom"])) for s in selectors]
     if not keys or any(k not in index for k in keys):
         raise MissingInput("declared atom group is empty or missing from this prediction")
@@ -35,28 +40,42 @@ def substrate_atoms(pose: Pose, context: dict):
     chains = context.get("substrate_chains", [])
     if not chains or any(ch not in pose.ligands for ch in chains):
         raise MissingInput("each target substrate chain must be present explicitly")
-    return [a for a in pose.atoms if not a.protein and a.chain in chains]
+    chain_set = set(chains)
+    return [a for a in pose.atoms if not a.protein and a.chain in chain_set]
 
 
 def protein_atoms(pose: Pose, context: dict):
     chains = context.get("protein_chains")
-    atoms = [a for a in pose.atoms if a.protein and (chains is None or a.chain in chains)]
+    chain_set = set(chains) if chains is not None else None
+    atoms = [a for a in pose.atoms if a.protein and (chain_set is None or a.chain in chain_set)]
     if not atoms:
         raise MissingInput("no protein atoms in the declared assembly context")
     return atoms
 
 
 def contacts(pose: Pose, context: dict, radius: float):
+    from scipy.spatial import cKDTree
+
     ligand = substrate_atoms(pose, context)
     protein = protein_atoms(pose, context)
     if not ligand:
         raise MissingInput("target substrate has no parsed heavy atoms")
-    xyz = np.array([a.xyz for a in protein])
-    fraction, residues = [], set()
-    for a in ligand:
-        mask = np.linalg.norm(xyz - a.xyz, axis=1) < radius
+    prot_xyz = np.asarray([a.xyz for a in protein])
+    lig_xyz = np.asarray([a.xyz for a in ligand])
+    tree = cKDTree(prot_xyz)
+    neighbors = tree.query_ball_point(lig_xyz, r=radius + 1e-9)
+    fraction = []
+    residues = set()
+    for a_xyz, idxs in zip(lig_xyz, neighbors):
+        if not idxs:
+            fraction.append(False)
+            continue
+        idx_arr = np.asarray(idxs, dtype=int)
+        mask = np.linalg.norm(prot_xyz[idx_arr] - a_xyz, axis=1) < radius
         fraction.append(bool(mask.any()))
-        residues.update((p.chain, p.residue) for p, keep in zip(protein, mask) if keep)
+        for j in idx_arr[mask]:
+            p = protein[j]
+            residues.add((p.chain, p.residue))
     return float(np.mean(fraction)), residues
 
 
@@ -68,30 +87,48 @@ VDW = {"C": 1.70, "N": 1.55, "O": 1.52, "S": 1.80, "P": 1.80,
 
 
 def group_sasa(pose: Pose, group: list[dict], context: dict, probe: float, n: int):
+    from scipy.spatial import cKDTree
+
     selected = atom_selection(pose, group)
     included = context.get("sasa_occluder_chains")
-    atoms = [a for a in pose.atoms if a.residue_name not in ("HOH", "DOD")
-             and (included is None or a.chain in included)]
-    if any(a.key not in {x.key for x in atoms} for a in selected):
+    included_set = set(included) if included is not None else None
+    atoms = [
+        a for a in pose.atoms
+        if a.residue_name not in ("HOH", "DOD")
+        and (included_set is None or a.chain in included_set)
+    ]
+    atom_keys = {x.key for x in atoms}
+    if any(a.key not in atom_keys for a in selected):
         raise MissingInput("SASA occlusion context must contain the selected group")
     if any(a.element not in VDW for a in atoms):
         raise MissingInput("SASA context contains an element without a declared radius")
-    i = np.arange(n) + .5
+    i = np.arange(n) + 0.5
     z = 1 - 2 * i / n
     phi = np.pi * (3 - np.sqrt(5)) * i
-    unit = np.column_stack((np.sqrt(1-z*z)*np.cos(phi), np.sqrt(1-z*z)*np.sin(phi), z))
-    result = 0.
+    unit = np.column_stack((np.sqrt(1 - z * z) * np.cos(phi), np.sqrt(1 - z * z) * np.sin(phi), z))
+
+    atom_xyz = np.asarray([x.xyz for x in atoms])
+    atom_rr = np.asarray([VDW[x.element] + probe for x in atoms])
+    max_rr = float(atom_rr.max()) if len(atom_rr) else 0.0
+    tree = cKDTree(atom_xyz)
+
+    result = 0.0
     for a in selected:
         radius = VDW[a.element] + probe
         sample = a.xyz + radius * unit
-        accessible = np.ones(n, dtype=bool)
-        for other in atoms:
-            if other.key == a.key:
-                continue
-            rr = VDW[other.element] + probe
-            if np.linalg.norm(other.xyz-a.xyz) < radius + rr:
-                accessible &= np.linalg.norm(sample-other.xyz, axis=1) >= rr
-        result += 4 * np.pi * radius**2 * accessible.mean()
+        cand_idxs = tree.query_ball_point(a.xyz, r=radius + max_rr)
+        nbr_idxs = [
+            idx for idx in cand_idxs
+            if atoms[idx].key != a.key and np.linalg.norm(atom_xyz[idx] - a.xyz) < radius + atom_rr[idx]
+        ]
+        if not nbr_idxs:
+            acc_mean = 1.0
+        else:
+            nbr_xyz = atom_xyz[nbr_idxs]
+            nbr_rr = atom_rr[nbr_idxs]
+            dists = np.linalg.norm(sample[:, None, :] - nbr_xyz[None, :, :], axis=2)
+            acc_mean = float((dists >= nbr_rr[None, :]).all(axis=1).mean())
+        result += 4 * np.pi * radius**2 * acc_mean
     return float(result)
 
 

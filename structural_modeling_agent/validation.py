@@ -8,13 +8,16 @@ the truth of a literature interpretation.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
+from concurrent.futures import ProcessPoolExecutor
 import hashlib
 import json
 import math
 from pathlib import Path
 
 import numpy as np
+
+from .io_utils import bounded_workers, file_digest, init_single_thread_worker
 
 
 SETUP_CHOICES = ("assembly", "enzyme_state", "cofactors", "substrates", "reaction_step")
@@ -24,14 +27,6 @@ SOURCE_KINDS = {"primary_literature", "experimental_structure", "solution_measur
 
 def fingerprint(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, allow_nan=False).encode()).hexdigest()
-
-
-def file_digest(path):
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as source:
-        for block in iter(lambda: source.read(8 * 1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def _positive_int(value):
@@ -519,55 +514,58 @@ def component_inventories(sources):
     return result
 
 
-def validate_pose(path, execution, *, component_atoms=None, generic_ligand_names=()):
-    """Measure one pose using exact atom identities and reviewed tolerances."""
-    record = execution["modeling_input"]
-    plan = (record.get("validation_plan") or {}).get("poses") or {}
+def _group_atoms_by_chain(atoms):
+    """Index parsed atoms by chain ID in a single O(N) pass."""
+    by_chain = defaultdict(list)
+    for key, atom in atoms.items():
+        by_chain[key[0]].append((key, atom))
+    return by_chain
+
+
+def _check_entity_identities(atoms, by_chain, sequences, entities, plan,
+                             component_atoms, generic_ligand_names):
     checks = []
-    try:
-        source_hash = file_digest(path)
-    except OSError:
-        source_hash = None
-    try:
-        atoms, sequences = _read_structure(path)
-    except (OSError, ValueError, RuntimeError) as exc:
-        return {"path": str(path), "sha256": source_hash, "status": "fail", "checks": [_check("structure", "fail", str(exc))]}
-    entities = execution.get("entity_map") or []
     if not entities:
         checks.append(_check("inventory", "abstain", "renderer entity map is missing"))
     wanted_chains = {e["chain"] for e in entities}
-    actual_chains = {k[0] for k in atoms}
+    actual_chains = set(by_chain)
     if entities:
         checks.append(_check("chain_inventory", "pass" if wanted_chains == actual_chains else "fail",
                              "predicted chain set compared with rendered input",
                              expected=sorted(wanted_chains), observed=sorted(actual_chains)))
+    generic_names = set(generic_ligand_names)
     for entity in entities:
         chain = entity["chain"]
-        selected = [a for k, a in atoms.items() if k[0] == chain]
+        entries = by_chain.get(chain, ())
+        selected = [a for _, a in entries]
         if entity["kind"] == "protein":
             same = sequences.get(chain) == entity["sequence"]
             checks.extend(_protein_completeness(atoms, chain, plan.get("protein_atom_policy") or {}))
         elif entity["kind"] == "cofactor":
-            residues = {k[1] for k in atoms if k[0] == chain}
-            names={a['resname'] for a in selected}
-            same=bool(selected) and len(residues)==1 and names=={entity['ccd']}
-            expected=(component_atoms or {}).get(entity['ccd'])
+            residues = {k[1] for k, _ in entries}
+            names = {a["resname"] for a in selected}
+            same = bool(selected) and len(residues) == 1 and names == {entity["ccd"]}
+            expected = (component_atoms or {}).get(entity["ccd"])
             if expected is not None:
-                observed={key[2]:atom['element'] for key,atom in atoms.items() if key[0]==chain}
-                recognized=(names=={entity['ccd']} or len(names)==1 and names<=set(generic_ligand_names))
-                same=recognized and len(residues)==1 and observed==expected
+                observed = {k[2]: a["element"] for k, a in entries}
+                recognized = names == {entity["ccd"]} or (len(names) == 1 and names <= generic_names)
+                same = recognized and len(residues) == 1 and observed == expected
         else:
             same = Counter(a["element"] for a in selected) == Counter(entity["elements"])
         checks.append(_check(f"identity.{chain}", "pass" if same else "fail",
                              "predicted entity compared with rendered identity (substrate elemental inventory only)"))
-    checks.extend(_source_checks(plan.get("evidence"), "pose_criteria.evidence"))
-    checks.extend(validate_pose_plan(record, entities)["checks"])
+    return checks
+
+
+def _check_attack_sites(atoms, record, plan, entities):
+    checks = []
     sites = plan.get("sites") or []
     if not sites:
         checks.append(_check("attack_geometry", "abstain", "site-specific reaction atoms and tolerances are missing"))
     expected_sites = (((record.get("validation_plan") or {}).get("setup") or {}).get("assembly") or {}).get("expected", {}).get("active_sites")
     if not _positive_int(expected_sites) or len(sites) != expected_sites or len({s.get("id") for s in sites}) != len(sites):
         checks.append(_check("active_site_coverage", "abstain", "declare a distinct geometry check for every modeled active site"))
+    substrate_chains = {e["chain"] for e in entities if e["kind"] == "substrate"}
     for site in sites:
         name = f"site.{site.get('id', 'unnamed')}"
         try:
@@ -575,26 +573,34 @@ def validate_pose(path, execution, *, component_atoms=None, generic_ligand_names
             alo, ahi = _range(site.get("angle_range_deg"), "attack angle")
             if ahi > 180:
                 raise ValueError("attack angles must lie in [0, 180]")
-            refs = _geometry_refs(atoms,site)
-            substrate_chains = {e["chain"] for e in entities if e["kind"] == "substrate"}
+            refs = _geometry_refs(atoms, site)
             if site.get("substrate_chain") not in substrate_chains or not any(r["chain"] == site["substrate_chain"] for r in refs):
                 raise ValueError("attack geometry must identify the participating rendered substrate chain")
             keys = [(r["chain"], str(r["residue"]), r["atom"]) for r in refs]
             if len(set(keys)) != 3:
                 raise ValueError("three distinct attack-angle atom identities are required")
             nu, el, ref = [_atom(atoms, r)["xyz"] for r in refs]
-            distance, angle = float(np.linalg.norm(nu-el)), _angle(nu, el, ref)
+            distance, angle = float(np.linalg.norm(nu - el)), _angle(nu, el, ref)
             checks.append(_check(name, "pass" if lo <= distance <= hi and alo <= angle <= ahi else "fail",
                                  "distance and mechanism-specific attack angle evaluated jointly",
-                                 distance_A=distance, angle_deg=angle,nucleophile=refs[0]))
+                                 distance_A=distance, angle_deg=angle, nucleophile=refs[0]))
         except LookupError as exc:
             checks.append(_check(name, "abstain", str(exc)))
         except (KeyError, TypeError, ValueError) as exc:
             checks.append(_check(name, "fail", str(exc)))
+    return checks
+
+
+def _check_distance_groups(atoms, plan, entities):
+    checks = []
     # Each distance group can declare metal donor distances, required catalytic
     # contacts or a reference-supported interchain contact. No universal cutoffs.
+    covered_cofactors = set()
     for group in plan.get("distance_checks") or []:
         name = f"distance.{group.get('id', 'unnamed')}"
+        a_ref, b_ref = group.get("a") or {}, group.get("b") or {}
+        if a_ref.get("chain") != b_ref.get("chain"):
+            covered_cofactors.update((a_ref.get("chain"), b_ref.get("chain")))
         try:
             low, high = _range(group.get("range_A"), "contact distance")
             first, second = _atom(atoms, group["a"]), _atom(atoms, group["b"])
@@ -607,21 +613,21 @@ def validate_pose(path, execution, *, component_atoms=None, generic_ligand_names
             checks.append(_check(name, "abstain", str(exc)))
         except (KeyError, TypeError, ValueError) as exc:
             checks.append(_check(name, "fail", str(exc)))
-    covered_cofactors = set()
-    for group in plan.get("distance_checks") or []:
-        a, b = group.get("a") or {}, group.get("b") or {}
-        if a.get("chain") != b.get("chain"):
-            covered_cofactors.update((a.get("chain"), b.get("chain")))
     required_cofactors = {e["chain"] for e in entities if e["kind"] == "cofactor"}
     if required_cofactors - covered_cofactors:
         checks.append(_check("cofactor_contact_coverage", "abstain", "each cofactor needs a declared contact to its modeled environment",
-                             missing=sorted(required_cofactors-covered_cofactors)))
+                             missing=sorted(required_cofactors - covered_cofactors)))
+    return checks
+
+
+def _check_coordination(atoms, by_chain, plan, entities):
+    checks = []
     metal_chains = {e["chain"] for e in entities if e["kind"] == "cofactor" and e.get("role") in {"metal", "catalytic_metal"}}
     import gemmi
     for entity in entities:
         if entity["kind"] == "cofactor":
-            selected = [a for k, a in atoms.items() if k[0] == entity["chain"]]
-            if len(selected) == 1 and gemmi.Element(selected[0]["element"]).is_metal:
+            entries = by_chain.get(entity["chain"], ())
+            if len(entries) == 1 and gemmi.Element(entries[0][1]["element"]).is_metal:
                 metal_chains.add(entity["chain"])
     coordinated = set()
     for group in plan.get("coordination_checks") or []:
@@ -636,7 +642,7 @@ def validate_pose(path, execution, *, component_atoms=None, generic_ligand_names
             keys = [(r["chain"], str(r["residue"]), r["atom"]) for r in refs]
             if not refs or len(set(keys)) != len(keys) or any(r == group["center"] for r in refs):
                 raise ValueError("declare distinct donor atoms excluding the metal center")
-            distances = [float(np.linalg.norm(_atom(atoms, r)["xyz"]-center["xyz"])) for r in refs]
+            distances = [float(np.linalg.norm(_atom(atoms, r)["xyz"] - center["xyz"])) for r in refs]
             count = sum(low <= d <= high for d in distances)
             checks.append(_check(name, "pass" if nlo <= count <= nhi else "fail", "coordination of declared modeled donors only",
                                  donor_distances_A=distances, donors_in_range=count))
@@ -645,12 +651,20 @@ def validate_pose(path, execution, *, component_atoms=None, generic_ligand_names
             checks.append(_check(name, "abstain", str(exc)))
         except (KeyError, TypeError, ValueError) as exc:
             checks.append(_check(name, "fail", str(exc)))
-    if metal_chains-coordinated:
+    if metal_chains - coordinated:
         checks.append(_check("metal_coordination_coverage", "abstain", "explicit donor checks are missing for modeled metal sites",
-                             missing=sorted(metal_chains-coordinated)))
+                             missing=sorted(metal_chains - coordinated)))
+    return checks
+
+
+def _check_interfaces(by_chain, plan, entities):
+    checks = []
     proteins = {e["chain"] for e in entities if e["kind"] == "protein"}
     connected = {c: {c} for c in proteins}
-    for interface in plan.get("interfaces") or []:
+    interfaces = plan.get("interfaces") or []
+    if interfaces:
+        from scipy.spatial import cKDTree
+    for interface in interfaces:
         name = f"interface.{interface.get('id', 'unnamed')}"
         try:
             first, second = interface["chains"]
@@ -659,9 +673,8 @@ def validate_pose(path, execution, *, component_atoms=None, generic_ligand_names
                 raise ValueError("interface must identify two rendered protein chains")
             if type(radius) not in (int, float) or not math.isfinite(radius) or radius <= 0 or not _positive_int(minimum):
                 raise ValueError("explicit positive interface radius and residue-pair count are required")
-            left = [(k, a) for k, a in atoms.items() if k[0] == first]
-            right = [(k, a) for k, a in atoms.items() if k[0] == second]
-            from scipy.spatial import cKDTree
+            left = by_chain.get(first, ())
+            right = by_chain.get(second, ())
             pairs = set()
             if left and right:
                 neighbors = cKDTree([a["xyz"] for _, a in left]).query_ball_tree(
@@ -678,42 +691,81 @@ def validate_pose(path, execution, *, component_atoms=None, generic_ligand_names
         reached, frontier = set(), {next(iter(proteins))}
         while frontier:
             reached.update(frontier)
-            frontier = set().union(*(connected[c] for c in frontier))-reached
+            frontier = set().union(*(connected[c] for c in frontier)) - reached
         if reached != proteins:
             checks.append(_check("assembly_interface_coverage", "abstain", "declared interface checks do not connect the modeled protein chains"))
+    return checks
+
+
+def _check_ligand_environment(by_chain, plan, entities):
     clashes = plan.get("ligand_environment")
     if not clashes:
-        checks.append(_check("ligand_environment", "abstain", "ligand contact and clash criteria are missing"))
+        return [_check("ligand_environment", "abstain", "ligand contact and clash criteria are missing")]
+    checks = []
+    try:
+        radius = clashes["contact_radius_A"]
+        clash_distance = clashes["clash_distance_A"]
+        if any(type(v) not in (int, float) or not math.isfinite(v) or v <= 0 for v in (radius, clash_distance)):
+            raise ValueError("contact and clash distances must be finite and positive")
+        minimum = clashes["minimum_contact_atoms"]
+        maximum = clashes["maximum_clashing_atoms"]
+        if type(minimum) is not int or minimum < 1 or type(maximum) is not int or maximum < 0:
+            raise ValueError("declare positive contact and nonnegative clash counts")
+        substrate_chains = {e["chain"] for e in entities if e["kind"] == "substrate"}
+        protein_chains = {e["chain"] for e in entities if e["kind"] == "protein"}
+        if not substrate_chains or not protein_chains:
+            raise LookupError("substrate and protein entity assignments are required")
+        protein_coords = [a["xyz"] for ch in protein_chains for _, a in by_chain.get(ch, ())]
+        if not protein_coords:
+            raise LookupError("protein atoms are absent")
+        from scipy.spatial import cKDTree
+        protein_tree = cKDTree(np.asarray(protein_coords))
+        for chain in sorted(substrate_chains):
+            ligand_entries = by_chain.get(chain, ())
+            if not ligand_entries:
+                raise LookupError(f"substrate chain {chain} is absent")
+            ligand_xyz = np.asarray([a["xyz"] for _, a in ligand_entries])
+            distances, _ = protein_tree.query(ligand_xyz, k=1)
+            distances = np.atleast_1d(distances)
+            contacts = int((distances <= radius).sum())
+            overlaps = int((distances < clash_distance).sum())
+            checks.append(_check(f"environment.{chain}", "pass" if contacts >= minimum and overlaps <= maximum else "fail",
+                                 "ligand-protein contacts and heavy-atom overlaps", contact_atoms=contacts,
+                                 clashing_atoms=overlaps, minimum_distance_A=float(distances.min())))
+    except LookupError as exc:
+        checks.append(_check("ligand_environment", "abstain", str(exc)))
+    except (KeyError, TypeError, ValueError) as exc:
+        checks.append(_check("ligand_environment", "fail", str(exc)))
+    return checks
+
+
+def validate_pose(path, execution, *, component_atoms=None, generic_ligand_names=(),
+                  precomputed_plan_checks=None):
+    """Measure one pose using exact atom identities and reviewed tolerances."""
+    record = execution["modeling_input"]
+    plan = (record.get("validation_plan") or {}).get("poses") or {}
+    try:
+        source_hash = file_digest(path)
+    except OSError:
+        source_hash = None
+    try:
+        atoms, sequences = _read_structure(path)
+    except (OSError, ValueError, RuntimeError) as exc:
+        return {"path": str(path), "sha256": source_hash, "status": "fail", "checks": [_check("structure", "fail", str(exc))]}
+    entities = execution.get("entity_map") or []
+    by_chain = _group_atoms_by_chain(atoms)
+    checks = _check_entity_identities(
+        atoms, by_chain, sequences, entities, plan, component_atoms, generic_ligand_names)
+    if precomputed_plan_checks is not None:
+        checks.extend(precomputed_plan_checks)
     else:
-        try:
-            radius = clashes["contact_radius_A"]
-            clash_distance = clashes["clash_distance_A"]
-            if any(type(v) not in (int, float) or not math.isfinite(v) or v <= 0 for v in (radius, clash_distance)):
-                raise ValueError("contact and clash distances must be finite and positive")
-            minimum = clashes["minimum_contact_atoms"]
-            maximum = clashes["maximum_clashing_atoms"]
-            if type(minimum) is not int or minimum < 1 or type(maximum) is not int or maximum < 0:
-                raise ValueError("declare positive contact and nonnegative clash counts")
-            substrate_chains = {e["chain"] for e in entities if e["kind"] == "substrate"}
-            protein_chains = {e["chain"] for e in entities if e["kind"] == "protein"}
-            if not substrate_chains or not protein_chains:
-                raise LookupError("substrate and protein entity assignments are required")
-            protein = np.array([v["xyz"] for k, v in atoms.items() if k[0] in protein_chains])
-            if len(protein) == 0:
-                raise LookupError("protein atoms are absent")
-            for chain in sorted(substrate_chains):
-                ligand = [v for k, v in atoms.items() if k[0] == chain]
-                if not ligand:
-                    raise LookupError(f"substrate chain {chain} is absent")
-                distances = np.array([np.linalg.norm(protein-a["xyz"], axis=1).min() for a in ligand])
-                contacts, overlaps = int((distances <= radius).sum()), int((distances < clash_distance).sum())
-                checks.append(_check(f"environment.{chain}", "pass" if contacts >= minimum and overlaps <= maximum else "fail",
-                                     "ligand-protein contacts and heavy-atom overlaps", contact_atoms=contacts,
-                                     clashing_atoms=overlaps, minimum_distance_A=float(distances.min())))
-        except LookupError as exc:
-            checks.append(_check("ligand_environment", "abstain", str(exc)))
-        except (KeyError, TypeError, ValueError) as exc:
-            checks.append(_check("ligand_environment", "fail", str(exc)))
+        checks.extend(_source_checks(plan.get("evidence"), "pose_criteria.evidence"))
+        checks.extend(validate_pose_plan(record, entities)["checks"])
+    checks.extend(_check_attack_sites(atoms, record, plan, entities))
+    checks.extend(_check_distance_groups(atoms, plan, entities))
+    checks.extend(_check_coordination(atoms, by_chain, plan, entities))
+    checks.extend(_check_interfaces(by_chain, plan, entities))
+    checks.extend(_check_ligand_environment(by_chain, plan, entities))
     try:
         current_hash = file_digest(path)
     except OSError:
@@ -723,10 +775,24 @@ def validate_pose(path, execution, *, component_atoms=None, generic_ligand_names
     return {"path": str(path), "sha256": source_hash, "status": _status(checks), "checks": checks}
 
 
-def validate_ensemble(paths, execution, *, supplemental_checks=None, chemical_component_sources=None,generic_ligand_names=()):
+def _validate_pose_worker(args):
+    path, execution, component_atoms, generic_ligand_names, precomputed_plan_checks = args
+    return validate_pose(
+        path,
+        execution,
+        component_atoms=component_atoms,
+        generic_ligand_names=generic_ligand_names,
+        precomputed_plan_checks=precomputed_plan_checks,
+    )
+
+
+def validate_ensemble(paths, execution, *, supplemental_checks=None, chemical_component_sources=None,
+                      generic_ligand_names=(), max_workers=None):
     """Report every pose, sampling coverage and the jointly supported fraction."""
     paths = [Path(p).resolve() for p in paths]
-    plan = ((execution.get("modeling_input") or {}).get("validation_plan") or {}).get("poses") or {}
+    record = execution.get("modeling_input") or {}
+    plan = (record.get("validation_plan") or {}).get("poses") or {}
+    entities = execution.get("entity_map") or []
     checks = []
     expected = plan.get("expected_predictions")
     minimum = plan.get("minimum_passing_predictions")
@@ -737,8 +803,30 @@ def validate_ensemble(paths, execution, *, supplemental_checks=None, chemical_co
                              "complete declared ensemble required", expected=expected, observed=len(paths)))
     if len({str(p.resolve()) for p in paths}) != len(paths):
         checks.append(_check("prediction_identity", "fail", "duplicate prediction paths would inflate coverage"))
-    component_atoms=component_inventories(chemical_component_sources)
-    rows = [validate_pose(p, execution,component_atoms=component_atoms,generic_ligand_names=generic_ligand_names) for p in paths]
+    component_atoms = component_inventories(chemical_component_sources)
+    # Hoist ensemble-invariant source and plan checks once instead of repeating per pose.
+    plan_checks = _source_checks(plan.get("evidence"), "pose_criteria.evidence")
+    plan_checks.extend(validate_pose_plan(record, entities)["checks"])
+    # Only spawn a process pool when explicitly requested or when files are large enough
+    # to amortize process-startup overhead (real enzyme PDB/mmCIF files are >=64 KiB).
+    first_size = paths[0].stat().st_size if paths and paths[0].is_file() else 0
+    if max_workers is None and (len(paths) < 16 or first_size < 65536):
+        workers = 1
+    else:
+        workers = bounded_workers(max_workers, n_items=len(paths), min_items_for_pool=6, max_cap=8)
+    if workers > 1:
+        tasks = [(p, execution, component_atoms, tuple(generic_ligand_names), plan_checks) for p in paths]
+        with ProcessPoolExecutor(max_workers=workers, initializer=init_single_thread_worker) as pool:
+            rows = list(pool.map(_validate_pose_worker, tasks))
+    else:
+        rows = [
+            validate_pose(
+                p, execution, component_atoms=component_atoms,
+                generic_ligand_names=generic_ligand_names,
+                precomputed_plan_checks=plan_checks,
+            )
+            for p in paths
+        ]
     for row in rows:
         row["checks"].extend((supplemental_checks or {}).get(str(Path(row["path"]).resolve()), []))
         row["status"] = _status(row["checks"])
