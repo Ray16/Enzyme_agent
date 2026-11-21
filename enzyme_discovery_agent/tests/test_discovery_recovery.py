@@ -66,8 +66,8 @@ class RecoveryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d, \
              patch("enzyme_discovery_agent.agent.register_builtin_tools"), \
              patch("enzyme_discovery_agent.agent.get_all_tools", return_value=schemas), \
-             patch("enzyme_discovery_agent.llm_client.OpenAI", return_value=provider), \
-             patch("enzyme_discovery_agent.llm_client.config.llm_backends", return_value=[
+             patch("enzyme_discovery_agent.llm.client.OpenAI", return_value=provider), \
+             patch("enzyme_discovery_agent.llm.client.config.llm_backends", return_value=[
                  {"name": "test", "model": "test", "base_url": "unused", "api_key": "unused"}]), \
              patch("enzyme_discovery_agent.models.target_reasoning.derive_target_reasoning", return_value={}):
             agent = EnzymeAgent(model="test", output_dir=d)
@@ -110,8 +110,8 @@ class ResearchCadenceTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d, \
              patch("enzyme_discovery_agent.agent.register_builtin_tools"), \
              patch("enzyme_discovery_agent.agent.get_all_tools", return_value=schemas), \
-             patch("enzyme_discovery_agent.llm_client.OpenAI", return_value=provider), \
-             patch("enzyme_discovery_agent.llm_client.config.llm_backends", return_value=[
+             patch("enzyme_discovery_agent.llm.client.OpenAI", return_value=provider), \
+             patch("enzyme_discovery_agent.llm.client.config.llm_backends", return_value=[
                  {"name": "test", "model": "test", "base_url": "unused", "api_key": "unused"}]), \
              patch("enzyme_discovery_agent.models.target_reasoning.derive_target_reasoning", return_value={}), \
              patch("enzyme_discovery_agent.models.literature_strategy.citation_actions", return_value=[citation]), \

@@ -10,7 +10,7 @@ import unittest
 from unittest.mock import patch
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.groq_limits import duration_seconds, quota_failure
 from enzyme_discovery_agent.provenance import snapshot_config
 from enzyme_discovery_agent.tests.test_llm_failover import _FakeClient, _resp, GoogleDailyQuotaTest
@@ -41,7 +41,7 @@ class GroqFallbackTest(unittest.TestCase):
         def create(fake, kwargs):
             self.seen.append(copy.deepcopy(kwargs))
             return behavior(kwargs)
-        with patch("enzyme_discovery_agent.llm_client.OpenAI", side_effect=lambda **kw: _FakeClient(create)):
+        with patch("enzyme_discovery_agent.llm.client.OpenAI", side_effect=lambda **kw: _FakeClient(create)):
             client = LLMClient(model=model)
         pacer = patch.object(client, "_pace_gemini", return_value="reservation")
         pacer.start()

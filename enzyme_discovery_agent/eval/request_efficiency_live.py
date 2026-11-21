@@ -12,9 +12,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models import target_review
-from enzyme_discovery_agent.request_efficiency import expand_evidence, serialized
+from enzyme_discovery_agent.llm.request_efficiency import expand_evidence, serialized
 from enzyme_discovery_agent.state_store import atomic_write_json
 
 

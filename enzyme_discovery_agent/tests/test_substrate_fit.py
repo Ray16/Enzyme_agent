@@ -2,7 +2,7 @@
 
 import unittest
 
-from enzyme_discovery_agent.substrate_fit import assign_one_to_one
+from enzyme_discovery_agent.chemistry.fit import assign_one_to_one
 
 
 class TestAssignOneToOne(unittest.TestCase):

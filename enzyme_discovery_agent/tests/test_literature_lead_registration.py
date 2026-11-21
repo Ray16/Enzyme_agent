@@ -9,7 +9,7 @@ from enzyme_discovery_agent.models.literature_leads import register_literature_l
 from enzyme_discovery_agent.models.rolling import evaluation_ready
 from enzyme_discovery_agent.models.recovery import next_recovery_action
 from enzyme_discovery_agent.tools.reasoning import evaluate_candidate
-from enzyme_discovery_agent.register_literature_leads import backfill
+from enzyme_discovery_agent.scripts.register_literature_leads import backfill
 
 
 class LeadRegistrationTest(unittest.TestCase):

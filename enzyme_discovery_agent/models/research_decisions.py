@@ -323,7 +323,7 @@ def decision_context(run_dir, limit=6):
         elif payload is not None and not (isinstance(payload, dict) and payload.get('text_available')):
             result_views.append({'source_tool': plan.get('tool_name'), 'source_status': actual.get('status'),
                                  'summary': actual.get('summary'), 'data': payload})
-        from enzyme_discovery_agent.evidence_projection import evidence_snapshot
+        from enzyme_discovery_agent.context import evidence_snapshot
         result_source = evidence_snapshot(run_dir, actual, 'decision_results')
         previous = {'id': state['last_decision'], 'hypothesis': plan.get('hypothesis'),
                     'alternative': plan.get('alternative'),

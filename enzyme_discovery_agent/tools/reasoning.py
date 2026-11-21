@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.chemistry_logic import (
+from enzyme_discovery_agent.chemistry.reactions import (
     check_bond_type_mismatch,
     classify_reaction_chemistry,
     compare_substrate_properties,
@@ -33,7 +33,7 @@ from enzyme_discovery_agent.models.candidate_registry import (
 )
 from enzyme_discovery_agent.models.exploration_log import append_exploration_log
 from enzyme_discovery_agent.models.target_profile import OPPOSITE_DIRECTIONS
-from enzyme_discovery_agent.substrate_fit import assign_one_to_one
+from enzyme_discovery_agent.chemistry.fit import assign_one_to_one
 from enzyme_discovery_agent.static.cofactors import COFACTOR_CHEBI_IDS
 from enzyme_discovery_agent.tool_registry import tool
 from enzyme_discovery_agent.tools._http import request_with_retry
@@ -51,7 +51,7 @@ def get_candidate_evidence(accession: str, run_dir: str = "") -> dict:
         return {"status": "empty", "data": None, "summary": "Candidate is not registered in this run."}
     from enzyme_discovery_agent.models.expansion import seed_evidence
     from enzyme_discovery_agent.models.target_review import assessment_receipt
-    from enzyme_discovery_agent.evidence_projection import evidence_snapshot
+    from enzyme_discovery_agent.context import evidence_snapshot
     data = seed_evidence(accession, entry)
     full_source = evidence_snapshot(run_dir, data, 'candidate_records')
     data = {'accession': accession, 'protein_name': data.get('protein_name'),
@@ -968,7 +968,7 @@ def evaluate_candidate(
 
     def _name_of(cid):
         resolve_chebi_smiles(cid)  # populates the name cache
-        from enzyme_discovery_agent.chemistry_logic import get_chebi_names
+        from enzyme_discovery_agent.chemistry.reactions import get_chebi_names
         return get_chebi_names(cid)
 
     from enzyme_discovery_agent.tools.native_reactions import reaction_groups, select_reaction_group, substrate_occurrences
@@ -992,8 +992,8 @@ def evaluate_candidate(
     target_parts=[part.strip() for part in target_substrate_smiles.split('.') if part.strip()]
     def _group_fit(group):
         from enzyme_discovery_agent.tools.family_reactions import _substrate_facts
-        from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
-        from enzyme_discovery_agent.substrate_fit import accommodation_score
+        from enzyme_discovery_agent.chemistry.accommodation import accommodation_facts
+        from enzyme_discovery_agent.chemistry.fit import accommodation_score
         native=[item['smiles'] for item in group['native_substrates'] if item.get('smiles')]
         if not native or not target_parts:
             return None
@@ -1071,7 +1071,7 @@ def evaluate_candidate(
                 native_substrates_info.append({"chebi_id": "", "name": ns.get("name", ""),
                                                "smiles": ns["smiles"], "source": "literature"})
     if literature_verified and not native_substrates_info:
-        from enzyme_discovery_agent.chemistry_logic import resolve_substrate_names_to_smiles
+        from enzyme_discovery_agent.chemistry.reactions import resolve_substrate_names_to_smiles
         for native in literature_evidence.get("native_substrates") or []:
             name = native.get("name", "") if isinstance(native, dict) else str(native)
             smiles = native.get("smiles") if isinstance(native, dict) else None
@@ -1114,7 +1114,7 @@ def evaluate_candidate(
                     _property_cache[t,n]=compare_substrate_properties(t,n,compute_substrate_properties)
                 return _property_cache[t,n]
             def _pair_fit(t,n):
-                from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+                from enzyme_discovery_agent.chemistry.reactions import whole_package_pair_fit
                 value=whole_package_pair_fit(_pair(t,n))
                 return value if value is not None else -1.0
             for component,(t_smi,n_smi,fit) in enumerate(assign_one_to_one(
@@ -1150,7 +1150,7 @@ def evaluate_candidate(
             # target substrate (if any) has no genuine native partner.  Ranking
             # uses this to DEMOTE a candidate that cannot host every target
             # substrate, rather than scoring an unresolvable partner as neutral.
-            from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+            from enzyme_discovery_agent.chemistry.accommodation import accommodation_facts
             substrate_similarity["accommodation"] = accommodation_facts(
                 target_molecules, native_smiles_list)
             from enzyme_discovery_agent.tools.native_reactions import annotate_indirect_donor_roles

@@ -205,7 +205,7 @@ def assess_next_batch(run_dir, llm_client=None, limit=20, accessions=None, famil
     from collections import Counter
     registry = load_candidate_registry(root)['candidates']
     assessed = []
-    from enzyme_discovery_agent.chemistry_logic import derive_activation_mechanism
+    from enzyme_discovery_agent.chemistry.reactions import derive_activation_mechanism
     for accession in stats.get('accessions_attempted', []):
         entry = registry.get(accession) or {}
         metadata = entry.get('metadata') or {}

@@ -12,7 +12,7 @@ from pathlib import Path
 from enzyme_discovery_agent.agent import EnzymeAgent
 from enzyme_discovery_agent.bootstrap import register_builtin_tools
 from enzyme_discovery_agent.context import compact_tool_definitions
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry_batch, load_candidate_registry
 from enzyme_discovery_agent.models.research_decisions import decision_context
 from enzyme_discovery_agent.models.rolling import fresh_evaluation_backlog

@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 
-from enzyme_discovery_agent.chemistry_logic import classify_reaction_chemistry
+from enzyme_discovery_agent.chemistry.reactions import classify_reaction_chemistry
 from enzyme_discovery_agent.models.target_profile import is_opposite_direction
 
 SCHEMA_VERSION = "1.0"
@@ -162,7 +162,7 @@ def _quote_reaction_support(evidence: dict, direction: str | None, bonds: set[st
     This deliberately narrow lexical check is not a general entailment model.
     Ambiguous wording remains pending for independent review.
     """
-    from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+    from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
 
     quote = str(evidence.get("evidence_quote") or "")
     anchors = [str(evidence.get(key) or "").strip() for key in
@@ -197,7 +197,7 @@ def _canonical_bond_tokens(values) -> set[str]:
     Preserve an unrecognized descriptor in lowercase so an unknown bond type
     cannot silently match a different reaction.
     """
-    from enzyme_discovery_agent.chemistry_logic import canonical_bond_types
+    from enzyme_discovery_agent.chemistry.reactions import canonical_bond_types
     return canonical_bond_types(values)
 
 
@@ -336,7 +336,7 @@ def validate_uniprot_claims(
     # a contradictory native reaction in the authoritative database record.
     if not reactions and literature_evidence:
         from enzyme_discovery_agent.models.literature_evidence import verify_literature_evidence
-        from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+        from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
         if verify_literature_evidence(literature_evidence, subject, entry):
             mechanism = literature_evidence.get("mechanism") or {}
             quote = literature_evidence["evidence_quote"]

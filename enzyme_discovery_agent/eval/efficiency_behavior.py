@@ -58,7 +58,7 @@ def compare(output, model, token_budget=120000):
     reports = {}
     for arm in ('baseline', 'optimized'):
         if arm == 'baseline':
-            with patch('enzyme_discovery_agent.request_efficiency.compact_json_messages', lambda messages: messages):
+            with patch('enzyme_discovery_agent.llm.request_efficiency.compact_json_messages', lambda messages: messages):
                 reports[arm] = run(output/arm, model, token_budget//2)
         else:
             reports[arm] = run(output/arm, model, token_budget//2)

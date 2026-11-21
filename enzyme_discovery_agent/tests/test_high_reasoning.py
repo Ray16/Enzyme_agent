@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.tests.test_llm_failover import _FakeClient, _resp, GoogleDailyQuotaTest
 
 
@@ -25,7 +25,7 @@ class HighReasoningTest(unittest.TestCase):
         with patch.object(config, "GEMINI_API_KEY", "unit-test-google-key"), \
              patch.object(config, "GROQ_API_KEY", ""), \
              patch.object(config, "GEMINI_CASCADE_MODELS", models or config.GEMINI_FREE_MODEL_PRIORITY), \
-             patch("enzyme_discovery_agent.llm_client.OpenAI", side_effect=lambda **kwargs: Client(create)):
+             patch("enzyme_discovery_agent.llm.client.OpenAI", side_effect=lambda **kwargs: Client(create)):
             client = LLMClient(model=model)
         client._pace_gemini = Mock(return_value="reservation")
         return client

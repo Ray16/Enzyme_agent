@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
 from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
 
 

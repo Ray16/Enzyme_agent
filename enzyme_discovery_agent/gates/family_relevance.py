@@ -54,8 +54,8 @@ def _survey_source_signature():
     project = Path(__file__).resolve().parents[1]
     files = (Path(__file__).resolve(), project / "tools" / "family_reactions.py",
              project / "tools" / "substrate.py", project / "tools" / "chemistry.py",
-             project / "chemistry_logic.py", project / "models" / "target_reasoning.py",
-             project / "substrate_fit.py", project / "substrate_accommodation.py",
+             project / "chemistry" / "reactions.py", project / "models" / "target_reasoning.py",
+             project / "chemistry" / "fit.py", project / "chemistry" / "accommodation.py",
              project / "models" / "target_profile.py", project / "models" / "claim_validation.py")
     try:
         return hashlib.sha256(b"family-survey-cache-v2\0" + b"\0".join(p.read_bytes() for p in files)).hexdigest()

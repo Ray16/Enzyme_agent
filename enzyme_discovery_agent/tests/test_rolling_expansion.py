@@ -13,7 +13,7 @@ from enzyme_discovery_agent.gates import AgentState
 from enzyme_discovery_agent.gates.ec_triage import ECTriageGate
 from enzyme_discovery_agent.gates.homolog_expansion import HomologExpansionGate
 from enzyme_discovery_agent.gates.systematic_coverage import SystematicCoverageGate
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.run_layout import run_file
 from enzyme_discovery_agent.models.candidate_registry import (
     update_candidate_registry, load_candidate_registry, register_structural_homologs,
@@ -212,7 +212,7 @@ class TestBudgetRecovery(unittest.TestCase):
         provider.chat.completions.create.side_effect = [error, response]
         with tempfile.TemporaryDirectory() as d, \
              patch("enzyme_discovery_agent.agent.register_builtin_tools"), \
-             patch("enzyme_discovery_agent.llm_client.OpenAI", return_value=provider), \
+             patch("enzyme_discovery_agent.llm.client.OpenAI", return_value=provider), \
              patch("enzyme_discovery_agent.config.GEMINI_API_KEY", "test-key"), \
              patch("enzyme_discovery_agent.config.GEMINI_REQUESTS_PER_MINUTE", 0), \
              patch("enzyme_discovery_agent.models.target_reasoning.derive_target_reasoning", return_value={}):
@@ -253,8 +253,8 @@ class TestBudgetRecovery(unittest.TestCase):
         provider = Provider()
         with tempfile.TemporaryDirectory() as d, \
              patch("enzyme_discovery_agent.agent.register_builtin_tools"), \
-             patch("enzyme_discovery_agent.llm_client.OpenAI", return_value=provider), \
-             patch("enzyme_discovery_agent.llm_client.config.llm_backends", return_value=[
+             patch("enzyme_discovery_agent.llm.client.OpenAI", return_value=provider), \
+             patch("enzyme_discovery_agent.llm.client.config.llm_backends", return_value=[
                  {"name": "test", "model": "test", "base_url": "unused", "api_key": "unused"}]), \
              patch("enzyme_discovery_agent.models.target_reasoning.derive_target_reasoning", return_value={}):
             first = EnzymeAgent(model="test", output_dir=d, max_iterations=1, token_budget=20)

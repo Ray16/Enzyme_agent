@@ -22,8 +22,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.substrate_fit import assign_one_to_one
-from enzyme_discovery_agent.chemistry_logic import (
+from enzyme_discovery_agent.chemistry.fit import assign_one_to_one
+from enzyme_discovery_agent.chemistry.reactions import (
     classify_reaction_chemistry,
     compare_substrate_properties,
     extract_target_bond_type,
@@ -127,7 +127,7 @@ _HOLISTIC_SIM_AXES = (
 def _holistic_fit(sub: dict | None) -> float | None:
     """Weakest required partner for current records; legacy summaries stay explicit."""
     if sub and 'property_comparisons' in sub:
-        from enzyme_discovery_agent.substrate_fit import accommodation_score
+        from enzyme_discovery_agent.chemistry.fit import accommodation_score
         return accommodation_score(sub)
     dims = (sub or {}).get("dimensions") or {}
     vals = [dims[a] for a in _HOLISTIC_SIM_AXES if isinstance(dims.get(a), (int, float))]
@@ -265,7 +265,7 @@ def select_relevant_members(
             continue
         substrate = m.get("substrate") or {}
         if "property_comparisons" in substrate or m.get("accommodation") is not None:
-            from enzyme_discovery_agent.substrate_fit import accommodation_score
+            from enzyme_discovery_agent.chemistry.fit import accommodation_score
             fit = accommodation_score({
                 **substrate,
                 "property_comparisons": substrate.get("property_comparisons"),
@@ -466,7 +466,7 @@ def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict
 
     def _pair_score(t, n):
         cmp = _cmp(t, n)
-        from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+        from enzyme_discovery_agent.chemistry.reactions import whole_package_pair_fit
         fg = whole_package_pair_fit(cmp) if cmp else None
         return fg if fg is not None else -1.0
 
@@ -914,8 +914,8 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
                     {'chebi_id':cid,'name':get_chebi_name(cid),'smiles':chebi_cache[cid]} for cid in group['chebi_ids'] if chebi_cache.get(cid)])
                 group['smiles']=[item['smiles'] for item in group['native_substrates']]
             def _fit(group):
-                from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
-                from enzyme_discovery_agent.substrate_fit import accommodation_score
+                from enzyme_discovery_agent.chemistry.accommodation import accommodation_facts
+                from enzyme_discovery_agent.chemistry.fit import accommodation_score
                 try:
                     facts=_substrate_facts(group['smiles'],target_smiles) or {}
                     from enzyme_discovery_agent.tools.native_reactions import annotate_indirect_donor_roles
@@ -930,7 +930,7 @@ def survey_family_reactions(run_dir: Path | str, seed_accession: str = "",
             if chosen:
                 smiles=chosen['smiles']
             substrate = _substrate_facts(smiles, target_smiles)
-            from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+            from enzyme_discovery_agent.chemistry.accommodation import accommodation_facts
             accommodation = accommodation_facts(target_smiles, smiles)
             from enzyme_discovery_agent.tools.native_reactions import annotate_indirect_donor_roles
             accommodation=annotate_indirect_donor_roles(entry,

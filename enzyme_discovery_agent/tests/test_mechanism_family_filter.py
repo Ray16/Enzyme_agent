@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import unittest
 
-from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
 from enzyme_discovery_agent.tools.mechanism_families import (
     family_passes_constraints,
     _family_native_direction,

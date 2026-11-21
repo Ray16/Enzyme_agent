@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import unittest
 
-from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+from enzyme_discovery_agent.chemistry.accommodation import accommodation_facts
 
 # Generic faithful chemistry — a C6 diacid and a C6 free primary diamine.
 _DIACID = "O=C(O)CCCCC(=O)O"

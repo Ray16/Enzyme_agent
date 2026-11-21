@@ -19,11 +19,11 @@ from pathlib import Path
 import time
 import urllib.parse
 
-from .llm_client import LLMClient, TokenUsage
-from .models.native_annotation import summarize_native_annotation
-from .models.target_review import target_contract, digest
-from .run_layout import run_file
-from .state_store import atomic_write_json, atomic_write_text, state_lock
+from ..llm.client import LLMClient, TokenUsage
+from ..models.native_annotation import summarize_native_annotation
+from ..models.target_review import target_contract, digest
+from ..run_layout import run_file
+from ..state_store import atomic_write_json, atomic_write_text, state_lock
 
 
 def read(path, default=None):
@@ -239,7 +239,7 @@ def nominate(client, usage, groups, families, target, output, label, budget, dea
         'groups': compact_groups(groups)}, separators=(',', ':'))}]
     # Include the transport's hidden-reasoning output allowance, not only the
     # requested visible answer. Never start a request that cannot fit its cap.
-    from . import config
+    from .. import config
     reasoning_reserve = config.ARGO_HIGH_REASONING_OUTPUT_RESERVE if client.requested_model == config.ARGO_MODEL else 0
     input_estimate = client._estimate_input_tokens(messages, [SCHEMA])
     reserve = input_estimate + output_tokens + reasoning_reserve
@@ -552,7 +552,7 @@ def apply_panel_scope(output, policy_path):
 def extend(settings):
     """Continue an existing production panel without repeating its paid call."""
     import shutil
-    from . import config
+    from .. import config
     output = Path(settings['output']).resolve()
     deadline = time.monotonic()+settings['runtime_seconds']
     with state_lock(output/'worker'):

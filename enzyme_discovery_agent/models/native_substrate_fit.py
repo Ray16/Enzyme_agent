@@ -22,7 +22,7 @@ def add_property_comparisons(root, evaluations):
     if not target:
         return evaluations
     from enzyme_discovery_agent.tools.family_reactions import _substrate_facts
-    from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+    from enzyme_discovery_agent.chemistry.accommodation import accommodation_facts
     targets = [part for part in target.split('.') if part]
     for evaluation in evaluations:
         data = evaluation.get('data', evaluation)

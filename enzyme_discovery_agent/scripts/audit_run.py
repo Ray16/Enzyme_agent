@@ -4,8 +4,8 @@ import csv
 import json
 from pathlib import Path
 
-from .models.candidate_registry import load_candidate_registry
-from .run_layout import run_file
+from ..models.candidate_registry import load_candidate_registry
+from ..run_layout import run_file
 
 
 def audit(run_dir):

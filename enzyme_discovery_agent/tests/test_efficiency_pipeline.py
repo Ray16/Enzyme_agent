@@ -12,10 +12,10 @@ import pytest
 
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.agent import EnzymeAgent
-from enzyme_discovery_agent.claude_subscription import Response, Choice, Message, Usage
+from enzyme_discovery_agent.llm.claude_subscription import Response, Choice, Message, Usage
 from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
 from enzyme_discovery_agent.models.handoff_contract import load_document, validate_handoff
-from enzyme_discovery_agent.request_efficiency import expand_evidence
+from enzyme_discovery_agent.llm.request_efficiency import expand_evidence
 from enzyme_discovery_agent.tests.test_target_review_gate import assessment
 from structural_modeling_agent.agent import ModelingAgent
 

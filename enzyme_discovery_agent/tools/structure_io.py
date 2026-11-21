@@ -30,7 +30,7 @@ from enzyme_discovery_agent.tool_registry import tool
 def load_structure_file(file_path: str, molecule_index: int = -1) -> dict:
     """Load a molecule from a structure file and return SMILES."""
     try:
-        from enzyme_discovery_agent.molecule_input import read_molecules
+        from enzyme_discovery_agent.chemistry.molecule_input import read_molecules
     except RuntimeError as e:
         return {
             "status": "error",

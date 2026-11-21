@@ -5,7 +5,7 @@ import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from enzyme_discovery_agent.request_efficiency import (
+from enzyme_discovery_agent.llm.request_efficiency import (
     compact_json_messages, compact_json_text, expand_evidence, factor_evidence, request_metrics, serialized,
 )
 
@@ -42,7 +42,7 @@ def test_json_compaction_leaves_truncated_preview_prose_and_signed_messages_unch
 
 
 def test_client_compacts_the_sent_copy_and_profiles_actual_savings(tmp_path):
-    from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+    from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
     from enzyme_discovery_agent.run_layout import run_file
     client = LLMClient(model='claude-code:synthetic-model')
     client.attach_usage(TokenUsage(), tmp_path)
@@ -126,7 +126,7 @@ def test_profile_contains_sizes_and_hashes_without_source_content():
 
 
 def test_client_profile_links_to_provider_usage_without_changing_payload(tmp_path):
-    from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+    from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
     from enzyme_discovery_agent.run_layout import run_file
     client = LLMClient(model='claude-code:synthetic-model')
     usage = TokenUsage()
@@ -205,7 +205,7 @@ def test_live_replay_reports_decorated_identifiers_and_unsupported_positive_deci
 
 def test_behavior_comparison_does_not_treat_matching_failures_as_success(tmp_path, monkeypatch):
     from enzyme_discovery_agent.eval import efficiency_behavior
-    from enzyme_discovery_agent import request_efficiency
+    from enzyme_discovery_agent.llm import request_efficiency
     sent = []
     def fake_run(output, model, budget):
         messages = [{'role': 'tool', 'content': '{ "fact": 1 }'}]

@@ -1,6 +1,6 @@
 """Keep native substrate evidence within one recorded catalytic reaction."""
 import re
-from enzyme_discovery_agent.chemistry_logic import classify_reaction_chemistry, check_bond_type_mismatch, derive_activation_mechanism
+from enzyme_discovery_agent.chemistry.reactions import classify_reaction_chemistry, check_bond_type_mismatch, derive_activation_mechanism
 
 
 def reaction_groups(entry, reactant_ids, product_ids=None):
@@ -61,7 +61,7 @@ def substrate_occurrences(reaction, substrates, *, side='left'):
     annotation retains one occurrence and an unresolved multiplicity for investigation.
     """
     from enzyme_discovery_agent.tools.family_reactions import _norm_chem
-    from enzyme_discovery_agent.chemistry_logic import get_chebi_names
+    from enzyme_discovery_agent.chemistry.reactions import get_chebi_names
     if '=' in reaction:
         lhs, rhs = reaction.split('=', 1)
         expr = rhs if side == 'right' else lhs

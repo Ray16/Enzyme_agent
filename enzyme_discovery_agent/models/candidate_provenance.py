@@ -288,12 +288,12 @@ def _accommodation_facts(target_smiles: str, native_smiles: list[str]) -> list[d
     if not target_smiles or not native_smiles:
         return []
     try:
-        from enzyme_discovery_agent.chemistry_logic import compare_substrate_properties
+        from enzyme_discovery_agent.chemistry.reactions import compare_substrate_properties
         from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
     except Exception:
         return []
-    from enzyme_discovery_agent.substrate_fit import assign_one_to_one
-    from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+    from enzyme_discovery_agent.chemistry.fit import assign_one_to_one
+    from enzyme_discovery_agent.chemistry.reactions import whole_package_pair_fit
     targets = [s for s in target_smiles.split('.') if s.strip()]
     if len(native_smiles) < len(targets):
         return []  # A partial comparison cannot stand in for every target role.
@@ -344,7 +344,7 @@ def enrich_leads_and_write_provenance(run_dir, evaluations, query, llm_client, l
         find_candidate_paper, extract_from_paper, _match_enzyme_record,
         select_relevant_sections,
     )
-    from enzyme_discovery_agent.chemistry_logic import resolve_substrate_names_to_smiles
+    from enzyme_discovery_agent.chemistry.reactions import resolve_substrate_names_to_smiles
 
     by_paper: dict[str, list] = {}
     src_by_acc: dict[str, str] = {}

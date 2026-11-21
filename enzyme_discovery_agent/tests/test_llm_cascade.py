@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.llm_cascade import next_quota_reset
 from enzyme_discovery_agent.tests.test_llm_failover import _FakeClient, _resp, GoogleDailyQuotaTest
 
@@ -27,7 +27,7 @@ class CascadeTest(unittest.TestCase):
              patch.object(config, "GEMINI_CASCADE_MODELS", models), \
              patch.object(config, "GROQ_API_KEY", ""), \
              patch.object(config, "GEMINI_API_KEY", "unused"), \
-             patch("enzyme_discovery_agent.llm_client.OpenAI", side_effect=lambda **kw: _FakeClient(create)):
+             patch("enzyme_discovery_agent.llm.client.OpenAI", side_effect=lambda **kw: _FakeClient(create)):
             return LLMClient(model="argo-test" if argo else "gemini:auto")
 
     def daily(self):
@@ -87,7 +87,7 @@ class CascadeTest(unittest.TestCase):
                 raise error
             return _resp("ok")
         client = self.make(behavior)
-        with patch("enzyme_discovery_agent.llm_client.time.sleep") as sleep:
+        with patch("enzyme_discovery_agent.llm.client.time.sleep") as sleep:
             self.assertIsNotNone(client.call([], max_retries=1))
         sleep.assert_not_called()
         self.assertEqual(client.model, "mid-test")
@@ -122,7 +122,7 @@ class CascadeTest(unittest.TestCase):
         client.model_profiles = {"strong-test": {"requests_per_minute": 2, "input_tokens_per_minute": 100},
                                  "mid-test": {"requests_per_minute": 10, "input_tokens_per_minute": 1000}}
         clock = [100.0]
-        with patch("enzyme_discovery_agent.llm_client.time.monotonic", side_effect=lambda: clock[0]), \
+        with patch("enzyme_discovery_agent.llm.client.time.monotonic", side_effect=lambda: clock[0]), \
              patch.object(client._gemini_rate_condition, "wait", side_effect=lambda s: clock.__setitem__(0, clock[0]+s)) as wait:
             client._pace_gemini(80, client.backends[0])
             client._pace_gemini(800, client.backends[1])

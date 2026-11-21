@@ -1,7 +1,7 @@
 """The role contract spans transformations without enzyme-specific identity rules."""
 import pytest
 from enzyme_discovery_agent.models.reaction_roles import validate_roles,apply_roles
-from enzyme_discovery_agent.substrate_fit import accommodation_score
+from enzyme_discovery_agent.chemistry.fit import accommodation_score
 
 
 def data():

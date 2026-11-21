@@ -512,7 +512,7 @@ def save_assessment(root,packet,result,model_provenance=None):
 
 def run_review(root,llm,limit=4,accessions=None,force=False):
     from enzyme_discovery_agent import config
-    from enzyme_discovery_agent.llm_client import LLMClient,UnparsedToolInput,unparsed_tool_input
+    from enzyme_discovery_agent.llm.client import LLMClient,UnparsedToolInput,unparsed_tool_input
     root=Path(root);rows=review_queue(root,limit,accessions,force)
     if not rows:return {'assessed':[],'errors':[],'provider_faults':[],'unassessed':[]}
     for i,row in enumerate(rows,1):row['source_id']='R'+str(i)
@@ -589,7 +589,7 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
         'Avoid repeating the target description or generic caveats in multiple fields. '
         'Do not invent evidence, experiments, identities or missing native substrates.')
     common={key:request[key] for key in ('target','target_inputs')}
-    from enzyme_discovery_agent.request_efficiency import factor_evidence, serialized
+    from enzyme_discovery_agent.llm.request_efficiency import factor_evidence, serialized
     candidate_request = {'candidates': request['candidates']}
     if config.TARGET_REVIEW_FACTOR_EVIDENCE:
         candidate_request = factor_evidence(request['candidates'])

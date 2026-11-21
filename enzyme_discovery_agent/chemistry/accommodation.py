@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import logging
 
-from enzyme_discovery_agent.substrate_fit import assign_one_to_one
+from enzyme_discovery_agent.chemistry.fit import assign_one_to_one
 
 logger = logging.getLogger("enzyme_agent")
 
@@ -80,7 +80,7 @@ def accommodation_facts(
     if not targets:
         return None
 
-    from enzyme_discovery_agent.chemistry_logic import compare_substrate_properties
+    from enzyme_discovery_agent.chemistry.reactions import compare_substrate_properties
     from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
 
     _cmp_cache: dict = {}
@@ -96,7 +96,7 @@ def accommodation_facts(
         return _cmp_cache[key]
 
     def _fg(t: str, n: str) -> float:
-        from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+        from enzyme_discovery_agent.chemistry.reactions import whole_package_pair_fit
         val = whole_package_pair_fit(_cmp(t,n))
         # -1 sentinel so an unresolved pair never wins the maximin assignment.
         return val if isinstance(val, (int, float)) else -1.0

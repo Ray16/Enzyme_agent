@@ -1,7 +1,7 @@
 """Survey promotion and ranking must use the same required-substrate evidence."""
 from enzyme_discovery_agent.tools.family_reactions import select_relevant_members, _substrate_facts
 from enzyme_discovery_agent.output.report_generator import _accommodation_score
-from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+from enzyme_discovery_agent.chemistry.accommodation import accommodation_facts
 
 
 def test_missing_required_role_cannot_be_hidden_by_high_average_features():

@@ -502,7 +502,7 @@ def _target_direction(run_dir: Path) -> str | None:
     if direction is not None:
         return direction
     try:
-        from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+        from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
         ctx = json.loads((run_file(run_dir, 'target_context.json')).read_text())
         reaction = (ctx.get("target_profile") or {}).get("reaction") or {}
         text = " ".join(filter(None, [
@@ -553,7 +553,7 @@ def extract_and_register_from_search(
 
     ortholog_capped = 0
     if tool_name == "search_uniprot" and isinstance(data, list):
-        from enzyme_discovery_agent.chemistry_logic import classify_reaction_chemistry
+        from enzyme_discovery_agent.chemistry.reactions import classify_reaction_chemistry
         target_direction = _target_direction(run_dir)
         # Group by coarse label for novelty reporting, not identity filtering.
         eligible: dict[str, list[dict]] = {}

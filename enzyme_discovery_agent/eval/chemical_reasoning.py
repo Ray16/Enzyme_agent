@@ -91,7 +91,7 @@ def grade(case, response):
 
 
 def run(output, model, budget):
-    from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+    from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
     from enzyme_discovery_agent.state_store import atomic_write_json
     output.mkdir(parents=True, exist_ok=False)
     suite = cases()

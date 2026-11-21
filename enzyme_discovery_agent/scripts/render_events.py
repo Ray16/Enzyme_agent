@@ -12,7 +12,7 @@ registry by :func:`family_key` and shows how many distinct families the raw
 candidate count actually represents.
 
 Usage:
-    python -m enzyme_discovery_agent.render_events <run_dir>
+    python -m enzyme_discovery_agent.scripts.render_events <run_dir>
 """
 
 from __future__ import annotations

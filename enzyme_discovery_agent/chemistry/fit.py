@@ -27,7 +27,7 @@ def comparison_coverage(similarity):
     expected=[s for s in expected if s]
     required=similarity.get('n_target_molecules') or accommodation.get('n_target_substrates') or len(expected)
     comparisons=similarity.get('property_comparisons') or []
-    from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+    from enzyme_discovery_agent.chemistry.reactions import whole_package_pair_fit
     observed=Counter(p.get('target_smiles') for p in comparisons if p.get('target_smiles')
                      and p.get('native_smiles') and whole_package_pair_fit(p) is not None)
     missing=list((Counter(expected)-observed).elements())
@@ -50,7 +50,7 @@ def accommodation_score(similarity: dict) -> float | None:
     Explicitly unmatched roles remain a weak analogue (zero); unresolved
     comparisons remain unknown. No similarity establishes target activity.
     """
-    from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+    from enzyme_discovery_agent.chemistry.reactions import whole_package_pair_fit
     accommodation = similarity.get("accommodation") or {}
     if accommodation.get('role_transfer_status')=='unresolved':
         return None

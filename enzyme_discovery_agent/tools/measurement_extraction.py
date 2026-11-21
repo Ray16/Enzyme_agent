@@ -388,7 +388,7 @@ def _llm_json(llm_client, system: str, user_parts: list, max_tokens: int = _EXTR
     folded into the user turn: a separate ``system`` role alongside an image reliably
     returned empty completions on the Argo/Vertex gateway."""
     if llm_client is None:
-        from enzyme_discovery_agent.llm_client import LLMClient
+        from enzyme_discovery_agent.llm.client import LLMClient
         llm_client = LLMClient()
     parts = list(user_parts)
     if parts and parts[0].get("type") == "text":

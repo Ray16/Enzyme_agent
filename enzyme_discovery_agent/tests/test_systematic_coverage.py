@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from enzyme_discovery_agent.gates.systematic_coverage import SystematicCoverageGate
 from enzyme_discovery_agent.gates import AgentState
-from enzyme_discovery_agent.chemistry_logic import (
+from enzyme_discovery_agent.chemistry.reactions import (
     classify_reaction_chemistry,
     extract_target_bond_type,
     filter_ec_prefixes_by_bond_type,

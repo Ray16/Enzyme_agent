@@ -871,3 +871,203 @@ def compare_substrate_properties(
         "aromaticity_match": arom_match,
         "cyclicity_match": cyclic_match,
     }
+
+
+# --------------------------------------------------------------------------
+# Nucleophile-class compatibility with the run's own target (deterministic)
+# --------------------------------------------------------------------------
+#
+# A ligase can only form the target bond if the nucleophile functional group of
+# its RECORDED reaction matches the nucleophile class of the target's own partner
+# substrate(s).  The target side is read from the run's target-partner structures
+# (never hard-coded here), so the same gate is correct for any query: a recorded
+# thiol nucleophile is a conflict for a target whose partners carry no free thiol,
+# and exactly right for one that does.
+#
+# Enzyme side, from the entry's recorded catalytic activity (preferred) or EC:
+#   amido_donor_glutamine  glutamine is the recorded amido donor (EC 6.3.5.-)  -> ammonia nucleophile
+#   thiol_or_CoA           free CoA / acyl-carrier thiol on the reactant side
+#                          (EC 6.2.1.-, acid-thiol ligases)                      -> thiol nucleophile
+#   ammonia                free NH3/NH4+ on the reactant side (EC 6.3.1.2)       -> ammonia nucleophile
+#   no_conflict_recorded   a recorded reaction exists and none of the above
+#   unknown                nothing recorded: no action (absence is not evidence)
+#
+# Action when the nucleophile class is absent from the target's partner classes:
+# amido-donor / thiol -> exclude (kept, with the reason, in excluded_candidates.csv);
+# free ammonia -> review + demote only, because that annotation is often transferred
+# by similarity.  If the target's nucleophile classes cannot be resolved, no action.
+# Keyed on recorded evidence only, never on family or fold names.
+
+PARTNER_EXCLUDE = frozenset({"amido_donor_glutamine", "thiol_or_CoA"})
+PARTNER_REVIEW = frozenset({"ammonia"})
+_NUCLEOPHILE_OF_CLASS = {"amido_donor_glutamine": "ammonia", "ammonia": "ammonia", "thiol_or_CoA": "thiol"}
+
+_AMMONIA_RE = re.compile(
+    r"(?<![A-Za-z0-9])(?:NH3|NH4(?:\(\+\)|\+)?|ammonia|ammonium)(?![A-Za-z0-9])", re.IGNORECASE
+)
+_GLUTAMINE_RE = re.compile(r"(?<![A-Za-z0-9])(?:L-)?glutamine(?![A-Za-z0-9])", re.IGNORECASE)
+_GLUTAMATE_RE = re.compile(r"(?<![A-Za-z0-9])(?:L-)?glutamate(?![A-Za-z0-9])", re.IGNORECASE)
+# Free CoA / ACP only: "<acyl>-CoA" is preceded by '-' and is excluded, so acyl-CoA
+# donors (whose CoA is a product) are not read as a thiol nucleophile.
+_FREE_COA_RE = re.compile(
+    r"(?<![-\w])(?:CoA|coenzyme A)(?![-\w])|\bholo-\[[^\]]*\]|(?<![-\w])\[acp\]|\bACP\b", re.IGNORECASE
+)
+_ATP_RE = re.compile(r"\bATP\b")
+_EC_AMIDO_DONOR_RE = re.compile(r"^\s*6\.3\.5\.")
+_EC_THIOL_LIGASE_RE = re.compile(r"^\s*6\.2\.1\.")
+_EC_AMMONIA_LIGASE_RE = re.compile(r"^\s*6\.3\.1\.2\s*$")
+_PARTNER_SEVERITY = {"amido_donor_glutamine": 3, "thiol_or_CoA": 3, "ammonia": 2}
+
+
+def _classify_partner_equation(equation: str) -> str | None:
+    """Class of one recorded equation, judged on its REACTANT side only."""
+    sides = _reaction_sides(str(equation))
+    if not sides:
+        return None
+    reactants, products = sides
+    if _GLUTAMINE_RE.search(reactants) and _GLUTAMATE_RE.search(products):
+        return "amido_donor_glutamine"
+    if _ATP_RE.search(reactants) and _FREE_COA_RE.search(reactants):
+        return "thiol_or_CoA"
+    if _AMMONIA_RE.search(reactants):
+        return "ammonia"
+    return "no_conflict_recorded"
+
+
+def classify_nucleophile_partner(
+    catalytic_activities: list[str] | None,
+    ec_numbers: list[str] | None = None,
+) -> dict:
+    """Classify the nucleophile an enzyme is RECORDED to use (target-independent).
+
+    Returns ``{"partner_class", "basis", "evidence", "action"}``; ``action`` is what
+    follows IF the target's partners carry a different nucleophile class (see
+    :func:`evaluate_partner_gate`, which applies the target).
+
+    Recorded equations decide first.  If any equation shows no conflict the entry is
+    ``no_conflict_recorded`` (a promiscuous entry with one usable reaction is never
+    excluded because it has another); otherwise the most severe class wins.  EC
+    numbers are consulted only when no equation decided the class.
+    """
+    equations = [str(e) for e in (catalytic_activities or []) if str(e).strip()]
+    per_equation = [(_classify_partner_equation(e), e) for e in equations]
+    per_equation = [(c, e) for c, e in per_equation if c]
+
+    if any(c == "no_conflict_recorded" for c, _ in per_equation):
+        evidence = next(e for c, e in per_equation if c == "no_conflict_recorded")
+        return {"partner_class": "no_conflict_recorded", "basis": "recorded_reaction",
+                "evidence": evidence, "action": "none"}
+
+    flagged = [(c, e) for c, e in per_equation if c in _PARTNER_SEVERITY]
+    if flagged:
+        cls, evidence = max(flagged, key=lambda item: _PARTNER_SEVERITY[item[0]])
+        return {"partner_class": cls, "basis": "recorded_reaction", "evidence": evidence,
+                "action": "exclude" if cls in PARTNER_EXCLUDE else "review_demote"}
+
+    for ec in ec_numbers or []:
+        ec = str(ec)
+        if _EC_AMIDO_DONOR_RE.match(ec):
+            return {"partner_class": "amido_donor_glutamine", "basis": "EC", "evidence": f"EC {ec}",
+                    "action": "exclude"}
+        if _EC_THIOL_LIGASE_RE.match(ec):
+            return {"partner_class": "thiol_or_CoA", "basis": "EC", "evidence": f"EC {ec}",
+                    "action": "exclude"}
+        if _EC_AMMONIA_LIGASE_RE.match(ec):
+            return {"partner_class": "ammonia", "basis": "EC", "evidence": f"EC {ec}",
+                    "action": "review_demote"}
+
+    return {"partner_class": "unknown", "basis": "none", "evidence": "", "action": "none"}
+
+
+def target_nucleophile_classes(target_smiles: list[str] | None) -> set[str]:
+    """Nucleophile functional-group classes present among the target's partner structures.
+
+    ``ammonia`` (N with no carbon neighbour), ``alkylamine`` (non-amide N with an H
+    and a carbon neighbour), ``thiol`` (S-H).  Unparseable structures are skipped, so
+    an unresolved target yields an empty set (the gate then takes no action).
+    """
+    try:
+        from rdkit import Chem
+    except ImportError:  # pragma: no cover - rdkit is a hard dependency elsewhere
+        return set()
+    classes: set[str] = set()
+    for smi in target_smiles or []:
+        mol = Chem.MolFromSmiles(str(smi)) if smi else None
+        if mol is None:
+            continue
+        for atom in mol.GetAtoms():
+            z = atom.GetAtomicNum()
+            if z == 16 and atom.GetTotalNumHs() >= 1:
+                classes.add("thiol")
+            elif z == 7 and not atom.GetIsAromatic():
+                neighbours = list(atom.GetNeighbors())
+                carbons = [n for n in neighbours if n.GetAtomicNum() == 6]
+                acylated = any(
+                    b.GetBondTypeAsDouble() == 2 and b.GetOtherAtom(c).GetAtomicNum() in (8, 16)
+                    for c in carbons for b in c.GetBonds()
+                )
+                if acylated:
+                    continue
+                if not neighbours and atom.GetTotalNumHs() >= 3:
+                    classes.add("ammonia")
+                elif carbons and atom.GetTotalNumHs() >= 1:
+                    classes.add("alkylamine")
+    return classes
+
+
+def candidate_target_smiles(data: dict) -> list[str]:
+    """Target partner structures already attached to an evaluation (no new lookups)."""
+    out: list[str] = []
+    comparisons = ((data or {}).get("substrate_similarity") or {}).get("property_comparisons") or []
+    for item in comparisons:
+        smi = item.get("target_smiles") if isinstance(item, dict) else None
+        if smi and smi not in out:
+            out.append(smi)
+    return out
+
+
+def evaluate_partner_gate(
+    catalytic_activities: list[str] | None,
+    ec_numbers: list[str] | None,
+    target_smiles: list[str] | None,
+) -> dict:
+    """Recorded nucleophile class judged against the target's own partner classes."""
+    gate = classify_nucleophile_partner(catalytic_activities, ec_numbers)
+    target_classes = target_nucleophile_classes(target_smiles)
+    gate["target_nucleophiles"] = sorted(target_classes)
+    nucleophile = _NUCLEOPHILE_OF_CLASS.get(gate["partner_class"])
+    if gate["action"] != "none":
+        if not nucleophile or not target_classes:
+            gate["action"] = "none"
+            gate["note"] = "target nucleophile class unresolved: no action"
+        elif nucleophile in target_classes:
+            gate["action"] = "none"
+            gate["note"] = "recorded nucleophile class matches a target partner"
+    gate["nucleophile"] = nucleophile
+    return gate
+
+
+def evaluate_partner_gate_for_candidate(data: dict) -> dict:
+    """:func:`evaluate_partner_gate` for one evaluation record."""
+    return evaluate_partner_gate(
+        (data or {}).get("catalytic_activities"), (data or {}).get("ec_numbers"),
+        candidate_target_smiles(data),
+    )
+
+
+def partner_gate_reason(gate: dict) -> str:
+    """One-line human reason for a non-trivial gate result."""
+    cls = gate.get("partner_class")
+    ev = gate.get("evidence") or ""
+    targets = ", ".join(gate.get("target_nucleophiles") or []) or "unresolved"
+    nucleophile = gate.get("nucleophile") or "?"
+    if cls == "amido_donor_glutamine":
+        return (f"Glutamine is the recorded amido donor ({ev}): the nucleophile is {nucleophile}, absent from the "
+                f"target's partner classes ({targets}).")
+    if cls == "thiol_or_CoA":
+        return (f"A free CoA/ACP thiol is the recorded nucleophile ({ev}); the target's partner classes are "
+                f"{targets}.")
+    if cls == "ammonia":
+        return (f"Free ammonia/ammonium is the recorded nucleophile ({ev}); the target's partner classes are "
+                f"{targets}. Review: such an annotation is often transferred by similarity.")
+    return ""

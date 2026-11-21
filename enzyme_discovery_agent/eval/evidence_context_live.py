@@ -7,7 +7,7 @@ import types
 from unittest.mock import patch
 
 from enzyme_discovery_agent.context import build_model_context
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models import research_decisions as current
 from enzyme_discovery_agent.state_store import atomic_write_json
 

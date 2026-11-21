@@ -28,7 +28,7 @@ import logging
 import re
 from pathlib import Path
 
-from enzyme_discovery_agent.chemistry_logic import resolve_substrate_names_to_smiles
+from enzyme_discovery_agent.chemistry.reactions import resolve_substrate_names_to_smiles
 
 logger = logging.getLogger("enzyme_agent")
 

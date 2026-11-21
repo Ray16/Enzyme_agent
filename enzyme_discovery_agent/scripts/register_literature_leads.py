@@ -41,7 +41,7 @@ def backfill(run_dir, output_dir, paper_ids):
                   "papers_record_sha256": hashlib.sha256(papers_file.read_bytes()).hexdigest(),
                   "model_calls": 0, "new_compute_jobs": 0,
                   "implementation_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-                     for p in (Path(__file__), Path(__file__).parent / "models/literature_leads.py")}}
+                     for p in (Path(__file__), Path(__file__).parents[1] / "models/literature_leads.py")}}
         atomic_write_json(output / "manifest.json", record)
         ids = set()
         try:

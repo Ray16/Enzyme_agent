@@ -11,7 +11,7 @@ from pathlib import Path
 from enzyme_discovery_agent.bootstrap import register_builtin_tools
 from enzyme_discovery_agent.context import compact_tool_definitions
 from enzyme_discovery_agent.eval.adaptive_evals import response_record
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry, update_candidate_registry
 from enzyme_discovery_agent.models.expansion import select_expansion_seeds
 from enzyme_discovery_agent.models.family_learning import refresh_family_learning

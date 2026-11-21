@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from enzyme_discovery_agent.context import build_model_context, build_research_state
-from enzyme_discovery_agent.llm_client import LLMClient
+from enzyme_discovery_agent.llm.client import LLMClient
 from enzyme_discovery_agent.models.event_log import append_event
 from enzyme_discovery_agent.models.research_memory import recall_memory
 from enzyme_discovery_agent.tools.reasoning import get_research_memory

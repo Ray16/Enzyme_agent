@@ -1,6 +1,6 @@
 """A hydrolyzed precursor's shape does not establish direct partner transfer."""
 from enzyme_discovery_agent.tools.native_reactions import annotate_indirect_donor_roles
-from enzyme_discovery_agent.substrate_fit import accommodation_score
+from enzyme_discovery_agent.chemistry.fit import accommodation_score
 
 
 def entry(description='Synthetic catalyst [precursor-hydrolyzing]',function='Uses precursor as a source of nitrogen.'):

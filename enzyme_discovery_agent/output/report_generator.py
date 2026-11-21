@@ -8,8 +8,8 @@ import re
 from pathlib import Path
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.chemistry.reactions import whole_package_pair_fit
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.notebook import get_notebook_text_for_report
 from enzyme_discovery_agent.prompts.report_prompts import (
     EXPLORATIVE_REPORT_SYSTEM,
@@ -200,7 +200,7 @@ def _deterministic_evidence_ranking(query: str, all_evals: list[dict]) -> list[d
     file-order fallback where a cyclic-dimer enzyme could appear first.
     """
     polymer_target = any(word in query.lower() for word in ("polymer", "oligomer"))
-    from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+    from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
     target = extract_target_bond_type(query)
     target_bonds = set(target.get("bond_types") or [])
 
@@ -371,7 +371,7 @@ def _accommodation_score(data: dict) -> float | None:
     not a blind gate.  Grounded facts, no tuned weights.  None when substrate SMILES
     were unavailable, so callers treat it as neutral.
     """
-    from enzyme_discovery_agent.substrate_fit import accommodation_score
+    from enzyme_discovery_agent.chemistry.fit import accommodation_score
     from enzyme_discovery_agent.models.reaction_roles import role_transfer_summary
     if role_transfer_summary(data)['review_required']:
         return None
@@ -583,8 +583,17 @@ def _deterministic_mechanistic_ranking(
     evidence_tiebreak: bool = True,
     family_rank_by_acc: dict[str, int] | None = None,
     fallback_substrate_fit_by_acc: dict[str, float] | None = None,
+    excluded_out: list[dict] | None = None,
 ) -> list[dict]:
     """Known conflicts first, then source-backed priorities and observed tradeoffs.
+
+    Nucleophile gate: an entry whose RECORDED reaction/EC uses a nucleophile class
+    (glutamine amido donor, free CoA/ACP thiol) that the target's own partner
+    substrates do not carry cannot form the target bond and is left out of the ranking
+    (appended to ``excluded_out`` with its reason when given, never silently dropped).
+    A recorded free-ammonia reaction the target does not call for is demoted to tier 3
+    with an explicit review flag.  Entries with no recorded reaction, or whose target
+    partners cannot be resolved, are untouched.
 
     No fixed fraction is promoted to the highest tier. Missing evidence is not
     scored as zero or ranked below measured evidence automatically. Among otherwise
@@ -594,7 +603,8 @@ def _deterministic_mechanistic_ranking(
     """
     from enzyme_discovery_agent.models.evaluations import priority_concerns,prioritized_hypothesis,shortlist_eligible
     from enzyme_discovery_agent.models.reaction_roles import role_transfer_summary
-    from enzyme_discovery_agent.substrate_fit import comparison_coverage
+    from enzyme_discovery_agent.chemistry.fit import comparison_coverage
+    from enzyme_discovery_agent.chemistry.reactions import evaluate_partner_gate_for_candidate,partner_gate_reason
     family_rank_by_acc=family_rank_by_acc or {}
     groups={}
     for evaluation in rankable_evals:
@@ -602,14 +612,21 @@ def _deterministic_mechanistic_ranking(
         accession=data.get('accession')
         if not accession or not shortlist_eligible(data):
             continue
+        gate=evaluate_partner_gate_for_candidate(data)
+        if gate['action']=='exclude':
+            if excluded_out is not None:
+                excluded_out.append({'accession':accession,'protein_name':data.get('protein_name',''),
+                    'ec_numbers':'; '.join(data.get('ec_numbers') or []),'partner_class':gate['partner_class'],
+                    'partner_class_basis':gate['basis'],'evidence':gate['evidence'],'reason':partner_gate_reason(gate)})
+            continue
         assessment=data.get('priority_assessment') or {}
         concerns=priority_concerns(data)
-        weak=bool(concerns) or assessment.get('decision')=='deprioritize'
+        weak=bool(concerns) or assessment.get('decision')=='deprioritize' or gate['action']=='review_demote'
         strong=not weak and prioritized_hypothesis(data)
         tier=3 if weak else 1 if strong else 2
         roles=role_transfer_summary(data)
         fallback=None if roles['review_required'] else (fallback_substrate_fit_by_acc or {}).get(accession)
-        row={'accession':accession,'data':data,'tier':tier,'concerns':concerns,
+        row={'accession':accession,'data':data,'tier':tier,'concerns':concerns,'gate':gate,
              'bottleneck_fit':_accommodation_score(data),
              'axes':{} if roles['review_required'] or comparison_coverage(data.get('substrate_similarity') or {})['complete'] is False
                         else _priority_axes(data,evidence_tiebreak=False,fallback=fallback)}
@@ -637,6 +654,8 @@ def _deterministic_mechanistic_ranking(
     for rank,row in enumerate(ordered,1):
         data=row['data'];tier=row['tier'];assessment=data.get('priority_assessment') or {}
         bits=[]
+        if row['gate']['action']=='review_demote':
+            bits.append('Nucleophile review: '+partner_gate_reason(row['gate']))
         if row['concerns']:
             bits.append('Known concern: '+row['concerns'][0])
         if assessment.get('reason'):
@@ -656,7 +675,8 @@ def _deterministic_mechanistic_ranking(
             'score':tier_score.get(tier,5.0),'rationale':' | '.join(bits),
             'substrate_fit':fit,'evidence_level':_evidence_level(data),
             'family_relevance':{0:'on-target',1:'neutral',2:'off-target(stopped)'}.get(family_rank_by_acc.get(row['accession'],1),'neutral'),
-            'direction':_reaction_direction(data),'priority_assessment':assessment or None})
+            'direction':_reaction_direction(data),'priority_assessment':assessment or None,
+            'partner_class':row['gate']['partner_class'],'partner_class_basis':row['gate']['basis']})
     return ranking
 
 

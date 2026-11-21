@@ -14,7 +14,7 @@ import re
 from pathlib import Path
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.chemistry_logic import classify_reaction_chemistry
+from enzyme_discovery_agent.chemistry.reactions import classify_reaction_chemistry
 from enzyme_discovery_agent.gates import AgentState, GateResult
 from enzyme_discovery_agent.models.candidate_registry import (
     current_candidate_status,

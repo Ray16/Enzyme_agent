@@ -181,7 +181,7 @@ def test_whole_turn_reviews_contradiction_before_draining_backlog_or_expanding(t
 
 
 def test_live_eval_serializes_native_subscription_response():
-    from enzyme_discovery_agent.claude_subscription import Response, Choice, Message, Usage
+    from enzyme_discovery_agent.llm.claude_subscription import Response, Choice, Message, Usage
     from enzyme_discovery_agent.eval.adaptive_evals import response_record
     response = Response([Choice(Message(None, [{'id': 'synthetic', 'function': {'name': 'plan_research_step', 'arguments': '{}'}}]), 'tool_calls')], Usage(10, 5))
     record = response_record(response)

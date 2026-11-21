@@ -3,7 +3,7 @@ import copy
 import json
 from unittest.mock import Mock, patch
 from enzyme_discovery_agent.agent import EnzymeAgent
-from enzyme_discovery_agent.llm_client import LLMClient
+from enzyme_discovery_agent.llm.client import LLMClient
 from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry, load_candidate_registry, discovery_status
 from enzyme_discovery_agent.context import compact_tool_definitions
 

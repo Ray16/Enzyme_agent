@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from enzyme_discovery_agent.chemistry_logic import (
+from enzyme_discovery_agent.chemistry.reactions import (
     derive_activation_mechanism,
     derive_modeling_cofactors,
 )

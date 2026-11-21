@@ -30,7 +30,7 @@ from enzyme_discovery_agent.gates.mechanism_family_coverage import MechanismFami
 from enzyme_discovery_agent.gates.family_survey import FamilySurveyGate
 from enzyme_discovery_agent.gates.homolog_expansion import HomologExpansionGate
 from enzyme_discovery_agent.gates.systematic_coverage import SystematicCoverageGate
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.candidate_registry import (
     current_candidate_status,
     discovery_status,
@@ -968,7 +968,7 @@ class EnzymeAgent:
         """Resolve missing substrate SMILES and derive the shared chemistry contract once."""
         if not substrate_smiles and not resume:
             try:
-                from enzyme_discovery_agent.chemistry_logic import (
+                from enzyme_discovery_agent.chemistry.reactions import (
                     resolve_substrate_names_to_smiles,
                     reason_target_substrate_smiles,
                 )

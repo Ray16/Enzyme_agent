@@ -20,7 +20,7 @@ import hashlib
 from dataclasses import dataclass
 from typing import Any
 
-from enzyme_discovery_agent.claude_tool_bridge import ClaudeToolBridge
+from enzyme_discovery_agent.llm.claude_tool_bridge import ClaudeToolBridge
 
 _AUTH_CACHE = {}
 _AUTH_LOCK = threading.Lock()
@@ -288,7 +288,7 @@ def call_claude(messages: list[dict], tools: list[dict] | None, model: str,
         mcp = root / "mcp.json"
         mcp.write_text(json.dumps({"mcpServers": {"discovery": {"command": sys.executable,
             "args": [str(Path(__file__).resolve()), "--mcp", str(schemas)],
-            "env": {"PYTHONPATH": str(Path(__file__).resolve().parent.parent)}}}}), encoding="utf-8")
+            "env": {"PYTHONPATH": str(Path(__file__).resolve().parents[2])}}}}), encoding="utf-8")
         system_file = root / "system.txt"
         system_file.write_text(system or "Follow the user's instructions.", encoding="utf-8")
         # Reasoning effort is a speed/quality lever: lower effort cuts per-call

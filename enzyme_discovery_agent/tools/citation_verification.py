@@ -21,7 +21,7 @@ from enzyme_discovery_agent import config
 from enzyme_discovery_agent.tools._http import request_with_retry
 
 if TYPE_CHECKING:
-    from enzyme_discovery_agent.llm_client import LLMClient
+    from enzyme_discovery_agent.llm.client import LLMClient
 
 logger = logging.getLogger("enzyme_agent")
 

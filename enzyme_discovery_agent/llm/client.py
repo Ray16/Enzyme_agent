@@ -578,7 +578,7 @@ class LLMClient:
                     self._model_event("llm_model_reconsider", model=self._backend_label(backend),
                                       reason="previous request-specific skip")
                     break
-        from enzyme_discovery_agent.request_efficiency import compact_json_messages, request_metrics, serialized
+        from enzyme_discovery_agent.llm.request_efficiency import compact_json_messages, request_metrics, serialized
         original_message_characters = len(serialized(messages))
         messages = compact_json_messages(messages)
         profile = request_metrics(messages, tools)
@@ -638,7 +638,7 @@ class LLMClient:
         """Attempt ONE backend with transient retries.  Returns the response, or None
         if the backend is unavailable (caller then fails over)."""
         if backend.name == "claude-code":
-            from enzyme_discovery_agent.claude_subscription import call_claude, ClaudeTransportError, Response
+            from enzyme_discovery_agent.llm.claude_subscription import call_claude, ClaudeTransportError, Response
             with self._request_count_lock:
                 self.request_counts[backend.name] = self.request_counts.get(backend.name, 0) + 1
                 key = self._backend_label(backend)

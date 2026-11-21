@@ -7,7 +7,7 @@ import types
 import unittest
 from unittest import mock
 
-from enzyme_discovery_agent import llm_client
+from enzyme_discovery_agent.llm import client as llm_client
 
 
 def _resp(content):

@@ -12,7 +12,7 @@ from unittest.mock import patch
 from enzyme_discovery_agent.agent import EnzymeAgent
 from enzyme_discovery_agent.gates import AgentState
 from enzyme_discovery_agent.gates.family_survey import FamilySurveyGate
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.candidate_registry import (
     load_candidate_registry, update_candidate_registry, discovery_status,
 )
@@ -177,8 +177,8 @@ class TestScope(unittest.TestCase):
 
 class TestUsageAndResume(unittest.TestCase):
     def _client(self):
-        with patch("enzyme_discovery_agent.llm_client.OpenAI", return_value=_Client()), \
-             patch("enzyme_discovery_agent.llm_client.config.llm_backends", return_value=[
+        with patch("enzyme_discovery_agent.llm.client.OpenAI", return_value=_Client()), \
+             patch("enzyme_discovery_agent.llm.client.config.llm_backends", return_value=[
                  {"name": "test", "model": "test", "base_url": "unused", "api_key": "unused"}]):
             return LLMClient(model="test")
 
@@ -247,8 +247,8 @@ class TestUsageAndResume(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             client = self._client()
             with patch("enzyme_discovery_agent.agent.LLMClient", LLMClient), \
-                 patch("enzyme_discovery_agent.llm_client.OpenAI", return_value=_Client()), \
-                 patch("enzyme_discovery_agent.llm_client.config.llm_backends", return_value=[
+                 patch("enzyme_discovery_agent.llm.client.OpenAI", return_value=_Client()), \
+                 patch("enzyme_discovery_agent.llm.client.config.llm_backends", return_value=[
                      {"name": "test", "model": "test", "base_url": "unused", "api_key": "unused"}]), \
                  patch("enzyme_discovery_agent.models.target_reasoning.derive_target_reasoning", return_value={}), \
                  patch("enzyme_discovery_agent.agent.RunFinalizer.finalize", return_value=("done", 0)) as finalize:

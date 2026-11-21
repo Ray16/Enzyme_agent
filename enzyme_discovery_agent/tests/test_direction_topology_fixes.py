@@ -10,7 +10,7 @@ All offline; no network/LLM.
 
 import unittest
 
-from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
 from enzyme_discovery_agent.models.claim_validation import validate_uniprot_claims
 from enzyme_discovery_agent.models.target_reasoning import derive_target_reasoning
 

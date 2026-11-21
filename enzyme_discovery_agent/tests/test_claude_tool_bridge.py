@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from enzyme_discovery_agent.claude_tool_bridge import ClaudeToolBridge
+from enzyme_discovery_agent.llm.claude_tool_bridge import ClaudeToolBridge
 
 
 DEFINITION = {"type": "function", "function": {

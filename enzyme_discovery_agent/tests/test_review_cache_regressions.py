@@ -25,7 +25,7 @@ def test_assessment_schemas_and_common_context_are_stable_across_batches(tmp_pat
             calls.append(kwargs)
             row=json.loads(kwargs['messages'][-1]['content'])['candidates'][0]
             value={**assessment(),'accession':row['accession'],'source_refs':[row['source_id']]}
-            from enzyme_discovery_agent.claude_subscription import Message
+            from enzyme_discovery_agent.llm.claude_subscription import Message
             message=Message(None,[{'id':'test','function':{
                 'name':'record_target_assessment','arguments':json.dumps(value)}}])
             return SimpleNamespace(choices=[SimpleNamespace(message=message)])
@@ -133,7 +133,7 @@ def test_explicit_source_taxon_supersedes_an_unsourced_registry_hint(tmp_path):
 
 
 def test_successful_subscription_auth_is_cached_and_settings_invalidate_it(tmp_path,monkeypatch):
-    from enzyme_discovery_agent import claude_subscription as transport
+    from enzyme_discovery_agent.llm import claude_subscription as transport
     from enzyme_discovery_agent.tests.test_claude_subscription import stream
     settings=tmp_path/'settings.json';settings.write_text('{}')
     monkeypatch.setenv('ENZYME_CLAUDE_SETTINGS',str(settings))
@@ -153,7 +153,7 @@ def test_successful_subscription_auth_is_cached_and_settings_invalidate_it(tmp_p
 
 
 def test_failed_auth_never_enters_the_success_cache(tmp_path,monkeypatch):
-    from enzyme_discovery_agent import claude_subscription as transport
+    from enzyme_discovery_agent.llm import claude_subscription as transport
     settings=tmp_path/'settings.json';settings.write_text('{}')
     monkeypatch.setenv('ENZYME_CLAUDE_SETTINGS',str(settings))
     with patch.object(transport.subprocess,'run',return_value=SimpleNamespace(returncode=1,stdout='{}')) as run:

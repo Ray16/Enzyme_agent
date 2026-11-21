@@ -6,7 +6,7 @@ from pathlib import Path
 from enzyme_discovery_agent.bootstrap import register_builtin_tools
 from enzyme_discovery_agent.context import compact_tool_definitions,build_model_context
 from enzyme_discovery_agent.eval.adaptive_evals import response_record
-from enzyme_discovery_agent.llm_client import LLMClient,TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient,TokenUsage
 from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry,load_candidate_registry
 from enzyme_discovery_agent.models.research_memory import recall_memory
 from enzyme_discovery_agent.prompts import build_system_prompt

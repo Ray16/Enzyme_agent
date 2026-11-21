@@ -3,13 +3,13 @@ import json
 
 import pytest
 
-from enzyme_discovery_agent.claude_subscription import Response, Choice, Message
-from enzyme_discovery_agent.exploration import (
+from enzyme_discovery_agent.llm.claude_subscription import Response, Choice, Message
+from enzyme_discovery_agent.scripts.exploration import (
     add_record, initial_tranche, nominate, parse_nomination, select_panel, sequence_identity,
     search_from_source_groups,
     conservative_charge,
 )
-from enzyme_discovery_agent.llm_client import TokenUsage
+from enzyme_discovery_agent.llm.client import TokenUsage
 
 
 def response(value):

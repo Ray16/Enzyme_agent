@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.context import build_model_context
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry
 from enzyme_discovery_agent.tools.reasoning import get_candidate_evidence
 
@@ -137,14 +137,14 @@ class PacingTest(unittest.TestCase):
     def client(self, limit=100):
         with patch.object(config, "GEMINI_API_KEY", "test"), \
              patch.object(config, "GEMINI_INPUT_TOKENS_PER_MINUTE", limit), \
-             patch("enzyme_discovery_agent.llm_client.OpenAI", return_value=Mock()):
+             patch("enzyme_discovery_agent.llm.client.OpenAI", return_value=Mock()):
             return LLMClient(model="gemini:test")
 
     def test_token_limit_applies_even_when_request_pacing_is_disabled(self):
         client = self.client()
         clock = [100.0]
         with patch.object(config, "GEMINI_REQUESTS_PER_MINUTE", 0), \
-             patch("enzyme_discovery_agent.llm_client.time.monotonic", side_effect=lambda: clock[0]), \
+             patch("enzyme_discovery_agent.llm.client.time.monotonic", side_effect=lambda: clock[0]), \
              patch.object(client._gemini_rate_condition, "wait", side_effect=lambda s: clock.__setitem__(0, clock[0] + s)) as wait:
             client._pace_gemini(80)
             client._pace_gemini(80)
@@ -154,7 +154,7 @@ class PacingTest(unittest.TestCase):
     def test_actual_usage_releases_overestimated_capacity(self):
         client = self.client()
         with patch.object(config, "GEMINI_REQUESTS_PER_MINUTE", 0), \
-             patch("enzyme_discovery_agent.llm_client.time.monotonic", return_value=100), \
+             patch("enzyme_discovery_agent.llm.client.time.monotonic", return_value=100), \
              patch.object(client._gemini_rate_condition, "wait") as wait:
             reservation = client._pace_gemini(80)
             client._settle_gemini_input(reservation, 20)
@@ -189,7 +189,7 @@ class PacingTest(unittest.TestCase):
             entered.set()
             return original_wait(seconds)
         with patch.object(config, "GEMINI_REQUESTS_PER_MINUTE", 0), \
-             patch("enzyme_discovery_agent.llm_client.time.monotonic", return_value=100), \
+             patch("enzyme_discovery_agent.llm.client.time.monotonic", return_value=100), \
              patch.object(client._gemini_rate_condition, "wait", side_effect=wait):
             first = client._pace_gemini(80)
             def next_request():
@@ -217,8 +217,8 @@ class PacingTest(unittest.TestCase):
              patch.object(config, "GEMINI_API_KEY", "test"), \
              patch.object(config, "GEMINI_INPUT_TOKENS_PER_MINUTE", 0), \
              patch.object(config, "GEMINI_REQUESTS_PER_MINUTE", 0), \
-             patch("enzyme_discovery_agent.llm_client.OpenAI", return_value=provider), \
-             patch("enzyme_discovery_agent.llm_client.time.sleep"):
+             patch("enzyme_discovery_agent.llm.client.OpenAI", return_value=provider), \
+             patch("enzyme_discovery_agent.llm.client.time.sleep"):
             client = LLMClient(model="gemini:test")
             client.attach_usage(TokenUsage(), d)
             self.assertIs(client.call([{"role": "user", "content": "hello"}]), response)
@@ -239,7 +239,7 @@ class PacingTest(unittest.TestCase):
         provider.chat.completions.create.side_effect = [error] * 4 + [response]
         with patch.object(config, "GEMINI_REQUESTS_PER_MINUTE", 0), \
              patch.object(client, "_pace_gemini", return_value=None), \
-             patch("enzyme_discovery_agent.llm_client.time.sleep"):
+             patch("enzyme_discovery_agent.llm.client.time.sleep"):
             self.assertIs(client.call([{"role": "user", "content": "hello"}], max_retries=1), response)
         self.assertEqual(client._active_idx, 0)
         self.assertEqual(client.request_counts["gemini"], 5)
@@ -248,7 +248,7 @@ class PacingTest(unittest.TestCase):
         client = self.client()
         checks = iter([False, True])
         client.budget_check = lambda: next(checks)
-        with patch("enzyme_discovery_agent.llm_client.time.sleep") as sleep:
+        with patch("enzyme_discovery_agent.llm.client.time.sleep") as sleep:
             client._wait_for_quota(60)
         sleep.assert_called_once_with(10.0)
         self.assertTrue(client.budget_exhausted)

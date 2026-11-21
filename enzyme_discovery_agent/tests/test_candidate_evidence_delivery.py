@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from enzyme_discovery_agent.context import build_model_context, compact_for_llm
-from enzyme_discovery_agent.evidence_projection import preview_evidence
+from enzyme_discovery_agent.context import preview_evidence
 from enzyme_discovery_agent.models.candidate_evidence import candidate_record
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry, update_candidate_registry
 from enzyme_discovery_agent.models import research_decisions as decisions, target_review as review
@@ -137,7 +137,7 @@ def test_preview_never_cuts_molecular_strings_or_source_identifiers():
 
 
 def test_review_usage_is_bound_to_its_response_and_saved_assessments(tmp_path):
-    from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+    from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
     setup(tmp_path)
     client = LLMClient(model='claude-code:synthetic-model')
     client.attach_usage(TokenUsage(), tmp_path)

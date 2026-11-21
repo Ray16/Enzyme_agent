@@ -27,7 +27,7 @@ from enzyme_discovery_agent.tool_registry import execute_tool
 from enzyme_discovery_agent.gates.ec_triage import _evidence_tier
 from enzyme_discovery_agent.gates.ec_triage import ECTriageGate
 from enzyme_discovery_agent.gates import AgentState
-from enzyme_discovery_agent.llm_client import LLMClient
+from enzyme_discovery_agent.llm.client import LLMClient
 
 
 class TestToolBootstrap(unittest.TestCase):
@@ -118,7 +118,7 @@ class TestLLMClient(unittest.TestCase):
                 self.timeout = timeout
                 return self
 
-        from enzyme_discovery_agent.llm_client import _Backend
+        from enzyme_discovery_agent.llm.client import _Backend
         fake = FakeClient()
         client = object.__new__(LLMClient)
         client.backends = [_Backend(name="test", client=fake, model="test-model")]

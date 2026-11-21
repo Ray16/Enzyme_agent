@@ -46,7 +46,7 @@ def test_legacy_mechanism_cache_requires_an_explicit_store():
 
 
 def test_chebi_transport_failure_is_retryable():
-    from enzyme_discovery_agent import chemistry_logic as chemistry
+    from enzyme_discovery_agent.chemistry import reactions as chemistry
     key = 'CHEBI:999999999'
     chemistry._chebi_smiles_cache.pop(key, None)
     with patch.object(chemistry, 'request_with_retry', side_effect=[TimeoutError(), b'{"_embedded":{"terms":[{"annotation":{"smiles_string":["CCO"]},"label":"Example"}]}}']) as fetch:

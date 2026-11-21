@@ -3,8 +3,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from enzyme_discovery_agent.substrate_fit import accommodation_score, comparison_coverage
-from enzyme_discovery_agent.chemistry_logic import check_bond_type_mismatch, canonical_bond_types
+from enzyme_discovery_agent.chemistry.fit import accommodation_score, comparison_coverage
+from enzyme_discovery_agent.chemistry.reactions import check_bond_type_mismatch, canonical_bond_types
 
 
 def pair(target,native,fit):
@@ -98,7 +98,7 @@ def test_ontology_aliases_exclude_a_product_without_dropping_unknown_participant
 
 
 def test_ontology_aliases_preserve_recorded_stoichiometry(monkeypatch):
-    from enzyme_discovery_agent import chemistry_logic as chemistry
+    from enzyme_discovery_agent.chemistry import reactions as chemistry
     from enzyme_discovery_agent.tools.native_reactions import substrate_occurrences
     monkeypatch.setattr(chemistry,'_chebi_alias_cache',{'CHEBI:SYNTH':['source monomer']})
     result=substrate_occurrences('2 source monomer = source product',[
@@ -108,9 +108,9 @@ def test_ontology_aliases_preserve_recorded_stoichiometry(monkeypatch):
 
 
 def test_discovery_and_accommodation_choose_the_same_maximin_property_assignment(monkeypatch):
-    from enzyme_discovery_agent import chemistry_logic as chemistry
+    from enzyme_discovery_agent.chemistry import reactions as chemistry
     from enzyme_discovery_agent.tools import family_reactions, substrate
-    from enzyme_discovery_agent.substrate_accommodation import accommodation_facts
+    from enzyme_discovery_agent.chemistry.accommodation import accommodation_facts
     targets=['CCCO','CCCOC'];natives=['CCCCO','CCCCC']
     values={(targets[0],natives[0]):.95,(targets[0],natives[1]):.3,
             (targets[1],natives[0]):.8,(targets[1],natives[1]):.1}

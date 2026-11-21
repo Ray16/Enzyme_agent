@@ -20,7 +20,7 @@ _SKETCH_URL = "https://pubchem.ncbi.nlm.nih.gov/edit3/index.html"
 
 
 def _load_structure_file(path: str) -> tuple[str, str | None]:
-    from enzyme_discovery_agent.molecule_input import read_single_molecule
+    from enzyme_discovery_agent.chemistry.molecule_input import read_single_molecule
     rec = read_single_molecule(path)
     return rec["smiles"], rec["name"]
 

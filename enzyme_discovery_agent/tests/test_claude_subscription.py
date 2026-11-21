@@ -6,10 +6,10 @@ from unittest.mock import patch, Mock
 
 import pytest
 
-from enzyme_discovery_agent.claude_subscription import (
+from enzyme_discovery_agent.llm.claude_subscription import (
     ClaudeTransportError, Response, Choice, Message, Usage, _parse_output, call_claude,
 )
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 
 
 def stream(*blocks, subtype="error_max_turns", provider="firstParty", usage=True):
@@ -72,7 +72,7 @@ def test_provider_failure_stops_without_retry_and_records_known_usage(tmp_path):
     client = LLMClient("claude-code:claude-sonnet-5")
     usage = TokenUsage()
     client.attach_usage(usage, tmp_path)
-    with patch("enzyme_discovery_agent.claude_subscription.call_claude", side_effect=ClaudeTransportError("failed", Usage(10, 3))) as call:
+    with patch("enzyme_discovery_agent.llm.claude_subscription.call_claude", side_effect=ClaudeTransportError("failed", Usage(10, 3))) as call:
         assert client.call([{"role": "user", "content": "hello"}]) is None
     assert call.call_count == 1
     assert usage.total_tokens == 13
@@ -85,7 +85,7 @@ def test_unknown_usage_is_marked_incomplete(tmp_path):
     client = LLMClient("claude-code:claude-sonnet-5")
     usage = TokenUsage()
     client.attach_usage(usage, tmp_path)
-    with patch("enzyme_discovery_agent.claude_subscription.call_claude", side_effect=ClaudeTransportError("timeout")):
+    with patch("enzyme_discovery_agent.llm.claude_subscription.call_claude", side_effect=ClaudeTransportError("timeout")):
         assert client.call([]) is None
     assert usage.unmetered_calls == 1
     assert not usage.to_dict()["accounting_complete"]
@@ -111,7 +111,7 @@ def test_controller_gate_and_budget_checkpoint(tmp_path):
          patch("enzyme_discovery_agent.models.target_reasoning.derive_target_reasoning", return_value={}), \
          patch("enzyme_discovery_agent.models.literature_bootstrap.bootstrap_status", return_value={'required':False}), \
          patch("enzyme_discovery_agent.models.recovery.next_recovery_action", return_value=None), \
-         patch("enzyme_discovery_agent.claude_subscription.call_claude", side_effect=model):
+         patch("enzyme_discovery_agent.llm.claude_subscription.call_claude", side_effect=model):
         agent = EnzymeAgent(model="claude-code:claude-sonnet-5", output_dir=tmp_path, token_budget=100)
         gate = Mock()
         gate.should_fire.return_value = True
@@ -157,7 +157,7 @@ def test_image_is_transmitted_as_native_content_and_environment_is_isolated(tmp_
     image = base64.b64encode(b"test-image-bytes").decode()
     outputs = stream({"type": "text", "text": "ok"}, subtype="success")
     auth = SimpleNamespace(stdout=json.dumps({"loggedIn": True, "authMethod": "claude.ai", "apiProvider": "firstParty"}), returncode=0)
-    with patch("enzyme_discovery_agent.claude_subscription.subprocess.run", side_effect=[auth, SimpleNamespace(stdout=outputs, returncode=0)]) as run:
+    with patch("enzyme_discovery_agent.llm.claude_subscription.subprocess.run", side_effect=[auth, SimpleNamespace(stdout=outputs, returncode=0)]) as run:
         response = call_claude([{"role": "user", "content": [
             {"type": "text", "text": "inspect"}, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image}"}}]}], None, "claude-sonnet-5", 30, 800)
     assert response.choices[0].message.content == "ok"
@@ -174,7 +174,7 @@ def test_rejects_settings_that_would_route_to_proxy(tmp_path, monkeypatch):
     settings = tmp_path / "settings.json"
     settings.write_text(json.dumps({"env": {"ANTHROPIC_BASE_URL": "http://example.invalid"}}))
     monkeypatch.setenv("ENZYME_CLAUDE_SETTINGS", str(settings))
-    with patch("enzyme_discovery_agent.claude_subscription.subprocess.run") as run:
+    with patch("enzyme_discovery_agent.llm.claude_subscription.subprocess.run") as run:
         with pytest.raises(ClaudeTransportError, match="authentication override") as exc:
             call_claude([], [], "claude-sonnet-5", 20, None)
     assert not exc.value.attempted
@@ -187,7 +187,7 @@ def test_rejects_api_key_login_before_any_model_request(tmp_path, monkeypatch):
     settings.write_text("{}")
     monkeypatch.setenv("ENZYME_CLAUDE_SETTINGS", str(settings))
     auth = SimpleNamespace(stdout=json.dumps({"loggedIn": True, "authMethod": "api_key", "apiProvider": "firstParty"}), returncode=0)
-    with patch("enzyme_discovery_agent.claude_subscription.subprocess.run", return_value=auth) as run:
+    with patch("enzyme_discovery_agent.llm.claude_subscription.subprocess.run", return_value=auth) as run:
         with pytest.raises(ClaudeTransportError, match="authentication") as exc:
             call_claude([], [], "claude-sonnet-5", 20, None)
     assert not exc.value.attempted
@@ -200,7 +200,7 @@ def test_provider_stop_is_distinguished_from_exhausted_token_budget(tmp_path):
          patch('enzyme_discovery_agent.agent.get_all_tools', return_value=[]), \
          patch('enzyme_discovery_agent.models.target_reasoning.derive_target_reasoning', return_value={}), \
          patch('enzyme_discovery_agent.models.recovery.next_recovery_action', return_value=None), \
-         patch('enzyme_discovery_agent.claude_subscription.call_claude', side_effect=ClaudeTransportError('provider error', Usage(4, 2))):
+         patch('enzyme_discovery_agent.llm.claude_subscription.call_claude', side_effect=ClaudeTransportError('provider error', Usage(4, 2))):
         agent = EnzymeAgent(model='claude-code:claude-sonnet-5', output_dir=tmp_path, token_budget=100)
         for gate in (agent._literature_harvest_gate, agent._mechanism_family_gate,
                      agent._family_survey_gate, agent._gate_pipeline.gates[2]):
@@ -216,7 +216,7 @@ def test_provider_stop_is_distinguished_from_exhausted_token_budget(tmp_path):
 def test_token_ledger_separates_cache_reads_from_fresh_input():
     """A cache read bills at a fraction of fresh input; collapsing them hides real spend."""
     from types import SimpleNamespace
-    from enzyme_discovery_agent.llm_client import TokenUsage
+    from enzyme_discovery_agent.llm.client import TokenUsage
     usage = TokenUsage()
     for _ in range(3):
         usage.record("main", SimpleNamespace(usage=Usage(
@@ -232,7 +232,7 @@ def test_token_ledger_separates_cache_reads_from_fresh_input():
 
 def test_a_backend_without_a_prompt_breakdown_is_unchanged():
     from types import SimpleNamespace
-    from enzyme_discovery_agent.llm_client import TokenUsage
+    from enzyme_discovery_agent.llm.client import TokenUsage
     usage = TokenUsage()
     usage.record("main", SimpleNamespace(usage=SimpleNamespace(prompt_tokens=10, completion_tokens=2)))
     payload = usage.to_dict()

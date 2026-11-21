@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
 from enzyme_discovery_agent.run_layout import run_file
 
 logger = logging.getLogger("enzyme_agent")

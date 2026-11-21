@@ -24,7 +24,7 @@ from pathlib import Path
 
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.state_store import atomic_write_json
-from enzyme_discovery_agent.chemistry_logic import extract_target_bond_type
+from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
 
 logger = logging.getLogger("enzyme_agent")
 

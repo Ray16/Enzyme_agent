@@ -5,10 +5,10 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from enzyme_discovery_agent import config
-from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
 from enzyme_discovery_agent.output.finalizer import RunFinalizer
 from enzyme_discovery_agent.output.report_generator import (
     generate_two_pass_explorative,

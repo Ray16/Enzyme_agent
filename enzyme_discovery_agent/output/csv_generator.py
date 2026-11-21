@@ -83,6 +83,8 @@ def _load_ranking(run_dir: Path) -> dict[str, dict]:
             "family_relevance": entry.get("family_relevance", ""),
             "direction": entry.get("direction", ""),
             "rationale":entry.get('rationale',''),
+            "partner_class":entry.get("partner_class",""),
+            "partner_class_basis":entry.get("partner_class_basis",""),
         }
         lookup[acc] = info
     return lookup
@@ -112,6 +114,33 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
     from enzyme_discovery_agent.state_store import atomic_write_text
     atomic_write_text(run_file(run_dir,'candidate_assessment_queue.csv'),queue.getvalue())
     all_evals=accepted
+
+    # Nucleophile gate: entries whose RECORDED reaction/EC uses a nucleophile class the
+    # target's own partners do not carry cannot form the target bond.  They are kept
+    # out of the decision list but written, with the reason, to
+    # excluded_candidates.csv so nothing is silently dropped.
+    from enzyme_discovery_agent.chemistry.reactions import evaluate_partner_gate_for_candidate,partner_gate_reason
+    from enzyme_discovery_agent.state_store import atomic_write_text
+    kept_evals=[];gated_rows={}
+    for ev in all_evals:
+        d=ev.get("data",ev)
+        gate=evaluate_partner_gate_for_candidate(d)
+        if gate["action"]=="exclude":
+            gated_rows.setdefault(d.get("accession",""),{
+                "accession":d.get("accession",""),"protein_name":d.get("protein_name",""),
+                "organism":d.get("organism",""),"ec_numbers":"; ".join(d.get("ec_numbers") or []),
+                "partner_class":gate["partner_class"],"partner_class_basis":gate["basis"],
+                "evidence":gate["evidence"],"reason":partner_gate_reason(gate)})
+        else:
+            kept_evals.append(ev)
+    excluded_buffer=io.StringIO(newline="")
+    excluded_writer=csv.DictWriter(excluded_buffer,fieldnames=["accession","protein_name","organism","ec_numbers",
+        "partner_class","partner_class_basis","evidence","reason"])
+    excluded_writer.writeheader()
+    for row in sorted(gated_rows.values(),key=lambda item:item["accession"]):
+        excluded_writer.writerow(row)
+    atomic_write_text(run_file(run_dir,'excluded_candidates.csv'),excluded_buffer.getvalue())
+    all_evals=kept_evals
 
     ranking = _load_ranking(run_dir) if ranking_entries is None else {row["accession"]:row for row in ranking_entries}
     mech_families = load_mechanism_families(run_dir)
@@ -162,6 +191,7 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
         "substrate_comparison_complete", "substrate_comparison_required", "substrate_comparison_resolved",
         "substrate_partner_fits", "substrate_fit_scope",
         "target_role_assessments", "substrate_role_mapping_status",
+        "partner_class", "partner_class_basis",
     ]
 
     try:
@@ -180,8 +210,8 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
                 lit = d.get("literature", {})
                 struct = d.get("structural_data", {})
                 sub_sim = d.get("substrate_similarity", {})
-                from enzyme_discovery_agent.substrate_fit import comparison_coverage
-                from enzyme_discovery_agent.chemistry_logic import whole_package_pair_fit
+                from enzyme_discovery_agent.chemistry.fit import comparison_coverage
+                from enzyme_discovery_agent.chemistry.reactions import whole_package_pair_fit
                 coverage=comparison_coverage(sub_sim)
                 mut = d.get("mutagenesis", {})
                 pdb_ids = struct.get("pdb_ids", [])
@@ -255,6 +285,8 @@ def generate_candidates_csv(run_dir: Path, all_evals: list[dict], log_fn=None, *
                     "substrate_fit_scope":"Weakest required-partner analogue resemblance; incomplete comparisons are unknown. Not measured binding or activity.",
                     "target_role_assessments":json.dumps(assessment.get('target_roles') or []),
                     "substrate_role_mapping_status":(sub_sim.get('accommodation') or {}).get('role_transfer_status','not_recorded'),
+                    "partner_class":rank_info.get("partner_class") or evaluate_partner_gate_for_candidate(d)["partner_class"],
+                    "partner_class_basis":rank_info.get("partner_class_basis") or evaluate_partner_gate_for_candidate(d)["basis"],
                 })
 
             content=f.getvalue()

@@ -9,7 +9,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from enzyme_discovery_agent.request_efficiency import factor_evidence, expand_evidence, serialized
+from enzyme_discovery_agent.llm.request_efficiency import factor_evidence, expand_evidence, serialized
 
 
 def audit_run(root):

@@ -1,7 +1,7 @@
 """An estimated volume must not masquerade as a 3D comparison."""
 from unittest.mock import patch
 
-from enzyme_discovery_agent.chemistry_logic import compare_substrate_properties
+from enzyme_discovery_agent.chemistry.reactions import compare_substrate_properties
 from enzyme_discovery_agent.tools import substrate
 
 
