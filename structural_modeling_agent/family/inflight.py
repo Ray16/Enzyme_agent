@@ -11,7 +11,7 @@ import time
 import yaml
 from campaign_catalog.lookup import physical_system_key
 from enzyme_discovery_agent.state_store import atomic_write_json,state_lock
-from .family_cofold import COFOLD_ARM_NAMES
+from .cofold import COFOLD_ARM_NAMES
 
 
 _QUEUES={}

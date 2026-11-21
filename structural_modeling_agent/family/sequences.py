@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 from enzyme_discovery_agent.state_store import atomic_write_json,state_lock
-from .msa import prepare,valid_csv
+from ..msa import prepare,valid_csv
 
 
 def prepare_members(handoff,legacy,directory,cache,fetch=None):

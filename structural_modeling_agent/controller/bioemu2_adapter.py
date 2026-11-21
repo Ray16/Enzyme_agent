@@ -17,7 +17,7 @@ from pathlib import Path
 import shutil
 
 from enzyme_discovery_agent.state_store import atomic_write_json
-from .validation import fingerprint, validate_msa, validate_pose_plan, _source_checks
+from ..validation import fingerprint, validate_msa, validate_pose_plan, _source_checks
 
 UPSTREAM_REVISION = "06be369dd555849165a737472d42d936959e46fc"
 
@@ -121,7 +121,7 @@ def prepare(execution_path, checkpoint_path, output_dir, *, seed, mode="equilibr
            "conditioning": "unrestrained", "scope": "joint modeled complex; biological validity is not established"}
     path = output / "job.json"; _write_immutable(path, job)
     return {"job_path": str(path), "job_sha256": digest(path), "mode": mode, "seed": seed,
-            "run_command": ["python", "-m", "structural_modeling_agent.bioemu2_adapter", "run", "--job", str(path), "--output", str(output / "results")]}
+            "run_command": ["python", "-m", "structural_modeling_agent.controller.bioemu2_adapter", "run", "--job", str(path), "--output", str(output / "results")]}
 
 
 def verify_job(job):
@@ -191,7 +191,7 @@ def run(job_path, output_dir):
 def inspect_result(job_path, manifest_path):
     """Inspect a dynamics ensemble without replacing the primary cofold report."""
     import copy
-    from .validation import validate_ensemble
+    from ..validation import validate_ensemble
     job = json.loads(Path(job_path).read_text()); verify_job(job)
     path = Path(manifest_path).resolve()
     producer = json.loads(path.read_text())

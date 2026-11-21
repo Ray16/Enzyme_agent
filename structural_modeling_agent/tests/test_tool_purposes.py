@@ -88,7 +88,7 @@ def test_bioemu2_preparation_preserves_entities_and_msas_and_is_optional(tmp_pat
 
 
 def test_mocked_bioemu2_run_and_dynamics_inspection_preserve_rejected_frames(tmp_path,monkeypatch):
-    from structural_modeling_agent.bioemu2_adapter import run
+    from structural_modeling_agent.controller.bioemu2_adapter import run
     agent=baseline(tmp_path)
     original=fingerprint(agent._current("SYNTHETIC1")["pose_validation"])
     checkpoint=tmp_path/"weights.ckpt"; checkpoint.write_text("fake")

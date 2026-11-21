@@ -10,7 +10,7 @@ import string
 from itertools import combinations
 
 from .validation import _source_checks, fingerprint, file_digest
-from .integrity import proxy_integrity
+from .controller.integrity import proxy_integrity
 
 
 CENTERS = {"atp_alpha", "atp_gamma", "carbonyl", "other"}

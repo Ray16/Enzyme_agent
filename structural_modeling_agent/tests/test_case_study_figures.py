@@ -1,7 +1,7 @@
 """Publication lookup still resolves figures after co-locating both case studies."""
 import pytest
-from structural_modeling_agent.publish_figures import figure_manifest
-from structural_modeling_agent import integration
+from structural_modeling_agent.scripts.publish_figures import figure_manifest
+from structural_modeling_agent.proxies import integration
 import hashlib
 import json
 

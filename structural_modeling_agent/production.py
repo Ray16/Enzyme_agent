@@ -4,7 +4,7 @@ from pathlib import Path
 import time
 
 from .agent import ModelingAgent
-from .cofold_execution import execute
+from .cofold.execution import execute
 from enzyme_discovery_agent.state_store import atomic_write_json
 
 

@@ -22,7 +22,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import step1_nac as s
-from proxy_policy import (  # noqa: E402
+from structural_modeling_agent.proxies.policy import (  # noqa: E402
     COMPATIBLE_ANGLE,
     MIN_GATED_POSES,
     PROXY_VERSION,

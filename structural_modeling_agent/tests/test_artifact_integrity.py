@@ -1,6 +1,6 @@
 import json
 
-from structural_modeling_agent.integrity import proxy_integrity
+from structural_modeling_agent.controller.integrity import proxy_integrity
 from structural_modeling_agent.validation import file_digest, fingerprint
 
 

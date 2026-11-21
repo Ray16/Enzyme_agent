@@ -23,8 +23,8 @@ def _string(description):
 
 
 def build_core_schemas():
-    from .barrier.api import tool_schemas as barrier_schemas
-    from .sampling.setup import declaration_schema
+    from ..barrier.api import tool_schemas as barrier_schemas
+    from ..sampling.setup import declaration_schema
     from enzyme_discovery_agent.tools import structural_proxy_planning
     from enzyme_discovery_agent.tool_registry import get_tool_info
 

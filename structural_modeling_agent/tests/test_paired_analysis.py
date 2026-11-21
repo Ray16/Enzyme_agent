@@ -5,7 +5,7 @@ import math
 import pytest
 from rdkit import Chem
 
-from structural_modeling_agent.paired_analysis import carbonyl_atom_references, paired_rows
+from structural_modeling_agent.family.paired_analysis import carbonyl_atom_references, paired_rows
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def test_known_carbonyl_trajectory_is_measured_against_carbonyl_oxygen(mapped_sy
     import hashlib
     import json
     import numpy as np
-    from structural_modeling_agent.paired_analysis import carbonyl_geometry
+    from structural_modeling_agent.family.paired_analysis import carbonyl_geometry
     job, manifest = mapped_system
     job['input_sha256'] = 'verified-input'
     job['modeling_input']['geometry']['charge_centre']['atom_selector'] = 'activated_carbonyl_oxygen'
@@ -69,7 +69,7 @@ def test_known_carbonyl_trajectory_is_measured_against_carbonyl_oxygen(mapped_sy
 
 def test_joint_order_uses_weaker_step_distance_not_one_favorable_step(tmp_path, monkeypatch):
     import json
-    monkeypatch.setattr('structural_modeling_agent.paired_analysis.carbonyl_geometry', lambda *args: None)
+    monkeypatch.setattr('structural_modeling_agent.family.paired_analysis.carbonyl_geometry', lambda *args: None)
     saved = tmp_path / 'saved.json';saved.write_text(json.dumps({}))
     summaries = []
     for accession, distances in [('balanced', (4., 5.)), ('one_close', (2., 20.))]:

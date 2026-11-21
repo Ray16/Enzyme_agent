@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-SKILLS_DIR = Path(__file__).parent / "skills"
+SKILLS_DIR = Path(__file__).resolve().parents[1] / "skills"
 
 
 @dataclass(frozen=True)

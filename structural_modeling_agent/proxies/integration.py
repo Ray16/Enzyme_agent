@@ -17,7 +17,7 @@ from enzyme_discovery_agent.state_store import atomic_write_json
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def digest(path: Path) -> str:
@@ -68,7 +68,7 @@ def export_bundle(config: dict, root: Path = ROOT) -> dict:
     selected = json.loads(source.read_text())
     definition = {**config["definition"]}
     if definition["kind"] == "proximity_weighted_attack_angle":
-        from .proxies.attack_angle import METRIC_ID
+        from ..proxies.attack_angle import METRIC_ID
         if selected.get("metric_id") != METRIC_ID or selected.get("kind") != definition["kind"]:
             raise ValueError("current metric identity differs from the frozen definition")
         definition.update({key: selected[key] for key in ("metric_id", "aggregation", "companion", "fitted_parameters")})
@@ -130,7 +130,7 @@ def validate_bundle(bundle: dict):
         if not np.isfinite(definition["intercept"]) or np.any(np.asarray(definition["scales"]) <= 0):
             raise ValueError("invalid frozen intercept or scales")
     elif definition["kind"] == "proximity_weighted_attack_angle":
-        from .proxies.attack_angle import METRIC_ID
+        from ..proxies.attack_angle import METRIC_ID
         if definition.get("metric_id") != METRIC_ID or definition.get("score_units") != "degrees" or definition.get("fitted_parameters") != []:
             raise ValueError("invalid current angle metric definition")
     elif definition["kind"] == "geometry_ensemble":
@@ -304,7 +304,7 @@ def apply_bundle(bundle: dict, candidates: list[dict], root: Path = ROOT) -> dic
                 if phosphate != expected:
                     raise ValueError("reactive phosphate disagrees with the declared mechanism")
                 if definition["kind"] == "proximity_weighted_attack_angle":
-                    from .proxies.attack_angle import geometry_from_pdb, weighted_attack_angle
+                    from ..proxies.attack_angle import geometry_from_pdb, weighted_attack_angle
                     values = np.array([geometry_from_pdb(p, phosphate) for p in paths])
                     metrics = weighted_attack_angle(values[:, 0], values[:, 1])
                     item.update(metrics, score=metrics["weighted_attack_angle_deg"], metric_id=definition["metric_id"])
@@ -385,7 +385,7 @@ def main():
         save_application(args.output_dir, apply_bundle(json.loads(args.bundle.read_text()), candidates))
         print(args.output_dir / "candidate_proxy_evidence.json")
     else:
-        from structural_modeling_agent.integration_examples import run_examples
+        from structural_modeling_agent.proxies.integration_examples import run_examples
         run_examples(args.output_dir)
 
 

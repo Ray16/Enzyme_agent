@@ -3,14 +3,14 @@ import hashlib
 import json
 from pathlib import Path
 
-from .validation import file_digest
+from ..validation import file_digest
 
 
 def _legacy_evidence(review):
     """Measure saved coordinates under their declared selector, retaining missing producer provenance."""
     from Bio.SeqUtils import seq1
     from Bio.PDB.Polypeptide import is_aa
-    from .proxies.attack_angle import geometry_from_pdb,weighted_attack_angle
+    from ..proxies.attack_angle import geometry_from_pdb,weighted_attack_angle
     inventory_path=Path(review['source_inventory']['path'])
     if file_digest(inventory_path)!=review['source_inventory']['sha256']:
         raise ValueError('Legacy review inventory changed')
@@ -47,7 +47,7 @@ def _legacy_evidence(review):
 
 def checked_evidence(review):
     """Recheck the original report and every bound artifact under its saved model."""
-    from .evidence import modeling_evidence
+    from ..evidence import modeling_evidence
     if review.get('kind')=='legacy_conditional_geometry':return _legacy_evidence(review)
     source = review['source_report']
     path = Path(source['path'])

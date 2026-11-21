@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from structural_modeling_agent import family_cofold as family
+from structural_modeling_agent.family import cofold as family
 from structural_modeling_agent.modeling_reasoning.chemistry import characterize_smiles
 
 
@@ -92,7 +92,7 @@ def test_physical_reuse_key_ignores_labels_but_preserves_required_input_differen
 
 
 def test_sequence_preparation_batches_only_new_members(tmp_path,monkeypatch):
-    from structural_modeling_agent import family_sequences
+    from structural_modeling_agent.family import sequences as family_sequences
     handoff={'families':[{'members':[{'accession':'P12345','enzyme_name':'Synthetic enzyme A'},
                                    {'accession':'Q12345','enzyme_name':'Synthetic enzyme B'}]}]}
     fetches=[];batches=[]

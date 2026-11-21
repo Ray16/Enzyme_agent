@@ -128,7 +128,7 @@ class ToolRegistry:
 # ---------------------------------------------------------------------------
 
 def _h_analyze_substrate_contacts(agent, args):
-    from .analysis import substrate_contacts as sc
+    from ..analysis import substrate_contacts as sc
     if sc.mda is None:
         raise RuntimeError(f"MDAnalysis is required for substrate contact analysis: {sc._MDA_ERR}")
     mode = args["mode"]
@@ -158,7 +158,7 @@ def _h_analyze_substrate_contacts(agent, args):
 
 
 def _h_analyze_substrate_channels(agent, args):
-    from .analysis import substrate_channels as ch
+    from ..analysis import substrate_channels as ch
     mode = args.get("mode", "parse")
     if mode == "parse":
         caver_dir = str(agent._authorized_evidence(args["caver_out_dir"]))
@@ -216,7 +216,7 @@ def _h_render_channel_visualization(agent, args):
     out_root.mkdir(parents=True, exist_ok=True)
     safe_label = "".join(c if c.isalnum() or c in "._-" else "_" for c in label)
     if fmt == "html":
-        from .analysis import channels_html
+        from ..analysis import channels_html
         out_path = str(out_root / f"{safe_label}_channels.html")
         channels_html.build(
             [(label, [(args.get("panel_label") or label, run_dir)])],
@@ -225,7 +225,7 @@ def _h_render_channel_visualization(agent, args):
             cdn=bool(args.get("cdn", False)),
         )
     elif fmt == "png":
-        from .analysis import render_channels
+        from ..analysis import render_channels
         out_path = str(out_root / f"{safe_label}_channels.png")
         render_channels.render(
             run_dir,
@@ -242,7 +242,7 @@ def _h_render_channel_visualization(agent, args):
 
 
 def _h_render_contact_figure(agent, args):
-    from .analysis import render_contacts
+    from ..analysis import render_contacts
 
     pose_path = str(agent._authorized_evidence(args["pose_path"]))
     freq_path = str(agent._authorized_evidence(args["freq_json_path"]))
@@ -262,7 +262,7 @@ def _h_render_contact_figure(agent, args):
 
 
 def _h_assess_mlmm_profile(agent, args):
-    from .mlmm import evaluate_profile, profile_from_freq_dirs
+    from ..mlmm import evaluate_profile, profile_from_freq_dirs
 
     results_dir = str(agent._authorized_evidence(args["results_dir"]))
     profile = profile_from_freq_dirs(

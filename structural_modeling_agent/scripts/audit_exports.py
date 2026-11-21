@@ -12,9 +12,9 @@ import json
 import os
 from pathlib import Path
 
-from .validation import file_digest, fingerprint, validate_ensemble, validate_pose_plan
-from .integration import relocated_source
-from .cofold.queue_worker import verify_completion
+from ..validation import file_digest, fingerprint, validate_ensemble, validate_pose_plan
+from ..proxies.integration import relocated_source
+from ..cofold.queue_worker import verify_completion
 
 NAMES = {"report.json", "structural_modeling_evidence.json", "candidate_proxy_evidence.json", "ranking.json", "bundle.json"}
 SKIP = {".git", ".venv", "__pycache__", "archive", "source_snapshots", "source-snapshots", "code_snapshots", "mlmm", "node_modules", "artifacts"}
@@ -51,7 +51,7 @@ def inspect_file(path):
                     row["findings"].append({"accession": acc, "status": "unverified", "detail": str(exc)})
         elif data.get("kind") == "modeling_validation":
             row["kind"] = "modeling_evidence_export"
-            from .evidence import modeling_evidence
+            from ..evidence import modeling_evidence
             source = data.get("source_report") or {}
             try:
                 if file_digest(source["path"]) != source["sha256"]:

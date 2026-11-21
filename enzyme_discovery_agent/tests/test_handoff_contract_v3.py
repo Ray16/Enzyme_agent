@@ -311,7 +311,7 @@ def test_builder_requires_sequence_source_and_exact_fasta(tmp_path):
 
 
 def test_investigation_leads_are_readable_without_admission(tmp_path):
-    from structural_modeling_agent.handoff_inspect import inspect_handoff
+    from structural_modeling_agent.controller.handoff_inspect import inspect_handoff
     path = write_structural_modeling_handoff(tmp_path, create_run(tmp_path), {'query': 'synthetic'})
     summary = inspect_handoff(path)
     assert summary['admitted_candidates'] == 1

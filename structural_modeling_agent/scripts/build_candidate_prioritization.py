@@ -12,7 +12,7 @@ import sys
 from collections import defaultdict
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from proxy_policy import (  # noqa: E402
+from structural_modeling_agent.proxies.policy import (  # noqa: E402
     PROXY_VERSION,
     proxy_mechanism_for_family,
     structural_support_tier,

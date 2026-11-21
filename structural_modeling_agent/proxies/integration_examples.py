@@ -10,9 +10,9 @@ import json
 from pathlib import Path
 
 from .integration import ROOT, export_bundle, read_rows, apply_bundle, save_application, write_json
-from .proxy_policy import resolve_mechanism, proxy_mechanism_for_family
-from .proxies import parse_pose
-from .proxies.workflow import evaluate_plan
+from .policy import resolve_mechanism, proxy_mechanism_for_family
+from ..proxies import parse_pose
+from ..proxies.workflow import evaluate_plan
 
 
 def campaign_configs() -> dict[str, dict]:

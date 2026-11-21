@@ -17,7 +17,7 @@ import re
 import uuid
 
 from enzyme_discovery_agent.state_store import atomic_write_json
-from .scientific_reasoning import (
+from ..scientific_reasoning import (
     assess_reasoning,
     compare_hypothesis_tests,
     execution_reasoning_errors,
@@ -26,7 +26,7 @@ from .scientific_reasoning import (
     validate_reasoning,
     validate_test,
 )
-from .validation import (
+from ..validation import (
     entity_map_for,
     file_digest,
     fingerprint,
@@ -84,8 +84,8 @@ def _merge_model_changes(base, changes):
 # ---------------------------------------------------------------------------
 
 def _h_inspect_barrier_contract(agent, args):
-    from .barrier.api import contract
-    from .barrier.workflow import backend_config
+    from ..barrier.api import contract
+    from ..barrier.workflow import backend_config
 
     result = contract()
     try:
@@ -96,32 +96,32 @@ def _h_inspect_barrier_contract(agent, args):
 
 
 def _h_prepare_barrier_inputs(agent, args):
-    from .barrier.api import prepare_for_agent
+    from ..barrier.api import prepare_for_agent
     return prepare_for_agent(agent, args)
 
 
 def _h_inspect_barrier_result(agent, args):
-    from .barrier.api import review_result
+    from ..barrier.api import review_result
     return review_result(agent._authorized_evidence(args["path"]))
 
 
 def _h_plan_barrier_calculation(agent, args):
-    from .barrier.workflow import plan
+    from ..barrier.workflow import plan
     return plan(agent, args)
 
 
 def _h_submit_barrier_calculation(agent, args):
-    from .barrier.workflow import reconcile
+    from ..barrier.workflow import reconcile
     return reconcile(agent, args["accession"], args["study_id"], "submit")
 
 
 def _h_check_barrier_calculation(agent, args):
-    from .barrier.workflow import reconcile
+    from ..barrier.workflow import reconcile
     return reconcile(agent, args["accession"], args["study_id"], "status")
 
 
 def _h_record_barrier_assessment(agent, args):
-    from .barrier.workflow import assess
+    from ..barrier.workflow import assess
     return assess(agent, args)
 
 
@@ -139,7 +139,7 @@ def _make_shared_proxy_handler(tool_name):
 # ---------------------------------------------------------------------------
 
 def _h_inspect_validation_contract(agent, args):
-    contract = json.loads((Path(__file__).parent / "validation_contract.json").read_text())
+    contract = json.loads((Path(__file__).resolve().parents[1] / "validation_contract.json").read_text())
     section = args.get("section", "all")
     if section == "all":
         return contract
@@ -157,7 +157,7 @@ def _h_inspect_validation_contract(agent, args):
 def _h_inspect_mlmm_engine_options(agent, args):
     from importlib.metadata import PackageNotFoundError, version
 
-    result = json.loads((Path(__file__).parent / "knowledge" / "mlmm_engine_options.json").read_text())
+    result = json.loads((Path(__file__).resolve().parents[1] / "knowledge" / "mlmm_engine_options.json").read_text())
     try:
         current = version("fairchem-core")
     except PackageNotFoundError:
@@ -170,33 +170,33 @@ def _h_inspect_mlmm_engine_options(agent, args):
 
 
 def _h_inspect_preparation_contract(agent, args):
-    from .sampling.preparation import contract
+    from ..sampling.preparation import contract
     return contract()
 
 
 def _h_inspect_preparation_structure(agent, args):
-    from .sampling.preparation import inspect_pdb
+    from ..sampling.preparation import inspect_pdb
     result = inspect_pdb(agent._authorized_evidence(args["path"]))
     return {"artifact": agent._artifact("preparation_structure", result), **result}
 
 
 def _h_inspect_sampling_setup_contract(agent, args):
-    from .sampling.setup import contract
+    from ..sampling.setup import contract
     return contract()
 
 
 def _h_inspect_processivity_toolchain(agent, args):
-    from .sampling.toolchain import inspect_toolchain
+    from ..sampling.toolchain import inspect_toolchain
     return inspect_toolchain()
 
 
 def _h_inspect_processivity_contract(agent, args):
-    from .sampling.kinetics import contract
+    from ..sampling.kinetics import contract
     return contract()
 
 
 def _h_inspect_result_locations(agent, args):
-    from .result_layout import results_index
+    from ..result_layout import results_index
     index = results_index(agent.run_dir, agent.state)
     accession = args.get("accession")
     if accession is not None:
@@ -206,7 +206,7 @@ def _h_inspect_result_locations(agent, args):
 
 
 def _h_inspect_molecule(agent, args):
-    from .modeling_reasoning.chemistry import characterize_smiles, resolve_ligand_atom
+    from ..modeling_reasoning.chemistry import characterize_smiles, resolve_ligand_atom
     result = characterize_smiles(args["smiles"])
     if args.get("smarts"):
         result["reactive_site_matches"] = resolve_ligand_atom(args["smiles"], args["smarts"])
@@ -281,7 +281,7 @@ def _h_search_literature(agent, args):
 
 
 def _h_assess_assembly(agent, args):
-    from .modeling_reasoning.modeling_unit import assess, gather_evidence
+    from ..modeling_reasoning.modeling_unit import assess, gather_evidence
     identifier = args.get("uniprot_accession", args["accession"])
     if not re.fullmatch(r"(?:[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})", identifier):
         return {
@@ -324,7 +324,7 @@ def _h_finish_task(agent, args):
     ):
         agent.state.update(status="waiting_for_backend", conclusion=args["rationale"])
         return {"status": "waiting_for_backend", "reason": "job ownership must be reconciled on resume"}
-    from .barrier.workflow import ACTIVE
+    from ..barrier.workflow import ACTIVE
     if any(
         s.get("job", {}).get("status") in ACTIVE
         for c in agent.state["candidates"].values()
@@ -341,7 +341,7 @@ def _h_finish_task(agent, args):
 # ---------------------------------------------------------------------------
 
 def _h_assess_processivity_network(agent, args, acc, candidate):
-    from .sampling.kinetics import evaluate
+    from ..sampling.kinetics import evaluate
     network = copy.deepcopy(args["network"])
     if (
         network.get("sequence_sha256") != hashlib.sha256(candidate["sequence"].encode()).hexdigest()
@@ -392,7 +392,7 @@ def _h_record_preparation_findings(agent, args, acc, candidate):
 
 
 def _h_run_preparation_operator(agent, args, acc, candidate):
-    from .sampling.preparation import run_operator
+    from ..sampling.preparation import run_operator
     folder = agent.run_dir / "artifacts" / f"preparation_{acc}_{uuid.uuid4().hex}"
     result = run_operator(
         folder, args["python"], args["code"], args["inputs"],
@@ -403,7 +403,7 @@ def _h_run_preparation_operator(agent, args, acc, candidate):
 
 
 def _h_preparation_study(agent, args, acc, candidate, *, declare: bool):
-    from .sampling.preparation import evaluate
+    from ..sampling.preparation import evaluate
     state = agent.state["candidates"][acc]
     studies = state.setdefault("preparation_studies", {})
     if declare:
@@ -433,8 +433,8 @@ def _h_preparation_study(agent, args, acc, candidate, *, declare: bool):
 
 
 def _h_sampling_setup(agent, args, acc, candidate, *, declare: bool):
-    from .sampling.setup import assess
-    from .result_layout import revision_dir
+    from ..sampling.setup import assess
+    from ..result_layout import revision_dir
 
     state = agent.state["candidates"][acc]
     revisions = state["revisions"]
@@ -570,7 +570,7 @@ def _h_propose_model(agent, args, acc, candidate):
 
 def _h_plan_followup(agent, args, acc, candidate, revision):
     from .workflow_policy import TOOL_PURPOSES, validate_followup
-    from .result_layout import followup_paths
+    from ..result_layout import followup_paths
 
     plan = copy.deepcopy(args["plan"])
     validate_followup(plan, revision)
@@ -636,7 +636,7 @@ def _h_plan_followup(agent, args, acc, candidate, revision):
 
 def _h_prepare_bioemu2(agent, args, acc, candidate, revision):
     from .bioemu2_adapter import prepare
-    from .scientific_reasoning import reasoning_errors
+    from ..scientific_reasoning import reasoning_errors
     from .workflow_policy import validate_followup
 
     followup = revision.get("followups", {}).get(args["followup_id"])
@@ -806,7 +806,7 @@ def _h_respond_to_reasoning_feedback(agent, args, acc, candidate, revision):
 
 def _h_declare_proxy_plan(agent, args, acc, candidate, revision):
     from enzyme_discovery_agent.structural_proxy_planning import validate_proxy_plan
-    from .proxies.library import BY_ID
+    from ..proxies.library import BY_ID
 
     plan = copy.deepcopy(args["plan"])
     for hypothesis in plan.get("hypotheses", []):
@@ -832,8 +832,8 @@ def _h_declare_proxy_plan(agent, args, acc, candidate, revision):
 
 
 def _h_evaluate_proxy_plan(agent, args, acc, candidate, revision):
-    from .proxies.library import BY_ID
-    from .proxies.workflow import run_plan
+    from ..proxies.library import BY_ID
+    from ..proxies.workflow import run_plan
 
     if not revision.get("proxy_plan"):
         raise ValueError("declare a proxy plan before evaluating measurements")
@@ -868,8 +868,8 @@ def _h_validate_setup(agent, args, acc, candidate, revision):
 
 
 def _h_render_inputs(agent, args, acc, candidate, revision):
-    from .result_layout import cofold_dir
-    from .scripts.build_step1_inputs import enzyme_chains, readiness_errors, yaml_for
+    from ..result_layout import cofold_dir
+    from ..scripts.build_step1_inputs import enzyme_chains, readiness_errors, yaml_for
 
     record = revision["modeling_input"]
     identity_error = agent._sequence_identity_error(acc)
@@ -1034,6 +1034,7 @@ PRE_ACCESSION_HANDLERS = {
     "get_structural_proxy_guidance": _make_shared_proxy_handler("get_structural_proxy_guidance"),
     "validate_structural_proxy_plan": _make_shared_proxy_handler("validate_structural_proxy_plan"),
     "inspect_experimental_proxy_bundle": _make_shared_proxy_handler("inspect_experimental_proxy_bundle"),
+    "inspect_investigation_lead": _h_inspect_investigation_lead,
 }
 
 GENERAL_HANDLERS = {
@@ -1049,7 +1050,6 @@ GENERAL_HANDLERS = {
     "inspect_candidate": _h_inspect_candidate,
     "review_existing_predictions": _h_review_existing_predictions,
     "read_candidate_section": _h_read_candidate_section,
-    "inspect_investigation_lead": _h_inspect_investigation_lead,
     "read_evidence": _h_read_evidence,
     "retrieve_reference": _h_retrieve_reference,
     "search_literature": _h_search_literature,

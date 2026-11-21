@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from structural_modeling_agent.integration import (definition_digest, apply_bundle,
+from structural_modeling_agent.proxies.integration import (definition_digest, apply_bundle,
     frozen_geometry_score, frozen_linear_score, validate_bundle)
 from enzyme_discovery_agent.tools.structural_evidence import get_structural_evaluation
 from enzyme_discovery_agent.import_structural_evidence import import_structural_evidence
@@ -68,7 +68,7 @@ def test_missing_features_wrong_sampling_and_definition_drift_abstain(tmp_path):
 
 
 def test_declared_feature_source_matches_values_and_fingerprint(tmp_path):
-    from structural_modeling_agent.integration import digest
+    from structural_modeling_agent.proxies.integration import digest
     c = candidate()
     source = tmp_path / "features.json"
     source.write_text(json.dumps({key: c[key] for key in ("accession", "feature_definition_id", "n_poses", "features")}))
@@ -129,8 +129,8 @@ def test_reference_template_reader_accepts_path_objects(tmp_path):
 
 
 def test_current_example_uses_the_fixed_angle_metric():
-    from structural_modeling_agent.integration_examples import campaign_configs
-    from structural_modeling_agent.integration import export_bundle
+    from structural_modeling_agent.proxies.integration_examples import campaign_configs
+    from structural_modeling_agent.proxies.integration import export_bundle
     definition = export_bundle(campaign_configs()["amide_activation"])["definition"]
     assert definition["kind"] == "proximity_weighted_attack_angle"
     assert definition["metric_id"] == "inverse_distance_attack_angle_v1"

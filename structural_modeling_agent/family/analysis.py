@@ -9,7 +9,7 @@ from collections import Counter,defaultdict
 from pathlib import Path
 
 from enzyme_discovery_agent.state_store import atomic_write_json,state_lock
-from .proxies.attack_angle import weighted_attack_angle
+from ..proxies.attack_angle import near_attack_mode, weighted_attack_angle
 
 
 def _short_name(raw,genes=(),literature=None):
@@ -104,9 +104,10 @@ def refresh(directory):
     directory=Path(directory);out=directory/'analysis';out.mkdir(exist_ok=True)
     files=sorted(directory.glob('jobs/*/complete.json'))
     overrides=out/'display_names.json'
+    analyzer_sources=[Path(__file__)]+[Path(__file__).with_name(name) for name in ('paired_analysis.py',)]+[Path(__file__).resolve().parents[1]/'proxies'/'attack_angle.py']
     signature=hashlib.sha256(json.dumps({'files':[(str(p),p.stat().st_size,p.stat().st_mtime_ns) for p in files],
         'labels':overrides.read_text() if overrides.exists() else '',
-        'analyzer':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}).encode()).hexdigest()
+        'analyzer':[hashlib.sha256(source.read_bytes()).hexdigest() for source in analyzer_sources]}).encode()).hexdigest()
     with state_lock(out/'refresh'):
         status=out/'status.json'
         if status.exists() and json.loads(status.read_text()).get('signature')==signature:return
@@ -122,6 +123,7 @@ def refresh(directory):
         for path in files:
             result=json.loads(path.read_text());job=result['job'];analysis=result['analysis'];raw=analysis['poses']
             score=weighted_attack_angle([p['distance_A'] for p in raw],[p['angle_deg'] for p in raw])
+            mode=near_attack_mode([p['distance_A'] for p in raw],[p['angle_deg'] for p in raw])
             label=labels[job['accession']];step=job['step']
             discovery_run_id=job.get('discovery_run_id',directory.parent.name)
             total=sum(1/p['distance_A'] for p in raw)
@@ -134,15 +136,28 @@ def refresh(directory):
                     'identity_pass':not pose['identity_issues'],'path':pose['path']})
             summaries.append({'discovery_run_id':discovery_run_id,'enzyme_name':job['enzyme_name'],'accession':job['accession'],'family_id':job['family_id'],
                 'analysis_arm':job.get('analysis_arm','unrestrained'),
-                'step':step,**score,'identity_pass_poses':analysis['identity_pass_poses'],
+                'step':step,**score,
+                'near_attack_threshold_A':mode['near_attack_threshold_A'],'n_near_attack_poses':mode['n_near_attack_poses'],
+                'near_attack_fraction':mode['near_attack_fraction'],
+                'near_mode_weighted_angle_deg':mode['near_mode_weighted_angle_deg'],
+                'near_mode_harmonic_distance_A':mode['near_mode_harmonic_distance_A'],
+                'identity_pass_poses':analysis['identity_pass_poses'],
                 'numerical_profile':result['receipt'].get('numerical_profile'),'result':str(path)})
             folder=out/'ensembles'/job['accession'];folder.mkdir(parents=True,exist_ok=True)
             fig,axes=plt.subplots(1,2,figsize=(10,4),layout='constrained')
-            axes[0].scatter([p['distance_A'] for p in raw],[p['angle_deg'] for p in raw],s=25,alpha=.7,color='#0072B2')
+            near=[p['distance_A']<=mode['near_attack_threshold_A'] for p in raw]
+            axes[0].scatter([p['distance_A'] for p in raw],[p['angle_deg'] for p in raw],s=25,alpha=.7,
+                color=['#0072B2' if n else '#BBBBBB' for n in near])
+            axes[0].axvline(mode['near_attack_threshold_A'],color='#D55E00',linestyle='--',linewidth=1)
             axes[0].set(xlabel='Attack distance (Å)',ylabel='Attack angle (°)',ylim=(0,180))
             axes[1].hist([p['distance_A'] for p in raw],bins=12,color='#009E73',edgecolor='white')
+            axes[1].axvline(mode['near_attack_threshold_A'],color='#D55E00',linestyle='--',linewidth=1)
             axes[1].set(xlabel='Attack distance (Å)',ylabel='Predictions')
-            fig.suptitle(f"{label} — step {step}\nWeighted angle {score['weighted_attack_angle_deg']:.2f}°; harmonic distance {score['harmonic_distance_A']:.2f} Å; n={len(raw)}",fontsize=10)
+            mode_angle=mode['near_mode_weighted_angle_deg']
+            mode_text=(f"first-mode angle {mode_angle:.2f}° (n={mode['n_near_attack_poses']})" if mode_angle is not None
+                else f"no near-attack mode (n={mode['n_near_attack_poses']})")
+            fig.suptitle(f"{label} — step {step}\nWeighted angle {score['weighted_attack_angle_deg']:.2f}°; harmonic distance {score['harmonic_distance_A']:.2f} Å; n={len(raw)}\n"
+                f"near-attack fraction (≤{mode['near_attack_threshold_A']:.0f} Å) {mode['near_attack_fraction']:.0%}; {mode_text}",fontsize=9)
             for extension in ['png','svg']:
                 target=folder/('step_'+str(step)+'.'+extension)
                 temporary=target.with_name(target.stem+'.'+str(os.getpid())+'.tmp'+target.suffix)

@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from structural_modeling_agent import cofold_execution as workflow
+from structural_modeling_agent.cofold import execution as workflow
 
 
 class Agent:

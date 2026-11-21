@@ -1,5 +1,5 @@
 """The provider consults current shared records rather than a launch-time alias list."""
-from structural_modeling_agent.lambda_boltz_backend import check_prediction_pool
+from structural_modeling_agent.cofold.lambda_backend import check_prediction_pool
 import hashlib
 import yaml
 
@@ -49,7 +49,7 @@ def test_charge_and_missing_input_provenance_prevent_same_system_reuse(tmp_path,
 
 def test_quality_minimum_cannot_be_reduced_by_a_model_proposal():
     import pytest
-    from structural_modeling_agent.lambda_boltz_backend import validate_sample_count
+    from structural_modeling_agent.cofold.lambda_backend import validate_sample_count
     policy={'min_predictions_per_job':50,'max_predictions_per_job':50}
     validate_sample_count(50,policy)
     for count in [1,49,51,True]:

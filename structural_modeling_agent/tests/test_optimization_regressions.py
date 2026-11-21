@@ -19,8 +19,8 @@ from structural_modeling_agent.agent import (
     _text_page,
     tool_schemas,
 )
-from structural_modeling_agent.tool_registry import ToolRegistry, ToolSpec, get_registry
-from structural_modeling_agent.tool_schemas import _schema
+from structural_modeling_agent.controller.tool_registry import ToolRegistry, ToolSpec, get_registry
+from structural_modeling_agent.controller.tool_schemas import _schema
 from structural_modeling_agent.proxies.roles import Atom, Pose
 from structural_modeling_agent.proxies.workflow import VDW, contacts, group_sasa
 from structural_modeling_agent.tests.test_validation import execution_for, modeling_record, write_pose
@@ -149,9 +149,9 @@ def test_agent_modular_exports_and_unified_tool_registry():
 
 
 def test_skills_and_progressive_tool_disclosure(tmp_path):
-    from structural_modeling_agent.prompts import SYSTEM_PROMPT, compact_system_prompt
-    from structural_modeling_agent.skills import get_skill, list_skills
-    from structural_modeling_agent.tool_registry import select_offered_tools
+    from structural_modeling_agent.controller.prompts import SYSTEM_PROMPT, compact_system_prompt
+    from structural_modeling_agent.controller.skills import get_skill, list_skills
+    from structural_modeling_agent.controller.tool_registry import select_offered_tools
 
     skills = list_skills()
     names = {s["name"] for s in skills}

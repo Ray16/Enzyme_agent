@@ -3,7 +3,7 @@ import socket
 
 import yaml
 
-from structural_modeling_agent import family_inflight as guard
+from structural_modeling_agent.family import inflight as guard
 
 
 def job(root,identifier='same',smiles='CCO'):

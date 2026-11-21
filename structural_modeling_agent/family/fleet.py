@@ -11,8 +11,8 @@ import subprocess
 import sys
 
 from enzyme_discovery_agent.state_store import atomic_write_json
-from .env_config import EXACT_BOLTZ_PYTHON, GPU_RESERVE_BIN, NFS_ROOT, STOCK_BOLTZ_LIB, STOCK_BOLTZ_PYTHON
-from .io_utils import SINGLE_THREAD_ENV
+from ..env_config import EXACT_BOLTZ_PYTHON, GPU_RESERVE_BIN, NFS_ROOT, STOCK_BOLTZ_LIB, STOCK_BOLTZ_PYTHON
+from ..io_utils import SINGLE_THREAD_ENV
 
 NFS = NFS_ROOT
 GATE = GPU_RESERVE_BIN
@@ -31,7 +31,7 @@ for process in psutil.process_iter(['cmdline']):
   affinity=set(process.cpu_affinity())
   if process.info['cmdline'] and len(affinity)<len(allowed) and len(affinity)<=32:occupied|=affinity
  except (psutil.NoSuchProcess,psutil.AccessDenied):pass
-for name in ['torch','boltz.main','rdkit','gemmi','structural_modeling_agent.family_cofold']:importlib.import_module(name)
+for name in ['torch','boltz.main','rdkit','gemmi','structural_modeling_agent.family.cofold']:importlib.import_module(name)
 import torch
 rows=subprocess.check_output(['nvidia-smi','--query-gpu=index,name,memory.total,compute_cap','--format=csv,noheader,nounits'],text=True)
 print(json.dumps({'host':os.uname().nodename,'online':os.cpu_count(),'load':os.getloadavg(),'available_ram':psutil.virtual_memory().available,
@@ -57,7 +57,7 @@ def _inspect_host_safe(args):
 
 
 def launch(run, specification, out, launch_workers=False):
-    project = Path(__file__).resolve().parent.parent
+    project = Path(__file__).resolve().parents[2]
     out = Path(out).resolve()
     out.mkdir(parents=True, exist_ok=True)
     task = json.loads(Path(specification).read_text())
@@ -71,7 +71,7 @@ def launch(run, specification, out, launch_workers=False):
     if not provider.exists():
         provider.write_text(
             'import sys\nsys.path.insert(0,' + repr(str(project)) + ')\n'
-            + (project / 'structural_modeling_agent/lambda_boltz_backend.py').read_text()
+            + (project / 'structural_modeling_agent/cofold/lambda_backend.py').read_text()
         )
     original = json.loads((Path(run) / 'rolling_modeling/backend.json').read_text())
     reports = {}

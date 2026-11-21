@@ -248,7 +248,7 @@ def test_standalone_builder_rejects_wrong_msa_and_fingerprints_valid_query(tmp_p
 
 def test_frozen_bundle_rejects_copied_prediction_contents(tmp_path):
     from test_integration import bundle, candidate
-    from structural_modeling_agent.integration import apply_bundle
+    from structural_modeling_agent.proxies.integration import apply_bundle
     directory=tmp_path/"poses"; directory.mkdir()
     for i in range(3):
         (directory/f"item_model_{i}.pdb").write_text("identical prediction bytes")
@@ -260,7 +260,7 @@ def test_frozen_bundle_rejects_copied_prediction_contents(tmp_path):
 
 def test_producer_sample_ids_are_required_when_the_bundle_declares_that_requirement(tmp_path):
     from test_integration import bundle, candidate
-    from structural_modeling_agent.integration import apply_bundle, definition_digest
+    from structural_modeling_agent.proxies.integration import apply_bundle, definition_digest
     b=bundle(); b["definition"]["require_producer_sample_ids"]=True
     b["definition_sha256"]=definition_digest(b["definition"])
     paths=[]
@@ -279,7 +279,7 @@ def test_producer_sample_ids_are_required_when_the_bundle_declares_that_requirem
 
 def test_old_directional_calibrations_require_version_review():
     from test_integration import bundle
-    from structural_modeling_agent.integration import validate_bundle, definition_digest
+    from structural_modeling_agent.proxies.integration import validate_bundle, definition_digest
     b=bundle(); b["definition"]["features"][0]="approach_consistency"
     b["definition_sha256"]=definition_digest(b["definition"])
     with pytest.raises(ValueError,match="recalibrate"):
@@ -287,7 +287,7 @@ def test_old_directional_calibrations_require_version_review():
 
 
 def test_exposure_audit_is_read_only_and_does_not_flag_unscored_candidates(tmp_path):
-    from structural_modeling_agent.audit_exports import audit
+    from structural_modeling_agent.scripts.audit_exports import audit
     source=tmp_path/"candidate_proxy_evidence.json"
     source.write_text(json.dumps({"schema_version":"2.0","candidates":[
         {"accession":"lead","status":"not_applicable","source_files":[]}]}))

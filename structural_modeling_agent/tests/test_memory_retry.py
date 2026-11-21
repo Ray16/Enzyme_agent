@@ -6,9 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from structural_modeling_agent import memory_retry as retry
-from structural_modeling_agent import family_cofold as family
-from structural_modeling_agent.lambda_boltz_backend import eligible_gpus, memory_failure
+from structural_modeling_agent.family import memory_retry as retry
+from structural_modeling_agent.family import cofold as family
+from structural_modeling_agent.cofold.lambda_backend import eligible_gpus, memory_failure
 
 
 @pytest.fixture

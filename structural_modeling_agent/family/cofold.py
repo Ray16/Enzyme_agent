@@ -18,13 +18,13 @@ import time
 
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
 from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
-from .env_config import EXACT_BOLTZ_PYTHON
-from .io_utils import bounded_workers, file_digest, init_single_thread_worker
-from .modeling_reasoning.chemistry import characterize_smiles
-from .modeling_reasoning.literature import LiteratureKnowledge
-from .modeling_reasoning.reaction import ReactionCoordinates
-from .modeling_reasoning.resolve_handoff import resolve_candidate, _load_family_metal
-from .msa import valid_csv
+from ..env_config import EXACT_BOLTZ_PYTHON
+from ..io_utils import bounded_workers, file_digest, init_single_thread_worker
+from ..modeling_reasoning.chemistry import characterize_smiles
+from ..modeling_reasoning.literature import LiteratureKnowledge
+from ..modeling_reasoning.reaction import ReactionCoordinates
+from ..modeling_reasoning.resolve_handoff import resolve_candidate, _load_family_metal
+from ..msa import valid_csv
 from .memory_retry import MemoryRetryPending, is_memory_failure, record_failure, retry_backend
 
 # Arm-directory names scanned for cross-run cache reuse and in-flight dedup.
@@ -33,7 +33,7 @@ from .memory_retry import MemoryRetryPending, is_memory_failure, record_failure,
 # produced before the rename stay reusable. Only the unrestrained arm participates in
 # reuse/dedup (the restrained arm carries a pocket constraint -> different geometry).
 COFOLD_ARM_NAMES = ('cofolded', 'family_cofold')
-from .scripts.build_step1_inputs import enzyme_chains, modeled_substrates, yaml_for
+from ..scripts.build_step1_inputs import enzyme_chains, modeled_substrates, yaml_for
 
 
 def digest(value):
@@ -398,7 +398,7 @@ def publish_results(directory,jobs):
         with temporary.open('w') as handle:
             writer=csv.DictWriter(handle,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
         os.replace(temporary,path)
-    from .family_analysis import refresh
+    from .analysis import refresh
     try:refresh(directory)
     except ImportError as exc:
         atomic_write_json(directory/'analysis_backend_pending.json',{'error':str(exc),'scope':'Plotting unavailable on this frontend; completed coordinates remain available for the central analyzer.'})
@@ -408,7 +408,7 @@ def _analyze_single_prediction(args):
     """Validate identity and compute attack geometry for one prediction file."""
     (prediction, sequence_sha256, expected_protein_copies, entities, ccd_atoms,
      ligand_atom_maps, center_ref, leaving_ref, donor_refs, pocket_protocol) = args
-    from .validation import _read_structure, _protein_completeness
+    from ..validation import _read_structure, _protein_completeness
     import numpy as np
 
     path = Path(prediction['path'])
@@ -482,7 +482,7 @@ def _analyze_single_prediction(args):
 
 def analyze_outputs(job, receipt, *, max_workers=None):
     """Measure every pose with the existing geometry metric; retain identity failures."""
-    from .proxies.attack_angle import weighted_attack_angle
+    from ..proxies.attack_angle import weighted_attack_angle
     import gemmi
 
     source = json.loads(Path(receipt['prediction_manifest']).read_text())
@@ -583,14 +583,14 @@ def main(argv=None):
                 time.sleep(args.watch_seconds);continue
             specification=json.loads(args.specification.read_text())
             if args.pocket_guided_from:
-                from .family_pockets import prepare
+                from .pockets import prepare
                 jobs=prepare(args.run,args.pocket_guided_from,args.out,specification.get('pocket_max_distance_A',10.),specification.get('pocket_rescue_all',False))
             elif args.memory_retries_only:
                 jobs=json.loads((args.out/'queue.json').read_text())['items']
             else:
                 handoff=build_handoff(args.run,specification)
                 atomic_write_json(args.out/'family_handoff.json',handoff)
-                from .family_sequences import prepare_members
+                from .sequences import prepare_members
                 candidates=prepare_members(handoff,_prepared_candidates(args.run),args.out/'sequences',
                     args.msa_cache or args.run.parent/'.sequence_msa_cache')
                 jobs,pending=render_jobs(args.run,handoff,args.out/'inputs',candidates)
@@ -663,7 +663,7 @@ def main(argv=None):
                     'enzyme_name':job['enzyme_name'],'step':job['step'],'job':job['id'],'setup_llm_calls':0})
                 shared_claim=None
                 try:
-                    from .family_inflight import acquire,release
+                    from .inflight import acquire,release
                     shared_claim=acquire(args.run,job,args.worker_id)
                     if shared_claim is None:
                         atomic_write_json(folder/'inflight_wait.json',{'status':'waiting_for_exact_existing_system',

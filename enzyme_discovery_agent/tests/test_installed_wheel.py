@@ -56,8 +56,8 @@ root = Path(location).parent
 assert json.loads((root/'validation_contract.json').read_text())
 assert json.loads((root/'knowledge/attack_angle_metric.json').read_text())['metric_id'] == 'inverse_distance_attack_angle_v1'
 assert json.loads((root/'knowledge/mlmm_engine_options.json').read_text())['schema_version'] == 'mlmm-engine-options-1.0'
-from structural_modeling_agent.bioemu2_adapter import prepare
-from structural_modeling_agent.workflow_policy import TOOL_PURPOSES
+from structural_modeling_agent.controller.bioemu2_adapter import prepare
+from structural_modeling_agent.controller.workflow_policy import TOOL_PURPOSES
 assert TOOL_PURPOSES['dynamics']['tool'] == 'bioemu2'
 assert TOOL_PURPOSES['de_novo_design']['recipient'] == 'enzyme_design_agent'
 """

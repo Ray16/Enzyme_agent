@@ -8,7 +8,7 @@ import hashlib
 from enzyme_discovery_agent.state_store import atomic_write_json
 from .validation import file_digest, fingerprint
 from .proxies.attack_angle import weighted_attack_angle
-from .integrity import proxy_integrity
+from .controller.integrity import proxy_integrity
 from .scientific_reasoning import assess_reasoning, execution_reasoning_errors
 
 
@@ -26,7 +26,7 @@ def modeling_evidence(report_path):
         seen.add(accession)
         existing=candidate.get('existing_prediction_review')
         if existing:
-            from .reuse import checked_evidence
+            from .controller.reuse import checked_evidence
             try:
                 row=copy.deepcopy(checked_evidence(existing))
             except (OSError,ValueError,KeyError) as exc:

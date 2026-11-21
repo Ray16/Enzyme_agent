@@ -215,7 +215,7 @@ def reconcile(agent,accession,identifier,operation):
     if operation=='status' and not job:return dict(study_id=identifier,status='not_submitted')
     if operation=='submit':
         if agent.task.get('workflow_mode')=='production_cofold' and agent.task.get('objective') not in {'evaluate_barriers','prepare_sampling'}:
-            from ..workflow_policy import baseline_errors
+            from ..controller.workflow_policy import baseline_errors
             errors=baseline_errors(agent._current(accession))
             if errors:raise ValueError('Inspect the primary cofold before barrier compute: '+'; '.join(errors))
         active=sum(s.get('job',{}).get('status') in ACTIVE for c in agent.state['candidates'].values()

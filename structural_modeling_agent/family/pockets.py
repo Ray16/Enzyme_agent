@@ -10,9 +10,9 @@ import yaml
 from rdkit import Chem
 
 from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
-from .family_cofold import digest, file_hash, write_input_index
+from .cofold import digest, file_hash, write_input_index
 from .paired_analysis import carbonyl_atom_references
-from .validation import _read_structure
+from ..validation import _read_structure
 
 
 def coordinate(atoms, chain, name):
@@ -69,23 +69,23 @@ def activation_pocket(saved, radius=7.0):
         'basis': 'Model-derived activated-end pocket from an identity-verified first-step pose; conditional localization test, not an experimentally validated binding site.'}
 
 
-def prepare(run, source, out, max_distance=10.0):
+def prepare(run, source, out, max_distance=10.0, rescue_all=False):
     source=Path(source).resolve();out=Path(out).resolve();out.mkdir(parents=True,exist_ok=True)
     if not 4 <= max_distance <= 20:
         raise ValueError('Broad pocket distance must be between 4 and 20 angstroms')
-    signature=digest({'queue':file_hash(source/'queue.json'),'max_distance':max_distance,
+    signature=digest({'queue':file_hash(source/'queue.json'),'max_distance':max_distance,'rescue_all':bool(rescue_all),
         'results':[(str(p),p.stat().st_size,p.stat().st_mtime_ns) for p in sorted(source.glob('jobs/*/complete.json'))],
         'implementation':file_hash(__file__)})
     with state_lock(out/'pocket_preparation'):
         saved=out/'pocket_preparation.json'
         if saved.exists() and json.loads(saved.read_text()).get('signature')==signature:
             return json.loads((out/'queue.json').read_text())['items']
-        jobs=_prepare(run,source,out,max_distance)
+        jobs=_prepare(run,source,out,max_distance,rescue_all)
         atomic_write_json(saved,{'signature':signature,'source':str(source),'setup_llm_calls':0})
         return jobs
 
 
-def _prepare(run, source, out, max_distance=10.0):
+def _prepare(run, source, out, max_distance=10.0, rescue_all=False):
     """One shared decision rule per family; resolve each member's residue mapping."""
     run = Path(run).resolve();source = Path(source).resolve();out = Path(out).resolve()
     out.mkdir(parents=True, exist_ok=True);(out / 'inputs').mkdir(exist_ok=True)
@@ -104,7 +104,7 @@ def _prepare(run, source, out, max_distance=10.0):
         if not first_result.exists() or not second_result.exists():
             decisions.append({**decision, 'status': 'pending', 'reason': 'Complete unrestrained references are not yet available.'});continue
         first_saved = json.loads(first_result.read_text());second_saved = json.loads(second_result.read_text())
-        if second_saved['analysis']['geometry']['harmonic_distance_A'] <= max_distance:
+        if not rescue_all and second_saved['analysis']['geometry']['harmonic_distance_A'] <= max_distance:
             decisions.append({**decision, 'status': 'retain_unrestrained',
                 'reason': 'No broad localization rescue selected: the existing attack distance is already within the proposed broad pocket scale. This is not an activity claim.'});continue
         try:

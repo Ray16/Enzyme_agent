@@ -1,7 +1,7 @@
 """Purpose-aware routing: cofold first, optional scientific follow-ups later."""
 from pathlib import Path
 
-from .validation import file_digest, fingerprint, validate_pose_plan, _source_checks
+from ..validation import file_digest, fingerprint, validate_pose_plan, _source_checks
 
 TOOL_PURPOSES = {
     "cofolding": {"role": "default assessment after discovery handoff", "tool": "configured cofold provider",
@@ -39,7 +39,7 @@ def baseline_errors(revision):
         errors.append("inspect the complete declared cofold ensemble first")
     if report.get("execution_sha256") != fingerprint(execution):
         errors.append("cofold evidence does not match the current execution")
-    if report.get("validator_sha256") != file_digest(Path(__file__).with_name("validation.py")):
+    if report.get("validator_sha256") != file_digest(Path(__file__).resolve().parents[1] / "validation.py"):
         errors.append("cofold checks need revalidation with the current validator")
     provenance = report.get("prediction_provenance") or {}
     if provenance.get("status") != "pass":
@@ -72,7 +72,7 @@ def validate_followup(plan, revision):
     for key in ("question", "why_cofold_insufficient", "expected_information", "decision_if_supported", "decision_if_refuted"):
         if not isinstance(plan.get(key), str) or not plan[key].strip():
             raise ValueError(f"follow-up requires {key}")
-    from .scientific_reasoning import assess_reasoning
+    from ..scientific_reasoning import assess_reasoning
     assessment = assess_reasoning(revision)
     if plan.get("assessment_sha256") != assessment["assessment_sha256"]:
         raise ValueError("follow-up must reference the current reasoning assessment")

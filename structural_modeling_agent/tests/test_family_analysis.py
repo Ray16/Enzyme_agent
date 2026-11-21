@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from structural_modeling_agent.family_analysis import _short_name,comparison_figure
+from structural_modeling_agent.family.analysis import _short_name,comparison_figure
 
 
 def test_display_prefers_enzyme_symbols_without_inventing_family_members():

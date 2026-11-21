@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import yaml
 
-from structural_modeling_agent import family_pockets as pockets
+from structural_modeling_agent.family import pockets as pockets
 
 
 def test_activation_pocket_uses_the_mapped_reactive_carboxyl_end(tmp_path, monkeypatch):

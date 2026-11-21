@@ -19,10 +19,10 @@ import time
 import uuid
 
 from enzyme_discovery_agent.state_store import atomic_write_json
-from .dispatch_handlers import _merge_model_changes, _text_page
-from .prompts import BARRIER_GUIDANCE, BARRIER_PROMPT, PREPARATION_PROMPT, SYSTEM_PROMPT, compact_system_prompt
-from .tool_registry import get_registry, select_offered_tools
-from .tool_schemas import _schema, _string, tool_schemas
+from .controller.dispatch_handlers import _merge_model_changes, _text_page
+from .controller.prompts import BARRIER_GUIDANCE, BARRIER_PROMPT, PREPARATION_PROMPT, SYSTEM_PROMPT, compact_system_prompt
+from .controller.tool_registry import get_registry, select_offered_tools
+from .controller.tool_schemas import _schema, _string, tool_schemas
 from .validation import (entity_map_for, file_digest, fingerprint, validate_ensemble,
                          validate_setup, validate_msa, validate_pose_plan)
 from .scientific_reasoning import (assess_reasoning, execution_reasoning_errors,
@@ -447,7 +447,7 @@ class ModelingAgent:
                 continue
             existing=self.state['candidates'][acc].get('existing_prediction_review')
             if existing:
-                from .reuse import checked_evidence
+                from .controller.reuse import checked_evidence
                 try:
                     if checked_evidence(existing)['execution_status']!='complete':
                         missing.append(f'{acc}: historical prediction ensemble is incomplete or unverified')
@@ -472,7 +472,7 @@ class ModelingAgent:
                 elif any(file_digest(m["path"]) != m["sha256"] for m in revision["execution"].get("msa_evidence", [])):
                     missing.append(f"{acc}: input MSA changed after rendering")
                 if revision.get("proxy_evaluation") is not None:
-                    from .integrity import proxy_integrity
+                    from .controller.integrity import proxy_integrity
                     integrity = proxy_integrity(revision.get("proxy_plan"), revision["proxy_evaluation"],
                                                 revision.get("proxy_evaluation_artifact"),
                                                 (revision.get("pose_validation") or {}).get("poses", []))

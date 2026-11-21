@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from .validation import file_digest, fingerprint
+from ..validation import file_digest, fingerprint
 
 
 def proxy_integrity(plan, evaluation, artifact, poses=None):

@@ -11,7 +11,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from proxy_policy import (
+from structural_modeling_agent.proxies.policy import (
     mechanism_from_reaction,
     proxy_mechanism_for_family,
     resolve_mechanism,

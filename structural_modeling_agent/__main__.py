@@ -22,7 +22,7 @@ def main():
         from .barrier.__main__ import main as barrier_main
         return barrier_main(sys.argv[2:])
     if sys.argv[1:2]==['family-cofold']:
-        from .family_cofold import main as family_main
+        from .family.cofold import main as family_main
         family_main(sys.argv[2:])
         return 0
     parser = argparse.ArgumentParser(description=__doc__,epilog='Shared family execution: python -m structural_modeling_agent family-cofold --help')
@@ -57,7 +57,7 @@ def main():
         print(json.dumps(result, indent=2))
         return 2 if result["missing"] else 0
     if args.inspect_handoff:
-        from .handoff_inspect import inspect_handoff
+        from .controller.handoff_inspect import inspect_handoff
         print(json.dumps(inspect_handoff(args.inspect_handoff, args.lead_id, args.offset), indent=2))
         return 0
     if args.inspect_run:

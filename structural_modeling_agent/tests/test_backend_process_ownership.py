@@ -1,5 +1,5 @@
 """A completed producer and stale driver observations do not cause false conflicts."""
-from structural_modeling_agent.lambda_boltz_backend import unexpected_residents
+from structural_modeling_agent.cofold.lambda_backend import unexpected_residents
 
 
 class Process:

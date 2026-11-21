@@ -38,7 +38,7 @@ MIN_GATED_POSES = 5
 COMPATIBLE_ANGLE = 150.0
 STRONG_ANGLE = 165.0
 
-_FALLBACK_PATH = Path(__file__).resolve().parent / "knowledge" / "family_mechanism_fallback.json"
+_FALLBACK_PATH = Path(__file__).resolve().parents[1] / "knowledge" / "family_mechanism_fallback.json"
 
 
 @dataclass(frozen=True)
