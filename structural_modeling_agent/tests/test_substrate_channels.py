@@ -416,3 +416,55 @@ def test_caver_reproduces_known_dhaa_tunnels(tmp):
     if len(res["clusters"]) >= 2:
         second = min(res["clusters"], key=lambda c: c["bottleneck_A"]["mean"])
         assert second["bottleneck_A"]["mean"] <= main["bottleneck_A"]["mean"] + 0.05
+
+
+# ---------------------------------------------------------------- 6. fast Voronoi/Dijkstra backend + burial gate
+def test_fast_channels_matches_analytic_tube_radius(tmp):
+    from structural_modeling_agent.analysis import fast_channels as fc
+    for tag, radius in (("r5", 5.0), ("r7", 7.0)):
+        wd = os.path.join(tmp, tag, "pdb")
+        os.makedirs(wd)
+        text = _tube(radius)
+        for i in range(2):
+            open(os.path.join(wd, f"pose_{i:04d}.pdb"), "w").write(text)
+        cl, _ = fc.run_fast_channels(wd, (0.0, 0.0, 8.0), max_workers=1)
+        assert max(c["bottleneck_A"]["mean"] for c in cl) == pytest.approx(radius - R_C, abs=0.1)
+
+
+def test_fast_channels_finds_inner_constriction(tmp):
+    from structural_modeling_agent.analysis import fast_channels as fc
+    wd = os.path.join(tmp, "ring", "pdb")
+    os.makedirs(wd)
+    text = _tube(7.0, ring_R=4.0)
+    for i in range(2):
+        open(os.path.join(wd, f"pose_{i:04d}.pdb"), "w").write(text)
+    cl, _ = fc.run_fast_channels(wd, (0.0, 0.0, 8.0), max_workers=1)
+    assert min(c["bottleneck_A"]["mean"] for c in cl) == pytest.approx(4.0 - R_C, abs=0.1)
+
+
+@pytest.mark.skipif(not os.path.exists(DHAA_FIXTURE), reason="DhaA fixture not available")
+def test_fast_channels_reproduces_known_dhaa_tunnels(tmp):
+    out_dir = os.path.join(tmp, "dhaa_fast")
+    res = ch.analyze_channels([DHAA_FIXTURE], out_dir,
+                              start_sel="resid 117 and name OD1 OD2",
+                              label="DhaA 1CQW fast", n_starts=3, backend="fast")
+    assert res["provenance"]["backend"] == "fast"
+    assert res["site"]["burial_fraction"]["mean"] > 0.8
+    assert res["site"]["surface_exposed"] is False
+    assert res["n_channels"] >= 1
+    main = res["channels"][0]
+    assert main["length_A"]["mean"] > 8.0
+    assert 1.0 <= main["bottleneck_A"]["mean"] <= 1.7
+    assert "A:117" in {r["residue"] for r in main["bottleneck_lining_residues"]}
+    # CAVER-compatible sphere-string PDB emitted for render_channels / channels_html
+    assert os.path.exists(os.path.join(out_dir, "caver_out", "data", "clusters_timeless", "tun_cl_001_1.pdb"))
+
+
+def test_burial_gate_skips_open_site(tmp):
+    poses = _poses(tmp, 2)
+    res = ch.analyze_channels(poses, os.path.join(tmp, "open_gate"),
+                              start_xyz=(25.0, 25.0, 25.0),
+                              backend="fast", skip_open=True, open_burial_threshold=0.55)
+    assert res["site"]["open_by_burial_gate"] is True
+    assert res["site"]["surface_exposed"] is True
+    assert res["n_clusters"] == 0 and res["n_channels"] == 0

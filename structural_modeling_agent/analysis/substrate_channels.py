@@ -553,64 +553,124 @@ def _java_version():
         return "unknown"
 
 
+DEFAULT_OPEN_BURIAL_THRESHOLD = 0.55  # mean ray-cast burial below this => site is solvent-open
+
+
 def analyze_channels(pose_paths, out_dir, start_xyz=None, probe_radius=DEFAULT_PROBE_RADIUS,
                      xmx_gb=DEFAULT_XMX_GB, threads=DEFAULT_THREADS, caver_home=CAVER_HOME, label=None,
                      n_starts=DEFAULT_N_STARTS, start_radius=DEFAULT_START_RADIUS,
                      min_freq=DEFAULT_MIN_FREQ, margin=DEFAULT_MARGIN, start_sel=None,
                      start_group="carboxylate", reaction_center_sel=None, substrate_resnames=None,
                      cofactor_resnames=None, hetero_sel=None, stability_poses=DEFAULT_STABILITY_POSES,
-                     keep_cofactor=True, keep_metals=True):
-    """Stage -> CAVER (primary + perturbed starts) -> parse -> classify -> stability ->
-    out_dir/channels.json. n_starts=1 disables the start-point sensitivity runs. The primary run uses
-    ALL poses (full statistics); each perturbed start-sensitivity run uses only `stability_poses` of
-    them (None = all) -- the costly ensemble is processed once, not n_starts times. See stage_ensemble
-    for how the start point and the substrate/cofactor split are resolved (start_sel, start_group,
-    reaction_center_sel, substrate_resnames, cofactor_resnames, hetero_sel)."""
+                     keep_cofactor=True, keep_metals=True, backend="fast", skip_open=False,
+                     open_burial_threshold=DEFAULT_OPEN_BURIAL_THRESHOLD, max_workers=None):
+    """Stage -> burial gate -> tunnel search (fast Voronoi/Delaunay or CAVER 3) -> classify ->
+    stability -> out_dir/channels.json.
+
+    `backend`:
+      * "fast" (default): native Python 3D Delaunay/Voronoi + Dijkstra (parallel across poses,
+        no Java/12-ball expansion, CAVER-compatible sphere-string PDBs for rendering).
+      * "caver": CAVER 3.0 JVM backend.
+    `skip_open`: when True and mean ray-cast burial < `open_burial_threshold`, skip tunnel
+    tracing and flag the site as solvent-open immediately.
+    """
+    if backend not in ("fast", "caver"):
+        raise ValueError(f"unknown channel backend {backend!r}; choose 'fast' or 'caver'")
     os.makedirs(out_dir, exist_ok=True)
     man = stage_ensemble(pose_paths, out_dir, start_xyz=start_xyz, start_sel=start_sel,
                          start_group=start_group, reaction_center_sel=reaction_center_sel,
                          substrate_resnames=substrate_resnames, cofactor_resnames=cofactor_resnames,
                          hetero_sel=hetero_sel, probe_radius=probe_radius,
                          keep_cofactor=keep_cofactor, keep_metals=keep_metals)
-    prot_r = protection_radius(caver_home)
+    prot_r = protection_radius(caver_home) if backend == "caver" else 4.0
     start = man["start_xyz"]
+    open_by_gate = bool(skip_open and man["burial"]["mean"] < open_burial_threshold)
 
-    def one(tag, s, pdb_dir=None, n=None):
-        out, warns, _ = run_caver(out_dir, s, probe_radius, xmx_gb, threads, caver_home, tag=tag,
-                                  pdb_dir=pdb_dir)
-        return classify_clusters(parse_caver_output(out, n or man["n_poses"]), probe_radius, prot_r,
-                                 min_freq, margin), warns
-
-    primary, warns = one("", start)                       # full ensemble, all poses
+    primary, warns = [], []
     others, failures = [], []
     n_stab = man["n_poses"]
-    if n_starts > 1:
-        offs = perturbed_starts(start, start_radius, n_starts - 1)
-        # perturbed runs only test start-point sensitivity -> a pose subset is enough and far cheaper
-        if stability_poses and stability_poses < man["n_poses"]:
-            sub_dir, n_stab = subset_pdb_dir(os.path.join(out_dir, "pdb"),
-                                             os.path.join(out_dir, "pdb_stability"), stability_poses)
+
+    if not open_by_gate:
+        if backend == "fast":
+            from . import fast_channels as fc
+
+            def one(tag, s, pdb_dir=None, n=None):
+                cl, w = fc.run_fast_channels(
+                    pdb_dir or os.path.join(out_dir, "pdb"),
+                    s,
+                    out_dir=out_dir if not tag else None,
+                    probe_radius=probe_radius,
+                    max_workers=max_workers,
+                )
+                return classify_clusters(cl, probe_radius, prot_r, min_freq, margin), w
         else:
-            sub_dir = os.path.join(out_dir, "pdb")
-        with ThreadPoolExecutor(max_workers=len(offs)) as ex:
-            futs = {i: ex.submit(one, f"s{i + 1}", s, sub_dir, n_stab) for i, s in enumerate(offs)}
-        for i, f in futs.items():
-            try:
-                others.append(f.result()[0])
-            except Exception as e:     # noqa: BLE001 -- a failed perturbation must not hide the primary
-                failures.append(f"perturbed start s{i + 1}: {str(e)[:200]}")
+            def one(tag, s, pdb_dir=None, n=None):
+                out, w, _ = run_caver(out_dir, s, probe_radius, xmx_gb, threads, caver_home, tag=tag,
+                                      pdb_dir=pdb_dir)
+                return classify_clusters(parse_caver_output(out, n or man["n_poses"]), probe_radius, prot_r,
+                                         min_freq, margin), w
+
+        primary, warns = one("", start)                       # full ensemble, all poses
+        if n_starts > 1:
+            offs = perturbed_starts(start, start_radius, n_starts - 1)
+            if stability_poses and stability_poses < man["n_poses"]:
+                sub_dir, n_stab = subset_pdb_dir(os.path.join(out_dir, "pdb"),
+                                                 os.path.join(out_dir, "pdb_stability"), stability_poses)
+            else:
+                sub_dir = os.path.join(out_dir, "pdb")
+            if backend == "fast":
+                # Each fast run already parallelizes across poses; run perturbed starts sequentially
+                # to avoid nested process pools while still completing in sub-second time.
+                for i, s in enumerate(offs):
+                    try:
+                        others.append(one(f"s{i + 1}", s, sub_dir, n_stab)[0])
+                    except Exception as e:     # noqa: BLE001
+                        failures.append(f"perturbed start s{i + 1}: {str(e)[:200]}")
+            else:
+                with ThreadPoolExecutor(max_workers=len(offs)) as ex:
+                    futs = {i: ex.submit(one, f"s{i + 1}", s, sub_dir, n_stab) for i, s in enumerate(offs)}
+                for i, f in futs.items():
+                    try:
+                        others.append(f.result()[0])
+                    except Exception as e:     # noqa: BLE001
+                        failures.append(f"perturbed start s{i + 1}: {str(e)[:200]}")
+
     channels = [c for c in primary if c["is_channel"]]
     stab = match_stability(channels, [[c for c in run if c["is_channel"]] for run in others])
     for c, s in zip(channels, stab):
         c["stability"] = s
 
     chains = sorted({p["n_protein_chains"] for p in man["per_pose"]})
-    exposed = site_surface_exposed(primary)
+    exposed = open_by_gate or site_surface_exposed(primary)
     notes = build_notes(chains, man["start_spread"], exposed)
+    if open_by_gate:
+        notes.append(
+            f"Tunnel search skipped by burial gate: mean burial_fraction {man['burial']['mean']:.3f} "
+            f"< {open_burial_threshold:.2f} (site is solvent-open)."
+        )
     if n_starts > 1 and failures:
         notes.append(f"{len(failures)} of {n_starts - 1} perturbed-start runs failed; stability uses "
                      f"{len(others)}: " + "; ".join(failures))
     ext = [p["substrate_extent_A"] for p in man["per_pose"] if p["substrate_extent_A"]]
+    if backend == "fast":
+        provenance = {
+            "engine": "fast_channels (native scipy 3D Delaunay/Voronoi + CAVER cost Dijkstra)",
+            "backend": "fast",
+            "probe_radius_A": probe_radius,
+            "shell_radius_A": 3.0,
+            "poses": [p["pose"] for p in man["per_pose"]],
+        }
+    else:
+        provenance = {
+            "engine": "CAVER 3.0 (Chovancova 2012, PLoS Comput Biol 8:e1002708)",
+            "backend": "caver",
+            "caver_home": caver_home,
+            "caver_jar_sha256": _file_sha256(os.path.join(caver_home, "caver.jar")),
+            "java": _java_version(),
+            "probe_radius_A": probe_radius,
+            "config": "package defaults except probe_radius + starting_point_coordinates",
+            "poses": [p["pose"] for p in man["per_pose"]],
+        }
     res = {
         "label": label, "descriptive_only": True, "n_poses": man["n_poses"],
         "n_protein_chains": chains, "start": {"xyz": man["start_xyz"], "how": man["start_how"],
@@ -619,6 +679,7 @@ def analyze_channels(pose_paths, out_dir, start_xyz=None, probe_radius=DEFAULT_P
                                               else start_group,
                                               "spread_across_poses": man["start_spread"]},
         "site": {"burial_fraction": man["burial"], "surface_exposed": exposed,
+                 "open_by_burial_gate": open_by_gate,
                  "protection_radius_A": prot_r},
         "substrate_extent_A_median": round(st.median(ext), 2) if ext else None,
         "obstacles": "protein (all chains)"
@@ -633,12 +694,7 @@ def analyze_channels(pose_paths, out_dir, start_xyz=None, probe_radius=DEFAULT_P
                        "n_perturbed_runs_ok": len(others), "n_perturbed_runs_failed": len(failures)},
         "n_clusters": len(primary), "n_channels": len(channels),
         "channels": channels, "clusters": primary, "notes": notes, "caver_warnings": warns,
-        "provenance": {"engine": "CAVER 3.0 (Chovancova 2012, PLoS Comput Biol 8:e1002708)",
-                       "caver_home": caver_home,
-                       "caver_jar_sha256": _file_sha256(os.path.join(caver_home, "caver.jar")),
-                       "java": _java_version(), "probe_radius_A": probe_radius,
-                       "config": "package defaults except probe_radius + starting_point_coordinates",
-                       "poses": [p["pose"] for p in man["per_pose"]]},
+        "provenance": provenance,
         "per_pose": man["per_pose"],
     }
     with open(os.path.join(out_dir, "channels.json"), "w") as fh:
@@ -688,6 +744,12 @@ def _cli(argv=None):
     r.add_argument("--strip-metals", action="store_true", help="also strip the metal (Mg/...) obstacle")
     r.add_argument("--strip-all-ligands", action="store_true",
                    help="bare-pocket: strip substrate + cofactor + metals (obstacles = protein only)")
+    r.add_argument("--backend", choices=["fast", "caver"], default="fast",
+                   help="tunnel search engine: 'fast' (native scipy Voronoi/Dijkstra, default) or 'caver' (CAVER 3.0 JVM)")
+    r.add_argument("--skip-open", action="store_true",
+                   help="skip tunnel search when mean ray-cast burial is below --open-burial-threshold")
+    r.add_argument("--open-burial-threshold", type=float, default=DEFAULT_OPEN_BURIAL_THRESHOLD)
+    r.add_argument("--max-workers", type=int, default=None, help="parallel workers for fast backend")
     r.add_argument("--label")
     p = sub.add_parser("parse", help="re-parse an existing CAVER output dir (no JVM)")
     p.add_argument("--caver-out", required=True)
@@ -707,7 +769,9 @@ def _cli(argv=None):
                            cofactor_resnames=a.cofactor_resnames, hetero_sel=a.hetero_sel,
                            stability_poses=a.stability_poses,
                            keep_cofactor=not (a.strip_cofactor or a.strip_all_ligands),
-                           keep_metals=not (a.strip_metals or a.strip_all_ligands))
+                           keep_metals=not (a.strip_metals or a.strip_all_ligands),
+                           backend=a.backend, skip_open=a.skip_open,
+                           open_burial_threshold=a.open_burial_threshold, max_workers=a.max_workers)
     b = res["site"]["burial_fraction"]
     print(f"{res['label'] or ''} n_poses={res['n_poses']} chains={res['n_protein_chains']} "
           f"start={res['start']['xyz']} burial={b['mean']:.2f} surface_exposed={res['site']['surface_exposed']} "

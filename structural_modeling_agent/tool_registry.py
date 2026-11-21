@@ -176,6 +176,8 @@ def _h_analyze_substrate_channels(agent, args):
             label=args.get("label"),
             n_starts=args.get("n_starts", 1),
             probe_radius=args.get("probe_radius", ch.DEFAULT_PROBE_RADIUS),
+            backend=args.get("backend", "fast"),
+            skip_open=args.get("skip_open", False),
         )
     else:
         raise ValueError(f"unknown substrate channel mode: {mode!r}")
@@ -384,6 +386,8 @@ def build_default_registry() -> ToolRegistry:
                     "label": _string("Label for output folder (mode=run)"),
                     "n_starts": {"type": "integer", "minimum": 1, "maximum": 5},
                     "probe_radius": {"type": "number", "minimum": 0.5},
+                    "backend": {"type": "string", "enum": ["fast", "caver"], "description": "fast (default native scipy Voronoi/Dijkstra) or caver (CAVER 3.0 JVM)"},
+                    "skip_open": {"type": "boolean", "description": "Skip tunnel tracing when ray-cast burial indicates a solvent-open site"},
                 },
                 ("mode",),
             ),
