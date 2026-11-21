@@ -112,5 +112,34 @@ class TestRollup(unittest.TestCase):
         self.assertTrue(rows[0]["name"].startswith("NIS"))
 
 
+class TestIdentityGuard(unittest.TestCase):
+    """A label must be supported by the protein's own identity fields, never by shared
+    substrate/product vocabulary in its reaction text alone."""
+
+    FAMS = [
+        {"name": "Alpha-fold ligase", "descriptors": ["alpha domain ligase", "zetamine substrate"], "promise": "high"},
+        {"name": "Beta amidotransferase", "descriptors": ["betase domain", "kappa amidotransferase"], "promise": "low"},
+    ]
+
+    def test_identity_beats_substrate_vocabulary(self):
+        # The reaction text is full of the first family's substrate words, but the protein's own
+        # name/InterPro family names the second family.  The second must win despite lower promise.
+        meta = {
+            "protein_name": "Betase kappa amidotransferase",
+            "interpro_family": "Betase domain",
+            "catalytic_activities": ["zetamine + zetamine substrate + alpha domain ligase"],
+        }
+        self.assertEqual(assign_mechanism_family(meta, self.FAMS)["name"], "Beta amidotransferase")
+
+    def test_no_identity_support_means_unassigned(self):
+        # Only the reaction text matches a family; identity fields match none -> no label at all.
+        meta = {
+            "protein_name": "Unrelated enzyme",
+            "interpro_family": "Unrelated family",
+            "catalytic_activities": ["zetamine substrate turnover"],
+        }
+        self.assertIsNone(assign_mechanism_family(meta, self.FAMS))
+
+
 if __name__ == "__main__":
     unittest.main()

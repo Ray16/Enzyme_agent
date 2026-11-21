@@ -85,6 +85,28 @@ def _candidate_tokens(meta: dict) -> set[str]:
     return set(re.findall(r"[a-z][a-z0-9]{2,}", text))
 
 
+def _identity_tokens(meta: dict) -> set[str]:
+    """Tokens from the fields that NAME what the protein is (InterPro family, protein
+    name, gene), as opposed to tokens from the reaction text.
+
+    Reaction text carries substrate vocabulary (amino-acid and cofactor names) shared
+    across unrelated enzymes, so two families can overlap a candidate equally through
+    substrates alone and the tie then fell to derivation order.  Identity tokens are
+    compared FIRST, so a label that the protein's own name/InterPro family does not
+    support cannot beat one it does."""
+    parts: list[str] = []
+    for key in ("interpro_family", "protein_name"):
+        val = meta.get(key)
+        if isinstance(val, str):
+            parts.append(val)
+    genes = meta.get("gene_names")
+    if isinstance(genes, (list, tuple)):
+        parts.extend(str(g) for g in genes)
+    elif isinstance(genes, str):
+        parts.append(genes)
+    return set(re.findall(r"[a-z][a-z0-9]{2,}", " ".join(parts).lower()))
+
+
 def assign_mechanism_family(meta: dict, families: list[dict]) -> dict | None:
     """Best-matching mechanism family for one candidate, or ``None``.
 
@@ -92,14 +114,17 @@ def assign_mechanism_family(meta: dict, families: list[dict]) -> dict | None:
     descriptors, minus generic reaction vocabulary) appear in the candidate's
     annotation tokens.  Requires at least one shared distinctive token; ties
     break toward the higher-promise family, then the earlier-derived one (stable
-    and reproducible).  Returns ``{"name", "level", "promise", "score",
-    "matched_tokens"}``.
+    and reproducible).  A family is considered only if at least one of its
+    distinctive tokens appears in the candidate's IDENTITY fields (InterPro family,
+    protein name, gene); otherwise the candidate is left unassigned (``None``).
+    Returns ``{"name", "level", "promise", "score", "matched_tokens"}``.
     """
     if not families:
         return None
     cand = _candidate_tokens(meta)
     if not cand:
         return None
+    identity = _identity_tokens(meta)
 
     best = None
     best_key: tuple = ()
@@ -109,10 +134,19 @@ def assign_mechanism_family(meta: dict, families: list[dict]) -> dict | None:
         score = len(matched)
         if score == 0:
             continue
+        identity_score = len(fam_tokens & identity)
+        # HARD GUARD: never label a protein with a family that its own identity fields
+        # (InterPro family / protein name / gene) do not support.  Reaction text alone
+        # (substrate or product words such as amino-acid or phosphate names) is shared by
+        # unrelated enzymes, so a label resting only on it is a guess, not an assignment.
+        # Better to leave the candidate UNASSIGNED than to attach a wrong family.
+        if identity_score == 0:
+            continue
         promise = str(fam.get("promise", "")).lower()
-        # Higher score, then higher promise, then earlier index (negated so a
-        # smaller index sorts as "better" under max()).
-        key = (score, _PROMISE_RANK.get(promise, 0), -idx)
+        # Identity-field overlap first (see _identity_tokens), then total overlap,
+        # then higher promise, then earlier index (negated so a smaller index sorts
+        # as "better" under max()).
+        key = (identity_score, score, _PROMISE_RANK.get(promise, 0), -idx)
         if best is None or key > best_key:
             best_key = key
             best = {
