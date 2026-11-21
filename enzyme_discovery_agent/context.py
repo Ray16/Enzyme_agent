@@ -167,10 +167,8 @@ def stable_tool_definitions(all_tools, *, include_inspections=True):
 
 
 def _read_state(path: Path, default):
-    try:
-        return json.loads(path.read_text())
-    except FileNotFoundError:
-        return default
+    from enzyme_discovery_agent.state_store import read_json
+    return read_json(path, default)
 
 
 def build_research_state(run_dir: Path) -> dict:
@@ -340,7 +338,8 @@ def _adaptive_context(prefix, messages, state, run_dir):
     directive = {'role':'user', 'content':
         'ADAPTIVE RESEARCH DECISION: continue this existing campaign; completed inspections below must not restart unchanged. Register the next test or priority action with plan_research_step. '
         'State a hypothesis, competing explanation, contrasting predictions and revision condition. Cite the evidence IDs below. '
-        'Interpret the last actual outcome; set revises to its decision ID and cite its outcome evidence. '
+        'When continuing after a recorded outcome, pass revises=<previous_action.id>, belief_update, outcome_interpretation, and the outcome evidence ID directly in plan_research_step (one turn; do not spend a separate interpret_research_outcome turn unless stopping without another test). '
+        'Use additional_actions in plan_research_step to run independent retrievals together under one hypothesis. '
         'Declare explicit assessment accessions/scopes or deliberate scope_mode=ready_queue. Unsampled mechanisms remain unresolved. '
         'Priority changes are not new functional evidence; explain reinterpretations and preserve uncertainty about target activity.'}
     directive['content'] += (
@@ -353,7 +352,7 @@ def _adaptive_context(prefix, messages, state, run_dir):
     lean_directive={'role':'user','content':
         'ADAPTIVE RESEARCH DECISION: continue this saved campaign. Use plan_research_step with source IDs, '
         'a competing explanation, contrasting predictions and a revision condition. If previous_action has an id, '
-        'set revises to it and cite the saved outcome evidence ID. Interpret that observation before the next action. '
+        'set revises, belief_update, outcome_interpretation and cite the saved outcome evidence ID directly in plan_research_step (one turn). '
         'Completed inspections remain complete. Conclude with conclude_research_review when the review allowance is reached; '
         'retain scientific uncertainty and resume routine evaluation.'}
     directive['content'] += (' Previews with omissions are incomplete evidence. Inspect the linked complete source '

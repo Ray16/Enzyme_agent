@@ -15,18 +15,15 @@ import uuid
 
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry, discovery_status, family_label
 from enzyme_discovery_agent.run_layout import run_file
-from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+from enzyme_discovery_agent.state_store import atomic_write_json, json_sha256, read_json, state_lock
 
 
 def _hash(value):
-    return hashlib.sha256(json.dumps(value, sort_keys=True, default=str, allow_nan=False).encode()).hexdigest()
+    return json_sha256(value, allow_nan=False)
 
 
 def _read(path, default):
-    try:
-        return json.loads(path.read_text())
-    except FileNotFoundError:
-        return default
+    return read_json(path, default)
 
 
 def _root(run_dir):
@@ -616,6 +613,10 @@ def validate_plan(run_dir, proposal, allowed_tools, *, field_limits=None, prospe
     for key in scientific_fields if not prospective else ():
         if proposal.get(key) and (not isinstance(proposal[key],str) or len(proposal[key])>BRIEF_FIELD_LIMIT):
             raise ValueError(f'{key} must be a string of at most {BRIEF_FIELD_LIMIT} characters when supplied')
+    if proposal.get('outcome_interpretation'):
+        interp = proposal['outcome_interpretation']
+        if not isinstance(interp, str) or len(interp) > BRIEF_FIELD_LIMIT:
+            raise ValueError(f'outcome_interpretation must be a string of at most {BRIEF_FIELD_LIMIT} characters when supplied')
     if (proposal.get('hypothesis') and proposal.get('alternative') and
             proposal['hypothesis'].strip().casefold() == proposal['alternative'].strip().casefold()):
         raise ValueError('State a distinct competing explanation')

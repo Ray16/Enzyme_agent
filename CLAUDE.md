@@ -20,3 +20,7 @@ results you look in exactly one place: `structural_modeling_agent/runs/`.
 Follow the global rules: all GPU work goes through `~/bin/gpu_reserve` (never raw
 `CUDA_VISIBLE_DEVICES`), one task per GPU, cap CPU threads per worker. Do NOT use lambda4 or lambda13
 for fan-out MD. See `~/.claude/CLAUDE.md` and the `lambda-fleet` skill.
+
+## Git attribution and remote sync
+- Always commit and push under the repository's configured user identity (never under Gemini, Claude, Antigravity, Codex, or any other AI name/email). Never pass `--author`, override `GIT_AUTHOR_*`/`GIT_COMMITTER_*`, or add `Co-Authored-By` / AI-attribution trailers to commits or PRs.
+- Commit and push to `origin` (`github.com/Ray16/Enzyme_agent`) after every substantial code change (more than ~30 lines of code), staging only the relevant files and never force-pushing.

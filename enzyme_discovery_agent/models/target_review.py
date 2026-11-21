@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 from .candidate_registry import load_candidate_registry,discovery_status,update_candidate_registry
 from enzyme_discovery_agent.run_layout import run_file
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_discovery_agent.state_store import atomic_write_json, json_sha256
 
 
 # The requested transformation is constant for a run, so it travels in the
@@ -31,7 +31,7 @@ def target_block_contract(system):
 
 
 def digest(value):
-    return hashlib.sha256(json.dumps(value,sort_keys=True,default=str).encode()).hexdigest()
+    return json_sha256(value)
 
 
 def target_contract(root):
@@ -45,6 +45,114 @@ def target_inputs(target):
     return [{'id':'T'+str(i),'smiles':part} for i,part in enumerate(parts,1)] or [{'id':'T1','description':'Requested transformation participants; structures unavailable'}]
 
 
+def _compact_claim_validation(validation):
+    """Preserve all blocking/contradicted/missing claims while collapsing routine supported checks."""
+    if not isinstance(validation, dict):
+        return validation
+    out = {}
+    for key in ('verdict', 'promotion_eligible', 'blocking_claims',
+                'blocked_by_absence', 'blocked_only_by_absence'):
+        if key in validation and validation[key] not in (None, [], {}):
+            out[key] = validation[key]
+    claims = validation.get('claims')
+    if isinstance(claims, list):
+        supported = []
+        flagged = []
+        for claim in claims:
+            if not isinstance(claim, dict):
+                continue
+            if claim.get('verdict') == 'supported':
+                ctype = claim.get('claim_type')
+                if ctype and ctype not in supported:
+                    supported.append(ctype)
+            else:
+                compact_claim = {
+                    k: v for k, v in claim.items()
+                    if k not in {'subject', 'schema_version'} and v not in (None, '', [], {})
+                }
+                flagged.append(compact_claim)
+        if supported:
+            out['supported_claims'] = supported
+        if flagged:
+            out['flagged_claims'] = flagged
+    return out
+
+
+def _compact_native_substrates(substrates, reaction_text=''):
+    """Drop repeated reaction-equation strings while preserving stoichiometry and occurrences."""
+    if not isinstance(substrates, list):
+        return substrates
+    out = []
+    for item in substrates:
+        if not isinstance(item, dict):
+            out.append(item)
+            continue
+        cleaned = {}
+        for k, v in item.items():
+            if v in (None, '', [], {}):
+                continue
+            if k == 'stoichiometry_source' and reaction_text and v == reaction_text:
+                continue
+            cleaned[k] = v
+        out.append(cleaned)
+    return out
+
+
+def _compact_domain_architecture(domains):
+    """Render InterPro domain/family entries concisely while retaining IDs, names, types, and spans."""
+    if not isinstance(domains, list):
+        return domains
+    out = []
+    for item in domains:
+        if not isinstance(item, dict):
+            out.append(item)
+            continue
+        acc = item.get('accession') or item.get('id') or ''
+        name = item.get('name') or ''
+        dtype = item.get('type') or ''
+        coords = item.get('coordinates') or []
+        spans = []
+        if isinstance(coords, list):
+            for c in coords:
+                if isinstance(c, dict) and c.get('start') is not None and c.get('end') is not None:
+                    spans.append(f"{c['start']}-{c['end']}")
+        meta = ', '.join(part for part in (dtype, ','.join(spans)) if part)
+        label = f"{acc}: {name}" if acc and name else (acc or name)
+        out.append(f"{label} ({meta})" if meta else label)
+    return out
+
+
+def _compact_mechanism_evidence(evidence, reaction_text=''):
+    """Strip verbatim reaction strings already carried in native_substrate_reaction_scope."""
+    if not isinstance(evidence, dict):
+        return evidence
+    out = {}
+    for k, v in evidence.items():
+        if v in (None, '', [], {}):
+            continue
+        if k == 'activation' and isinstance(v, dict):
+            act = {ak: av for ak, av in v.items() if av not in (None, '', [], {})}
+            basis = act.get('basis')
+            if isinstance(basis, dict):
+                act['basis'] = {
+                    bk: bv for bk, bv in basis.items()
+                    if bv not in (None, '', [], {})
+                    and not (bk == 'source_value' and reaction_text and bv == reaction_text)
+                }
+            out[k] = act
+        elif k == 'modeled_reaction_scope' and isinstance(v, dict):
+            scope = {
+                sk: sv for sk, sv in v.items()
+                if sv not in (None, '', [], {})
+                and not (sk == 'reaction' and reaction_text and sv == reaction_text)
+            }
+            if scope:
+                out[k] = scope
+        else:
+            out[k] = v
+    return out
+
+
 def compact_record(record):
     data=dict(record);sequence=data.pop('sequence',None)
     if sequence:data['sequence_sha256']=hashlib.sha256(sequence.encode()).hexdigest()
@@ -56,10 +164,40 @@ def compact_record(record):
             'role_transfer_status':(similarity.get('accommodation') or {}).get('role_transfer_status'),
             'unmatched_targets':(similarity.get('accommodation') or {}).get('unaccommodated_targets'),
             'scope':'Computed analogue context, not measured binding or target activity. Compare reacting roles rather than whole-group overlap.'}
-    if data.get('native_substrate_reaction_scope'):
+    reaction_text = ''
+    if isinstance(data.get('native_substrate_reaction_scope'), dict):
         scope=data['native_substrate_reaction_scope']
-        data['native_substrate_reaction_scope']={key:scope.get(key) for key in
-            ('reaction_index','reaction','ec_number','native_substrates')}
+        reaction_text = str(scope.get('reaction') or '')
+        scoped_subs = _compact_native_substrates(scope.get('native_substrates'), reaction_text)
+        data['native_substrate_reaction_scope']={
+            key: val for key, val in (
+                ('reaction_index', scope.get('reaction_index')),
+                ('reaction', scope.get('reaction')),
+                ('ec_number', scope.get('ec_number')),
+                ('native_substrates', scoped_subs),
+            ) if val not in (None, '', [], {})
+        }
+        # Avoid repeating the identical substrate list at top level when already in scope.
+        if data.get('native_substrates') == scope.get('native_substrates'):
+            data.pop('native_substrates', None)
+        elif data.get('native_substrates'):
+            data['native_substrates'] = _compact_native_substrates(data['native_substrates'], reaction_text)
+    elif data.get('native_substrates'):
+        first_rxn = str((data.get('catalytic_activities') or [''])[0] or '')
+        data['native_substrates'] = _compact_native_substrates(data['native_substrates'], first_rxn)
+        reaction_text = first_rxn
+    if data.get('claim_validation'):
+        data['claim_validation'] = _compact_claim_validation(data['claim_validation'])
+    if data.get('domain_architecture'):
+        data['domain_architecture'] = _compact_domain_architecture(data['domain_architecture'])
+    if data.get('mechanism_evidence'):
+        data['mechanism_evidence'] = _compact_mechanism_evidence(data['mechanism_evidence'], reaction_text)
+    if isinstance(data.get('identity_resolution'), dict):
+        data['identity_resolution'] = {
+            k: v for k, v in data['identity_resolution'].items()
+            if k not in {'database_record_path', 'database_record_sha256', 'sequence_sha256'}
+            and v not in (None, '', [], {})
+        }
     modeled=data.get('modeling_validation_evidence') or {}
     if modeled:
         data['modeling_validation_evidence']={key:modeled.get(key) for key in ('execution_status','scientific_status','geometry_metrics','review_errors')}
@@ -67,7 +205,7 @@ def compact_record(record):
         model=modeled.get('modeling_input') or {}
         data['modeling_validation_evidence']['modeled_step']=model.get('modeled_step')
         data['modeling_validation_evidence']['declared_site_criteria']=((model.get('validation_plan') or {}).get('poses') or {}).get('sites')
-    return data
+    return {k: v for k, v in data.items() if v not in (None, '', [], {})}
 
 
 def scientific_record(metadata):

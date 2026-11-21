@@ -10,16 +10,15 @@ import subprocess
 import sys
 import time
 
-from .state_store import atomic_write_json, state_lock
+from .state_store import atomic_write_json, file_sha256, read_json, state_lock
 
 
 def read(path, default=None):
-    path = Path(path)
-    return json.loads(path.read_text()) if path.exists() else default
+    return read_json(path, default)
 
 
 def checksum(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    return file_sha256(path)
 
 
 def owner():

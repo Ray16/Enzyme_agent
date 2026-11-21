@@ -33,3 +33,7 @@ baked-in PyMOL text. Put measurements in a bold, bottom-right white rounded box 
 in matplotlib. References: `structural_modeling_agent/runs/glutarate_cadaverine_correct_protonation_panel/analysis/contact_frequency/acsA_Q5CD72/acsA_Q5CD72_contact_frequency.png`
 and `structural_modeling_agent/runs/glutarate_cadaverine_glna2_dimer_20261117/analysis_email/render_failure_mode.py`.
 Exception: anchor-grid design figures keep their orange-substrate/teal-ATP scheme.
+
+## Git attribution and remote sync
+- Always commit and push under the repository's configured user identity (never under Gemini, Claude, Antigravity, Codex, or any other AI name/email). Never pass `--author`, override `GIT_AUTHOR_*`/`GIT_COMMITTER_*`, or add `Co-Authored-By` / AI-attribution trailers to commits or PRs.
+- Commit and push to `origin` (`github.com/Ray16/Enzyme_agent`) after every substantial code change (more than ~30 lines of code), staging only the relevant files and never force-pushing.

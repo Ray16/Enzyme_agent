@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 import errno
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -116,6 +117,26 @@ def _atomic_write(path: str | Path, writer) -> None:
     finally:
         if os.path.exists(tmp):
             os.unlink(tmp)
+
+
+def read_json(path: str | Path, default=None):
+    """Read a JSON file, returning ``default`` if it does not exist."""
+    target = Path(path)
+    try:
+        return json.loads(target.read_text())
+    except FileNotFoundError:
+        return default
+
+
+def json_sha256(value, *, allow_nan: bool = True) -> str:
+    """Stable SHA-256 hex digest of a JSON-serializable object."""
+    payload = json.dumps(value, sort_keys=True, default=str, allow_nan=allow_nan)
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def file_sha256(path: str | Path) -> str:
+    """SHA-256 hex digest of a file's raw bytes."""
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def atomic_write_json(path: str | Path, payload, *, indent=2, allow_nan=True) -> None:

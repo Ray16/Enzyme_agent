@@ -150,7 +150,19 @@ class EnzymeAgent:
             raise RuntimeError(f"Resume run directory not found: {self.run_dir}")
         self.artifacts_dir = self.run_dir / "artifacts"
 
-        self.tools = get_all_tools()
+        all_tools = get_all_tools()
+        # Exclude out-of-scope design tools and disabled opt-in embedding tools
+        # once at init so stable_tool_definitions stays cache-invariant across
+        # every turn without paying per-turn schema tokens for unused tools.
+        disabled_tools = set()
+        if not config.ENABLE_CANDIDATE_MAP:
+            disabled_tools.update({"map_candidate_neighbors", "expand_candidates_esm"})
+        from enzyme_discovery_agent.tool_registry import get_tool_info
+        self.tools = [
+            schema for schema in all_tools
+            if schema["function"]["name"] not in disabled_tools
+            and (get_tool_info(schema["function"]["name"]) or {}).get("category") not in {"structure", "design"}
+        ]
         self.parallel_safe = get_parallel_safe_tools()
         self.capabilities = init_capabilities()
 
@@ -184,15 +196,15 @@ class EnzymeAgent:
         self._mechanism_family_gate = MechanismFamilyGate(self.llm, self.log)
         self._family_survey_gate = FamilySurveyGate(self.log)
         self._evidence_selection_gate = EvidenceSelectionGate()
+        self._entity_gate = EntityExtractionGate()
+        self._coverage_gate = DiscoveryCoverageGate()
+        self._eval_gate = ECTriageGate(self.llm)
+        self._expansion_gate = HomologExpansionGate(self.llm)
         self._gate_pipeline = GatePipeline([
-            EntityExtractionGate(),
-            DiscoveryCoverageGate(),
-            # Order is load-bearing: gates[2]/gates[3] are referenced positionally
-            # elsewhere in the loop (gates[2]=evaluation, gates[3]=expansion), and
-            # the manual gate loop already runs expansion before evaluation. The
-            # reserved cadence lives in HomologExpansionGate.should_fire, not here.
-            ECTriageGate(self.llm),
-            HomologExpansionGate(self.llm),
+            self._entity_gate,
+            self._coverage_gate,
+            self._eval_gate,
+            self._expansion_gate,
         ])
         # Gates that fire (in this order) on every discovery turn, before the
         # pre-evaluation pipeline.  Each conforms to the Gate protocol, so they run
@@ -593,7 +605,12 @@ class EnzymeAgent:
                                    for action, row in zip(actions, outcomes)]}
             evidence_id = finish_decision(self.run_dir, identifier, result)
             return {**result, 'research_decision': identifier, 'outcome_evidence': evidence_id,
-                    'interpretation_required': 'Compare this observation with the registered competing predictions before choosing the next test.'}
+                    'interpretation_required': (
+                        'Compare this observation with the registered competing predictions. '
+                        'If proposing a next test, pass revises, belief_update, outcome_interpretation, '
+                        'and this outcome_evidence ID directly in plan_research_step (one turn); '
+                        'otherwise use conclude_research_review or interpret_research_outcome.'
+                    )}
         if (getattr(self, '_require_research_decision', False) and _planned_decision is None
                 and tool_name not in {'get_decision_context', 'get_exploration_state',
                                       'get_candidate_evidence', 'get_research_memory', 'inspect_discovery_source',
@@ -937,6 +954,189 @@ class EnzymeAgent:
         except (OSError, ValueError) as exc:
             logger.warning("Run map update deferred: %s", exc)
 
+    def _resolve_initial_target_context(
+        self,
+        *,
+        query: str,
+        substrate_smiles: str | None,
+        substrate_name: str | None,
+        target_profile: dict | None,
+        resume: dict | None,
+        saved_context: dict | None,
+        token_usage: TokenUsage,
+    ) -> str | None:
+        """Resolve missing substrate SMILES and derive the shared chemistry contract once."""
+        if not substrate_smiles and not resume:
+            try:
+                from enzyme_discovery_agent.chemistry_logic import (
+                    resolve_substrate_names_to_smiles,
+                    reason_target_substrate_smiles,
+                )
+                derived = None
+                if not substrate_name:
+                    validations = []
+                    derived = reason_target_substrate_smiles(
+                        query, self.llm, on_validation=validations.append
+                    )
+                    if validations:
+                        (run_file(self.run_dir, 'substrate_identity_verification.json')).write_text(
+                            json.dumps({"query": query, "substrates": validations}, indent=2) + "\n"
+                        )
+                        for validation in validations:
+                            self._log_event("substrate_identity_verification", validation)
+                if not derived and not self._budget_reason():
+                    derived = resolve_substrate_names_to_smiles(substrate_name or query)
+                if derived:
+                    substrate_smiles = derived
+                    self.log(f"  Derived substrate SMILES: {substrate_smiles}")
+            except Exception as exc:  # never block a run on resolution
+                logger.warning("Substrate SMILES derivation failed: %s", exc)
+
+        self._target_context = saved_context if resume else {
+            "query": query,
+            "substrate_smiles": substrate_smiles,
+            "substrate_name": substrate_name,
+            "target_profile": normalize_target_profile(target_profile),
+        }
+
+        try:
+            from enzyme_discovery_agent.models.target_reasoning import derive_target_reasoning
+            target_reasoning = (
+                json.loads((run_file(self.run_dir, 'target_reasoning.json')).read_text())
+                if resume
+                else derive_target_reasoning(
+                    query=query,
+                    substrate_smiles=substrate_smiles,
+                    substrate_name=substrate_name,
+                    llm_client=self.llm,
+                    target_profile=self._target_context["target_profile"],
+                    on_response=lambda resp: token_usage.record("contract", resp),
+                )
+            )
+            self._target_context["target_reasoning"] = target_reasoning
+            atomic_write_json(run_file(self.run_dir, 'target_reasoning.json'), target_reasoning)
+            self.log(
+                "  Target chemistry: "
+                f"direction={target_reasoning.get('reaction_direction')}, "
+                f"bonds={target_reasoning.get('bond_types')}, "
+                f"topology={target_reasoning.get('substrate_topology')}"
+            )
+            contract_call = (
+                token_usage.calls[-1]
+                if token_usage.calls and token_usage.calls[-1].get("iteration") == "contract"
+                else {}
+            )
+            if not resume:
+                self._log_event("contract_derived", {
+                    "reaction_direction": target_reasoning.get("reaction_direction"),
+                    "bond_types": target_reasoning.get("bond_types"),
+                    "substrate_topology": target_reasoning.get("substrate_topology"),
+                    "reactive_groups": target_reasoning.get("reactive_groups"),
+                    "n_claims": len(target_reasoning.get("claims") or []),
+                    "n_inferred": sum(
+                        1 for c in target_reasoning.get("claims") or []
+                        if c.get("status") == "inferred"
+                    ),
+                    **contract_call,
+                })
+            if contract_call and not resume and not isinstance(self.llm, LLMClient):
+                self._log_event("llm_call", {
+                    "iteration": 0,
+                    "phase": "contract_derivation",
+                    "prompt_tokens": contract_call.get("prompt_tokens", 0),
+                    "completion_tokens": contract_call.get("completion_tokens", 0),
+                    "total_tokens": contract_call.get("total_tokens", 0),
+                    "cumulative_tokens": token_usage.total_tokens,
+                })
+        except Exception as exc:  # never block a run on contract derivation
+            logger.warning("Target-reasoning contract derivation failed: %s", exc)
+
+        atomic_write_json(run_file(self.run_dir, 'target_context.json'), self._target_context)
+        if not resume:
+            provenance.refresh_manifest_target_reasoning(self.run_dir)
+            clear_search_history(history=self._search_history)
+        self._ensure_artifacts_dir()
+        return substrate_smiles
+
+    def _execute_tool_batch(
+        self,
+        tool_calls: list,
+        available_tools: list[dict],
+        iteration: int,
+        messages: list[dict],
+    ) -> list[tuple[str, str, dict]]:
+        """Parse and dispatch a turn's tool calls (parallel-safe concurrently, others serially)."""
+        parsed: list[tuple[str, str, dict]] = []
+        for tc in tool_calls:
+            if hasattr(tc, "function"):
+                name, args_raw, tc_id = tc.function.name, tc.function.arguments, tc.id
+            else:
+                name = tc["function"]["name"]
+                args_raw, tc_id = tc["function"]["arguments"], tc["id"]
+            try:
+                args = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
+            except (json.JSONDecodeError, TypeError) as exc:
+                args = {"_parse_error": str(exc), "_raw": str(args_raw)[:200]}
+            if not isinstance(args, dict):
+                args = {"_parse_error": "Tool arguments must be a JSON object", "_raw": str(args)[:200]}
+            parsed.append((tc_id, name, args))
+
+        parallel = [(tc_id, n, a) for tc_id, n, a in parsed if n in self.parallel_safe]
+        sequential = [(tc_id, n, a) for tc_id, n, a in parsed if n not in self.parallel_safe]
+
+        results: dict[str, str] = {}
+        max_result_chars = config.MAX_RESULT_CHARS
+        allowed = {tool["function"]["name"] for tool in available_tools}
+
+        def _exec(tc_id: str, name: str, args: dict) -> None:
+            budget_reason = self._budget_reason()
+            result = (
+                {"status": "skipped", "summary": "Tool unavailable this turn; take an evidence-gathering action."}
+                if name not in allowed else
+                {"status": "skipped", "deferred_for_budget": True,
+                 "summary": budget_reason + "; retry this tool on continuation."}
+                if budget_reason else self._execute_model_tool(name, args, iteration)
+            )
+            result_for_llm = compact_for_llm(result)
+            result_str = json.dumps(result_for_llm, default=str)
+            if len(result_str) > max_result_chars:
+                result_str = (
+                    f"[NOTE: Result truncated to {max_result_chars} chars. "
+                    f"Full data saved to artifacts.]\n"
+                    + result_str[:max_result_chars]
+                )
+            results[tc_id] = result_str
+
+        if len(parallel) > 1:
+            with ThreadPoolExecutor(max_workers=config.TOOL_THREAD_POOL_WORKERS) as pool:
+                futures = [pool.submit(_exec, *p) for p in parallel]
+                for f in futures:
+                    f.result()
+        else:
+            for p in parallel:
+                _exec(*p)
+        for s in sequential:
+            _exec(*s)
+
+        for tc_id, _name, _args in parsed:
+            messages.append({
+                "role": "tool", "tool_call_id": tc_id,
+                "content": results[tc_id],
+            })
+
+        if any(name == "update_notebook" and not str(args.get("content", "")).strip()
+               for _, name, args in parsed):
+            self._notebook_tool_cooldown = max(self._notebook_tool_cooldown, 2)
+            messages.append({
+                "role": "user",
+                "content": (
+                    "Your notebook call had no content and was safely skipped. Do not retry it now; "
+                    "continue with a substantive discovery action. Only write a notebook note after "
+                    "you have concise, evidence-backed content to preserve."
+                ),
+            })
+        return parsed
+
     def run(
         self,
         query: str,
@@ -1016,108 +1216,15 @@ class EnzymeAgent:
             )
 
         self._query = query
-        # Derive target-substrate SMILES when the caller did not supply them:
-        # without a target structure the substrate-accommodation axis is inert
-        # and ranking collapses to annotation depth (fame), unable to tell an
-        # enzyme whose substrate fits the target from one built for a bulky or
-        # tethered substrate.  The substrate names come from the user's own
-        # query, so resolving them is task setup, not answer leakage.
-        if not substrate_smiles and not resume:
-            try:
-                from enzyme_discovery_agent.chemistry_logic import (
-                    resolve_substrate_names_to_smiles,
-                    reason_target_substrate_smiles,
-                )
-                # The agent reasons about the reaction + substrates at the outset,
-                # so REASON the target-substrate SMILES from the query (a whole
-                # sentence does not resolve to a structure).  Fall back to a
-                # name->PubChem lookup on the supplied name or raw text.
-                derived = None
-                if not substrate_name:
-                    validations = []
-                    derived = reason_target_substrate_smiles(query, self.llm, on_validation=validations.append)
-                    if validations:
-                        (run_file(self.run_dir, 'substrate_identity_verification.json')).write_text(
-                            json.dumps({"query": query, "substrates": validations}, indent=2) + "\n")
-                        for validation in validations:
-                            self._log_event("substrate_identity_verification", validation)
-                if not derived and not self._budget_reason():
-                    derived = resolve_substrate_names_to_smiles(substrate_name or query)
-                if derived:
-                    substrate_smiles = derived
-                    self.log(f"  Derived substrate SMILES: {substrate_smiles}")
-            except Exception as exc:  # never block a run on resolution
-                logger.warning("Substrate SMILES derivation failed: %s", exc)
-        self._target_context = saved_context if resume else {
-            "query": query,
-            "substrate_smiles": substrate_smiles,
-            "substrate_name": substrate_name,
-            "target_profile": normalize_target_profile(target_profile),
-        }
-        # The ledger was attached before substrate resolution; the contract
-        # callback remains compatible with standalone and stub clients.
-        # Derive the shared chemistry contract ONCE, at run start, from the target
-        # only.  Every downstream stage reads its required-chemistry facts from
-        # this single contract instead of re-deriving them independently, so no
-        # stage can invent a different account of what chemistry is required.
-        try:
-            from enzyme_discovery_agent.models.target_reasoning import derive_target_reasoning
-            target_reasoning = (json.loads((run_file(self.run_dir, 'target_reasoning.json')).read_text())
-                                if resume else derive_target_reasoning(
-                query=query,
-                substrate_smiles=substrate_smiles,
-                substrate_name=substrate_name,
-                llm_client=self.llm,
-                target_profile=self._target_context["target_profile"],
-                # Account for the derivation's tokens in the same ledger as the
-                # main loop, so cost is complete and auditable.
-                on_response=lambda resp: token_usage.record("contract", resp),
-            ))
-            self._target_context["target_reasoning"] = target_reasoning
-            atomic_write_json(run_file(self.run_dir, 'target_reasoning.json'), target_reasoning)
-            self.log(
-                "  Target chemistry: "
-                f"direction={target_reasoning.get('reaction_direction')}, "
-                f"bonds={target_reasoning.get('bond_types')}, "
-                f"topology={target_reasoning.get('substrate_topology')}"
-            )
-            # Make the contract visible in the canonical event stream: a
-            # dedicated event for the derived facts, plus a standard llm_call
-            # event so existing cost tooling counts its tokens.
-            contract_call = (token_usage.calls[-1]
-                             if token_usage.calls and token_usage.calls[-1].get("iteration") == "contract"
-                             else {})
-            if not resume:
-                self._log_event("contract_derived", {
-                "reaction_direction": target_reasoning.get("reaction_direction"),
-                "bond_types": target_reasoning.get("bond_types"),
-                "substrate_topology": target_reasoning.get("substrate_topology"),
-                "reactive_groups": target_reasoning.get("reactive_groups"),
-                "n_claims": len(target_reasoning.get("claims") or []),
-                "n_inferred": sum(1 for c in target_reasoning.get("claims") or []
-                                  if c.get("status") == "inferred"),
-                **contract_call,
-                })
-            if contract_call and not resume and not isinstance(self.llm, LLMClient):
-                self._log_event("llm_call", {
-                    "iteration": 0,
-                    "phase": "contract_derivation",
-                    "prompt_tokens": contract_call.get("prompt_tokens", 0),
-                    "completion_tokens": contract_call.get("completion_tokens", 0),
-                    "total_tokens": contract_call.get("total_tokens", 0),
-                    "cumulative_tokens": token_usage.total_tokens,
-                })
-        except Exception as exc:  # never block a run on contract derivation
-            logger.warning("Target-reasoning contract derivation failed: %s", exc)
-        # Gates run independently of the live agent instance. Persist the
-        # structured target once so automatic evaluation never has to infer it
-        # from a truncated notebook paragraph.
-        atomic_write_json(run_file(self.run_dir, 'target_context.json'), self._target_context)
-        if not resume:
-            provenance.refresh_manifest_target_reasoning(self.run_dir)
-        if not resume:
-            clear_search_history(history=self._search_history)
-        self._ensure_artifacts_dir()
+        substrate_smiles = self._resolve_initial_target_context(
+            query=query,
+            substrate_smiles=substrate_smiles,
+            substrate_name=substrate_name,
+            target_profile=target_profile,
+            resume=resume,
+            saved_context=saved_context if resume else None,
+            token_usage=token_usage,
+        )
 
         system_prompt = build_system_prompt(
             available_tools=list(get_tools_by_category().keys()),
@@ -1232,9 +1339,8 @@ class EnzymeAgent:
             if (candidate_work and not reconnaissance and not user_reflection and not review_yield
                     and (source_reviewed or not adaptive_review)
                     and self._automatic_evidence_batches < config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION):
-                ready_gate = self._gate_pipeline.gates[2]
-                if ready_gate.should_fire(self._gate_state, False, messages):
-                    result = ready_gate.execute(self._gate_state, messages)
+                if self._eval_gate.should_fire(self._gate_state, False, messages):
+                    result = self._eval_gate.execute(self._gate_state, messages)
                     iteration, intercepted = self._apply_gate_result(
                         "evaluation_backlog", result, iteration, messages, discard_assistant=False)
                     if intercepted:
@@ -1244,9 +1350,8 @@ class EnzymeAgent:
                 # then only on its reserved cadence, so breadth fills the gaps
                 # between evaluation instead of being starved by it. This is the
                 # block that reliably fires, so expansion was previously unreached.
-                expansion_gate = self._gate_pipeline.gates[3]
-                if expansion_gate.should_fire(self._gate_state, False, messages):
-                    result = expansion_gate.execute(self._gate_state, messages)
+                if self._expansion_gate.should_fire(self._gate_state, False, messages):
+                    result = self._expansion_gate.execute(self._gate_state, messages)
                     iteration, intercepted = self._apply_gate_result(
                         "homolog_expansion", result, iteration, messages, discard_assistant=False)
                     if intercepted:
@@ -1300,9 +1405,8 @@ class EnzymeAgent:
 
             intercepted = False
             if not skip_automation and self._last_automatic_action != "rolling_evaluation":
-                ready_gate = self._gate_pipeline.gates[2]
-                if ready_gate.should_fire(self._gate_state, False, messages):
-                    result = ready_gate.execute(self._gate_state, messages)
+                if self._eval_gate.should_fire(self._gate_state, False, messages):
+                    result = self._eval_gate.execute(self._gate_state, messages)
                     iteration, intercepted = self._apply_gate_result(
                         "rolling_evaluation", result, iteration, messages, discard_assistant=False)
                 if intercepted:
@@ -1348,9 +1452,9 @@ class EnzymeAgent:
                     or self._gate_state.pending_evaluation_count > 0):
                 intercepted = False
                 for name, gate in [
-                    ("homolog_expansion", self._gate_pipeline.gates[3]),
+                    ("homolog_expansion", self._expansion_gate),
                     ("systematic_coverage", self._systematic_gate),
-                    ("rolling_evaluation", self._gate_pipeline.gates[2]),
+                    ("rolling_evaluation", self._eval_gate),
                 ]:
                     from enzyme_discovery_agent.steering import has_pending
                     if has_pending(self.run_dir) or self._budget_reason():
@@ -1535,8 +1639,7 @@ class EnzymeAgent:
             # are sent. Varying the schemas rewrote the provider's cache prefix every turn.
             self._offered_direct_tools={tool['function']['name'] for tool in permitted}
             from enzyme_discovery_agent.context import stable_tool_definitions
-            model_tools = stable_tool_definitions(self.tools,
-                                                  include_inspections=not inspection_completed(self.run_dir))
+            model_tools = stable_tool_definitions(self.tools, include_inspections=True)
             # Volatile, so it goes last in the payload and is never written to the durable
             # history: anything placed earlier would invalidate the cache behind it.
             model_messages = model_messages + [{'role': 'user', 'content': 'PERMITTED THIS TURN: '
@@ -1746,76 +1849,7 @@ class EnzymeAgent:
                         continue
 
             # Parse and execute tool calls
-            parsed = []
-            for tc in tool_calls:
-                if hasattr(tc, "function"):
-                    name, args_raw, tc_id = tc.function.name, tc.function.arguments, tc.id
-                else:
-                    name = tc["function"]["name"]
-                    args_raw, tc_id = tc["function"]["arguments"], tc["id"]
-                try:
-                    args = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
-                except (json.JSONDecodeError, TypeError) as e:
-                    args = {"_parse_error": str(e), "_raw": str(args_raw)[:200]}
-                if not isinstance(args, dict):
-                    args = {"_parse_error": "Tool arguments must be a JSON object", "_raw": str(args)[:200]}
-                parsed.append((tc_id, name, args))
-
-            parallel = [(tc_id, n, a) for tc_id, n, a in parsed if n in self.parallel_safe]
-            sequential = [(tc_id, n, a) for tc_id, n, a in parsed if n not in self.parallel_safe]
-
-            results: dict[str, str] = {}
-            max_result_chars = config.MAX_RESULT_CHARS
-
-            def _exec(tc_id: str, name: str, args: dict):
-                budget_reason = self._budget_reason()
-                allowed = {tool["function"]["name"] for tool in available_tools}
-                result = ({"status": "skipped", "summary": "Tool unavailable this turn; take an evidence-gathering action."}
-                          if name not in allowed else
-                          {"status": "skipped", "deferred_for_budget": True,
-                           "summary": budget_reason + "; retry this tool on continuation."}
-                          if budget_reason else self._execute_model_tool(name, args, iteration))
-                result_for_llm = compact_for_llm(result)
-                result_str = json.dumps(result_for_llm, default=str)
-                if len(result_str) > max_result_chars:
-                    result_str = (
-                        f"[NOTE: Result truncated to {max_result_chars} chars. "
-                        f"Full data saved to artifacts.]\n"
-                        + result_str[:max_result_chars]
-                    )
-                results[tc_id] = result_str
-
-            if len(parallel) > 1:
-                with ThreadPoolExecutor(max_workers=config.TOOL_THREAD_POOL_WORKERS) as pool:
-                    futures = [pool.submit(_exec, *p) for p in parallel]
-                    for f in futures:
-                        f.result()
-            else:
-                for p in parallel:
-                    _exec(*p)
-            for s in sequential:
-                _exec(*s)
-
-            for tc_id, name, args in parsed:
-                messages.append({
-                    "role": "tool", "tool_call_id": tc_id,
-                    "content": results[tc_id],
-                })
-
-            if any(name == "update_notebook" and not str(args.get("content", "")).strip()
-                   for _, name, args in parsed):
-                # Prevent a malformed notebook-only response from burning all
-                # remaining iterations.  The next two turns cannot select the
-                # write tool and must take a substantive discovery action.
-                self._notebook_tool_cooldown = max(self._notebook_tool_cooldown, 2)
-                messages.append({
-                    "role": "user",
-                    "content": (
-                        "Your notebook call had no content and was safely skipped. Do not retry it now; "
-                        "continue with a substantive discovery action. Only write a notebook note after "
-                        "you have concise, evidence-backed content to preserve."
-                    ),
-                })
+            parsed = self._execute_tool_batch(tool_calls, available_tools, iteration, messages)
 
             # Make newly screened candidates visible immediately.  The next
             # iteration will deterministically enter the evaluation gate even

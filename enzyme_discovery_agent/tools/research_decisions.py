@@ -8,7 +8,7 @@ _BRIEF = {'type':'string','minLength':1,'maxLength':BRIEF_FIELD_LIMIT}
 _OPTIONAL_BRIEF = {'type':'string','maxLength':BRIEF_FIELD_LIMIT,'default':''}
 
 
-@tool(description='Interpret the current pending test outcome without executing another test. Cite its exact outcome evidence and distinguish observations from uncertainty.',
+@tool(description='Record an interpretation of the pending test outcome WITHOUT executing another test (e.g., before concluding or during repair). If you are proposing a next test, record your interpretation inline in plan_research_step via revises, belief_update and outcome_interpretation instead.',
       category='reasoning',parallel_safe=False,injected_params=['run_dir'],params={
           'run_dir':{'type':'string'},'decision_id':{'type':'string'},
           'evidence_refs':{'type':'array','items':{'type':'string'}},
@@ -129,6 +129,7 @@ def get_decision_context(run_dir, decision_id=''):
                         'properties':{'tool_name':{'type':'string'},'arguments':{'type':'object'}}}},
           'revises': {'type': 'string', 'default': ''},
           'belief_update': {'type': 'string', 'enum': ['retain', 'revise', 'suspend'], 'default': 'retain'},
+          'outcome_interpretation': {**_OPTIONAL_BRIEF, 'description': 'Concise interpretation of the revised test outcome against its predictions; avoids a separate interpret_research_outcome turn.'},
       })
 def plan_research_step(**kwargs):
     # Only the controller may validate, register and execute the enclosed action;
