@@ -29,3 +29,17 @@ def test_sphere_colors_span_the_ramp():
     cols = rc._sphere_colors([rc.RADIUS_VMIN, rc.RADIUS_VMAX])
     assert len(cols) == 2 and all(len(c) == 3 for c in cols)
     assert cols[0] != cols[1]                                 # narrow and wide map to different colours
+
+
+def test_fast_channels_html_viewer_end_to_end(tmp_path):
+    pytest.importorskip("MDAnalysis")
+    from structural_modeling_agent.analysis import channels_html, substrate_channels as ch
+    dhaa = os.path.join(os.path.dirname(__file__), "fixtures", "dhaa_1cqw.pdb")
+    if not os.path.exists(dhaa):
+        pytest.skip("DhaA fixture not available")
+    run_dir = str(tmp_path / "dhaa_fast")
+    ch.analyze_channels([dhaa], run_dir, start_sel="resid 117 and name OD1 OD2", n_starts=1, backend="fast")
+    out_html = str(tmp_path / "dhaa_channels.html")
+    channels_html.build([("DhaA 1CQW", [("fast", run_dir)])], out_html, cdn=True)
+    text = open(out_html).read()
+    assert "DhaA 1CQW" in text and "spheres" in text and len(text) > 5000

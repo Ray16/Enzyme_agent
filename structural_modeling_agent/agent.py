@@ -20,7 +20,7 @@ import uuid
 
 from enzyme_discovery_agent.state_store import atomic_write_json
 from .dispatch_handlers import _merge_model_changes, _text_page
-from .prompts import BARRIER_GUIDANCE, BARRIER_PROMPT, PREPARATION_PROMPT, SYSTEM_PROMPT
+from .prompts import BARRIER_GUIDANCE, BARRIER_PROMPT, PREPARATION_PROMPT, SYSTEM_PROMPT, compact_system_prompt
 from .tool_registry import get_registry, select_offered_tools
 from .tool_schemas import _schema, _string, tool_schemas
 from .validation import (entity_map_for, file_digest, fingerprint, validate_ensemble,
@@ -189,7 +189,8 @@ class ModelingAgent:
                     "investigation_leads": len(self.task.get("unresolved_leads") or []),
                     "excluded_candidates": len(self.task.get("excluded_candidates") or []),
                 }
-            self.messages = [{"role": "system", "content": SYSTEM_PROMPT},
+            initial_prompt = compact_system_prompt() if self.task.get("progressive_tool_disclosure") else SYSTEM_PROMPT
+            self.messages = [{"role": "system", "content": initial_prompt},
                              {"role": "user", "content": json.dumps(initial)}]
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self._resume_requested = resume
@@ -507,7 +508,9 @@ class ModelingAgent:
         prefix=copy.deepcopy(self.messages[:2])
         objective=self.task.get('objective')
         prefix[0]={"role":"system","content":(BARRIER_PROMPT if objective=='evaluate_barriers' else
-                    PREPARATION_PROMPT if objective=='prepare_sampling' else SYSTEM_PROMPT+BARRIER_GUIDANCE)}
+                    PREPARATION_PROMPT if objective == 'prepare_sampling' else (
+                        compact_system_prompt() if self.task.get('progressive_tool_disclosure') else SYSTEM_PROMPT + BARRIER_GUIDANCE
+                    ))}
         # Scientific field definitions must survive ordinary history compaction.
         # Otherwise a model can spend every turn rereading a truncated schema.
         cached_only=all((candidate.get('evidence') or {}).get('do_not_recofold')
@@ -692,7 +695,7 @@ class ModelingAgent:
     def run(self, *, max_turns=30, token_budget=100000, runtime_budget_seconds=1800):
         if type(max_turns) is not int or max_turns < 1 or token_budget < 1 or runtime_budget_seconds <= 0:
             raise ValueError("turn, token and runtime allowances must be positive")
-        from enzyme_discovery_agent.llm_client import LLMClient, TokenUsage
+        from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
         # Separate-process lock enforces one decision owner per modeling run.
         with _controller_lock(self.run_dir):
             if self._resume_requested:

@@ -126,7 +126,14 @@ def test_agent_modular_exports_and_unified_tool_registry():
     schema_names = {s["function"]["name"] for s in schemas_a}
     assert schema_names == set(reg.names())
     # Newly registered domain capabilities are exposed via the unified registry
-    assert {"analyze_substrate_contacts", "analyze_substrate_channels", "assess_mlmm_profile"} <= schema_names
+    assert {
+        "analyze_substrate_contacts",
+        "analyze_substrate_channels",
+        "assess_mlmm_profile",
+        "load_skill",
+        "render_channel_visualization",
+        "render_contact_figure",
+    } <= schema_names
     # Every registered tool has a callable handler and valid scope
     for spec in reg.specs():
         assert callable(spec.handler)
@@ -139,3 +146,43 @@ def test_agent_modular_exports_and_unified_tool_registry():
         scratch.register(spec)
     with pytest.raises(ValueError, match="schema function name"):
         scratch.register(ToolSpec(name="other", schema=_schema("wrong", "d"), handler=lambda a, b: {}))
+
+
+def test_skills_and_progressive_tool_disclosure(tmp_path):
+    from structural_modeling_agent.prompts import SYSTEM_PROMPT, compact_system_prompt
+    from structural_modeling_agent.skills import get_skill, list_skills
+    from structural_modeling_agent.tool_registry import select_offered_tools
+
+    skills = list_skills()
+    names = {s["name"] for s in skills}
+    assert {"cofold-setup", "md-preparation", "reaction-barriers", "contacts-and-channels", "visualization"} <= names
+    compact = compact_system_prompt()
+    assert len(compact) < len(SYSTEM_PROMPT) * 0.25
+    assert "contacts-and-channels" in compact
+
+    # Test progressive tool disclosure on a real ModelingAgent
+    task_path = tmp_path / "task.json"
+    task_path.write_text(json.dumps({
+        "target": {"name": "synthetic"},
+        "progressive_tool_disclosure": True,
+        "candidates": [{"accession": "TEST1", "sequence": "AG", "evidence": {}}],
+    }))
+    agent = ModelingAgent(task_path=task_path, run_dir=tmp_path / "run")
+    initial_names = {t["function"]["name"] for t in select_offered_tools(agent)}
+    all_names = {t["function"]["name"] for t in tool_schemas()}
+    assert len(initial_names) < len(all_names) * 0.65
+    assert "load_skill" in initial_names
+    assert "analyze_substrate_channels" not in initial_names
+    assert "render_channel_visualization" not in initial_names
+
+    res = agent.dispatch("load_skill", {"name": "visualization"})
+    assert "render_channel_visualization" in res["tools_unlocked"]
+    assert "visualization" in agent.state["active_skills"]
+    after_viz = {t["function"]["name"] for t in select_offered_tools(agent)}
+    assert {"render_channel_visualization", "render_contact_figure"} <= after_viz
+    assert "analyze_substrate_channels" not in after_viz
+
+    agent.dispatch("load_skill", {"name": "contacts-and-channels"})
+    after_analysis = {t["function"]["name"] for t in select_offered_tools(agent)}
+    assert {"analyze_substrate_contacts", "analyze_substrate_channels"} <= after_analysis
+    assert get_skill("visualization").domains == frozenset({"visualization"})

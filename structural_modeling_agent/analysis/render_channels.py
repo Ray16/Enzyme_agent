@@ -25,7 +25,10 @@ import tempfile
 
 import numpy as np
 
-PYMOL = "/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/pymol/bin/pymol"
+try:
+    from ..env_config import PYMOL_BIN as PYMOL
+except ImportError:
+    PYMOL = os.environ.get("SMA_PYMOL_BIN", "/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/pymol/bin/pymol")
 IMG_W, IMG_H = 1500, 1200
 RADIUS_VMIN, RADIUS_VMAX = 1.0, 2.6     # A; colour-bar range for tunnel radius
 CMAP = "RdYlBu"                          # narrow = red (bottleneck), wide = blue (open to solvent)

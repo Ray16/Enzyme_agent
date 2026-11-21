@@ -185,6 +185,82 @@ def _h_analyze_substrate_channels(agent, args):
     return {"artifact": artifact, **result}
 
 
+def _h_load_skill(agent, args):
+    from .skills import get_skill
+
+    skill = get_skill(args["name"])
+    active = agent.state.setdefault("active_skills", [])
+    if skill.name not in active:
+        active.append(skill.name)
+    registry = get_registry()
+    unlocked = sorted(
+        name
+        for domain in skill.domains
+        for name in registry.names_for_domain(domain)
+    )
+    return {
+        "name": skill.name,
+        "description": skill.description,
+        "domains": sorted(skill.domains),
+        "tools_unlocked": unlocked,
+        "instructions": skill.body,
+    }
+
+
+def _h_render_channel_visualization(agent, args):
+    run_dir = str(agent._authorized_evidence(args["run_dir"]))
+    fmt = args.get("format", "html")
+    label = args.get("label") or Path(run_dir).name
+    title = args.get("title") or label
+    out_root = agent.run_dir / "artifacts" / "visualizations"
+    out_root.mkdir(parents=True, exist_ok=True)
+    safe_label = "".join(c if c.isalnum() or c in "._-" else "_" for c in label)
+    if fmt == "html":
+        from .analysis import channels_html
+        out_path = str(out_root / f"{safe_label}_channels.html")
+        channels_html.build(
+            [(label, [(args.get("panel_label") or label, run_dir)])],
+            out_path,
+            title=title,
+            cdn=bool(args.get("cdn", False)),
+        )
+    elif fmt == "png":
+        from .analysis import render_channels
+        out_path = str(out_root / f"{safe_label}_channels.png")
+        render_channels.render(
+            run_dir,
+            out_path,
+            title=title,
+            all_clusters=bool(args.get("all_clusters", False)),
+            max_residues=int(args.get("max_residues", 0)),
+            cutaway=bool(args.get("cutaway", False)),
+            publication=bool(args.get("publication", False)),
+        )
+    else:
+        raise ValueError(f"unknown channel visualization format: {fmt!r}")
+    return {"format": fmt, "output_path": out_path, "run_dir": run_dir}
+
+
+def _h_render_contact_figure(agent, args):
+    from .analysis import render_contacts
+
+    pose_path = str(agent._authorized_evidence(args["pose_path"]))
+    freq_path = str(agent._authorized_evidence(args["freq_json_path"]))
+    md_freq_path = (
+        str(agent._authorized_evidence(args["md_freq_json_path"]))
+        if args.get("md_freq_json_path")
+        else None
+    )
+    label = args.get("label") or Path(pose_path).stem
+    title = args.get("title") or label
+    out_root = agent.run_dir / "artifacts" / "visualizations"
+    out_root.mkdir(parents=True, exist_ok=True)
+    safe_label = "".join(c if c.isalnum() or c in "._-" else "_" for c in label)
+    out_path = str(out_root / f"{safe_label}_contact_frequency.png")
+    render_contacts.build_figure(pose_path, freq_path, title, out_path, md_freq_json=md_freq_path)
+    return {"output_path": out_path, "pose_path": pose_path, "freq_json_path": freq_path}
+
+
 def _h_assess_mlmm_profile(agent, args):
     from .mlmm import evaluate_profile, profile_from_freq_dirs
 
@@ -418,6 +494,69 @@ def build_default_registry() -> ToolRegistry:
         )
     )
 
+    registry.register(
+        ToolSpec(
+            name="load_skill",
+            schema=_schema(
+                "load_skill",
+                "Load a domain playbook (scientific checklist, caveats, and tool workflow) and unlock that domain's tools when progressive disclosure is active",
+                {"name": _string("Skill name from the available skills index (e.g. cofold-setup, md-preparation, reaction-barriers, contacts-and-channels, processivity-kinetics, dynamics-and-design, visualization)")},
+                ("name",),
+            ),
+            handler=_h_load_skill,
+            scope="general",
+            domain="core",
+            stages=frozenset(_STAGE_MEMBERSHIPS),
+        )
+    )
+
+    registry.register(
+        ToolSpec(
+            name="render_channel_visualization",
+            schema=_schema(
+                "render_channel_visualization",
+                "Render an interactive 3Dmol.js HTML viewer (fast, ~1-2 s, default) or a house-style PyMOL+matplotlib PNG figure from a substrate_channels output directory",
+                {
+                    "run_dir": _string("Authorized substrate_channels output directory containing channels.json"),
+                    "format": {"type": "string", "enum": ["html", "png"], "description": "html (fast 3Dmol.js interactive, default) or png (PyMOL ray-traced)"},
+                    "label": _string("Short enzyme label for output filename and dropdown"),
+                    "panel_label": _string("Panel subtitle in HTML viewer"),
+                    "title": _string("Figure or page title"),
+                    "publication": {"type": "boolean", "description": "Full antialias PyMOL render (png only; default false = fast draft)"},
+                    "all_clusters": {"type": "boolean", "description": "Draw all clusters, not only is_channel (png only)"},
+                    "max_residues": {"type": "integer", "minimum": 0, "description": "Number of bottleneck-lining residues to show as sticks (png only)"},
+                    "cutaway": {"type": "boolean", "description": "Solid cutaway surface instead of translucent cartoon (png only)"},
+                    "cdn": {"type": "boolean", "description": "Load 3Dmol.js from CDN instead of inlining (html only)"},
+                },
+                ("run_dir",),
+            ),
+            handler=_h_render_channel_visualization,
+            scope="general",
+            domain="visualization",
+        )
+    )
+
+    registry.register(
+        ToolSpec(
+            name="render_contact_figure",
+            schema=_schema(
+                "render_contact_figure",
+                "Render a paired house-style PyMOL active-site structure + contact-frequency bar chart from an authorized pose PDB and substrate_contacts frequency JSON",
+                {
+                    "pose_path": _string("Authorized representative holo pose PDB path"),
+                    "freq_json_path": _string("Authorized substrate_contacts frequency JSON path"),
+                    "md_freq_json_path": _string("Optional authorized MD frequency JSON for hatched overlay bars"),
+                    "label": _string("Short label for output filename"),
+                    "title": _string("Figure title"),
+                },
+                ("pose_path", "freq_json_path"),
+            ),
+            handler=_h_render_contact_figure,
+            scope="general",
+            domain="visualization",
+        )
+    )
+
     return registry
 
 
@@ -503,6 +642,22 @@ def select_offered_tools(agent) -> list[dict[str, Any]]:
     if objective == "evaluate_barriers":
         barrier_allowed = set(registry.names_for_stage("evaluate_barriers"))
         allowed = barrier_allowed if allowed is None else (allowed & barrier_allowed)
+
+    # Opt-in progressive domain disclosure: start with core + cofold + reasoning tools
+    # and unlock domain tools as skills are activated via load_skill(name).
+    if agent.task.get("progressive_tool_disclosure") and allowed is None:
+        from .skills import get_skill
+        active_domains = {"core", "cofold", "reasoning"}
+        for skill_name in agent.state.get("active_skills", ()):
+            try:
+                active_domains |= set(get_skill(skill_name).domains)
+            except ValueError:
+                continue
+        allowed = {
+            name
+            for domain in active_domains
+            for name in registry.names_for_domain(domain)
+        }
 
     if agent.state.get("repeated_inspections", 0) >= 3:
         readers = registry.repeatable_readers()
