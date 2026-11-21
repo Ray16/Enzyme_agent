@@ -3,7 +3,7 @@ import re
 from enzyme_discovery_agent.chemistry_logic import classify_reaction_chemistry, check_bond_type_mismatch, derive_activation_mechanism
 
 
-def reaction_groups(entry, reactant_ids):
+def reaction_groups(entry, reactant_ids, product_ids=None):
     """Retain all reactions; resolve participants separately for each one."""
     groups=[]
     for index,comment in enumerate(entry.get('comments') or []):
@@ -12,12 +12,15 @@ def reaction_groups(entry, reactant_ids):
         reaction=comment.get('reaction') or {}
         ec=reaction.get('ecNumber')
         facts=classify_reaction_chemistry([ec] if ec else [],[reaction.get('name','')])
-        groups.append({'reaction_index':index,'reaction':reaction.get('name',''),
+        group={'reaction_index':index,'reaction':reaction.get('name',''),
             'ec_number':ec,'reaction_direction':facts.get('reaction_direction'),
             'bond_types':facts.get('bond_types') or [],
             'chebi_ids':reactant_ids({'comments':[comment]}),
             'rhea_ids':[x['id'] for x in reaction.get('reactionCrossReferences') or []
-                        if x.get('database')=='Rhea' and x.get('id')]})
+                        if x.get('database')=='Rhea' and x.get('id')]}
+        if product_ids is not None:
+            group['product_chebi_ids']=product_ids({'comments':[comment]})
+        groups.append(group)
     return groups
 
 
@@ -50,17 +53,21 @@ def scoped_activation(selected,all_activities):
     return result
 
 
-def substrate_occurrences(reaction, substrates):
+def substrate_occurrences(reaction, substrates, *, side='left'):
     """Preserve explicitly recorded stoichiometry without inventing extra sites.
 
     A chemical species and a reactant occurrence are distinct identities. Only
-    exact names on the input side justify repeated copies; ambiguous annotation
-    retains one occurrence and an unresolved multiplicity for investigation.
+    exact names on the requested equation side justify repeated copies; ambiguous
+    annotation retains one occurrence and an unresolved multiplicity for investigation.
     """
     from enzyme_discovery_agent.tools.family_reactions import _norm_chem
     from enzyme_discovery_agent.chemistry_logic import get_chebi_names
-    left=reaction.split('=',1)[0] if '=' in reaction else ''
-    terms=re.split(r'\s+\+\s+', left)
+    if '=' in reaction:
+        lhs, rhs = reaction.split('=', 1)
+        expr = rhs if side == 'right' else lhs
+    else:
+        expr = ''
+    terms=re.split(r'\s+\+\s+', expr)
     counts={}
     for term in terms:
         match=re.match(r'^\s*(?:(\d+)\s+)?(.+?)\s*$', term)
@@ -68,6 +75,7 @@ def substrate_occurrences(reaction, substrates):
             name=_norm_chem(match[2])
             counts[name]=counts.get(name,0)+int(match[1] or 1)
     occurrences=[]
+    prefix = 'product' if side == 'right' else 'native'
     for index, substrate in enumerate(substrates):
         labels=[substrate.get('name') or '']
         if substrate.get('chebi_id'):labels+=get_chebi_names(substrate['chebi_id'])
@@ -76,7 +84,7 @@ def substrate_occurrences(reaction, substrates):
         # Large coefficients remain explicit facts rather than creating a
         # combinatorial structural assignment over a bulk reaction equation.
         for copy in range(min(count or 1, 8)):
-            occurrences.append({**substrate, 'occurrence_id':f'native:{index}:{copy}',
+            occurrences.append({**substrate, 'occurrence_id':f'{prefix}:{index}:{copy}',
                 'stoichiometry':count, 'stoichiometry_status':'source_recorded' if count else 'unresolved',
                 'stoichiometry_source':reaction})
     return occurrences

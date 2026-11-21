@@ -961,7 +961,10 @@ def evaluate_candidate(
     # enzyme's true partner for it is cofactor-scale; ranking's substrate signal
     # (_accommodation_score) must judge what the enzyme CONSUMES.  Shared with the
     # family-survey resolution so promotion and ranking see the same substrates.
-    from enzyme_discovery_agent.tools.family_reactions import _reactant_side_chebi_ids
+    from enzyme_discovery_agent.tools.family_reactions import (
+        _product_side_chebi_ids,
+        _reactant_side_chebi_ids,
+    )
 
     def _name_of(cid):
         resolve_chebi_smiles(cid)  # populates the name cache
@@ -969,7 +972,11 @@ def evaluate_candidate(
         return get_chebi_names(cid)
 
     from enzyme_discovery_agent.tools.native_reactions import reaction_groups, select_reaction_group, substrate_occurrences
-    groups=reaction_groups(entry,lambda one:_reactant_side_chebi_ids(one,_name_of))
+    groups = reaction_groups(
+        entry,
+        lambda one: _reactant_side_chebi_ids(one, _name_of),
+        product_ids=lambda one: _product_side_chebi_ids(one, _name_of),
+    )
     for group in groups:
         group['native_substrates']=[{'chebi_id':cid,'name':get_chebi_name(cid),
             'smiles':resolve_chebi_smiles(cid)} for cid in group['chebi_ids']]
@@ -1000,10 +1007,30 @@ def evaluate_candidate(
             return None
     selected_reaction=select_reaction_group(groups,target_chemistry.get('direction'),
                                            target_chemistry.get('bond_types') or [],_group_fit)
+    reaction_center_analysis = None
     if selected_reaction:
         native_substrates_info=selected_reaction['native_substrates']
         # The fallback must use this same reaction's identifiers as well.
         rhea_ids=selected_reaction['rhea_ids']
+        product_cids = selected_reaction.get('product_chebi_ids') or []
+        if product_cids:
+            try:
+                from enzyme_discovery_agent.models.reaction_center import analyze_reaction_center
+                raw_products = [
+                    {'chebi_id': cid, 'name': get_chebi_name(cid), 'smiles': resolve_chebi_smiles(cid)}
+                    for cid in product_cids
+                ]
+                native_products = substrate_occurrences(
+                    selected_reaction['reaction'], raw_products, side='right'
+                )
+                selected_reaction['native_products'] = native_products
+                reaction_center_analysis = analyze_reaction_center(
+                    selected_reaction['native_substrates'],
+                    native_products,
+                    selected_reaction.get('reaction', ''),
+                )
+            except Exception as exc:  # noqa: BLE001 - reaction-center diff is additive
+                logger.debug("reaction_center_analysis skipped for %s: %s", accession, exc)
 
     # Substrate-source cascade — measured or reported ONLY, never inferred.
     # 1) UniProt catalyticActivity -> ChEBI -> SMILES (above; most reliable).
@@ -1263,6 +1290,7 @@ def evaluate_candidate(
         ],
         "native_substrate_reaction_scope": selected_reaction,
         "native_reaction_groups": groups,
+        **({"reaction_center_analysis": reaction_center_analysis} if reaction_center_analysis else {}),
         "rhea_ids": rhea_ids,
         "identity_validation": identity_validation,
         "claim_validation": function_validation,

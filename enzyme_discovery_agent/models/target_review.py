@@ -215,6 +215,11 @@ def scientific_record(metadata):
         'interpro_family','domain_architecture','mechanism_evidence','literature_evidence','source_function_evidence',
         'reaction_chemistry','reaction_roles','reaction_step','modeling_validation_evidence',
         'native_substrate_reaction_scope','substrate_similarity','critical_warnings')}
+    # Optional additive evidence fields: include only when present so historical
+    # record digests remain identical for runs that predate them.
+    for extra in ('reaction_center_analysis', 'scope_followup_evidence'):
+        if data.get(extra):
+            result[extra] = data[extra]
     if result.get('claim_validation'):
         result['claim_validation']={k:v for k,v in result['claim_validation'].items() if k!='validated_at'}
     return result
@@ -444,6 +449,18 @@ def save_assessment(root,packet,result,model_provenance=None):
         raise ValueError('Account for every supplied target participant exactly once')
     if any(not role.get('participant') or not role.get('role') or role.get('basis') not in {'observed','transfer','hypothesis','incompatible'} for role in result['target_roles']):
         raise ValueError('Each participant requires an explicit chemical role and evidence basis')
+    # Verify any explicit native occurrence IDs cited in target_roles exist in the selected reaction.
+    import re
+    scoped_subs = ((candidate_record(meta).get('native_substrate_reaction_scope') or {}).get('native_substrates') or [])
+    known_occurrences = {s.get('occurrence_id') for s in scoped_subs if isinstance(s, dict) and s.get('occurrence_id')}
+    if known_occurrences:
+        for role in result['target_roles']:
+            for cited_occ in re.findall(r'\bnative:\d+:\d+\b', str(role.get('role') or '')):
+                if cited_occ not in known_occurrences:
+                    raise ValueError(
+                        f'Cited native occurrence {cited_occ} is not in this candidate\'s selected reaction '
+                        f'(available: {sorted(known_occurrences)})'
+                    )
     if result.get('source_refs')!=[row['source_id']]:raise ValueError('Cite the exact supplied candidate evidence ID')
     if decision in {'prioritize','investigate'} and (not result.get('strengths') or level=='speculative'):
         raise ValueError('Positive ranking requires candidate-specific support beyond a generic class or speculation')
@@ -452,10 +469,27 @@ def save_assessment(root,packet,result,model_provenance=None):
     if decision=='exclude' and not any(c.get('basis')=='observed_mismatch' for c in result.get('constraints',[])):
         raise ValueError('Missing evidence cannot establish exclusion; defer instead')
     result=dict(result)
+    role_bases = {role.get('basis') for role in result['target_roles']}
+    if level == 'direct_target_observation':
+        if (decision in {'prioritize', 'investigate'} and role_bases != {'observed'}) or (
+            decision == 'exclude' and bool(role_bases & {'transfer', 'hypothesis'})
+        ):
+            result.update(
+                evidence_level='mechanistic_transfer',
+                requested_evidence_level='direct_target_observation',
+                admission_note=(
+                    (result.get('admission_note') + ' ' if result.get('admission_note') else '')
+                    + 'Evidence level capped at mechanistic_transfer because at least one required target participant relies on transfer or hypothesis rather than direct observation.'
+                ),
+            )
+            level = 'mechanistic_transfer'
     if decision=='prioritize' and level!='direct_target_observation' and any(
             c.get('basis')=='observed_mismatch' and c.get('severity')=='major' for c in result.get('constraints',[])):
         result.update(decision='investigate',requested_decision='prioritize',
-            admission_note='Transfer-only support with a major observed conflict remains exploratory until the conflict is resolved.')
+            admission_note=(
+                (result.get('admission_note') + ' ' if result.get('admission_note') else '')
+                + 'Transfer-only support with a major observed conflict remains exploratory until the conflict is resolved.'
+            ))
         decision='investigate'
     identifier=uuid.uuid4().hex
     record={**result,'id':identifier,'created_at':datetime.now(timezone.utc).isoformat(),
@@ -525,7 +559,10 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
         'Whole-molecule overlap is supporting context, never a requirement or a reason by itself to reject such a route. '
         'Native annotation, an enzyme class, a shared bond label, a high similarity score, or merely using an energy cofactor cannot establish relevance. '
         'Identify the actual activated center and reacting partners; distinguish donors, carriers, auxiliary substrates and direct nucleophiles. '
-        'Check local reacting atoms and bond-order changes rather than relying on EC labels or matching functional groups elsewhere in a molecule. Algorithmic classifications are fallible interpretations; prefer reaction equations and structures. '
+        'Check local reacting atoms and bond-order changes rather than relying on EC labels or matching functional groups elsewhere in a molecule. '
+        'When reaction_center_analysis is supplied, use its consumed_groups, formed_groups, unchanged_spectator_groups and molecularity to distinguish reacting ends from spectator groups and intramolecular from intermolecular reactions. '
+        'Algorithmic classifications are fallible interpretations; prefer reaction equations and structures. '
+        'Use direct_target_observation ONLY when the cited source directly tested the requested target substrates; inactivity or activity on analogs alone is mechanistic_transfer. '
         'Explain candidate-specific catalytic machinery, target partner roles, adaptations and constraints. A different native substrate does not alone imply inactivity. '
         'Missing native annotation does not exclude a candidate if independent mechanistic evidence supports a testable hypothesis. '
         'Defer when no defensible target-specific hypothesis can be formed; exclude only on observed incompatibility. '

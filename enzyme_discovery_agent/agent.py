@@ -1290,6 +1290,11 @@ class EnzymeAgent:
                     messages.append({'role':'user','content':
                         'Source-grounded literature follow-up linked and assessed these sequence records: '+json.dumps(followup['resolved'])+
                         '. Inspect their current evidence and record target-specific priorities when justified. Identity/native-function resolution does not establish target activity.'})
+            if config.AUTO_SCOPE_FOLLOWUP and iteration % 4 == 0:
+                from enzyme_discovery_agent.models.evidence_followup import run_scope_followup
+                scope_out = run_scope_followup(self.run_dir, limit=2)
+                if scope_out['enriched']:
+                    self._log_event('scope_followup_enriched', {'iteration': iteration, 'accessions': scope_out['enriched']})
             self._record_research_progress()
             from enzyme_discovery_agent.models.target_review import review_queue,run_review
             from enzyme_discovery_agent.models.research_decisions import _root as decision_root,_read as read_decision_state

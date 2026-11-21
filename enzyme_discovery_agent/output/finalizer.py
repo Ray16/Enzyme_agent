@@ -164,6 +164,11 @@ class RunFinalizer:
         write_structural_modeling_handoff(
             self.run_dir, evaluations, target,
             discovery_status_value='incomplete', coverage={'status': 'incomplete', 'reason': reason})
+        from enzyme_discovery_agent.models.comparative_synthesis import write_comparative_synthesis
+        try:
+            write_comparative_synthesis(self.run_dir)
+        except Exception as exc:  # noqa: BLE001 - comparative summary is additive
+            logger.debug("Comparative synthesis snapshot skipped: %s", exc)
         from enzyme_discovery_agent.export_reasoning_trace import export_trace
         trace=export_trace(self.run_dir)
         assessments=sum(event['type']=='target_assessment_recorded' for event in trace['events'])
@@ -474,6 +479,10 @@ class RunFinalizer:
         )
         if handoff_path:
             self.log(f"  Structural-modeling handoff: {handoff_path}")
+        from enzyme_discovery_agent.models.comparative_synthesis import write_comparative_synthesis
+        self._run_finalization_stage(
+            'comparative_synthesis', lambda: write_comparative_synthesis(self.run_dir),
+            produces=self.run_dir / 'artifacts/comparative_synthesis.json')
         from enzyme_discovery_agent.export_reasoning_trace import export_trace
         self._run_finalization_stage(
             'scientific_reasoning_trace',lambda:export_trace(self.run_dir),

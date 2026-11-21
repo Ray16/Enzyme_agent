@@ -371,6 +371,41 @@ def _reactant_side_chebi_ids(entry: dict, name_of) -> list[str]:
     return ids
 
 
+def _product_side_chebi_ids(entry: dict, name_of) -> list[str]:
+    """Non-cofactor ChEBI ids clearly on the PRODUCT side of a member's reactions.
+
+    Used only for deterministic reactant-vs-product reaction-center analysis,
+    never for substrate accommodation. Keeps participants whose resolved name
+    matches the right-hand side and not the left-hand side of ``A + B = C + D``.
+    """
+    ids: list[str] = []
+    for c in entry.get("comments", []):
+        if c.get("commentType") != "CATALYTIC ACTIVITY":
+            continue
+        name = str((c.get("reaction") or {}).get("name") or "")
+        if "=" not in name:
+            continue
+        lhs, rhs = name.split("=", 1)
+
+        def side_terms(side):
+            return {_norm_chem(re.sub(r'^\s*\d+\s+', '', term))
+                    for term in re.split(r'\s+\+\s+', side)}
+
+        left, right = side_terms(lhs), side_terms(rhs)
+        for x in c.get("reaction", {}).get("reactionCrossReferences", []):
+            if x.get("database") != "ChEBI":
+                continue
+            cid = x.get("id", "")
+            if not cid or cid in COFACTOR_CHEBI_IDS or cid in ids:
+                continue
+            resolved = name_of(cid)
+            labels = resolved if isinstance(resolved, (list, tuple, set)) else [resolved]
+            names = {_norm_chem(label) for label in labels if label}
+            if names & right and not names & left:
+                ids.append(cid)
+    return ids
+
+
 def _substrate_facts(member_smiles: list[str], target_smiles: list[str]) -> dict | None:
     """Report GROUNDED substrate-resemblance facts (no blended score, no weights).
 
