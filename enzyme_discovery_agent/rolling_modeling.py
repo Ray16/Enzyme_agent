@@ -43,7 +43,12 @@ def _snapshot(folder):
     for package in ('enzyme_discovery_agent','structural_modeling_agent','campaign_catalog','enzyme_design_agent'):
         source=project/package
         for directory,dirs,files in os.walk(source):
-            dirs[:]=[d for d in dirs if d not in {'runs','tests','eval','archive','analysis','campaigns','cofold','integrated_campaigns','figures','__pycache__','knowledge'}]
+            if Path(directory).name == 'cofold' and (Path(directory)/'__init__.py').is_file():
+                # Snapshot only the Python subpackage modules, never generated campaign dirs inside cofold/.
+                dirs[:] = []
+            else:
+                dirs[:]=[d for d in dirs if d not in {'runs','tests','eval','archive','analysis','campaigns','integrated_campaigns','figures','__pycache__','knowledge'}
+                         and not (d == 'cofold' and not (Path(directory)/d/'__init__.py').is_file())]
             for name in files:
                 path=Path(directory)/name
                 if path.suffix not in {'.py','.json','.yaml','.yml','.txt'}:continue
@@ -109,7 +114,10 @@ def attach(run_dir, *, discovery_owner=None, model=None, runtime_seconds=43200,
         worker=folder/'worker.py'
         worker.write_text("import sys\nfrom pathlib import Path\nsys.path.insert(0,str(Path(__file__).resolve().parent/'source'))\nfrom enzyme_discovery_agent.production import main\nif __name__=='__main__':main()\n")
         provider=folder/'provider.py'
-        source=(folder/'source/structural_modeling_agent/lambda_boltz_backend.py').read_text()
+        backend_src=folder/'source/structural_modeling_agent/cofold/lambda_backend.py'
+        if not backend_src.exists():
+            backend_src=folder/'source/structural_modeling_agent/lambda_boltz_backend.py'
+        source=backend_src.read_text()
         provider.write_text("import sys\nfrom pathlib import Path\nsys.path.insert(0,str(Path(__file__).resolve().parent/'source'))\n"+source)
         atomic_write_json(folder/'backend.json',{'provider':'lambda13-boltz2-exact','engine':'boltz2',
             'argv':[sys.executable,str(provider),'--state-dir',str(folder/'provider'),'--pool',str(pool)],

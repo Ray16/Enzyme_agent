@@ -124,7 +124,8 @@ def _family(data):
 def build_handoff(run_dir, specification):
     """Group published candidates; direct contradictory evidence always splits groups."""
     root=Path(run_dir);registry=load_candidate_registry(root,strict=True)['candidates']
-    rows=list(csv.DictReader((root/'ranked_candidates.csv').open()))
+    ranking_path=root/'ranked_candidates.csv'
+    rows=list(csv.DictReader(ranking_path.open())) if ranking_path.is_file() else []
     assignments=[];known=defaultdict(set)
     coordinates=(ReactionCoordinates.load(specification['reaction_coordinates_path'])
                  if specification.get('reaction_coordinates_path') else ReactionCoordinates.load())

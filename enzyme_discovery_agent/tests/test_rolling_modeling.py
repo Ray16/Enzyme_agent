@@ -23,7 +23,12 @@ def test_dead_coordinator_requires_reconciliation_not_duplicate_gpu_jobs(tmp_pat
 def test_frozen_runtime_excludes_generated_campaigns_and_keeps_static_contracts(tmp_path):
     hashes=rolling_modeling._snapshot(tmp_path)
     assert hashes
-    assert not any('/cofold/' in name or '/integrated_campaigns/' in name or '/runs/' in name for name in hashes)
+    assert not any(
+        ('/cofold/' in name and not name.endswith('.py'))
+        or '/integrated_campaigns/' in name
+        or '/runs/' in name
+        for name in hashes
+    )
     assert 'structural_modeling_agent/validation_contract.json' in hashes
     assert 'structural_modeling_agent/knowledge/attack_angle_metric.json' in hashes
     assert 'enzyme_discovery_agent/rolling_modeling.py' in hashes
