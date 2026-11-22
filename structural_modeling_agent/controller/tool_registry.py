@@ -261,6 +261,115 @@ def _h_render_contact_figure(agent, args):
     return {"output_path": out_path, "pose_path": pose_path, "freq_json_path": freq_path}
 
 
+def _h_assess_developability(agent, args):
+    from ..developability.assess import assess_developability
+    acc = args["accession"]
+    candidate = agent._candidate(acc)
+    result = assess_developability(
+        accession=acc,
+        sequence=candidate["sequence"],
+        family_id=args.get("family_id"),
+        predictor_name=args.get("predictor_name", "netsolp"),
+    )
+    payload = result.to_dict() if hasattr(result, "to_dict") else dict(result)
+    artifact = agent._artifact(f"developability_{acc}", payload)
+    agent.state["candidates"][acc]["developability"] = payload
+    return {"artifact": artifact, **payload}
+
+
+def _h_analyze_pocket_envelope(agent, args):
+    from ..analysis.pocket_envelope import compare_native_vs_target
+
+    target_poses = [str(agent._authorized_evidence(p)) for p in args["target_poses"]]
+    native_poses = (
+        [str(agent._authorized_evidence(p)) for p in args["native_poses"]]
+        if args.get("native_poses")
+        else None
+    )
+    result = compare_native_vs_target(
+        target_poses,
+        native_poses,
+        target_substrate_chains=args.get("target_substrate_chains"),
+        target_substrate_resnames=args.get("target_substrate_resnames"),
+        native_substrate_chains=args.get("native_substrate_chains"),
+        native_substrate_resnames=args.get("native_substrate_resnames"),
+        reaction_center_xyz=args.get("reaction_center_xyz"),
+        clash_cutoff_A=float(args.get("clash_cutoff_A", 2.2)),
+    )
+    artifact = agent._artifact("pocket_envelope", result)
+    return {"artifact": artifact, **result}
+
+
+def _h_analyze_side_reactions(agent, args):
+    from ..analysis import side_reactions as sr
+
+    mode = args["mode"]
+    pathways = args["pathways"]
+    if mode == "poses":
+        paths = [str(agent._authorized_evidence(p)) for p in args.get("pose_paths", [])]
+        if not paths:
+            raise ValueError("poses mode requires non-empty pose_paths")
+        result = sr.analyze_side_reactions_poses(paths, pathways)
+    elif mode == "traj":
+        top = str(agent._authorized_evidence(args["top_path"]))
+        trajs = [str(agent._authorized_evidence(p)) for p in args.get("traj_paths", [])]
+        if not trajs:
+            raise ValueError("traj mode requires non-empty traj_paths")
+        result = sr.analyze_side_reactions_trajectory(top, trajs, pathways, stride=int(args.get("stride", 1)))
+    else:
+        raise ValueError(f"unknown side-reaction analysis mode: {mode!r}")
+    artifact = agent._artifact(f"side_reactions_{mode}", result)
+    return {"artifact": artifact, **result}
+
+
+def _h_analyze_preorganization(agent, args):
+    from ..analysis.preorganization import analyze_preorganization
+
+    apo = str(agent._authorized_evidence(args["apo_path"])) if args.get("apo_path") else None
+    holo = str(agent._authorized_evidence(args["holo_path"])) if args.get("holo_path") else None
+    poses = [str(agent._authorized_evidence(p)) for p in args["pose_paths"]] if args.get("pose_paths") else None
+    prmtop = str(agent._authorized_evidence(args["prmtop_path"])) if args.get("prmtop_path") else None
+    trajs = [str(agent._authorized_evidence(p)) for p in args["traj_paths"]] if args.get("traj_paths") else None
+
+    result = analyze_preorganization(
+        apo_path=apo,
+        holo_path=holo,
+        catalytic_residues=args.get("catalytic_residues"),
+        pose_paths=poses,
+        charge_center=args.get("charge_center"),
+        prmtop_path=prmtop,
+        traj_paths=trajs,
+        axis_a_sel=args.get("axis_a_sel"),
+        axis_b_sel=args.get("axis_b_sel"),
+        environment_sel=args.get("environment_sel", "protein"),
+        expected_favorable_sign=args.get("expected_favorable_sign"),
+        cutoff_A=float(args.get("cutoff_A", 15.0)),
+        stride=int(args.get("stride", 1)),
+    )
+    artifact = agent._artifact("preorganization", result)
+    return {"artifact": artifact, **result}
+
+
+def _h_build_catalytic_profile(agent, args):
+    from ..analysis.catalytic_profile import build_catalytic_profile
+
+    acc = args["accession"]
+    profile = build_catalytic_profile(
+        acc,
+        mechanism_gate=args.get("mechanism_gate"),
+        pocket_envelope=args.get("pocket_envelope"),
+        access=args.get("access"),
+        reactive_persistence=args.get("reactive_persistence"),
+        ts_and_preorganization=args.get("ts_and_preorganization"),
+        side_reactions=args.get("side_reactions"),
+        barrier_status=args.get("barrier_status"),
+        developability=args.get("developability") or agent.state["candidates"][acc].get("developability"),
+    )
+    artifact = agent._artifact(f"catalytic_profile_{acc}", profile)
+    agent.state["candidates"][acc]["catalytic_profile"] = profile
+    return {"artifact": artifact, **profile}
+
+
 def _h_assess_mlmm_profile(agent, args):
     from ..mlmm import evaluate_profile, profile_from_freq_dirs
 
@@ -554,6 +663,125 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_render_contact_figure,
             scope="general",
             domain="visualization",
+        )
+    )
+
+    registry.register(
+        ToolSpec(
+            name="assess_developability",
+            schema=_schema(
+                "assess_developability",
+                "Evaluate curated expression/membrane liabilities and predicted solubility for a candidate; fails closed and emits an exploration_trigger for soluble homolog search when vetoed/flagged",
+                {
+                    "accession": _string("Candidate identifier from this task"),
+                    "family_id": _string("Optional InterPro/mechanism family identifier"),
+                    "predictor_name": _string("Solubility predictor name (default netsolp)"),
+                },
+                ("accession",),
+            ),
+            handler=_h_assess_developability,
+            scope="general",
+            domain="developability",
+        )
+    )
+
+    registry.register(
+        ToolSpec(
+            name="analyze_pocket_envelope",
+            schema=_schema(
+                "analyze_pocket_envelope",
+                "Enzyme-agnostic asymmetric pocket-envelope and distal-tail exposure analysis; optionally compares target-holo against a native-holo control to separate modeling artifacts, buried steric exclusion, and pocket slack",
+                {
+                    "target_poses": {"type": "array", "items": {"type": "string"}, "minItems": 1, "description": "Authorized target-holo PDB/mmCIF paths"},
+                    "native_poses": {"type": "array", "items": {"type": "string"}, "description": "Optional authorized native-holo PDB/mmCIF control paths"},
+                    "target_substrate_chains": {"type": "array", "items": {"type": "string"}},
+                    "target_substrate_resnames": {"type": "array", "items": {"type": "string"}},
+                    "native_substrate_chains": {"type": "array", "items": {"type": "string"}},
+                    "native_substrate_resnames": {"type": "array", "items": {"type": "string"}},
+                    "reaction_center_xyz": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+                    "clash_cutoff_A": {"type": "number", "minimum": 0.5},
+                },
+                ("target_poses",),
+            ),
+            handler=_h_analyze_pocket_envelope,
+            scope="general",
+            domain="analysis",
+        )
+    )
+
+    registry.register(
+        ToolSpec(
+            name="analyze_side_reactions",
+            schema=_schema(
+                "analyze_side_reactions",
+                "Reaction-agnostic competing-pathway geometry analyzer for pose ensembles or MD trajectories (e.g., solvent hydrolysis at any angle/distance, intramolecular cyclization, futile cofactor hydrolysis, or off-target C-H abstraction)",
+                {
+                    "mode": {"type": "string", "enum": ["poses", "traj"]},
+                    "pathways": {"type": "array", "items": {"type": "object"}, "minItems": 1, "description": "Declared competing-attack specs (name, kind, electrophile/electrophile_sel, nucleophiles/nucleophile_sel, optional angle_reference/ideal_angle_deg/angle_tolerance_deg, distance_cutoff_A)"},
+                    "pose_paths": {"type": "array", "items": {"type": "string"}},
+                    "top_path": _string("Authorized topology path (mode=traj)"),
+                    "traj_paths": {"type": "array", "items": {"type": "string"}},
+                    "stride": {"type": "integer", "minimum": 1},
+                },
+                ("mode", "pathways"),
+            ),
+            handler=_h_analyze_side_reactions,
+            scope="general",
+            domain="analysis",
+        )
+    )
+
+    registry.register(
+        ToolSpec(
+            name="analyze_preorganization",
+            schema=_schema(
+                "analyze_preorganization",
+                "Enzyme-agnostic preorganization and TS/intermediate stabilization diagnostics: apo-vs-holo catalytic-constellation RMSD, polar/metal stabilization of any declared charge center, and MD-averaged projected electric field (MV/cm) along any reaction axis",
+                {
+                    "apo_path": _string("Authorized apo PDB/mmCIF path"),
+                    "holo_path": _string("Authorized holo PDB/mmCIF path"),
+                    "catalytic_residues": {"type": "array", "items": {"type": "object"}, "description": "List of {chain, residue} catalytic residues"},
+                    "pose_paths": {"type": "array", "items": {"type": "string"}, "description": "Authorized holo/TI pose paths for charge-center stabilization"},
+                    "charge_center": {"type": "object", "description": "{chain, residue, atom} of developing TS/intermediate charge"},
+                    "prmtop_path": _string("Authorized Amber prmtop path for MD electric field"),
+                    "traj_paths": {"type": "array", "items": {"type": "string"}},
+                    "axis_a_sel": _string("MDAnalysis selection for reaction axis start atom"),
+                    "axis_b_sel": _string("MDAnalysis selection for reaction axis end atom"),
+                    "environment_sel": _string("MDAnalysis selection for field-producing environment (default protein)"),
+                    "expected_favorable_sign": {"type": "integer", "enum": [-1, 1]},
+                    "cutoff_A": {"type": "number", "minimum": 2.0},
+                    "stride": {"type": "integer", "minimum": 1},
+                },
+                (),
+            ),
+            handler=_h_analyze_preorganization,
+            scope="general",
+            domain="analysis",
+        )
+    )
+
+    registry.register(
+        ToolSpec(
+            name="build_catalytic_profile",
+            schema=_schema(
+                "build_catalytic_profile",
+                "Assemble a non-collapsed multi-axis CatalyticProfile with explicit failure modes (hard_reject vs soft_evolvable_defect vs modeling_artifact) and residue-level design targets",
+                {
+                    "accession": _string("Candidate identifier from this task"),
+                    "mechanism_gate": {"type": "object"},
+                    "pocket_envelope": {"type": "object"},
+                    "access": {"type": "object"},
+                    "reactive_persistence": {"type": "object"},
+                    "ts_and_preorganization": {"type": "object"},
+                    "side_reactions": {"type": "object"},
+                    "barrier_status": {"type": "object"},
+                    "developability": {"type": "object"},
+                },
+                ("accession",),
+            ),
+            handler=_h_build_catalytic_profile,
+            scope="general",
+            domain="core",
         )
     )
 
