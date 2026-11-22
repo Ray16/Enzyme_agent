@@ -12,6 +12,7 @@ cofactor, or reaction mechanism.
 """
 from __future__ import annotations
 
+from functools import lru_cache
 import math
 from pathlib import Path
 from typing import Any
@@ -33,7 +34,7 @@ VDW = {
 }
 
 
-def read_heavy_atoms(path: str | Path) -> list[dict[str, Any]]:
+def read_heavy_atoms(path: str | Path, *, include_solvent: bool = False) -> list[dict[str, Any]]:
     """Read heavy atoms from PDB or mmCIF (uses gemmi when available, else pure-Python PDB)."""
     p = Path(path)
     if p.suffix.lower() in {".cif", ".mmcif"}:
@@ -44,7 +45,8 @@ def read_heavy_atoms(path: str | Path) -> list[dict[str, Any]]:
         for chain in model:
             for res in chain:
                 rn = res.name.strip().upper()
-                if rn in _SOLVENT:
+                is_solv = rn in _SOLVENT
+                if is_solv and not include_solvent:
                     continue
                 resid = f"{res.seqid.num}{res.seqid.icode.strip()}"
                 is_prot = rn in _AA3
@@ -60,6 +62,7 @@ def read_heavy_atoms(path: str | Path) -> list[dict[str, Any]]:
                         "element": el,
                         "xyz": np.array([atom.pos.x, atom.pos.y, atom.pos.z], dtype=float),
                         "protein": is_prot,
+                        "solvent": is_solv,
                     })
         return atoms
 
@@ -72,7 +75,8 @@ def read_heavy_atoms(path: str | Path) -> list[dict[str, Any]]:
             if alt not in (" ", "A"):
                 continue
             rn = ln[17:20].strip().upper()
-            if rn in _SOLVENT:
+            is_solv = rn in _SOLVENT
+            if is_solv and not include_solvent:
                 continue
             el = ln[76:78].strip().upper()
             name = ln[12:16].strip()
@@ -90,30 +94,53 @@ def read_heavy_atoms(path: str | Path) -> list[dict[str, Any]]:
                 "element": el,
                 "xyz": np.array([float(ln[30:38]), float(ln[38:46]), float(ln[46:54])], dtype=float),
                 "protein": rn in _AA3,
+                "solvent": is_solv,
             })
     return atoms
 
 
+@lru_cache(maxsize=8)
 def _fibonacci_sphere(n: int = 128) -> np.ndarray:
     i = np.arange(n) + 0.5
     phi = np.arccos(1.0 - 2.0 * i / n)
     th = np.pi * (1.0 + 5.0 ** 0.5) * i
-    return np.stack([np.cos(th) * np.sin(phi), np.sin(th) * np.sin(phi), np.cos(phi)], axis=1)
+    pts = np.stack([np.cos(th) * np.sin(phi), np.sin(th) * np.sin(phi), np.cos(phi)], axis=1)
+    pts.setflags(write=False)
+    return pts
+
+
+def _points_burial_batch(
+    points: np.ndarray,
+    obs_tree: cKDTree,
+    obs_radii: np.ndarray,
+    probe: float = 1.4,
+    n_dir: int = 128,
+    max_len: float = 16.0,
+    step: float = 1.0,
+) -> np.ndarray:
+    """Vectorized ray-cast burial fraction for M points in one cKDTree.query call."""
+    m = len(points)
+    if m == 0:
+        return np.zeros(0, dtype=float)
+    if len(obs_radii) == 0:
+        return np.zeros(m, dtype=float)
+    s = np.arange(step, max_len + step, step)
+    dirs = _fibonacci_sphere(n_dir)
+    # Shape: (M, n_dir, n_steps, 3) -> (M * n_dir * n_steps, 3)
+    offsets = dirs[:, None, :] * s[None, :, None]
+    rays = (points[:, None, None, :] + offsets[None, :, :, :]).reshape(-1, 3)
+    k = min(4, len(obs_radii))
+    d, idx = obs_tree.query(rays, k=k)
+    d = d.reshape(len(rays), -1)
+    idx = idx.reshape(len(rays), -1)
+    gap = (d - obs_radii[idx]).min(axis=1).reshape(m, n_dir, len(s))
+    return (gap < probe).any(axis=2).mean(axis=1).astype(float)
 
 
 def _point_burial(point: np.ndarray, obs_tree: cKDTree, obs_radii: np.ndarray,
                   probe: float = 1.4, n_dir: int = 128, max_len: float = 16.0, step: float = 1.0) -> float:
     """Ray-cast burial fraction of `point` against `obs_tree` (0=solvent-open, 1=fully buried)."""
-    if len(obs_radii) == 0:
-        return 0.0
-    s = np.arange(step, max_len + step, step)
-    rays = (point + _fibonacci_sphere(n_dir)[:, None, :] * s[None, :, None]).reshape(-1, 3)
-    k = min(4, len(obs_radii))
-    d, idx = obs_tree.query(rays, k=k)
-    d = d.reshape(len(rays), -1)
-    idx = idx.reshape(len(rays), -1)
-    gap = (d - obs_radii[idx]).min(axis=1).reshape(n_dir, len(s))
-    return float((gap < probe).any(axis=1).mean())
+    return float(_points_burial_batch(point[None, :], obs_tree, obs_radii, probe, n_dir, max_len, step)[0])
 
 
 def _select_substrate(atoms: list[dict[str, Any]], substrate_chains: list[str] | None = None,
@@ -184,14 +211,17 @@ def analyze_pose_envelope(
 
     contact_residues = set()
     clashing_residues = set()
-    for d_val, hit_list in zip(min_d_prot, prot_tree.query_ball_point(sub_xyz, r=contact_cutoff_A)):
+    clash_sq = clash_cutoff_A * clash_cutoff_A
+    for i_sub, hit_list in enumerate(prot_tree.query_ball_point(sub_xyz, r=contact_cutoff_A)):
+        if not hit_list:
+            continue
+        p_pt = sub_xyz[i_sub]
         for j in hit_list:
             label = f"{prot[j]['chain']}:{prot[j]['resname']}{prot[j]['resid']}"
             contact_residues.add(label)
-    for hit_list in prot_tree.query_ball_point(sub_xyz, r=clash_cutoff_A):
-        for j in hit_list:
-            label = f"{prot[j]['chain']}:{prot[j]['resname']}{prot[j]['resid']}"
-            clashing_residues.add(label)
+            dv = prot_xyz[j] - p_pt
+            if float(dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2]) < clash_sq:
+                clashing_residues.add(label)
 
     # Reactive end vs distal tail: rank atoms by distance to reaction center (or cofactor/protein center)
     if reaction_center_xyz is not None:
@@ -206,8 +236,11 @@ def analyze_pose_envelope(
     reactive_idx = order[:k_end]
     distal_idx = order[-k_end:]
 
-    reactive_burial = float(np.mean([_point_burial(sub_xyz[i], obs_tree, obs_rad) for i in reactive_idx]))
-    distal_burial = float(np.mean([_point_burial(sub_xyz[i], obs_tree, obs_rad) for i in distal_idx]))
+    # Single batched KDTree query for both reactive-end and distal-tail atoms
+    eval_idx = np.concatenate([reactive_idx, distal_idx])
+    burials = _points_burial_batch(sub_xyz[eval_idx], obs_tree, obs_rad)
+    reactive_burial = float(burials[: len(reactive_idx)].mean())
+    distal_burial = float(burials[len(reactive_idx) :].mean())
     distal_clashes = int((min_d_prot[distal_idx] < clash_cutoff_A).sum())
 
     if len(sub_xyz) >= 2:

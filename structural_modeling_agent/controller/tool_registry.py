@@ -386,6 +386,16 @@ def _h_assess_mlmm_profile(agent, args):
     return {"artifact": artifact, **payload}
 
 
+def _h_submit_sampling(agent, args):
+    from ..sampling.workflow import submit_sampling
+    return submit_sampling(agent, args)
+
+
+def _h_check_sampling(agent, args):
+    from ..sampling.workflow import check_sampling
+    return check_sampling(agent, args)
+
+
 # ---------------------------------------------------------------------------
 # Declarative stage, domain, and repeatable-reader metadata
 # ---------------------------------------------------------------------------
@@ -402,6 +412,7 @@ _REPEATABLE_READER_NAMES = frozenset({
     "inspect_processivity_contract",
     "inspect_processivity_toolchain",
     "inspect_mlmm_engine_options",
+    "check_sampling",
 })
 
 _STAGE_MEMBERSHIPS: dict[str, frozenset[str]] = {
@@ -782,6 +793,48 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_build_catalytic_profile,
             scope="general",
             domain="core",
+        )
+    )
+
+    registry.register(
+        ToolSpec(
+            name="submit_sampling",
+            schema=_schema(
+                "submit_sampling",
+                "Submit a reviewed MD or umbrella-sampling job (openmm_classical or ase_mlip_pilot) once through the configured reservation-aware sampling backend; never runs dynamics in the controller process",
+                {
+                    "accession": _string("Candidate identifier from this task"),
+                    "setup_id": _string("Ready sampling setup ID returned by declare_sampling_setup"),
+                    "label": _string("Safe version label for this sampling run"),
+                    "engine": {"type": "string", "enum": ["openmm_classical", "ase_mlip_pilot"]},
+                    "wall_seconds": {"type": "integer", "minimum": 1, "maximum": 86400},
+                    "inputs": {"type": "object", "description": "Authorized input paths: {prmtop, coordinates, spec_path} for openmm_classical or {config_path} for ase_mlip_pilot"},
+                    "settings": {"type": "object", "description": "Optional engine settings (e.g. production_ns, temperature_K, seed, strip_water)"},
+                },
+                ("accession", "setup_id", "label", "engine", "wall_seconds", "inputs"),
+            ),
+            handler=_h_submit_sampling,
+            scope="general",
+            domain="sampling",
+        )
+    )
+
+    registry.register(
+        ToolSpec(
+            name="check_sampling",
+            schema=_schema(
+                "check_sampling",
+                "Reconcile an existing sampling job receipt, verify output hashes, and return ready-to-chain analysis_inputs (top_path, traj_paths, geometry_jsonl) on completion",
+                {
+                    "accession": _string("Candidate identifier from this task"),
+                    "job_id": _string("Sampling job ID returned by submit_sampling"),
+                },
+                ("accession", "job_id"),
+            ),
+            handler=_h_check_sampling,
+            scope="general",
+            domain="sampling",
+            repeatable_reader=True,
         )
     )
 

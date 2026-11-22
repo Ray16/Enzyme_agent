@@ -19,3 +19,7 @@ domains: [sampling]
 3. **Operators & validation**:
    - Use `run_preparation_operator` for bounded (<=60 s, 1 CPU) diagnostic/prep scripts opening hash-verified `inputs/<name>`.
    - A zero exit code is not scientific validation; inspect numerical outputs (`inspect_preparation_structure`, `inspect_preparation_study`) and never impose artificial restraints just to preserve a favorable substrate pose.
+
+4. **Reservation-aware MD submission & post-MD chaining**:
+   - Once `declare_sampling_setup` reaches `ready_for_preparation`, submit bounded dynamics via `submit_sampling` (`openmm_classical` or `ase_mlip_pilot`) and reconcile with `check_sampling` (never double-submit).
+   - When `check_sampling` returns `status="complete"`, chain `outputs.analysis_inputs` (`top_path`, `traj_paths`) directly into `analyze_substrate_contacts(mode="traj")`, `analyze_side_reactions(mode="traj")`, `analyze_preorganization(prmtop_path=..., traj_paths=...)`, and `build_catalytic_profile`.

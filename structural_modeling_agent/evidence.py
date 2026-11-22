@@ -120,6 +120,10 @@ def modeling_evidence(report_path):
             and provenance.get('status')=='pass' and not artifact_errors)
         proxy_check = proxy_integrity(candidate.get("proxy_plan"), candidate.get("proxy_evaluation"),
                                       candidate.get("proxy_evaluation_artifact"), records)
+        catalytic_profile = candidate.get("catalytic_profile")
+        failure_modes = list((catalytic_profile or {}).get("failure_modes") or [])
+        design_targets = list((catalytic_profile or {}).get("design_targets") or [])
+        evolvability_class = (catalytic_profile or {}).get("evolvability_class")
         rows.append({"accession": accession, "revision": candidate.get("revision"),
                      "status": "validated" if ready else "incomplete",
                      "execution_status":"complete" if execution_complete else "incomplete",
@@ -130,6 +134,12 @@ def modeling_evidence(report_path):
                      "proxy_evaluation": candidate.get("proxy_evaluation"),
                      "proxy_integrity": proxy_check,
                      "proxy_plan_registration": candidate.get("proxy_plan_registration"),
+                     "catalytic_profile": catalytic_profile,
+                     "failure_modes": failure_modes,
+                     "evolvability_class": evolvability_class,
+                     "design_targets": design_targets,
+                     "developability": candidate.get("developability"),
+                     "sampling_jobs": candidate.get("sampling_jobs", {}),
                      "scientific_reasoning": candidate.get("scientific_reasoning"),
                      "reasoning_registration": candidate.get("reasoning_registration"),
                      "reasoning_assessment": reasoning_assessment,
@@ -141,7 +151,23 @@ def modeling_evidence(report_path):
                      "sequence_identity_source": identity_source or None,
                      "sequence_sha256": candidate.get("sequence_sha256"),
                      "experimental_activity": "not_established_by_modeling"})
+    # Aggregate family-level failure-mode feedback for upstream discovery review
+    failure_mode_counts: dict[str, int] = {}
+    evolvability_counts: dict[str, int] = {}
+    for row in rows:
+        ev = row.get("evolvability_class")
+        if ev:
+            evolvability_counts[ev] = evolvability_counts.get(ev, 0) + 1
+        for fm in row.get("failure_modes") or []:
+            key = f"{fm.get('severity', 'unknown')}:{fm.get('code', 'unknown')}"
+            failure_mode_counts[key] = failure_mode_counts.get(key, 0) + 1
     return {"schema_version": "3.0", "kind": "modeling_validation", "candidates": rows,
+            "family_feedback": {
+                "n_candidates": len(rows),
+                "n_with_catalytic_profile": sum(1 for r in rows if r.get("catalytic_profile")),
+                "evolvability_counts": evolvability_counts,
+                "failure_mode_counts": failure_mode_counts,
+            },
             "target": report.get("target"), "task_sha256": report.get("task_sha256"),
             "decision_origin":report.get('decision_origin'),
             "source_discovery_run": report.get("source_discovery_run"),

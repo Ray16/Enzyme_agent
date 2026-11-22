@@ -16,9 +16,14 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from scipy.spatial import cKDTree
 
 from .pocket_envelope import _METALS, read_heavy_atoms
+
+# Protein heavy atoms capable of donating an H-bond (excludes backbone carbonyl O)
+_HBOND_DONOR_ATOM_NAMES = {
+    "N", "ND1", "ND2", "NE", "NE1", "NE2", "NH1", "NH2", "NZ",
+    "OG", "OG1", "OH", "SG",
+}
 
 # Electrostatic conversion: 1 e / A^2 = 1439.9645 MV/cm (vacuum permittivity)
 _E_PER_A2_TO_MV_CM = 1439.964547842567
@@ -119,16 +124,26 @@ def compute_projected_electric_field(
     u_hat = axis / norm
     probe = 0.5 * (np.asarray(axis_a_xyz, dtype=float) + np.asarray(axis_b_xyz, dtype=float)) if probe_xyz is None else np.asarray(probe_xyz, dtype=float)
 
-    mask = np.ones(len(coords), dtype=bool) if include_mask is None else np.asarray(include_mask, dtype=bool)
-    delta = probe[None, :] - coords  # vector from source charge -> probe
-    dists = np.linalg.norm(delta, axis=1)
-    keep = mask & (dists >= min_dist_A) & (dists <= cutoff_A)
+    if include_mask is not None:
+        mask = np.asarray(include_mask, dtype=bool)
+        sel_coords = coords[mask]
+        sel_charges = charges_e[mask]
+    else:
+        sel_coords = coords
+        sel_charges = charges_e
+
+    if len(sel_coords) == 0:
+        return {"projected_field_MV_per_cm": 0.0, "field_vector_MV_per_cm": [0.0, 0.0, 0.0], "n_charges": 0}
+
+    delta = probe[None, :] - sel_coords  # vector from source charge -> probe
+    d2 = np.einsum("ij,ij->i", delta, delta)
+    keep = (d2 >= min_dist_A * min_dist_A) & (d2 <= cutoff_A * cutoff_A)
     if not keep.any():
         return {"projected_field_MV_per_cm": 0.0, "field_vector_MV_per_cm": [0.0, 0.0, 0.0], "n_charges": 0}
 
-    q = charges_e[keep]
+    q = sel_charges[keep]
     d_vec = delta[keep]
-    d = dists[keep]
+    d = np.sqrt(d2[keep])
     # E = sum_i q_i * (r_probe - r_i) / |r_probe - r_i|^3
     e_vec = (q[:, None] * d_vec / (d[:, None] ** 3)).sum(axis=0) * _E_PER_A2_TO_MV_CM
     e_proj = float(np.dot(e_vec, u_hat))
@@ -146,9 +161,14 @@ def analyze_charge_center_stabilization(
     donor_cutoff_A: float = 3.5,
     metal_cutoff_A: float = 2.7,
 ) -> dict[str, Any]:
-    """Count persistent polar H-bond donors and metal contacts around any TS/intermediate charge center."""
+    """Count persistent H-bond donors and metal contacts around any TS/intermediate charge center.
+
+    Distinguishes H-bond donors (backbone amide N and polar sidechain donors) from
+    backbone carbonyl O acceptors so oxyanion/anionic TS stabilization is not inflated.
+    """
     target_key = (str(charge_center["chain"]), str(charge_center["residue"]), str(charge_center["atom"]))
     donor_counts: list[int] = []
+    polar_counts: list[int] = []
     metal_hits = 0
     res_freq: dict[str, int] = {}
     n_eval = 0
@@ -165,9 +185,12 @@ def analyze_charge_center_stabilization(
         n_eval += 1
         donors = [
             a for a in atoms
+            if a["protein"] and a["name"] in _HBOND_DONOR_ATOM_NAMES
+        ]
+        all_polar = [
+            a for a in atoms
             if a["protein"] and a["element"] in ("N", "O", "S")
         ]
-        metals = [a for a in atoms if not a["protein"] and a["element"] in _METALS]
         if donors:
             d_xyz = np.asarray([a["xyz"] for a in donors], dtype=float)
             dists = np.linalg.norm(d_xyz - center_xyz[None, :], axis=1)
@@ -177,6 +200,12 @@ def analyze_charge_center_stabilization(
                 res_freq[label] = res_freq.get(label, 0) + 1
         else:
             donor_counts.append(0)
+        if all_polar:
+            p_xyz = np.asarray([a["xyz"] for a in all_polar], dtype=float)
+            polar_counts.append(int((np.linalg.norm(p_xyz - center_xyz[None, :], axis=1) <= donor_cutoff_A).sum()))
+        else:
+            polar_counts.append(0)
+        metals = [a for a in atoms if not a["protein"] and a["element"] in _METALS]
         if metals:
             m_xyz = np.asarray([a["xyz"] for a in metals], dtype=float)
             if float(np.linalg.norm(m_xyz - center_xyz[None, :], axis=1).min()) <= metal_cutoff_A:
@@ -190,7 +219,9 @@ def analyze_charge_center_stabilization(
     return {
         "n_evaluated": n_eval,
         "charge_center": charge_center,
+        "hbond_donor_atoms_mean": round(float(np.mean(donor_counts)), 2) if donor_counts else None,
         "polar_donor_atoms_mean": round(float(np.mean(donor_counts)), 2) if donor_counts else None,
+        "all_polar_heavy_atoms_mean": round(float(np.mean(polar_counts)), 2) if polar_counts else None,
         "metal_stabilization_freq": round(metal_hits / n_eval, 3) if n_eval else None,
         "stabilizing_residues": top_res,
     }
@@ -235,28 +266,61 @@ def analyze_preorganization(
         if len(sel_a) != 1 or len(sel_b) != 1:
             raise ValueError("axis_a_sel and axis_b_sel must each select exactly 1 atom")
         idx_a, idx_b = int(sel_a.indices[0]), int(sel_b.indices[0])
-        env_idx = u.select_atoms(environment_sel).indices
-        env_mask = np.zeros(len(u.atoms), dtype=bool)
-        env_mask[env_idx] = True
-        env_mask[idx_a] = False
-        env_mask[idx_b] = False
+        env_atoms = u.select_atoms(environment_sel)
+        env_idx = np.asarray([i for i in env_atoms.indices if i != idx_a and i != idx_b], dtype=int)
+        env_charges = charges[env_idx]
+        # Precompute residue label per environment atom for O(N_env) per-residue decomposition
+        env_res_labels = [f"{a.segid or 'A'}:{a.resname}{a.resid}" for a in u.atoms[env_idx]]
+        unique_res = sorted(set(env_res_labels))
+        res_to_id = {r: k for k, r in enumerate(unique_res)}
+        env_res_ids = np.asarray([res_to_id[r] for r in env_res_labels], dtype=int)
+        res_field_sums = np.zeros(len(unique_res), dtype=float)
+        cut_sq = cutoff_A * cutoff_A
+        min_sq = 0.25
 
         fields = []
         for _ in u.trajectory[::stride]:
-            coords = u.atoms.positions.astype(float)
-            f = compute_projected_electric_field(
-                coords, charges, coords[idx_a], coords[idx_b],
-                include_mask=env_mask, cutoff_A=cutoff_A,
-            )
-            fields.append(f["projected_field_MV_per_cm"])
+            pos = u.atoms.positions
+            pa = pos[idx_a].astype(float)
+            pb = pos[idx_b].astype(float)
+            axis = pb - pa
+            norm = float(np.linalg.norm(axis))
+            if norm < 1e-8:
+                continue
+            u_hat = axis / norm
+            probe = 0.5 * (pa + pb)
+            env_coords = pos[env_idx].astype(float)
+            delta = probe[None, :] - env_coords
+            d2 = np.einsum("ij,ij->i", delta, delta)
+            keep = (d2 >= min_sq) & (d2 <= cut_sq)
+            if not keep.any():
+                fields.append(0.0)
+                continue
+            d_vec = delta[keep]
+            d = np.sqrt(d2[keep])
+            atom_proj = (env_charges[keep] * (d_vec @ u_hat) / (d ** 3)) * _E_PER_A2_TO_MV_CM
+            fields.append(float(atom_proj.sum()))
+            np.add.at(res_field_sums, env_res_ids[keep], atom_proj)
+
+        n_f = len(fields)
+        per_res_means = (
+            [(unique_res[k], float(res_field_sums[k] / n_f)) for k in range(len(unique_res)) if abs(res_field_sums[k]) > 1e-6]
+            if n_f else []
+        )
+        sign = expected_favorable_sign if expected_favorable_sign in (-1, 1) else 1
+        per_res_means.sort(key=lambda kv: -(kv[1] * sign))
+        top_pos = [{"residue": r, "field_MV_per_cm": round(v, 2)} for r, v in per_res_means[:5] if v * sign > 0]
+        top_neg = [{"residue": r, "field_MV_per_cm": round(v, 2)} for r, v in reversed(per_res_means[-5:]) if v * sign < 0]
 
         result["electric_field"] = {
-            "n_frames": len(fields),
+            "n_frames": n_f,
             "projected_field_MV_per_cm_mean": round(float(np.mean(fields)), 2) if fields else None,
             "projected_field_MV_per_cm_sd": round(float(np.std(fields)), 2) if fields else None,
             "expected_favorable_sign": expected_favorable_sign,
             "cutoff_A": cutoff_A,
             "environment_sel": environment_sel,
+            "top_stabilizing_residues": top_pos,
+            "top_destabilizing_residues": top_neg,
         }
 
     return result

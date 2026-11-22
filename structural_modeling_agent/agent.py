@@ -774,6 +774,18 @@ class ModelingAgent:
                             self._event('barrier_job_reconciled',study_id=identifier,status=reply['status'])
                         except Exception as exc:
                             self._event('barrier_job_reconciliation_failed',study_id=identifier,error=str(exc))
+                from .sampling.workflow import ACTIVE as SAMPLING_ACTIVE, check_sampling
+                for accession, candidate_state in self.state["candidates"].items():
+                    for job_id, job_rec in candidate_state.get("sampling_jobs", {}).items():
+                        if budget_reason():
+                            break
+                        if (job_rec.get("job") or {}).get("status") not in SAMPLING_ACTIVE:
+                            continue
+                        try:
+                            reply = check_sampling(self, {"accession": accession, "job_id": job_id})
+                            self._event("sampling_job_reconciled", job_id=job_id, status=reply["status"])
+                        except Exception as exc:
+                            self._event("sampling_job_reconciliation_failed", job_id=job_id, error=str(exc))
             self.state["status"] = "running"
             try:
                 for _ in range(max_turns):
@@ -857,6 +869,9 @@ class ModelingAgent:
             candidates.append({"accession": acc, "revision": current.get("revision"),
                                "barrier_studies":copy.deepcopy(state.get('barrier_studies',{})),
                                "barrier_preparations":copy.deepcopy(state.get('barrier_preparations',[])),
+                               "sampling_jobs": copy.deepcopy(state.get("sampling_jobs", {})),
+                               "catalytic_profile": copy.deepcopy(state.get("catalytic_profile")),
+                               "developability": copy.deepcopy(state.get("developability")),
                                "preparation_studies": [{"id": key, "artifact": value["artifact"]}
                                                        for key, value in state.get("preparation_studies", {}).items()],
                                "preparation_operators": [{"artifact": value["artifact"], "status": value["status"]}

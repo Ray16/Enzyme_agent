@@ -614,6 +614,7 @@ def _h_plan_followup(agent, args, acc, candidate, revision):
             "python", "-m", "enzyme_design_agent", design_query,
             "--output-dir", followup["paths"]["design_runs_root"],
         ]
+        profile = candidate.get("catalytic_profile") or {}
         request = {
             "kind": "de_novo_design_request",
             "purpose": "de_novo_enzyme_design",
@@ -626,6 +627,12 @@ def _h_plan_followup(agent, args, acc, candidate, revision):
             "question": plan,
             "source_task_sha256": agent.state["task_sha256"],
             "output_dir": followup["paths"]["design_runs_root"],
+            "catalytic_profile_summary": {
+                "evolvability_class": profile.get("evolvability_class"),
+                "axes": profile.get("axes"),
+            } if profile else None,
+            "soft_defect_design_targets": list(profile.get("design_targets") or []),
+            "failure_modes": list(profile.get("failure_modes") or []),
             "note": "Design request only; no generation launched and no new sequence is assumed validated.",
         }
         atomic_write_json(followup["paths"]["design_handoff"], request, allow_nan=False)

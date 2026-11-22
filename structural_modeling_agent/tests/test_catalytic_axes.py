@@ -211,3 +211,113 @@ def test_catalytic_profile_and_agent_tool_dispatch(tmp_path):
     })
     assert built["evolvability_class"] == "promising_scaffold"
     assert agent.state["candidates"]["CAND1"]["catalytic_profile"]["evolvability_class"] == "promising_scaffold"
+
+
+def test_submit_and_check_sampling_workflow_and_evidence_export(tmp_path):
+    """End-to-end test of Step 3 (reservation-aware sampling) and Step 4 (evidence + design handoff)."""
+    import sys
+    from structural_modeling_agent.evidence import modeling_evidence
+
+    run_dir = tmp_path / "run"
+
+    # Mock reservation-aware adapter script that queues on submit and completes on status
+    adapter = tmp_path / "mock_sampling_adapter.py"
+    adapter.write_text(
+        "import hashlib, json, sys\n"
+        "from pathlib import Path\n"
+        "req = json.loads(sys.stdin.read())\n"
+        "plan = json.loads(Path(req['plan_path']).read_text())\n"
+        "wd = Path(plan['work_dir'])\n"
+        "if req['operation'] == 'submit':\n"
+        "    print(json.dumps({'status': 'queued', 'remote_job_id': 'res-42'}))\n"
+        "else:\n"
+        "    top = wd / 'complex.prmtop'; top.write_text('top')\n"
+        "    dcd = wd / 'production.dcd'; dcd.write_text('dcd')\n"
+        "    geom = wd / 'geometry.jsonl'; geom.write_text('{}\\n')\n"
+        "    hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in (top, dcd, geom)}\n"
+        "    print(json.dumps({'status': 'complete', 'remote_job_id': 'res-42', 'completed_ns': 2.0,\n"
+        "                      'topology_path': str(top), 'trajectory_paths': [str(dcd)],\n"
+        "                      'geometry_jsonl': str(geom), 'output_sha256': hashes}))\n"
+    )
+
+    task_path = tmp_path / "task.json"
+    task_path.write_text(json.dumps({
+        "target": {"name": "generic_reaction"},
+        "candidates": [{"accession": "CAND1", "sequence": "MKKLL", "evidence": {}}],
+    }))
+    backend_path = tmp_path / "backend.json"
+    backend_path.write_text(json.dumps({
+        "sampling": {
+            "provider": "mock_reserved",
+            "supported_engines": ["openmm_classical"],
+            "argv": [sys.executable, str(adapter)],
+            "resource_policy": {"reservation_managed": True, "max_jobs": 2, "max_wall_seconds": 3600},
+        }
+    }))
+    agent = ModelingAgent(task_path=task_path, run_dir=run_dir, backend_path=backend_path)
+
+    # Create mock prepared input files inside run_dir/artifacts (as produced by preparation)
+    prep_dir = run_dir / "artifacts" / "prep_inputs"
+    prep_dir.mkdir(parents=True, exist_ok=True)
+    prmtop = prep_dir / "sys.prmtop"
+    coords = prep_dir / "sys.pdb"
+    spec = prep_dir / "rxn.json"
+    prmtop.write_text("%FLAG CHARGE\n%FORMAT(5E16.8)\n0.0\n")
+    coords.write_text("END\n")
+    spec.write_text("{}\n")
+
+    # Seed a ready sampling setup matching declare_sampling_setup's exact schema
+    agent.state["candidates"]["CAND1"].setdefault("sampling_setups", {})["setup1"] = {
+        "artifact": str(run_dir / "artifacts" / "sampling_setup_setup1.json"),
+        "assessment": {"status": "ready_for_preparation"},
+        "setup": {"schema_version": "sampling-setup-1.0"},
+    }
+
+    # 1. Submit sampling job
+    sub = agent.dispatch("submit_sampling", {
+        "accession": "CAND1",
+        "setup_id": "setup1",
+        "label": "md_v1",
+        "engine": "openmm_classical",
+        "wall_seconds": 600,
+        "inputs": {"prmtop": str(prmtop), "coordinates": str(coords), "spec_path": str(spec)},
+        "settings": {"production_ns": 2.0},
+    })
+    assert sub["status"] == "queued"
+    job_id = sub["job_id"]
+
+    # 2. Idempotent re-submit with same label does not double-submit
+    dup = agent.dispatch("submit_sampling", {
+        "accession": "CAND1",
+        "setup_id": "setup1",
+        "label": "md_v1",
+        "engine": "openmm_classical",
+        "wall_seconds": 600,
+        "inputs": {"prmtop": str(prmtop), "coordinates": str(coords), "spec_path": str(spec)},
+    })
+    assert dup["status"] == "already_requested"
+    assert dup["job_id"] == job_id
+
+    # 3. Check sampling transitions to complete and returns hash-verified analysis_inputs
+    chk = agent.dispatch("check_sampling", {"accession": "CAND1", "job_id": job_id})
+    assert chk["status"] == "complete"
+    assert chk["outputs"]["analysis_inputs"]["top_path"].endswith("complex.prmtop")
+    assert len(chk["outputs"]["analysis_inputs"]["traj_paths"]) == 1
+    assert "analyze_side_reactions" in chk["outputs"]["recommended_next_tools"]
+
+    # 4. Build catalytic profile with a soft defect and verify Step 4 report + evidence export
+    agent.dispatch("build_catalytic_profile", {
+        "accession": "CAND1",
+        "mechanism_gate": {"status": "pass"},
+        "pocket_envelope": {"diagnosis": "distal_tail_buried_clash", "clashing_residues": ["A:PHE120"]},
+        "developability": {"verdict": "ok"},
+    })
+    agent._write_report()
+    ev = modeling_evidence(agent.run_dir / "report.json")
+    row = ev["candidates"][0]
+    assert row["evolvability_class"] == "evolvable_with_mutations"
+    assert any("A:PHE120" in (dt.get("residues") or []) for dt in row["design_targets"])
+    assert ev["family_feedback"]["n_with_catalytic_profile"] == 1
+    assert ev["family_feedback"]["evolvability_counts"]["evolvable_with_mutations"] == 1
+    assert "soft_evolvable_defect:distal_tail_clash" in ev["family_feedback"]["failure_mode_counts"]
+
