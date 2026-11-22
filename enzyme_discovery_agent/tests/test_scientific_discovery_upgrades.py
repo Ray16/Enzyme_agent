@@ -206,3 +206,45 @@ def test_family_learning_incorporates_structural_modeling_feedback():
     assert order.index("ipr:IPR_PASS") < order.index("ipr:IPR_UNMOD") < order.index("ipr:IPR_FAIL")
     assert policy["families"]["ipr:IPR_PASS"]["structural_feedback"]["n_passing_geometry"] == 1
     assert policy["families"]["ipr:IPR_FAIL"]["structural_feedback"]["structural_warning"] is not None
+
+
+def test_direction_consistency_and_bond_extraction_cover_all_ec_classes(tmp_path):
+    from enzyme_discovery_agent.tools.fulltext import _direction_consistent, _looks_like_identifier
+    from enzyme_discovery_agent.chemistry.reactions import extract_target_bond_type
+    from enzyme_discovery_agent.models.comparative_synthesis import _load_structural_geometry
+
+    def _entry(ec: str, name: str) -> dict:
+        return {"proteinDescription": {"recommendedName": {"fullName": {"value": name}, "ecNumbers": [{"value": ec}]}}}
+
+    # EC 1 (redox), EC 2 (transfer), EC 4 (lyase/decarboxylase), EC 5 (isomerase), EC 6 (formation), EC 7 (translocation)
+    assert _direction_consistent(_entry("1.14.13.1", "Monooxygenase"), "redox") is True
+    assert _direction_consistent(_entry("2.6.1.1", "Aminotransferase"), "transfer") is True
+    assert _direction_consistent(_entry("4.1.1.33", "Diphosphomevalonate decarboxylase"), "cleavage") is True
+    assert _direction_consistent(_entry("5.1.1.1", "Alanine racemase"), "isomerization") is True
+    assert _direction_consistent(_entry("6.3.1.2", "Synthetic ligase"), "formation") is True
+    assert _direction_consistent(_entry("7.1.2.2", "H+-transporting ATPase"), "translocation") is True
+    # Direction contradiction still blocked
+    assert _direction_consistent(_entry("3.5.1.4", "Amidase"), "formation") is False
+    assert _direction_consistent(_entry("6.3.1.2", "Synthetic ligase"), "cleavage") is False
+
+    # Generic enzyme-class words across all EC classes are not mistaken for clone IDs
+    for generic in ("decarboxylase", "isomerase", "oxidoreductase", "transferase", "ligase", "hydrolase"):
+        assert _looks_like_identifier(generic) is False
+
+    # extract_target_bond_type recognizes all EC directions
+    assert extract_target_bond_type("C-C bond decarboxylation")["direction"] == "cleavage"
+    assert extract_target_bond_type("epimerization of sugar")["direction"] == "isomerization"
+    assert extract_target_bond_type("alcohol dehydrogenation")["direction"] == "redox"
+    assert extract_target_bond_type("amine transamination")["direction"] == "transfer"
+
+    # Single-step ensemble_summary.csv fallback works for 1-step enzymes (e.g. lyase/hydrolase/isomerase)
+    analysis_dir = tmp_path / "family_cofold" / "analysis"
+    analysis_dir.mkdir(parents=True)
+    (analysis_dir / "ensemble_summary.csv").write_text(
+        "accession,step,harmonic_distance_A,near_attack_fraction\n"
+        "SYNTH_1STEP,1,3.42,0.88\n"
+    )
+    geom = _load_structural_geometry(tmp_path)
+    assert geom["SYNTH_1STEP"]["step_1_harmonic_distance_A"] == 3.42
+    assert geom["SYNTH_1STEP"]["step_2_harmonic_distance_A"] is None
+    assert geom["SYNTH_1STEP"]["larger_step_distance_A"] == 3.42

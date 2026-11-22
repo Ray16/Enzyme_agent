@@ -26,41 +26,69 @@ from enzyme_discovery_agent.state_store import atomic_write_json
 
 
 def _load_structural_geometry(run_dir: Path) -> dict[str, dict]:
-    """Read completed two-step structural geometry observations if present.
+    """Read completed structural geometry observations (multi-step or single-step) if present.
 
     Structural geometry is reported strictly as a structural observation, never
     as demonstrated catalytic activity.
     """
-    for arm in ("cofolded", "family_cofold"):
-        summary_path = run_dir / arm / "analysis" / "both_steps_summary.csv"
-        if not summary_path.is_file():
-            continue
-        out: dict[str, dict] = {}
+    def _flt(row, key):
+        val = row.get(key)
         try:
-            with summary_path.open(encoding="utf-8") as handle:
-                for row in csv.DictReader(handle):
-                    acc = (row.get("accession") or "").strip()
-                    if not acc:
-                        continue
-                    def _flt(key):
-                        val = row.get(key)
-                        try:
-                            return round(float(val), 3) if val not in (None, "") else None
-                        except (TypeError, ValueError):
-                            return None
-                    out[acc] = {
-                        "arm": arm,
-                        "step_1_harmonic_distance_A": _flt("step_1_harmonic_distance_A"),
-                        "step_1_near_attack_fraction": _flt("step_1_near_attack_fraction"),
-                        "step_2_harmonic_distance_A": _flt("step_2_harmonic_distance_A"),
-                        "step_2_near_attack_fraction": _flt("step_2_near_attack_fraction"),
-                        "larger_step_distance_A": _flt("larger_step_distance_A"),
-                        "scope": "Step-specific structural geometry only; not demonstrated activity.",
-                    }
-        except OSError:
-            continue
-        if out:
-            return out
+            return round(float(val), 3) if val not in (None, "") else None
+        except (TypeError, ValueError):
+            return None
+
+    for arm in ("cofolded", "family_cofold"):
+        # Multi-step paired summary (when a mechanism has >=2 steps)
+        summary_path = run_dir / arm / "analysis" / "both_steps_summary.csv"
+        if summary_path.is_file():
+            out: dict[str, dict] = {}
+            try:
+                with summary_path.open(encoding="utf-8") as handle:
+                    for row in csv.DictReader(handle):
+                        acc = (row.get("accession") or "").strip()
+                        if not acc:
+                            continue
+                        out[acc] = {
+                            "arm": arm,
+                            "step_1_harmonic_distance_A": _flt(row, "step_1_harmonic_distance_A"),
+                            "step_1_near_attack_fraction": _flt(row, "step_1_near_attack_fraction"),
+                            "step_2_harmonic_distance_A": _flt(row, "step_2_harmonic_distance_A"),
+                            "step_2_near_attack_fraction": _flt(row, "step_2_near_attack_fraction"),
+                            "larger_step_distance_A": _flt(row, "larger_step_distance_A"),
+                            "scope": "Step-specific structural geometry only; not demonstrated activity.",
+                        }
+            except OSError:
+                continue
+            if out:
+                return out
+        # Fallback for single-step mechanisms (e.g. hydrolases, lyases, isomerases, oxidoreductases)
+        ensemble_path = run_dir / arm / "analysis" / "ensemble_summary.csv"
+        if ensemble_path.is_file():
+            out = {}
+            try:
+                with ensemble_path.open(encoding="utf-8") as handle:
+                    for row in csv.DictReader(handle):
+                        acc = (row.get("accession") or "").strip()
+                        if not acc:
+                            continue
+                        dist = _flt(row, "harmonic_distance_A")
+                        frac = _flt(row, "near_attack_fraction")
+                        prev = out.get(acc)
+                        if prev is None or (dist is not None and (prev["larger_step_distance_A"] is None or dist > prev["larger_step_distance_A"])):
+                            out[acc] = {
+                                "arm": arm,
+                                "step_1_harmonic_distance_A": dist,
+                                "step_1_near_attack_fraction": frac,
+                                "step_2_harmonic_distance_A": None,
+                                "step_2_near_attack_fraction": None,
+                                "larger_step_distance_A": dist,
+                                "scope": "Step-specific structural geometry only; not demonstrated activity.",
+                            }
+            except OSError:
+                continue
+            if out:
+                return out
     return {}
 
 

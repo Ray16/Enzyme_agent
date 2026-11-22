@@ -542,28 +542,48 @@ def _functionally_coherent(entries: list[dict]) -> bool:
     return bool(tok_sets) and bool(set.intersection(*tok_sets))
 
 
-# Generic enzyme-class vocabulary (no answer family), used to check whether a DB
-# entry is an enzyme and whether its class matches the target reaction DIRECTION.
+# Generic enzyme-class vocabulary across all 7 EC classes (no answer family),
+# used to check whether a DB entry is an enzyme and whether its class matches
+# the target reaction DIRECTION.
 _FORMATION_WORDS = ("ligase", "synthetase", "synthase", "synthesis", "forming",
-                    "formation", "ligation", "condensation", "amidation", "carboxylase")
+                    "formation", "ligation", "condensation", "amidation",
+                    "carboxylase", "esterification")
 _CLEAVAGE_WORDS = ("hydrolase", "hydrolysis", "hydrolyz", "peptidase", "protease",
-                   "esterase", "amidase", "depolymer", "deacetylase", "glycosidase")
-_ENZYME_CLASS_WORDS = _FORMATION_WORDS + _CLEAVAGE_WORDS + (
-    "transferase", "oxidoreductase", "isomerase", "lyase", "kinase", "reductase",
-    "oxidase", "dehydrogenase", "mutase", "aminotransferase")
+                   "esterase", "amidase", "depolymer", "deacetylase", "glycosidase",
+                   "lyase", "decarboxylase", "dehydratase", "deaminase", "cleavage")
+_TRANSFER_WORDS = ("transferase", "kinase", "aminotransferase", "transaminase",
+                   "methyltransferase", "acyltransferase", "glycosyltransferase",
+                   "prenyltransferase", "phosphorylase", "phosphotransferase")
+_REDOX_WORDS = ("oxidoreductase", "oxidase", "reductase", "dehydrogenase",
+                "oxygenase", "monooxygenase", "dioxygenase", "peroxidase",
+                "hydroxylase", "desaturase", "hydrogenase")
+_ISOMERIZATION_WORDS = ("isomerase", "mutase", "racemase", "epimerase",
+                        "tautomerase", "topoisomerase", "cycloisomerase")
+_TRANSLOCATION_WORDS = ("translocase", "transporter", "atpase", "permease")
+_ENZYME_CLASS_WORDS = (
+    _FORMATION_WORDS + _CLEAVAGE_WORDS + _TRANSFER_WORDS
+    + _REDOX_WORDS + _ISOMERIZATION_WORDS + _TRANSLOCATION_WORDS
+)
+
+_DIRECTION_RULES = {
+    "formation":     ({"6"}, {"3"}, _FORMATION_WORDS, _CLEAVAGE_WORDS),
+    "cleavage":      ({"3", "4"}, {"6"}, _CLEAVAGE_WORDS, _FORMATION_WORDS),
+    "transfer":      ({"2"}, set(), _TRANSFER_WORDS, ()),
+    "redox":         ({"1"}, set(), _REDOX_WORDS, ()),
+    "isomerization": ({"5"}, set(), _ISOMERIZATION_WORDS, ()),
+    "translocation": ({"7"}, set(), _TRANSLOCATION_WORDS, ()),
+}
 
 
 def _direction_consistent(entry: dict, direction: str | None, descriptor: str = "") -> bool:
     """Whether a candidate UniProt entry is an ENZYME whose class matches the target
-    reaction DIRECTION.
+    reaction DIRECTION across all 7 EC classes.
 
     Guards the free-text name+organism fallback below: a paper's characterisation is
     trusted over a stale/generic DB label, but only if the entry actually looks like
-    an enzyme of the right direction (EC class 6 = formation, 3 = cleavage; else the
-    protein-name / paper-descriptor wording).  An unknown target direction is
-    permissive (only require that it looks like an enzyme).  ``descriptor`` is the
-    paper's own catalytic description, a strong
-    direction hint the stale DB label may lack.
+    an enzyme of the right direction (EC 1=redox, 2=transfer, 3/4=cleavage,
+    5=isomerization, 6=formation, 7=translocation; else protein-name / paper-descriptor
+    wording). An unknown target direction is permissive (only requires an enzyme).
     """
     ecs = _entry_ecs(entry)
     blob = json.dumps(entry.get("proteinDescription") or {}).lower() + " " + descriptor.lower()
@@ -572,14 +592,16 @@ def _direction_consistent(entry: dict, direction: str | None, descriptor: str = 
         return False
     if not direction:
         return True
-    ec1 = ecs[0].split(".")[0] if ecs else ""
-    good = _FORMATION_WORDS if direction == "formation" else _CLEAVAGE_WORDS
-    bad = _CLEAVAGE_WORDS if direction == "formation" else _FORMATION_WORDS
-    if ec1 == ("6" if direction == "formation" else "3"):
+    rule = _DIRECTION_RULES.get(str(direction).lower().strip())
+    if rule is None:
         return True
-    if ec1 == ("3" if direction == "formation" else "6"):
+    good_ecs, bad_ecs, good_words, bad_words = rule
+    ec1 = ecs[0].split(".")[0] if ecs else ""
+    if ec1 in good_ecs:
+        return True
+    if ec1 in bad_ecs:
         return False
-    return any(w in blob for w in good) and not any(w in blob for w in bad)
+    return any(w in blob for w in good_words) and not any(w in blob for w in bad_words)
 
 
 def _known_organism(organism):
@@ -587,10 +609,14 @@ def _known_organism(organism):
     return "" if value.lower() in {"not specified", "not explicitly stated", "unknown", "unspecified", "n/a", "none"} else value
 
 
-# Words that are a substrate/activity description, never the identifier a paper
-# uses to name a specific enzyme.
+# Generic enzyme-class and boilerplate words that are an activity description,
+# never the identifier a paper uses to name a specific enzyme.
 _DESCRIPTIVE_TOKENS = {
     "amidase", "hydrolase", "esterase", "lipase", "protease", "peptidase",
+    "ligase", "synthetase", "synthase", "transferase", "kinase", "oxidase",
+    "reductase", "oxidoreductase", "dehydrogenase", "oxygenase", "peroxidase",
+    "lyase", "decarboxylase", "dehydratase", "isomerase", "mutase", "epimerase",
+    "racemase", "aminotransferase", "transaminase", "translocase",
     "enzyme", "protein", "variant", "mutant", "wild", "type", "from",
     "the", "and", "subunit", "domain", "family", "putative", "recombinant",
 }
