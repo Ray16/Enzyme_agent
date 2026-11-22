@@ -28,6 +28,7 @@ class ToolSpec:
     domain: str = "core"
     stages: frozenset[str] = frozenset()
     repeatable_reader: bool = False
+    deprecated: bool = False
 
 
 class ToolRegistry:
@@ -79,8 +80,18 @@ class ToolRegistry:
             )
         return self._stage_cache[stage]
 
-    def names_for_domain(self, domain: str) -> frozenset[str]:
-        return frozenset(spec.name for spec in self._specs.values() if spec.domain == domain)
+    def names_for_domain(self, domain: str, *, include_deprecated: bool = False) -> frozenset[str]:
+        return frozenset(
+            spec.name
+            for spec in self._specs.values()
+            if spec.domain == domain and (include_deprecated or not spec.deprecated)
+        )
+
+    def active_names(self) -> tuple[str, ...]:
+        return tuple(spec.name for spec in self._specs.values() if not spec.deprecated)
+
+    def deprecated_names(self) -> tuple[str, ...]:
+        return tuple(spec.name for spec in self._specs.values() if spec.deprecated)
 
     def repeatable_readers(self) -> frozenset[str]:
         if self._readers_cache is None:
@@ -277,6 +288,12 @@ def _h_assess_developability(agent, args):
     return {"artifact": artifact, **payload}
 
 
+def _cache_analysis(agent, args: dict[str, Any], key: str, result: dict[str, Any]) -> None:
+    acc = args.get("accession")
+    if acc and acc in agent.state.get("candidates", {}):
+        agent.state["candidates"][acc].setdefault("analyses", {})[key] = result
+
+
 def _h_analyze_pocket_envelope(agent, args):
     from ..analysis.pocket_envelope import compare_native_vs_target
 
@@ -297,6 +314,7 @@ def _h_analyze_pocket_envelope(agent, args):
         clash_cutoff_A=float(args.get("clash_cutoff_A", 2.2)),
     )
     artifact = agent._artifact("pocket_envelope", result)
+    _cache_analysis(agent, args, "pocket_envelope", result)
     return {"artifact": artifact, **result}
 
 
@@ -319,6 +337,7 @@ def _h_analyze_side_reactions(agent, args):
     else:
         raise ValueError(f"unknown side-reaction analysis mode: {mode!r}")
     artifact = agent._artifact(f"side_reactions_{mode}", result)
+    _cache_analysis(agent, args, "side_reactions", result)
     return {"artifact": artifact, **result}
 
 
@@ -347,6 +366,7 @@ def _h_analyze_preorganization(agent, args):
         stride=int(args.get("stride", 1)),
     )
     artifact = agent._artifact("preorganization", result)
+    _cache_analysis(agent, args, "ts_and_preorganization", result)
     return {"artifact": artifact, **result}
 
 
@@ -354,19 +374,21 @@ def _h_build_catalytic_profile(agent, args):
     from ..analysis.catalytic_profile import build_catalytic_profile
 
     acc = args["accession"]
+    cand = agent.state["candidates"][acc]
+    cached = cand.get("analyses") or {}
     profile = build_catalytic_profile(
         acc,
         mechanism_gate=args.get("mechanism_gate"),
-        pocket_envelope=args.get("pocket_envelope"),
-        access=args.get("access"),
-        reactive_persistence=args.get("reactive_persistence"),
-        ts_and_preorganization=args.get("ts_and_preorganization"),
-        side_reactions=args.get("side_reactions"),
-        barrier_status=args.get("barrier_status"),
-        developability=args.get("developability") or agent.state["candidates"][acc].get("developability"),
+        pocket_envelope=args.get("pocket_envelope") or cached.get("pocket_envelope"),
+        access=args.get("access") or cached.get("access"),
+        reactive_persistence=args.get("reactive_persistence") or cached.get("reactive_persistence"),
+        ts_and_preorganization=args.get("ts_and_preorganization") or cached.get("ts_and_preorganization"),
+        side_reactions=args.get("side_reactions") or cached.get("side_reactions"),
+        barrier_status=args.get("barrier_status") or cached.get("barrier_status"),
+        developability=args.get("developability") or cand.get("developability"),
     )
     artifact = agent._artifact(f"catalytic_profile_{acc}", profile)
-    agent.state["candidates"][acc]["catalytic_profile"] = profile
+    cand["catalytic_profile"] = profile
     return {"artifact": artifact, **profile}
 
 
@@ -413,6 +435,27 @@ _REPEATABLE_READER_NAMES = frozenset({
     "inspect_processivity_toolchain",
     "inspect_mlmm_engine_options",
     "check_sampling",
+    "check_barrier_calculation",
+    "inspect_barrier_result",
+})
+
+# Legacy doc-inspector and redundant read-back tools replaced by lazy-loaded skills
+# and read_evidence. Retained for backward-compatible dispatch, excluded from default
+# LLM tool offers so the model sees a lean, essential tool surface.
+_DEPRECATED_TOOLS: frozenset[str] = frozenset({
+    "inspect_workflow_policy",
+    "inspect_validation_contract",
+    "inspect_preparation_contract",
+    "inspect_sampling_setup_contract",
+    "inspect_processivity_contract",
+    "inspect_barrier_contract",
+    "get_structural_proxy_guidance",
+    "inspect_mlmm_engine_options",
+    "inspect_preparation_study",
+    "inspect_sampling_setup",
+    "inspect_processivity_toolchain",
+    "validate_structural_proxy_plan",
+    "inspect_experimental_proxy_bundle",
 })
 
 _STAGE_MEMBERSHIPS: dict[str, frozenset[str]] = {
@@ -423,13 +466,14 @@ _STAGE_MEMBERSHIPS: dict[str, frozenset[str]] = {
         "inspect_preparation_structure", "declare_preparation_study", "inspect_preparation_study",
         "run_preparation_operator", "inspect_sampling_setup_contract", "inspect_processivity_toolchain",
         "declare_sampling_setup", "inspect_sampling_setup", "record_preparation_findings", "finish_task",
+        "submit_sampling", "check_sampling",
         "inspect_barrier_contract", "prepare_barrier_inputs", "plan_barrier_calculation",
         "submit_barrier_calculation", "check_barrier_calculation", "inspect_barrier_result",
         "record_barrier_assessment",
     }),
     "prepare_decision": frozenset({
         "record_preparation_findings", "declare_sampling_setup", "declare_preparation_study",
-        "run_preparation_operator", "finish_task",
+        "run_preparation_operator", "submit_sampling", "check_sampling", "finish_task",
         "prepare_barrier_inputs", "plan_barrier_calculation", "submit_barrier_calculation",
         "check_barrier_calculation", "record_barrier_assessment",
     }),
@@ -444,6 +488,9 @@ _STAGE_MEMBERSHIPS: dict[str, frozenset[str]] = {
     "production_post_proposal": frozenset({
         "validate_setup", "render_inputs", "inspect_reasoning", "read_reasoning_section",
         "respond_to_reasoning_feedback", "record_reasoning_observation", "compare_hypothesis_tests",
+        "analyze_pocket_envelope", "analyze_substrate_contacts", "analyze_substrate_channels",
+        "analyze_side_reactions", "analyze_preorganization", "assess_developability",
+        "build_catalytic_profile",
     }),
     "production_cached": frozenset({
         "inspect_candidate", "read_candidate_section", "read_evidence", "retrieve_reference",
@@ -537,6 +584,7 @@ def build_default_registry() -> ToolRegistry:
                 domain=_DOMAIN_BY_TOOL.get(name, "core"),
                 stages=_stages_for(name),
                 repeatable_reader=name in _REPEATABLE_READER_NAMES,
+                deprecated=name in _DEPRECATED_TOOLS,
             )
         )
 
@@ -838,6 +886,31 @@ def build_default_registry() -> ToolRegistry:
         )
     )
 
+    for name, fn, domain in (
+        ("analyze_substrate_contacts", _h_analyze_substrate_contacts, "analysis"),
+        ("analyze_substrate_channels", _h_analyze_substrate_channels, "analysis"),
+        ("analyze_pocket_envelope", _h_analyze_pocket_envelope, "analysis"),
+        ("analyze_side_reactions", _h_analyze_side_reactions, "analysis"),
+        ("analyze_preorganization", _h_analyze_preorganization, "analysis"),
+        ("assess_developability", _h_assess_developability, "developability"),
+        ("build_catalytic_profile", _h_build_catalytic_profile, "core"),
+        ("submit_sampling", _h_submit_sampling, "sampling"),
+        ("check_sampling", _h_check_sampling, "sampling"),
+    ):
+        spec = registry.get(name)
+        stages = _stages_for(name)
+        if stages and stages != spec.stages:
+            registry._specs[name] = ToolSpec(
+                name=spec.name,
+                schema=spec.schema,
+                handler=spec.handler,
+                scope=spec.scope,
+                domain=spec.domain,
+                stages=stages,
+                repeatable_reader=spec.repeatable_reader,
+                deprecated=spec.deprecated,
+            )
+    registry._stage_cache.clear()
     return registry
 
 
@@ -924,9 +997,11 @@ def select_offered_tools(agent) -> list[dict[str, Any]]:
         barrier_allowed = set(registry.names_for_stage("evaluate_barriers"))
         allowed = barrier_allowed if allowed is None else (allowed & barrier_allowed)
 
-    # Opt-in progressive domain disclosure: start with core + cofold + reasoning tools
-    # and unlock domain tools as skills are activated via load_skill(name).
-    if agent.task.get("progressive_tool_disclosure") and allowed is None:
+    # Progressive domain disclosure (default ON for standard runs; pass
+    # progressive_tool_disclosure=False in task to expose all non-deprecated tools).
+    # Starts with active core + cofold + reasoning tools (~24 tools instead of 66)
+    # and unlocks domain tools as skills are activated via load_skill(name).
+    if agent.task.get("progressive_tool_disclosure", True) and allowed is None:
         from .skills import get_skill
         active_domains = {"core", "cofold", "reasoning"}
         for skill_name in agent.state.get("active_skills", ()):
@@ -937,14 +1012,13 @@ def select_offered_tools(agent) -> list[dict[str, Any]]:
         allowed = {
             name
             for domain in active_domains
-            for name in registry.names_for_domain(domain)
+            for name in registry.names_for_domain(domain, include_deprecated=False)
         }
+    elif allowed is None:
+        allowed = set(registry.active_names())
 
     if agent.state.get("repeated_inspections", 0) >= 3:
         readers = registry.repeatable_readers()
-        if allowed is None:
-            allowed = set(registry.names()) - readers
-        else:
-            allowed = allowed - readers
+        allowed = allowed - readers
 
     return registry.schemas(allowed)

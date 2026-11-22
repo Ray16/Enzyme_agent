@@ -321,3 +321,45 @@ def test_submit_and_check_sampling_workflow_and_evidence_export(tmp_path):
     assert ev["family_feedback"]["evolvability_counts"]["evolvable_with_mutations"] == 1
     assert "soft_evolvable_defect:distal_tail_clash" in ev["family_feedback"]["failure_mode_counts"]
 
+
+def test_slim_default_tool_surface_and_auto_caching(tmp_path):
+    """Default progressive disclosure hides the 13 deprecated contract/read-back tools and auto-caches analyses."""
+    from structural_modeling_agent.controller.tool_registry import get_registry, select_offered_tools
+
+    reg = get_registry()
+    assert len(reg.deprecated_names()) == 13
+    assert len(reg.active_names()) == len(reg.names()) - 13
+
+    task_path = tmp_path / "task.json"
+    task_path.write_text(json.dumps({
+        "target": {"name": "generic_reaction"},
+        "candidates": [{"accession": "CAND1", "sequence": "MKKLL", "evidence": {}}],
+    }))
+    run_dir = tmp_path / "run"
+    agent = ModelingAgent(task_path=task_path, run_dir=run_dir)
+    offered = {t["function"]["name"] for t in select_offered_tools(agent)}
+    # Lean default surface: ~24 tools, zero deprecated contract/read-back tools
+    assert len(offered) <= 26
+    assert not (offered & set(reg.deprecated_names()))
+    assert {"load_skill", "propose_model", "build_catalytic_profile", "finish_task"} <= offered
+
+    # Loading catalytic-triage unlocks analysis + developability without exposing deprecated tools
+    agent.dispatch("load_skill", {"name": "catalytic-triage"})
+    offered_after = {t["function"]["name"] for t in select_offered_tools(agent)}
+    assert {"analyze_pocket_envelope", "analyze_side_reactions", "analyze_preorganization", "assess_developability"} <= offered_after
+    assert not (offered_after & set(reg.deprecated_names()))
+
+    # Auto-caching: analyze_pocket_envelope caches onto candidate so build_catalytic_profile picks it up automatically
+    pose = run_dir / "artifacts" / "pose.pdb"
+    pose.parent.mkdir(parents=True, exist_ok=True)
+    _write_pdb(pose, [
+        ("ATOM", "CA", "ALA", "A", 1, (0.0, 0.0, 0.0), "C"),
+        ("ATOM", "CZ", "PHE", "A", 2, (5.5, 0.0, 0.0), "C"),
+        ("HETATM", "C1", "LIG", "B", 1, (2.8, 0.0, 0.0), "C"),
+        ("HETATM", "C2", "LIG", "B", 1, (4.2, 0.0, 0.0), "C"),
+    ])
+    agent.dispatch("analyze_pocket_envelope", {"target_poses": [str(pose)]})
+    built = agent.dispatch("build_catalytic_profile", {"accession": "CAND1", "mechanism_gate": {"status": "pass"}})
+    assert built["axes"]["pocket_envelope"]["status"] == "evaluated"
+
+
