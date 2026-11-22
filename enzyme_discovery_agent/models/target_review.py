@@ -471,6 +471,8 @@ def save_assessment(root,packet,result,model_provenance=None):
     if result.get('source_refs')!=[row['source_id']]:raise ValueError('Cite the exact supplied candidate evidence ID')
     if decision in {'prioritize','investigate'} and (not result.get('strengths') or level=='speculative'):
         raise ValueError('Positive ranking requires candidate-specific support beyond a generic class or speculation')
+    if decision in {'prioritize','investigate'} and result.get('mechanism_fit')=='incompatible':
+        raise ValueError('A candidate judged mechanism_fit=incompatible cannot be prioritized or investigated; use defer or exclude.')
     if decision in {'prioritize','investigate'}:
         if not identity_verified(root,accession,meta):raise ValueError('Verify candidate identity before ranking')
     if decision=='exclude' and not any(c.get('basis')=='observed_mismatch' for c in result.get('constraints',[])):
@@ -587,8 +589,10 @@ def run_review(root,llm,limit=4,accessions=None,force=False):
         'tolerance, or native partners resembling the requested ones. '
         'Separate catalytic mechanism compatibility (mechanism_fit) from substrate recognition/pocket outlook (pocket_engineering_outlook). '
         'Native substrate size is asymmetric: a larger native pocket (larger_native_envelope) or documented generalist/secondary-metabolism '
-        'promiscuity (promiscuity_indicators) can be a strong starting point for structural modeling and engineering, whereas a much smaller '
-        'buried pocket poses a harder steric barrier. Also weigh architecture_and_tractability (soluble monomer/homomer vs. membrane or obligate hetero-complex). '
+        'promiscuity (promiscuity_indicators) can be a strong starting point when the local reacting end and pocket polarity are compatible, '
+        'whereas a much larger unrelated scaffold (where the small target would bind unproductively) still weakens substrate match, and a much smaller '
+        'buried pocket poses a harder steric barrier. Keep plausible repurposed activation routes (mechanism_fit=plausible) as investigate rather than excluding them. '
+        'Also weigh architecture_and_tractability (soluble monomer/homomer vs. membrane or obligate hetero-complex). '
         'Investigate denotes a weaker or unresolved hypothesis. '
         'Decide on absolute evidence, not which candidate is best within this batch. Zero prioritized candidates is a valid result. '
         'Matching native reacting atom classes alone is insufficient for priority: explain candidate-specific evidence supporting transfer of substrate recognition, such as relevant promiscuity, native scaffold tolerance or architecture. '

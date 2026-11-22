@@ -51,6 +51,18 @@ def _ring_count(smiles: str) -> int:
     return int(mol.GetRingInfo().NumRings())
 
 
+def _thioester_count(smiles: str) -> int:
+    try:
+        from rdkit import Chem
+    except Exception:  # noqa: BLE001
+        return 0
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return 0
+    pat = Chem.MolFromSmarts("[CX3](=O)[SX2]")
+    return len(mol.GetSubstructMatches(pat)) if pat is not None else 0
+
+
 def _side_group_inventory(occurrences: list[dict]) -> tuple[Counter, int, list[dict], int]:
     """Return (total_groups, total_rings, per_occurrence_groups, unresolved_count)."""
     from enzyme_discovery_agent.tools.substrate import compute_substrate_properties
@@ -76,6 +88,10 @@ def _side_group_inventory(occurrences: list[dict]) -> tuple[Counter, int, list[d
             if val > 0:
                 counts[label] = val
                 totals[label] += val
+        thio = _thioester_count(smiles)
+        if thio > 0:
+            counts["thioester"] = thio
+            totals["thioester"] += thio
         rings = _ring_count(smiles)
         total_rings += rings
         per_occ.append({

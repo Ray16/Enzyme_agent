@@ -87,6 +87,31 @@ def test_two_axis_target_review_accepts_and_validates_mechanism_and_pocket_outlo
     with pytest.raises(ValueError, match="mechanism_fit"):
         review.save_assessment(tmp_path, packet, bad)
 
+    # Self-consistency: mechanism_fit=incompatible cannot be prioritize/investigate,
+    # while mechanism_fit=plausible (e.g. repurposed activation) is preserved!
+    incompat = {**assessment("investigate"), "mechanism_fit": "incompatible"}
+    with pytest.raises(ValueError, match="incompatible"):
+        review.save_assessment(tmp_path, packet, incompat)
+    plausible = {**assessment("investigate"), "mechanism_fit": "plausible"}
+    assert review.save_assessment(tmp_path, packet, plausible)["mechanism_fit"] == "plausible"
+
+
+def test_reaction_center_detects_thioester_formation_informationally():
+    from enzyme_discovery_agent.models.reaction_center import analyze_reaction_center
+    res = analyze_reaction_center(
+        reactants=[
+            {"occurrence_id": "native:0:0", "name": "propionic acid", "smiles": "CCC(=O)O"},
+            {"occurrence_id": "native:1:0", "name": "ethanethiol", "smiles": "CCS"},
+        ],
+        products=[
+            {"occurrence_id": "product:0:0", "name": "S-ethyl propanethioate", "smiles": "CCC(=O)SCC"},
+        ],
+    )
+    assert res is not None
+    assert res["formed_groups"].get("thioester") == 1
+    assert res["consumed_groups"].get("thiol") == 1
+    assert res["consumed_groups"].get("carboxyl") == 1
+
 
 def test_sequence_identity_ortholog_filter_collapses_near_identical_but_keeps_divergent(tmp_path):
     seq_base = "M" + "ACDEFGHIKLMNPQRSTVWY" * 5  # 101 aa
