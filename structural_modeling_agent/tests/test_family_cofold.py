@@ -334,3 +334,65 @@ def test_stereochemistry_and_ph_role_charge_validation():
     assert any('spectator aliphatic amine' in e for e in substrate_errors(diamine_0, characterize_smiles(diamine_0), role='amine_substrate', assay_pH=8.0))
     # Monoamine nucleophile (1 neutral -NH2, no spectator amine) still passes cleanly
     assert substrate_errors('CCN', characterize_smiles('CCN'), role='amine_substrate', assay_pH=8.0) == []
+
+
+def test_generic_holo_seating_diagnostic_across_cofactor_and_metal_classes():
+    import numpy as np
+
+    def _protein_pocket():
+        # 6 protein atoms around the origin (4 polar N/O/S + 2 carbons)
+        pts = [
+            (('A', '10', 'OE1'), {'xyz': np.array([2.0, 0.0, 0.0]), 'protein': True, 'element': 'O'}),
+            (('A', '11', 'NE2'), {'xyz': np.array([0.0, 2.0, 0.0]), 'protein': True, 'element': 'N'}),
+            (('A', '12', 'SG'),  {'xyz': np.array([-2.0, 0.0, 0.0]), 'protein': True, 'element': 'S'}),
+            (('A', '13', 'OD1'), {'xyz': np.array([0.0, -2.0, 0.0]), 'protein': True, 'element': 'O'}),
+            (('A', '14', 'CA'),  {'xyz': np.array([1.5, 1.5, 1.0]), 'protein': True, 'element': 'C'}),
+            (('A', '15', 'CB'),  {'xyz': np.array([-1.5, -1.5, 1.0]), 'protein': True, 'element': 'C'}),
+        ]
+        return dict(pts)
+
+    # 1. Cofactor-free, metal-free enzyme -> not_applicable
+    atoms = _protein_pocket()
+    atoms[('B', '1', 'C1')] = {'xyz': np.array([0.0, 0.0, 0.5]), 'protein': False, 'element': 'C'}
+    by_ch = {'A': [(k, v) for k, v in atoms.items() if k[0] == 'A'], 'B': [(('B', '1', 'C1'), atoms[('B', '1', 'C1')])]}
+    m0 = family._holo_seating_metrics(atoms, by_ch, {'substrate': 'B'})
+    assert family._summarize_holo_seating([m0])['status'] == 'not_applicable'
+
+    # 2. Metal-only enzyme (Zn2+ hydrolase): coordinated vs floating
+    atoms_zn_ok = _protein_pocket()
+    atoms_zn_ok[('B', '1', 'ZN')] = {'xyz': np.array([0.0, 0.0, 0.0]), 'protein': False, 'element': 'ZN'}
+    by_zn_ok = {'A': [(k, v) for k, v in atoms_zn_ok.items() if k[0] == 'A'], 'B': [(('B', '1', 'ZN'), atoms_zn_ok[('B', '1', 'ZN')])]}
+    m_zn_ok = family._holo_seating_metrics(atoms_zn_ok, by_zn_ok, {'ZN': ['B']})
+    assert m_zn_ok['metal_coordinated'] is True
+    assert family._summarize_holo_seating([m_zn_ok])['status'] == 'pass'
+
+    atoms_zn_bad = _protein_pocket()
+    atoms_zn_bad[('B', '1', 'ZN')] = {'xyz': np.array([15.0, 0.0, 0.0]), 'protein': False, 'element': 'ZN'}
+    by_zn_bad = {'A': [(k, v) for k, v in atoms_zn_bad.items() if k[0] == 'A'], 'B': [(('B', '1', 'ZN'), atoms_zn_bad[('B', '1', 'ZN')])]}
+    m_zn_bad = family._holo_seating_metrics(atoms_zn_bad, by_zn_bad, {'ZN': ['B']})
+    assert m_zn_bad['metal_coordinated'] is False
+    assert family._summarize_holo_seating([m_zn_bad])['status'] == 'warning_seating_artifact'
+
+    # 3. Organic-cofactor-only enzyme (e.g. PLP / FAD): seated vs floating
+    atoms_cof_ok = _protein_pocket()
+    atoms_cof_ok[('B', '1', 'O1')] = {'xyz': np.array([0.5, 0.5, 0.5]), 'protein': False, 'element': 'O'}
+    by_cof_ok = {'A': [(k, v) for k, v in atoms_cof_ok.items() if k[0] == 'A'], 'B': [(('B', '1', 'O1'), atoms_cof_ok[('B', '1', 'O1')])]}
+    m_cof_ok = family._holo_seating_metrics(atoms_cof_ok, by_cof_ok, {'PLP': ['B']})
+    assert m_cof_ok['cofactor_seated'] is True
+    assert family._summarize_holo_seating([m_cof_ok])['status'] == 'pass'
+
+    # 4. Organic cofactor + metal (e.g. nucleotide + Mg/Mn): floating metal flags artifact
+    atoms_both_bad = _protein_pocket()
+    atoms_both_bad[('B', '1', 'O1')] = {'xyz': np.array([0.5, 0.5, 0.5]), 'protein': False, 'element': 'O'}
+    atoms_both_bad[('C', '1', 'MG')] = {'xyz': np.array([9.0, 0.0, 0.0]), 'protein': False, 'element': 'MG'}
+    by_both_bad = {
+        'A': [(k, v) for k, v in atoms_both_bad.items() if k[0] == 'A'],
+        'B': [(('B', '1', 'O1'), atoms_both_bad[('B', '1', 'O1')])],
+        'C': [(('C', '1', 'MG'), atoms_both_bad[('C', '1', 'MG')])],
+    }
+    m_both_bad = family._holo_seating_metrics(atoms_both_bad, by_both_bad, {'ATP': ['B'], 'MG': ['C']})
+    assert m_both_bad['cofactor_seated'] is True
+    assert m_both_bad['metal_cofactor_coordinated'] is False
+    summary = family._summarize_holo_seating([m_both_bad])
+    assert summary['status'] == 'warning_seating_artifact'
+    assert 'seating artifact' in summary['note']

@@ -761,6 +761,116 @@ def publish_results(directory,jobs):
         atomic_write_json(directory/'analysis_backend_pending.json',{'error':str(exc),'scope':'Plotting unavailable on this frontend; completed coordinates remain available for the central analyzer.'})
 
 
+# Periodic-table catalytic metal elements for generic holo-seating checks
+# (works for any metalloenzyme: Mg, Mn, Zn, Fe, Ca, Co, Cu, Ni, Mo, W, etc.).
+_METAL_ELEMENTS = frozenset({'MG', 'MN', 'ZN', 'FE', 'CA', 'CO', 'CU', 'NI', 'MO', 'W', 'V', 'K', 'NA'})
+_POLAR_COORD_ELEMENTS = frozenset({'O', 'N', 'S', 'P'})
+
+
+def _holo_seating_metrics(atoms, by_chain, entities):
+    """Generic, enzyme-agnostic cofactor and catalytic-metal seating check for one pose."""
+    import numpy as np
+
+    protein_xyz = np.array([v['xyz'] for v in atoms.values() if v.get('protein')])
+    protein_polar_xyz = np.array([
+        v['xyz'] for v in atoms.values()
+        if v.get('protein') and str(v.get('element', '')).upper() in _POLAR_COORD_ELEMENTS
+    ])
+
+    metal_chains = []
+    organic_cofactor_chains = []
+    substrate_chains = []
+    for key, val in (entities or {}).items():
+        if isinstance(val, list):
+            for ch in val:
+                chain_atoms = by_chain.get(ch, ())
+                elems = {str(v.get('element', '')).upper() for _, v in chain_atoms}
+                if chain_atoms and elems <= _METAL_ELEMENTS:
+                    metal_chains.append(ch)
+                elif chain_atoms:
+                    organic_cofactor_chains.append(ch)
+        elif isinstance(val, str):
+            if by_chain.get(val):
+                substrate_chains.append(val)
+
+    result = {}
+    if organic_cofactor_chains and len(protein_xyz):
+        min_contacts = None
+        for ch in organic_cofactor_chains:
+            c_xyz = np.array([v['xyz'] for _, v in by_chain[ch]])
+            dists = np.linalg.norm(protein_xyz[:, None, :] - c_xyz[None, :, :], axis=2)
+            n_contacts = int((dists.min(axis=1) <= 4.5).sum())
+            min_contacts = n_contacts if min_contacts is None else min(min_contacts, n_contacts)
+        result['cofactor_min_protein_contacts'] = min_contacts
+        result['cofactor_seated'] = bool(min_contacts is not None and min_contacts >= 4)
+
+    if metal_chains:
+        cof_polar_list = [
+            v['xyz'] for ch in organic_cofactor_chains for _, v in by_chain.get(ch, ())
+            if str(v.get('element', '')).upper() in _POLAR_COORD_ELEMENTS
+        ]
+        sub_polar_list = [
+            v['xyz'] for ch in substrate_chains for _, v in by_chain.get(ch, ())
+            if str(v.get('element', '')).upper() in _POLAR_COORD_ELEMENTS
+        ]
+        all_partner_list = (
+            (list(protein_polar_xyz) if len(protein_polar_xyz) else [])
+            + cof_polar_list + sub_polar_list
+        )
+        all_partner_xyz = np.array(all_partner_list) if all_partner_list else np.empty((0, 3))
+        cof_polar_xyz = np.array(cof_polar_list) if cof_polar_list else np.empty((0, 3))
+
+        worst_any = 0.0
+        worst_cof = 0.0
+        for ch in metal_chains:
+            m_xyz = np.array([v['xyz'] for _, v in by_chain[ch]])
+            if len(all_partner_xyz):
+                d_any = float(np.linalg.norm(all_partner_xyz[:, None, :] - m_xyz[None, :, :], axis=2).min())
+                worst_any = max(worst_any, d_any)
+            else:
+                worst_any = float('inf')
+            if len(cof_polar_xyz):
+                d_cof = float(np.linalg.norm(cof_polar_xyz[:, None, :] - m_xyz[None, :, :], axis=2).min())
+                worst_cof = max(worst_cof, d_cof)
+        result['metal_nearest_polar_A'] = round(worst_any, 3) if math.isfinite(worst_any) else None
+        result['metal_coordinated'] = bool(math.isfinite(worst_any) and worst_any <= 3.2)
+        if len(cof_polar_xyz):
+            result['metal_to_cofactor_A'] = round(worst_cof, 3)
+            result['metal_cofactor_coordinated'] = bool(worst_cof <= 3.5)
+
+    return result
+
+
+def _summarize_holo_seating(poses):
+    """Aggregate per-pose cofactor/metal seating into an ensemble-level diagnostic."""
+    n = len(poses)
+    if not n:
+        return {'status': 'not_applicable'}
+    cof_vals = [p['cofactor_seated'] for p in poses if 'cofactor_seated' in p]
+    met_vals = [p['metal_coordinated'] for p in poses if 'metal_coordinated' in p]
+    mc_vals = [p['metal_cofactor_coordinated'] for p in poses if 'metal_cofactor_coordinated' in p]
+    if not cof_vals and not met_vals and not mc_vals:
+        return {'status': 'not_applicable'}
+    cof_frac = round(sum(cof_vals) / len(cof_vals), 4) if cof_vals else None
+    met_frac = round(sum(met_vals) / len(met_vals), 4) if met_vals else None
+    mc_frac = round(sum(mc_vals) / len(mc_vals), 4) if mc_vals else None
+    checks = [v for v in (cof_frac, met_frac, mc_frac) if v is not None]
+    status = 'pass' if all(v >= 0.5 for v in checks) else 'warning_seating_artifact'
+    summary = {
+        'status': status,
+        'cofactor_seated_fraction': cof_frac,
+        'metal_coordinated_fraction': met_frac,
+        'metal_cofactor_coordinated_fraction': mc_frac,
+    }
+    if status != 'pass':
+        summary['note'] = (
+            'Cofactor and/or catalytic metal failed to seat properly in >50% of poses; '
+            'poor target attack geometry may reflect a cofolding seating artifact rather than '
+            'true substrate incompatibility (verify with a native-substrate control).'
+        )
+    return summary
+
+
 def _analyze_single_prediction(args):
     """Validate identity and compute attack geometry for one prediction file."""
     (prediction, sequence_sha256, expected_protein_copies, entities, ccd_atoms,
@@ -824,6 +934,7 @@ def _analyze_single_prediction(args):
         'angle_deg': angle,
         'identity_issues': issues,
         'nucleophile': ref,
+        **_holo_seating_metrics(atoms, by_chain, entities),
     }
     if pocket_protocol:
         contacts = {(chain, str(number)) for chain, number in pocket_protocol['contacts']}
@@ -899,9 +1010,11 @@ def analyze_outputs(job, receipt, *, max_workers=None):
     else:
         poses = [_analyze_single_prediction(t) for t in tasks]
     score = weighted_attack_angle([p['distance_A'] for p in poses], [p['angle_deg'] for p in poses])
+    holo_seating = _summarize_holo_seating(poses)
     return {
         'poses': poses,
         'geometry': score,
+        'holo_seating': holo_seating,
         'identity_pass_poses': sum(not p['identity_issues'] for p in poses),
         **({'pocket_localized_poses': sum(p['pocket_localized'] for p in poses)} if pocket_protocol else {}),
         'step': job['step'],

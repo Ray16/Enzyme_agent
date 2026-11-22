@@ -134,6 +134,7 @@ def refresh(directory):
                     'nucleophile_to_pocket_A':pose.get('nucleophile_to_pocket_A'),
                     'ligand_to_pocket_A':pose.get('ligand_to_pocket_A'),'pocket_localized':pose.get('pocket_localized'),
                     'identity_pass':not pose['identity_issues'],'path':pose['path']})
+            holo = analysis.get('holo_seating') or {}
             summaries.append({'discovery_run_id':discovery_run_id,'enzyme_name':job['enzyme_name'],'accession':job['accession'],'family_id':job['family_id'],
                 'analysis_arm':job.get('analysis_arm','unrestrained'),
                 'step':step,**score,
@@ -141,6 +142,10 @@ def refresh(directory):
                 'near_attack_fraction':mode['near_attack_fraction'],
                 'near_mode_weighted_angle_deg':mode['near_mode_weighted_angle_deg'],
                 'near_mode_harmonic_distance_A':mode['near_mode_harmonic_distance_A'],
+                'holo_seating_status':holo.get('status'),
+                'cofactor_seated_fraction':holo.get('cofactor_seated_fraction'),
+                'metal_coordinated_fraction':holo.get('metal_coordinated_fraction'),
+                'metal_cofactor_coordinated_fraction':holo.get('metal_cofactor_coordinated_fraction'),
                 'identity_pass_poses':analysis['identity_pass_poses'],
                 'numerical_profile':result['receipt'].get('numerical_profile'),'result':str(path)})
             folder=out/'ensembles'/job['accession'];folder.mkdir(parents=True,exist_ok=True)
