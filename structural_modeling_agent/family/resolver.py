@@ -54,14 +54,14 @@ def _default_llm_caller(model: str) -> Callable[[str, str], tuple[str, dict]]:
     client = LLMClient(model=model)
 
     def _call(system_prompt: str, user_prompt: str) -> tuple[str, dict]:
-        resp = client.chat(
+        resp = client.call(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             max_tokens=4096,
             temperature=0.0,
-            call_label="family_protocol_resolver",
+            usage_label="family_protocol_resolver",
         )
         content = ""
         if hasattr(resp, "choices") and resp.choices:
