@@ -130,7 +130,8 @@ def attach(run_dir, *, discovery_owner=None, model=None, runtime_seconds=43200,
             specification=Path(family_specification) if family_specification else run/'agent_state/family_modeling_protocol.json'
             argv=['taskset','-c',','.join(map(str,coordinator_cpus)),sys.executable,'-u','-m','structural_modeling_agent',
                 'family-cofold','--run',str(run),'--specification',str(specification),'--backend',str(folder/'backend.json'),
-                '--out',str(run/'family_cofold'),'--watch-seconds','30']
+                '--out',str(run/'family_cofold'),'--watch-seconds','30',
+                '--resolver-model',settings['model']]
             env['PYTHONPATH']=str(folder/'source')
         manifest={'host':socket.gethostname(),'run_dir':str(run),'source_hashes':hashes,
             'argv':argv,'cpu_affinity':coordinator_cpus,'modeling_cpu_affinity':modeling_cpus,

@@ -922,6 +922,8 @@ def main(argv=None):
     parser.add_argument('--worker-id',default='worker-0')
     parser.add_argument('--msa-cache',type=Path)
     parser.add_argument('--watch-seconds',type=int,default=0)
+    parser.add_argument('--resolver-model',help='Optional LLM model for once-per-family protocol resolution of unresolved targets or pending families')
+    parser.add_argument('--no-llm-resolver',action='store_true',help='Disable automatic once-per-family LLM protocol resolution')
     parser.add_argument('--memory-retries-only',action='store_true',help='Recover only saved GPU-memory failures; reuse the existing prepared queue')
     parser.add_argument('--pocket-guided-from',type=Path,help='Prepare a separate broad-pocket arm from this saved unrestrained family queue')
     args=parser.parse_args(argv);args.out.mkdir(parents=True,exist_ok=True)
@@ -932,10 +934,20 @@ def main(argv=None):
             'process_start_ticks':Path('/proc/self/stat').read_text().rsplit(')',1)[1].split()[19],
             'cpu_affinity':sorted(os.sched_getaffinity(0)),'started_at':time.time()})
         while True:
+            resolver_model = None if args.no_llm_resolver else args.resolver_model
+            setup_llm_calls = 0
             if not args.specification.exists():
                 if adopt_registered_protocol(args.run,args.specification):continue
+                if resolver_model:
+                    from .resolver import resolve_target_protocol
+                    resolved_spec, res_info = resolve_target_protocol(
+                        args.run, args.specification, args.out, model=resolver_model
+                    )
+                    setup_llm_calls += int(res_info.get('llm_calls') or 0)
+                    if resolved_spec is not None:
+                        continue
                 atomic_write_json(args.out/'workers'/args.worker_id/'current.json',{
-                    'status':'awaiting_shared_family_protocol','path':str(args.specification),'setup_llm_calls':0})
+                    'status':'awaiting_shared_family_protocol','path':str(args.specification),'setup_llm_calls':setup_llm_calls})
                 if not args.watch_seconds:return
                 time.sleep(args.watch_seconds);continue
             specification=json.loads(args.specification.read_text())
@@ -946,6 +958,15 @@ def main(argv=None):
                 jobs=json.loads((args.out/'queue.json').read_text())['items']
             else:
                 handoff=build_handoff(args.run,specification)
+                if resolver_model and handoff.get('pending_families'):
+                    from .resolver import resolve_pending_families
+                    specification, res_report = resolve_pending_families(
+                        args.run, handoff, specification, args.specification, args.out, model=resolver_model
+                    )
+                    setup_llm_calls += int(res_report.get('llm_calls') or 0)
+                    if res_report.get('resolved'):
+                        handoff = build_handoff(args.run, specification)
+                handoff['setup_llm_calls'] = setup_llm_calls
                 from .sequences import prepare_members
                 candidates=prepare_members(handoff,_prepared_candidates(args.run),args.out/'sequences',
                     args.msa_cache or args.run.parent/'.sequence_msa_cache')
@@ -957,7 +978,7 @@ def main(argv=None):
                 atomic_write_json(args.out/'family_handoff.json',handoff)
                 write_family_handoff_markdown(handoff, args.out/'family_handoff.md')
                 jobs,pending=render_jobs(args.run,handoff,args.out/'inputs',candidates)
-                atomic_write_json(args.out/'queue.json',{'items':jobs,'pending':pending,'setup_llm_calls':0})
+                atomic_write_json(args.out/'queue.json',{'items':jobs,'pending':pending,'setup_llm_calls':setup_llm_calls})
                 write_input_index(jobs,args.out)
             publish_results(args.out,jobs)
             if args.prepare_only:return
