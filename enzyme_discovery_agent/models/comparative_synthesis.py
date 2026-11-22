@@ -10,6 +10,7 @@ alternatives, and produces a structured family-comparison artifact
 
 from __future__ import annotations
 
+import csv
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,6 +23,45 @@ from enzyme_discovery_agent.models.candidate_registry import (
 from enzyme_discovery_agent.models.ortholog import filter_highly_similar_orthologs
 from enzyme_discovery_agent.models.target_review import eligible
 from enzyme_discovery_agent.state_store import atomic_write_json
+
+
+def _load_structural_geometry(run_dir: Path) -> dict[str, dict]:
+    """Read completed two-step structural geometry observations if present.
+
+    Structural geometry is reported strictly as a structural observation, never
+    as demonstrated catalytic activity.
+    """
+    for arm in ("cofolded", "family_cofold"):
+        summary_path = run_dir / arm / "analysis" / "both_steps_summary.csv"
+        if not summary_path.is_file():
+            continue
+        out: dict[str, dict] = {}
+        try:
+            with summary_path.open(encoding="utf-8") as handle:
+                for row in csv.DictReader(handle):
+                    acc = (row.get("accession") or "").strip()
+                    if not acc:
+                        continue
+                    def _flt(key):
+                        val = row.get(key)
+                        try:
+                            return round(float(val), 3) if val not in (None, "") else None
+                        except (TypeError, ValueError):
+                            return None
+                    out[acc] = {
+                        "arm": arm,
+                        "step_1_harmonic_distance_A": _flt("step_1_harmonic_distance_A"),
+                        "step_1_near_attack_fraction": _flt("step_1_near_attack_fraction"),
+                        "step_2_harmonic_distance_A": _flt("step_2_harmonic_distance_A"),
+                        "step_2_near_attack_fraction": _flt("step_2_near_attack_fraction"),
+                        "larger_step_distance_A": _flt("larger_step_distance_A"),
+                        "scope": "Step-specific structural geometry only; not demonstrated activity.",
+                    }
+        except OSError:
+            continue
+        if out:
+            return out
+    return {}
 
 
 def _decision_rank(decision: str) -> int:
@@ -51,6 +91,7 @@ def build_comparative_brief(
     """Build a deterministic, family-grouped chemical trade-off comparison."""
     root = Path(run_dir)
     registry = load_candidate_registry(root, strict=True).get("candidates", {})
+    structural_by_acc = _load_structural_geometry(root)
 
     by_family: dict[str, list[dict]] = {}
     for acc, entry in sorted(registry.items()):
@@ -86,10 +127,12 @@ def build_comparative_brief(
             "major_constraints": major_constraints,
             "unknowns": (assessment.get("unknowns") or [])[:4],
             "revisit_when": assessment.get("revisit_when"),
+            "structural_geometry": structural_by_acc.get(acc),
             "_sequence": data.get("sequence") or "",
         })
 
     family_rows = []
+    modeled_all: list[dict] = []
     for fam, members in by_family.items():
         members.sort(key=lambda m: (
             _decision_rank(m["decision"]),
@@ -107,12 +150,29 @@ def build_comparative_brief(
             (r.get("reaction_center") or {}).get("molecularity")
             for r in reps if (r.get("reaction_center") or {}).get("molecularity")
         })
+        fam_modeled = [m for m in members if m.get("structural_geometry")]
+        best_dist = min(
+            (m["structural_geometry"]["larger_step_distance_A"] for m in fam_modeled
+             if m["structural_geometry"].get("larger_step_distance_A") is not None),
+            default=None,
+        )
+        for m in fam_modeled:
+            sg = m["structural_geometry"]
+            modeled_all.append({
+                "accession": m["accession"],
+                "protein_name": m["protein_name"],
+                "family": fam,
+                "decision": m["decision"],
+                **sg,
+            })
         family_rows.append({
             "family": fam,
             "n_admitted": len(members),
             "n_prioritized": sum(1 for m in members if m["decision"] == "prioritize"),
             "n_investigate": sum(1 for m in members if m["decision"] == "investigate"),
             "n_distinct_representatives": len(reps),
+            "n_modeled": len(fam_modeled),
+            **({"best_two_step_distance_A": best_dist} if best_dist is not None else {}),
             "activation_modes": activation_modes,
             "molecularities": molecularities,
             "representatives": clean_reps,
@@ -120,7 +180,11 @@ def build_comparative_brief(
         })
 
     family_rows.sort(key=lambda f: (-f["n_prioritized"], -f["n_distinct_representatives"], f["family"]))
-    return {
+    modeled_all.sort(key=lambda r: (
+        r.get("larger_step_distance_A") if r.get("larger_step_distance_A") is not None else 9999.0,
+        r["accession"],
+    ))
+    brief = {
         "schema_version": "1.0",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_admitted_candidates": sum(f["n_admitted"] for f in family_rows),
@@ -132,6 +196,13 @@ def build_comparative_brief(
             "does not establish target activity or replace candidate-level evidence."
         ),
     }
+    if modeled_all:
+        brief["structural_modeling_summary"] = {
+            "total_modeled_admitted": len(modeled_all),
+            "top_by_two_step_distance": modeled_all[:10],
+            "scope": "Completed Boltz-2 step-specific structural geometry; distinct from experimental activity.",
+        }
+    return brief
 
 
 def render_comparative_markdown(brief: dict) -> str:
@@ -167,6 +238,28 @@ def render_comparative_markdown(brief: dict) -> str:
             f"{chem} | {reps} | {str(limiter)[:120]} |"
         )
     lines.append("")
+    sm = brief.get("structural_modeling_summary") or {}
+    top_sm = sm.get("top_by_two_step_distance") or []
+    if top_sm:
+        lines.extend([
+            "### Completed Two-Step Structural Geometry (Not Demonstrated Activity)",
+            "",
+            f"Modeled admitted candidates: **{sm.get('total_modeled_admitted', len(top_sm))}**.",
+            "",
+            "| Enzyme | Family | Step 1 Dist (Å) | Step 2 Dist (Å) | Worst-Step (Å) |",
+            "| --- | --- | ---: | ---: | ---: |",
+        ])
+        for item in top_sm[:8]:
+            d1 = item.get("step_1_harmonic_distance_A")
+            d2 = item.get("step_2_harmonic_distance_A")
+            dm = item.get("larger_step_distance_A")
+            lines.append(
+                f"| {item['protein_name']} (`{item['accession']}`) | {item['family']} | "
+                f"{f'{d1:.2f}' if d1 is not None else '-'} | "
+                f"{f'{d2:.2f}' if d2 is not None else '-'} | "
+                f"{f'{dm:.2f}' if dm is not None else '-'} |"
+            )
+        lines.append("")
     return "\n".join(lines)
 
 

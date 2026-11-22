@@ -33,6 +33,12 @@ def _evidence_layer(accession, data, metadata):
     conflicts = {key: {'evaluation': data[key], 'registry': metadata[key]}
                  for key in fields if data.get(key) is not None and metadata.get(key) is not None
                  and data[key] != metadata[key]}
+    ta = metadata.get('target_assessment') if isinstance(metadata.get('target_assessment'), dict) else {}
+    ta_summary = {
+        k: ta.get(k)
+        for k in ('decision', 'evidence_level', 'mechanism_fit', 'pocket_engineering_outlook', 'mechanism_and_step')
+        if ta.get(k) is not None
+    } or None
     return {
         'identity': {'accession': accession, 'protein_name': _first(data, metadata, 'protein_name', ''),
                      'organism': _first(data, metadata, 'organism', ''),
@@ -48,6 +54,9 @@ def _evidence_layer(accession, data, metadata):
         'cofactor_annotations': {'names': _first(data, metadata, 'required_cofactors', []),
                                  'notes': _first(data, metadata, 'cofactor_notes', [])},
         'reaction_chemistry': _first(data, metadata, 'reaction_chemistry', {}),
+        'reaction_center_analysis': _first(data, metadata, 'reaction_center_analysis'),
+        'architecture_and_tractability': _first(data, metadata, 'architecture_and_tractability'),
+        'target_assessment_summary': ta_summary,
         'mechanism': {'status': mechanism.get('status', 'not_attempted') if isinstance(mechanism, dict) else 'not_attempted',
                       'evidence': mechanism},
         'claim_validation': _first(data, metadata, 'claim_validation'),
@@ -135,7 +144,7 @@ def _bundle_evidence(value, root, sources):
 
 
 def write_structural_modeling_handoff(run_dir: Path, evaluations: list[dict], target: dict,
-                                     max_candidates: int = 20, neighbor_map: dict | None = None,
+                                     max_candidates: int | None = None, neighbor_map: dict | None = None,
                                      output_path: Path | None = None, *, discovery_status_value=None,
                                      coverage=None) -> Path:
     """Write admitted candidates, investigation leads and explicit exclusions."""
@@ -143,8 +152,8 @@ def write_structural_modeling_handoff(run_dir: Path, evaluations: list[dict], ta
     path = Path(output_path).resolve() if output_path else root / 'structural_modeling_handoff.json'
     if path.parent != root:
         raise ValueError('handoff must be written in the run directory so bundle paths remain valid')
-    if type(max_candidates) is not int or max_candidates < 1:
-        raise ValueError('max_candidates must be a positive integer')
+    if max_candidates is not None and (type(max_candidates) is not int or max_candidates < 1):
+        raise ValueError('max_candidates must be a positive integer or None for no cap')
     state_files = {'candidate_registry': run_file(root, 'candidate_registry.json'),
                    'target_context': run_file(root, 'target_context.json'),
                    'ranking': run_file(root, 'pass1_ranking.json'),
@@ -215,7 +224,7 @@ def write_structural_modeling_handoff(run_dir: Path, evaluations: list[dict], ta
                           'discovery_status': current, 'identity_conflicts': identity_conflicts,
                           'evidence': _evidence_layer(acc, data, meta)})
             continue
-        if len(candidates) >= max_candidates:
+        if max_candidates is not None and len(candidates) >= max_candidates:
             leads.append({'accession': acc, 'reason': 'eligible but outside the current candidate limit',
                           'discovery_status': current})
             continue
@@ -225,7 +234,7 @@ def write_structural_modeling_handoff(run_dir: Path, evaluations: list[dict], ta
         rank = rank_by_acc.get(acc) or {}
         raw_rank = rank.get('rank')
         rank_value = raw_rank if type(raw_rank) is int and raw_rank > 0 else None
-        sequence = _first(data, meta, 'sequence')
+        sequence = _first(data, meta, 'sequence') or (meta.get('evaluation_data') or {}).get('sequence')
         sequence_source = 'discovery_evidence' if sequence else 'run_sequence_cache'
         sequence = sequence or cached_sequences.get(acc)
         if not isinstance(sequence, str) or not re.fullmatch(r'[A-Z]+', sequence):
@@ -276,7 +285,7 @@ def write_structural_modeling_handoff(run_dir: Path, evaluations: list[dict], ta
               'source_artifact_sha256': original_hashes,
               'evaluations_input_sha256': digest(evaluations or []),
               'neighbor_map_input_sha256': digest(neighbor_map or {})},
-           'target': target, 'max_candidates': max_candidates,
+           'target': target, 'max_candidates': max_candidates if max_candidates is not None else max(len(candidates), 1),
            'ranking': {'status': 'unverified' if ranking else 'unavailable',
                        'source_sha256': digest(ranking) if ranking else None,
                        'note': 'Ranks are proposals from the saved ranking; freshness is not established.'},
@@ -310,6 +319,8 @@ def _write_readable_summary(path, doc):
     for candidate in doc['candidates']:
         evidence, selection, proposal = candidate['evidence'], candidate['selection'], candidate['modeling_input']
         identity = evidence.get('identity') or {}
+        arch = evidence.get('architecture_and_tractability') or {}
+        ta_sum = evidence.get('target_assessment_summary') or {}
         rows.extend([f"### {line(candidate['accession'])} — {line(identity.get('protein_name'))}",
                      f"- Organism: {line(identity.get('organism'))}; family: {line((evidence.get('family_assignment') or {}).get('interpro_family'))}",
                      f"- Admission: {line(selection.get('admission'))}; rank: {line(selection.get('rank'))} ({line(selection.get('ranking_status'))})",
@@ -318,6 +329,8 @@ def _write_readable_summary(path, doc):
                      f"- Alignment: {line(candidate['input_availability']['msa']['status'])}",
                      f"- Discovery reaction evidence: {line('; '.join(str(x) for x in evidence.get('native_reactions') or []))}",
                      f"- Mechanism evidence status: {line((evidence.get('mechanism') or {}).get('status'))}",
+                     *([f"- Architecture / oligomerization: {line(arch.get('oligomer_state') or arch.get('subunit_structure'))}; tractability: {line(arch.get('tractability_tier'))}"] if isinstance(arch, dict) and arch else []),
+                     *([f"- Target assessment axes: mechanism_fit={line(ta_sum.get('mechanism_fit'))}; pocket_outlook={line(ta_sum.get('pocket_engineering_outlook'))}"] if isinstance(ta_sum, dict) and (ta_sum.get('mechanism_fit') or ta_sum.get('pocket_engineering_outlook')) else []),
                      f"- Proposal status: {line(proposal.get('status'))}",
                      f"- Unresolved: {line('; '.join(proposal.get('unresolved') or []))}",
                      f"- Warnings: {line('; '.join(proposal.get('warnings') or []))}",

@@ -144,3 +144,115 @@ def test_readable_input_index_has_the_consuming_run_identity(tmp_path):
     rows=list(csv.DictReader((tmp_path/'input_index.csv').open()))
     assert rows[0]['discovery_run_id']=='synthetic_run'
     assert Path(rows[0]['input_yaml']).resolve()==path
+
+
+def test_interfacial_fold_triggers_dimer_override_with_single_active_site(tmp_path, monkeypatch, specification):
+    records = {
+        'SYNTH_GS1': {'metadata': {
+            'interpro_family_id': 'IPR008146',
+            'catalytic_activities': ['ATP = ADP'],
+            'is_swissprot': True,
+        }},
+        'SYNTH_GS2': {'metadata': {
+            'interpro_family_id': 'IPR004809',
+            'catalytic_activities': ['ATP = ADP'],
+            'is_swissprot': True,
+        }},
+        'SYNTH_MONO': {'metadata': {
+            'interpro_family_id': 'SYNTH_MONOMER_FOLD',
+            'catalytic_activities': ['ATP = AMP + diphosphate'],
+            'is_swissprot': True,
+        }},
+    }
+    monkeypatch.setattr(family, 'load_candidate_registry', lambda *a, **k: {'candidates': records})
+    with (tmp_path / 'ranked_candidates.csv').open('w') as handle:
+        writer = csv.DictWriter(handle, fieldnames=['rank', 'accession', 'protein_name', 'mechanism_family', 'is_swissprot'])
+        writer.writeheader()
+        writer.writerow({'rank': 1, 'accession': 'SYNTH_GS1', 'protein_name': 'Synthetic GS A', 'mechanism_family': 'GS-fold amide ligase', 'is_swissprot': 'True'})
+        writer.writerow({'rank': 2, 'accession': 'SYNTH_GS2', 'protein_name': 'Synthetic GS B', 'mechanism_family': 'GS-fold amide ligase', 'is_swissprot': 'True'})
+        writer.writerow({'rank': 3, 'accession': 'SYNTH_MONO', 'protein_name': 'Synthetic Monomer', 'mechanism_family': 'Monomeric adenylate ligase', 'is_swissprot': 'True'})
+
+    handoff = family.build_handoff(tmp_path, specification)
+    # Canonical family grouping keeps SYNTH_GS1 (IPR008146) and SYNTH_GS2 (IPR004809) together
+    gs_groups = [g for g in handoff['families'] if g['family_id'] == 'GS-fold amide ligase']
+    assert len(gs_groups) == 1
+    assert len(gs_groups[0]['members']) == 2
+    assert gs_groups[0]['protein_copies'] == 2
+
+    gs_proto = handoff['protocols'][gs_groups[0]['protocol_id']]
+    step1 = gs_proto['steps']['1']
+    step2 = gs_proto['steps']['2']
+    assert len(step1['enzyme_state']['chains']) == 2
+    assert len(step2['enzyme_state']['chains']) == 2
+    # 1 modeled interfacial active site => 2 Mg (not 4 Mg) and 1 ATP
+    assert {c['ccd']: c['count'] for c in step1['cofactors']} == {'ATP': 1, 'MG': 2}
+    assert {c['ccd']: c['count'] for c in step2['cofactors']} == {'MG': 2}
+
+    mono_groups = [g for g in handoff['families'] if g['family_id'] == 'Monomeric adenylate ligase']
+    assert len(mono_groups) == 1
+    assert mono_groups[0]['protein_copies'] == 1
+
+
+def test_handoff_ortholog_dedup_collapses_near_identical_and_keeps_divergent(tmp_path, monkeypatch, specification):
+    base_seq = 'ACDEFGHIKLMNPQRSTVWY' * 10  # 200 aa
+    near_seq = base_seq[:-3] + 'AAA'        # 98.5% identical
+    div_seq = 'WYVTSRQPNMLKIHGFEDCA' * 10   # divergent
+    records = {
+        'SYNTH_TREMBL': {'metadata': {'interpro_family_id': 'SYNTH_FAM', 'catalytic_activities': ['ATP = AMP + diphosphate'], 'sequence': near_seq}},
+        'SYNTH_SP': {'metadata': {'interpro_family_id': 'SYNTH_FAM', 'catalytic_activities': ['ATP = AMP + diphosphate'], 'sequence': base_seq}},
+        'SYNTH_DIV': {'metadata': {'interpro_family_id': 'SYNTH_FAM', 'catalytic_activities': ['ATP = AMP + diphosphate'], 'sequence': div_seq}},
+    }
+    monkeypatch.setattr(family, 'load_candidate_registry', lambda *a, **k: {'candidates': records})
+    with (tmp_path / 'ranked_candidates.csv').open('w') as handle:
+        writer = csv.DictWriter(handle, fieldnames=['rank', 'accession', 'protein_name', 'is_swissprot'])
+        writer.writeheader()
+        writer.writerow({'rank': 1, 'accession': 'SYNTH_TREMBL', 'protein_name': 'Unreviewed copy', 'is_swissprot': 'False'})
+        writer.writerow({'rank': 2, 'accession': 'SYNTH_SP', 'protein_name': 'Reviewed rep', 'is_swissprot': 'True'})
+        writer.writerow({'rank': 3, 'accession': 'SYNTH_DIV', 'protein_name': 'Divergent ortholog', 'is_swissprot': 'False'})
+
+    handoff = family.build_handoff(tmp_path, specification)
+    kept_accs = [m['accession'] for m in handoff['families'][0]['members']]
+    # Reviewed Swiss-Prot representative is retained over lower-rank TrEMBL duplicate; divergent ortholog is kept.
+    assert kept_accs == ['SYNTH_SP', 'SYNTH_DIV']
+    assert len(handoff['collapsed_orthologs']) == 1
+    assert handoff['collapsed_orthologs'][0]['accession'] == 'SYNTH_TREMBL'
+    assert handoff['collapsed_orthologs'][0]['representative_accession'] == 'SYNTH_SP'
+
+
+def test_prioritize_modeling_jobs_round_robin_and_reviewed_first():
+    jobs = [
+        {'id': 'a1', 'accession': 'A_TREMBL', 'family_id': 'FAM_A', 'rank': 1, 'step': 1, 'is_swissprot': False, 'recorded_activities': []},
+        {'id': 'a2', 'accession': 'A_TREMBL', 'family_id': 'FAM_A', 'rank': 1, 'step': 2, 'is_swissprot': False, 'recorded_activities': []},
+        {'id': 'a3', 'accession': 'A_SP', 'family_id': 'FAM_A', 'rank': 5, 'step': 1, 'is_swissprot': True, 'recorded_activities': ['rxn']},
+        {'id': 'a4', 'accession': 'A_SP', 'family_id': 'FAM_A', 'rank': 5, 'step': 2, 'is_swissprot': True, 'recorded_activities': ['rxn']},
+        {'id': 'b1', 'accession': 'B_SP', 'family_id': 'FAM_B', 'rank': 8, 'step': 1, 'is_swissprot': True, 'recorded_activities': ['rxn']},
+        {'id': 'b2', 'accession': 'B_SP', 'family_id': 'FAM_B', 'rank': 8, 'step': 2, 'is_swissprot': True, 'recorded_activities': ['rxn']},
+    ]
+    ordered = family.prioritize_modeling_jobs(jobs)
+    # Slot 0: A_SP (steps 1, 2), then B_SP (steps 1, 2); Slot 1: A_TREMBL (steps 1, 2)
+    assert [(j['accession'], j['step']) for j in ordered] == [
+        ('A_SP', 1), ('A_SP', 2),
+        ('B_SP', 1), ('B_SP', 2),
+        ('A_TREMBL', 1), ('A_TREMBL', 2),
+    ]
+
+
+def test_comparative_synthesis_ingests_structural_geometry(tmp_path):
+    from enzyme_discovery_agent.models.comparative_synthesis import _load_structural_geometry, render_comparative_markdown
+    analysis_dir = tmp_path / 'family_cofold' / 'analysis'
+    analysis_dir.mkdir(parents=True)
+    (analysis_dir / 'both_steps_summary.csv').write_text(
+        'enzyme_name,accession,step_1_harmonic_distance_A,step_1_near_attack_fraction,step_2_harmonic_distance_A,step_2_near_attack_fraction,larger_step_distance_A\n'
+        'Synthetic Ligase,SYNTH_1,3.75,0.80,4.90,0.12,4.90\n'
+    )
+    geom = _load_structural_geometry(tmp_path)
+    assert 'SYNTH_1' in geom
+    assert geom['SYNTH_1']['larger_step_distance_A'] == 4.9
+    md = render_comparative_markdown({
+        'total_admitted_candidates': 1,
+        'total_families': 1,
+        'families': [{'family': 'SYNTH_FAM', 'n_prioritized': 1, 'n_investigate': 0, 'activation_modes': ['acyl_phosphate'], 'molecularities': ['bimolecular'], 'representatives': [{'accession': 'SYNTH_1', 'protein_name': 'Synthetic Ligase', 'decision': 'prioritize'}]}],
+        'structural_modeling_summary': {'total_modeled_admitted': 1, 'top_by_two_step_distance': [{'accession': 'SYNTH_1', 'protein_name': 'Synthetic Ligase', 'family': 'SYNTH_FAM', **geom['SYNTH_1']}]},
+    })
+    assert 'Completed Two-Step Structural Geometry (Not Demonstrated Activity)' in md
+    assert 'SYNTH_1' in md and '4.90' in md

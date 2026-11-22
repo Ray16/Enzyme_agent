@@ -101,13 +101,18 @@ def compile_protocol(mode, specification):
         candidate={'accession':'shared-protocol','evidence':{},'modeling_input':{
             'activation':{'status':'assigned','activation_mode':mode,'nucleotide':nucleotide},
             'target_substrates':partners,'cofactors':copy.deepcopy(template.get('step_cofactors',{}).get(str(index),template.get('cofactors',[])))}}
+        metal_resolution = (
+            {'strategy':'explicit','ccd':metal['metal'],
+             'per_site_metal_count':metal['per_site_metal_count'],'uniprot_cross_check':False,
+             'origin':'existing_mechanism_protocol','rationale':metal['rationale'],
+             **({'active_sites':int(specification['active_sites'])} if specification.get('active_sites') is not None else {})}
+            if metal else {'strategy':'omit'}
+        )
         declaration={'step':{'index':index,'mechanism':key,'chosen_because':specification['step_rationale'][str(index)]},
             'scoring_policy':'unrestrained','resolutions':{
                 'enzyme_state':{'chains':[{'source':'full_sequence'}],'copies':specification.get('protein_copies',1),
                     'state':'intact','origin':'shared_protocol','rationale':specification['assembly_basis']},
-                'substrates':directives,'catalytic_metal':({'strategy':'explicit','ccd':metal['metal'],
-                    'per_site_metal_count':metal['per_site_metal_count'],'uniprot_cross_check':False,
-                    'origin':'existing_mechanism_protocol','rationale':metal['rationale']} if metal else {'strategy':'omit'})}}
+                'substrates':directives,'catalytic_metal':metal_resolution}}
         resolved=resolve_candidate(candidate,declaration,knowledge,step=index,mechanism_override=key,coordinates=coordinates)
         if resolved['status']!='ready':raise ValueError(str(resolved['errors']))
         stages[str(index)]=candidate['modeling_input']
@@ -116,14 +121,205 @@ def compile_protocol(mode, specification):
         'assembly_basis':specification['assembly_basis'],'setup_llm_calls':0}
 
 
+# Fold-level InterPro identifiers for catalytic domains whose active site sits
+# strictly at a subunit-subunit interface (requiring at least a minimal dimer
+# interface rather than an isolated monomer for valid catalytic geometry).
+_INTERFACIAL_ACTIVE_SITE_INTERPRO_IDS = frozenset({
+    'IPR008146',  # Glutamine synthetase, catalytic domain
+    'IPR004809',  # Glutamine synthetase type I
+    'IPR054669',  # Gamma-glutamylputrescine synthetase (GS-fold)
+    'IPR001637',  # Glutamine synthetase, beta-grasp domain
+    'IPR027302',  # Glutamine synthetase, type III
+})
+
+_INTERFACIAL_FOLD_RE = re.compile(
+    r'glutamine[\s\-]+synthetase|gamma[\s\-]+glutamyl.*synthetase',
+    re.I,
+)
+_INTERFACIAL_ARCH_RE = re.compile(
+    r'active\s+site.{0,40}(?:interface|between\s+subunits|inter[\s\-]?subunit)'
+    r'|inter[\s\-]?subunit\s+active\s+site'
+    r'|subunit[\s\-]+interface.{0,40}active\s+site',
+    re.I,
+)
+
+
 def _family(data):
     value=data.get('interpro_family_id') or data.get('screening_family_id') or data.get('interpro_family')
     return json.dumps(value,sort_keys=True) if isinstance(value,(list,dict)) else str(value or 'unresolved')
 
 
+def _canonical_family(data, row):
+    """Group related InterPro sub-tags that share a canonical mechanism/fold family."""
+    raw = _family(data)
+    mech_family = str(row.get('mechanism_family') or data.get('mechanism_family') or '').strip()
+    if mech_family:
+        # Use a short deterministic slug for grouping while keeping raw InterPro ID accessible.
+        return mech_family, raw
+    return raw, raw
+
+
+def _load_discovery_handoff_index(root: Path) -> dict:
+    """Read-only lookup of discovery's structural_modeling_handoff.json if present."""
+    path = root / 'structural_modeling_handoff.json'
+    if not path.is_file():
+        return {}
+    try:
+        doc = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+    by_acc = {}
+    for cand in doc.get('candidates') or []:
+        if isinstance(cand, dict) and cand.get('accession'):
+            by_acc[cand['accession']] = cand
+    return by_acc
+
+
+def _interfacial_assembly_override(raw_family, canonical_family, data, row, specification):
+    """Return a minimal-dimer override for folds with obligate inter-subunit active sites.
+
+    Explicit user ``family_overrides`` in ``specification`` always take precedence.
+    """
+    overrides = specification.get('family_overrides') or {}
+    explicit = overrides.get(raw_family) or overrides.get(canonical_family) or {}
+    if explicit.get('protein_copies') is not None:
+        return {}
+    if specification.get('disable_interfacial_assembly_override'):
+        return {}
+    interpro_ids = {raw_family}
+    for key in ('interpro_family_id', 'screening_family_id'):
+        val = data.get(key)
+        if isinstance(val, str) and val:
+            interpro_ids.add(val)
+        elif isinstance(val, list):
+            interpro_ids.update(str(v) for v in val if v)
+    fold_text = ' '.join(
+        str(x or '') for x in (
+            data.get('interpro_family'),
+            row.get('interpro_family'),
+            row.get('mechanism_family'),
+            data.get('mechanism_family'),
+        )
+    )
+    arch = data.get('architecture_and_tractability') or {}
+    arch_text = json.dumps(arch) if isinstance(arch, dict) else str(arch or '')
+    if (interpro_ids & _INTERFACIAL_ACTIVE_SITE_INTERPRO_IDS
+            or _INTERFACIAL_FOLD_RE.search(fold_text)
+            or _INTERFACIAL_ARCH_RE.search(arch_text)):
+        return {
+            'protein_copies': 2,
+            'active_sites': 1,
+            'assembly_basis': (
+                'Minimal functional dimer interface override: fold/subunit evidence indicates '
+                'an obligate inter-subunit active site (2 protein copies, 1 modeled catalytic site).'
+            ),
+        }
+    return {}
+
+
+def _as_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {'true', '1', 'yes'}
+    return bool(value)
+
+
+def deduplicate_handoff_orthologs(handoff, candidates=None, *, identity_threshold: float | None = 0.85):
+    """Collapse near-identical orthologs (>= identity_threshold) within each family group.
+
+    Retains all distinct families and divergent orthologs (< identity_threshold),
+    prioritizing reviewed Swiss-Prot and reaction-annotated representatives first.
+    Collapsed members are recorded in ``handoff['collapsed_orthologs']`` for auditability.
+    """
+    if identity_threshold is None or identity_threshold <= 0:
+        handoff.setdefault('collapsed_orthologs', [])
+        return handoff
+    from enzyme_discovery_agent.models.ortholog import filter_highly_similar_orthologs
+
+    candidates = candidates or {}
+    collapsed_all = list(handoff.get('collapsed_orthologs') or [])
+    seen_collapsed = {c.get('accession') for c in collapsed_all if isinstance(c, dict)}
+    for group in handoff.get('families') or []:
+        members = list(group.get('members') or [])
+        members.sort(key=lambda m: (
+            0 if m.get('is_swissprot') else 1,
+            0 if m.get('recorded_activities') else 1,
+            int(m.get('rank') or 999999),
+            m.get('accession') or '',
+        ))
+        kept, collapsed = filter_highly_similar_orthologs(
+            members,
+            identity_threshold=float(identity_threshold),
+            seq_getter=lambda m: (candidates.get(m.get('accession')) or {}).get('sequence') or m.get('_sequence'),
+            family_getter=lambda m: group.get('family_id') or 'same_family',
+        )
+        group['members'] = kept
+        for item in collapsed:
+            if item.get('accession') not in seen_collapsed:
+                seen_collapsed.add(item.get('accession'))
+                collapsed_all.append(item)
+    handoff['collapsed_orthologs'] = collapsed_all
+    return handoff
+
+
+def prioritize_modeling_jobs(jobs):
+    """Order cofold jobs round-robin across families, prioritizing reviewed/annotated leads first.
+
+    Within each family, candidates are ordered by:
+    1. Swiss-Prot reviewed status,
+    2. Recorded native reaction annotation,
+    3. Discovery rank,
+    keeping Step 1 and Step 2 of the same candidate adjacent.
+    """
+    by_family = defaultdict(list)
+    seen_member = {}
+    for job in jobs:
+        fam = job.get('family_id') or 'unresolved'
+        acc = job.get('accession') or ''
+        key = (fam, acc)
+        if key not in seen_member:
+            seen_member[key] = {
+                'is_swissprot': bool(job.get('is_swissprot')),
+                'has_reaction': bool(job.get('recorded_activities')),
+                'rank': int(job.get('rank') or 999999),
+                'accession': acc,
+                'jobs': [],
+            }
+            by_family[fam].append(seen_member[key])
+        seen_member[key]['jobs'].append(job)
+    # Sort members within each family and families by their top member's priority.
+    for fam in by_family:
+        by_family[fam].sort(key=lambda m: (
+            0 if m['is_swissprot'] else 1,
+            0 if m['has_reaction'] else 1,
+            m['rank'],
+            m['accession'],
+        ))
+        for m in by_family[fam]:
+            m['jobs'].sort(key=lambda j: int(j.get('step') or 0))
+    family_order = sorted(
+        by_family,
+        key=lambda f: (
+            0 if by_family[f][0]['is_swissprot'] else 1,
+            0 if by_family[f][0]['has_reaction'] else 1,
+            by_family[f][0]['rank'],
+            f,
+        ),
+    )
+    ordered = []
+    max_depth = max((len(v) for v in by_family.values()), default=0)
+    for slot in range(max_depth):
+        for fam in family_order:
+            if slot < len(by_family[fam]):
+                ordered.extend(by_family[fam][slot]['jobs'])
+    return ordered
+
+
 def build_handoff(run_dir, specification):
     """Group published candidates; direct contradictory evidence always splits groups."""
     root=Path(run_dir);registry=load_candidate_registry(root,strict=True)['candidates']
+    discovery_handoff=_load_discovery_handoff_index(root)
     ranking_path=root/'ranked_candidates.csv'
     rows=list(csv.DictReader(ranking_path.open())) if ranking_path.is_file() else []
     assignments=[];known=defaultdict(set)
@@ -131,7 +327,14 @@ def build_handoff(run_dir, specification):
                  if specification.get('reaction_coordinates_path') else ReactionCoordinates.load())
     for row in rows:
         meta=(registry.get(row['accession']) or {}).get('metadata') or {}
-        data={**(meta.get('evaluation_data') or {}),**meta};family=_family(data)
+        dh_cand=discovery_handoff.get(row['accession']) or {}
+        dh_ev=dh_cand.get('evidence') or {}
+        data={**(meta.get('evaluation_data') or {}),**meta}
+        if dh_ev.get('architecture_and_tractability') and not data.get('architecture_and_tractability'):
+            data['architecture_and_tractability']=dh_ev['architecture_and_tractability']
+        if dh_cand.get('sequence') and not data.get('sequence'):
+            data['sequence']=dh_cand['sequence']
+        canonical_fam, raw_fam = _canonical_family(data, row)
         text=' '.join(data.get('catalytic_activities') or [])
         matched=[rule['mode'] for rule in specification.get('assignment_rules',[])
                  if all(re.search(pattern,text,re.I) for pattern in rule.get('required',[]))
@@ -139,7 +342,7 @@ def build_handoff(run_dir, specification):
                  and rule.get('required')]
         basis='recorded_reaction'
         if len(set(matched))==1:
-            mode=matched[0];known[family].add(mode)
+            mode=matched[0];known[canonical_fam].add(mode);known[raw_fam].add(mode)
         else:
             mode=((data.get('modeling_input') or {}).get('activation') or {}).get('activation_mode')
             basis='source_activation_annotation'
@@ -150,34 +353,56 @@ def build_handoff(run_dir, specification):
                 mode=next(iter(modes)) if len(modes)==1 else None
                 basis='conditional_family_transfer'
             if not mode:
-                ids=[family] if family.startswith('IPR') else []
+                ids=[raw_fam] if raw_fam.startswith('IPR') else []
                 _,coordinate,_=coordinates.select(family_ids=ids)
                 modes=(coordinate or {}).get('keys',{}).get('activation_mode',[])
                 mode=modes[0] if len(modes)==1 else None
                 basis='conditional_family_coordinate'
-        assignments.append((row,data,family,mode,basis))
+        assignments.append((row,data,canonical_fam,raw_fam,mode,basis,dh_ev))
     protocols={};groups={};pending=[];invalid={}
-    for row,data,family,mode,basis in assignments:
-        if not mode and len(known[family])==1:
-            mode=next(iter(known[family]));basis='conditional_family_member_transfer'
+    for row,data,canonical_fam,raw_fam,mode,basis,dh_ev in assignments:
+        if not mode:
+            fam_modes = known[canonical_fam] or known[raw_fam]
+            if len(fam_modes)==1:
+                mode=next(iter(fam_modes));basis='conditional_family_member_transfer'
+        is_sp = _as_bool(row.get('is_swissprot')) if row.get('is_swissprot') not in (None, '') else _as_bool(data.get('is_swissprot'))
+        ta_summary = dh_ev.get('target_assessment_summary') or {}
+        if not ta_summary and isinstance(data.get('target_assessment'), dict):
+            ta = data['target_assessment']
+            ta_summary = {k: ta.get(k) for k in ('decision', 'evidence_level', 'mechanism_fit', 'pocket_engineering_outlook') if ta.get(k) is not None}
         member={'accession':row['accession'],'enzyme_name':row.get('protein_name') or row.get('enzyme_name') or data.get('protein_name'),
             'rank':int(row.get('rank') or len(rows)),'assignment_basis':basis,
-            'recorded_activities':data.get('catalytic_activities') or []}
+            'hypothesis_class':'native_mechanism_match' if basis=='recorded_reaction' else 'exploratory_transfer',
+            'is_swissprot':is_sp,'raw_family_id':raw_fam,
+            'recorded_activities':data.get('catalytic_activities') or [],
+            **({'architecture_and_tractability':data['architecture_and_tractability']} if data.get('architecture_and_tractability') else {}),
+            **({'target_assessment_summary':ta_summary} if ta_summary else {}),
+            **({'_sequence':data['sequence']} if isinstance(data.get('sequence'),str) and data['sequence'] else {})}
         if mode not in specification['mechanism_templates']:
-            pending.append({**member,'family_id':family,'reason':'No applicable shared mechanism protocol; resolve this family once.'});continue
-        shared={**specification,**specification.get('family_overrides',{}).get(family,{})}
+            pending.append({k:v for k,v in {**member,'family_id':canonical_fam,'reason':'No applicable shared mechanism protocol; resolve this family once.'}.items() if not k.startswith('_')});continue
+        overrides=specification.get('family_overrides') or {}
+        explicit_override=overrides.get(raw_fam) or overrides.get(canonical_fam) or {}
+        auto_override=_interfacial_assembly_override(raw_fam, canonical_fam, data, row, specification)
+        shared={**specification,**auto_override,**explicit_override}
+        member['protein_copies']=int(shared.get('protein_copies',1) or 1)
         protocol_id=digest({'mode':mode,'specification':shared})[:20]
         if protocol_id not in protocols and protocol_id not in invalid:
             try:protocols[protocol_id]=compile_protocol(mode,shared)
             except (KeyError,ValueError) as exc:invalid[protocol_id]=str(exc)
         if protocol_id in invalid:
-            pending.append({**member,'family_id':family,'reason':'Shared protocol needs review: '+invalid[protocol_id]});continue
-        group_id=family+':'+mode
-        group=groups.setdefault(group_id,{'family_id':family,'protocol_id':protocol_id,'members':[]})
+            pending.append({k:v for k,v in {**member,'family_id':canonical_fam,'reason':'Shared protocol needs review: '+invalid[protocol_id]}.items() if not k.startswith('_')});continue
+        group_id=canonical_fam+':'+mode+':c'+str(member['protein_copies'])
+        group=groups.setdefault(group_id,{'family_id':canonical_fam,'protocol_id':protocol_id,'protein_copies':member['protein_copies'],'members':[]})
         group['members'].append(member)
-    return {'schema_version':'family-cofold-1','discovery_run_id':root.name,'source_run':str(root.resolve()),'specification_sha256':digest(specification),
+    handoff={'schema_version':'family-cofold-1','discovery_run_id':root.name,'source_run':str(root.resolve()),'specification_sha256':digest(specification),
         'protocols':protocols,'families':list(groups.values()),'pending_families':pending,
-        'ranked_candidates':len(rows),'setup_llm_calls':0}
+        'collapsed_orthologs':[],'ranked_candidates':len(rows),'setup_llm_calls':0}
+    threshold = specification.get('ortholog_identity_threshold', 0.85)
+    deduplicate_handoff_orthologs(handoff, identity_threshold=threshold)
+    # Strip private _sequence helper before persisting
+    for group in handoff['families']:
+        group['members'] = [{k: v for k, v in m.items() if not k.startswith('_')} for m in group['members']]
+    return handoff
 
 
 def _prepared_candidates(root):
@@ -590,10 +815,15 @@ def main(argv=None):
                 jobs=json.loads((args.out/'queue.json').read_text())['items']
             else:
                 handoff=build_handoff(args.run,specification)
-                atomic_write_json(args.out/'family_handoff.json',handoff)
                 from .sequences import prepare_members
                 candidates=prepare_members(handoff,_prepared_candidates(args.run),args.out/'sequences',
                     args.msa_cache or args.run.parent/'.sequence_msa_cache')
+                deduplicate_handoff_orthologs(
+                    handoff,
+                    candidates=candidates,
+                    identity_threshold=specification.get('ortholog_identity_threshold', 0.85),
+                )
+                atomic_write_json(args.out/'family_handoff.json',handoff)
                 jobs,pending=render_jobs(args.run,handoff,args.out/'inputs',candidates)
                 atomic_write_json(args.out/'queue.json',{'items':jobs,'pending':pending,'setup_llm_calls':0})
                 write_input_index(jobs,args.out)
@@ -620,7 +850,7 @@ def main(argv=None):
             if args.max_protein_length:
                 import yaml
                 selected=[j for j in selected if max(len(e['protein']['sequence']) for e in yaml.safe_load(Path(j['input_yaml']).read_text())['sequences'] if e.get('protein'))<=args.max_protein_length]
-            selected.sort(key=lambda j: (j['rank'], j['step']))
+            selected = prioritize_modeling_jobs(selected)
             deferred = []
             reusable_index = build_reusable_index(args.run)
             for job in {j['id']: j for j in selected}.values():
