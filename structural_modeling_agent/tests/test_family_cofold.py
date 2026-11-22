@@ -278,3 +278,36 @@ def test_family_handoff_markdown_is_human_readable(tmp_path, monkeypatch, specif
     assert 'Synthetic GS Ligase (`SYNTH_GS`)' in text
     assert 'Unresolved Protein (`SYNTH_UNK`)' in text
     assert '## Pending / Unresolved Families' in text
+
+
+def test_stereochemistry_and_ph_role_charge_validation():
+    from structural_modeling_agent.modeling_reasoning.chemistry import characterize_smiles, substrate_errors
+
+    # 1. Chiral stereoisomer preservation (synthetic 2-hydroxybutanoate: R vs S vs unspecified)
+    src_r = 'CC[C@@H](O)C(=O)O'       # (R)
+    mod_r = 'CC[C@@H](O)C(=O)[O-]'    # (R), deprotonated carboxylate
+    mod_s = 'CC[C@H](O)C(=O)[O-]'     # (S), inverted!
+    mod_unk = 'CCC(O)C(=O)[O-]'       # unspecified!
+    assert substrate_errors(mod_r, characterize_smiles(mod_r), role='carboxylate_substrate', source_smiles=src_r, assay_pH=8.0) == []
+    inv_errs = substrate_errors(mod_s, characterize_smiles(mod_s), role='carboxylate_substrate', source_smiles=src_r, assay_pH=8.0)
+    assert any('stereochemistry does not match source stereoisomer' in e for e in inv_errs)
+    unk_errs = substrate_errors(mod_unk, characterize_smiles(mod_unk), role='carboxylate_substrate', source_smiles=src_r, assay_pH=8.0)
+    assert any('unspecified' in e for e in unk_errs)
+
+    # 2. Step-1 dicarboxylic acid at pH 8: both carboxylates must be deprotonated (-2)
+    diacid_m2 = '[O-]C(=O)CCC(=O)[O-]'
+    diacid_m1 = 'OC(=O)CCC(=O)[O-]'
+    diacid_0 = 'OC(=O)CCC(=O)O'
+    assert substrate_errors(diacid_m2, characterize_smiles(diacid_m2), role='carboxylate_substrate', assay_pH=8.0, expected_formal_charge=-2) == []
+    assert any('protonated carboxylic acid' in e for e in substrate_errors(diacid_m1, characterize_smiles(diacid_m1), role='carboxylate_substrate', assay_pH=8.0))
+    assert any('protonated carboxylic acid' in e for e in substrate_errors(diacid_0, characterize_smiles(diacid_0), role='carboxylate_substrate', assay_pH=8.0))
+
+    # 3. Step-2 diamine nucleophile at pH 8: 1 neutral -NH2 (nucleophile) + 1 protonated -NH3+ (spectator) -> charge +1
+    diamine_p1 = 'NCCCC[NH3+]'
+    diamine_p2 = '[NH3+]CCCC[NH3+]'
+    diamine_0 = 'NCCCCN'
+    assert substrate_errors(diamine_p1, characterize_smiles(diamine_p1), role='amine_substrate', assay_pH=8.0, expected_formal_charge=1) == []
+    assert any('cannot act as a nucleophile' in e for e in substrate_errors(diamine_p2, characterize_smiles(diamine_p2), role='amine_substrate', assay_pH=8.0))
+    assert any('spectator aliphatic amine' in e for e in substrate_errors(diamine_0, characterize_smiles(diamine_0), role='amine_substrate', assay_pH=8.0))
+    # Monoamine nucleophile (1 neutral -NH2, no spectator amine) still passes cleanly
+    assert substrate_errors('CCN', characterize_smiles('CCN'), role='amine_substrate', assay_pH=8.0) == []

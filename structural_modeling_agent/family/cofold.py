@@ -96,7 +96,10 @@ def compile_protocol(mode, specification):
                 'modeling_smiles':smiles,'role':role,'include_in_model':included})
             directives.append({'match':{'component_index':number},'include_in_model':included,
                 'modeling_smiles':smiles,'role':role,'review_status':'reviewed',
-                'origin':'user_protocol','rationale':'Shared stage-specific representation from the supplied protocol.'})
+                'origin':'user_protocol','rationale':'Shared stage-specific representation from the supplied protocol.',
+                **({'expected_formal_charge':state['expected_formal_charge']} if state.get('expected_formal_charge') is not None else {}),
+                **({'assay_pH':state['assay_pH']} if state.get('assay_pH') is not None else {}),
+                **({'allow_all_neutral_polyamine':bool(state['allow_all_neutral_polyamine'])} if 'allow_all_neutral_polyamine' in state else {})})
         nucleotide=template.get('nucleotide_ccd')
         candidate={'accession':'shared-protocol','evidence':{},'modeling_input':{
             'activation':{'status':'assigned','activation_mode':mode,'nucleotide':nucleotide},
@@ -109,7 +112,9 @@ def compile_protocol(mode, specification):
             if metal else {'strategy':'omit'}
         )
         declaration={'step':{'index':index,'mechanism':key,'chosen_because':specification['step_rationale'][str(index)]},
-            'scoring_policy':'unrestrained','resolutions':{
+            'scoring_policy':'unrestrained',
+            **({'assay_pH':specification['assay_pH']} if specification.get('assay_pH') is not None else {}),
+            'resolutions':{
                 'enzyme_state':{'chains':[{'source':'full_sequence'}],'copies':specification.get('protein_copies',1),
                     'state':'intact','origin':'shared_protocol','rationale':specification['assembly_basis']},
                 'substrates':directives,'catalytic_metal':metal_resolution}}
@@ -429,11 +434,23 @@ def write_family_handoff_markdown(handoff, path):
         if not isinstance(step_model, dict):
             return '-'
         cofs = ', '.join(f"{c['ccd']}×{c['count']}" for c in (step_model.get('cofactors') or []))
-        subs = ', '.join(
-            s.get('role') or 'substrate'
-            for s in (step_model.get('target_substrates') or [])
-            if s.get('include_in_model', True)
-        )
+        sub_parts = []
+        for s in (step_model.get('target_substrates') or []):
+            if not s.get('include_in_model', True):
+                continue
+            role_txt = s.get('role') or 'substrate'
+            rep = s.get('modeling_representation') or {}
+            tags = []
+            if rep.get('formal_charge') is not None:
+                q = int(rep['formal_charge'])
+                tags.append(f"q={q:+d}" if q else "q=0")
+            stereo = rep.get('stereochemistry') or {}
+            if stereo.get('status') == 'specified':
+                cips = ''.join(c.get('cip', '') for c in (stereo.get('assigned_centers') or []))
+                if cips:
+                    tags.append(f"CIP={cips}")
+            sub_parts.append(f"{role_txt}[{','.join(tags)}]" if tags else role_txt)
+        subs = ', '.join(sub_parts)
         return f"{subs} ({cofs})" if cofs else subs
 
     lines = [

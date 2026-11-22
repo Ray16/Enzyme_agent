@@ -205,7 +205,14 @@ def _resolve_substrates(mi: dict, manifest: dict, knowledge, features: dict) -> 
             errors.extend(
                 f"component {target.get('component_index')}: {msg}"
                 for msg in substrate_errors(
-                    target.get("modeling_smiles"), target.get("modeling_representation") or {}
+                    target.get("modeling_smiles"),
+                    target.get("modeling_representation") or {},
+                    role=target.get("role"),
+                    source_smiles=target.get("source_smiles"),
+                    source_representation=target.get("source_representation"),
+                    assay_pH=directive.get("assay_pH") if directive.get("assay_pH") is not None else manifest.get("assay_pH"),
+                    expected_formal_charge=directive.get("expected_formal_charge"),
+                    allow_all_neutral_polyamine=bool(directive.get("allow_all_neutral_polyamine", False)),
                 )
             )
         # A representation change must be marked reviewed to clear the renderer's gate.
