@@ -148,15 +148,17 @@ def test_readable_input_index_has_the_consuming_run_identity(tmp_path):
 
 def test_interfacial_fold_triggers_dimer_override_with_single_active_site(tmp_path, monkeypatch, specification):
     records = {
-        'SYNTH_GS1': {'metadata': {
-            'interpro_family_id': 'IPR008146',
+        'SYNTH_INT1': {'metadata': {
+            'interpro_family_id': 'IPR_SYNTH_A',
             'catalytic_activities': ['ATP = ADP'],
             'is_swissprot': True,
+            'architecture_and_tractability': {'subunit_structure': 'Homohexamer; active site lies at the subunit interface between adjacent chains'},
         }},
-        'SYNTH_GS2': {'metadata': {
-            'interpro_family_id': 'IPR004809',
+        'SYNTH_INT2': {'metadata': {
+            'interpro_family_id': 'IPR_SYNTH_B',
             'catalytic_activities': ['ATP = ADP'],
             'is_swissprot': True,
+            'architecture_and_tractability': {'interfacial_active_site': True, 'required_copies': 2},
         }},
         'SYNTH_MONO': {'metadata': {
             'interpro_family_id': 'SYNTH_MONOMER_FOLD',
@@ -168,20 +170,20 @@ def test_interfacial_fold_triggers_dimer_override_with_single_active_site(tmp_pa
     with (tmp_path / 'ranked_candidates.csv').open('w') as handle:
         writer = csv.DictWriter(handle, fieldnames=['rank', 'accession', 'protein_name', 'mechanism_family', 'is_swissprot'])
         writer.writeheader()
-        writer.writerow({'rank': 1, 'accession': 'SYNTH_GS1', 'protein_name': 'Synthetic GS A', 'mechanism_family': 'GS-fold amide ligase', 'is_swissprot': 'True'})
-        writer.writerow({'rank': 2, 'accession': 'SYNTH_GS2', 'protein_name': 'Synthetic GS B', 'mechanism_family': 'GS-fold amide ligase', 'is_swissprot': 'True'})
+        writer.writerow({'rank': 1, 'accession': 'SYNTH_INT1', 'protein_name': 'Synthetic Interfacial A', 'mechanism_family': 'Interfacial ligase fold', 'is_swissprot': 'True'})
+        writer.writerow({'rank': 2, 'accession': 'SYNTH_INT2', 'protein_name': 'Synthetic Interfacial B', 'mechanism_family': 'Interfacial ligase fold', 'is_swissprot': 'True'})
         writer.writerow({'rank': 3, 'accession': 'SYNTH_MONO', 'protein_name': 'Synthetic Monomer', 'mechanism_family': 'Monomeric adenylate ligase', 'is_swissprot': 'True'})
 
     handoff = family.build_handoff(tmp_path, specification)
-    # Canonical family grouping keeps SYNTH_GS1 (IPR008146) and SYNTH_GS2 (IPR004809) together
-    gs_groups = [g for g in handoff['families'] if g['family_id'] == 'GS-fold amide ligase']
-    assert len(gs_groups) == 1
-    assert len(gs_groups[0]['members']) == 2
-    assert gs_groups[0]['protein_copies'] == 2
+    # Canonical family grouping keeps SYNTH_INT1 (IPR_SYNTH_A) and SYNTH_INT2 (IPR_SYNTH_B) together
+    int_groups = [g for g in handoff['families'] if g['family_id'] == 'Interfacial ligase fold']
+    assert len(int_groups) == 1
+    assert len(int_groups[0]['members']) == 2
+    assert int_groups[0]['protein_copies'] == 2
 
-    gs_proto = handoff['protocols'][gs_groups[0]['protocol_id']]
-    step1 = gs_proto['steps']['1']
-    step2 = gs_proto['steps']['2']
+    int_proto = handoff['protocols'][int_groups[0]['protocol_id']]
+    step1 = int_proto['steps']['1']
+    step2 = int_proto['steps']['2']
     assert len(step1['enzyme_state']['chains']) == 2
     assert len(step2['enzyme_state']['chains']) == 2
     # 1 modeled interfacial active site => 2 Mg (not 4 Mg) and 1 ATP
@@ -191,6 +193,22 @@ def test_interfacial_fold_triggers_dimer_override_with_single_active_site(tmp_pa
     mono_groups = [g for g in handoff['families'] if g['family_id'] == 'Monomeric adenylate ligase']
     assert len(mono_groups) == 1
     assert mono_groups[0]['protein_copies'] == 1
+
+
+def test_protocol_supplied_interfacial_assembly_rules_are_generic(tmp_path, monkeypatch, specification):
+    spec = copy.deepcopy(specification)
+    spec['interfacial_assembly_rules'] = [
+        {'family_ids': ['IPR_CUSTOM_DIMER'], 'protein_copies': 2, 'active_sites': 1}
+    ]
+    records = {
+        'SYNTH_C1': {'metadata': {'interpro_family_id': 'IPR_CUSTOM_DIMER', 'catalytic_activities': ['ATP = ADP'], 'is_swissprot': True}},
+    }
+    monkeypatch.setattr(family, 'load_candidate_registry', lambda *a, **k: {'candidates': records})
+    (tmp_path / 'ranked_candidates.csv').write_text('rank,accession,protein_name\n1,SYNTH_C1,Synthetic Custom Dimer\n')
+    handoff = family.build_handoff(tmp_path, spec)
+    assert handoff['families'][0]['protein_copies'] == 2
+    step1 = handoff['protocols'][handoff['families'][0]['protocol_id']]['steps']['1']
+    assert {c['ccd']: c['count'] for c in step1['cofactors']} == {'ATP': 1, 'MG': 2}
 
 
 def test_handoff_ortholog_dedup_collapses_near_identical_and_keeps_divergent(tmp_path, monkeypatch, specification):
@@ -260,14 +278,19 @@ def test_comparative_synthesis_ingests_structural_geometry(tmp_path):
 
 def test_family_handoff_markdown_is_human_readable(tmp_path, monkeypatch, specification):
     records = {
-        'SYNTH_GS': {'metadata': {'interpro_family_id': 'IPR008146', 'catalytic_activities': ['ATP = ADP'], 'is_swissprot': True}},
+        'SYNTH_INT': {'metadata': {
+            'interpro_family_id': 'IPR_SYNTH_INT',
+            'catalytic_activities': ['ATP = ADP'],
+            'is_swissprot': True,
+            'architecture_and_tractability': {'interfacial_active_site': True, 'required_copies': 2},
+        }},
         'SYNTH_UNK': {'metadata': {}},
     }
     monkeypatch.setattr(family, 'load_candidate_registry', lambda *a, **k: {'candidates': records})
     with (tmp_path / 'ranked_candidates.csv').open('w') as handle:
         writer = csv.DictWriter(handle, fieldnames=['rank', 'accession', 'protein_name', 'mechanism_family', 'is_swissprot'])
         writer.writeheader()
-        writer.writerow({'rank': 1, 'accession': 'SYNTH_GS', 'protein_name': 'Synthetic GS Ligase', 'mechanism_family': 'GS-fold', 'is_swissprot': 'True'})
+        writer.writerow({'rank': 1, 'accession': 'SYNTH_INT', 'protein_name': 'Synthetic Interfacial Ligase', 'mechanism_family': 'Interfacial fold', 'is_swissprot': 'True'})
         writer.writerow({'rank': 2, 'accession': 'SYNTH_UNK', 'protein_name': 'Unresolved Protein', 'mechanism_family': '', 'is_swissprot': 'False'})
 
     handoff = family.build_handoff(tmp_path, specification)
@@ -275,7 +298,7 @@ def test_family_handoff_markdown_is_human_readable(tmp_path, monkeypatch, specif
     text = md_path.read_text(encoding='utf-8')
     assert '# Family Structural-Modeling Handoff' in text
     assert '2 (dimer)' in text
-    assert 'Synthetic GS Ligase (`SYNTH_GS`)' in text
+    assert 'Synthetic Interfacial Ligase (`SYNTH_INT`)' in text
     assert 'Unresolved Protein (`SYNTH_UNK`)' in text
     assert '## Pending / Unresolved Families' in text
 

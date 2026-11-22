@@ -126,23 +126,10 @@ def compile_protocol(mode, specification):
         'assembly_basis':specification['assembly_basis'],'setup_llm_calls':0}
 
 
-# Fold-level InterPro identifiers for catalytic domains whose active site sits
-# strictly at a subunit-subunit interface (requiring at least a minimal dimer
-# interface rather than an isolated monomer for valid catalytic geometry).
-_INTERFACIAL_ACTIVE_SITE_INTERPRO_IDS = frozenset({
-    'IPR008146',  # Glutamine synthetase, catalytic domain
-    'IPR004809',  # Glutamine synthetase type I
-    'IPR054669',  # Gamma-glutamylputrescine synthetase (GS-fold)
-    'IPR001637',  # Glutamine synthetase, beta-grasp domain
-    'IPR027302',  # Glutamine synthetase, type III
-})
-
-_INTERFACIAL_FOLD_RE = re.compile(
-    r'glutamine[\s\-]+synthetase|gamma[\s\-]+glutamyl.*synthetase',
-    re.I,
-)
+# Generic structural-annotation pattern detecting obligate inter-subunit active
+# sites from UniProt/PDB subunit or architecture evidence (never enzyme-specific).
 _INTERFACIAL_ARCH_RE = re.compile(
-    r'active\s+site.{0,40}(?:interface|between\s+subunits|inter[\s\-]?subunit)'
+    r'active\s+site.{0,40}(?:interface|between\s+(?:adjacent\s+)?subunits|inter[\s\-]?subunit)'
     r'|inter[\s\-]?subunit\s+active\s+site'
     r'|subunit[\s\-]+interface.{0,40}active\s+site',
     re.I,
@@ -181,9 +168,15 @@ def _load_discovery_handoff_index(root: Path) -> dict:
 
 
 def _interfacial_assembly_override(raw_family, canonical_family, data, row, specification):
-    """Return a minimal-dimer override for folds with obligate inter-subunit active sites.
+    """Return a minimal multi-chain override when generic evidence indicates an interfacial active site.
 
-    Explicit user ``family_overrides`` in ``specification`` always take precedence.
+    Resolution order (all enzyme-agnostic; no hardcoded enzyme/family names in code):
+    1. Explicit ``specification['family_overrides']`` (handled by caller; takes precedence).
+    2. Optional protocol-supplied ``specification['interfacial_assembly_rules']`` matching
+       InterPro family IDs or family regex.
+    3. Candidate's own structural/subunit evidence (``architecture_and_tractability``,
+       ``oligomeric_state``, ``subunit_structure``, or ``function_comments``) indicating
+       an inter-subunit / interfacial active site.
     """
     overrides = specification.get('family_overrides') or {}
     explicit = overrides.get(raw_family) or overrides.get(canonical_family) or {}
@@ -191,6 +184,7 @@ def _interfacial_assembly_override(raw_family, canonical_family, data, row, spec
         return {}
     if specification.get('disable_interfacial_assembly_override'):
         return {}
+
     interpro_ids = {raw_family}
     for key in ('interpro_family_id', 'screening_family_id'):
         val = data.get(key)
@@ -206,17 +200,45 @@ def _interfacial_assembly_override(raw_family, canonical_family, data, row, spec
             data.get('mechanism_family'),
         )
     )
+    for rule in specification.get('interfacial_assembly_rules') or []:
+        if not isinstance(rule, dict):
+            continue
+        rule_ids = set(rule.get('family_ids') or [])
+        rule_regex = rule.get('family_regex')
+        if (rule_ids and (interpro_ids & rule_ids)) or (rule_regex and re.search(rule_regex, fold_text, re.I)):
+            return {
+                'protein_copies': int(rule.get('protein_copies', 2) or 2),
+                'active_sites': int(rule.get('active_sites', 1) or 1),
+                'assembly_basis': rule.get('assembly_basis') or (
+                    'Minimal functional oligomer interface from protocol assembly rule '
+                    f"({int(rule.get('protein_copies', 2) or 2)} protein copies, "
+                    f"{int(rule.get('active_sites', 1) or 1)} modeled catalytic site)."
+                ),
+            }
+
+    # Check structured or text evidence from the candidate's own record
     arch = data.get('architecture_and_tractability') or {}
-    arch_text = json.dumps(arch) if isinstance(arch, dict) else str(arch or '')
-    if (interpro_ids & _INTERFACIAL_ACTIVE_SITE_INTERPRO_IDS
-            or _INTERFACIAL_FOLD_RE.search(fold_text)
-            or _INTERFACIAL_ARCH_RE.search(arch_text)):
+    if isinstance(arch, dict) and arch.get('interfacial_active_site') is True:
+        copies = int(arch.get('required_copies') or 2)
+        return {
+            'protein_copies': copies,
+            'active_sites': 1,
+            'assembly_basis': (
+                f'Minimal functional interface override from candidate structural evidence '
+                f'({copies} protein copies, 1 modeled catalytic site).'
+            ),
+        }
+    evidence_text = ' '.join(
+        json.dumps(x) if isinstance(x, (dict, list)) else str(x or '')
+        for x in (arch, data.get('subunit_structure'), data.get('function_comments'))
+    )
+    if _INTERFACIAL_ARCH_RE.search(evidence_text):
         return {
             'protein_copies': 2,
             'active_sites': 1,
             'assembly_basis': (
-                'Minimal functional dimer interface override: fold/subunit evidence indicates '
-                'an obligate inter-subunit active site (2 protein copies, 1 modeled catalytic site).'
+                'Minimal functional dimer interface override: candidate subunit/architecture evidence '
+                'indicates an inter-subunit active site (2 protein copies, 1 modeled catalytic site).'
             ),
         }
     return {}
