@@ -1292,7 +1292,7 @@ class EnzymeAgent:
                         '. Inspect their current evidence and record target-specific priorities when justified. Identity/native-function resolution does not establish target activity.'})
             if config.AUTO_SCOPE_FOLLOWUP and iteration % 4 == 0:
                 from enzyme_discovery_agent.models.evidence_followup import run_scope_followup
-                scope_out = run_scope_followup(self.run_dir, limit=2)
+                scope_out = run_scope_followup(self.run_dir, limit=5)
                 if scope_out['enriched']:
                     self._log_event('scope_followup_enriched', {'iteration': iteration, 'accessions': scope_out['enriched']})
             self._record_research_progress()

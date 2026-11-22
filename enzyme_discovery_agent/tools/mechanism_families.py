@@ -355,8 +355,8 @@ def _derive_once(query: str, substrate_smiles: str, llm_client, max_families: in
 
 
 def derive_mechanism_families(
-    query: str, substrate_smiles: str, llm_client, max_families: int = 10,
-    min_families: int = 4, max_attempts: int = 6,
+    query: str, substrate_smiles: str, llm_client, max_families: int = 12,
+    min_families: int = 2, max_attempts: int = 6,
     target_direction: str | None = None, reflect: bool = True,
     target_topology: str | None = None,
     retrieved_papers: list[dict] | None = None,

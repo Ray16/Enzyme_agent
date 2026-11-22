@@ -197,7 +197,7 @@ MODELING_ORTHOLOG_IDENTITY_THRESHOLD = float(
 )
 DISCOVERY_PORTFOLIO_SIZE = 48
 DISCOVERY_RESEARCH_INTERVAL = 10
-LITERATURE_DISCOVERY_PAPERS_PER_STEP = 2
+LITERATURE_DISCOVERY_PAPERS_PER_STEP = 5
 EVALUATIONS_PER_STEP = 20
 EXPANSION_SEEDS_PER_STEP = 2
 # Reserve one structural-expansion pass per this many evaluation batches, so
@@ -255,7 +255,7 @@ REPORT_COMPACT_RETRIES = int(os.environ.get("ENZYME_AGENT_REPORT_COMPACT_RETRIES
 # Profiling (canonical run, 2026-10-03) showed the harvest cost ~8 min and
 # registered 0 candidates (all came from search_uniprot), so this is capped low:
 # the per-paper LLM extraction dominates wall-clock and scales with this number.
-FULLTEXT_HARVEST_MAX_PAPERS = 3
+FULLTEXT_HARVEST_MAX_PAPERS = 6
 MAX_RESULT_CHARS = 20_000
 # Screening allocates a RELEVANCE BUDGET across fold families, it does not blindly
 # cap.  auto_screen groups only exact known sequences, preserves unknown identities,
@@ -275,7 +275,7 @@ FAMILY_EVAL_FLOOR_PER_FOLD = 1    # always evaluate at least this many per fold
 FAMILY_EVAL_MAX_PER_FOLD = 20     # depth per fold in this tranche; retain the rest
 # The survey may use this bound when promoting representatives. Discovery itself
 # retains all eligible search accessions; a name alone cannot prove redundancy.
-MAX_REPRESENTATIVES_PER_FAMILY = 2
+MAX_REPRESENTATIVES_PER_FAMILY = 5
 EVIDENCE_SELECTION_SEARCH_THRESHOLD = 16
 # Substrate-fit member promotion + gated TrEMBL deepening.
 #

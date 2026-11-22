@@ -113,8 +113,8 @@ def _dedupe_orthologs(members: list[dict], identity_threshold: float = 0.85) -> 
 def build_comparative_brief(
     run_dir: str | Path,
     *,
-    max_per_family: int = 3,
-    max_families: int = 12,
+    max_per_family: int = 5,
+    max_families: int | None = None,
 ) -> dict:
     """Build a deterministic, family-grouped chemical trade-off comparison."""
     root = Path(run_dir)
@@ -217,7 +217,7 @@ def build_comparative_brief(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_admitted_candidates": sum(f["n_admitted"] for f in family_rows),
         "total_families": len(family_rows),
-        "families": family_rows[:max_families],
+        "families": family_rows[:max_families] if max_families is not None else family_rows,
         "scope": (
             "Cross-family comparative summary of source-bound target assessments. "
             "Collapses exact-sequence and shared-annotation orthologs for comparison; "

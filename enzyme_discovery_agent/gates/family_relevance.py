@@ -319,7 +319,7 @@ def resolve_family_folds(fam: dict, count_cache: dict[str, int], search_interpro
         if not term:
             return []
         try:
-            res = search_interpro(term, max_results=8)
+            res = search_interpro(term, max_results=20)
         except Exception:  # noqa: BLE001 - one bad term must not sink resolution
             return []
         out: list[tuple[str, int, str]] = []
