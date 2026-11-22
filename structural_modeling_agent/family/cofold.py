@@ -416,6 +416,98 @@ def _prepared_candidates(root):
     return result
 
 
+def write_family_handoff_markdown(handoff, path):
+    """Write a concise, human-readable Markdown companion to family_handoff.json."""
+    path = Path(path)
+    families = handoff.get('families') or []
+    protocols = handoff.get('protocols') or {}
+    pending = handoff.get('pending_families') or []
+    collapsed = handoff.get('collapsed_orthologs') or []
+    total_members = sum(len(g.get('members') or []) for g in families)
+
+    def _step_desc(step_model):
+        if not isinstance(step_model, dict):
+            return '-'
+        cofs = ', '.join(f"{c['ccd']}×{c['count']}" for c in (step_model.get('cofactors') or []))
+        subs = ', '.join(
+            s.get('role') or 'substrate'
+            for s in (step_model.get('target_substrates') or [])
+            if s.get('include_in_model', True)
+        )
+        return f"{subs} ({cofs})" if cofs else subs
+
+    lines = [
+        '# Family Structural-Modeling Handoff',
+        '',
+        f"- **Discovery run**: `{handoff.get('discovery_run_id', '-')}`",
+        f"- **Ranked candidates**: **{handoff.get('ranked_candidates', 0)}** → "
+        f"**{total_members}** scheduled across **{len(families)}** family group(s) · "
+        f"**{len(collapsed)}** near-identical ortholog(s) collapsed · "
+        f"**{len(pending)}** pending family resolution",
+        f"- **Setup LLM calls**: `{handoff.get('setup_llm_calls', 0)}`",
+        '',
+        '## Resolved Family Protocols',
+        '',
+        '| Family | Mechanism | Copies | Step 1 Setup | Step 2 Setup | Members |',
+        '| --- | --- | :---: | --- | --- | ---: |',
+    ]
+    for group in families:
+        proto = protocols.get(group.get('protocol_id')) or {}
+        steps = proto.get('steps') or {}
+        copies = group.get('protein_copies', 1)
+        copy_label = f'{copies} (dimer)' if copies == 2 else str(copies)
+        lines.append(
+            f"| {group.get('family_id')} | `{proto.get('mechanism', '-')}` | {copy_label} | "
+            f"{_step_desc(steps.get('1'))} | {_step_desc(steps.get('2'))} | {len(group.get('members') or [])} |"
+        )
+    lines.append('')
+
+    lines.extend(['## Scheduled Members by Family', ''])
+    for group in families:
+        proto = protocols.get(group.get('protocol_id')) or {}
+        lines.append(f"### {group.get('family_id')} (`{proto.get('mechanism', '-')}`, {group.get('protein_copies', 1)} chain(s))")
+        if proto.get('assembly_basis'):
+            lines.append(f"> {proto['assembly_basis']}")
+        lines.append('')
+        for m in group.get('members') or []:
+            sp = 'Swiss-Prot' if m.get('is_swissprot') else 'TrEMBL'
+            hyp = m.get('hypothesis_class') or m.get('assignment_basis') or '-'
+            lines.append(
+                f"- **#{m.get('rank', '-')} {m.get('enzyme_name') or 'Unresolved'} (`{m.get('accession')}`)** "
+                f"— {sp}, `{hyp}`"
+            )
+        lines.append('')
+
+    if collapsed:
+        lines.extend([
+            '## Collapsed Near-Identical Orthologs (Retained Representative Modeled)',
+            '',
+            '| Collapsed Enzyme (Accession) | Representative | Seq Identity | Reason |',
+            '| --- | --- | ---: | --- |',
+        ])
+        for c in collapsed:
+            ident = f"{float(c['sequence_identity']):.1%}" if c.get('sequence_identity') is not None else '-'
+            lines.append(
+                f"| {c.get('protein_name') or 'Unresolved'} (`{c.get('accession')}`) | "
+                f"`{c.get('representative_accession')}` | {ident} | {c.get('reason', '-')} |"
+            )
+        lines.append('')
+
+    if pending:
+        lines.extend(['## Pending / Unresolved Families (Not Yet Cofolded)', ''])
+        for p in pending:
+            lines.append(
+                f"- **{p.get('enzyme_name') or 'Unresolved'} (`{p.get('accession')}`)** "
+                f"[{p.get('family_id', '-')}]: {p.get('reason', '-')}"
+            )
+        lines.append('')
+
+    temporary = path.with_name(path.name + '.' + str(os.getpid()) + '.tmp')
+    temporary.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    os.replace(temporary, path)
+    return path
+
+
 def render_jobs(run_dir, handoff, directory,candidates=None):
     """Only sequence/identity/MSA expansion is per member; no scientific replanning."""
     root=Path(run_dir);directory=Path(directory);directory.mkdir(parents=True,exist_ok=True)
@@ -824,6 +916,7 @@ def main(argv=None):
                     identity_threshold=specification.get('ortholog_identity_threshold', 0.85),
                 )
                 atomic_write_json(args.out/'family_handoff.json',handoff)
+                write_family_handoff_markdown(handoff, args.out/'family_handoff.md')
                 jobs,pending=render_jobs(args.run,handoff,args.out/'inputs',candidates)
                 atomic_write_json(args.out/'queue.json',{'items':jobs,'pending':pending,'setup_llm_calls':0})
                 write_input_index(jobs,args.out)

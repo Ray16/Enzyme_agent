@@ -256,3 +256,25 @@ def test_comparative_synthesis_ingests_structural_geometry(tmp_path):
     })
     assert 'Completed Two-Step Structural Geometry (Not Demonstrated Activity)' in md
     assert 'SYNTH_1' in md and '4.90' in md
+
+
+def test_family_handoff_markdown_is_human_readable(tmp_path, monkeypatch, specification):
+    records = {
+        'SYNTH_GS': {'metadata': {'interpro_family_id': 'IPR008146', 'catalytic_activities': ['ATP = ADP'], 'is_swissprot': True}},
+        'SYNTH_UNK': {'metadata': {}},
+    }
+    monkeypatch.setattr(family, 'load_candidate_registry', lambda *a, **k: {'candidates': records})
+    with (tmp_path / 'ranked_candidates.csv').open('w') as handle:
+        writer = csv.DictWriter(handle, fieldnames=['rank', 'accession', 'protein_name', 'mechanism_family', 'is_swissprot'])
+        writer.writeheader()
+        writer.writerow({'rank': 1, 'accession': 'SYNTH_GS', 'protein_name': 'Synthetic GS Ligase', 'mechanism_family': 'GS-fold', 'is_swissprot': 'True'})
+        writer.writerow({'rank': 2, 'accession': 'SYNTH_UNK', 'protein_name': 'Unresolved Protein', 'mechanism_family': '', 'is_swissprot': 'False'})
+
+    handoff = family.build_handoff(tmp_path, specification)
+    md_path = family.write_family_handoff_markdown(handoff, tmp_path / 'family_handoff.md')
+    text = md_path.read_text(encoding='utf-8')
+    assert '# Family Structural-Modeling Handoff' in text
+    assert '2 (dimer)' in text
+    assert 'Synthetic GS Ligase (`SYNTH_GS`)' in text
+    assert 'Unresolved Protein (`SYNTH_UNK`)' in text
+    assert '## Pending / Unresolved Families' in text

@@ -306,45 +306,152 @@ def write_structural_modeling_handoff(run_dir: Path, evaluations: list[dict], ta
 
 
 def _write_readable_summary(path, doc):
+    from collections import Counter
+
     def line(value):
-        return str('unknown' if value is None or value == '' else value).replace('\n', ' ').replace('\r', ' ')
+        return str('unknown' if value is None or value == '' else value).replace('\n', ' ').replace('\r', ' ').strip()
+
+    def short(value, limit=140):
+        text = line(value)
+        return text if len(text) <= limit else text[: limit - 1].rstrip() + '…'
+
     producer = doc['producer']
-    rows = ['# Discovery handoff', '',
-            f"Discovery status: **{line(producer.get('discovery_status'))}**",
-            f"Target: {line(doc['target'].get('query'))}",
-            f"Coverage: {line((producer.get('coverage') or {}).get('status') or (producer.get('coverage') or {}).get('covered'))}",
-            f"Admitted: {len(doc['candidates'])} · Investigation leads: {len(doc['unresolved_leads'])} · Excluded: {len(doc['excluded_candidates'])}",
-            f"Snapshot SHA-256: `{doc['integrity']['snapshot_sha256']}`", '',
-            'Evidence and modeling inputs are proposals for independent review.', '', '## Candidates', '']
-    for candidate in doc['candidates']:
+    raw_query = line(doc['target'].get('query'))
+    # Keep the target header concise (first sentence / line) while preserving SMILES if present.
+    target_headline = raw_query.split('  ', 1)[0]
+    if len(target_headline) > 220:
+        target_headline = target_headline[:219].rstrip() + '…'
+    smiles = doc['target'].get('substrate_smiles') or doc['target'].get('smiles')
+
+    rows = [
+        '# Discovery-to-Modeling Handoff',
+        '',
+        f"- **Discovery status**: {line(producer.get('discovery_status'))}",
+        f"- **Target**: {target_headline}",
+        *([f"- **Target SMILES**: `{line(smiles)}`"] if smiles else []),
+        f"- **Coverage**: {line((producer.get('coverage') or {}).get('status') or (producer.get('coverage') or {}).get('covered'))}",
+        f"- **Portfolio**: **{len(doc['candidates'])}** admitted · **{len(doc['unresolved_leads'])}** investigation leads · **{len(doc['excluded_candidates'])}** excluded",
+        f"- **Snapshot SHA-256**: `{doc['integrity']['snapshot_sha256']}`",
+        '',
+        '> Evidence and modeling proposals below require independent structural-modeling review; discovery admission is not demonstrated target activity.',
+        '',
+    ]
+
+    # De-duplicate target-level unresolved items shared across >= 50% of candidates.
+    candidates = doc['candidates']
+    shared_unresolved = []
+    if len(candidates) >= 2:
+        counts = Counter(
+            item
+            for c in candidates
+            for item in ((c.get('modeling_input') or {}).get('unresolved') or [])
+            if item
+        )
+        threshold = max(2, (len(candidates) + 1) // 2)
+        shared_unresolved = [item for item, n in counts.most_common() if n >= threshold]
+    shared_set = set(shared_unresolved)
+
+    if candidates:
+        rows.extend([
+            '## Admitted Candidates Overview',
+            '',
+            '| Rank | Enzyme (Accession) | Family | Mechanism / Pocket | Native Reaction |',
+            '| ---: | --- | --- | --- | --- |',
+        ])
+        for candidate in candidates:
+            ev = candidate['evidence']
+            sel = candidate['selection']
+            ident = ev.get('identity') or {}
+            name = line(ident.get('protein_name') or 'Unresolved protein')
+            acc = line(candidate['accession'])
+            fam = short((ev.get('family_assignment') or {}).get('interpro_family') or '-', 48)
+            ta = ev.get('target_assessment_summary') or {}
+            axes = '/'.join(
+                str(ta.get(k)) for k in ('mechanism_fit', 'pocket_engineering_outlook') if ta.get(k)
+            ) or line(ta.get('decision') or sel.get('admission'))
+            rxns = ev.get('native_reactions') or []
+            rxn = short(rxns[0], 72) if rxns else 'unannotated'
+            rk = sel.get('rank')
+            rows.append(f"| {rk if rk is not None else '-'} | {name} (`{acc}`) | {fam} | {axes} | {rxn} |")
+        rows.append('')
+
+    if shared_unresolved:
+        rows.extend(['## Shared Target-Level Uncertainties (Applies Across Candidates)', ''])
+        rows.extend(f'- {line(item)}' for item in shared_unresolved)
+        rows.append('')
+
+    rows.extend(['## Candidate Details', ''])
+    for candidate in candidates:
         evidence, selection, proposal = candidate['evidence'], candidate['selection'], candidate['modeling_input']
         identity = evidence.get('identity') or {}
+        name = line(identity.get('protein_name') or 'Unresolved protein')
+        acc = line(candidate['accession'])
         arch = evidence.get('architecture_and_tractability') or {}
         ta_sum = evidence.get('target_assessment_summary') or {}
-        rows.extend([f"### {line(candidate['accession'])} — {line(identity.get('protein_name'))}",
-                     f"- Organism: {line(identity.get('organism'))}; family: {line((evidence.get('family_assignment') or {}).get('interpro_family'))}",
-                     f"- Admission: {line(selection.get('admission'))}; rank: {line(selection.get('rank'))} ({line(selection.get('ranking_status'))})",
-                     f"- Reason: {line(selection.get('reason'))}",
-                     f"- Sequence: {line(candidate['sequence_identity'].get('status'))}; SHA-256: {line(candidate['sequence_identity'].get('sha256'))}",
-                     f"- Alignment: {line(candidate['input_availability']['msa']['status'])}",
-                     f"- Discovery reaction evidence: {line('; '.join(str(x) for x in evidence.get('native_reactions') or []))}",
-                     f"- Mechanism evidence status: {line((evidence.get('mechanism') or {}).get('status'))}",
-                     *([f"- Architecture / oligomerization: {line(arch.get('oligomer_state') or arch.get('subunit_structure'))}; tractability: {line(arch.get('tractability_tier'))}"] if isinstance(arch, dict) and arch else []),
-                     *([f"- Target assessment axes: mechanism_fit={line(ta_sum.get('mechanism_fit'))}; pocket_outlook={line(ta_sum.get('pocket_engineering_outlook'))}"] if isinstance(ta_sum, dict) and (ta_sum.get('mechanism_fit') or ta_sum.get('pocket_engineering_outlook')) else []),
-                     f"- Proposal status: {line(proposal.get('status'))}",
-                     f"- Unresolved: {line('; '.join(proposal.get('unresolved') or []))}",
-                     f"- Warnings: {line('; '.join(proposal.get('warnings') or []))}",
-                     f"- Conflicting fields: {line(', '.join((evidence.get('source_conflicts') or {}).keys()))}", ''])
-    for title, entries in [('Investigation leads', doc['unresolved_leads']), ('Excluded', doc['excluded_candidates'])]:
+        rxns = evidence.get('native_reactions') or []
+        cand_unresolved = [u for u in (proposal.get('unresolved') or []) if u not in shared_set]
+        warnings = proposal.get('warnings') or []
+        conflicts = list((evidence.get('source_conflicts') or {}).keys())
+
+        rows.append(f"### {name} (`{acc}`)")
+        rows.append(
+            f"- **Organism**: {line(identity.get('organism'))} | "
+            f"**Family**: {line((evidence.get('family_assignment') or {}).get('interpro_family'))}"
+        )
+        rows.append(
+            f"- **Rank**: {line(selection.get('rank'))} ({line(selection.get('admission'))}) | "
+            f"**Sequence**: {line(candidate['sequence_identity'].get('status'))}"
+        )
+        if rxns:
+            rows.append(f"- **Native reaction(s)**: {short('; '.join(str(x) for x in rxns), 220)}")
+        else:
+            rows.append('- **Native reaction(s)**: unannotated')
+        if isinstance(arch, dict) and (arch.get('oligomer_state') or arch.get('subunit_structure') or arch.get('tractability_tier')):
+            rows.append(
+                f"- **Architecture / oligomerization**: {line(arch.get('oligomer_state') or arch.get('subunit_structure'))} | "
+                f"**Tractability**: {line(arch.get('tractability_tier'))}"
+            )
+        if isinstance(ta_sum, dict) and (ta_sum.get('mechanism_fit') or ta_sum.get('pocket_engineering_outlook') or ta_sum.get('decision')):
+            rows.append(
+                f"- **Assessment**: decision={line(ta_sum.get('decision'))}, "
+                f"evidence={line(ta_sum.get('evidence_level'))}, "
+                f"mechanism_fit={line(ta_sum.get('mechanism_fit'))}, "
+                f"pocket_outlook={line(ta_sum.get('pocket_engineering_outlook'))}"
+            )
+        if selection.get('ranking_rationale'):
+            rows.append(f"- **Rationale**: {short(selection.get('ranking_rationale'), 280)}")
+        if cand_unresolved:
+            rows.append(f"- **Candidate-specific open questions**: {'; '.join(line(x) for x in cand_unresolved)}")
+        if warnings:
+            rows.append(f"- **Warnings**: {'; '.join(line(x) for x in warnings)}")
+        if conflicts:
+            rows.append(f"- **Source field conflicts**: {', '.join(conflicts)}")
+        rows.append('')
+
+    for title, entries in [('Investigation Leads Summary', doc['unresolved_leads']), ('Excluded Candidates Summary', doc['excluded_candidates'])]:
         rows.extend([f'## {title}', ''])
-        rows.extend(f"- {line(item.get('accession'))}: {line(item.get('reason'))}" for item in entries)
         if not entries:
             rows.append('- None')
+        elif len(entries) <= 15:
+            rows.extend(f"- `{line(item.get('accession'))}`: {line(item.get('reason'))}" for item in entries)
+        else:
+            by_reason = Counter(line(item.get('reason')) for item in entries)
+            for reason, count in by_reason.most_common():
+                samples = [line(i.get('accession')) for i in entries if line(i.get('reason')) == reason][:5]
+                sample_str = ', '.join(f'`{s}`' for s in samples)
+                more = f' (+{count - len(samples)} more)' if count > len(samples) else ''
+                rows.append(f'- **{count}** — {reason} (e.g., {sample_str}{more})')
         rows.append('')
-    rows.extend(['## Source snapshots', ''])
-    rows.extend(f"- {line(item.get('id') or item.get('sha256'))}: {line(item.get('availability'))}" for item in doc['evidence_sources'])
+
+    rows.extend(['## Source Snapshots', ''])
     if not doc['evidence_sources']:
         rows.append('- None supplied')
+    else:
+        avail = sum(1 for s in doc['evidence_sources'] if s.get('availability') == 'available')
+        unavail = len(doc['evidence_sources']) - avail
+        rows.append(f'- **{len(doc["evidence_sources"])}** referenced source snapshot(s): {avail} bundled/available, {unavail} unavailable.')
+    rows.append('')
+
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix='.handoff-summary-')
     try:
         with os.fdopen(fd, 'w', encoding='utf-8') as handle:
