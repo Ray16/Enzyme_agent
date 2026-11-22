@@ -30,9 +30,13 @@ ligand (substrate and ATP) carbons gray40 with element-coloured heteroatoms; for
 spheres (`sphere_scale 0.45`); thin dashes (radius 0.058, gap 0.35, length 0.25), blue
 `[0.12,0.31,0.85]` for the attack axis and gray40 otherwise; orient/zoom on the site; no
 baked-in PyMOL text. Put measurements in a bold, bottom-right white rounded box and labels
-in matplotlib. References: `structural_modeling_agent/runs/glutarate_cadaverine_correct_protonation_panel/analysis/contact_frequency/acsA_Q5CD72/acsA_Q5CD72_contact_frequency.png`
-and `structural_modeling_agent/runs/glutarate_cadaverine_glna2_dimer_20261117/analysis_email/render_failure_mode.py`.
+in matplotlib. References: `structural_modeling_agent/runs/glutarate_cadaverine/md/correct_protonation_panel/analysis/contact_frequency/acsA_Q5CD72/acsA_Q5CD72_contact_frequency.png`
+and `structural_modeling_agent/runs/glutarate_cadaverine/dimer/glna2_dimer_20261117/analysis_email/render_failure_mode.py`.
 Exception: anchor-grid design figures keep their orange-substrate/teal-ATP scheme.
+
+## Campaign directory hygiene (one campaign = one folder)
+- Every structural-modeling / MD / design campaign MUST live inside a **single** top-level folder under `structural_modeling_agent/runs/<campaign_id>/` (with organized subdirectories such as `cofold/`, `md/`, `dimer/`, `constructs/`, `benchmarks/`, `analysis/`, `design/`, `archive/`).
+- Never create new dated top-level sibling folders in `structural_modeling_agent/runs/` (e.g., `<campaign>_step1_md_20261117/`) for follow-up runs, analyses, or controls belonging to an existing campaign.
 
 ## Git attribution and remote sync
 - Always commit and push under the repository's configured user identity (never under Gemini, Claude, Antigravity, Codex, or any other AI name/email). Never pass `--author`, override `GIT_AUTHOR_*`/`GIT_COMMITTER_*`, or add `Co-Authored-By` / AI-attribution trailers to commits or PRs.
