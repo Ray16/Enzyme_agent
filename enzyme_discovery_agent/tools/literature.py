@@ -52,189 +52,34 @@ def _openalex_auth_qs() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Semantic re-ranking
 # ---------------------------------------------------------------------------
-_RERANK_MODEL = None
-_RERANK_MODEL_NAME = "nomic-ai/nomic-embed-text-v1.5"
-_RERANK_MODEL_LOCK = threading.Lock()
-
-
-def _get_rerank_model():
-    """Lazy-load the sentence-transformer model (thread-safe singleton)."""
-    global _RERANK_MODEL
-    if not config.ENABLE_SEMANTIC_RERANK:
-        # Do not even import sentence_transformers in the default workflow.
-        # The caller preserves PubMed/OpenAlex's normal relevance order.
-        return None
-    if _RERANK_MODEL is not None:
-        return _RERANK_MODEL
-    with _RERANK_MODEL_LOCK:
-        if _RERANK_MODEL is not None:
-            return _RERANK_MODEL
-        try:
-            from sentence_transformers import SentenceTransformer
-            logger.info(
-                "Loading semantic re-ranking model on CPU: %s",
-                _RERANK_MODEL_NAME,
-            )
-            _RERANK_MODEL = SentenceTransformer(
-                _RERANK_MODEL_NAME, trust_remote_code=True,
-                device="cpu",
-                config_kwargs={"use_flash_attn": False},
-            )
-            return _RERANK_MODEL
-        except Exception as e:
-            # Reaching here means the feature is ENABLED but the model could not
-            # load -- a real misconfiguration, not a routine skip.  Be loud and
-            # actionable rather than silently degrading to native order.
-            logger.error(
-                "Semantic rerank is ENABLED but the model failed to load; "
-                "falling back to native retrieval order. Install the optional "
-                "dependency (pip install sentence-transformers). Cause: %s", e,
-            )
-            return None
-
-
-def cleanup_rerank_model() -> None:
-    """Release the semantic re-ranking model and free GPU memory."""
-    global _RERANK_MODEL
-    with _RERANK_MODEL_LOCK:
-        if _RERANK_MODEL is not None:
-            _RERANK_MODEL = None
-            logger.info("Released semantic re-ranking model")
-
-
-def _semantic_rerank(
+# Retrieval trace persistence & native relevance-order slicing
+# ---------------------------------------------------------------------------
+def _retain_retrieved_papers(
     query: str,
     papers: list[dict],
     max_results: int,
-    min_score: float = config.RERANK_MIN_SCORE,
-    title_key: str = "title",
-    abstract_key: str = "abstract",
     run_dir: str | None = None,
 ) -> list[dict]:
-    """Re-rank papers by fusing native retrieval order with semantic similarity.
-
-    The input ``papers`` arrive in the source's own relevance order (PubMed,
-    OpenAlex, Europe PMC, Semantic Scholar all pre-rank).  Rather than discard
-    that signal, we compute a semantic (cosine) rank from embeddings and fuse
-    the two with Reciprocal Rank Fusion, so a paper strong on *either* axis
-    surfaces.  RRF governs ORDER only; inclusion is gated by ``min_score`` on
-    the cosine score -- a stable [0,1] scale -- so the threshold's meaning is
-    unchanged by fusion (the two can be recalibrated together).
-
-    Degrades gracefully to native order when the embedder is unavailable
-    (feature disabled or the optional dependency is missing).
-    """
+    """Slice ``papers`` to ``max_results`` in native relevance order and record the funnel."""
     if not papers:
         return []
-    def retain(result):
-        if run_dir:
-            from pathlib import Path
-            import uuid
-            from enzyme_discovery_agent.state_store import atomic_write_json
-            atomic_write_json(Path(run_dir) / "artifacts" / "literature" / "retrieval" / f"{uuid.uuid4().hex}.json", {
-                "query": query, "source": papers[0].get("source"),
-                "result": {"data": papers}, "retained_keys": [str(_paper_key(p)) for p in result],
+    result = papers[:max_results]
+    if run_dir:
+        from pathlib import Path
+        import uuid
+        from enzyme_discovery_agent.state_store import atomic_write_json
+        atomic_write_json(
+            Path(run_dir) / "artifacts" / "literature" / "retrieval" / f"{uuid.uuid4().hex}.json",
+            {
+                "query": query,
+                "source": papers[0].get("source"),
+                "result": {"data": papers},
+                "retained_keys": [str(_paper_key(p)) for p in result],
                 "funnel": {"retrieved": len(papers), "retained": len(result), "limit": max_results},
-            })
-        return result
-    model = _get_rerank_model()
-    if model is None:
-        # Expected no-op: rerank disabled or sentence-transformers absent.
-        return retain(papers[:max_results])
-
-    # A failure computing embeddings/cosine is a genuine bug, NOT the expected
-    # "embedder unavailable" path -- surface it loudly (with traceback) instead
-    # of letting it masquerade as a graceful fallback.
-    try:
-        sims = _semantic_scores(model, query, papers, title_key, abstract_key)
-    except Exception as e:
-        logger.error("Semantic rerank computation failed; returning native "
-                     "order: %s", e, exc_info=True)
-        return retain(papers[:max_results])
-
-    return retain(_rrf_fuse(papers, sims, max_results, min_score))
-
-
-# Embedding cache: within (and across) searches in a campaign the same abstract
-# recurs constantly.  Cache normalized embeddings by (model, text-hash) so each
-# unique document is encoded once, not once per search that surfaces it.
-_EMBED_CACHE: dict[tuple[str, str], list[float]] = {}
-_EMBED_CACHE_LOCK = threading.Lock()
-
-
-def _embed_texts(model, texts: list[str]):
-    """Return normalized embeddings for ``texts``, encoding only cache misses."""
-    import numpy as np
-    out: list[list[float] | None] = [None] * len(texts)
-    misses, miss_slots = [], []
-    for i, t in enumerate(texts):
-        h = (_RERANK_MODEL_NAME, hashlib.sha1(t.encode("utf-8")).hexdigest())
-        cached = _EMBED_CACHE.get(h)
-        if cached is not None:
-            out[i] = cached
-        else:
-            misses.append(t)
-            miss_slots.append((i, h))
-    if misses:
-        emb = np.asarray(model.encode(misses, normalize_embeddings=True,
-                                      batch_size=32, show_progress_bar=False))
-        with _EMBED_CACHE_LOCK:
-            for j, (i, h) in enumerate(miss_slots):
-                vec = emb[j].tolist()
-                _EMBED_CACHE[h] = vec
-                out[i] = vec
-    return np.asarray(out)
-
-
-def _semantic_scores(model, query, papers, title_key, abstract_key):
-    """Per-paper cosine similarity to the query.
-
-    Embeddings are normalized, so cosine is a plain dot product -- computed with
-    numpy (already present via pandas), which removes the previous undeclared
-    scikit-learn dependency entirely.  Encoding is cached per unique text.
-    """
-    query_text = f"search_query: {query}"
-    doc_texts = [
-        f"search_document: {p.get(title_key, '')}. {p.get(abstract_key, '')[:500]}"
-        for p in papers
-    ]
-    q_emb = _embed_texts(model, [query_text])[0]
-    p_emb = _embed_texts(model, doc_texts)
-    return p_emb @ q_emb
-
-
-def _rrf_fuse(papers, sims, max_results, min_score, k: int = 60):
-    """Fuse native retrieval order with semantic (cosine) order via Reciprocal
-    Rank Fusion.
-
-    RRF sets ORDER (a paper high on *either* the source's native rank or the
-    cosine rank floats up); ``min_score`` gates INCLUSION on the cosine scale.
-    ``k`` is the standard RRF damping constant.  Attaches ``semantic_score`` and
-    ``rrf_score`` to each returned paper for auditability.
-    """
-    n = len(papers)
-    # native rank = input position (0 = most relevant per the source);
-    # cosine rank = position when sorted by similarity, descending.
-    cosine_order = sorted(range(n), key=lambda i: sims[i], reverse=True)
-    cosine_rank = {i: r for r, i in enumerate(cosine_order)}
-
-    fused = []
-    for i, paper in enumerate(papers):
-        rrf = 1.0 / (k + i) + 1.0 / (k + cosine_rank[i])
-        pc = dict(paper)
-        pc["semantic_score"] = round(float(sims[i]), 4)
-        pc["rrf_score"] = round(float(rrf), 6)
-        fused.append(pc)
-
-    fused.sort(key=lambda p: p["rrf_score"], reverse=True)
-    kept = [p for p in fused if p["semantic_score"] >= min_score]
-    # Never starve to empty purely on the floor: an over-tight threshold should
-    # degrade to the fused ranking, not return nothing.
-    if not kept:
-        kept = fused
-    return kept[:max_results]
+            },
+        )
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -347,15 +192,14 @@ def dedupe_and_merge(papers: list[dict]) -> tuple[list[dict], dict]:
 
 
 def consolidate_pool(query: str, papers: list[dict], max_results: int = 25,
-                     min_score: float = config.RERANK_MIN_SCORE) -> dict:
-    """Dedup+merge a pooled paper set, then a single global RRF rerank.
+                     min_score: float = 0.0) -> dict:
+    """Dedup+merge a pooled paper set in native relevance order.
 
     Returns ``{"ranked": [...], "funnel": {...}}`` where the funnel carries
     PRISMA-style counts for auditability.
     """
     unique, stats = dedupe_and_merge(papers)
-    ranked = _semantic_rerank(query, unique, max_results=max_results,
-                              min_score=min_score)
+    ranked = _retain_retrieved_papers(query, unique, max_results=max_results)
     funnel = {
         "raw": stats["raw"],
         "unique": stats["unique"],
@@ -645,8 +489,7 @@ def search_pubmed(
             "count": 0,
         }
 
-    # Semantic re-ranking
-    reranked = _semantic_rerank(
+    reranked = _retain_retrieved_papers(
         query=rerank_query or query,
         papers=articles,
         max_results=max_results, run_dir=run_dir,
@@ -787,7 +630,7 @@ def search_openalex(
             "suggestions": ["Try broader search terms or check PubMed."],
         }
 
-    reranked = _semantic_rerank(
+    reranked = _retain_retrieved_papers(
         query=rerank_query or query,
         papers=results,
         max_results=max_results, run_dir=run_dir,
@@ -907,8 +750,8 @@ def search_europepmc(
             "suggestions": ["Try broader terms, or search PubMed/OpenAlex for other coverage."],
         }
 
-    reranked = _semantic_rerank(query=rerank_query or query, papers=results,
-                                max_results=max_results, run_dir=run_dir)
+    reranked = _retain_retrieved_papers(query=rerank_query or query, papers=results,
+                                        max_results=max_results, run_dir=run_dir)
     return {
         "status": "success",
         "summary": f"Found {len(reranked)} Europe PMC articles for: {query[:60]}",
@@ -1017,8 +860,8 @@ def search_semantic_scholar(
             "suggestions": ["Try broader terms or another literature source."],
         }
 
-    reranked = _semantic_rerank(query=rerank_query or query, papers=results,
-                                max_results=max_results, run_dir=run_dir)
+    reranked = _retain_retrieved_papers(query=rerank_query or query, papers=results,
+                                        max_results=max_results, run_dir=run_dir)
     return {
         "status": "success",
         "summary": f"Found {len(reranked)} Semantic Scholar works for: {query[:60]}",
@@ -1140,8 +983,8 @@ def search_crossref(
             "suggestions": ["Provide a more complete or exact title."],
         }
 
-    reranked = _semantic_rerank(query=rerank_query or query, papers=results,
-                                max_results=max_results, run_dir=run_dir)
+    reranked = _retain_retrieved_papers(query=rerank_query or query, papers=results,
+                                        max_results=max_results, run_dir=run_dir)
     return {
         "status": "success",
         "summary": f"Found {len(reranked)} Crossref records for: {query[:60]}",
@@ -2212,14 +2055,7 @@ def sequence_literature_search(
 
         time.sleep(0.3)
 
-    # Step 4: Semantic re-rank if query provided
-    if rerank_query and all_pubs:
-        all_pubs = _semantic_rerank(
-            rerank_query, all_pubs, max_results=len(all_pubs),
-            min_score=0.0,
-        )
-
-    # Step 5: Extract entities from collected papers
+    # Step 4: Extract entities from collected papers
     entities_result = extract_entities(all_pubs)
     entities = entities_result.get("data", {})
 

@@ -11,7 +11,6 @@ def configure(monkeypatch,payload):
         requests.append(parse_qs(urlsplit(req.full_url).query))
         return json.dumps(payload).encode()
     monkeypatch.setattr(literature,'request_with_retry',request)
-    monkeypatch.setattr(literature,'_semantic_rerank',lambda **kwargs:kwargs['papers'][:kwargs['max_results']])
     monkeypatch.setattr(literature.config,'OPENALEX_API_KEY','')
     return requests
 

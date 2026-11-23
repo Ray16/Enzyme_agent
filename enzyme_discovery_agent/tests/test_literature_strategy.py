@@ -76,13 +76,11 @@ class StrategyTest(unittest.TestCase):
         finally:
             clear_search_history()
 
-    def test_raw_retrieval_remains_readable_after_semantic_reranking_discards_a_paper(self):
+    def test_raw_retrieval_remains_readable_after_slicing_retained_papers(self):
         with tempfile.TemporaryDirectory() as d:
             raw = [{"title": "Old paper", "doi": "10.test/old", "source": "test"},
                    {"title": "Recent target application", "doi": "10.test/new", "source": "test"}]
-            with patch.object(L, "_get_rerank_model", return_value=object()), \
-                 patch.object(L, "_semantic_scores", return_value=[.9, .01]):
-                kept = L._semantic_rerank("target", raw, 1, min_score=.2, run_dir=d)
+            kept = L._retain_retrieved_papers("target", raw, 1, run_dir=d)
             self.assertEqual(len(kept), 1)
             self.assertEqual(len(L._recover_literature_papers(d)), 2)
             trace = next((Path(d) / "artifacts/literature/retrieval").glob("*.json"))

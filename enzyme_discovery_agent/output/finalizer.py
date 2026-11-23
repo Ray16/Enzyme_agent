@@ -315,10 +315,6 @@ class RunFinalizer:
         force_completion: bool = False,
     ) -> tuple[str, int]:
         """Write durable artifacts and return the final user-facing report and count."""
-        # Import lazily: report finalization should not implicitly register tools.
-        from enzyme_discovery_agent.tools.literature import cleanup_rerank_model
-
-        cleanup_rerank_model()
         self.log("\n  FINALIZING RUN")
         try:
             (self.run_dir / "agent_state" / "messages.json").write_text(
