@@ -117,6 +117,11 @@ def _accept_outputs(record: dict[str, Any], reply: dict[str, Any]) -> None:
         if p and str(Path(p).resolve()) not in {str(Path(k).resolve()) for k in outputs}:
             raise ValueError(f"Declared sampling output missing from output_sha256: {p}")
 
+    engine = plan.get("engine", "openmm_classical")
+    next_tools = (
+        ["analyze_substrate_contacts", "analyze_side_reactions", "analyze_preorganization", "build_catalytic_profile"]
+        if traj_paths else ["build_catalytic_profile"]
+    )
     record["outputs"] = {
         "topology_path": top_path,
         "trajectory_paths": traj_paths,
@@ -125,15 +130,12 @@ def _accept_outputs(record: dict[str, Any], reply: dict[str, Any]) -> None:
         "completed_ns": reply.get("completed_ns"),
         "analysis_inputs": {
             "top_path": top_path,
+            "prmtop_path": top_path,
             "traj_paths": traj_paths,
             "geometry_jsonl": geom_path,
+            "engine": engine,
         },
-        "recommended_next_tools": [
-            "analyze_substrate_contacts",
-            "analyze_side_reactions",
-            "analyze_preorganization",
-            "build_catalytic_profile",
-        ],
+        "recommended_next_tools": next_tools,
     }
 
 
@@ -176,17 +178,11 @@ def submit_sampling(agent, args: dict[str, Any]) -> dict[str, Any]:
     if type(wall_seconds) is not int or wall_seconds < 1 or wall_seconds > config["resource_policy"]["max_wall_seconds"]:
         raise ValueError("wall_seconds must be a positive integer within resource_policy.max_wall_seconds")
 
-    active_count = sum(
-        1 for rec in records.values() if (rec.get("job") or {}).get("status") in ACTIVE
-    )
-    if active_count >= config["resource_policy"]["max_jobs"]:
-        raise ValueError(f"Sampling max_jobs ({config['resource_policy']['max_jobs']}) reached; reconcile active jobs first")
-
     label = args["label"]
     if not isinstance(label, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}", label):
         raise ValueError("Sampling label must be a safe file component")
 
-    # Idempotent check: if this exact label already exists, return its status instead of double-submitting
+    # Idempotent check before max_jobs: never double-submit an existing label
     for existing_id, rec in records.items():
         if rec["plan"]["label"] == label:
             return {
@@ -195,6 +191,16 @@ def submit_sampling(agent, args: dict[str, Any]) -> dict[str, Any]:
                 "job": rec.get("job"),
                 "next_action": "check_sampling",
             }
+
+    # Global active-job cap across ALL candidates in the run
+    active_count = sum(
+        1
+        for c_state in agent.state["candidates"].values()
+        for rec in (c_state.get("sampling_jobs") or {}).values()
+        if (rec.get("job") or {}).get("status") in ACTIVE
+    )
+    if active_count >= config["resource_policy"]["max_jobs"]:
+        raise ValueError(f"Sampling max_jobs ({config['resource_policy']['max_jobs']}) reached; reconcile active jobs first")
 
     raw_inputs = args.get("inputs") or {}
     required_keys = ("prmtop", "coordinates", "spec_path") if engine == "openmm_classical" else ("config_path",)
@@ -245,26 +251,34 @@ def submit_sampling(agent, args: dict[str, Any]) -> dict[str, Any]:
         },
     }
     records[job_id] = record
+    agent._save()
 
-    reply = _invoke_adapter(
-        config,
-        {
-            "operation": "submit",
-            "idempotency_key": idem_key,
-            "plan_path": str(plan_path),
-            "plan_sha256": plan_sha256,
-            "plan": plan,
-        },
-    )
-    status = str(reply["status"])
-    record["job"].update(
-        status=status,
-        remote_job_id=reply.get("remote_job_id"),
-        message=reply.get("message"),
-    )
-    record["status"] = status
-    if status == "complete":
-        _accept_outputs(record, reply)
+    try:
+        reply = _invoke_adapter(
+            config,
+            {
+                "operation": "submit",
+                "idempotency_key": idem_key,
+                "plan_path": str(plan_path),
+                "plan_sha256": plan_sha256,
+                "plan": plan,
+            },
+        )
+        status = str(reply["status"])
+        if status == "complete":
+            _accept_outputs(record, reply)
+        record["job"].update(
+            status=status,
+            remote_job_id=reply.get("remote_job_id"),
+            message=reply.get("message"),
+        )
+        record["status"] = status
+    except Exception as exc:
+        record["job"].update(status="unknown", message=str(exc))
+        record["status"] = "unknown"
+        agent._save()
+        raise
+    agent._save()
     return {
         "job_id": job_id,
         "status": status,
@@ -308,25 +322,32 @@ def check_sampling(agent, args: dict[str, Any]) -> dict[str, Any]:
     if job.get("idempotency_key") != expected_key:
         raise ValueError("Sampling backend configuration changed; retain existing receipt and create a new job")
 
-    reply = _invoke_adapter(
-        config,
-        {
-            "operation": "status",
-            "idempotency_key": job["idempotency_key"],
-            "remote_job_id": job.get("remote_job_id"),
-            "plan_path": record["plan_path"],
-            "plan_sha256": record["plan_sha256"],
-        },
-    )
-    status = str(reply["status"])
-    job.update(
-        status=status,
-        remote_job_id=reply.get("remote_job_id", job.get("remote_job_id")),
-        message=reply.get("message"),
-    )
-    record["status"] = status
-    if status == "complete":
-        _accept_outputs(record, reply)
+    try:
+        reply = _invoke_adapter(
+            config,
+            {
+                "operation": "status",
+                "idempotency_key": job["idempotency_key"],
+                "remote_job_id": job.get("remote_job_id"),
+                "plan_path": record["plan_path"],
+                "plan_sha256": record["plan_sha256"],
+            },
+        )
+        status = str(reply["status"])
+        if status == "complete":
+            _accept_outputs(record, reply)
+        job.update(
+            status=status,
+            remote_job_id=reply.get("remote_job_id", job.get("remote_job_id")),
+            message=reply.get("message"),
+        )
+        record["status"] = status
+    except Exception as exc:
+        job.update(status="unknown", message=str(exc))
+        record["status"] = "unknown"
+        agent._save()
+        raise
+    agent._save()
     return {
         "job_id": job_id,
         "status": status,

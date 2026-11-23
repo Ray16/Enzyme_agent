@@ -185,7 +185,9 @@ def analyze_charge_center_stabilization(
         n_eval += 1
         donors = [
             a for a in atoms
-            if a["protein"] and a["name"] in _HBOND_DONOR_ATOM_NAMES
+            if a["protein"]
+            and a["name"] in _HBOND_DONOR_ATOM_NAMES
+            and not (a["resname"] == "PRO" and a["name"] == "N")
         ]
         all_polar = [
             a for a in atoms
@@ -267,7 +269,10 @@ def analyze_preorganization(
             raise ValueError("axis_a_sel and axis_b_sel must each select exactly 1 atom")
         idx_a, idx_b = int(sel_a.indices[0]), int(sel_b.indices[0])
         env_atoms = u.select_atoms(environment_sel)
-        env_idx = np.asarray([i for i in env_atoms.indices if i != idx_a and i != idx_b], dtype=int)
+        # Exclude the entire residue(s) containing the reaction axis atoms so
+        # covalently adjacent ligand/substrate atoms cannot produce unphysical field spikes.
+        excl_res_indices = set(u.atoms[idx_a].residue.atoms.indices) | set(u.atoms[idx_b].residue.atoms.indices)
+        env_idx = np.asarray([i for i in env_atoms.indices if i not in excl_res_indices], dtype=int)
         env_charges = charges[env_idx]
         # Precompute residue label per environment atom for O(N_env) per-residue decomposition
         env_res_labels = [f"{a.segid or 'A'}:{a.resname}{a.resid}" for a in u.atoms[env_idx]]
@@ -278,19 +283,25 @@ def analyze_preorganization(
         cut_sq = cutoff_A * cutoff_A
         min_sq = 0.25
 
+        from MDAnalysis.lib.distances import minimize_vectors
         fields = []
-        for _ in u.trajectory[::stride]:
+        for ts in u.trajectory[::stride]:
             pos = u.atoms.positions
+            box = ts.dimensions if ts.dimensions is not None and np.all(ts.dimensions[:3] > 0) else None
             pa = pos[idx_a].astype(float)
             pb = pos[idx_b].astype(float)
             axis = pb - pa
+            if box is not None:
+                axis = minimize_vectors(np.ascontiguousarray(axis[None, :], dtype=np.float32), box)[0].astype(float)
             norm = float(np.linalg.norm(axis))
             if norm < 1e-8:
                 continue
             u_hat = axis / norm
-            probe = 0.5 * (pa + pb)
+            probe = pa + 0.5 * axis
             env_coords = pos[env_idx].astype(float)
             delta = probe[None, :] - env_coords
+            if box is not None:
+                delta = minimize_vectors(np.ascontiguousarray(delta, dtype=np.float32), box).astype(float)
             d2 = np.einsum("ij,ij->i", delta, delta)
             keep = (d2 >= min_sq) & (d2 <= cut_sq)
             if not keep.any():

@@ -258,13 +258,16 @@ def _h_read_evidence(agent, args):
         raise ValueError("offset must be a nonnegative integer")
     if path.stat().st_size > 16 * 1024 * 1024:
         raise ValueError("evidence exceeds the 16 MiB inspection limit")
-    text = path.read_text()
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"evidence file {path.name!r} is binary or non-UTF-8 and cannot be inspected as text") from exc
     page = _text_page(text, offset, path=str(path.resolve()), sha256=file_digest(path))
     if not path.is_relative_to((agent.run_dir / "artifacts").resolve()):
         notes = agent.state.setdefault("inspected_source_passages", [])
         note = {k: page[k] for k in ("path", "sha256", "offset")}
         note["text"] = page["text"][:1000]
-        note["next_offset"] = offset + len(note["text"]) if offset + len(note["text"]) < len(text) else None
+        note["next_offset"] = page["next_offset"]
         notes[:] = [old for old in notes if (old["path"], old["offset"]) != (note["path"], note["offset"])]
         notes.append(note)
         del notes[:-4]
@@ -332,6 +335,14 @@ def _h_finish_task(agent, args):
     ):
         agent.state.update(status="waiting_for_backend", conclusion=args["rationale"])
         return {"status": "waiting_for_backend", "reason": "Barrier job ownership must be reconciled on resume"}
+    from ..sampling.workflow import ACTIVE as SAMPLING_ACTIVE
+    if any(
+        (j.get("job") or {}).get("status") in SAMPLING_ACTIVE
+        for c in agent.state["candidates"].values()
+        for j in c.get("sampling_jobs", {}).values()
+    ):
+        agent.state.update(status="waiting_for_backend", conclusion=args["rationale"])
+        return {"status": "waiting_for_backend", "reason": "Sampling job ownership must be reconciled on resume"}
     agent.state.update(status=args["outcome"], conclusion=args["rationale"])
     return {"status": agent.state["status"], "rationale": args["rationale"]}
 

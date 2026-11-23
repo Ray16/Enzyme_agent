@@ -150,11 +150,12 @@ def _select_substrate(atoms: list[dict[str, Any]], substrate_chains: list[str] |
     sub_rn = {r.upper() for r in substrate_resnames} if substrate_resnames else None
 
     if sub_ch or sub_rn:
+        # Allow peptide/protein substrates when substrate_chains or substrate_resnames are explicitly declared
         sub = [
             a for a in atoms
-            if not a["protein"]
-            and (sub_ch is None or a["chain"] in sub_ch)
+            if (sub_ch is None or a["chain"] in sub_ch)
             and (sub_rn is None or a["resname"] in sub_rn)
+            and (sub_ch is not None or not a["protein"])
         ]
     else:
         # Generic fallback: non-protein, non-metal organic groups; exclude obvious P-cofactors if multiple groups

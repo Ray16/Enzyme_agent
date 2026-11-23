@@ -189,7 +189,7 @@ class ModelingAgent:
                     "investigation_leads": len(self.task.get("unresolved_leads") or []),
                     "excluded_candidates": len(self.task.get("excluded_candidates") or []),
                 }
-            initial_prompt = compact_system_prompt() if self.task.get("progressive_tool_disclosure") else SYSTEM_PROMPT
+            initial_prompt = compact_system_prompt() if self.task.get("progressive_tool_disclosure", True) else SYSTEM_PROMPT
             self.messages = [{"role": "system", "content": initial_prompt},
                              {"role": "user", "content": json.dumps(initial)}]
         self.run_dir.mkdir(parents=True, exist_ok=True)
@@ -509,7 +509,7 @@ class ModelingAgent:
         objective=self.task.get('objective')
         prefix[0]={"role":"system","content":(BARRIER_PROMPT if objective=='evaluate_barriers' else
                     PREPARATION_PROMPT if objective == 'prepare_sampling' else (
-                        compact_system_prompt() if self.task.get('progressive_tool_disclosure') else SYSTEM_PROMPT + BARRIER_GUIDANCE
+                        compact_system_prompt() if self.task.get('progressive_tool_disclosure', True) else SYSTEM_PROMPT + BARRIER_GUIDANCE
                     ))}
         # Scientific field definitions must survive ordinary history compaction.
         # Otherwise a model can spend every turn rereading a truncated schema.

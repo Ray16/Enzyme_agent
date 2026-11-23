@@ -248,18 +248,12 @@ def _find_tunnels_one_pose(
     # If every candidate near start_xyz is already in bulk (e.g. a wide hollow tube > shell_radius),
     # terminate tunnels at the convex hull exterior instead of immediately at start_node.
     start_in_bulk = bool(is_bulk[cand_arr].all())
-    target_mask = touches_exterior if start_in_bulk else is_bulk
+    target_mask = (touches_exterior if start_in_bulk else is_bulk).copy()
     keep_graph = ~(target_mask[src_nodes] & target_mask[dst_nodes])
 
     u_e = src_nodes[keep_graph]
     v_e = dst_nodes[keep_graph]
     w_e = seg_len[keep_graph] / (np.maximum(edge_r[keep_graph], 1e-3) ** 2)
-    edge_r_map: dict[tuple[int, int], float] = {}
-    for a_i, b_i, r_val in zip(u_e, v_e, edge_r[keep_graph]):
-        key = (int(a_i), int(b_i)) if a_i < b_i else (int(b_i), int(a_i))
-        prev = edge_r_map.get(key)
-        if prev is None or r_val > prev:
-            edge_r_map[key] = float(r_val)
 
     graph = csr_matrix(
         (np.concatenate([w_e, w_e]), (np.concatenate([u_e, v_e]), np.concatenate([v_e, u_e]))),
@@ -276,6 +270,8 @@ def _find_tunnels_one_pose(
     d_cand = np.linalg.norm(pass_xyz[reachable_cand] - start_xyz, axis=1)
     eff_r = np.minimum(pass_r[reachable_cand], 5.0)
     start_node = int(reachable_cand[int(np.argmax(eff_r - 0.05 * d_cand))])
+    if not start_in_bulk:
+        target_mask[start_node] = False
 
     # 6. Run Dijkstra once from start_node
     costs, predecessors = dijkstra(graph, directed=False, indices=start_node, return_predecessors=True)
@@ -330,10 +326,14 @@ def _find_tunnels_one_pose(
         if len(path_nodes) >= 2:
             seg_lens = np.linalg.norm(pts[1:] - pts[:-1], axis=1)
             length = float(seg_lens.sum())
-            e_rs = np.array([
-                edge_r_map.get((min(a, b), max(a, b)), min(rs[i], rs[i + 1]))
-                for i, (a, b) in enumerate(zip(path_nodes[:-1], path_nodes[1:]))
-            ])
+            # Compute midpoint clearance directly for the ~20-40 extracted path edges
+            # instead of maintaining an O(E) Python edge_r_map dict over all Voronoi edges.
+            mids = 0.5 * (pts[:-1] + pts[1:])
+            md_edge, mi_edge = atom_tree.query(mids, k=min(4, len(radii)))
+            md_edge = np.asarray(md_edge).reshape(len(mids), -1)
+            mi_edge = np.asarray(mi_edge).reshape(len(mids), -1)
+            mid_r = (md_edge - radii[mi_edge]).min(axis=1)
+            e_rs = np.minimum(mid_r, np.minimum(rs[:-1], rs[1:]))
             min_v_idx = int(np.argmin(rs))
             min_e_idx = int(np.argmin(e_rs))
             if e_rs[min_e_idx] < rs[min_v_idx]:

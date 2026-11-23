@@ -213,10 +213,18 @@ class NetSolPPredictor(SolubilityPredictor):
                    "--MODEL_TYPE", self.model_type,
                    "--PREDICTION_TYPE", self.prediction_type,
                    "--NUM_THREADS", str(self.num_threads)]
-            subprocess.run(cmd, cwd=self.netsolp_dir, check=True,
-                           capture_output=True, timeout=self.timeout_s)
-            with open(out_csv) as fh:
-                records = parse_netsolp_csv(fh.read())
+            env = dict(os.environ)
+            for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+                env.setdefault(var, str(self.num_threads))
+            try:
+                subprocess.run(cmd, cwd=self.netsolp_dir, check=True,
+                               capture_output=True, timeout=self.timeout_s, env=env)
+                with open(out_csv) as fh:
+                    records = parse_netsolp_csv(fh.read())
+            except (subprocess.SubprocessError, OSError) as exc:
+                return SolubilityPrediction(
+                    None, self.name,
+                    note=f"NetSolP execution failed ({type(exc).__name__}) -- abstain")
         if not records:
             return SolubilityPrediction(None, self.name, note="NetSolP returned no rows")
         rec = records[0]

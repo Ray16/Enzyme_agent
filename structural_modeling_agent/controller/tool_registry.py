@@ -180,19 +180,28 @@ def _h_analyze_substrate_channels(agent, args):
         paths = [str(agent._authorized_evidence(p)) for p in args.get("pose_paths", [])]
         if not paths:
             raise ValueError("run mode requires non-empty pose_paths")
-        out_dir = agent.run_dir / "artifacts" / f"channels_{args.get('label', 'run')}"
-        result = ch.analyze_channels(
-            paths,
-            str(out_dir),
-            label=args.get("label"),
-            n_starts=args.get("n_starts", 1),
-            probe_radius=args.get("probe_radius", ch.DEFAULT_PROBE_RADIUS),
-            backend=args.get("backend", "fast"),
-            skip_open=args.get("skip_open", False),
-        )
+        raw_label = args.get("label") or "run"
+        safe_label = "".join(c if c.isalnum() or c in "._-" else "_" for c in str(raw_label)) or "run"
+        out_dir = agent.run_dir / "artifacts" / f"channels_{safe_label}"
+        kwargs: dict[str, Any] = {
+            "label": safe_label,
+            "n_starts": args.get("n_starts", 1),
+            "probe_radius": args.get("probe_radius", ch.DEFAULT_PROBE_RADIUS),
+            "backend": args.get("backend", "fast"),
+            "skip_open": args.get("skip_open", False),
+        }
+        for opt in ("start_xyz", "start_sel", "start_group", "reaction_center_sel", "hetero_sel", "keep_cofactor", "keep_metals"):
+            if args.get(opt) is not None:
+                kwargs[opt] = args[opt]
+        if args.get("substrate_resnames"):
+            kwargs["substrate_resnames"] = set(args["substrate_resnames"])
+        if args.get("cofactor_resnames"):
+            kwargs["cofactor_resnames"] = set(args["cofactor_resnames"])
+        result = ch.analyze_channels(paths, str(out_dir), **kwargs)
     else:
         raise ValueError(f"unknown substrate channel mode: {mode!r}")
     artifact = agent._artifact(f"substrate_channels_{mode}", result)
+    _cache_analysis(agent, args, "access", result)
     return {"artifact": artifact, **result}
 
 
@@ -276,10 +285,13 @@ def _h_assess_developability(agent, args):
     from ..developability.assess import assess_developability
     acc = args["accession"]
     candidate = agent._candidate(acc)
+    fams = args.get("family_ids")
+    if fams is None and args.get("family_id"):
+        fams = [args["family_id"]]
     result = assess_developability(
-        accession=acc,
-        sequence=candidate["sequence"],
-        family_id=args.get("family_id"),
+        uniprot=acc,
+        sequence=candidate.get("sequence"),
+        family_ids=tuple(fams or ()),
         predictor_name=args.get("predictor_name", "netsolp"),
     )
     payload = result.to_dict() if hasattr(result, "to_dict") else dict(result)
@@ -393,7 +405,7 @@ def _h_build_catalytic_profile(agent, args):
 
 
 def _h_assess_mlmm_profile(agent, args):
-    from ..mlmm import evaluate_profile, profile_from_freq_dirs
+    from ..mlmm import NotReportable, diagram_values, profile_from_freq_dirs
 
     results_dir = str(agent._authorized_evidence(args["results_dir"]))
     profile = profile_from_freq_dirs(
@@ -402,9 +414,17 @@ def _h_assess_mlmm_profile(agent, args):
         step_id=args["step_id"],
         net_charge=args["net_charge"],
     )
-    verdict = evaluate_profile(profile, strict=args.get("strict", True))
-    payload = verdict.to_dict() if hasattr(verdict, "to_dict") else {"ok": bool(verdict.ok), "verdict": str(verdict)}
+    strict = bool(args.get("strict", True))
+    try:
+        values = diagram_values(profile)
+        payload = {"ok": True, "reportable": True, "diagram": values, "system_id": args["system_id"], "step_id": args["step_id"]}
+    except NotReportable as exc:
+        if strict:
+            payload = {"ok": False, "reportable": False, "reason": str(exc), "system_id": args["system_id"], "step_id": args["step_id"]}
+        else:
+            payload = {"ok": False, "reportable": False, "warning": str(exc), "system_id": args["system_id"], "step_id": args["step_id"]}
     artifact = agent._artifact(f"mlmm_verdict_{args['system_id']}", payload)
+    _cache_analysis(agent, args, "barrier_status", payload)
     return {"artifact": artifact, **payload}
 
 
@@ -426,6 +446,8 @@ _REPEATABLE_READER_NAMES = frozenset({
     "inspect_candidate",
     "inspect_validation_contract",
     "inspect_workflow_policy",
+    "inspect_result_locations",
+    "inspect_investigation_lead",
     "read_candidate_section",
     "read_evidence",
     "read_reasoning_section",
@@ -434,6 +456,7 @@ _REPEATABLE_READER_NAMES = frozenset({
     "inspect_processivity_contract",
     "inspect_processivity_toolchain",
     "inspect_mlmm_engine_options",
+    "check_cofold",
     "check_sampling",
     "check_barrier_calculation",
     "inspect_barrier_result",
@@ -500,7 +523,7 @@ _STAGE_MEMBERSHIPS: dict[str, frozenset[str]] = {
     "evaluate_barriers": frozenset({
         "inspect_barrier_contract", "prepare_barrier_inputs", "plan_barrier_calculation",
         "submit_barrier_calculation", "check_barrier_calculation", "inspect_barrier_result",
-        "record_barrier_assessment",
+        "record_barrier_assessment", "assess_mlmm_profile",
         "inspect_candidate", "read_candidate_section", "read_evidence",
         "retrieve_reference", "search_literature", "assess_assembly", "inspect_molecule",
         "inspect_result_locations", "run_preparation_operator", "inspect_preparation_structure",
@@ -624,6 +647,7 @@ def build_default_registry() -> ToolRegistry:
                 "Parse existing CAVER 3.0 output or run descriptive full-assembly transport-channel analysis across an authorized pose ensemble; descriptive only, no ranking verdict",
                 {
                     "mode": {"type": "string", "enum": ["parse", "run"]},
+                    "accession": _string("Optional candidate identifier for caching results into build_catalytic_profile"),
                     "caver_out_dir": _string("Authorized CAVER output directory (mode=parse)"),
                     "n_poses": {"type": "integer", "minimum": 1, "description": "Number of poses in CAVER run (mode=parse)"},
                     "pose_paths": {"type": "array", "items": {"type": "string"}, "description": "Authorized full-assembly pose paths (mode=run)"},
@@ -632,6 +656,14 @@ def build_default_registry() -> ToolRegistry:
                     "probe_radius": {"type": "number", "minimum": 0.5},
                     "backend": {"type": "string", "enum": ["fast", "caver"], "description": "fast (default native scipy Voronoi/Dijkstra) or caver (CAVER 3.0 JVM)"},
                     "skip_open": {"type": "boolean", "description": "Skip tunnel tracing when ray-cast burial indicates a solvent-open site"},
+                    "start_xyz": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3, "description": "Optional explicit starting point [x, y, z] for apo or custom-site channel tracing"},
+                    "start_sel": _string("Optional MDAnalysis selection for starting point"),
+                    "start_group": _string("Optional ligand functional-group hint for starting point"),
+                    "substrate_resnames": {"type": "array", "items": {"type": "string"}},
+                    "cofactor_resnames": {"type": "array", "items": {"type": "string"}},
+                    "hetero_sel": _string("Optional MDAnalysis ligand selection"),
+                    "keep_cofactor": {"type": "boolean"},
+                    "keep_metals": {"type": "boolean"},
                 },
                 ("mode",),
             ),
@@ -668,7 +700,7 @@ def build_default_registry() -> ToolRegistry:
             schema=_schema(
                 "load_skill",
                 "Load a domain playbook (scientific checklist, caveats, and tool workflow) and unlock that domain's tools when progressive disclosure is active",
-                {"name": _string("Skill name from the available skills index (e.g. cofold-setup, md-preparation, reaction-barriers, contacts-and-channels, processivity-kinetics, dynamics-and-design, visualization)")},
+                {"name": _string("Skill name from the available skills index (cofold-setup, catalytic-triage, md-preparation, reaction-barriers, contacts-and-channels, processivity-kinetics, dynamics-and-design, visualization)")},
                 ("name",),
             ),
             handler=_h_load_skill,
@@ -733,7 +765,8 @@ def build_default_registry() -> ToolRegistry:
                 "Evaluate curated expression/membrane liabilities and predicted solubility for a candidate; fails closed and emits an exploration_trigger for soluble homolog search when vetoed/flagged",
                 {
                     "accession": _string("Candidate identifier from this task"),
-                    "family_id": _string("Optional InterPro/mechanism family identifier"),
+                    "family_id": _string("Optional single InterPro/mechanism family identifier"),
+                    "family_ids": {"type": "array", "items": {"type": "string"}, "description": "Optional list of InterPro/mechanism family identifiers"},
                     "predictor_name": _string("Solubility predictor name (default netsolp)"),
                 },
                 ("accession",),
@@ -751,6 +784,7 @@ def build_default_registry() -> ToolRegistry:
                 "analyze_pocket_envelope",
                 "Enzyme-agnostic asymmetric pocket-envelope and distal-tail exposure analysis; optionally compares target-holo against a native-holo control to separate modeling artifacts, buried steric exclusion, and pocket slack",
                 {
+                    "accession": _string("Optional candidate identifier for caching results into build_catalytic_profile"),
                     "target_poses": {"type": "array", "items": {"type": "string"}, "minItems": 1, "description": "Authorized target-holo PDB/mmCIF paths"},
                     "native_poses": {"type": "array", "items": {"type": "string"}, "description": "Optional authorized native-holo PDB/mmCIF control paths"},
                     "target_substrate_chains": {"type": "array", "items": {"type": "string"}},
@@ -775,6 +809,7 @@ def build_default_registry() -> ToolRegistry:
                 "analyze_side_reactions",
                 "Reaction-agnostic competing-pathway geometry analyzer for pose ensembles or MD trajectories (e.g., solvent hydrolysis at any angle/distance, intramolecular cyclization, futile cofactor hydrolysis, or off-target C-H abstraction)",
                 {
+                    "accession": _string("Optional candidate identifier for caching results into build_catalytic_profile"),
                     "mode": {"type": "string", "enum": ["poses", "traj"]},
                     "pathways": {"type": "array", "items": {"type": "object"}, "minItems": 1, "description": "Declared competing-attack specs (name, kind, electrophile/electrophile_sel, nucleophiles/nucleophile_sel, optional angle_reference/ideal_angle_deg/angle_tolerance_deg, distance_cutoff_A)"},
                     "pose_paths": {"type": "array", "items": {"type": "string"}},
@@ -797,6 +832,7 @@ def build_default_registry() -> ToolRegistry:
                 "analyze_preorganization",
                 "Enzyme-agnostic preorganization and TS/intermediate stabilization diagnostics: apo-vs-holo catalytic-constellation RMSD, polar/metal stabilization of any declared charge center, and MD-averaged projected electric field (MV/cm) along any reaction axis",
                 {
+                    "accession": _string("Optional candidate identifier for caching results into build_catalytic_profile"),
                     "apo_path": _string("Authorized apo PDB/mmCIF path"),
                     "holo_path": _string("Authorized holo PDB/mmCIF path"),
                     "catalytic_residues": {"type": "array", "items": {"type": "object"}, "description": "List of {chain, residue} catalytic residues"},
@@ -893,6 +929,7 @@ def build_default_registry() -> ToolRegistry:
         ("analyze_side_reactions", _h_analyze_side_reactions, "analysis"),
         ("analyze_preorganization", _h_analyze_preorganization, "analysis"),
         ("assess_developability", _h_assess_developability, "developability"),
+        ("assess_mlmm_profile", _h_assess_mlmm_profile, "mlmm"),
         ("build_catalytic_profile", _h_build_catalytic_profile, "core"),
         ("submit_sampling", _h_submit_sampling, "sampling"),
         ("check_sampling", _h_check_sampling, "sampling"),

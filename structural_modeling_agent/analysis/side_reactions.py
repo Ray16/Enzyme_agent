@@ -47,12 +47,12 @@ def _read_all_heavy_incl_solvent(path: str | Path) -> tuple[dict[tuple[str, str,
     """Read all heavy atoms including solvent via the shared pocket_envelope reader."""
     atoms = read_heavy_atoms(path, include_solvent=True)
     index: dict[tuple[str, str, str], np.ndarray] = {}
-    solvent: list[dict[str, Any]] = []
+    non_protein: list[dict[str, Any]] = []
     for a in atoms:
         index[(a["chain"], a["resid"], a["name"])] = a["xyz"]
-        if a["resname"] in DEFAULT_SOLVENT_RESNAMES:
-            solvent.append({"resname": a["resname"], "atom": a["name"], "xyz": a["xyz"]})
-    return index, solvent
+        if not a["protein"]:
+            non_protein.append({"resname": a["resname"], "atom": a["name"], "xyz": a["xyz"]})
+    return index, non_protein
 
 
 def _eval_pathway_coords(
@@ -62,39 +62,54 @@ def _eval_pathway_coords(
     distance_cutoff_A: float,
     ideal_angle_deg: float | None,
     angle_tolerance_deg: float | None,
+    *,
+    box: np.ndarray | None = None,
 ) -> tuple[bool, float | None, float | None]:
     """Check whether any nucleophile in `nuc_pts` meets the competing-attack geometry.
 
-    Uses a single vectorized squared-distance pass (O(N) in C/NumPy, ~0.1 ms for
-    20,000 waters) rather than rebuilding a spatial tree per MD frame.
+    Uses a single vectorized squared-distance pass (with PBC minimum-image when
+    ``box`` is supplied) rather than rebuilding a spatial tree per MD frame.
     """
     if len(nuc_pts) == 0:
         return False, None, None
-    diff = nuc_pts - elec_xyz[None, :]
+    diff = (nuc_pts - elec_xyz[None, :]).astype(np.float32 if box is not None else float, copy=False)
+    v_ref = (ref_xyz - elec_xyz) if ref_xyz is not None else None
+    if box is not None:
+        from MDAnalysis.lib.distances import minimize_vectors
+        diff = minimize_vectors(np.ascontiguousarray(diff, dtype=np.float32), box).astype(float)
+        if v_ref is not None:
+            v_ref = minimize_vectors(np.ascontiguousarray(v_ref[None, :], dtype=np.float32), box)[0].astype(float)
     d2 = np.einsum("ij,ij->i", diff, diff)
     min_idx = int(np.argmin(d2))
     min_d = float(math.sqrt(float(d2[min_idx])))
     within = np.flatnonzero(d2 <= distance_cutoff_A * distance_cutoff_A)
     if len(within) == 0:
-        best_ang = _angle_deg(nuc_pts[min_idx], elec_xyz, ref_xyz) if ref_xyz is not None else None
-        return False, min_d, best_ang
+        if v_ref is None:
+            return False, min_d, None
+        denom = float(min_d * np.linalg.norm(v_ref))
+        ang0 = float(math.degrees(math.acos(float(np.clip(np.dot(diff[min_idx], v_ref) / denom, -1.0, 1.0))))) if denom > 1e-12 else 0.0
+        return False, min_d, ang0
 
-    if ref_xyz is None or ideal_angle_deg is None or angle_tolerance_deg is None:
+    if v_ref is None or ideal_angle_deg is None or angle_tolerance_deg is None:
         return True, min_d, None
 
     # Vectorized angles for all within-cutoff nucleophiles
     u = diff[within]
-    v = ref_xyz - elec_xyz
-    v_norm = float(np.linalg.norm(v))
+    v_norm = float(np.linalg.norm(v_ref))
     if v_norm < 1e-12:
         return False, min_d, 0.0
     u_norms = np.sqrt(d2[within])
     denom = u_norms * v_norm
-    cos_vals = np.where(denom > 1e-12, (u @ v) / np.where(denom > 1e-12, denom, 1.0), 0.0)
+    cos_vals = np.where(denom > 1e-12, (u @ v_ref) / np.where(denom > 1e-12, denom, 1.0), 0.0)
     angles = np.degrees(np.arccos(np.clip(cos_vals, -1.0, 1.0)))
     devs = np.abs(angles - ideal_angle_deg)
+    hits = np.flatnonzero(devs <= angle_tolerance_deg)
+    if len(hits) > 0:
+        # Report distance and angle for the SAME winning (closest hitting) nucleophile
+        best_hit = int(hits[int(np.argmin(u_norms[hits]))])
+        return True, float(u_norms[best_hit]), float(angles[best_hit])
     best_i = int(np.argmin(devs))
-    return bool(devs[best_i] <= angle_tolerance_deg), min_d, float(angles[best_i])
+    return False, float(u_norms[best_i]), float(angles[best_i])
 
 
 def analyze_side_reactions_poses(
@@ -181,9 +196,10 @@ def analyze_side_reactions_trajectory(
         })
 
     n_frames = 0
-    for _ in u.trajectory[::stride]:
+    for ts in u.trajectory[::stride]:
         n_frames += 1
         coords = u.atoms.positions
+        box = ts.dimensions if ts.dimensions is not None and np.all(ts.dimensions[:3] > 0) else None
         for item in resolved:
             p = item["spec"]
             elec = coords[item["elec_idx"]]
@@ -194,7 +210,7 @@ def analyze_side_reactions_trajectory(
             nuc_pts = coords[nuc_idx]
             d_cut = float(p["distance_cutoff_A"])
             hit, d_min, ang = _eval_pathway_coords(
-                nuc_pts, elec, ref, d_cut, p.get("ideal_angle_deg"), p.get("angle_tolerance_deg")
+                nuc_pts, elec, ref, d_cut, p.get("ideal_angle_deg"), p.get("angle_tolerance_deg"), box=box,
             )
             item["n_evaluated"] += 1
             if hit:
