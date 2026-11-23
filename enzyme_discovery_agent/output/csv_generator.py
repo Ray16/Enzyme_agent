@@ -17,6 +17,27 @@ from enzyme_discovery_agent.run_layout import run_file
 logger = logging.getLogger("enzyme_agent")
 
 
+def _ranking_input_fingerprint(root: Path) -> dict:
+    """Fast stat-based fingerprint of all state files that affect live ranking."""
+    watched = (
+        "candidate_registry.json",
+        "target_context.json",
+        "family_learning.json",
+        "target_reasoning.json",
+        "mechanism_families.json",
+        "family_relevance.json",
+    )
+    sig = {}
+    for name in watched:
+        p = run_file(root, name)
+        if p.is_file():
+            st = p.stat()
+            sig[name] = [st.st_mtime_ns, st.st_size]
+        else:
+            sig[name] = None
+    return sig
+
+
 def refresh_ranked_candidates(run_dir):
     """Refresh the decision list from saved evidence without provider calls."""
     from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry,discovery_status
@@ -27,6 +48,16 @@ def refresh_ranked_candidates(run_dir):
     root=Path(run_dir)
     from enzyme_discovery_agent.state_store import state_lock
     with state_lock(root/'agent_state/live_ranking'):
+        ranking_path = run_file(root, 'pass1_ranking.json')
+        csv_path = root / 'ranked_candidates.csv'
+        fp_path = root / 'agent_state' / 'live_ranking_fingerprint.json'
+        current_fp = _ranking_input_fingerprint(root)
+        if ranking_path.is_file() and csv_path.is_file() and fp_path.is_file():
+            try:
+                if json.loads(fp_path.read_text()) == current_fp:
+                    return json.loads(ranking_path.read_text())
+            except (OSError, ValueError):
+                pass
         registry=load_candidate_registry(root,strict=True)['candidates']
         from enzyme_discovery_agent.models.evaluations import registered_hypothesis
         evaluations=current_evaluations(root,[{'data':seed_evidence(acc,entry)} for acc,entry in registry.items()
@@ -42,8 +73,9 @@ def refresh_ranked_candidates(run_dir):
         ranking=_deterministic_mechanistic_ranking([ev for ev in rankable if ev['data']['accession'] not in stopped],{},
             family_rank_by_acc=_family_rank_map(stopped,supported))
         ranking=_collapse_orthologs(ranking,{ev['data']['accession']:ev for ev in rankable})
-        atomic_write_json(run_file(root,'pass1_ranking.json'),ranking)
+        atomic_write_json(ranking_path,ranking)
         generate_candidates_csv(root,evaluations,ranking_entries=ranking)
+        atomic_write_json(fp_path, _ranking_input_fingerprint(root))
         return ranking
 
 

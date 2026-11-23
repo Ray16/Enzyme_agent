@@ -188,14 +188,39 @@ def run_scope_followup(
 
         search_fn = _default_search
 
-    ledger = read_json(_ledger_path(root), {"attempted": {}, "total_attempted": 0})
-    attempted_map = ledger.setdefault("attempted", {})
+    from concurrent.futures import ThreadPoolExecutor
+    from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry_batch
 
-    for row in selected:
-        acc = row["accession"]
-        summary["attempted"].append(acc)
+    def _fetch_one(row: dict):
         try:
             papers = search_fn(row["query"]) or []
+            return row, papers, None
+        except Exception as exc:  # noqa: BLE001 - network lookup must never halt discovery
+            return row, None, exc
+
+    if len(selected) > 1:
+        with ThreadPoolExecutor(max_workers=min(len(selected), 6)) as pool:
+            fetched = list(pool.map(_fetch_one, selected))
+    else:
+        fetched = [_fetch_one(selected[0])]
+
+    ledger = read_json(_ledger_path(root), {"attempted": {}, "total_attempted": 0})
+    attempted_map = ledger.setdefault("attempted", {})
+    registry_updates = []
+
+    for row, papers, exc in fetched:
+        acc = row["accession"]
+        summary["attempted"].append(acc)
+        if exc is not None:
+            logger.debug("Scope follow-up failed for %s: %s", acc, exc)
+            attempted_map[acc] = {
+                "record_sha256": row["record_sha256"],
+                "status": "error",
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+            summary["errors"].append({"accession": acc, "error": str(exc)})
+            continue
+        try:
             passages = _extract_scope_passages(papers, max_papers=max_papers_per_candidate)
             artifact_payload = {
                 "accession": acc,
@@ -221,7 +246,7 @@ def run_scope_followup(
                     "passages": passages,
                     "scope": artifact_payload["scope"],
                 }
-                update_candidate_registry(root, acc, None, {"scope_followup_evidence": evidence_block})
+                registry_updates.append((acc, None, {"scope_followup_evidence": evidence_block}))
                 attempted_map[acc] = {
                     "record_sha256": row["record_sha256"],
                     "status": "found",
@@ -238,14 +263,16 @@ def run_scope_followup(
                 }
                 summary["empty"].append(acc)
             ledger["total_attempted"] = int(ledger.get("total_attempted", 0)) + 1
-        except Exception as exc:  # noqa: BLE001 - network lookup must never halt discovery
-            logger.debug("Scope follow-up failed for %s: %s", acc, exc)
+        except Exception as exc2:  # noqa: BLE001 - artifact write must never halt discovery
+            logger.debug("Scope follow-up failed for %s: %s", acc, exc2)
             attempted_map[acc] = {
                 "record_sha256": row["record_sha256"],
                 "status": "error",
-                "error": f"{type(exc).__name__}: {exc}",
+                "error": f"{type(exc2).__name__}: {exc2}",
             }
-            summary["errors"].append({"accession": acc, "error": str(exc)})
+            summary["errors"].append({"accession": acc, "error": str(exc2)})
 
+    if registry_updates:
+        update_candidate_registry_batch(root, registry_updates)
     atomic_write_json(_ledger_path(root), ledger)
     return summary
