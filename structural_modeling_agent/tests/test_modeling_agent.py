@@ -322,13 +322,12 @@ def test_validation_report_returns_to_discovery_without_changing_rank(tmp_path):
 def test_proxy_tools_are_available_and_plans_are_immutable(tmp_path):
     from structural_modeling_agent.agent import tool_schemas
     names = {t["function"]["name"] for t in tool_schemas()}
-    assert {"get_structural_proxy_guidance", "validate_structural_proxy_plan", "declare_proxy_plan", "evaluate_proxy_plan"} <= names
+    assert {"declare_proxy_plan", "evaluate_proxy_plan"} <= names
     agent = make_agent(tmp_path)
     agent.dispatch("propose_model", propose(modeling_record(tmp_path)))
     plan = {"schema_version": "1.0", "mechanism": "synthetic_transfer", "reaction_step": "synthetic transfer",
         "assay_endpoint": "synthetic measurement", "context": {}, "hypotheses": [{"proxy_id": "complex_plddt",
         "rationale": "Prediction confidence baseline", "expected_direction": None, "evidence_ids": ["synthetic:reference"]}]}
-    assert agent.dispatch("validate_structural_proxy_plan", {"plan": plan})["status"] == "success"
     assert agent.dispatch("declare_proxy_plan", {"accession": "SYNTHETIC1", "plan": plan})["status"] == "declared"
     with pytest.raises(ValueError, match="inspect"):
         agent.dispatch("evaluate_proxy_plan", {"accession": "SYNTHETIC1"})
@@ -503,7 +502,7 @@ def test_preparation_operator_stays_offered_after_investigation_turns(tmp_path):
     # offer run_preparation_operator, the only tool that produces measured stage evidence.
     client = Recorder([
         [("read_evidence", {"path": str(tmp_path / "reference.txt")})],
-        [("inspect_preparation_contract", {})],
+        [("inspect_result_locations", {})],
         [("finish_task", {"outcome": "inconclusive", "rationale": "Nothing measured yet."})],
     ])
     agent = ModelingAgent(task_path=task, run_dir=tmp_path / "agent", llm_client=client)

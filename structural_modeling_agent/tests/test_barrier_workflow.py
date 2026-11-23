@@ -157,14 +157,13 @@ def test_scripted_agent_uses_the_entire_barrier_lifecycle(tmp_path,monkeypatch):
             step=len(observed)
             current=agent.state['candidates']['SYNTHETIC1'].get('barrier_studies',{})
             identifier=next(iter(current),None)
-            if step==0:name,args='inspect_barrier_contract',{}
-            elif step==1:name,args='prepare_barrier_inputs',dict(accession='SYNTHETIC1',prmtop=str(inputs[0]),
+            if step==0:name,args='prepare_barrier_inputs',dict(accession='SYNTHETIC1',prmtop=str(inputs[0]),
                 coordinates=str(inputs[1]),spec_path=str(inputs[2]),python=sys.executable,mode='embedded',seconds=5)
-            elif step==2:name,args='plan_barrier_calculation',plan_args(manifest)
-            elif step==3:name,args='submit_barrier_calculation',dict(accession='SYNTHETIC1',study_id=identifier)
-            elif step==4:name,args='check_barrier_calculation',dict(accession='SYNTHETIC1',study_id=identifier)
-            elif step==5:name,args='inspect_barrier_result',dict(path=current[identifier]['result']['path'])
-            elif step==6:name,args='record_barrier_assessment',assessment(identifier)
+            elif step==1:name,args='plan_barrier_calculation',plan_args(manifest)
+            elif step==2:name,args='submit_barrier_calculation',dict(accession='SYNTHETIC1',study_id=identifier)
+            elif step==3:name,args='check_barrier_calculation',dict(accession='SYNTHETIC1',study_id=identifier)
+            elif step==4:name,args='inspect_barrier_result',dict(path=current[identifier]['result']['path'])
+            elif step==5:name,args='record_barrier_assessment',assessment(identifier)
             else:name,args='finish_task',dict(outcome='complete',rationale='Synthetic lifecycle contract verified')
             assert name in {tool['function']['name'] for tool in kwargs['tools']}
             observed.append(name)

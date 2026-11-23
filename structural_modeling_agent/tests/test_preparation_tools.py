@@ -14,9 +14,6 @@ def test_readonly_preparation_tools_from_controller(tmp_path):
         ('read_candidate_section',{'accession':'SYNTHETIC1','section':'evidence'}),
         ('read_evidence',{'path':setup['sources'][0]['path']}),
         ('inspect_result_locations',{}),
-        ('inspect_mlmm_engine_options',{}),
-        ('inspect_preparation_contract',{}),
-        ('inspect_sampling_setup_contract',{}),
         ('inspect_processivity_toolchain',{}),
         ('inspect_molecule',{'smiles':'CC(=O)[O-]','smarts':'C(=O)[O-]'})]:
         result=agent.dispatch(name,args)
@@ -26,7 +23,7 @@ def test_readonly_preparation_tools_from_controller(tmp_path):
     assert inventory['recorded_evidence_current']
     assert all(e.get('interpreter_available',e.get('executable_available')) for e in inventory['environments'])
     saved=agent.dispatch('declare_sampling_setup',{'accession':'SYNTHETIC1','setup':setup})
-    assert agent.dispatch('inspect_sampling_setup',{'accession':'SYNTHETIC1','setup_id':saved['id']})['status']=='ready_for_preparation'
+    assert saved['status']=='ready_for_preparation'
     assert agent.dispatch('finish_task',{'outcome':'complete','rationale':'Synthetic test'})['status']=='blocked'
 
 
@@ -75,7 +72,7 @@ def test_two_read_only_turns_require_a_decision_update(tmp_path):
                 assert 'read_evidence' not in names
                 assert 'record_preparation_findings' in names
             return super().call(**kwargs)
-    client=InspectClient([[('inspect_preparation_contract',{})], [('inspect_sampling_setup_contract',{})],
+    client=InspectClient([[('inspect_candidate',{'accession':'SYNTHETIC1'})], [('inspect_result_locations',{})],
                           [('finish_task',{'outcome':'inconclusive','rationale':'Synthetic missing evidence'})]])
     agent=make_agent(tmp_path,client,objective='prepare_sampling')
     assert agent.run(max_turns=3)['status']=='inconclusive'

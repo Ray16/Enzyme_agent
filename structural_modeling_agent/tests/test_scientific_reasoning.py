@@ -66,8 +66,9 @@ def test_prose_only_proposals_and_inconsistent_mechanisms_cannot_execute(tmp_pat
 
 
 def test_focused_inspection_pages_keep_offsets_and_exact_content_in_model_context(tmp_path):
+    from structural_modeling_agent.controller.dispatch_handlers import validation_contract
     agent = make_agent(tmp_path)
-    schema = agent.dispatch("inspect_validation_contract", {"section": "scientific_reasoning"})
+    schema = validation_contract("scientific_reasoning")
     assert "hypotheses" in schema and "execution_rules" not in schema
     assert len(json.dumps(schema)) < 4800
     source = tmp_path / "reference.txt"

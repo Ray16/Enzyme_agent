@@ -18,10 +18,10 @@ from ..validation import file_digest, fingerprint
 from enzyme_discovery_agent.state_store import atomic_write_json
 
 ACTIVE = {'submission_pending','queued','running','unknown'}
-TOOLS = {'inspect_barrier_contract','prepare_barrier_inputs','plan_barrier_calculation',
+TOOLS = {'prepare_barrier_inputs','plan_barrier_calculation',
          'submit_barrier_calculation','check_barrier_calculation','inspect_barrier_result',
          'record_barrier_assessment'}
-READERS = {'inspect_barrier_contract','check_barrier_calculation','inspect_barrier_result'}
+READERS = {'check_barrier_calculation','inspect_barrier_result'}
 
 
 def tool_schemas():

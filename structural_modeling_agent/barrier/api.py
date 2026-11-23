@@ -90,7 +90,6 @@ def tool_schemas():
     string=lambda description:dict(type='string',description=description)
     from .workflow import tool_schemas as job_schemas
     return [
-        schema('inspect_barrier_contract','Inspect the generic reaction-barrier submodule, setup requirements and validation limits',{}),
         schema('prepare_barrier_inputs','Prepare one explicit embedded snapshot or isolated cluster in a bounded CPU operator; does not run a potential or submit GPU work',{
             'accession':string('Candidate identifier'),
             'prmtop':string('Authorized Amber topology path'),

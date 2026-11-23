@@ -42,11 +42,6 @@ def followup(agent, purpose="dynamics"):
 
 def test_default_is_cofold_and_followups_cannot_replace_it(tmp_path):
     agent=make_agent(tmp_path,objective="model_and_validate")
-    policy=agent.dispatch("inspect_workflow_policy",ACC)
-    assert policy["default"]=="cofolding" and not policy["followups_available"]
-    options=agent.dispatch("inspect_mlmm_engine_options",{})
-    assert "not a separate checkpoint" in options["uma"]["nitro_is"]
-    assert {option["id"] for option in options["embedding_options"]}=={"mechanical","xtb_oniom_ee","dft_electrostatic","emle"}
     agent.dispatch("propose_model",propose(modeling_record(tmp_path)))
     agent.dispatch("render_inputs",msa(tmp_path))
     with pytest.raises(ValueError,match="cofolding is the default prerequisite"):
@@ -61,7 +56,6 @@ def test_default_is_cofold_and_followups_cannot_replace_it(tmp_path):
 def test_unproductive_but_traceable_cofold_can_motivate_dynamics(tmp_path):
     agent=baseline(tmp_path,displacement=30)
     assert agent._current("SYNTHETIC1")["pose_validation"]["status"]=="fail"
-    assert agent.dispatch("inspect_workflow_policy",ACC)["followups_available"]
     dynamics=followup(agent)
     assert dynamics["tool"]=="bioemu2"
     design=followup(agent,"de_novo_design")

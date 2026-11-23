@@ -20,7 +20,7 @@ def test_saved_inspection_history_distinguishes_a_new_page_and_preserves_state(t
 def test_schema_copy_read_through_another_artifact_is_not_new_information(tmp_path):
     agent=make_agent(tmp_path)
     schema={'assembly':{'expected':'source-supported chain inventory'}}
-    agent._record_inspection('inspect_validation_contract',{'section':'setup'},schema,'first-artifact')
+    agent._record_inspection('read_candidate_section',{'section':'evidence'},schema,'first-artifact')
     for index in range(3):
         agent._record_inspection('read_evidence',{'path':f'copy-{index}'},
             {'text':json.dumps(schema),'offset':0,'next_offset':None},f'artifact-{index}')

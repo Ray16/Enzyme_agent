@@ -84,7 +84,8 @@ def test_agent_binds_network_to_exact_target_and_preserves_synthetic_scope(tmp_p
     sources.mkdir(exist_ok=True)
     data = network(sources)
     data.update(sequence_sha256=hashlib.sha256(b"AG").hexdigest(), target_sha256=fingerprint(agent.task["target"]))
-    assert agent.dispatch("inspect_processivity_contract", {})["schema_version"] == "processivity-network-1.0"
+    from structural_modeling_agent.sampling.kinetics import contract
+    assert contract()["schema_version"] == "processivity-network-1.0"
     result = agent.dispatch("assess_processivity_network", {"accession": "SYNTHETIC1", "network": data})
     assert result["status"] == "software_demonstration_only"
     assert result["processivity_demonstrated"] is False

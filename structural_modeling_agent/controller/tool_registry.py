@@ -444,53 +444,30 @@ def _h_check_sampling(agent, args):
 
 _REPEATABLE_READER_NAMES = frozenset({
     "inspect_candidate",
-    "inspect_validation_contract",
-    "inspect_workflow_policy",
     "inspect_result_locations",
     "inspect_investigation_lead",
     "read_candidate_section",
     "read_evidence",
     "read_reasoning_section",
-    "inspect_preparation_contract",
-    "inspect_sampling_setup_contract",
-    "inspect_processivity_contract",
     "inspect_processivity_toolchain",
-    "inspect_mlmm_engine_options",
     "check_cofold",
     "check_sampling",
     "check_barrier_calculation",
     "inspect_barrier_result",
 })
 
-# Legacy doc-inspector and redundant read-back tools replaced by lazy-loaded skills
-# and read_evidence. Retained for backward-compatible dispatch, excluded from default
-# LLM tool offers so the model sees a lean, essential tool surface.
-_DEPRECATED_TOOLS: frozenset[str] = frozenset({
-    "inspect_workflow_policy",
-    "inspect_validation_contract",
-    "inspect_preparation_contract",
-    "inspect_sampling_setup_contract",
-    "inspect_processivity_contract",
-    "inspect_barrier_contract",
-    "get_structural_proxy_guidance",
-    "inspect_mlmm_engine_options",
-    "inspect_preparation_study",
-    "inspect_sampling_setup",
-    "inspect_processivity_toolchain",
-    "validate_structural_proxy_plan",
-    "inspect_experimental_proxy_bundle",
-})
+_DEPRECATED_TOOLS: frozenset[str] = frozenset()
 
 _STAGE_MEMBERSHIPS: dict[str, frozenset[str]] = {
     "prepare_sampling": frozenset({
         "inspect_candidate", "read_candidate_section", "read_evidence",
         "retrieve_reference", "search_literature", "assess_assembly", "inspect_molecule",
-        "inspect_result_locations", "inspect_mlmm_engine_options", "inspect_preparation_contract",
-        "inspect_preparation_structure", "declare_preparation_study", "inspect_preparation_study",
-        "run_preparation_operator", "inspect_sampling_setup_contract", "inspect_processivity_toolchain",
-        "declare_sampling_setup", "inspect_sampling_setup", "record_preparation_findings", "finish_task",
+        "inspect_result_locations",
+        "inspect_preparation_structure", "declare_preparation_study",
+        "run_preparation_operator", "inspect_processivity_toolchain",
+        "declare_sampling_setup", "record_preparation_findings", "finish_task",
         "submit_sampling", "check_sampling",
-        "inspect_barrier_contract", "prepare_barrier_inputs", "plan_barrier_calculation",
+        "prepare_barrier_inputs", "plan_barrier_calculation",
         "submit_barrier_calculation", "check_barrier_calculation", "inspect_barrier_result",
         "record_barrier_assessment",
     }),
@@ -504,7 +481,7 @@ _STAGE_MEMBERSHIPS: dict[str, frozenset[str]] = {
         "inspect_candidate", "read_candidate_section", "inspect_investigation_lead",
         "inspect_molecule", "read_evidence", "retrieve_reference", "search_literature",
         "assess_assembly", "propose_model", "finish_task", "inspect_result_locations",
-        "inspect_barrier_contract", "prepare_barrier_inputs", "plan_barrier_calculation",
+        "prepare_barrier_inputs", "plan_barrier_calculation",
         "submit_barrier_calculation", "check_barrier_calculation", "inspect_barrier_result",
         "record_barrier_assessment",
     }),
@@ -518,29 +495,26 @@ _STAGE_MEMBERSHIPS: dict[str, frozenset[str]] = {
     "production_cached": frozenset({
         "inspect_candidate", "read_candidate_section", "read_evidence", "retrieve_reference",
         "review_existing_predictions", "finish_task", "inspect_result_locations",
-        "inspect_barrier_contract", "check_barrier_calculation", "inspect_barrier_result",
+        "check_barrier_calculation", "inspect_barrier_result",
     }),
     "evaluate_barriers": frozenset({
-        "inspect_barrier_contract", "prepare_barrier_inputs", "plan_barrier_calculation",
+        "prepare_barrier_inputs", "plan_barrier_calculation",
         "submit_barrier_calculation", "check_barrier_calculation", "inspect_barrier_result",
         "record_barrier_assessment", "assess_mlmm_profile",
         "inspect_candidate", "read_candidate_section", "read_evidence",
         "retrieve_reference", "search_literature", "assess_assembly", "inspect_molecule",
         "inspect_result_locations", "run_preparation_operator", "inspect_preparation_structure",
-        "inspect_preparation_contract", "record_preparation_findings", "finish_task",
+        "record_preparation_findings", "finish_task",
     }),
 }
 
 _DOMAIN_BY_TOOL: dict[str, str] = {
-    "inspect_barrier_contract": "barrier",
     "prepare_barrier_inputs": "barrier",
     "inspect_barrier_result": "barrier",
     "plan_barrier_calculation": "barrier",
     "submit_barrier_calculation": "barrier",
     "check_barrier_calculation": "barrier",
     "record_barrier_assessment": "barrier",
-    "get_structural_proxy_guidance": "proxies",
-    "validate_structural_proxy_plan": "proxies",
     "inspect_experimental_proxy_bundle": "proxies",
     "declare_proxy_plan": "proxies",
     "evaluate_proxy_plan": "proxies",
@@ -553,17 +527,12 @@ _DOMAIN_BY_TOOL: dict[str, str] = {
     "prepare_bioemu2": "followups",
     "inspect_dynamics": "followups",
     "register_design_run": "followups",
-    "inspect_preparation_contract": "sampling",
     "inspect_preparation_structure": "sampling",
     "declare_preparation_study": "sampling",
-    "inspect_preparation_study": "sampling",
     "record_preparation_findings": "sampling",
     "run_preparation_operator": "sampling",
-    "inspect_sampling_setup_contract": "sampling",
     "declare_sampling_setup": "sampling",
-    "inspect_sampling_setup": "sampling",
     "inspect_processivity_toolchain": "sampling",
-    "inspect_processivity_contract": "sampling",
     "assess_processivity_network": "sampling",
     "propose_model": "cofold",
     "validate_setup": "cofold",
@@ -572,7 +541,6 @@ _DOMAIN_BY_TOOL: dict[str, str] = {
     "check_cofold": "cofold",
     "validate_predictions": "cofold",
     "review_existing_predictions": "cofold",
-    "inspect_mlmm_engine_options": "mlmm",
 }
 
 

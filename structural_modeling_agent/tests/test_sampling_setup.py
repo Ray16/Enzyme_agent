@@ -80,9 +80,10 @@ def test_changed_source_and_different_sequence_require_new_investigation(tmp_pat
 
 
 def test_agent_tools_save_resumable_decisions_without_submitting_or_loading_models(tmp_path):
+    from structural_modeling_agent.sampling.setup import contract
     agent = make_agent(tmp_path)
     setup = declaration(tmp_path)
-    assert agent.dispatch("inspect_sampling_setup_contract", {})["schema_version"] == "sampling-setup-1.0"
+    assert contract()["schema_version"] == "sampling-setup-1.0"
     saved = agent.dispatch("declare_sampling_setup", {"accession": "SYNTHETIC1", "setup": setup})
     assert saved["status"] == "ready_for_preparation"
     assert not agent.state["candidates"]["SYNTHETIC1"]["revisions"]
@@ -91,8 +92,6 @@ def test_agent_tools_save_resumable_decisions_without_submitting_or_loading_mode
     updated = agent.dispatch("declare_sampling_setup", {"accession": "SYNTHETIC1", "setup": setup})
     assert updated["status"] == "needs_investigation"
     assert Path(saved["artifact"]).read_bytes() == original
-    page = agent.dispatch("inspect_sampling_setup", {"accession": "SYNTHETIC1", "setup_id": saved["id"]})
-    assert page["status"] == "needs_investigation"
     agent._save()
     from structural_modeling_agent.result_layout import read_run_index
     index = read_run_index(agent.run_dir)

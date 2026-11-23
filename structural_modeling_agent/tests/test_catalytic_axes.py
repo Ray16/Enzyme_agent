@@ -327,8 +327,10 @@ def test_slim_default_tool_surface_and_auto_caching(tmp_path):
     from structural_modeling_agent.controller.tool_registry import get_registry, select_offered_tools
 
     reg = get_registry()
-    assert len(reg.deprecated_names()) == 13
-    assert len(reg.active_names()) == len(reg.names()) - 13
+    assert len(reg.deprecated_names()) == 0
+    assert len(reg.names()) == 55
+    assert "inspect_validation_contract" not in reg.names()
+    assert "inspect_barrier_contract" not in reg.names()
 
     task_path = tmp_path / "task.json"
     task_path.write_text(json.dumps({

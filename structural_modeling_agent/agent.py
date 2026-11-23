@@ -439,7 +439,8 @@ class ModelingAgent:
             if self.task.get('objective')=='evaluate_barriers':continue
             if self.task.get("objective") == "prepare_sampling":
                 try:
-                    result = self.dispatch("inspect_preparation_study", {"accession": acc})
+                    from .controller.dispatch_handlers import evaluate_preparation_study
+                    result = evaluate_preparation_study(self, acc)
                     if result["status"] != "ready_for_sampling_review":
                         missing.append(f"{acc}: preparation or validation remains unresolved")
                 except (ValueError, OSError, KeyError) as exc:
@@ -509,25 +510,28 @@ class ModelingAgent:
         objective=self.task.get('objective')
         prefix[0]={"role":"system","content":(BARRIER_PROMPT if objective=='evaluate_barriers' else
                     PREPARATION_PROMPT if objective == 'prepare_sampling' else (
-                        compact_system_prompt() if self.task.get('progressive_tool_disclosure', True) else SYSTEM_PROMPT + BARRIER_GUIDANCE
+                        compact_system_prompt() if (self.task.get('workflow_mode') != 'production_cofold' and self.task.get('progressive_tool_disclosure', True)) else SYSTEM_PROMPT + BARRIER_GUIDANCE
                     ))}
         # Scientific field definitions must survive ordinary history compaction.
         # Otherwise a model can spend every turn rereading a truncated schema.
         cached_only=all((candidate.get('evidence') or {}).get('do_not_recofold')
                         and (candidate.get('evidence') or {}).get('existing_cofolds') for candidate in self.task['candidates'])
+        from .controller.dispatch_handlers import validation_contract
         contract = ({'workflow':'Review the original saved computation, not a fresh modeling experiment.',
                      'action':'review_existing_predictions','required':['accession','setup_id','applicability','interpretation','unresolved'],
                      'scope':'Source checks and frozen measurements remain attributed to the original model. Assess applicability and uncertainties; activity is not established. No new proposal or cofold is required.'}
-                    if cached_only else self.dispatch("inspect_validation_contract", {"section": "all" if self.task.get('workflow_mode')=='production_cofold' else "scientific_reasoning"}))
+                    if cached_only else validation_contract("all" if self.task.get('workflow_mode')=='production_cofold' else "scientific_reasoning"))
         if self.task.get("objective") == "prepare_sampling":
-            contract = self.dispatch("inspect_preparation_contract", {})
+            from .sampling.preparation import contract as prep_contract
+            contract = prep_contract()
             prefix.append({"role": "user", "content": json.dumps({
                 "preparation_instructions": self.task.get("preparation_instructions", "Investigate and validate the requested molecular preparation."),
                 "evidence_paths": self.state.get("authorized_evidence_paths", []),
                 "objective": "prepare_sampling"})})
         if objective=='evaluate_barriers':
+            from .barrier.api import contract as barrier_contract
             from .barrier.workflow import summary as barrier_summary
-            contract=self.dispatch('inspect_barrier_contract',{})
+            contract=barrier_contract()
             prefix.append(dict(role='user',content=json.dumps(dict(
                 objective=objective,barrier_studies={acc:barrier_summary(value.get('barrier_studies',{}))
                     for acc,value in self.state['candidates'].items()}))))

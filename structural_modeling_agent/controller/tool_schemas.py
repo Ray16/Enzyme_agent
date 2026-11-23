@@ -97,35 +97,29 @@ def build_core_schemas():
     shared = [
         get_tool_info(name)["schema"]
         for name in (
-            "get_structural_proxy_guidance",
-            "validate_structural_proxy_plan",
             "inspect_experimental_proxy_bundle",
         )
     ]
     return shared + barrier_schemas() + [
         _schema("inspect_result_locations", "Find this system/run's output destinations, current revisions and recorded result paths; folder existence is not completion", acc),
-        _schema("inspect_workflow_policy", "Inspect default cofolding and the distinct scientific purposes of optional dynamics and de novo design", acc, ("accession",)),
-        _schema("inspect_mlmm_engine_options", "Inspect reviewed UMA/Nitro, precision and embedding options and the separate evidence needed before a chemical-energetics run; no model loading"),
         _schema("record_preparation_findings", "Persist compact scientific working memory with verified source references and the next concrete action; replaces current notes, history is retained", {
             **acc,
             "summary": _string("Evidence-based findings, unresolved alternatives and decisions; maximum 6000 characters"),
             "sources": {"type": "array", "items": {"type": "object"}},
             "next_action": _string("Next discriminating preparation or investigation operation"),
         }, ("accession", "summary", "sources", "next_action")),
-        _schema("inspect_preparation_contract", "Inspect the preparation/validation loop and alternative-state evidence contract"),
         _schema("inspect_preparation_structure", "Inspect an authorized single-model PDB for hydrogens, waters and metal neighbors; observations only", {"path": _string("Authorized PDB path")}, ("path",)),
         _schema("declare_preparation_study", "Record preparation alternatives, measured validation, failures and concrete next actions", {
             **acc,
             "study": {
                 "type": "object",
-                "description": "Preparation study object (see inspect_preparation_contract); includes variants referencing declared setup_id and stage measurements",
+                "description": "Preparation study object (see md-preparation skill); includes variants referencing declared setup_id and stage measurements",
                 "properties": {
                     "variants": {"type": "array", "items": {"type": "object"}},
                     "next_actions": {"type": "array", "items": {"type": "string"}},
                 },
             },
         }, ("accession", "study")),
-        _schema("inspect_preparation_study", "Recheck latest preparation evidence and upstream dependencies", acc, ("accession",)),
         _schema("run_preparation_operator", "Run a short CPU Python preparation or diagnostic operator; saves code, inputs, logs and outputs for review. Not a GPU launcher.", {
             **acc,
             "python": _string("Absolute validated Python interpreter"),
@@ -146,9 +140,7 @@ def build_core_schemas():
             "outputs": {"type": "array", "items": {"type": "string"}},
             "seconds": {"type": "integer", "minimum": 1, "maximum": 60},
         }, ("accession", "python", "code", "inputs", "outputs", "seconds")),
-        _schema("inspect_sampling_setup_contract", "Inspect the evidence ledger for agent-selected MD/enhanced-sampling protocols; supplies questions, no chemical defaults"),
         _schema("inspect_processivity_toolchain", "Inspect configured MD, enhanced sampling, tunnel, QM/MM and ML/MM tools and exact validation scope; no model loading or submission"),
-        _schema("inspect_processivity_contract", "Inspect the transport/chemistry/release network contract and limits of processivity claims"),
         _schema("assess_processivity_network", "Evaluate a source-grounded kinetic network without filling unknown rates or counting release/rebinding as continuation", {
             **acc,
             "network": {"type": "object", "description": "processivity-network-1.0 declaration with exact sequence_sha256 and target_sha256"},
@@ -157,11 +149,6 @@ def build_core_schemas():
             **acc,
             "setup": declaration_schema(),
         }, ("accession", "setup")),
-        _schema("inspect_sampling_setup", "Recheck an agent-selected sampling setup against current evidence and model context; paginate the full declaration", {
-            **acc,
-            "setup_id": _string("Saved setup ID; omit for latest"),
-            "offset": {"type": "integer", "minimum": 0},
-        }, ("accession",)),
         _schema("plan_followup", "Record an evidence-grounded optional follow-up after primary cofold inspection", {
             **acc,
             "plan": {
@@ -240,9 +227,6 @@ def build_core_schemas():
             **acc,
             "offset": {"type": "integer", "minimum": 0},
         }, ("accession",)),
-        _schema("inspect_validation_contract", "Read focused schema sections; use scientific_reasoning for hypothesis fields and reasoning_rules for feedback rules", {
-            "section": {"type": "string", "enum": ["all", "scientific_reasoning", "reasoning_rules", "setup", "poses", "source_record", "proposal"]},
-        }),
         _schema("inspect_molecule", "Compute molecular charge, stereochemistry and optional reactive-atom matches", {
             "smiles": _string("Proposed modeled molecular structure"),
             "smarts": _string("Optional reaction-site selector"),

@@ -83,18 +83,6 @@ def _merge_model_changes(base, changes):
 # Pre-accession handlers (barrier & shared discovery proxy tools)
 # ---------------------------------------------------------------------------
 
-def _h_inspect_barrier_contract(agent, args):
-    from ..barrier.api import contract
-    from ..barrier.workflow import backend_config
-
-    result = contract()
-    try:
-        result["configured_backend"] = backend_config(agent)
-    except ValueError as exc:
-        result["backend_gap"] = str(exc)
-    return result
-
-
 def _h_prepare_barrier_inputs(agent, args):
     from ..barrier.api import prepare_for_agent
     return prepare_for_agent(agent, args)
@@ -135,12 +123,12 @@ def _make_shared_proxy_handler(tool_name):
 
 
 # ---------------------------------------------------------------------------
-# General / contract / inspection handlers (after accession defaulting)
+# General / contract / inspection helpers & handlers (after accession defaulting)
 # ---------------------------------------------------------------------------
 
-def _h_inspect_validation_contract(agent, args):
+def validation_contract(section: str = "all"):
+    """Load the validation_contract.json section (used internally by agent._context)."""
     contract = json.loads((Path(__file__).resolve().parents[1] / "validation_contract.json").read_text())
-    section = args.get("section", "all")
     if section == "all":
         return contract
     if section == "scientific_reasoning":
@@ -154,24 +142,10 @@ def _h_inspect_validation_contract(agent, args):
     raise ValueError("unknown contract section")
 
 
-def _h_inspect_mlmm_engine_options(agent, args):
-    from importlib.metadata import PackageNotFoundError, version
-
-    result = json.loads((Path(__file__).resolve().parents[1] / "knowledge" / "mlmm_engine_options.json").read_text())
-    try:
-        current = version("fairchem-core")
-    except PackageNotFoundError:
-        current = None
-    return {
-        **result,
-        "controller_environment_fairchem_version": current,
-        "execution_environment": "External engine environments must be inspected independently; this tool does not test runtime capability.",
-    }
-
-
-def _h_inspect_preparation_contract(agent, args):
-    from ..sampling.preparation import contract
-    return contract()
+def evaluate_preparation_study(agent, acc: str):
+    """Re-evaluate the latest declared preparation study (used by completion_errors)."""
+    candidate = agent._candidate(acc)
+    return _h_preparation_study(agent, {}, acc, candidate, declare=False)
 
 
 def _h_inspect_preparation_structure(agent, args):
@@ -180,19 +154,9 @@ def _h_inspect_preparation_structure(agent, args):
     return {"artifact": agent._artifact("preparation_structure", result), **result}
 
 
-def _h_inspect_sampling_setup_contract(agent, args):
-    from ..sampling.setup import contract
-    return contract()
-
-
 def _h_inspect_processivity_toolchain(agent, args):
     from ..sampling.toolchain import inspect_toolchain
     return inspect_toolchain()
-
-
-def _h_inspect_processivity_contract(agent, args):
-    from ..sampling.kinetics import contract
-    return contract()
 
 
 def _h_inspect_result_locations(agent, args):
@@ -369,18 +333,6 @@ def _h_assess_processivity_network(agent, args, acc, candidate):
         "processivity_demonstrated": False,
     }
     return {**result, "artifact": artifact}
-
-
-def _h_inspect_workflow_policy(agent, args, acc, candidate):
-    from .workflow_policy import TOOL_PURPOSES, baseline_errors
-    revisions = agent.state["candidates"][acc]["revisions"]
-    errors = baseline_errors(revisions[-1]) if revisions else ["no primary cofold decision yet"]
-    return {
-        "default": "cofolding",
-        "tool_purposes": TOOL_PURPOSES,
-        "cofold_baseline_errors": errors,
-        "followups_available": not errors,
-    }
 
 
 def _h_record_preparation_findings(agent, args, acc, candidate):
@@ -1042,27 +994,19 @@ def _h_validate_predictions(agent, args, acc, candidate, revision):
 # ---------------------------------------------------------------------------
 
 PRE_ACCESSION_HANDLERS = {
-    "inspect_barrier_contract": _h_inspect_barrier_contract,
     "prepare_barrier_inputs": _h_prepare_barrier_inputs,
     "inspect_barrier_result": _h_inspect_barrier_result,
     "plan_barrier_calculation": _h_plan_barrier_calculation,
     "submit_barrier_calculation": _h_submit_barrier_calculation,
     "check_barrier_calculation": _h_check_barrier_calculation,
     "record_barrier_assessment": _h_record_barrier_assessment,
-    "get_structural_proxy_guidance": _make_shared_proxy_handler("get_structural_proxy_guidance"),
-    "validate_structural_proxy_plan": _make_shared_proxy_handler("validate_structural_proxy_plan"),
     "inspect_experimental_proxy_bundle": _make_shared_proxy_handler("inspect_experimental_proxy_bundle"),
     "inspect_investigation_lead": _h_inspect_investigation_lead,
 }
 
 GENERAL_HANDLERS = {
-    "inspect_validation_contract": _h_inspect_validation_contract,
-    "inspect_mlmm_engine_options": _h_inspect_mlmm_engine_options,
-    "inspect_preparation_contract": _h_inspect_preparation_contract,
     "inspect_preparation_structure": _h_inspect_preparation_structure,
-    "inspect_sampling_setup_contract": _h_inspect_sampling_setup_contract,
     "inspect_processivity_toolchain": _h_inspect_processivity_toolchain,
-    "inspect_processivity_contract": _h_inspect_processivity_contract,
     "inspect_result_locations": _h_inspect_result_locations,
     "inspect_molecule": _h_inspect_molecule,
     "inspect_candidate": _h_inspect_candidate,
@@ -1077,13 +1021,10 @@ GENERAL_HANDLERS = {
 
 CANDIDATE_HANDLERS = {
     "assess_processivity_network": _h_assess_processivity_network,
-    "inspect_workflow_policy": _h_inspect_workflow_policy,
     "record_preparation_findings": _h_record_preparation_findings,
     "run_preparation_operator": _h_run_preparation_operator,
     "declare_preparation_study": lambda a, args, acc, cand: _h_preparation_study(a, args, acc, cand, declare=True),
-    "inspect_preparation_study": lambda a, args, acc, cand: _h_preparation_study(a, args, acc, cand, declare=False),
     "declare_sampling_setup": lambda a, args, acc, cand: _h_sampling_setup(a, args, acc, cand, declare=True),
-    "inspect_sampling_setup": lambda a, args, acc, cand: _h_sampling_setup(a, args, acc, cand, declare=False),
     "propose_model": _h_propose_model,
 }
 
