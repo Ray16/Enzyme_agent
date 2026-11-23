@@ -937,12 +937,14 @@ def evaluate_candidate(
         )
         fut_structural = pool.submit(_check_pdb_availability, accession, entry)
 
-        domain_result = fut_domains.result()
-        literature = fut_literature.result()
+        # Start bacterial-expression lookup as soon as PDB IDs arrive so it overlaps
+        # with slower domain and PubMed lookups instead of waiting behind them.
         structural_data = fut_structural.result()
-
         pdb_ids = structural_data.get("pdb_ids", [])
         fut_expression = pool.submit(_check_bacterial_expression, accession, entry, pdb_ids)
+
+        domain_result = fut_domains.result()
+        literature = fut_literature.result()
         expression_data = fut_expression.result()
 
     domain_architecture = domain_result.get("data", []) if isinstance(domain_result, dict) else []

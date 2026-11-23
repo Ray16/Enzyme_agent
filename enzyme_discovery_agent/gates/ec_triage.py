@@ -369,7 +369,7 @@ def _auto_evaluate_all(run_dir: Path, log_fn=None, llm_client=None, limit=None, 
         budget_check = getattr(llm_client, "budget_check", None)
         if budget_check and budget_check():
             llm_client.budget_exhausted = True
-            return acc, None
+            return acc, None, None, None
         try:
             use_llm = None if native_first and current_candidate_status(registry["candidates"][acc]) == "screened" else llm_client
             result = evaluate_candidate(
@@ -378,14 +378,13 @@ def _auto_evaluate_all(run_dir: Path, log_fn=None, llm_client=None, limit=None, 
                 llm_client=use_llm,
                 **target_params,
             )
+            post_meta = {}
+            failure_reason = None
             if use_llm is not None and not getattr(llm_client, "budget_exhausted", False):
-                update_candidate_registry(run_dir, acc, None,
-                    metadata={"literature_recovery_attempted": True,
-                              "literature_recovery_fingerprint": evidence_fingerprint(
-                                  load_candidate_registry(run_dir).get("candidates", {}).get(
-                                      acc, {}).get("metadata", {}).get("literature_evidence"))})
+                post_meta["literature_recovery_attempted"] = True
+                post_meta["_need_lit_fp"] = True
             if result and result.get("status") == "success":
-                update_candidate_registry(run_dir, acc, None, {"evaluation_failure": None})
+                post_meta["evaluation_failure"] = None
                 write_tool_artifact(run_dir, "candidates", "evaluate_candidate", {
                     "tool_name": "evaluate_candidate",
                     "args": {"accession": acc},
@@ -394,25 +393,55 @@ def _auto_evaluate_all(run_dir: Path, log_fn=None, llm_client=None, limit=None, 
                     "result": result,
                 })
             elif not getattr(llm_client, "budget_exhausted", False):
-                record_failure(acc, "evaluation returned no successful evidence")
-            return acc, result
+                failure_reason = "evaluation returned no successful evidence"
+            return acc, result, post_meta, failure_reason
         except Exception as e:
             logger.warning("Auto-evaluate failed for %s: %s", acc, e)
-            record_failure(acc, type(e).__name__)
-            return acc, None
+            return acc, None, {}, type(e).__name__
 
+    from enzyme_discovery_agent.models.candidate_registry import update_candidate_registry_batch
+    post_updates = []
+    failures = []
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=config.EVAL_POOL_WORKERS
     ) as pool:
         futures = [pool.submit(_eval_one, acc) for acc in to_evaluate]
         for future in concurrent.futures.as_completed(futures):
-            acc, result = future.result()
+            acc, result, post_meta, failure_reason = future.result()
+            if post_meta:
+                post_updates.append((acc, post_meta))
+            if failure_reason:
+                failures.append((acc, failure_reason))
             if result and result.get("status") == "success":
                 validation = (result.get("data") or {}).get("claim_validation")
                 if validation and validation.get("promotion_eligible") is not True:
                     evidence_pending += 1
                 else:
                     evaluated += 1
+
+    # Commit post-evaluation metadata updates in one batched registry write instead
+    # of lock-contended per-thread writes.
+    if post_updates or failures:
+        import time as _time
+        current_reg = load_candidate_registry(run_dir).get("candidates", {})
+        batch = []
+        for acc, post_meta in post_updates:
+            md = dict(post_meta)
+            if md.pop("_need_lit_fp", False):
+                md["literature_recovery_fingerprint"] = evidence_fingerprint(
+                    (current_reg.get(acc) or {}).get("metadata", {}).get("literature_evidence")
+                )
+            if md:
+                batch.append((acc, None, md))
+        for acc, reason in failures:
+            meta = (current_reg.get(acc) or {}).get("metadata", {})
+            previous = meta.get("evaluation_failure") or {}
+            basis = evaluation_basis(meta)
+            attempts = previous.get("attempts", 0) + 1 if previous.get("basis") == basis else 1
+            batch.append((acc, None, {"evaluation_failure": {
+                "basis": basis, "attempts": attempts, "retry_after": _time.time() + 60, "reason": reason}}))
+        if batch:
+            update_candidate_registry_batch(run_dir, batch)
 
     if log_fn:
         log_fn(f"  Auto-evaluation complete: {evaluated}/{len(to_evaluate)} supported, "

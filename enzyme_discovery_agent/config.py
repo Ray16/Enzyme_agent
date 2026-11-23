@@ -210,16 +210,16 @@ DISCOVERY_EXTRACTION_TIMEOUT = 90
 FINALIZATION_RESERVE_ITERATIONS = 8  # retained for compatibility; no turn-based cutoff
 
 # --- Tool execution ---
-TOOL_THREAD_POOL_WORKERS = 4
+TOOL_THREAD_POOL_WORKERS = 8
 # The auto-screen light-annotation fetch and the auto-evaluation loop are pure
 # network I/O (no LLM), and every distinct gene representative is now evaluated,
 # so a higher concurrency keeps finalization fast without over-loading the public
-# APIs.  Kept modest to stay polite to UniProt / EBI.
-EVAL_POOL_WORKERS = 8
+# APIs.  Per-host HTTP_RATE_LIMITS keep requests polite to UniProt / EBI.
+EVAL_POOL_WORKERS = 12
 # Concurrency for the full-text harvest: papers are downloaded and read (LLM
 # extraction) in parallel rather than one at a time.  Bounded to stay polite to
 # publisher servers and the LLM endpoint.
-FULLTEXT_HARVEST_WORKERS = 6
+FULLTEXT_HARVEST_WORKERS = 8
 # Concurrency for building a fold's members in survey_family_reactions (each member
 # does independent ChEBI/UniProt network work -- the dominant per-fold cost).  The
 # family-survey gate already runs folds ~6-wide, so keep this modest to stay polite
