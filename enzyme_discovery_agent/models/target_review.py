@@ -377,8 +377,11 @@ def _same_review_basis(attempt, target_hash, record_hash):
 
 
 def review_queue(root,limit=4,accessions=None,force=False):
+    from enzyme_discovery_agent.chemistry.reactions import evaluate_partner_gate
     registry=load_candidate_registry(Path(root),strict=True)['candidates'];rows=[]
-    target_hash=digest(target_contract(root))
+    contract=target_contract(root)
+    target_hash=digest(contract)
+    target_smiles=[part for part in (contract.get('substrate_smiles') or '').split('.') if part]
     for accession,entry in registry.items():
         meta=entry.get('metadata') or {}
         if accessions is not None and accession not in accessions:continue
@@ -386,6 +389,14 @@ def review_queue(root,limit=4,accessions=None,force=False):
         if not identity_verified(root,accession,meta):continue
         if discovery_status(entry) not in {'evaluated','ranked','evidence_pending'}:continue
         record=scientific_record(meta)
+        # Skip spending LLM target-review tokens on candidates whose recorded
+        # reaction/EC already triggers a deterministic partner-class exclusion
+        # (they are recorded in excluded_candidates.csv by csv_generator).
+        # Explicit caller-requested accessions or force=True still bypass this.
+        if accessions is None and not force and target_smiles:
+            ec_numbers=meta.get('ec_numbers') or (meta.get('evaluation_data') or {}).get('ec_numbers')
+            if evaluate_partner_gate(record.get('catalytic_activities'),ec_numbers,target_smiles).get('action')=='exclude':
+                continue
         record_hash=digest(record)
         record['accession']=accession
         assessment=meta.get('target_assessment') or {}

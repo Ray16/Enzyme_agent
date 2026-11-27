@@ -86,30 +86,48 @@ def inspection_completed(run_dir):
     return state.get('inspected_epoch') == inspection_epoch(run_dir)
 
 
+_LIT_OBS_CACHE: dict[str, tuple[tuple[tuple[str, int, int], ...], list[dict]]] = {}
+
+
 def _literature_observations(root):
     """Make retrieved passages citable before any candidate has been evaluated."""
-    rows,seen=[],set()
-    for path in sorted((root/'artifacts/literature').rglob('*.json'),
-                       key=lambda path:(path.stat().st_mtime_ns,str(path)),reverse=True):
-        payload=_read(path,{})
-        result=payload.get('result') or {}
-        data=result.get('data')
-        papers=data if isinstance(data,list) else [paper for key in ('seed_papers','reference_papers')
-            for paper in (data.get(key) or [])] if isinstance(data,dict) else []
-        digest=hashlib.sha256(path.read_bytes()).hexdigest()
-        for index,paper in enumerate(papers):
-            if not isinstance(paper,dict) or not paper.get('title'):
+    lit_dir = root / 'artifacts/literature'
+    if not lit_dir.is_dir():
+        return []
+    files = sorted(
+        ((path, path.stat()) for path in lit_dir.rglob('*.json')),
+        key=lambda item: (item[1].st_mtime_ns, str(item[0])),
+        reverse=True,
+    )
+    sig = tuple((str(path), st.st_mtime_ns, st.st_size) for path, st in files)
+    cache_key = str(root.resolve())
+    cached = _LIT_OBS_CACHE.get(cache_key)
+    if cached is not None and cached[0] == sig:
+        return list(cached[1])
+    rows, seen = [], set()
+    for path, _st in files:
+        payload = _read(path, {})
+        result = payload.get('result') or {}
+        data = result.get('data')
+        papers = data if isinstance(data, list) else [paper for key in ('seed_papers', 'reference_papers')
+            for paper in (data.get(key) or [])] if isinstance(data, dict) else []
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        for index, paper in enumerate(papers):
+            if not isinstance(paper, dict) or not paper.get('title'):
                 continue
-            key=paper.get('doi') or paper.get('pmid') or paper['title']
+            key = paper.get('doi') or paper.get('pmid') or paper['title']
             if key in seen:
                 continue
             seen.add(key)
-            rows.append({'kind':'retrieved_literature_evidence','family':None,
-                'facts':{'paper_key':str(key),'title':paper['title'],'doi':paper.get('doi'),
-                    'pmid':paper.get('pmid'),'abstract_excerpt':str(paper.get('abstract') or '')[:1000],
-                    'scope':'Retrieved title/abstract, not a verified enzyme identity or demonstrated target activity.'},
-                'source':{'path':str(path.relative_to(root)),'sha256':digest,'paper_index':index}})
-    return rows
+            rows.append({'kind': 'retrieved_literature_evidence', 'family': None,
+                'facts': {'paper_key': str(key), 'title': paper['title'], 'doi': paper.get('doi'),
+                    'pmid': paper.get('pmid'), 'abstract_excerpt': str(paper.get('abstract') or '')[:1000],
+                    'scope': 'Retrieved title/abstract, not a verified enzyme identity or demonstrated target activity.'},
+                'source': {'path': str(path.relative_to(root)), 'sha256': digest, 'paper_index': index}})
+    if len(_LIT_OBS_CACHE) >= 16:
+        _LIT_OBS_CACHE.clear()
+    _LIT_OBS_CACHE[cache_key] = (sig, rows)
+    return list(rows)
 
 
 def _native_facts(accession, data, metadata):
@@ -699,8 +717,26 @@ def validate_plan(run_dir, proposal, allowed_tools, *, field_limits=None, prospe
         if not isinstance(previous, str) or len(previous) != 32 or any(c not in '0123456789abcdef' for c in previous):
             raise ValueError('Invalid previous decision identifier')
         outcome = _read(_root(run_dir) / previous / 'outcome.json', {})
-        if not outcome or outcome.get('evidence_id') not in refs:
+        outcome_ev_id = outcome.get('evidence_id') if isinstance(outcome, dict) else None
+        if not outcome or not outcome_ev_id:
             raise ValueError('A revision must cite the recorded outcome of its previous test')
+        if outcome_ev_id not in refs:
+            # When the model explicitly names the revised decision and supplies an
+            # interpretation (or concludes the review), bind the recorded outcome's
+            # evidence ID automatically and verify its integrity rather than burning
+            # a full turn on a copy-paste hash omission.
+            has_explicit_interp = (
+                bool(str(proposal.get('outcome_interpretation') or '').strip())
+                or not prospective
+            )
+            ev_digest = outcome_ev_id.split(':', 1)[1] if isinstance(outcome_ev_id, str) and outcome_ev_id.startswith('evidence:') else ''
+            ev_obj = _read(_root(run_dir) / 'evidence' / (ev_digest + '.json'), None) if len(ev_digest) == 64 else None
+            if has_explicit_interp and ev_obj is not None and _hash(ev_obj) == ev_digest and len(refs) < 8:
+                refs = [*refs, outcome_ev_id]
+                cited.append(ev_obj)
+                proposal = {**proposal, 'evidence_refs': refs, 'outcome_citation_inferred_from_revises': True}
+            else:
+                raise ValueError('A revision must cite the recorded outcome of its previous test')
     if name == 'set_family_focus' and state.get('last_decision'):
         prior = _read(_root(run_dir) / state['last_decision'] / 'plan.json', {})
         if prior.get('tool_name') == 'set_family_focus':

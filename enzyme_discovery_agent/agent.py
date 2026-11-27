@@ -939,10 +939,22 @@ class EnzymeAgent:
         # Count DISTINCT papers for gate sufficiency: now that several sources
         # feed the pool, the same paper arrives multiple times and must not
         # inflate the "enough literature" signal (which would stop search early).
+        # Cache disk literature recovery by directory stat signature so hot-loop
+        # syncs do not re-read every literature artifact JSON on every turn.
         from enzyme_discovery_agent.tools.literature import dedupe_and_merge
         unique_papers, _ = dedupe_and_merge(self._accumulated_papers)
-        from enzyme_discovery_agent.tools.literature import _recover_literature_papers
-        unique_papers, _ = dedupe_and_merge(unique_papers + _recover_literature_papers(str(self.run_dir)))
+        lit_dir = self.run_dir / "artifacts" / "literature"
+        lit_sig = (
+            tuple(sorted((p.name, p.stat().st_mtime_ns, p.stat().st_size) for p in lit_dir.glob("*.json")))
+            if lit_dir.is_dir() else ()
+        )
+        if lit_sig != getattr(self, "_lit_recovery_sig", None):
+            from enzyme_discovery_agent.tools.literature import _recover_literature_papers
+            self._lit_recovery_cache = _recover_literature_papers(str(self.run_dir))
+            self._lit_recovery_sig = lit_sig
+        recovered_papers = getattr(self, "_lit_recovery_cache", [])
+        if recovered_papers:
+            unique_papers, _ = dedupe_and_merge(unique_papers + recovered_papers)
         self._accumulated_papers = unique_papers
         self._gate_state.accumulated_papers = unique_papers
         self._gate_state.lit_search_count = len(
@@ -1341,6 +1353,7 @@ class EnzymeAgent:
             # that work in the bounded tranche, even while an earlier search
             # outcome awaits interpretation. Never close that review implicitly.
             candidate_work = bool(backlog) or (source_reviewed and new_evaluation_work(self.run_dir))
+            pre_checked_gates: set[int] = set()
             if (candidate_work and not reconnaissance and not user_reflection and not review_yield
                     and (source_reviewed or not adaptive_review)
                     and self._automatic_evidence_batches < config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION):
@@ -1350,17 +1363,19 @@ class EnzymeAgent:
                         "evaluation_backlog", result, iteration, messages, discard_assistant=False)
                     if intercepted:
                         continue
-                # A fresh evaluation backlog always drains first (above). Only when
-                # nothing is ready to evaluate this turn is expansion offered, and
-                # then only on its reserved cadence, so breadth fills the gaps
-                # between evaluation instead of being starved by it. This is the
-                # block that reliably fires, so expansion was previously unreached.
+                else:
+                    pre_checked_gates.add(id(self._eval_gate))
+                # A fresh evaluation backlog drains first (above). Once nothing is
+                # ready to evaluate this turn, offer expansion on its reserved cadence
+                # so breadth fills the gaps between evaluation batches.
                 if self._expansion_gate.should_fire(self._gate_state, False, messages):
                     result = self._expansion_gate.execute(self._gate_state, messages)
                     iteration, intercepted = self._apply_gate_result(
                         "homolog_expansion", result, iteration, messages, discard_assistant=False)
                     if intercepted:
                         continue
+                else:
+                    pre_checked_gates.add(id(self._expansion_gate))
             if getattr(self, '_invalid_research_decisions', 0) >= 2:
                 if backlog:
                     from enzyme_discovery_agent.models.research_decisions import defer_ungrounded_review
@@ -1385,10 +1400,14 @@ class EnzymeAgent:
                 else:
                     return self._finish_budget_checkpoint(messages, iteration - 1, token_usage,
                         'Adaptive decision could not be grounded after two attempts; review the preserved evidence and proposals.', status='discovery_incomplete')
-            forced_reflection = user_reflection or self._automatic_reflection_due() or review_yield
-            # A productive automatic queue still yields periodically to a
-            # normal model decision, without injecting a reflection request.
-            automation_yield = self._automatic_evidence_batches >= config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION
+            forced_reflection = user_reflection or self._automatic_reflection_due()
+            # A productive automatic queue (including a bounded target-review tranche)
+            # yields periodically to a normal model decision, without injecting a
+            # reflection + STRATEGY CHECK prompt on every single turn.
+            automation_yield = (
+                self._automatic_evidence_batches >= config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION
+                or review_yield
+            )
             skip_automation = forced_reflection or automation_yield or adaptive_review or reconnaissance
             from enzyme_discovery_agent.models.recovery import next_recovery_action
             initial_action = next_recovery_action(self.run_dir, {t["function"]["name"] for t in self.tools})
@@ -1448,6 +1467,8 @@ class EnzymeAgent:
                         name, result, iteration, messages, discard_assistant=False)
                     if intercepted:
                         break
+                else:
+                    pre_checked_gates.add(id(gate))
             if intercepted:
                 continue
 
@@ -1465,12 +1486,16 @@ class EnzymeAgent:
                     if has_pending(self.run_dir) or self._budget_reason():
                         intercepted = True
                         break
+                    if id(gate) in pre_checked_gates:
+                        continue
                     if gate.should_fire(self._gate_state, False, messages):
                         result = gate.execute(self._gate_state, messages)
                         iteration, intercepted = self._apply_gate_result(
                             name, result, iteration, messages, discard_assistant=False)
                         if intercepted:
                             break
+                    else:
+                        pre_checked_gates.add(id(gate))
                 if intercepted:
                     continue
 
@@ -1819,20 +1844,20 @@ class EnzymeAgent:
             # fire on the NEXT turn with the stops already in place.
             has_focus_call = any(_tc_name(tc) in {"set_family_focus", "plan_research_step", "conclude_research_review"} for tc in tool_calls)
 
-            self._sync_gate_state()
             # Deterministic pre-evaluation gates, all skipped on a focus-call turn
             # (see has_focus_call above) so the agent's set_family_focus tool runs
             # and its stop/expand decisions persist before the eval gates spend
-            # budget — they fire on the NEXT turn with the stops in place.  The early
-            # gates (literature-first harvest → mechanism-family derivation → family
-            # survey → evidence selection → systematic coverage) fire every discovery
-            # turn; the pre-evaluation pipeline fires only once there is something to
-            # evaluate.  Every gate runs through the one shared intercept ritual.
+            # budget — they fire on the NEXT turn with the stops in place.  Gates
+            # that were already evaluated pre-LLM in this same iteration are skipped
+            # unless the model issued evaluate_candidate calls (avoiding redundant
+            # checks and wasted paid turns).
             if not has_focus_call and not skip_automation:
                 intercepted = False
                 for name, gate in self._early_gates:
                     if steering.has_pending(self.run_dir):
                         break
+                    if not has_eval_calls and id(gate) in pre_checked_gates:
+                        continue
                     if not gate.should_fire(self._gate_state, has_eval_calls, messages):
                         continue
                     result = gate.execute(self._gate_state, messages)
@@ -1842,7 +1867,15 @@ class EnzymeAgent:
                         break
                 if intercepted:
                     continue
-                if not steering.has_pending(self.run_dir) and (self._gate_state.candidate_count > 0
+                pipeline_needed = (
+                    has_eval_calls
+                    or not getattr(self._gate_state, "entity_extraction_done", False)
+                    or not getattr(self._gate_state, "discovery_coverage_done", False)
+                    or id(self._eval_gate) not in pre_checked_gates
+                    or id(self._expansion_gate) not in pre_checked_gates
+                )
+                if pipeline_needed and not steering.has_pending(self.run_dir) and (
+                        self._gate_state.candidate_count > 0
                         or self._gate_state.pending_evaluation_count > 0
                         or has_eval_calls
                         or self._gate_state.critique_injected):
