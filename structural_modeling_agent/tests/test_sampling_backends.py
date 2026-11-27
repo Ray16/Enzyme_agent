@@ -1,4 +1,6 @@
 import pytest
+
+pytest.importorskip("ase")
 from ase import Atoms
 from structural_modeling_agent.sampling.backends import bind_electronic_state
 

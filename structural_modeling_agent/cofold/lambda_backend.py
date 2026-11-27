@@ -15,10 +15,16 @@ import time
 
 ROOT = None
 POOL = None
-NFS = Path('/nfs/lambda_stor_01/homes/rzhu')
-GATE = NFS/'bin/gpu_reserve'
-KIT = NFS/'Tool/uplifting-biomolecular-modeling/boltz2'
-PYTHON = NFS/'boltz2-venv/bin/python'
+try:
+    from ..env_config import EXACT_BOLTZ_PYTHON as _EXACT_BOLTZ_PYTHON, GPU_RESERVE_BIN as _GPU_RESERVE_BIN, NFS_ROOT as _NFS_ROOT
+    NFS = _NFS_ROOT
+    GATE = _GPU_RESERVE_BIN
+    PYTHON = Path(_EXACT_BOLTZ_PYTHON)
+except ImportError:
+    NFS = Path(os.environ.get('SMA_NFS_ROOT', '/nfs/lambda_stor_01/homes/rzhu'))
+    GATE = Path(os.environ.get('SMA_GPU_RESERVE', str(NFS / 'bin/gpu_reserve')))
+    PYTHON = Path(os.environ.get('SMA_EXACT_BOLTZ_PYTHON', str(NFS / 'boltz2-venv/bin/python')))
+KIT = Path(os.environ.get('SMA_BOLTZ_KIT', str(NFS / 'Tool/uplifting-biomolecular-modeling/boltz2')))
 THREADS = ('OMP_NUM_THREADS','OMP_THREAD_LIMIT','OPENBLAS_NUM_THREADS',
            'MKL_NUM_THREADS','NUMEXPR_NUM_THREADS','VECLIB_MAXIMUM_THREADS','BLIS_NUM_THREADS')
 
@@ -188,16 +194,17 @@ def worker(job):
         cpus=allocation(requested=requested_cpus); os.sched_setaffinity(0,set(cpus)); gpu=choices[0]
         env=os.environ.copy(); env.update({name:'1' for name in THREADS})
         env.pop('PYTHONPATH',None)
+        seed = int(request.get('seed', 42))
         command=['taskset','-c',','.join(map(str,cpus)),str(GATE),'run',str(gpu),'--label','discovery-'+key[:12],'--',
                  'bash',str(KIT/'_kit_run.sh'),'pred','--config','h100','--mode','exact',
                  '--input',request['input_yaml'],'--out_dir',str(job/'outputs'),
-                 '--diffusion_samples',str(request['expected_predictions']),'--seed','42',
+                 '--diffusion_samples',str(request['expected_predictions']),'--seed',str(seed),
                  '--num_workers','0','--preprocessing-threads','1','--output_format','pdb']
         producer=KIT/'_kit_run.sh';batch_size=request['expected_predictions']
         if profile=='stock_fp32_serial':
             producer=Path(policy['serial_producer']);batch_size=1
             options=['predict',request['input_yaml'],'--out_dir',str(job/'outputs'),'--diffusion_samples',str(request['expected_predictions']),
-                     '--seed','42','--num_workers','0','--preprocessing-threads','1','--output_format','pdb',
+                     '--seed',str(seed),'--num_workers','0','--preprocessing-threads','1','--output_format','pdb',
                      '--max_parallel_samples','1','--cache',str(NFS/'.boltz'),'--model','boltz2','--no_kernels']
             boltz.main.cli.commands['predict'].make_context('predict',options[1:])
             prefix=command[:command.index('--')+1]
@@ -221,11 +228,20 @@ def worker(job):
             predictor=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,env=env,start_new_session=True)
             receipt['predictor_pid']=predictor.pid;write(job/'receipt.json',receipt)
             started=time.monotonic()
+            smi_failures=0
             while predictor.poll() is None:
                 if time.monotonic()-started>21600: stop()
                 # Any resident process outside our worker tree invalidates exclusivity.
-                query=subprocess.run(['nvidia-smi','-i',str(gpu),'--query-compute-apps=pid',
-                                      '--format=csv,noheader,nounits'],capture_output=True,text=True,timeout=15,check=True)
+                try:
+                    query=subprocess.run(['nvidia-smi','-i',str(gpu),'--query-compute-apps=pid',
+                                          '--format=csv,noheader,nounits'],capture_output=True,text=True,timeout=15,check=True)
+                    smi_failures=0
+                except subprocess.SubprocessError:
+                    smi_failures+=1
+                    if smi_failures>=3:
+                        raise
+                    time.sleep(5)
+                    continue
                 if predictor.poll() is not None:break
                 residents={int(v.strip()) for v in query.stdout.splitlines() if v.strip().isdigit()}
                 try:descendants={p.pid for p in psutil.Process(predictor.pid).children(recursive=True)}
@@ -261,7 +277,7 @@ def worker(job):
             target.symlink_to(file)
         producer={'input_sha256':request['input_sha256'],'execution_sha256':request['execution_sha256'],
                   'predictions':[{'path':str(p),'sha256':sha(p)} for p in destination.glob('*.pdb')],
-                  'producer':receipt,'mode':profile,'seed':42,'chemical_component_sources':component_sources,
+                  'producer':receipt,'mode':profile,'seed':seed,'chemical_component_sources':component_sources,
                   'ligand_atom_maps':ligand_atom_maps,
                   'format_policy':{'generic_ligand_residue_names':['LIG']}}
         write(job/'prediction_manifest.json',producer)
@@ -269,13 +285,24 @@ def worker(job):
                        completed_samples=len(files),process_wall_seconds=time.monotonic()-started)
     except BaseException as exc:
         if predictor and predictor.poll() is None:
-            os.killpg(predictor.pid,signal.SIGTERM); predictor.wait(timeout=60)
+            try:
+                os.killpg(predictor.pid,signal.SIGTERM)
+                predictor.wait(timeout=60)
+            except subprocess.TimeoutExpired:
+                os.killpg(predictor.pid,signal.SIGKILL)
+                predictor.wait(timeout=15)
+            except OSError:
+                pass
         receipt.update(status='failed',error=receipt.get('error') or f'{type(exc).__name__}: {exc}')
         if memory_failure('',receipt['error']):receipt['failure_kind']='gpu_out_of_memory'
     finally:
         receipt['finished_at']=time.time(); write(job/'receipt.json',receipt)
         if dispatch_claim:
-            (dispatch_claim/'owner.json').unlink();dispatch_claim.rmdir()
+            (dispatch_claim/'owner.json').unlink(missing_ok=True)
+            try:
+                dispatch_claim.rmdir()
+            except OSError:
+                pass
 
 def check_prediction_pool(document,pool):
     """Only the same molecular system can block a new target-substrate prediction."""
@@ -350,7 +377,20 @@ def adapter():
                 receipt={'idempotency_key':key,'status':'failed','error':'Campaign ensemble allowance reached'}
                 write(job/'receipt.json',receipt);print(json.dumps(receipt));return
             # All jobs pass through one campaign owner, one GPU at a time.
-            active=[read(p) for p in (ROOT/'backend_jobs').glob('*/receipt.json')]
+            # Reconcile dead local workers before blocking new submissions.
+            local_host = socket.gethostname()
+            active = []
+            for p in (ROOT/'backend_jobs').glob('*/receipt.json'):
+                rec = read(p)
+                if (rec.get('status') in {'queued', 'running'}
+                        and rec.get('host') == local_host
+                        and rec.get('pid') and rec.get('process_start_ticks')
+                        and not alive(rec['pid'], rec['process_start_ticks'])):
+                    rec.update(status='failed',
+                               error=rec.get('error') or 'Worker process exited unexpectedly (reconciled by adapter)',
+                               finished_at=time.time())
+                    write(p, rec)
+                active.append(rec)
             if any(r['status'] in {'queued','running','unknown'} for r in active):
                 raise RuntimeError('A cofold is already outstanding; reconcile it first')
             write(job/'request.json',request)

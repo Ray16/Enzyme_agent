@@ -172,7 +172,7 @@ def _h_analyze_substrate_channels(agent, args):
     from ..analysis import substrate_channels as ch
     mode = args.get("mode", "parse")
     if mode == "parse":
-        caver_dir = str(agent._authorized_evidence(args["caver_out_dir"]))
+        caver_dir = str(agent._authorized_evidence(args["caver_out_dir"], allow_dir=True))
         n_poses = args["n_poses"]
         clusters = ch.classify_clusters(ch.parse_caver_output(caver_dir, n_poses))
         result = {"descriptive_only": True, "n_poses": n_poses, "n_clusters": len(clusters), "clusters": clusters}
@@ -228,7 +228,7 @@ def _h_load_skill(agent, args):
 
 
 def _h_render_channel_visualization(agent, args):
-    run_dir = str(agent._authorized_evidence(args["run_dir"]))
+    run_dir = str(agent._authorized_evidence(args["run_dir"], allow_dir=True))
     fmt = args.get("format", "html")
     label = args.get("label") or Path(run_dir).name
     title = args.get("title") or label
@@ -407,7 +407,7 @@ def _h_build_catalytic_profile(agent, args):
 def _h_assess_mlmm_profile(agent, args):
     from ..mlmm import NotReportable, diagram_values, profile_from_freq_dirs
 
-    results_dir = str(agent._authorized_evidence(args["results_dir"]))
+    results_dir = str(agent._authorized_evidence(args["results_dir"], allow_dir=True))
     profile = profile_from_freq_dirs(
         results_dir,
         system_id=args["system_id"],
@@ -604,6 +604,7 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_analyze_substrate_contacts,
             scope="general",
             domain="analysis",
+            stages=_stages_for("analyze_substrate_contacts"),
         )
     )
 
@@ -638,6 +639,7 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_analyze_substrate_channels,
             scope="general",
             domain="analysis",
+            stages=_stages_for("analyze_substrate_channels"),
         )
     )
 
@@ -659,16 +661,25 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_assess_mlmm_profile,
             scope="general",
             domain="mlmm",
+            stages=_stages_for("assess_mlmm_profile"),
         )
     )
 
+    from .skills import list_skills
+    skill_names = [s["name"] for s in list_skills()]
     registry.register(
         ToolSpec(
             name="load_skill",
             schema=_schema(
                 "load_skill",
                 "Load a domain playbook (scientific checklist, caveats, and tool workflow) and unlock that domain's tools when progressive disclosure is active",
-                {"name": _string("Skill name from the available skills index (cofold-setup, catalytic-triage, md-preparation, reaction-barriers, contacts-and-channels, processivity-kinetics, dynamics-and-design, visualization)")},
+                {
+                    "name": {
+                        "type": "string",
+                        "enum": skill_names,
+                        "description": "Skill name from the available skills index",
+                    }
+                },
                 ("name",),
             ),
             handler=_h_load_skill,
@@ -742,6 +753,7 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_assess_developability,
             scope="general",
             domain="developability",
+            stages=_stages_for("assess_developability"),
         )
     )
 
@@ -767,8 +779,47 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_analyze_pocket_envelope,
             scope="general",
             domain="analysis",
+            stages=_stages_for("analyze_pocket_envelope"),
         )
     )
+
+    atom_ref_schema = {
+        "type": "object",
+        "properties": {
+            "chain": _string("Chain ID (e.g. A, B)"),
+            "residue": _string("Residue number/ID as string (e.g. '1', '117')"),
+            "atom": _string("PDB atom name (e.g. C1, O1, NZ, PG)"),
+        },
+        "required": ["chain", "residue", "atom"],
+    }
+    res_ref_schema = {
+        "type": "object",
+        "properties": {
+            "chain": _string("Chain ID"),
+            "residue": _string("Residue number/ID as string"),
+        },
+        "required": ["chain", "residue"],
+    }
+    pathway_schema = {
+        "type": "object",
+        "properties": {
+            "name": _string("Descriptive competing-pathway label (e.g. water_attack, futile_atp_hydrolysis, intramolecular_cyclization)"),
+            "kind": {"type": "string", "enum": ["solvent", "intramolecular", "intermolecular"]},
+            "distance_cutoff_A": {"type": "number", "minimum": 0.5, "description": "Maximum nucleophile-electrophile distance in Angstroms"},
+            "ideal_angle_deg": {"type": "number", "description": "Optional ideal approach angle in degrees (e.g. 107 for carbonyl, 180 for inline SN2; omit for distance-only)"},
+            "angle_tolerance_deg": {"type": "number", "description": "Optional +/- angle tolerance in degrees"},
+            "warning_threshold": {"type": "number", "description": "Occupancy fraction above which to flag risk (default 0.30)"},
+            "electrophile": atom_ref_schema,
+            "angle_reference": atom_ref_schema,
+            "nucleophiles": {"type": "array", "items": atom_ref_schema, "description": "Static pose nucleophile atom refs (mode=poses, kind!=solvent)"},
+            "solvent_resnames": {"type": "array", "items": {"type": "string"}, "description": "Optional solvent residue names (mode=poses, kind=solvent)"},
+            "solvent_atom_name": _string("Solvent attacking atom name prefix (default 'O')"),
+            "electrophile_sel": _string("MDAnalysis 1-atom selection for electrophile (mode=traj)"),
+            "angle_reference_sel": _string("Optional MDAnalysis 1-atom selection for angle reference (mode=traj)"),
+            "nucleophile_sel": _string("MDAnalysis selection for competing nucleophiles (mode=traj)"),
+        },
+        "required": ["name", "kind", "distance_cutoff_A"],
+    }
 
     registry.register(
         ToolSpec(
@@ -779,7 +830,7 @@ def build_default_registry() -> ToolRegistry:
                 {
                     "accession": _string("Optional candidate identifier for caching results into build_catalytic_profile"),
                     "mode": {"type": "string", "enum": ["poses", "traj"]},
-                    "pathways": {"type": "array", "items": {"type": "object"}, "minItems": 1, "description": "Declared competing-attack specs (name, kind, electrophile/electrophile_sel, nucleophiles/nucleophile_sel, optional angle_reference/ideal_angle_deg/angle_tolerance_deg, distance_cutoff_A)"},
+                    "pathways": {"type": "array", "items": pathway_schema, "minItems": 1, "description": "Declared competing-attack pathway specs"},
                     "pose_paths": {"type": "array", "items": {"type": "string"}},
                     "top_path": _string("Authorized topology path (mode=traj)"),
                     "traj_paths": {"type": "array", "items": {"type": "string"}},
@@ -790,6 +841,7 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_analyze_side_reactions,
             scope="general",
             domain="analysis",
+            stages=_stages_for("analyze_side_reactions"),
         )
     )
 
@@ -803,9 +855,9 @@ def build_default_registry() -> ToolRegistry:
                     "accession": _string("Optional candidate identifier for caching results into build_catalytic_profile"),
                     "apo_path": _string("Authorized apo PDB/mmCIF path"),
                     "holo_path": _string("Authorized holo PDB/mmCIF path"),
-                    "catalytic_residues": {"type": "array", "items": {"type": "object"}, "description": "List of {chain, residue} catalytic residues"},
+                    "catalytic_residues": {"type": "array", "items": res_ref_schema, "description": "Catalytic residues for apo-vs-holo heavy-atom RMSD"},
                     "pose_paths": {"type": "array", "items": {"type": "string"}, "description": "Authorized holo/TI pose paths for charge-center stabilization"},
-                    "charge_center": {"type": "object", "description": "{chain, residue, atom} of developing TS/intermediate charge"},
+                    "charge_center": atom_ref_schema,
                     "prmtop_path": _string("Authorized Amber prmtop path for MD electric field"),
                     "traj_paths": {"type": "array", "items": {"type": "string"}},
                     "axis_a_sel": _string("MDAnalysis selection for reaction axis start atom"),
@@ -820,6 +872,7 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_analyze_preorganization,
             scope="general",
             domain="analysis",
+            stages=_stages_for("analyze_preorganization"),
         )
     )
 
@@ -828,23 +881,37 @@ def build_default_registry() -> ToolRegistry:
             name="build_catalytic_profile",
             schema=_schema(
                 "build_catalytic_profile",
-                "Assemble a non-collapsed multi-axis CatalyticProfile with explicit failure modes (hard_reject vs soft_evolvable_defect vs modeling_artifact) and residue-level design targets",
+                "Assemble a non-collapsed multi-axis CatalyticProfile with explicit failure modes (hard_reject vs soft_evolvable_defect vs modeling_artifact) and residue-level design targets. Automatically reuses cached outputs from analyze_pocket_envelope, analyze_substrate_channels, analyze_side_reactions, analyze_preorganization, assess_mlmm_profile, and assess_developability when omitted.",
                 {
                     "accession": _string("Candidate identifier from this task"),
-                    "mechanism_gate": {"type": "object"},
-                    "pocket_envelope": {"type": "object"},
-                    "access": {"type": "object"},
-                    "reactive_persistence": {"type": "object"},
-                    "ts_and_preorganization": {"type": "object"},
-                    "side_reactions": {"type": "object"},
-                    "barrier_status": {"type": "object"},
-                    "developability": {"type": "object"},
+                    "mechanism_gate": {
+                        "type": "object",
+                        "properties": {
+                            "status": {"type": "string", "enum": ["pass", "fail", "unknown"]},
+                            "reason": _string("Mechanism compatibility rationale"),
+                        },
+                    },
+                    "pocket_envelope": {"type": "object", "description": "Optional override; auto-filled from cached analyze_pocket_envelope"},
+                    "access": {"type": "object", "description": "Optional override; auto-filled from cached analyze_substrate_channels"},
+                    "reactive_persistence": {
+                        "type": "object",
+                        "properties": {
+                            "boltz_nac_fraction": {"type": "number"},
+                            "md_nac_fraction": {"type": "number"},
+                        },
+                        "description": "Near-attack geometry fractions from cofold and MD",
+                    },
+                    "ts_and_preorganization": {"type": "object", "description": "Optional override; auto-filled from cached analyze_preorganization"},
+                    "side_reactions": {"type": "object", "description": "Optional override; auto-filled from cached analyze_side_reactions"},
+                    "barrier_status": {"type": "object", "description": "Optional override; auto-filled from cached assess_mlmm_profile"},
+                    "developability": {"type": "object", "description": "Optional override; auto-filled from cached assess_developability"},
                 },
                 ("accession",),
             ),
             handler=_h_build_catalytic_profile,
             scope="general",
             domain="core",
+            stages=_stages_for("build_catalytic_profile"),
         )
     )
 
@@ -868,6 +935,7 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_submit_sampling,
             scope="general",
             domain="sampling",
+            stages=_stages_for("submit_sampling"),
         )
     )
 
@@ -886,36 +954,11 @@ def build_default_registry() -> ToolRegistry:
             handler=_h_check_sampling,
             scope="general",
             domain="sampling",
+            stages=_stages_for("check_sampling"),
             repeatable_reader=True,
         )
     )
 
-    for name, fn, domain in (
-        ("analyze_substrate_contacts", _h_analyze_substrate_contacts, "analysis"),
-        ("analyze_substrate_channels", _h_analyze_substrate_channels, "analysis"),
-        ("analyze_pocket_envelope", _h_analyze_pocket_envelope, "analysis"),
-        ("analyze_side_reactions", _h_analyze_side_reactions, "analysis"),
-        ("analyze_preorganization", _h_analyze_preorganization, "analysis"),
-        ("assess_developability", _h_assess_developability, "developability"),
-        ("assess_mlmm_profile", _h_assess_mlmm_profile, "mlmm"),
-        ("build_catalytic_profile", _h_build_catalytic_profile, "core"),
-        ("submit_sampling", _h_submit_sampling, "sampling"),
-        ("check_sampling", _h_check_sampling, "sampling"),
-    ):
-        spec = registry.get(name)
-        stages = _stages_for(name)
-        if stages and stages != spec.stages:
-            registry._specs[name] = ToolSpec(
-                name=spec.name,
-                schema=spec.schema,
-                handler=spec.handler,
-                scope=spec.scope,
-                domain=spec.domain,
-                stages=stages,
-                repeatable_reader=spec.repeatable_reader,
-                deprecated=spec.deprecated,
-            )
-    registry._stage_cache.clear()
     return registry
 
 

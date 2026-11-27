@@ -3,6 +3,10 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
+pytest.importorskip("ase")
+
 
 def test_worker_supervisor_reaps_orphaned_grandchildren(tmp_path):
     # A fresh supervisor process avoids changing pytest's child-reaper policy.

@@ -9,6 +9,8 @@ import sys
 
 import numpy as np
 import pytest
+
+pytest.importorskip("ase")
 from ase import Atoms, units
 from ase.io import write
 

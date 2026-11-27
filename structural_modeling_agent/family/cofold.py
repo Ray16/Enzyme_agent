@@ -26,6 +26,17 @@ from ..modeling_reasoning.reaction import ReactionCoordinates
 from ..modeling_reasoning.resolve_handoff import resolve_candidate, _load_family_metal
 from ..msa import valid_csv
 from .memory_retry import MemoryRetryPending, is_memory_failure, record_failure, retry_backend
+from .pose_analysis import (
+    _METAL_ELEMENTS,
+    _POLAR_COORD_ELEMENTS,
+    _analyze_single_prediction,
+    _holo_seating_metrics,
+    _summarize_holo_seating,
+    analyze_outputs,
+)
+
+DEFAULT_SAMPLES = 50
+DEFAULT_SEED = 42
 
 # Arm-directory names scanned for cross-run cache reuse and in-flight dedup.
 # `cofolded` is the current convention (paired with `cofolded_restrained` for the
@@ -423,7 +434,9 @@ def build_handoff(run_dir, specification):
         group['members'].append(member)
     handoff={'schema_version':'family-cofold-1','discovery_run_id':root.name,'source_run':str(root.resolve()),'specification_sha256':digest(specification),
         'protocols':protocols,'families':list(groups.values()),'pending_families':pending,
-        'collapsed_orthologs':[],'ranked_candidates':len(rows),'setup_llm_calls':0}
+        'collapsed_orthologs':[],'ranked_candidates':len(rows),'setup_llm_calls':0,
+        **({'expected_predictions':int(specification['expected_predictions'])} if specification.get('expected_predictions') is not None else {}),
+        **({'seed':int(specification['seed'])} if specification.get('seed') is not None else {})}
     threshold = specification.get('ortholog_identity_threshold', 0.85)
     deduplicate_handoff_orthologs(handoff, identity_threshold=threshold)
     # Strip private _sequence helper before persisting
@@ -547,10 +560,12 @@ def write_family_handoff_markdown(handoff, path):
     return path
 
 
-def render_jobs(run_dir, handoff, directory,candidates=None):
+def render_jobs(run_dir, handoff, directory, candidates=None, *, samples=None, seed=None):
     """Only sequence/identity/MSA expansion is per member; no scientific replanning."""
     root=Path(run_dir);directory=Path(directory);directory.mkdir(parents=True,exist_ok=True)
     candidates=candidates if candidates is not None else _prepared_candidates(root);jobs=[];pending=[]
+    n_samples = int(samples if samples is not None else handoff.get('expected_predictions', DEFAULT_SAMPLES))
+    run_seed = int(seed if seed is not None else handoff.get('seed', DEFAULT_SEED))
     for family in handoff['families']:
         protocol=handoff['protocols'][family['protocol_id']]
         for member in family['members']:
@@ -567,7 +582,7 @@ def render_jobs(run_dir, handoff, directory,candidates=None):
                 for step,model in protocol['steps'].items():
                     chains=enzyme_chains(sequence,str(msa),model['enzyme_state']['chains'])
                     text=yaml_for(chains,model['cofactors'],modeled_substrates(model))
-                    job_id=digest({'yaml':text,'msa_sha256':file_hash(msa),'samples':50,'profile':'exact','seed':42})
+                    job_id=digest({'yaml':text,'msa_sha256':file_hash(msa),'samples':n_samples,'profile':'exact','seed':run_seed})
                     path=directory/(job_id+'.yaml')
                     if not path.exists():path.write_text(text)
                     if path.read_text()!=text:raise ValueError('Existing rendered input changed')
@@ -580,7 +595,7 @@ def render_jobs(run_dir, handoff, directory,candidates=None):
                         'discovery_run_id':root.name,'discovery_run_dir':str(root.resolve()),
                         'step':int(step),'input_yaml':str(path.resolve()),'input_sha256':file_hash(path),'msa_path':str(msa),
                         'msa_sha256':file_hash(msa),'sequence_sha256':hashlib.sha256(sequence.encode()).hexdigest(),
-                        'expected_predictions':50,'entities':entities,'modeling_input':model})
+                        'expected_predictions':n_samples,'seed':run_seed,'entities':entities,'modeling_input':model})
             except (KeyError,ValueError,OSError) as exc:pending.append({**member,'reason':str(exc)})
     return jobs,pending
 
@@ -640,9 +655,12 @@ def execute_job(job, backend, directory,resource_attempt=0):
         if previous.get('status')=='failed' and previous.get('provider_state_dir') not in {None,str(state_dir)}:
             attempts=directory/'backend_attempts';attempts.mkdir(exist_ok=True)
             os.rename(receipt_path,attempts/(str(time.time_ns())+'.json'))
+    expected_samples = int(job.get('expected_predictions', DEFAULT_SAMPLES))
+    run_seed = int(job.get('seed', DEFAULT_SEED))
     request={'operation':'submit','idempotency_key':job['id'],'input_yaml':job['input_yaml'],
-        'input_sha256':job['input_sha256'],'expected_predictions':50,'resource_policy':backend['resource_policy'],
-        'execution_sha256':digest({'job':job['id'],'input':job['input_sha256'],'msa':job['msa_sha256'],'profile':'exact','samples':50}),
+        'input_sha256':job['input_sha256'],'expected_predictions':expected_samples,'seed':run_seed,
+        'resource_policy':backend['resource_policy'],
+        'execution_sha256':digest({'job':job['id'],'input':job['input_sha256'],'msa':job['msa_sha256'],'profile':'exact','samples':expected_samples}),
         'msa_evidence':[{'path':job['msa_path'],'sha256':job['msa_sha256']}]}
     if not receipt_path.exists():
         result=subprocess.run(backend['argv'],input=json.dumps(request),text=True,capture_output=True,timeout=90)
@@ -761,268 +779,6 @@ def publish_results(directory,jobs):
         atomic_write_json(directory/'analysis_backend_pending.json',{'error':str(exc),'scope':'Plotting unavailable on this frontend; completed coordinates remain available for the central analyzer.'})
 
 
-# Periodic-table catalytic metal elements for generic holo-seating checks
-# (works for any metalloenzyme: Mg, Mn, Zn, Fe, Ca, Co, Cu, Ni, Mo, W, etc.).
-_METAL_ELEMENTS = frozenset({'MG', 'MN', 'ZN', 'FE', 'CA', 'CO', 'CU', 'NI', 'MO', 'W', 'V', 'K', 'NA'})
-_POLAR_COORD_ELEMENTS = frozenset({'O', 'N', 'S', 'P'})
-
-
-def _holo_seating_metrics(atoms, by_chain, entities):
-    """Generic, enzyme-agnostic cofactor and catalytic-metal seating check for one pose."""
-    import numpy as np
-
-    protein_xyz = np.array([v['xyz'] for v in atoms.values() if v.get('protein')])
-    protein_polar_xyz = np.array([
-        v['xyz'] for v in atoms.values()
-        if v.get('protein') and str(v.get('element', '')).upper() in _POLAR_COORD_ELEMENTS
-    ])
-
-    metal_chains = []
-    organic_cofactor_chains = []
-    substrate_chains = []
-    for key, val in (entities or {}).items():
-        if isinstance(val, list):
-            for ch in val:
-                chain_atoms = by_chain.get(ch, ())
-                elems = {str(v.get('element', '')).upper() for _, v in chain_atoms}
-                if chain_atoms and elems <= _METAL_ELEMENTS:
-                    metal_chains.append(ch)
-                elif chain_atoms:
-                    organic_cofactor_chains.append(ch)
-        elif isinstance(val, str):
-            if by_chain.get(val):
-                substrate_chains.append(val)
-
-    result = {}
-    if organic_cofactor_chains and len(protein_xyz):
-        min_contacts = None
-        for ch in organic_cofactor_chains:
-            c_xyz = np.array([v['xyz'] for _, v in by_chain[ch]])
-            dists = np.linalg.norm(protein_xyz[:, None, :] - c_xyz[None, :, :], axis=2)
-            n_contacts = int((dists.min(axis=1) <= 4.5).sum())
-            min_contacts = n_contacts if min_contacts is None else min(min_contacts, n_contacts)
-        result['cofactor_min_protein_contacts'] = min_contacts
-        result['cofactor_seated'] = bool(min_contacts is not None and min_contacts >= 4)
-
-    if metal_chains:
-        cof_polar_list = [
-            v['xyz'] for ch in organic_cofactor_chains for _, v in by_chain.get(ch, ())
-            if str(v.get('element', '')).upper() in _POLAR_COORD_ELEMENTS
-        ]
-        sub_polar_list = [
-            v['xyz'] for ch in substrate_chains for _, v in by_chain.get(ch, ())
-            if str(v.get('element', '')).upper() in _POLAR_COORD_ELEMENTS
-        ]
-        all_partner_list = (
-            (list(protein_polar_xyz) if len(protein_polar_xyz) else [])
-            + cof_polar_list + sub_polar_list
-        )
-        all_partner_xyz = np.array(all_partner_list) if all_partner_list else np.empty((0, 3))
-        cof_polar_xyz = np.array(cof_polar_list) if cof_polar_list else np.empty((0, 3))
-
-        worst_any = 0.0
-        worst_cof = 0.0
-        for ch in metal_chains:
-            m_xyz = np.array([v['xyz'] for _, v in by_chain[ch]])
-            if len(all_partner_xyz):
-                d_any = float(np.linalg.norm(all_partner_xyz[:, None, :] - m_xyz[None, :, :], axis=2).min())
-                worst_any = max(worst_any, d_any)
-            else:
-                worst_any = float('inf')
-            if len(cof_polar_xyz):
-                d_cof = float(np.linalg.norm(cof_polar_xyz[:, None, :] - m_xyz[None, :, :], axis=2).min())
-                worst_cof = max(worst_cof, d_cof)
-        result['metal_nearest_polar_A'] = round(worst_any, 3) if math.isfinite(worst_any) else None
-        result['metal_coordinated'] = bool(math.isfinite(worst_any) and worst_any <= 3.2)
-        if len(cof_polar_xyz):
-            result['metal_to_cofactor_A'] = round(worst_cof, 3)
-            result['metal_cofactor_coordinated'] = bool(worst_cof <= 3.5)
-
-    return result
-
-
-def _summarize_holo_seating(poses):
-    """Aggregate per-pose cofactor/metal seating into an ensemble-level diagnostic."""
-    n = len(poses)
-    if not n:
-        return {'status': 'not_applicable'}
-    cof_vals = [p['cofactor_seated'] for p in poses if 'cofactor_seated' in p]
-    met_vals = [p['metal_coordinated'] for p in poses if 'metal_coordinated' in p]
-    mc_vals = [p['metal_cofactor_coordinated'] for p in poses if 'metal_cofactor_coordinated' in p]
-    if not cof_vals and not met_vals and not mc_vals:
-        return {'status': 'not_applicable'}
-    cof_frac = round(sum(cof_vals) / len(cof_vals), 4) if cof_vals else None
-    met_frac = round(sum(met_vals) / len(met_vals), 4) if met_vals else None
-    mc_frac = round(sum(mc_vals) / len(mc_vals), 4) if mc_vals else None
-    checks = [v for v in (cof_frac, met_frac, mc_frac) if v is not None]
-    status = 'pass' if all(v >= 0.5 for v in checks) else 'warning_seating_artifact'
-    summary = {
-        'status': status,
-        'cofactor_seated_fraction': cof_frac,
-        'metal_coordinated_fraction': met_frac,
-        'metal_cofactor_coordinated_fraction': mc_frac,
-    }
-    if status != 'pass':
-        summary['note'] = (
-            'Cofactor and/or catalytic metal failed to seat properly in >50% of poses; '
-            'poor target attack geometry may reflect a cofolding seating artifact rather than '
-            'true substrate incompatibility (verify with a native-substrate control).'
-        )
-    return summary
-
-
-def _analyze_single_prediction(args):
-    """Validate identity and compute attack geometry for one prediction file."""
-    (prediction, sequence_sha256, expected_protein_copies, entities, ccd_atoms,
-     ligand_atom_maps, center_ref, leaving_ref, donor_refs, pocket_protocol) = args
-    from ..validation import _read_structure, _protein_completeness
-    import numpy as np
-
-    path = Path(prediction['path'])
-    if file_hash(path) != prediction['sha256']:
-        raise ValueError('Prediction changed')
-    atoms, sequences = _read_structure(path)
-    by_chain = defaultdict(list)
-    by_chain_atom = defaultdict(list)
-    for key, val in atoms.items():
-        by_chain[key[0]].append((key, val))
-        by_chain_atom[(key[0], key[2])].append(val['xyz'])
-
-    issues = []
-    for chain, sequence in sequences.items():
-        if hashlib.sha256(sequence.encode()).hexdigest() != sequence_sha256:
-            issues.append('protein_sequence:' + chain)
-        if any(c['status'] != 'pass' for c in _protein_completeness(atoms, chain, {})):
-            issues.append('protein_heavy_atoms:' + chain)
-    if len(sequences) != expected_protein_copies:
-        issues.append('protein_copy_count')
-    observed = set(by_chain)
-    expected = set(sequences)
-    for entity in entities.values():
-        expected.update(entity if isinstance(entity, list) else [entity])
-    if observed != expected:
-        issues.append('entity_inventory')
-    for ccd, chains in ((k, v) for k, v in entities.items() if isinstance(v, list)):
-        expected_ccd = ccd_atoms.get(ccd)
-        for chain in chains:
-            actual = {k[2]: v['element'] for k, v in by_chain.get(chain, ())}
-            if actual != expected_ccd:
-                issues.append('cofactor_identity:' + chain)
-    for chain, definition in ligand_atom_maps.items():
-        actual = {k[2]: v['element'] for k, v in by_chain.get(chain, ())}
-        desired = {v['name']: v['element'] for v in definition['atoms'].values()}
-        if actual != desired:
-            issues.append('ligand_atom_inventory:' + chain)
-
-    def coordinate(ref):
-        matches = by_chain_atom.get(ref, ())
-        if len(matches) != 1:
-            raise ValueError('Missing/ambiguous reaction atom ' + str(ref))
-        return matches[0]
-
-    center = coordinate(center_ref)
-    axis = coordinate(leaving_ref) - center
-    donors = [(ref, coordinate(ref)) for ref in donor_refs]
-    ref, donor = min(donors, key=lambda pair: np.linalg.norm(pair[1] - center))
-    vector = donor - center
-    distance = float(np.linalg.norm(vector))
-    angle = math.degrees(math.acos(float(np.clip(np.dot(vector, axis) / (distance * np.linalg.norm(axis)), -1, 1))))
-    pose = {
-        'path': str(path),
-        'sha256': prediction['sha256'],
-        'distance_A': distance,
-        'angle_deg': angle,
-        'identity_issues': issues,
-        'nucleophile': ref,
-        **_holo_seating_metrics(atoms, by_chain, entities),
-    }
-    if pocket_protocol:
-        contacts = {(chain, str(number)) for chain, number in pocket_protocol['contacts']}
-        pocket = np.array([value['xyz'] for key, value in atoms.items() if (key[0], key[1]) in contacts and value['protein']])
-        if not len(pocket):
-            raise ValueError('Mapped pocket residues are absent from guided prediction')
-        ligand = np.array([value['xyz'] for _, value in by_chain.get(ref[0], ())])
-        pose['nucleophile_to_pocket_A'] = float(np.linalg.norm(pocket - donor, axis=1).min())
-        pose['ligand_to_pocket_A'] = float(np.linalg.norm(ligand[:, None, :] - pocket[None, :, :], axis=2).min())
-        pose['pocket_localized'] = pose['ligand_to_pocket_A'] <= pocket_protocol['max_distance_A']
-    return pose
-
-
-def analyze_outputs(job, receipt, *, max_workers=None):
-    """Measure every pose with the existing geometry metric; retain identity failures."""
-    from ..proxies.attack_angle import weighted_attack_angle
-    import gemmi
-
-    source = json.loads(Path(receipt['prediction_manifest']).read_text())
-    if source['input_sha256'] != job['input_sha256']:
-        raise ValueError('Producer input identity changed')
-    predictions = source['predictions']
-    if len(predictions) != 50:
-        raise ValueError('Require the complete 50-pose ensemble')
-    geometry = job['modeling_input']['geometry']
-    entities = job['entities']
-    ccd_atoms = {}
-    for ccd, reference in source.get('chemical_component_sources', {}).items():
-        if file_hash(reference['path']) != reference['sha256']:
-            raise ValueError('CCD source changed')
-        block = gemmi.cif.read_file(reference['path']).sole_block()
-        ccd_atoms[ccd] = {
-            gemmi.cif.as_string(name): gemmi.cif.as_string(element).upper()
-            for name, element in zip(
-                block.find_values('_chem_comp_atom.atom_id'),
-                block.find_values('_chem_comp_atom.type_symbol'),
-            )
-            if gemmi.cif.as_string(element).upper() not in {'H', 'D'}
-        }
-
-    def references(participant):
-        spec = geometry[participant]
-        if spec['kind'] == 'cofactor':
-            return [(entities[spec['ccd']][0], spec['atom'])]
-        chain = entities[spec['role']]
-        mapping = source['ligand_atom_maps'][chain]['atoms']
-        return [(chain, mapping[str(index)]['name']) for index in spec['reactive_atom_indices']]
-
-    centers = references('electrophile')
-    leaving = references('leaving_group')
-    if len(centers) != 1 or len(leaving) != 1:
-        raise ValueError('Reaction center is ambiguous')
-    donor_refs = references('nucleophile')
-    expected_protein_copies = len(job['modeling_input']['enzyme_state']['chains'])
-    ligand_atom_maps = source.get('ligand_atom_maps', {})
-    pocket_protocol = job.get('pocket_protocol')
-    tasks = [
-        (
-            prediction, job['sequence_sha256'], expected_protein_copies, entities,
-            ccd_atoms, ligand_atom_maps, centers[0], leaving[0], donor_refs, pocket_protocol,
-        )
-        for prediction in predictions
-    ]
-    first_path = Path(predictions[0]['path']) if predictions else None
-    first_size = first_path.stat().st_size if first_path and first_path.is_file() else 0
-    if max_workers is None and (len(tasks) < 16 or first_size < 65536):
-        workers = 1
-    else:
-        workers = bounded_workers(max_workers, n_items=len(tasks), min_items_for_pool=8, max_cap=8)
-    if workers > 1:
-        with ProcessPoolExecutor(max_workers=workers, initializer=init_single_thread_worker) as pool:
-            poses = list(pool.map(_analyze_single_prediction, tasks))
-    else:
-        poses = [_analyze_single_prediction(t) for t in tasks]
-    score = weighted_attack_angle([p['distance_A'] for p in poses], [p['angle_deg'] for p in poses])
-    holo_seating = _summarize_holo_seating(poses)
-    return {
-        'poses': poses,
-        'geometry': score,
-        'holo_seating': holo_seating,
-        'identity_pass_poses': sum(not p['identity_issues'] for p in poses),
-        **({'pocket_localized_poses': sum(p['pocket_localized'] for p in poses)} if pocket_protocol else {}),
-        'step': job['step'],
-        'ideal_angle': geometry.get('ideal_angle'),
-        'scope': 'Raw step-specific structural observations; no enzyme-activity threshold or cross-step activity ranking.',
-    }
-
-
 def main(argv=None):
     import argparse
     parser=argparse.ArgumentParser(description=__doc__)
@@ -1099,7 +855,11 @@ def main(argv=None):
             pilot_jobs=[j for j in jobs if j['accession']==args.pilot_accession and j['step'] in pilot_steps]
             pilot_passed=bool(pilot_jobs) and all((args.out/'jobs'/j['id']/'complete.json').is_file() for j in pilot_jobs)
             if pilot_passed:
-                pilot_passed=all(json.loads((args.out/'jobs'/j['id']/'complete.json').read_text())['analysis']['identity_pass_poses']==50 for j in pilot_jobs)
+                pilot_passed=all(
+                    json.loads((args.out/'jobs'/j['id']/'complete.json').read_text())['analysis']['identity_pass_poses']
+                    == int(j.get('expected_predictions', DEFAULT_SAMPLES))
+                    for j in pilot_jobs
+                )
             selected=[j for j in jobs if not args.pilot_accession or (j['accession']==args.pilot_accession and j['step'] in pilot_steps) or (args.expand_after_pilot and pilot_passed)]
             if args.memory_retries_only:
                 def memory_pending(job):
@@ -1182,7 +942,11 @@ def main(argv=None):
                     if (args.pilot_accession and not pilot_passed) or failed>=3:raise
                 finally:
                     if shared_claim is not None:release(shared_claim)
-                    (claim/'owner.json').unlink();claim.rmdir()
+                    (claim/'owner.json').unlink(missing_ok=True)
+                    try:
+                        claim.rmdir()
+                    except OSError:
+                        pass
             atomic_write_json(args.out/'workers'/args.worker_id/'current.json',{'status':'waiting_for_new_ranked_candidates' if args.watch_seconds else 'finished',
                 'completed_jobs':len(seen),'memory_deferred':deferred,'setup_llm_calls':0})
             if args.memory_retries_only and not selected and not args.watch_seconds:return

@@ -6,7 +6,6 @@ Scientific calculations remain in callable tools, outside the model's prose.
 """
 from __future__ import annotations
 
-from dataclasses import asdict
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import copy
@@ -22,7 +21,7 @@ from enzyme_discovery_agent.state_store import atomic_write_json
 from .controller.dispatch_handlers import _merge_model_changes, _text_page
 from .controller.prompts import BARRIER_GUIDANCE, BARRIER_PROMPT, PREPARATION_PROMPT, SYSTEM_PROMPT, compact_system_prompt
 from .controller.tool_registry import get_registry, select_offered_tools
-from .controller.tool_schemas import _schema, _string, tool_schemas
+from .controller.tool_schemas import tool_schemas
 from .validation import (entity_map_for, file_digest, fingerprint, validate_ensemble,
                          validate_setup, validate_msa, validate_pose_plan)
 from .scientific_reasoning import (assess_reasoning, execution_reasoning_errors,
@@ -51,7 +50,7 @@ def _task_evidence_paths(task, base):
         elif isinstance(value, list):
             for child in value:
                 visit(child, "path" if key == "evidence_paths" else key)
-        elif isinstance(value, str) and (key == "path" or key.endswith("_path")):
+        elif isinstance(value, str) and (key == "path" or key.endswith("_path") or key.endswith("_dir")):
             path = Path(value)
             paths.add(str((path if path.is_absolute() else base / path).resolve()))
 
@@ -239,18 +238,19 @@ class ModelingAgent:
                 self.state["environment"] = capture_environment()
                 self._save()
 
-    def _save(self):
+    def _save(self, *, compat: bool = True):
         # This single atomic file is authoritative. The two historical files are
         # compatibility views and can lag safely if a process dies between writes.
         atomic_write_json(self.run_dir / "checkpoint.json", {
             "schema_version": 1, "state": self.state, "messages": self.messages,
         }, allow_nan=False)
-        atomic_write_json(self.run_dir / "agent_state.json", self.state, allow_nan=False)
-        atomic_write_json(self.run_dir / "transcript.json", self.messages, allow_nan=False)
-        from .result_layout import write_index
-        write_index(self.run_dir, self.state)
+        if compat:
+            atomic_write_json(self.run_dir / "agent_state.json", self.state, allow_nan=False)
+            atomic_write_json(self.run_dir / "transcript.json", self.messages, allow_nan=False)
+            from .result_layout import write_index
+            write_index(self.run_dir, self.state)
 
-    def _authorized_evidence(self, path):
+    def _authorized_evidence(self, path, *, allow_dir: bool = False):
         resolved = Path(path).resolve(strict=True)
         allowed = set(self.state.get("authorized_evidence_paths", _task_evidence_paths(
             self.task, Path(self.state.get("invocation_cwd", ".")))))
@@ -259,7 +259,10 @@ class ModelingAgent:
                             self.run_dir / name for name in ("results_index.json", "run_manifest.json", "task_snapshot.json", "report.json", "structural_modeling_evidence.json")}
         if str(resolved) not in allowed and not generated:
             raise PermissionError("evidence path was not explicitly supplied in the task or produced by this run")
-        if not resolved.is_file():
+        if allow_dir:
+            if not (resolved.is_file() or resolved.is_dir()):
+                raise ValueError("evidence path must be a file or directory")
+        elif not resolved.is_file():
             raise ValueError("evidence path must be a file")
         return resolved
 
@@ -536,6 +539,22 @@ class ModelingAgent:
                 objective=objective,barrier_studies={acc:barrier_summary(value.get('barrier_studies',{}))
                     for acc,value in self.state['candidates'].items()}))))
         prefix[0]["content"] += "\n\nScientific record field contract (trusted tool schema):\n" + json.dumps(contract)
+        # Keep loaded skill playbooks pinned across history compaction so the agent
+        # never loses active domain instructions after 1-3 turns.
+        active_skills = self.state.get("active_skills") or []
+        skill_block = ""
+        if active_skills:
+            from .controller.skills import get_skill
+            blocks = []
+            for sname in active_skills:
+                try:
+                    sk = get_skill(sname)
+                    blocks.append(f"### Active skill: {sk.name}\n{sk.body}")
+                except ValueError:
+                    continue
+            if blocks:
+                skill_block = "\n\nActive domain playbooks:\n" + "\n\n".join(blocks)
+                prefix[0]["content"] += skill_block
         # Before the first proposal the candidate record is task input, not conversational
         # history. It does not fit the per-turn tool-result allowance, so re-reading it
         # returns another truncated preview and the setup stage cannot converge. Anchor it
@@ -616,7 +635,7 @@ class ModelingAgent:
             "completed_inspections":inspections,
             "repeated_inspections":self.state.get('repeated_inspections',0),
             "inspection_guidance":"Reuse unchanged inspected material. Record a provisional model, retrieve a genuinely new source, or finish inconclusive with the missing evidence; repeated reading does not resolve a setup choice."})}
-        allowance=(24000 if self.task.get("objective") == "prepare_sampling" else CONTEXT_ALLOWANCE)+(len(anchor) if anchor else 0)
+        allowance=(24000 if self.task.get("objective") == "prepare_sampling" else CONTEXT_ALLOWANCE)+(len(anchor) if anchor else 0)+len(skill_block)
         while recent and len(json.dumps(prefix+[m for group in recent for m in group]+[current]))>allowance:
             recent.pop(0)  # Never split an assistant/tool transaction.
         context=prefix+[m for group in recent for m in group]+[current]
@@ -724,11 +743,12 @@ class ModelingAgent:
                         self.messages[1]["content"] = json.dumps(initial)
                     except (ValueError, KeyError, IndexError, TypeError):
                         self._event("handoff_currentness_context_unavailable", currentness=currentness)
-            from enzyme_discovery_agent.provenance import snapshot_source_code, capture_environment
-            snapshot = snapshot_source_code(self.run_dir)
-            self.state["environment"] = capture_environment()
-            if not any(s["source_sha256"] == snapshot["source_sha256"] for s in self.state.get("code_snapshots", [])):
-                self.state.setdefault("code_snapshots", []).append(snapshot)
+            if self._resume_requested or not self.state.get("code_snapshots"):
+                from enzyme_discovery_agent.provenance import snapshot_source_code, capture_environment
+                snapshot = snapshot_source_code(self.run_dir)
+                self.state["environment"] = capture_environment()
+                if not any(s["source_sha256"] == snapshot["source_sha256"] for s in self.state.get("code_snapshots", [])):
+                    self.state.setdefault("code_snapshots", []).append(snapshot)
             if self.state["status"] == "complete" and not self.completion_errors():
                 self._save()
                 return self._write_report()
@@ -825,8 +845,20 @@ class ModelingAgent:
                         try:
                             arguments = json.loads(raw) if isinstance(raw, str) else raw
                             if name not in offered_names:
-                                result={'status':'blocked','reason':'Choose a new evidence action, provisional proposal, or explicit inconclusive outcome after repeated unchanged inspections.'}
-                                self.state.update(status='inspection_stalled',checkpoint_reason=result['reason'])
+                                if self.state.get("repeated_inspections", 0) >= 3 and name in _REPEATABLE_READERS:
+                                    result={'status':'blocked','reason':'Choose a new evidence action, provisional proposal, or explicit inconclusive outcome after repeated unchanged inspections.'}
+                                    self.state.update(status='inspection_stalled',checkpoint_reason=result['reason'])
+                                else:
+                                    registry = get_registry()
+                                    hint = f"Tool {name!r} is not currently offered in this stage."
+                                    if name in registry.names():
+                                        domain = registry.get(name).domain
+                                        from .controller.skills import list_skills
+                                        matching = [s["name"] for s in list_skills() if domain in s["domains"]]
+                                        if matching and "load_skill" in offered_names:
+                                            hint = (f"Tool {name!r} belongs to the {domain!r} domain, which is not yet unlocked. "
+                                                    f"Call load_skill(name=...) with one of {matching} first.")
+                                    result = {"status": "blocked", "reason": hint, "offered_tools": sorted(offered_names)}
                             elif self.state["status"] != "running" or (budget_reason() and not (
                                     self.task.get("objective") == "prepare_sampling" and name in {
                                         "record_preparation_findings", "declare_sampling_setup", "declare_preparation_study", "finish_task"})):
@@ -842,10 +874,12 @@ class ModelingAgent:
                         self.messages.append({"role": "tool", "tool_call_id": call_id, "content": json.dumps(payload)})
                         self._event("tool_result", tool=name, artifact=artifact)
                         self.state["usage"] = usage.to_dict()
-                        self._save()
+                        self._save(compat=False)
                         if (self.task.get('workflow_mode')=='production_cofold' and name=='render_inputs'
                                 and result.get('status')=='rendered'):
                             self.state.update(status='ready_for_native_execution')
+                    if calls:
+                        self._save(compat=True)
                     if self.task.get('objective') == 'prepare_sampling':
                         changed = self._preparation_progress() != preparation_before
                         self.state['preparation_read_turns'] = 0 if changed else self.state.get('preparation_read_turns', 0) + 1

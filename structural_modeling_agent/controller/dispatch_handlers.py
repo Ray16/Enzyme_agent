@@ -371,7 +371,7 @@ def _h_preparation_study(agent, args, acc, candidate, *, declare: bool):
     studies = state.setdefault("preparation_studies", {})
     if declare:
         if not isinstance(args.get("study"), dict):
-            raise ValueError("declare_preparation_study requires a 'study' object; inspect_preparation_contract shows its shape")
+            raise ValueError("declare_preparation_study requires a 'study' object (see md-preparation skill)")
         study = copy.deepcopy(args["study"])
     else:
         if not studies:
@@ -405,7 +405,7 @@ def _h_sampling_setup(agent, args, acc, candidate, *, declare: bool):
     setups = state.setdefault("sampling_setups", {})
     if declare:
         if not isinstance(args.get("setup"), dict):
-            raise ValueError("declare_sampling_setup requires a 'setup' object; inspect_sampling_setup_contract shows its shape")
+            raise ValueError("declare_sampling_setup requires a 'setup' object (see md-preparation skill)")
         setup = copy.deepcopy(args["setup"])
         identities = {
             "sequence_sha256": hashlib.sha256(candidate["sequence"].encode()).hexdigest(),
@@ -1049,37 +1049,6 @@ REVISION_HANDLERS = {
 
 
 def dispatch_tool(agent, name, args):
-    """Route a tool call to its domain handler with consistent accession resolution."""
-    if name in PRE_ACCESSION_HANDLERS:
-        return PRE_ACCESSION_HANDLERS[name](agent, args)
-
-    # Single-candidate runs default omitted accession and reject unknown ones clearly.
-    if isinstance(args, dict):
-        if "accession" not in args and len(agent.state["candidates"]) == 1:
-            args = {**args, "accession": next(iter(agent.state["candidates"]))}
-        elif args.get("accession") is not None and args["accession"] not in agent.state["candidates"]:
-            raise ValueError(
-                f"unknown accession {args['accession']!r}; choose one of {list(agent.state['candidates'])}"
-            )
-
-    if name in GENERAL_HANDLERS:
-        return GENERAL_HANDLERS[name](agent, args)
-
-    acc = args.get("accession")
-    if acc is None:
-        ids = list(agent.state["candidates"])
-        if len(ids) != 1:
-            raise ValueError(f"accession is required; choose one of {ids}")
-        acc = ids[0]
-    elif acc not in agent.state["candidates"]:
-        raise ValueError(f"unknown accession {acc!r}; choose one of {list(agent.state['candidates'])}")
-
-    candidate = agent._candidate(acc)
-    if name in CANDIDATE_HANDLERS:
-        return CANDIDATE_HANDLERS[name](agent, args, acc, candidate)
-
-    if name in REVISION_HANDLERS:
-        revision = agent._current(acc)
-        return REVISION_HANDLERS[name](agent, args, acc, candidate, revision)
-
-    raise ValueError(f"unknown tool {name}")
+    """Delegate to the unified ToolRegistry (single source of truth for dispatch)."""
+    from .tool_registry import get_registry
+    return get_registry().dispatch(agent, name, args)

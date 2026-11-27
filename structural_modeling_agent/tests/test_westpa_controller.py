@@ -1,6 +1,7 @@
-import h5py
 import numpy as np
 import pytest
+
+h5py = pytest.importorskip("h5py")
 
 from structural_modeling_agent.sampling.westpa_controller import validate_completed_run
 

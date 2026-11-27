@@ -6,6 +6,8 @@ import sys
 
 import numpy as np
 import pytest
+
+ase = pytest.importorskip("ase")
 from ase import Atoms
 from ase.calculators.emt import EMT
 
