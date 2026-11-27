@@ -162,7 +162,7 @@ def select_expansion_seeds(candidates: dict, n: int, run_dir: Path | str | None 
         ordered = sorted(eligible, key=lambda a: (ranks[a], a))
     else:
         # Reuse the ranking policy rather than invent a separate expansion score.
-        from enzyme_discovery_agent.output.report_generator import (
+        from enzyme_discovery_agent.models.ranking import (
             _deterministic_mechanistic_ranking, _family_relevance_partition, _family_rank_map,
         )
         evaluations = [{"data": seed_evidence(a, e)} for a, e in eligible.items()]

@@ -100,10 +100,10 @@ class RunFinalizer:
 
     def snapshot(self, *, query: str, reason: str) -> tuple[str, int]:
         """Write a budget checkpoint report using only already saved evidence."""
-        from enzyme_discovery_agent.output.report_generator import (
-            _deterministic_mechanistic_ranking, _write_deterministic_report,
-            _family_relevance_partition, _family_rank_map,
+        from enzyme_discovery_agent.models.ranking import (
+            _deterministic_mechanistic_ranking, _family_relevance_partition, _family_rank_map,
         )
+        from enzyme_discovery_agent.output.report_generator import _write_deterministic_report
         from enzyme_discovery_agent.models.candidate_registry import discovery_status
         from enzyme_discovery_agent.models.evaluations import registered_hypothesis
         registry = load_candidate_registry(self.run_dir).get("candidates", {})

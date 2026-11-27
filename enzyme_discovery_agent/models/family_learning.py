@@ -52,7 +52,7 @@ def candidate_feedback(data, target):
         reasons.append("native reaction does not establish the target carrier requirement")
     if data.get("requires_polymer_substrate") and topology == "free_small_molecule":
         reasons.append("record explicitly requires a polymer substrate")
-    from enzyme_discovery_agent.output.report_generator import _accommodation_score
+    from enzyme_discovery_agent.models.ranking import _accommodation_score
     from enzyme_discovery_agent.models.reaction_roles import role_transfer_summary
     roles = role_transfer_summary(data)
     fit = _accommodation_score(data)

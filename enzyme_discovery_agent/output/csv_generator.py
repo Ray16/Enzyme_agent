@@ -43,7 +43,7 @@ def refresh_ranked_candidates(run_dir):
     from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry,discovery_status
     from enzyme_discovery_agent.models.expansion import seed_evidence
     from enzyme_discovery_agent.models.evaluations import current_evaluations
-    from enzyme_discovery_agent.output.report_generator import _deterministic_mechanistic_ranking,_family_relevance_partition,_family_rank_map,_collapse_orthologs
+    from enzyme_discovery_agent.models.ranking import _deterministic_mechanistic_ranking, _family_relevance_partition, _family_rank_map, _collapse_orthologs
     from enzyme_discovery_agent.state_store import atomic_write_json
     root=Path(run_dir)
     from enzyme_discovery_agent.state_store import state_lock

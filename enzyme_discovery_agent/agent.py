@@ -1149,6 +1149,333 @@ class EnzymeAgent:
             })
         return parsed
 
+    def _run_periodic_maintenance(self, messages: list[dict], iteration: int) -> None:
+        """Service background lead resolution and scope enrichment without LLM calls."""
+        if iteration % 2 == 0:
+            # Servicing a lead costs no LLM call, so the cadence should track the backlog
+            # rather than a fixed trickle; leads the run paid to discover were otherwise
+            # still unresolved when the token budget ended.
+            from enzyme_discovery_agent.models.lead_followup import service_leads
+            followup = service_leads(self.run_dir)
+            if followup['resolved']:
+                from enzyme_discovery_agent.output.csv_generator import refresh_ranked_candidates
+                refresh_ranked_candidates(self.run_dir)
+                messages.append({'role': 'user', 'content': (
+                    'Source-grounded literature follow-up linked and assessed these sequence records: '
+                    + json.dumps(followup['resolved'])
+                    + '. Inspect their current evidence and record target-specific priorities when justified. '
+                    'Identity/native-function resolution does not establish target activity.'
+                )})
+        if config.AUTO_SCOPE_FOLLOWUP and iteration % 4 == 0:
+            from enzyme_discovery_agent.models.evidence_followup import run_scope_followup
+            scope_out = run_scope_followup(self.run_dir, limit=5)
+            if scope_out['enriched']:
+                self._log_event('scope_followup_enriched', {'iteration': iteration, 'accessions': scope_out['enriched']})
+        self._record_research_progress()
+
+    def _run_auto_target_review(
+        self, messages: list[dict], iteration: int, token_usage: TokenUsage, review_yield: bool
+    ) -> tuple[bool, str | None]:
+        """Run one bounded target-review batch if queued; returns (handled, early_report)."""
+        from enzyme_discovery_agent.models.target_review import review_queue, run_review
+        if not (config.AUTO_TARGET_REVIEW
+                and not review_yield
+                and self._automatic_evidence_batches < config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION
+                and review_queue(self.run_dir, limit=config.TARGET_REVIEW_BATCH_SIZE)):
+            return False, None
+        review = run_review(self.run_dir, self.llm, limit=config.TARGET_REVIEW_BATCH_SIZE)
+        self._automatic_evidence_batches += 1
+        self._automatic_review_batches += 1
+        self._last_automatic_action = 'target_review'
+        if review['assessed']:
+            from enzyme_discovery_agent.output.csv_generator import refresh_ranked_candidates
+            refresh_ranked_candidates(self.run_dir)
+        self._checkpoint_transcript(messages, iteration)
+        if self._budget_reason():
+            return True, self._finish_budget_checkpoint(messages, iteration, token_usage, self._budget_reason())
+        if review['errors'] or review['unassessed']:
+            self.log('Target review checkpoint: ' + json.dumps(review))
+        # Re-enter scheduling after partial batches too. Falling through
+        # evaluated more native records ahead of already-ready target
+        # assessments whenever any response was invalid or missing.
+        return True, None
+
+    def _handle_invalid_research_decisions(
+        self, messages: list[dict], iteration: int, token_usage: TokenUsage, backlog: list
+    ) -> tuple[bool, bool, str | None]:
+        """Recover from repeated ungrounded proposals; returns (clear_adaptive, clear_recon, early_report)."""
+        if getattr(self, '_invalid_research_decisions', 0) < 2:
+            return False, False, None
+        if backlog:
+            from enzyme_discovery_agent.models.research_decisions import defer_ungrounded_review
+            defer_ungrounded_review(self.run_dir, len(backlog))
+            self._invalid_research_decisions = 0
+            messages.append({'role': 'user', 'content': (
+                'The controller deferred an ungrounded review and is resuming ready candidate evaluation. '
+                'Uncertainty and existing scientific priorities remain unchanged; new evidence can reopen review.'
+            )})
+            return True, True, None
+        if not getattr(self, '_research_repair_attempted', False):
+            from enzyme_discovery_agent.models.research_decisions import proposal_repair_context
+            repair = proposal_repair_context(self.run_dir)
+            self._research_repair_attempted = True
+            self._research_repair_only = True
+            self._invalid_research_decisions = 0
+            messages.append({'role': 'user', 'content': (
+                'BOUNDED PROTOCOL REPAIR: interpret_research_outcome can record your interpretation '
+                'of the pending observation without proposing another test, or conclude_research_review '
+                'can close the review provisionally. No scientific interpretation has been supplied by '
+                'the controller. Use the exact saved references: ' + json.dumps(repair)
+            )})
+            return False, False, None
+        return False, False, self._finish_budget_checkpoint(
+            messages, iteration - 1, token_usage,
+            'Adaptive decision could not be grounded after two attempts; review the preserved evidence and proposals.',
+            status='discovery_incomplete',
+        )
+
+    def _build_turn_prompt_and_tools(
+        self,
+        messages: list[dict],
+        iteration: int,
+        *,
+        forced_reflection: bool,
+        adaptive_review: bool,
+        reconnaissance: bool,
+        literature_bootstrap: dict,
+    ) -> tuple[list[dict], list[dict], list[dict], list[str]]:
+        """Append turn advisories, compute permitted tools, and build the provider payload."""
+        state_header = build_state_header(
+            iteration=iteration, max_iterations=self.max_iterations,
+            candidate_count=self._candidate_count,
+            searches_done=self._search_log,
+            phase=self._infer_phase(iteration),
+        )
+
+        reflection_msg = None
+        if forced_reflection or (self._consecutive_no_progress_turns >= 2 and
+                                 iteration > 1 and iteration % config.REFLECTION_INTERVAL == 0):
+            reflection_msg = build_reflection_prompt(iteration, self._candidate_count)
+            if forced_reflection:
+                reflection_msg += (
+                    f"\n\nThe controller completed {self._automatic_evidence_batches} automated evidence batches "
+                    "since your last decision. Review the CURRENT RESEARCH STATE and take a substantive action now. "
+                    "Use set_family_focus to record evidence-backed changes in family priorities, or gather "
+                    "missing primary evidence through a different source, query or citation route. "
+                    "Do not claim coverage is complete from a populated candidate list."
+                )
+            self._log_event("reflection_scheduled", {
+                "iteration": iteration,
+                "reason": "automated_batch_limit" if forced_reflection else "periodic",
+                "automated_batches": self._automatic_evidence_batches,
+            })
+            # Surface a plateau signal (a cue, not a gate): if recent searches
+            # stopped finding new families, nudge toward breadth before the run
+            # settles into mining one neighbourhood.
+            from enzyme_discovery_agent.models.event_log import exploration_saturation
+            sat = exploration_saturation(self.run_dir)
+            if sat["plateaued"]:
+                reflection_msg += (
+                    f"\n\nEXPLORATION SIGNAL: the last {sat['events_in_window']} searches added "
+                    f"no new families (and {sat['recent_new_accessions']} new sequence(s)). If "
+                    "promising families remain unexplored, search a DIFFERENT one; if you are "
+                    "deepening an already-strong family, broaden with expand_candidates_esm "
+                    "(steer_mode='explore') rather than re-mining the same neighbourhood."
+                )
+
+        if reflection_msg:
+            messages.append({"role": "user", "content": f"{state_header}\n\n{reflection_msg}"})
+        elif iteration > 1:
+            messages.append({"role": "user", "content": state_header})
+
+        available_tools = self.tools
+        if not config.ADAPTIVE_REASONING:
+            available_tools = [tool for tool in available_tools if tool['function']['name'] not in
+                               {'plan_research_step', 'get_decision_context'}]
+        if self._consecutive_no_progress_turns >= 2 or forced_reflection:
+            available_tools = [tool for tool in available_tools
+                               if tool["function"]["name"] not in {"get_notebook", "update_notebook"}]
+            messages.append({"role": "user", "content": (
+                ("STRATEGY CHECK: automated evidence work must now yield to a substantive decision. "
+                 if forced_reflection else "PROGRESS CHECK: recent turns added no new candidate, paper or evidence. ") +
+                "Notebook activity and completion notices do not advance discovery. "
+                "Take an evidence-gathering action in an unresolved family or candidate, "
+                "or explain that the remaining searches are exhausted."
+            )})
+        # Source counts are a diagnostic, not a reason to hide a useful route.
+        from enzyme_discovery_agent.models.event_log import retrieval_balance
+        balance = retrieval_balance(self.run_dir)
+        if balance['reports_crowding_out_records']:
+            self._log_event('retrieval_balance_advisory', {'iteration': iteration, **balance})
+            messages.append({'role': 'user', 'content': (
+                f"RETRIEVAL BALANCE: {balance['report_searches']} recent literature searches and "
+                f"{balance['record_searches']} sequence-archive searches. Choose the next route "
+                "by the unresolved question: resolve retrieved identities or reaction/family "
+                "cross-references to sequences; read or follow citations when chemistry remains "
+                "unclear. A low-yield query needs relaxed constraints or another evidence axis. "
+                "Do not repeat completed searches without a changed scope. Keep complementary "
+                "unexplored reaction hypotheses visible. All evidence sources remain available.")})
+        # Early turns must establish chemistry and retrieve evidence.
+        # Delaying optional notebook writes avoids provider-generated
+        # section-only calls before there is any evidence to summarize.
+        if iteration <= 3 or self._notebook_tool_cooldown > 0:
+            available_tools = [
+                tool for tool in available_tools
+                if tool["function"]["name"] != "update_notebook"
+            ]
+            self._notebook_tool_cooldown = max(0, self._notebook_tool_cooldown - 1)
+        if self._gate_state.discovery_coverage_incomplete:
+            # The coverage gate is a hard evaluation boundary, but it
+            # must not discard a whole model turn.  Keep all discovery
+            # tools available so the model can close evidence gaps.
+            available_tools = [
+                tool for tool in available_tools
+                if tool["function"]["name"] != "evaluate_candidate"
+            ]
+        if (not forced_reflection and self._gate_state.evidence_selection_prompted
+                and self._candidate_count == 0):
+            # Once enough literature is gathered, do not spend the
+            # remaining campaign rediscovering the same landscape. Resolve
+            # identifiers and screen the bounded evidence-backed list.
+            selection_tools = {
+                "screen_candidates", "search_uniprot", "lookup_genbank_to_uniprot",
+                "get_notebook", "get_research_memory",
+            }
+            available_tools = [
+                tool for tool in available_tools
+                if tool["function"]["name"] in selection_tools
+            ]
+        if adaptive_review:
+            available_tools = [tool for tool in self.tools if tool['function']['name'] not in
+                               {'get_notebook', 'update_notebook'}]
+            from enzyme_discovery_agent.models.research_decisions import review_limits, review_action_allowed
+            review_budget = review_limits(self.run_dir)
+            available_tools = [tool for tool in available_tools
+                               if tool['function']['name'] == 'plan_research_step' and not review_budget['conclusion_required']
+                               or tool['function']['name'] != 'plan_research_step' and
+                               review_action_allowed(self.run_dir, tool['function']['name'])]
+            messages.append({'role': 'user', 'content': (
+                'ADAPTIVE RESEARCH DECISION. Use plan_research_step with one available tool and valid arguments. '
+                'Cite evidence IDs from adaptive_reasoning or get_decision_context. Register a testable hypothesis, '
+                'a competing explanation, contrasting predicted observations, why this test distinguishes them, and a revision condition. '
+                'Interpret the previous action outcome, cite its evidence ID, set revises to its decision ID, and state retain, revise or suspend. '
+                'You may instead call interpret_research_outcome to record that interpretation separately before selecting another action. '
+                'A priority update supplies no new functional evidence. Explain any reinterpretation of existing observations, and choose a discriminating evidence action when more information is needed. '
+                'Native mismatch, retrieval failure and a weak structural proxy have different meanings; none alone establishes target inactivity. '
+                'assess_next_batch gathers a bounded native-evidence batch. set_family_focus can defer a reported family or annotation scope reversibly. '
+                'Check actual test coverage: an unsampled mechanism remains unresolved, not refuted. '
+                'Choose an evidence action rather than a narrative-only answer or a repeated completed query. '
+                'Deliberation is the expensive step and retrieval is the cheap one: having reasoned a mechanism '
+                'family in or out, spend the next actions retrieving its sequence-database members rather than '
+                'restating the reasoning. A family judged relevant and never searched is an untested family, and '
+                'a named protein without a retrieved sequence cannot be assessed or modelled.'
+            )})
+        if reconnaissance:
+            available_tools = [tool for tool in self.tools if tool['function']['name'] in literature_bootstrap['available_tools']]
+            messages.append({'role': 'user', 'content': (
+                'INITIAL SOURCE RECONNAISSANCE: retrieve primary literature or a supplied primary source before the broad annotation survey. '
+                'Construct a discriminating query from the user target and reaction requirements. Prefer direct target/substrate evidence; '
+                'use a complementary source or reformulate if the first lookup fails or is empty. Names from model memory remain hypotheses '
+                'until retrieved. The next mechanism derivation receives the actual retrieved titles and abstracts. This reconnaissance '
+                'is bounded; unavailable sources will be recorded as degraded evidence, never biological absence.'
+            )})
+        self._require_research_decision = adaptive_review
+        self._decision_action_tools = {tool['function']['name'] for tool in available_tools}
+        model_messages = build_model_context(messages, self.run_dir)
+        from enzyme_discovery_agent import steering
+        delivered_ids = [item["id"] for item in steering.read_state(self.run_dir)["instructions"]]
+        self._log_event("model_context", {
+            "iteration": iteration,
+            "history_characters": len(json.dumps(messages, default=str)),
+            "sent_characters": len(json.dumps(model_messages, default=str)),
+        })
+        from enzyme_discovery_agent.models.research_decisions import inspection_completed, review_action_allowed
+        from enzyme_discovery_agent.context import strategic_tool_definitions, stable_tool_definitions
+        permitted = (strategic_tool_definitions(available_tools, include_inspections=not inspection_completed(self.run_dir))
+                     if adaptive_review else compact_tool_definitions(available_tools))
+        if not review_action_allowed(self.run_dir, 'interpret_research_outcome'):
+            permitted = [tool for tool in permitted if tool['function']['name'] != 'interpret_research_outcome']
+        if getattr(self, '_research_repair_only', False):
+            permitted = [tool for tool in permitted if tool['function']['name'] in
+                         {'interpret_research_outcome', 'conclude_research_review'}]
+        # The allowlist still decides what may run; it no longer decides what schemas
+        # are sent. Varying the schemas rewrote the provider's cache prefix every turn.
+        self._offered_direct_tools = {tool['function']['name'] for tool in permitted}
+        model_tools = stable_tool_definitions(self.tools, include_inspections=True)
+        # Volatile, so it goes last in the payload and is never written to the durable
+        # history: anything placed earlier would invalidate the cache behind it.
+        model_messages = model_messages + [{'role': 'user', 'content': (
+            'PERMITTED THIS TURN: '
+            + ', '.join(sorted(self._offered_direct_tools))
+            + '. Other listed tools are unavailable this turn and will be refused; choose from these.'
+        )}]
+        return available_tools, model_messages, model_tools, delivered_ids
+
+    def _handle_no_tool_turn(
+        self,
+        messages: list[dict],
+        iteration: int,
+        token_usage: TokenUsage,
+        *,
+        adaptive_review: bool,
+        text_content: str,
+    ) -> str | None:
+        """Handle a prose-only assistant response; return a report to stop or None to continue."""
+        if adaptive_review:
+            self._invalid_research_decisions = getattr(self, '_invalid_research_decisions', 0) + 1
+        self._consecutive_no_tool_turns += 1
+        self._record_research_progress(count_turn=True)
+        if self._should_continue(iteration):
+            if self._candidate_count == 0:
+                recovery_instruction = (
+                    "You have not begun evidence-backed discovery. Take a concrete tool action now: "
+                    "analyze the substrate or search primary literature for direct target/substrate evidence. "
+                    "Do not return a plan or prose-only answer. Call at least one tool."
+                )
+            else:
+                recovery_instruction = "You stopped before completing all phases. Continue with concrete tool calls."
+            messages.append({"role": "user", "content": recovery_instruction})
+            return None
+        # Coverage guard: the agent thinks it is done, but do not finalize
+        # while a family it ITSELF derived as promising was never searched.
+        # Nudge a bounded number of times with that family's own terms,
+        # steering budget to DIFFERENT families instead of more orthologs.
+        uncovered = self._uncovered_promising_families()
+        if uncovered and self._coverage_nudges_used < config.MAX_FAMILY_COVERAGE_NUDGES:
+            self._coverage_nudges_used += 1
+            lines = []
+            for fam in uncovered[:4]:
+                terms = "; ".join(fam.get("literature_terms") or fam.get("descriptors") or [])
+                lines.append(f"- {fam.get('name', 'family')}: {terms}")
+            self.log(
+                f"  Coverage checkpoint: {len(uncovered)} promising family(ies) "
+                f"never searched; nudging targeted search "
+                f"({self._coverage_nudges_used}/{config.MAX_FAMILY_COVERAGE_NUDGES})"
+            )
+            self._log_event("coverage_checkpoint", {
+                "iteration": iteration,
+                "uncovered_families": [f.get("name") for f in uncovered],
+                "nudge": self._coverage_nudges_used,
+            })
+            messages.append({"role": "user", "content": (
+                "COVERAGE CHECKPOINT — do not finalize yet. You derived these "
+                "mechanism families as promising but never searched them. Run a "
+                "TARGETED search for EACH (search_uniprot and/or primary "
+                "literature with the terms below), then screen only the grounded "
+                "hits. Do NOT expand more orthologs of families you already have "
+                "— reach these DIFFERENT families:\n" + "\n".join(lines)
+            )})
+            return None
+        self._consecutive_no_tool_turns = 0
+        if self._confidence_report_text is None:
+            self._confidence_report_text = text_content
+        return self._finish_budget_checkpoint(
+            messages, iteration, token_usage,
+            "Discovery incomplete: complementary search routes currently exhausted; "
+            "literature and candidate coverage remain unproven",
+            status="discovery_incomplete",
+        )
+
     def run(
         self,
         query: str,
@@ -1290,65 +1617,34 @@ class EnzymeAgent:
             # LLM for another turn, so the evaluation gate cannot miss a
             # screen that occurred near the iteration limit.
             self._sync_gate_state()
-            if iteration % 2 == 0:
-                # Servicing a lead costs no LLM call, so the cadence should track the backlog
-                # rather than a fixed trickle; leads the run paid to discover were otherwise
-                # still unresolved when the token budget ended.
-                from enzyme_discovery_agent.models.lead_followup import service_leads
-                followup=service_leads(self.run_dir)
-                if followup['resolved']:
-                    from enzyme_discovery_agent.output.csv_generator import refresh_ranked_candidates
-                    refresh_ranked_candidates(self.run_dir)
-                    messages.append({'role':'user','content':
-                        'Source-grounded literature follow-up linked and assessed these sequence records: '+json.dumps(followup['resolved'])+
-                        '. Inspect their current evidence and record target-specific priorities when justified. Identity/native-function resolution does not establish target activity.'})
-            if config.AUTO_SCOPE_FOLLOWUP and iteration % 4 == 0:
-                from enzyme_discovery_agent.models.evidence_followup import run_scope_followup
-                scope_out = run_scope_followup(self.run_dir, limit=5)
-                if scope_out['enriched']:
-                    self._log_event('scope_followup_enriched', {'iteration': iteration, 'accessions': scope_out['enriched']})
-            self._record_research_progress()
-            from enzyme_discovery_agent.models.target_review import review_queue,run_review
-            from enzyme_discovery_agent.models.research_decisions import _root as decision_root,_read as read_decision_state
-            pending_interpretation=read_decision_state(decision_root(self.run_dir)/'state.json',{}).get('awaiting_interpretation')
-            review_yield=(config.AUTO_TARGET_REVIEW and
-                getattr(self,'_automatic_review_batches',0)>=config.TARGET_REVIEW_BATCHES_BEFORE_DECISION)
+            self._run_periodic_maintenance(messages, iteration)
+            from enzyme_discovery_agent.models.research_decisions import _root as decision_root, _read as read_decision_state
+            pending_interpretation = read_decision_state(decision_root(self.run_dir) / 'state.json', {}).get('awaiting_interpretation')
+            review_yield = (config.AUTO_TARGET_REVIEW and
+                            getattr(self, '_automatic_review_batches', 0) >= config.TARGET_REVIEW_BATCHES_BEFORE_DECISION)
             # Candidate assessment is itself a source-bound scientific interpretation.
             # A pending search-review closure must not leave retrieved candidates
             # unranked. Bound the tranche so strategy review still gets a turn.
-            if (config.AUTO_TARGET_REVIEW
-                    and not review_yield
-                    and self._automatic_evidence_batches < config.MAX_AUTOMATED_BATCHES_BEFORE_REFLECTION
-                    and review_queue(self.run_dir,limit=config.TARGET_REVIEW_BATCH_SIZE)):
-                review=run_review(self.run_dir,self.llm,limit=config.TARGET_REVIEW_BATCH_SIZE)
-                self._automatic_evidence_batches += 1
-                self._automatic_review_batches += 1
-                self._last_automatic_action = 'target_review'
-                if review['assessed']:
-                    from enzyme_discovery_agent.output.csv_generator import refresh_ranked_candidates
-                    refresh_ranked_candidates(self.run_dir)
-                self._checkpoint_transcript(messages,iteration)
-                if self._budget_reason():
-                    return self._finish_budget_checkpoint(messages,iteration,token_usage,self._budget_reason())
-                if review['errors'] or review['unassessed']:
-                    self.log('Target review checkpoint: '+json.dumps(review))
-                # Re-enter scheduling after partial batches too. Falling through
-                # evaluated more native records ahead of already-ready target
-                # assessments whenever any response was invalid or missing.
+            handled_review, early_report = self._run_auto_target_review(messages, iteration, token_usage, review_yield)
+            if early_report is not None:
+                return early_report
+            if handled_review:
                 continue
             from enzyme_discovery_agent.models.literature_bootstrap import bootstrap_status
-            literature_bootstrap=bootstrap_status(self.run_dir,{tool['function']['name'] for tool in self.tools},
-                mechanisms_derived=self._gate_state.mechanism_families_done)
-            reconnaissance=literature_bootstrap['required']
+            literature_bootstrap = bootstrap_status(
+                self.run_dir, {tool['function']['name'] for tool in self.tools},
+                mechanisms_derived=self._gate_state.mechanism_families_done,
+            )
+            reconnaissance = literature_bootstrap['required']
             if not self._gate_state.mechanism_families_done:
-                atomic_write_json(self.run_dir/'agent_state/literature_bootstrap.json',literature_bootstrap)
+                atomic_write_json(self.run_dir / 'agent_state/literature_bootstrap.json', literature_bootstrap)
             from enzyme_discovery_agent.models.rolling import fresh_evaluation_backlog, new_evaluation_work
             backlog = fresh_evaluation_backlog(self.run_dir)
             from enzyme_discovery_agent.models.research_decisions import review_due
             adaptive_review = (config.ADAPTIVE_REASONING and review_due(
                 self.run_dir, minimum_assessed=config.ADAPTIVE_REVIEW_MIN_ASSESSED))
             source_reviewed = read_decision_state(
-                decision_root(self.run_dir)/'state.json', {}).get('initial_sources_reviewed')
+                decision_root(self.run_dir) / 'state.json', {}).get('initial_sources_reviewed')
             # A survey registers discoveries before they are screened. Include
             # that work in the bounded tranche, even while an earlier search
             # outcome awaits interpretation. Never close that review implicitly.
@@ -1376,30 +1672,15 @@ class EnzymeAgent:
                         continue
                 else:
                     pre_checked_gates.add(id(self._expansion_gate))
-            if getattr(self, '_invalid_research_decisions', 0) >= 2:
-                if backlog:
-                    from enzyme_discovery_agent.models.research_decisions import defer_ungrounded_review
-                    defer_ungrounded_review(self.run_dir,len(backlog))
-                    self._invalid_research_decisions=0
-                    adaptive_review=False
-                    reconnaissance=False
-                    messages.append({'role':'user','content':
-                        'The controller deferred an ungrounded review and is resuming ready candidate evaluation. '
-                        'Uncertainty and existing scientific priorities remain unchanged; new evidence can reopen review.'})
-                elif not getattr(self,'_research_repair_attempted',False):
-                    from enzyme_discovery_agent.models.research_decisions import proposal_repair_context
-                    repair=proposal_repair_context(self.run_dir)
-                    self._research_repair_attempted=True
-                    self._research_repair_only=True
-                    self._invalid_research_decisions=0
-                    messages.append({'role':'user','content':
-                        'BOUNDED PROTOCOL REPAIR: interpret_research_outcome can record your interpretation '
-                        'of the pending observation without proposing another test, or conclude_research_review '
-                        'can close the review provisionally. No scientific interpretation has been supplied by '
-                        'the controller. Use the exact saved references: '+json.dumps(repair)})
-                else:
-                    return self._finish_budget_checkpoint(messages, iteration - 1, token_usage,
-                        'Adaptive decision could not be grounded after two attempts; review the preserved evidence and proposals.', status='discovery_incomplete')
+            clear_adaptive, clear_recon, early_report = self._handle_invalid_research_decisions(
+                messages, iteration, token_usage, backlog
+            )
+            if early_report is not None:
+                return early_report
+            if clear_adaptive:
+                adaptive_review = False
+            if clear_recon:
+                reconnaissance = False
             forced_reflection = user_reflection or self._automatic_reflection_due()
             # A productive automatic queue (including a bounded target-review tranche)
             # yields periodically to a normal model decision, without injecting a
@@ -1503,178 +1784,24 @@ class EnzymeAgent:
                     and self._recover_discovery(messages, iteration)):
                 continue
 
-            state_header = build_state_header(
-                iteration=iteration, max_iterations=self.max_iterations,
-                candidate_count=self._candidate_count,
-                searches_done=self._search_log,
-                phase=self._infer_phase(iteration),
-            )
-
-            reflection_msg = None
-            if forced_reflection or (self._consecutive_no_progress_turns >= 2 and
-                                    iteration > 1 and iteration % config.REFLECTION_INTERVAL == 0):
-                reflection_msg = build_reflection_prompt(iteration, self._candidate_count)
-                if forced_reflection:
-                    reflection_msg += (
-                        f"\n\nThe controller completed {self._automatic_evidence_batches} automated evidence batches "
-                        "since your last decision. Review the CURRENT RESEARCH STATE and take a substantive action now. "
-                        "Use set_family_focus to record evidence-backed changes in family priorities, or gather "
-                        "missing primary evidence through a different source, query or citation route. "
-                        "Do not claim coverage is complete from a populated candidate list."
-                    )
-                self._log_event("reflection_scheduled", {"iteration": iteration,
-                    "reason": "automated_batch_limit" if forced_reflection else "periodic",
-                    "automated_batches": self._automatic_evidence_batches})
-                # Surface a plateau signal (a cue, not a gate): if recent searches
-                # stopped finding new families, nudge toward breadth before the run
-                # settles into mining one neighbourhood.
-                from enzyme_discovery_agent.models.event_log import exploration_saturation
-                sat = exploration_saturation(self.run_dir)
-                if sat["plateaued"]:
-                    reflection_msg += (
-                        f"\n\nEXPLORATION SIGNAL: the last {sat['events_in_window']} searches added "
-                        f"no new families (and {sat['recent_new_accessions']} new sequence(s)). If "
-                        "promising families remain unexplored, search a DIFFERENT one; if you are "
-                        "deepening an already-strong family, broaden with expand_candidates_esm "
-                        "(steer_mode='explore') rather than re-mining the same neighbourhood."
-                    )
-
-            if reflection_msg:
-                messages.append({"role": "user", "content": f"{state_header}\n\n{reflection_msg}"})
-            elif iteration > 1:
-                messages.append({"role": "user", "content": state_header})
-
-            available_tools = self.tools
-            if not config.ADAPTIVE_REASONING:
-                available_tools = [tool for tool in available_tools if tool['function']['name'] not in
-                                   {'plan_research_step', 'get_decision_context'}]
-            if self._consecutive_no_progress_turns >= 2 or forced_reflection:
-                available_tools = [tool for tool in available_tools
-                                   if tool["function"]["name"] not in {"get_notebook", "update_notebook"}]
-                messages.append({"role": "user", "content": (
-                    ("STRATEGY CHECK: automated evidence work must now yield to a substantive decision. "
-                     if forced_reflection else "PROGRESS CHECK: recent turns added no new candidate, paper or evidence. ") +
-                    "Notebook activity and completion notices do not advance discovery. "
-                    "Take an evidence-gathering action in an unresolved family or candidate, "
-                    "or explain that the remaining searches are exhausted."
-                )})
-            # Source counts are a diagnostic, not a reason to hide a useful route.
-            from enzyme_discovery_agent.models.event_log import retrieval_balance
-            balance = retrieval_balance(self.run_dir)
-            if balance['reports_crowding_out_records']:
-                self._log_event('retrieval_balance_advisory', {'iteration': iteration, **balance})
-                messages.append({'role': 'user', 'content': (
-                    f"RETRIEVAL BALANCE: {balance['report_searches']} recent literature searches and "
-                    f"{balance['record_searches']} sequence-archive searches. Choose the next route "
-                    "by the unresolved question: resolve retrieved identities or reaction/family "
-                    "cross-references to sequences; read or follow citations when chemistry remains "
-                    "unclear. A low-yield query needs relaxed constraints or another evidence axis. "
-                    "Do not repeat completed searches without a changed scope. Keep complementary "
-                    "unexplored reaction hypotheses visible. All evidence sources remain available.")})
-            # Early turns must establish chemistry and retrieve evidence.
-            # Delaying optional notebook writes avoids provider-generated
-            # section-only calls before there is any evidence to summarize.
-            if iteration <= 3 or self._notebook_tool_cooldown > 0:
-                available_tools = [
-                    tool for tool in available_tools
-                    if tool["function"]["name"] != "update_notebook"
-                ]
-                self._notebook_tool_cooldown = max(0, self._notebook_tool_cooldown - 1)
-            if self._gate_state.discovery_coverage_incomplete:
-                # The coverage gate is a hard evaluation boundary, but it
-                # must not discard a whole model turn.  Keep all discovery
-                # tools available so the model can close evidence gaps.
-                available_tools = [
-                    tool for tool in available_tools
-                    if tool["function"]["name"] != "evaluate_candidate"
-                ]
-            if (not forced_reflection and self._gate_state.evidence_selection_prompted
-                    and self._candidate_count == 0):
-                # Once enough literature is gathered, do not spend the
-                # remaining campaign rediscovering the same landscape. Resolve
-                # identifiers and screen the bounded evidence-backed list.
-                selection_tools = {
-                    "screen_candidates", "search_uniprot", "lookup_genbank_to_uniprot",
-                    "get_notebook", "get_research_memory",
-                }
-                available_tools = [
-                    tool for tool in available_tools
-                    if tool["function"]["name"] in selection_tools
-                ]
-            # Cap prompt growth: the re-sent history is 97% of token spend and
-            # grows unboundedly as raw tool dumps accumulate.  Everything a later
-            # turn needs is already persisted (candidate registry, notebook,
-            # artifacts), so stub the CONTENT of tool results older than the most
-            # recent few turns.  Messages are kept (never removed) so tool_call /
-            # tool-result pairing stays intact.
-            if adaptive_review:
-                available_tools = [tool for tool in self.tools if tool['function']['name'] not in
-                                   {'get_notebook', 'update_notebook'}]
-                from enzyme_discovery_agent.models.research_decisions import review_limits,review_action_allowed
-                review_budget=review_limits(self.run_dir)
-                available_tools=[tool for tool in available_tools
-                                 if tool['function']['name']=='plan_research_step' and not review_budget['conclusion_required']
-                                 or tool['function']['name']!='plan_research_step' and
-                                 review_action_allowed(self.run_dir,tool['function']['name'])]
-                messages.append({'role': 'user', 'content': (
-                    'ADAPTIVE RESEARCH DECISION. Use plan_research_step with one available tool and valid arguments. '
-                    'Cite evidence IDs from adaptive_reasoning or get_decision_context. Register a testable hypothesis, '
-                    'a competing explanation, contrasting predicted observations, why this test distinguishes them, and a revision condition. '
-                    'Interpret the previous action outcome, cite its evidence ID, set revises to its decision ID, and state retain, revise or suspend. '
-                    'You may instead call interpret_research_outcome to record that interpretation separately before selecting another action. '
-                    'A priority update supplies no new functional evidence. Explain any reinterpretation of existing observations, and choose a discriminating evidence action when more information is needed. '
-                    'Native mismatch, retrieval failure and a weak structural proxy have different meanings; none alone establishes target inactivity. '
-                    'assess_next_batch gathers a bounded native-evidence batch. set_family_focus can defer a reported family or annotation scope reversibly. '
-                    'Check actual test coverage: an unsampled mechanism remains unresolved, not refuted. '
-                    'Choose an evidence action rather than a narrative-only answer or a repeated completed query. '
-                    'Deliberation is the expensive step and retrieval is the cheap one: having reasoned a mechanism '
-                    'family in or out, spend the next actions retrieving its sequence-database members rather than '
-                    'restating the reasoning. A family judged relevant and never searched is an untested family, and '
-                    'a named protein without a retrieved sequence cannot be assessed or modelled.'
-                )})
-            if reconnaissance:
-                available_tools=[tool for tool in self.tools if tool['function']['name'] in literature_bootstrap['available_tools']]
-                messages.append({'role':'user','content':
-                    'INITIAL SOURCE RECONNAISSANCE: retrieve primary literature or a supplied primary source before the broad annotation survey. '
-                    'Construct a discriminating query from the user target and reaction requirements. Prefer direct target/substrate evidence; '
-                    'use a complementary source or reformulate if the first lookup fails or is empty. Names from model memory remain hypotheses '
-                    'until retrieved. The next mechanism derivation receives the actual retrieved titles and abstracts. This reconnaissance '
-                    'is bounded; unavailable sources will be recorded as degraded evidence, never biological absence.'})
-            self._require_research_decision = adaptive_review
-            self._decision_action_tools = {tool['function']['name'] for tool in available_tools}
             try:
-                model_messages = build_model_context(messages, self.run_dir)
+                available_tools, model_messages, model_tools, delivered_ids = self._build_turn_prompt_and_tools(
+                    messages, iteration,
+                    forced_reflection=forced_reflection,
+                    adaptive_review=adaptive_review,
+                    reconnaissance=reconnaissance,
+                    literature_bootstrap=literature_bootstrap,
+                )
             except ValueError as exc:
                 if not str(exc).startswith('Mandatory instructions'):
                     raise
-                return self._finish_budget_checkpoint(messages, iteration - 1, token_usage,
+                return self._finish_budget_checkpoint(
+                    messages, iteration - 1, token_usage,
                     'Context allowance cannot fit mandatory instructions and source-linked evidence. '
-                    'The full history and pending work are preserved for resume.', status='discovery_incomplete')
+                    'The full history and pending work are preserved for resume.',
+                    status='discovery_incomplete',
+                )
             from enzyme_discovery_agent import steering
-            delivered_ids = [item["id"] for item in steering.read_state(self.run_dir)["instructions"]]
-            self._log_event("model_context", {"iteration": iteration,
-                "history_characters": len(json.dumps(messages, default=str)),
-                "sent_characters": len(json.dumps(model_messages, default=str))})
-            from enzyme_discovery_agent.models.research_decisions import inspection_completed
-            from enzyme_discovery_agent.context import strategic_tool_definitions
-            permitted = (strategic_tool_definitions(available_tools,include_inspections=not inspection_completed(self.run_dir))
-                         if adaptive_review else compact_tool_definitions(available_tools))
-            from enzyme_discovery_agent.models.research_decisions import review_action_allowed
-            if not review_action_allowed(self.run_dir,'interpret_research_outcome'):
-                permitted=[tool for tool in permitted if tool['function']['name']!='interpret_research_outcome']
-            if getattr(self,'_research_repair_only',False):
-                permitted=[tool for tool in permitted if tool['function']['name'] in
-                           {'interpret_research_outcome','conclude_research_review'}]
-            # The allowlist still decides what may run; it no longer decides what schemas
-            # are sent. Varying the schemas rewrote the provider's cache prefix every turn.
-            self._offered_direct_tools={tool['function']['name'] for tool in permitted}
-            from enzyme_discovery_agent.context import stable_tool_definitions
-            model_tools = stable_tool_definitions(self.tools, include_inspections=True)
-            # Volatile, so it goes last in the payload and is never written to the durable
-            # history: anything placed earlier would invalidate the cache behind it.
-            model_messages = model_messages + [{'role': 'user', 'content': 'PERMITTED THIS TURN: '
-                + ', '.join(sorted(self._offered_direct_tools))
-                + '. Other listed tools are unavailable this turn and will be refused; choose from these.'}]
             from contextlib import nullcontext
             validation_context=self.llm.controller_tool_validation() if isinstance(self.llm,LLMClient) else nullcontext()
             with validation_context:
@@ -1769,63 +1896,13 @@ class EnzymeAgent:
 
             # No tool calls: check if done
             if not tool_calls:
-                if adaptive_review:
-                    self._invalid_research_decisions = getattr(self, '_invalid_research_decisions', 0) + 1
-                self._consecutive_no_tool_turns += 1
-                self._record_research_progress(count_turn=True)
-                if self._should_continue(iteration):
-                    if self._candidate_count == 0:
-                        recovery_instruction = (
-                            "You have not begun evidence-backed discovery. Take a concrete tool action now: "
-                            "analyze the substrate or search primary literature for direct target/substrate evidence. "
-                            "Do not return a plan or prose-only answer. Call at least one tool."
-                        )
-                    else:
-                        recovery_instruction = "You stopped before completing all phases. Continue with concrete tool calls."
-                    messages.append({
-                        "role": "user",
-                        "content": recovery_instruction,
-                    })
-                    continue
-                # Coverage guard: the agent thinks it is done, but do not finalize
-                # while a family it ITSELF derived as promising was never searched.
-                # Nudge a bounded number of times with that family's own terms,
-                # steering budget to DIFFERENT families instead of more orthologs.
-                uncovered = self._uncovered_promising_families()
-                if uncovered and self._coverage_nudges_used < config.MAX_FAMILY_COVERAGE_NUDGES:
-                    self._coverage_nudges_used += 1
-                    lines = []
-                    for fam in uncovered[:4]:
-                        terms = "; ".join(
-                            fam.get("literature_terms") or fam.get("descriptors") or []
-                        )
-                        lines.append(f"- {fam.get('name', 'family')}: {terms}")
-                    self.log(
-                        f"  Coverage checkpoint: {len(uncovered)} promising family(ies) "
-                        f"never searched; nudging targeted search "
-                        f"({self._coverage_nudges_used}/{config.MAX_FAMILY_COVERAGE_NUDGES})"
-                    )
-                    self._log_event("coverage_checkpoint", {
-                        "iteration": iteration,
-                        "uncovered_families": [f.get("name") for f in uncovered],
-                        "nudge": self._coverage_nudges_used,
-                    })
-                    messages.append({"role": "user", "content": (
-                        "COVERAGE CHECKPOINT — do not finalize yet. You derived these "
-                        "mechanism families as promising but never searched them. Run a "
-                        "TARGETED search for EACH (search_uniprot and/or primary "
-                        "literature with the terms below), then screen only the grounded "
-                        "hits. Do NOT expand more orthologs of families you already have "
-                        "— reach these DIFFERENT families:\n" + "\n".join(lines)
-                    )})
-                    continue
-                self._consecutive_no_tool_turns = 0
-                if self._confidence_report_text is None:
-                    self._confidence_report_text = text_content
-                return self._finish_budget_checkpoint(
+                report = self._handle_no_tool_turn(
                     messages, iteration, token_usage,
-                    "Discovery incomplete: complementary search routes currently exhausted; "
-                    "literature and candidate coverage remain unproven", status="discovery_incomplete")
+                    adaptive_review=adaptive_review, text_content=text_content,
+                )
+                if report is not None:
+                    return report
+                continue
 
             self._consecutive_no_tool_turns = 0
 

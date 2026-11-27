@@ -158,7 +158,7 @@ def compact_record(record):
     if sequence:data['sequence_sha256']=hashlib.sha256(sequence.encode()).hexdigest()
     similarity=data.pop('substrate_similarity',None) or {}
     if similarity:
-        from enzyme_discovery_agent.output.report_generator import _accommodation_facts_payload
+        from enzyme_discovery_agent.models.ranking import _accommodation_facts_payload
         data['substrate_context']={
             'comparisons':_accommodation_facts_payload(record),
             'role_transfer_status':(similarity.get('accommodation') or {}).get('role_transfer_status'),

@@ -123,7 +123,7 @@ def compact_for_llm(obj):
     if isinstance(obj, dict):
         if (isinstance(obj.get('accession'),str) and isinstance(obj.get('catalytic_activities'),list)
                 and ('native_substrates' in obj or 'substrate_similarity' in obj)):
-            from enzyme_discovery_agent.output.report_generator import _candidate_evidence_payload
+            from enzyme_discovery_agent.models.ranking import _candidate_evidence_payload
             return {key:compact_for_llm(value) for key,value in _candidate_evidence_payload(obj).items()}
         out = {}
         for k, v in obj.items():
@@ -211,7 +211,7 @@ def build_research_state(run_dir: Path) -> dict:
     """Project durable evidence into a bounded decision state, without new I/O services."""
     from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry, discovery_status
     from enzyme_discovery_agent.models.expansion import select_expansion_seeds, seed_evidence
-    from enzyme_discovery_agent.output.report_generator import _accommodation_score
+    from enzyme_discovery_agent.models.ranking import _accommodation_score
     registry = load_candidate_registry(run_dir, strict=True).get("candidates", {})
     target = _read_state(run_file(run_dir, 'target_context.json'), {})
     chemistry = target.get("target_reasoning") or _read_state(run_file(run_dir, 'target_reasoning.json'), {})
