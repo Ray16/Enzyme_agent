@@ -28,6 +28,10 @@ def main() -> None:
     p.add_argument("--output-dir", default=None,
                    help="Defaults to <package>/runs.")
     p.add_argument("--max-iterations", type=int, default=40)
+    p.add_argument("--token-budget", type=int, default=None,
+                   help="Optional total-token budget before forcing finalization.")
+    p.add_argument("--runtime-budget-seconds", type=float, default=None,
+                   help="Optional wall-clock budget in seconds before forcing finalization.")
     p.add_argument("--llm-timeout", type=int, default=config.LLM_TIMEOUT)
     p.add_argument("--list-tools", action="store_true",
                    help="Print the design toolkit and exit.")
@@ -52,6 +56,8 @@ def main() -> None:
         max_iterations=args.max_iterations,
         llm_timeout=args.llm_timeout,
         query=args.query,
+        token_budget=args.token_budget,
+        runtime_budget_seconds=args.runtime_budget_seconds,
     )
     report = agent.run(query=args.query, motif_hint=args.motif,
                        scaffold_path=args.scaffold)

@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import os
 import re
 import statistics
@@ -251,7 +252,9 @@ def aggregate(rows: list[dict], value_key: str, expect: int | None = None,
     out = []
     for key, rs in sorted(groups.items(), key=lambda kv: tuple(str(x) for x in kv[0])):
         vals = [r[value_key] for r in rs
-                if isinstance(r.get(value_key), (int, float))]
+                if isinstance(r.get(value_key), (int, float))
+                and not isinstance(r.get(value_key), bool)
+                and math.isfinite(r[value_key])]
         row = dict(zip(group_keys, key))
         for c in carry:
             row[c] = rs[0].get(c, "")

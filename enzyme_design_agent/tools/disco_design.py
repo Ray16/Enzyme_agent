@@ -172,8 +172,11 @@ def _subprocess_env(gpus: list[str], run_dir: str | None, use_fast_attention: bo
     threads = str(config.DISCO_THREADS_PER_WORKER)
     env.update({
         "OMP_NUM_THREADS": threads,
+        "OMP_THREAD_LIMIT": threads,
         "MKL_NUM_THREADS": threads,
         "OPENBLAS_NUM_THREADS": threads,
+        "NUMEXPR_NUM_THREADS": threads,
+        "TOKENIZERS_PARALLELISM": "false",
     })
     cache_base = Path(run_dir) if run_dir else Path("/tmp")  # noqa: S108 -- fallback only
     env["TRITON_CACHE_DIR"] = str(cache_base / ".triton_cache")
@@ -566,7 +569,6 @@ def design_enzyme_with_disco(
         stdout = exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or "")
         stderr = exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
     except Exception as exc:  # noqa: BLE001 -- `finally` does the release
-        _release_gpus(gpus)
         return {
             "status": "error",
             "summary": f"Failed to launch DISCO: {exc}",

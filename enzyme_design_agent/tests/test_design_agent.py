@@ -54,9 +54,26 @@ def _fake_llm(turns):
 class ToolkitTest(unittest.TestCase):
     def test_both_strategies_are_in_the_toolkit(self):
         names = design_tool_names()
-        self.assertIn("design_de_novo_enzyme", names)
-        self.assertIn("build_saturation_library", names)
-        self.assertIn("scan_design_pocket", names)
+        expected = {
+            "check_de_novo_design_readiness",
+            "design_de_novo_enzyme",
+            "summarize_de_novo_campaign",
+            "check_disco_design_readiness",
+            "design_enzyme_with_disco",
+            "summarize_disco_campaign",
+            "check_genzyme_design_readiness",
+            "design_enzyme_with_genzyme",
+            "get_genzyme_design_status",
+            "check_rfd4_design_readiness",
+            "design_enzyme_with_rfd4",
+            "get_rfd4_design_status",
+            "scan_design_pocket",
+            "build_saturation_library",
+            "prepare_saturation_campaign",
+            "summarize_saturation_campaign",
+            "audit_design_contacts",
+        }
+        self.assertTrue(expected.issubset(set(names)), f"missing: {expected - set(names)}")
 
     def test_discovery_only_tools_are_not(self):
         """A design loop that can also run literature search is a different agent."""
@@ -139,16 +156,89 @@ class LoopTest(unittest.TestCase):
     def test_calling_both_strategies_is_recorded_as_both(self):
         turns = [
             _Msg(tool_calls=[_Call("scan_design_pocket", {"structure_path": str(self.pdb)})]),
-            _Msg(tool_calls=[_Call("check_de_novo_design_readiness", {}, cid="c2")]),
+            _Msg(tool_calls=[_Call("design_de_novo_enzyme", {}, cid="c2")]),
             _Msg(content="report"),
         ]
         agent = self._agent(turns)
-        # Stubbed: the readiness tool probes real GPUs, and this test is about
+        # Stubbed: the generative tool runs on real GPUs, and this test is about
         # strategy bookkeeping, not about the hardware under it.
+        with mock.patch("enzyme_design_agent.agent.execute_tool",
+                        return_value={"status": "success", "data": {"artifact_counts": {"generated": 3}}}):
+            agent.run("q")
+        self.assertEqual("both", agent.strategy)
+        self.assertEqual(3, agent.designs)
+
+    def test_readiness_probe_does_not_pin_strategy(self):
+        turns = [
+            _Msg(tool_calls=[_Call("check_de_novo_design_readiness", {})]),
+            _Msg(content="report"),
+        ]
+        agent = self._agent(turns)
         with mock.patch("enzyme_design_agent.agent.execute_tool",
                         return_value={"status": "success", "data": {}}):
             agent.run("q")
-        self.assertEqual("both", agent.strategy)
+        self.assertEqual("undecided", agent.strategy)
+
+    def test_disco_genzyme_rfd4_track_strategy_and_designs_without_double_count(self):
+        turns = [
+            _Msg(tool_calls=[_Call("design_enzyme_with_disco", {}, cid="c1")]),
+            _Msg(tool_calls=[_Call("get_rfd4_design_status", {"job_dir": "/j1"}, cid="c2")]),
+            _Msg(tool_calls=[_Call("get_rfd4_design_status", {"job_dir": "/j1"}, cid="c3")]),
+            _Msg(content="report"),
+        ]
+        agent = self._agent(turns)
+        responses = [
+            {"status": "success", "data": {"n_designs": 2}},
+            {"status": "success", "data": {"manifest": "/j1/manifest.json", "designs": [{"cif": "a"}, {"cif": "b"}]}},
+            {"status": "success", "data": {"manifest": "/j1/manifest.json", "designs": [{"cif": "a"}, {"cif": "b"}]}},
+        ]
+        with mock.patch("enzyme_design_agent.agent.execute_tool", side_effect=responses):
+            agent.run("q")
+        self.assertEqual("generative", agent.strategy)
+        self.assertEqual(4, agent.designs)
+
+    def test_globally_registered_non_design_tool_is_still_refused(self):
+        """Even if a non-design tool is in the global registry, the design agent refuses it."""
+        turns = [
+            _Msg(tool_calls=[_Call("foreign_global_tool", {})]),
+            _Msg(content="report"),
+        ]
+        agent = self._agent(turns)
+        with mock.patch("enzyme_design_agent.agent.get_tool_info", return_value={"parallel_safe": True}), \
+             mock.patch("enzyme_design_agent.agent.execute_tool") as exec_mock:
+            report = agent.run("q")
+        self.assertEqual("report", report)
+        self.assertEqual([], agent.tools_used)
+        exec_mock.assert_not_called()
+
+    def test_malformed_json_args_returns_error_without_executing_tool(self):
+        bad_call = _Call("scan_design_pocket", {})
+        bad_call.function.arguments = "{not valid json"
+        turns = [
+            _Msg(tool_calls=[bad_call]),
+            _Msg(content="report"),
+        ]
+        agent = self._agent(turns)
+        with mock.patch("enzyme_design_agent.agent.execute_tool") as exec_mock:
+            agent.run("q")
+        exec_mock.assert_not_called()
+        transcript = json.loads((agent.run_dir / "agent_state" / "transcript.json").read_text())
+        tool_msgs = [m for m in transcript["messages"] if m.get("role") == "tool"]
+        self.assertEqual(1, len(tool_msgs))
+        self.assertIn("Malformed JSON arguments", tool_msgs[0]["content"])
+
+    def test_state_headers_are_deduplicated_and_token_budget_finalizes(self):
+        pocket = _Msg(tool_calls=[_Call("scan_design_pocket", {"structure_path": str(self.pdb)})])
+        turns = [pocket, pocket, _Msg(content="budget report")]
+        agent = self._agent(turns, token_budget=20, max_iterations=20)
+        report = agent.run("q")
+        self.assertEqual("budget report", report)
+        transcript = json.loads((agent.run_dir / "agent_state" / "transcript.json").read_text())
+        state_msgs = [
+            m for m in transcript["messages"]
+            if m.get("role") == "user" and str(m.get("content", "")).startswith("[STATE: ")
+        ]
+        self.assertEqual(1, len(state_msgs))
 
     def test_unknown_tool_is_refused_without_killing_the_run(self):
         turns = [

@@ -12,9 +12,15 @@ design tools stay importable in a bare agent env.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import shlex
 from pathlib import Path
 
 import numpy as np
+
+_TWO_LETTER_ELEMENTS = frozenset({
+    "MG", "MN", "ZN", "FE", "CA", "CU", "CO", "NI", "NA", "CL", "BR",
+    "SE", "MO", "HG", "CD", "AL", "SI", "LI", "BE", "PT", "AU", "AG",
+})
 
 THREE_TO_ONE = {
     "ALA": "A", "ARG": "R", "ASN": "N", "ASP": "D", "CYS": "C", "GLN": "Q",
@@ -43,6 +49,8 @@ class Residue:
     aa1: str
     xyz: np.ndarray                      # (n_atoms, 3)
     icode: str = ""
+    atom_names: tuple[str, ...] = ()
+    elements: tuple[str, ...] = ()
 
     @property
     def key(self) -> tuple[str, int, str]:
@@ -66,6 +74,7 @@ class Component:
     resnum: int
     xyz: np.ndarray                      # (n_atoms, 3)
     elements: tuple[str, ...] = ()
+    atom_names: tuple[str, ...] = ()
 
     @property
     def n_atoms(self) -> int:
@@ -129,20 +138,174 @@ class Structure:
         return "".join(r.aa1 for r in rs)
 
 
-def _element(line: str, name: str) -> str:
-    return (line[76:78].strip() or name.strip()[:1]).upper()
+def _element(line: str, name: str, resname: str = "", is_het: bool = False) -> str:
+    col = line[76:78].strip().upper()
+    if col:
+        return col
+    stripped = name.strip().upper()
+    # Two-letter ions/metals in PDB files with missing element columns (e.g. MG, ZN, FE, HG).
+    if is_het and stripped[:2] in _TWO_LETTER_ELEMENTS and (
+        resname.upper() == stripped[:2] or stripped in _TWO_LETTER_ELEMENTS
+    ):
+        return stripped[:2]
+    # Standard 4-char PDB atom name: leading digit (e.g. "1HB") or space-padded.
+    letters = "".join(ch for ch in stripped if ch.isalpha())
+    return letters[:1] if letters else ""
+
+
+def _assemble_structure(
+    path: Path,
+    residues: dict[tuple[str, int, str], dict],
+    het: dict[tuple[str, str, int], dict],
+) -> Structure:
+    res_list = [
+        Residue(
+            chain=c, resnum=n, resname=d["resname"], aa1=d["aa1"],
+            xyz=np.asarray(d["xyz"], dtype=float), icode=i,
+            atom_names=tuple(d["atom_names"]), elements=tuple(d["elements"]),
+        )
+        for (c, n, i), d in sorted(residues.items(), key=lambda kv: (kv[0][0], kv[0][1], kv[0][2]))
+    ]
+
+    # One het residue in a chain -> the chain id IS the component id.
+    per_chain: dict[str, int] = {}
+    for (c, _rn, _num) in het:
+        per_chain[c] = per_chain.get(c, 0) + 1
+    comps = []
+    for (c, resname, num), d in sorted(het.items()):
+        cid = c if per_chain[c] == 1 else f"{c}:{resname}{num}"
+        comps.append(Component(
+            id=cid, chain=c, resname=resname, resnum=num,
+            xyz=np.asarray(d["xyz"], dtype=float),
+            elements=tuple(d["elements"]),
+            atom_names=tuple(d["atom_names"]),
+        ))
+
+    return Structure(path=str(path), residues=res_list, components=comps)
+
+
+def _load_mmcif(p: Path, text: str, keep_water: bool) -> Structure:
+    """Parse model 1 of an mmCIF file's _atom_site loop (stdlib + numpy)."""
+    lines = text.splitlines()
+    headers: list[str] = []
+    rows: list[list[str]] = []
+    i = 0
+    n_lines = len(lines)
+    while i < n_lines:
+        s = lines[i].strip()
+        if s == "loop_":
+            i += 1
+            cols: list[str] = []
+            while i < n_lines and lines[i].strip().startswith("_"):
+                cols.append(lines[i].strip().split()[0])
+                i += 1
+            if cols and all(c.startswith("_atom_site.") for c in cols):
+                headers = cols
+                while i < n_lines:
+                    raw = lines[i].strip()
+                    if not raw or raw.startswith("#"):
+                        i += 1
+                        continue
+                    if raw == "loop_" or raw.startswith("_") or raw.startswith("data_"):
+                        break
+                    toks = shlex.split(raw)
+                    if len(toks) >= len(headers):
+                        rows.append(toks[:len(headers)])
+                    i += 1
+                break
+            continue
+        i += 1
+
+    if not headers:
+        return Structure(path=str(p), residues=[], components=[])
+
+    col = {h: idx for idx, h in enumerate(headers)}
+
+    def _get(row: list[str], *names: str, default: str = "") -> str:
+        for nm in names:
+            idx = col.get(nm)
+            if idx is not None and idx < len(row):
+                val = row[idx]
+                if val not in (".", "?"):
+                    return val
+        return default
+
+    residues: dict[tuple[str, int, str], dict] = {}
+    het: dict[tuple[str, str, int], dict] = {}
+    seen_alt: set[tuple] = set()
+    first_model: str | None = None
+
+    for row in rows:
+        rec = _get(row, "_atom_site.group_PDB", default="ATOM").upper()
+        if rec not in ("ATOM", "HETATM"):
+            continue
+        model_num = _get(row, "_atom_site.pdbx_PDB_model_num", default="1")
+        if first_model is None:
+            first_model = model_num
+        elif model_num != first_model:
+            continue
+        name = _get(row, "_atom_site.auth_atom_id", "_atom_site.label_atom_id")
+        elem = _get(row, "_atom_site.type_symbol", default=name[:1]).upper()
+        if elem in ("H", "D"):
+            continue
+        altloc = _get(row, "_atom_site.label_alt_id")
+        chain = _get(row, "_atom_site.auth_asym_id", "_atom_site.label_asym_id", default="A")
+        resname = _get(row, "_atom_site.auth_comp_id", "_atom_site.label_comp_id").upper()
+        seq_s = _get(row, "_atom_site.auth_seq_id", "_atom_site.label_seq_id")
+        try:
+            resnum = int(seq_s)
+        except ValueError:
+            resnum = 1
+        icode = _get(row, "_atom_site.pdbx_PDB_ins_code")
+        atom_key = (chain, resnum, icode, resname, name)
+        if altloc:
+            if atom_key in seen_alt:
+                continue
+            seen_alt.add(atom_key)
+        try:
+            xyz = (
+                float(_get(row, "_atom_site.Cartn_x")),
+                float(_get(row, "_atom_site.Cartn_y")),
+                float(_get(row, "_atom_site.Cartn_z")),
+            )
+        except ValueError:
+            continue
+
+        is_polymer = rec == "ATOM" or resname == "MSE"
+        if is_polymer:
+            k = (chain, resnum, icode)
+            d = residues.setdefault(
+                k, {"resname": resname, "aa1": THREE_TO_ONE.get(resname, "X"),
+                    "xyz": [], "atom_names": [], "elements": []}
+            )
+            d["xyz"].append(xyz)
+            d["atom_names"].append(name)
+            d["elements"].append(elem)
+        else:
+            if not keep_water and resname in WATER_RESNAMES:
+                continue
+            k2 = (chain, resname, resnum)
+            d2 = het.setdefault(k2, {"xyz": [], "elements": [], "atom_names": []})
+            d2["xyz"].append(xyz)
+            d2["elements"].append(elem)
+            d2["atom_names"].append(name)
+
+    return _assemble_structure(p, residues, het)
 
 
 def load_structure(path: str | Path, keep_water: bool = False) -> Structure:
-    """Parse a PDB into polymer residues and non-polymer components.
+    """Parse a PDB or mmCIF into polymer residues and non-polymer components.
 
     Hydrogens are dropped: shells are defined on heavy atoms, and whether a file
     carries hydrogens is a property of the preparation pipeline, not of the
     pocket.  Alternate locations other than the first are dropped too, so an
-    altloc does not silently double a residue's atom count.
+    altloc does not silently double a residue's atom count.  For multi-model
+    files, only the first model is parsed.
     """
     p = Path(path).expanduser()
     text = p.read_text()
+    if p.suffix.lower() in (".cif", ".mmcif") or "_atom_site." in text[:4096]:
+        return _load_mmcif(p, text, keep_water=keep_water)
 
     residues: dict[tuple[str, int, str], dict] = {}
     het: dict[tuple[str, str, int], dict] = {}
@@ -150,15 +313,18 @@ def load_structure(path: str | Path, keep_water: bool = False) -> Structure:
 
     for line in text.splitlines():
         rec = line[:6]
-        if rec not in ("ATOM  ", "HETATM"):
+        if rec == "ENDMDL":
+            break
+        if rec not in ("ATOM  ", "HETATM") or len(line) < 54:
             continue
         name = line[12:16]
-        elem = _element(line, name)
+        resname = line[17:20].strip()
+        is_polymer = rec == "ATOM  " or resname == "MSE"
+        elem = _element(line, name, resname=resname, is_het=not is_polymer)
         if elem == "H" or elem == "D":
             continue
         altloc = line[16]
         chain = line[21]
-        resname = line[17:20].strip()
         try:
             resnum = int(line[22:26])
         except ValueError:
@@ -171,40 +337,25 @@ def load_structure(path: str | Path, keep_water: bool = False) -> Structure:
             seen_alt.add(atom_key)
         xyz = (float(line[30:38]), float(line[38:46]), float(line[46:54]))
 
-        # MSE is a selenomethionine: a HETATM record that is really polymer.
-        is_polymer = rec == "ATOM  " or resname == "MSE"
         if is_polymer:
             k = (chain, resnum, icode)
             d = residues.setdefault(
-                k, {"resname": resname, "aa1": THREE_TO_ONE.get(resname, "X"), "xyz": []}
+                k, {"resname": resname, "aa1": THREE_TO_ONE.get(resname, "X"),
+                    "xyz": [], "atom_names": [], "elements": []}
             )
             d["xyz"].append(xyz)
+            d["atom_names"].append(name.strip())
+            d["elements"].append(elem)
         else:
             if not keep_water and resname in WATER_RESNAMES:
                 continue
             k2 = (chain, resname, resnum)
-            d2 = het.setdefault(k2, {"xyz": [], "elements": []})
+            d2 = het.setdefault(k2, {"xyz": [], "elements": [], "atom_names": []})
             d2["xyz"].append(xyz)
             d2["elements"].append(elem)
+            d2["atom_names"].append(name.strip())
 
-    res_list = [
-        Residue(chain=c, resnum=n, resname=d["resname"], aa1=d["aa1"],
-                xyz=np.asarray(d["xyz"], dtype=float), icode=i)
-        for (c, n, i), d in sorted(residues.items(), key=lambda kv: (kv[0][0], kv[0][1], kv[0][2]))
-    ]
-
-    # One het residue in a chain -> the chain id IS the component id.
-    per_chain: dict[str, int] = {}
-    for (c, _rn, _num) in het:
-        per_chain[c] = per_chain.get(c, 0) + 1
-    comps = []
-    for (c, resname, num), d in sorted(het.items()):
-        cid = c if per_chain[c] == 1 else f"{c}:{resname}{num}"
-        comps.append(Component(id=cid, chain=c, resname=resname, resnum=num,
-                               xyz=np.asarray(d["xyz"], dtype=float),
-                               elements=tuple(d["elements"])))
-
-    return Structure(path=str(p), residues=res_list, components=comps)
+    return _assemble_structure(p, residues, het)
 
 
 def min_distance(a: np.ndarray, b: np.ndarray) -> float:

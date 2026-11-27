@@ -174,9 +174,11 @@ def design_enzyme_with_genzyme(substrate_smiles: str, product_smiles: str,
         if not free:
             return dict(status='error', summary=f'No free GPU with at least {minimum_gib} GiB on this host; request is prepared',
                         data={'job_dir':str(out),'request':str(req)})
-        # Recheck CPU capacity immediately before submission.
-        if set(cpus) != set(_cpu_slots(2)):
-            raise RuntimeError('CPU availability changed during preflight; retry submission')
+        # Recheck CPU capacity immediately before submission and bind to fresh
+        # verified slots so unrelated process churn during preflight does not
+        # cause spurious aborts when capacity is still available.
+        cpus = _cpu_slots(2)
+        affinity = ','.join(map(str, cpus))
         argv = [paths['gpu_reserve'],'run',free[0],'--label','genzyme-design','--',
                 'taskset','-c',affinity,*worker]
         with (out/'run.log').open('w') as log:

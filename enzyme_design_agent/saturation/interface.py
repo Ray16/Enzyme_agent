@@ -17,8 +17,11 @@ def group_coordinates(path, selector):
     elements = {e.upper() for e in selector.get('elements', [])}
     atoms = {}
     residues = set()
+    seen_alt = set()
     for line in Path(path).read_text().splitlines():
-        if line[:6] != 'HETATM' or line[21] != selector['chain']:
+        if line[:6] == 'ENDMDL':
+            break
+        if line[:6] != 'HETATM' or len(line) < 54 or line[21] != selector['chain']:
             continue
         name = line[12:16].strip()
         if names and name not in names:
@@ -28,9 +31,14 @@ def group_coordinates(path, selector):
             continue
         if elements and element not in elements:
             continue
-        if line[16] not in (' ', 'A'):
-            continue
-        residues.add(line[17:27])
+        altloc = line[16]
+        res_key = line[17:27]
+        if altloc not in (' ', ''):
+            alt_key = (res_key, name)
+            if alt_key in seen_alt:
+                continue
+            seen_alt.add(alt_key)
+        residues.add(res_key)
         if name in atoms:
             raise ValueError(f'{path}: ambiguous atom {name}')
         atoms[name] = [float(line[a:b]) for a,b in ((30,38),(38,46),(46,54))]

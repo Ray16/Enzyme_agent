@@ -43,7 +43,7 @@ LIMITATIONS = [
     'Amino-acid hydropathy windows are a heuristic; they are not a transmembrane, signal-peptide or aggregation predictor.',
     'Promoter, vector, RBS, tags, 5-prime UTR, induction and chaperones are unspecified; initiation accessibility is not assessed.',
     'Missing or translation-mismatched DNA is unassessed, never counted as a favorable result.',
-    'Native AS9 DNA is a sequence comparator; the DNA construct used in the activity assay is not established here.',
+    'Native DNA is a sequence comparator; the DNA construct used in any activity assay is not established here.',
 ]
 
 

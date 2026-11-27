@@ -134,7 +134,10 @@ def evaluate(manifest_path, n_bootstrap=2000):
     table(out/'variant_metrics.csv',rows);table(out/'pose_geometry.csv',raw)
     status={'counts':counts,'expected_variants':len(m['jobs']),'complete':counts.get('evaluated',0)==len(m['jobs']),
             'interpretation':'Pose-resampling intervals are not biological confidence or multiplicity-adjusted significance. Improvements are structural hypotheses under the specified assembly.'}
-    (out/'evaluation_status.json').write_text(json.dumps(status,indent=2)+'\n')
+    status_path = out / 'evaluation_status.json'
+    tmp_status = status_path.with_suffix('.tmp')
+    tmp_status.write_text(json.dumps(status,indent=2)+'\n')
+    tmp_status.replace(status_path)
     return status
 
 if __name__=='__main__':

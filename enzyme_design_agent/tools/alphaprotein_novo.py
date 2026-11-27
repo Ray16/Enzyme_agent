@@ -139,8 +139,11 @@ def _subprocess_env(gpus: list[str]) -> dict:
     threads = str(config.APNOVO_THREADS_PER_WORKER)
     env.update({
         "OMP_NUM_THREADS": threads,
+        "OMP_THREAD_LIMIT": threads,
         "MKL_NUM_THREADS": threads,
         "OPENBLAS_NUM_THREADS": threads,
+        "NUMEXPR_NUM_THREADS": threads,
+        "TOKENIZERS_PARALLELISM": "false",
     })
     ld = env.get("LD_LIBRARY_PATH", "")
     if ld:

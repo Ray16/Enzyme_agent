@@ -20,12 +20,13 @@ _BOOTSTRAPPED = False
 #: registry: choosing between them is the agent's job, and it cannot choose
 #: what it cannot see.
 _DESIGN_TOOL_MODULES = (
-    "enzyme_design_agent.tools.alphaprotein_novo",  # generate a scaffold around a catalytic motif
-    "enzyme_design_agent.tools.disco_design",       # generate a scaffold around a ligand (motif-free)
-    "enzyme_design_agent.tools.genzyme_design",     # generate a pocket and protein from a reaction
-    "enzyme_design_agent.tools.rfd4_design",        # all-atom motif/ligand-conditioned co-design
-    "enzyme_design_agent.tools.saturation_scan",    # redesign an existing one
-    "enzyme_design_agent.tools.saturation_campaign",
+    "enzyme_design_agent.tools.alphaprotein_novo",   # generate a scaffold around a catalytic motif
+    "enzyme_design_agent.tools.disco_design",        # generate a scaffold around a ligand (motif-free)
+    "enzyme_design_agent.tools.genzyme_design",      # generate a pocket and protein from a reaction
+    "enzyme_design_agent.tools.rfd4_design",         # all-atom motif/ligand-conditioned co-design
+    "enzyme_design_agent.tools.saturation_scan",     # redesign an existing scaffold (pocket + library)
+    "enzyme_design_agent.tools.saturation_campaign", # reproducible discovery-to-redesign handoff
+    "enzyme_design_agent.tools.design_evaluation",   # saturation summary/eval + donor/acceptor contact audit
 )
 
 

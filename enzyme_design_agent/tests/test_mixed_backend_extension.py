@@ -13,6 +13,15 @@ from unittest.mock import patch
 import numpy as np
 
 EXT=Path(__file__).resolve().parents[1]/"campaigns/amide_interface_20261010/substrate_extension_20261026"
+if not EXT.is_dir():
+    try:
+        import pytest
+        pytest.skip(
+            f"Archived campaign extension directory not present: {EXT}",
+            allow_module_level=True,
+        )
+    except ImportError:
+        raise unittest.SkipTest(f"Archived campaign extension directory not present: {EXT}")
 sys.path.insert(0,str(EXT))
 import merge_analysis as merger
 import audit_completion as audit
