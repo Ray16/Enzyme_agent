@@ -613,3 +613,30 @@ DISCO_THREADS_PER_WORKER = 4
 # Below that DISCO must run with use_deepspeed_evo_attention=false; the tool
 # auto-selects based on the host's GPUs and whether DISCO_CUTLASS_PATH is set.
 DISCO_MIN_DS_ATTENTION_CAPABILITY = 8.0
+
+# ---------------------------------------------------------------------------
+# GENzyme — reaction-conditioned de novo enzyme generation
+# ---------------------------------------------------------------------------
+GENZYME_DIR = os.environ.get(
+    "ENZYME_AGENT_GENZYME_DIR", "/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/external/GENzyme"
+)
+GENZYME_PYTHON = os.environ.get(
+    "ENZYME_AGENT_GENZYME_PYTHON", "/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/genzyme/bin/python"
+)
+GENZYME_HF_HOME = os.environ.get(
+    "ENZYME_AGENT_GENZYME_HF_HOME", "/nfs/lambda_stor_01/homes/rzhu/.cache/huggingface"
+)
+
+# ---------------------------------------------------------------------------
+# RFD4-Proteina — all-atom motif/ligand-conditioned co-design
+# ---------------------------------------------------------------------------
+RFD4_DIR = os.environ.get(
+    "ENZYME_AGENT_RFD4_DIR", "/nfs/lambda_stor_01/homes/rzhu/Tool/RFD4-Proteina"
+)
+RFD4_PYTHON = os.environ.get(
+    "ENZYME_AGENT_RFD4_PYTHON", "/nfs/lambda_stor_01/homes/rzhu/Tool/envs/rfd4-proteina/bin/python"
+)
+RFD4_HOST = os.environ.get("ENZYME_AGENT_RFD4_HOST", "lambda13")
+RFD4_HF_HOME = os.environ.get(
+    "ENZYME_AGENT_RFD4_HF_HOME", "/nfs/lambda_stor_01/homes/rzhu/Tool/hf_cache"
+)

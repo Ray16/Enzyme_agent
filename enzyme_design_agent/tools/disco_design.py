@@ -46,6 +46,8 @@ from pathlib import Path
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.tool_registry import tool
 
+from . import _runtime
+
 
 # --------------------------------------------------------------------------
 # Readiness
@@ -85,69 +87,33 @@ def _readiness() -> dict:
 # --------------------------------------------------------------------------
 def _free_gpu_indices(max_n: int) -> list[str]:
     """Free GPU indices ON THIS HOST, via the cluster reservation gate."""
-    host = socket.gethostname().split(".")[0]
-    try:
-        r = subprocess.run(
-            [config.CANDIDATE_MAP_GPU_RESERVE, "list"],
-            capture_output=True, text=True, timeout=120,
-        )
-    except Exception:  # noqa: BLE001
-        return []
-    out = []
-    for line in r.stdout.splitlines():
-        parts = line.split()
-        if len(parts) >= 2 and parts[0] == host and parts[1].isdigit():
-            out.append(parts[1])
-    return out[:max_n]
+    return _runtime.free_gpu_indices(
+        config.CANDIDATE_MAP_GPU_RESERVE,
+        max_n=max_n,
+        host=socket.gethostname().split(".")[0],
+        runner=subprocess.run,
+    )
 
 
 def _acquire_gpus(n: int, label: str) -> list[str]:
     """Reserve up to ``n`` GPUs on this host, recording THIS process as owner."""
-    reserved: list[str] = []
-    for idx in _free_gpu_indices(n * 2):  # over-fetch: some claims lose the race
-        if len(reserved) >= n:
-            break
-        try:
-            r = subprocess.run(
-                [config.CANDIDATE_MAP_GPU_RESERVE, "acquire", idx,
-                 "--label", label, "--pid", str(os.getpid())],
-                capture_output=True, text=True, timeout=120,
-            )
-        except Exception:  # noqa: BLE001
-            continue
-        if r.returncode == 0:
-            reserved.append(idx)
-    return reserved
+    return _runtime.acquire_gpus(
+        config.CANDIDATE_MAP_GPU_RESERVE,
+        n,
+        label,
+        candidates=_free_gpu_indices(n * 2),
+        runner=subprocess.run,
+    )
 
 
 def _release_gpus(idxs: list[str]) -> None:
     """Release reservations from the owning process (no ``--force`` needed)."""
-    for idx in idxs:
-        try:
-            subprocess.run(
-                [config.CANDIDATE_MAP_GPU_RESERVE, "release", idx],
-                capture_output=True, text=True, timeout=120,
-            )
-        except Exception:  # noqa: BLE001
-            pass
+    _runtime.release_gpus(config.CANDIDATE_MAP_GPU_RESERVE, idxs, runner=subprocess.run)
 
 
 def _local_gpu_capability() -> float | None:
     """Highest CUDA compute capability on this host, or None if undetectable."""
-    try:
-        r = subprocess.run(
-            ["nvidia-smi", "--query-gpu=compute_cap", "--format=csv,noheader"],
-            capture_output=True, text=True, timeout=60,
-        )
-    except Exception:  # noqa: BLE001
-        return None
-    caps = []
-    for line in r.stdout.splitlines():
-        try:
-            caps.append(float(line.strip()))
-        except ValueError:
-            continue
-    return max(caps) if caps else None
+    return _runtime.local_gpu_capability(runner=subprocess.run)
 
 
 def _fast_attention_available(cap: float | None) -> bool:
@@ -160,36 +126,16 @@ def _fast_attention_available(cap: float | None) -> bool:
 
 
 def _subprocess_env(gpus: list[str], run_dir: str | None, use_fast_attention: bool) -> dict:
-    """Environment for the DISCO subprocess.
-
-    ``CUDA_VISIBLE_DEVICES`` is pinned to exactly the reserved device, a system
-    CUDA on ``LD_LIBRARY_PATH`` is stripped (its cuSPARSE can shadow the venv's
-    CUDA wheels and silently push the run onto CPU), the Triton autotune cache is
-    moved off NFS, and CUTLASS_PATH is exported only when the fast kernel is on.
-    """
-    env = os.environ.copy()
-    env["CUDA_VISIBLE_DEVICES"] = ",".join(gpus)
-    threads = str(config.DISCO_THREADS_PER_WORKER)
-    env.update({
-        "OMP_NUM_THREADS": threads,
-        "OMP_THREAD_LIMIT": threads,
-        "MKL_NUM_THREADS": threads,
-        "OPENBLAS_NUM_THREADS": threads,
-        "NUMEXPR_NUM_THREADS": threads,
-        "TOKENIZERS_PARALLELISM": "false",
-    })
+    """Environment for the DISCO subprocess (pinned GPU, stripped CUDA LD, thread caps)."""
     cache_base = Path(run_dir) if run_dir else Path("/tmp")  # noqa: S108 -- fallback only
-    env["TRITON_CACHE_DIR"] = str(cache_base / ".triton_cache")
-    ld = env.get("LD_LIBRARY_PATH", "")
-    if ld:
-        kept = [p for p in ld.split(":") if p and "cuda" not in p.lower()]
-        if kept:
-            env["LD_LIBRARY_PATH"] = ":".join(kept)
-        else:
-            env.pop("LD_LIBRARY_PATH", None)
+    extra = {"TRITON_CACHE_DIR": str(cache_base / ".triton_cache")}
     if use_fast_attention and config.DISCO_CUTLASS_PATH:
-        env["CUTLASS_PATH"] = config.DISCO_CUTLASS_PATH
-    return env
+        extra["CUTLASS_PATH"] = config.DISCO_CUTLASS_PATH
+    return _runtime.base_subprocess_env(
+        config.DISCO_THREADS_PER_WORKER,
+        cuda_visible_devices=",".join(gpus),
+        extra=extra,
+    )
 
 
 # --------------------------------------------------------------------------

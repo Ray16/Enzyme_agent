@@ -10,6 +10,7 @@ from unittest import mock
 
 from enzyme_design_agent.saturation.results import aggregate
 from enzyme_design_agent.structure import load_structure
+from enzyme_design_agent.tools import _runtime
 from enzyme_design_agent.tools import alphaprotein_novo as apn
 from enzyme_design_agent.tools import disco_design as dc
 from enzyme_design_agent.tools.design_evaluation import (
@@ -157,6 +158,21 @@ class ResourceSafetyCapsTest(unittest.TestCase):
             res = dc.design_enzyme_with_disco(lengths=[100], num_seeds=1, run_dir=tmp)
         self.assertEqual("error", res["status"])
         self.assertEqual(1, release.call_count)
+
+    def test_runtime_helpers_strip_cuda_and_check_liveness(self):
+        env = _runtime.base_subprocess_env(
+            2,
+            cuda_visible_devices="1",
+            base={"LD_LIBRARY_PATH": "/usr/local/cuda-12.4/lib64:/opt/custom/lib"},
+        )
+        self.assertEqual("1", env["CUDA_VISIBLE_DEVICES"])
+        self.assertEqual("/opt/custom/lib", env["LD_LIBRARY_PATH"])
+        for key in _runtime.THREAD_ENV_KEYS:
+            self.assertEqual("2", env[key])
+        import os
+        ticks = _runtime.process_start_ticks(os.getpid())
+        self.assertTrue(_runtime.is_process_alive(os.getpid(), ticks))
+        self.assertFalse(_runtime.is_process_alive(os.getpid(), "wrong-ticks"))
 
 
 if __name__ == "__main__":

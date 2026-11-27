@@ -13,24 +13,28 @@ import socket
 import subprocess
 import time
 
+from enzyme_discovery_agent import config
 from enzyme_discovery_agent.tool_registry import tool
 
+from . import _runtime
+
 _ROOT = Path(__file__).resolve().parents[2]
-_NFS = Path('/nfs/lambda_stor_01/homes/rzhu')
-_THREAD_KEYS = ('OMP_NUM_THREADS', 'OMP_THREAD_LIMIT', 'OPENBLAS_NUM_THREADS',
-                'MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS')
+_THREAD_KEYS = _runtime.THREAD_ENV_KEYS
 
 
 def _paths():
-    default_repo = _ROOT/'external/GENzyme'
-    if not default_repo.is_dir(): default_repo = _NFS/'Enzyme_agent/external/GENzyme'
+    default_repo = _ROOT / 'external/GENzyme'
+    if not default_repo.is_dir():
+        default_repo = Path(config.GENZYME_DIR)
     repo = Path(os.environ.get('ENZYME_AGENT_GENZYME_DIR', str(default_repo))).expanduser().resolve()
-    return dict(repo=str(repo),
-        python=os.environ.get('ENZYME_AGENT_GENZYME_PYTHON', str(_NFS/'miniforge3/envs/genzyme/bin/python')),
-        checkpoint=os.environ.get('ENZYME_AGENT_GENZYME_CHECKPOINT', str(repo/'genzyme_ckpt/genzyme.ckpt')),
-        gpu_reserve=os.environ.get('ENZYME_AGENT_GENZYME_GPU_RESERVE', str(_NFS/'bin/gpu_reserve')),
-        hf_home=os.environ.get('ENZYME_AGENT_GENZYME_HF_HOME', str(_NFS/'.cache/huggingface')),
-        worker=str(Path(__file__).with_name('_genzyme_worker.py')))
+    return dict(
+        repo=str(repo),
+        python=os.environ.get('ENZYME_AGENT_GENZYME_PYTHON', config.GENZYME_PYTHON),
+        checkpoint=os.environ.get('ENZYME_AGENT_GENZYME_CHECKPOINT', str(repo / 'genzyme_ckpt/genzyme.ckpt')),
+        gpu_reserve=os.environ.get('ENZYME_AGENT_GENZYME_GPU_RESERVE', config.CANDIDATE_MAP_GPU_RESERVE),
+        hf_home=os.environ.get('ENZYME_AGENT_GENZYME_HF_HOME', config.GENZYME_HF_HOME),
+        worker=str(Path(__file__).with_name('_genzyme_worker.py')),
+    )
 
 
 def _readiness():
@@ -51,41 +55,31 @@ def _readiness():
 
 
 def _env(paths, threads):
-    env = dict(os.environ)
-    for k in _THREAD_KEYS: env[k] = str(threads)
-    env['HF_HOME'] = paths['hf_home']; env['HF_HUB_OFFLINE'] = '1'
-    env['TOKENIZERS_PARALLELISM'] = 'false'; env['PYTHONUNBUFFERED'] = '1'
-    env['LD_LIBRARY_PATH'] = ':'.join(p for p in env.get('LD_LIBRARY_PATH', '').split(':')
-                                      if p and 'cuda' not in p.lower())
     # GPU visibility is set solely by gpu_reserve run, not by this wrapper.
-    return env
+    return _runtime.base_subprocess_env(
+        threads,
+        extra={
+            'HF_HOME': paths['hf_home'],
+            'HF_HUB_OFFLINE': '1',
+            'PYTHONUNBUFFERED': '1',
+        },
+    )
 
 
 def _cpu_slots(n):
-    allowed = set(os.sched_getaffinity(0)); occupied = set()
-    for p in Path('/proc').glob('[0-9]*'):
-        try:
-            if not (p/'cmdline').read_bytes(): continue
-            affinity = set(os.sched_getaffinity(int(p.name)))
-            if len(affinity) < len(allowed): occupied.update(affinity)
-        except OSError: continue
-    available = sorted(allowed-occupied)
-    if os.cpu_count() is None or max(os.getloadavg())+n > os.cpu_count() or len(available) < n:
-        raise RuntimeError('Insufficient verified CPU capacity')
-    return available[-n:]
+    return _runtime.verified_cpu_slots(n)
 
 
 def _free_gpus(paths, minimum_gib=24):
-    host = socket.gethostname().split('.')[0]
-    result = subprocess.run([paths['gpu_reserve'], 'list', '--hosts', host],
-                            text=True, capture_output=True, timeout=30, check=True)
-    free = [p[1] for line in result.stdout.splitlines()
-            if len(p := line.split()) == 2 and p[0] == host and p[1].isdigit()]
-    memory = subprocess.run(['nvidia-smi','--query-gpu=index,memory.total','--format=csv,noheader,nounits'],
-                            text=True,capture_output=True,timeout=15,check=True)
-    capacity = {parts[0].strip():float(parts[1]) for line in memory.stdout.splitlines()
-                if len(parts := line.split(',')) == 2}
-    return [gpu for gpu in free if capacity.get(gpu,0) >= minimum_gib*1024]
+    return _runtime.free_gpu_indices(
+        paths['gpu_reserve'],
+        host=socket.gethostname().split('.')[0],
+        min_memory_gib=minimum_gib,
+        host_filter_flag=True,
+        check=True,
+        timeout=30,
+        runner=subprocess.run,
+    )
 
 
 def _verify_protein(path, sequence=None):
@@ -184,10 +178,10 @@ def design_enzyme_with_genzyme(substrate_smiles: str, product_smiles: str,
         with (out/'run.log').open('w') as log:
             child = subprocess.Popen(argv, env=env, stdin=subprocess.DEVNULL, stdout=log,
                                      stderr=subprocess.STDOUT, start_new_session=True)
-        launch = dict(pid=child.pid, start_ticks=Path(f'/proc/{child.pid}/stat').read_text().split()[21],
+        launch = dict(pid=child.pid, start_ticks=_runtime.process_start_ticks(child.pid),
                       host=socket.gethostname().split('.')[0], gpu=free[0], cpu_affinity=cpus,
                       argv=argv, python=paths['python'], requested_designs=num_designs)
-        (out/'launch.json').write_text(json.dumps(launch,indent=2)+'\n')
+        _runtime.atomic_write_json(out/'launch.json', launch)
         return dict(status='running', summary=f'GENzyme launched for {num_designs} candidate(s)',
                     data={'job_dir':str(out),'launch':launch,'status_tool':'get_genzyme_design_status'})
     except (ValueError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
@@ -221,10 +215,7 @@ def get_genzyme_design_status(job_dir: str) -> dict:
         launch = json.loads((out/'launch.json').read_text())
         if launch['host'] != socket.gethostname().split('.')[0]:
             return dict(status='unknown', summary='GENzyme outputs pending; process liveness must be checked on the worker host',data=launch)
-        try:
-            fields = Path(f"/proc/{launch['pid']}/stat").read_text().split()
-            alive = fields[21] == launch['start_ticks'] and fields[2] != 'Z'
-        except OSError: alive = False
+        alive = _runtime.is_process_alive(launch['pid'], launch['start_ticks'])
         if not alive:
             tail = (out/'run.log').read_text(errors='replace')[-2000:]
             return dict(status='error', summary='GENzyme process exited without verified outputs',data={'log_tail':tail,'job_dir':str(out)})

@@ -10,20 +10,21 @@ import socket
 import subprocess
 import time
 
+from enzyme_discovery_agent import config
 from enzyme_discovery_agent.tool_registry import tool
 
-_NFS = Path('/nfs/lambda_stor_01/homes/rzhu')
-_THREAD_KEYS = ('OMP_NUM_THREADS', 'OMP_THREAD_LIMIT', 'OPENBLAS_NUM_THREADS',
-                'MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS')
+from . import _runtime
+
+_THREAD_KEYS = _runtime.THREAD_ENV_KEYS
 
 
 def _paths():
     return dict(
-        repo=os.environ.get('ENZYME_AGENT_RFD4_DIR', str(_NFS/'Tool/RFD4-Proteina')),
-        python=os.environ.get('ENZYME_AGENT_RFD4_PYTHON', str(_NFS/'Tool/envs/rfd4-proteina/bin/python')),
-        host=os.environ.get('ENZYME_AGENT_RFD4_HOST', 'lambda13'),
-        hf_home=os.environ.get('ENZYME_AGENT_RFD4_HF_HOME', str(_NFS/'Tool/hf_cache')),
-        gpu_reserve=os.environ.get('ENZYME_AGENT_RFD4_GPU_RESERVE', str(_NFS/'bin/gpu_reserve')),
+        repo=os.environ.get('ENZYME_AGENT_RFD4_DIR', config.RFD4_DIR),
+        python=os.environ.get('ENZYME_AGENT_RFD4_PYTHON', config.RFD4_PYTHON),
+        host=os.environ.get('ENZYME_AGENT_RFD4_HOST', config.RFD4_HOST),
+        hf_home=os.environ.get('ENZYME_AGENT_RFD4_HF_HOME', config.RFD4_HF_HOME),
+        gpu_reserve=os.environ.get('ENZYME_AGENT_RFD4_GPU_RESERVE', config.CANDIDATE_MAP_GPU_RESERVE),
         worker=str(Path(__file__).with_name('_rfd4_worker.py')))
 
 
@@ -93,9 +94,9 @@ def design_enzyme_with_rfd4(input_path: str, num_replicates: int = 1, seed: int 
         with (out/'run.log').open('w') as log:
             proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=log,
                                     stderr=subprocess.STDOUT, start_new_session=True)
-        launch = dict(pid=proc.pid, start_ticks=Path(f'/proc/{proc.pid}/stat').read_text().split()[21],
+        launch = dict(pid=proc.pid, start_ticks=_runtime.process_start_ticks(proc.pid),
                       launcher_host=socket.gethostname().split('.')[0], worker_host=paths['host'], argv=argv)
-        (out/'launch.json').write_text(json.dumps(launch, indent=2)+'\n')
+        _runtime.atomic_write_json(out/'launch.json', launch)
         return dict(status='running', summary='RFD4 job submitted; resource claim and generation pending',
                     data=dict(job_dir=str(out), status_tool='get_rfd4_design_status'))
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
@@ -115,12 +116,7 @@ def get_rfd4_design_status(job_dir: str) -> dict:
         if data['status'] == 'pending':
             launch = json.loads((out/'launch.json').read_text())
             if launch['launcher_host'] == socket.gethostname().split('.')[0]:
-                try:
-                    fields = Path(f"/proc/{launch['pid']}/stat").read_text().split()
-                    alive = fields[21] == launch['start_ticks'] and fields[2] != 'Z'
-                except OSError:
-                    alive = False
-                if not alive:
+                if not _runtime.is_process_alive(launch['pid'], launch['start_ticks']):
                     data = dict(status='error', summary='Launcher exited before worker startup',
                                 log_tail=(out/'run.log').read_text(errors='replace')[-3000:])
         return dict(status=data['status'], summary=data.get('summary', 'RFD4 '+data['status']), data=data)

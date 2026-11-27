@@ -49,6 +49,8 @@ from pathlib import Path
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.tool_registry import tool
 
+from . import _runtime
+
 _STAGES = ("generation", "resequence", "folding", "evaluation")
 # Stages 2 and 4 are pure CPU (LigandMPNN runs with CUDA_VISIBLE_DEVICES="" and
 # the metrics are numpy): running one of them alone must not reserve a GPU.
@@ -102,75 +104,25 @@ def _readiness() -> dict:
 # --------------------------------------------------------------------------
 def _free_gpu_indices(max_n: int) -> list[str]:
     """Free GPU indices ON THIS HOST, via the cluster reservation gate."""
-    host = socket.gethostname().split(".")[0]
-    try:
-        r = subprocess.run(
-            [config.CANDIDATE_MAP_GPU_RESERVE, "list"],
-            capture_output=True, text=True, timeout=120,
-        )
-    except Exception:  # noqa: BLE001
-        return []
-    out = []
-    for line in r.stdout.splitlines():
-        parts = line.split()
-        if len(parts) >= 2 and parts[0] == host and parts[1].isdigit():
-            out.append(parts[1])
-    return out[:max_n]
+    return _runtime.free_gpu_indices(
+        config.CANDIDATE_MAP_GPU_RESERVE,
+        max_n=max_n,
+        host=socket.gethostname().split(".")[0],
+        runner=subprocess.run,
+    )
 
 
 def _subprocess_env(gpus: list[str]) -> dict:
-    """Environment for the AP Novo subprocess.
-
-    Two things have to be right here:
-
-    1. ``CUDA_VISIBLE_DEVICES`` is pinned to exactly the reserved devices (empty
-       for a CPU-only stage).  Without it AP Novo enumerates every GPU on the
-       node via ``nvidia-smi`` and forks a worker onto each one.
-    2. A system CUDA on ``LD_LIBRARY_PATH`` is stripped.  Some nodes' login
-       profiles export e.g. ``/usr/local/cuda-12.4/lib64``, whose cuSPARSE
-       shadows the CUDA wheels pinned inside the AP Novo venv; JAX then fails
-       with "Unable to load cuSPARSE", falls back to CPU, and the run dies deep
-       inside the folding stage with "Not supported on cpu" instead of saying
-       anything about libraries.  Measured on lambda13: with the login profile
-       JAX saw ``[CpuDevice]``, without it all 8 ``CudaDevice``s.
-    """
-    env = os.environ.copy()
-    env["CUDA_VISIBLE_DEVICES"] = ",".join(gpus)
-    threads = str(config.APNOVO_THREADS_PER_WORKER)
-    env.update({
-        "OMP_NUM_THREADS": threads,
-        "OMP_THREAD_LIMIT": threads,
-        "MKL_NUM_THREADS": threads,
-        "OPENBLAS_NUM_THREADS": threads,
-        "NUMEXPR_NUM_THREADS": threads,
-        "TOKENIZERS_PARALLELISM": "false",
-    })
-    ld = env.get("LD_LIBRARY_PATH", "")
-    if ld:
-        kept = [p for p in ld.split(":") if p and "cuda" not in p.lower()]
-        if kept:
-            env["LD_LIBRARY_PATH"] = ":".join(kept)
-        else:
-            env.pop("LD_LIBRARY_PATH", None)
-    return env
+    """Environment for the AP Novo subprocess (pinned GPUs, stripped CUDA LD, thread caps)."""
+    return _runtime.base_subprocess_env(
+        config.APNOVO_THREADS_PER_WORKER,
+        cuda_visible_devices=",".join(gpus),
+    )
 
 
 def _local_gpu_capability() -> float | None:
     """Highest CUDA compute capability on this host, or None if undetectable."""
-    try:
-        r = subprocess.run(
-            ["nvidia-smi", "--query-gpu=compute_cap", "--format=csv,noheader"],
-            capture_output=True, text=True, timeout=60,
-        )
-    except Exception:  # noqa: BLE001
-        return None
-    caps = []
-    for line in r.stdout.splitlines():
-        try:
-            caps.append(float(line.strip()))
-        except ValueError:
-            continue
-    return max(caps) if caps else None
+    return _runtime.local_gpu_capability(runner=subprocess.run)
 
 
 def _folding_in_scope(only_stage: str, fold_apo_monomer: bool, folding_states: list[dict]) -> bool:
@@ -182,41 +134,19 @@ def _folding_in_scope(only_stage: str, fold_apo_monomer: bool, folding_states: l
 
 
 def _acquire_gpus(n: int, label: str) -> list[str]:
-    """Reserve up to ``n`` GPUs on this host, recording THIS process as owner.
-
-    ``gpu_reserve acquire --pid`` ties the lock's lifetime to our pid, so the
-    reservation survives for as long as this tool call is running and goes stale
-    (rather than leaking forever) if we are killed.  Re-checks each candidate at
-    the moment of claim -- another session may have taken it since ``list``.
-    """
-    reserved: list[str] = []
-    for idx in _free_gpu_indices(n * 2):  # over-fetch: some claims lose the race
-        if len(reserved) >= n:
-            break
-        try:
-            r = subprocess.run(
-                [config.CANDIDATE_MAP_GPU_RESERVE, "acquire", idx,
-                 "--label", label, "--pid", str(os.getpid())],
-                capture_output=True, text=True, timeout=120,
-            )
-        except Exception:  # noqa: BLE001
-            continue
-        if r.returncode == 0:
-            reserved.append(idx)
-    return reserved
+    """Reserve up to ``n`` GPUs on this host, recording THIS process as owner."""
+    return _runtime.acquire_gpus(
+        config.CANDIDATE_MAP_GPU_RESERVE,
+        n,
+        label,
+        candidates=_free_gpu_indices(n * 2),
+        runner=subprocess.run,
+    )
 
 
 def _release_gpus(idxs: list[str]) -> None:
-    """Release reservations.  Spawned directly from the owning process so the
-    gate sees ``opid == $PPID`` and releases without ``--force``."""
-    for idx in idxs:
-        try:
-            subprocess.run(
-                [config.CANDIDATE_MAP_GPU_RESERVE, "release", idx],
-                capture_output=True, text=True, timeout=120,
-            )
-        except Exception:  # noqa: BLE001
-            pass
+    """Release reservations from the owning process (no ``--force`` needed)."""
+    _runtime.release_gpus(config.CANDIDATE_MAP_GPU_RESERVE, idxs, runner=subprocess.run)
 
 
 # --------------------------------------------------------------------------
