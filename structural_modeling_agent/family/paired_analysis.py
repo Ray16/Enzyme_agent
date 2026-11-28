@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import textwrap
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 
 # Mechanistic reference angles for the two geometries this module measures, not substrate-specific
 # and not fitted thresholds: an in-line nucleophilic attack at the activated phosphorus (step one),

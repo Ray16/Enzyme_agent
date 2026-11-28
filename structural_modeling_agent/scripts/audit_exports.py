@@ -172,7 +172,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = audit(args.root)
-    from enzyme_discovery_agent.state_store import atomic_write_json
+    from enzyme_core.state_store import atomic_write_json
     atomic_write_json(args.output, result, allow_nan=False)
     print(json.dumps({k: v for k, v in result.items() if k != "artifacts"}, indent=2))
 

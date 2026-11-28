@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass, field, asdict
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 
 # With no/weak per-family evidence, shrink the calibrated estimate toward this neutral
 # prior and report high uncertainty -- we do not trust the raw proxy on its own.

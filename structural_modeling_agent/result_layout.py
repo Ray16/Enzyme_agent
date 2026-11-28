@@ -11,7 +11,7 @@ from pathlib import Path
 import re
 import uuid
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from .validation import fingerprint
 
 LAYOUT_VERSION = "structural-results-2.0"

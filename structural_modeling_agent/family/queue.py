@@ -10,7 +10,7 @@ from pathlib import Path
 import re
 import string
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from ..msa import valid_csv
 from ..scripts.build_step1_inputs import enzyme_chains, modeled_substrates, yaml_for
 from .pose_analysis import analyze_outputs

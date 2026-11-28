@@ -18,7 +18,7 @@ import subprocess
 import uuid
 from typing import Any
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from ..validation import file_digest, fingerprint
 
 ACTIVE = {"submission_pending", "queued", "running", "unknown"}

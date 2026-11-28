@@ -62,8 +62,8 @@ def sequence_identity_errors(candidate, sequence, reference, base):
             os.close(fd)
         if hashlib.sha256(content).hexdigest() != reference["sha256"]:
             raise ValueError("sequence identity source fingerprint mismatch")
-        from enzyme_discovery_agent.models.handoff_contract import _unique_object, _reject_constant
-        record = json.loads(content, object_pairs_hook=_unique_object, parse_constant=_reject_constant)
+        from enzyme_core.handoff_contract import parse_unique_json_object, reject_json_constant
+        record = json.loads(content, object_pairs_hook=parse_unique_json_object, parse_constant=reject_json_constant)
         if (record.get("primaryAccession") != accession or record.get("inactiveReason")
                 or str(record.get("entryType") or "").casefold() == "inactive"
                 or (record.get("sequence") or {}).get("value") != sequence):
@@ -77,7 +77,7 @@ def load_handoff_modeling(path):
     """Return the handoff and accession-indexed candidate records."""
     if not path or not os.path.exists(path):
         raise ValueError("--handoff must name an existing schema-2.0 or 3.0 handoff")
-    from enzyme_discovery_agent.models.handoff_contract import load_document, validate_handoff
+    from enzyme_core.handoff_contract import load_document, validate_handoff
     document = load_document(path)
     if document.get("schema_version") == "3.0":
         validate_handoff(document)
@@ -280,7 +280,7 @@ def main():
     reviewed = {}
     review_root = None
     if args.reviewed_decisions:
-        from enzyme_discovery_agent.models.handoff_contract import load_document
+        from enzyme_core.handoff_contract import load_document
         from structural_modeling_agent.validation import fingerprint
         report = load_document(args.reviewed_decisions)
         if (not v3 or not isinstance(report, dict) or report.get("schema_version") != "modeling-agent-1.0"
@@ -294,7 +294,7 @@ def main():
             reviewed[row["accession"]] = row
     identity_index = {}
     if args.sequence_identity_index:
-        from enzyme_discovery_agent.models.handoff_contract import load_document
+        from enzyme_core.handoff_contract import load_document
         identity_index = load_document(args.sequence_identity_index)
         if not isinstance(identity_index, dict):
             ap.error("sequence identity index must be a JSON object")
@@ -437,7 +437,7 @@ def main():
             "blocked": blocked,
             "missing_msa": miss,
         }
-        from enzyme_discovery_agent.state_store import atomic_write_json
+        from enzyme_core.state_store import atomic_write_json
         atomic_write_json(os.path.join(args.out, "campaign_manifest.json"), manifest)
 
 

@@ -10,7 +10,7 @@ import socket
 import subprocess
 import sys
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from ..env_config import EXACT_BOLTZ_PYTHON, GPU_RESERVE_BIN, NFS_ROOT, STOCK_BOLTZ_LIB, STOCK_BOLTZ_PYTHON
 from ..io_utils import SINGLE_THREAD_ENV
 

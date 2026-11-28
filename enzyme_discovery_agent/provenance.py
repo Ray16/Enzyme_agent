@@ -111,7 +111,7 @@ def snapshot_source_code(run_dir: Path) -> dict[str, Any]:
     payloads = {}
     excluded = {"runs", "archive", "campaigns", "cofold", "results", "figures",
                 "analysis", "integrated_campaigns", "__pycache__", "tests", "build", "dist", "predictions"}
-    for package in (_PACKAGE_DIR.name, "enzyme_design_agent", "structural_modeling_agent", "campaign_catalog"):
+    for package in (_PACKAGE_DIR.name, "enzyme_core", "enzyme_design_agent", "structural_modeling_agent", "campaign_catalog"):
         root = _REPO_ROOT / package
         if not root.is_dir():
             continue

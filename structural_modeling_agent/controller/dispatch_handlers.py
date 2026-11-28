@@ -16,7 +16,7 @@ from pathlib import Path
 import re
 import uuid
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from ..scientific_reasoning import (
     assess_reasoning,
     compare_hypothesis_tests,

@@ -685,7 +685,7 @@ def main(argv: list[str] | None = None) -> int:
 
     reports = resolve_handoff(handoff, manifest, knowledge, step=args.step, fetch=fetch)
 
-    from enzyme_discovery_agent.state_store import atomic_write_json
+    from enzyme_core.state_store import atomic_write_json
     atomic_write_json(args.out, handoff)
     if args.report:
         atomic_write_json(args.report, reports)

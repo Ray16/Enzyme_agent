@@ -22,7 +22,7 @@ def main():
         parser.error("supply --plan, --record, --predictions and --output")
     result = run_plan(args.predictions, json.loads(args.record.read_text()), json.loads(args.plan.read_text()))
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    from enzyme_discovery_agent.state_store import atomic_write_json
+    from enzyme_core.state_store import atomic_write_json
     atomic_write_json(args.output, result, allow_nan=False)
     print(args.output)
 

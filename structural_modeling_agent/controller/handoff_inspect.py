@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from enzyme_discovery_agent.models.handoff_contract import adapt_legacy_handoff, load_document, validate_handoff
+from enzyme_core.handoff_contract import adapt_legacy_handoff, load_document, validate_handoff
 from structural_modeling_agent.validation import file_digest
 
 

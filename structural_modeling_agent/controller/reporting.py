@@ -4,7 +4,7 @@ from __future__ import annotations
 import copy
 from pathlib import Path
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from ..scientific_reasoning import assess_reasoning, execution_reasoning_errors
 from ..validation import file_digest, fingerprint, validate_pose_plan, validate_setup
 

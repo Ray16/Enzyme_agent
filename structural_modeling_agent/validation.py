@@ -878,7 +878,7 @@ def main():
             parser.error("accession must identify exactly one rendered execution")
         paths = sorted(p for p in args.predictions.iterdir() if p.suffix.lower() in {".pdb", ".cif", ".mmcif"})
         result = validate_ensemble(paths, matches[0])
-    from enzyme_discovery_agent.state_store import atomic_write_json
+    from enzyme_core.state_store import atomic_write_json
     atomic_write_json(args.output, result, allow_nan=False)
     print(f"{result['status']}: {args.output}")
     return 0 if result["status"] == "pass" else 2

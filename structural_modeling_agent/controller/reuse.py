@@ -90,7 +90,7 @@ def review_existing(agent, *, accession, setup_id, applicability, interpretation
         inventory={'artifacts':match['execution']['artifacts'],'source':source,
                    'expected_poses':match['execution']['expected_poses'],'phosphate':recipe['phosphate']}
         for ref in inventory['artifacts']:agent._authorized_evidence(ref['path'])
-        from enzyme_discovery_agent.state_store import atomic_write_json
+        from enzyme_core.state_store import atomic_write_json
         inventory_path=agent.run_dir/'artifacts'/('legacy_inventory_'+hashlib.sha256(setup_id.encode()).hexdigest()[:20]+'.json')
         atomic_write_json(inventory_path,inventory)
         review={'kind':'legacy_conditional_geometry','source_setup_id':setup_id,

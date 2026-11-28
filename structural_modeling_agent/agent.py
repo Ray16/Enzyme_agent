@@ -17,7 +17,7 @@ import subprocess
 import time
 import uuid
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from .controller.context import CONTEXT_ALLOWANCE, SETUP_ANCHOR_LIMIT, build_context
 from .controller.dispatch_handlers import _merge_model_changes, _text_page
 from .controller.prompts import BARRIER_GUIDANCE, BARRIER_PROMPT, PREPARATION_PROMPT, SYSTEM_PROMPT, compact_system_prompt
@@ -52,7 +52,7 @@ def _task_evidence_paths(task, base):
 
 def _discovery_currentness(task, run_path):
     """Compare only an explicitly supplied run with identity-bearing state."""
-    from enzyme_discovery_agent.run_layout import run_file
+    from enzyme_core.run_layout import run_file
     stamp = datetime.now(timezone.utc).isoformat()
     unknown = {"status": "unknown", "checked_at": stamp}
     if run_path is None:
@@ -126,7 +126,7 @@ class ModelingAgent:
             if task_path is None:
                 raise ValueError("a standalone task or discovery handoff is required")
             task_path = Path(task_path).resolve()
-            from enzyme_discovery_agent.models.handoff_contract import (
+            from enzyme_core.handoff_contract import (
                 adapt_legacy_handoff, load_document, validate_handoff,
             )
             raw_task = load_document(task_path)
@@ -209,7 +209,7 @@ class ModelingAgent:
                     "task_sha256": self.state["task_sha256"],
                     "results_index": str(self.run_dir / "results_index.json")}, allow_nan=False)
                 if self.task.get("kind") == "discovery_handoff":
-                    from enzyme_discovery_agent.models.handoff_contract import read_bundle_source
+                    from enzyme_core.handoff_contract import read_bundle_source
                     bundled = []
                     for source in self.task.get("evidence_sources", []):
                         info = dict(source) if isinstance(source, dict) else {"availability": "invalid"}
@@ -294,13 +294,13 @@ class ModelingAgent:
         if not identity.get("sequence") or source.get("source_id") != f"uniprot:{accession}":
             return "independent sequence identity verification is required before rendering"
         try:
-            from enzyme_discovery_agent.models.handoff_contract import read_bundle_source, _unique_object, _reject_constant
+            from enzyme_core.handoff_contract import read_bundle_source, parse_unique_json_object, reject_json_constant
             path = Path(source["path"]).resolve(strict=True)
             if not path.is_relative_to((self.run_dir / "sources").resolve()):
                 raise ValueError("identity source is outside the modeling run")
             raw = read_bundle_source(self.run_dir, {"bundle_relative_path": path.relative_to(self.run_dir).as_posix(),
                                                     "sha256": source["sha256"]})
-            entry = json.loads(raw, object_pairs_hook=_unique_object, parse_constant=_reject_constant)
+            entry = json.loads(raw, object_pairs_hook=parse_unique_json_object, parse_constant=reject_json_constant)
         except (OSError, ValueError, KeyError, TypeError) as exc:
             return f"verified sequence source unavailable or changed: {exc}"
         if (entry.get("primaryAccession") != accession or entry.get("inactiveReason")

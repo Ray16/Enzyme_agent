@@ -5,7 +5,7 @@ import time
 
 from .agent import ModelingAgent
 from .cofold.execution import execute
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 
 
 TERMINAL = {'complete', 'inconclusive', 'inspection_stalled', 'setup_stalled',

@@ -9,7 +9,7 @@ import socket
 import subprocess
 import time
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from ..env_config import EXACT_BOLTZ_PYTHON
 from .memory_retry import MemoryRetryPending, is_memory_failure, record_failure, retry_backend
 from .protocol import DEFAULT_SAMPLES, DEFAULT_SEED, digest

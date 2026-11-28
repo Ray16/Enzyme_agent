@@ -31,7 +31,7 @@ from enzyme_discovery_agent import config
 from enzyme_discovery_agent.capabilities import create_run_dir, init_capabilities
 from enzyme_discovery_agent.context import compact_for_llm
 from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
-from enzyme_discovery_agent.state_store import atomic_write_text as _atomic_write_text
+from enzyme_core.state_store import atomic_write_text as _atomic_write_text
 from enzyme_discovery_agent.tool_registry import execute_tool, get_tool_info
 
 from .bootstrap import design_tool_names, design_tool_schemas, register_design_tools

@@ -20,7 +20,7 @@ import subprocess  # noqa: F401 - preserved for test monkeypatch compatibility
 import time
 
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
-from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+from enzyme_core.state_store import atomic_write_json, state_lock
 from ..scripts.build_step1_inputs import enzyme_chains, modeled_substrates, yaml_for
 from .executor import execute_job as _execute_job, provider_owner_live
 from .memory_retry import MemoryRetryPending, is_memory_failure

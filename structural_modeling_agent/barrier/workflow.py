@@ -15,7 +15,7 @@ import sys
 import uuid
 
 from ..validation import file_digest, fingerprint
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 
 ACTIVE = {'submission_pending','queued','running','unknown'}
 TOOLS = {'prepare_barrier_inputs','plan_barrier_calculation',

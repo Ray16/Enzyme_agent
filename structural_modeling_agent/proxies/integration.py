@@ -13,7 +13,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 
 import numpy as np
 

@@ -8,7 +8,7 @@ import textwrap
 from collections import Counter,defaultdict
 from pathlib import Path
 
-from enzyme_discovery_agent.state_store import atomic_write_json,state_lock
+from enzyme_core.state_store import atomic_write_json,state_lock
 from ..proxies.attack_angle import near_attack_mode, weighted_attack_angle
 
 

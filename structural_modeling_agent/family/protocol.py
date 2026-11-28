@@ -11,7 +11,7 @@ from pathlib import Path
 import re
 
 from enzyme_discovery_agent.models.candidate_registry import load_candidate_registry
-from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+from enzyme_core.state_store import atomic_write_json, state_lock
 from ..io_utils import file_digest
 from ..modeling_reasoning.literature import LiteratureKnowledge
 from ..modeling_reasoning.reaction import ReactionCoordinates

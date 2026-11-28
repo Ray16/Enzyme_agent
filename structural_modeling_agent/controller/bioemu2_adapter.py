@@ -16,7 +16,7 @@ import re
 from pathlib import Path
 import shutil
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from ..validation import fingerprint, validate_msa, validate_pose_plan, _source_checks
 
 UPSTREAM_REVISION = "06be369dd555849165a737472d42d936959e46fc"

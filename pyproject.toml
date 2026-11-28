@@ -62,6 +62,7 @@ embedding-map = [
 [tool.setuptools]
 packages = [
     "enzyme_barrier",
+    "enzyme_core",
     "campaign_catalog",
     "enzyme_discovery_agent",
     "enzyme_discovery_agent.chemistry",
@@ -101,6 +102,7 @@ packages = [
 
 [tool.setuptools.package-dir]
 campaign_catalog = "campaign_catalog"
+enzyme_core = "enzyme_core"
 enzyme_discovery_agent = "enzyme_discovery_agent"
 enzyme_design_agent = "enzyme_design_agent"
 structural_modeling_agent = "structural_modeling_agent"

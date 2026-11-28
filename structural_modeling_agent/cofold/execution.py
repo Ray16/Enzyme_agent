@@ -5,7 +5,7 @@ import time
 
 from ..agent import ModelingAgent,_controller_lock
 from ..scientific_reasoning import execution_reasoning_errors
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 
 
 def action(agent,name,arguments):

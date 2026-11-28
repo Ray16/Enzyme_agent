@@ -9,7 +9,7 @@ import numpy as np
 import yaml
 from rdkit import Chem
 
-from enzyme_discovery_agent.state_store import atomic_write_json, state_lock
+from enzyme_core.state_store import atomic_write_json, state_lock
 from .cofold import digest, file_hash, write_input_index
 from .paired_analysis import carbonyl_atom_references
 from ..validation import _read_structure

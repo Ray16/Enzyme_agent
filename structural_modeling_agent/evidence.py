@@ -5,7 +5,7 @@ import copy
 import json
 import hashlib
 
-from enzyme_discovery_agent.state_store import atomic_write_json
+from enzyme_core.state_store import atomic_write_json
 from .validation import file_digest, fingerprint
 from .proxies.attack_angle import weighted_attack_angle
 from .controller.integrity import proxy_integrity
@@ -47,14 +47,14 @@ def modeling_evidence(report_path):
         identity_source = candidate.get("sequence_identity_source") or {}
         if report.get("sequence_identity_requirement") == "exact_uniprot_primary":
             try:
-                from enzyme_discovery_agent.models.handoff_contract import read_bundle_source, _unique_object, _reject_constant
+                from enzyme_core.handoff_contract import read_bundle_source, parse_unique_json_object, reject_json_constant
                 identity_path = Path(identity_source["path"]).resolve(strict=True)
                 source_root = (path.parent / "sources").resolve()
                 if not identity_path.is_relative_to(source_root):
                     raise ValueError("identity source is outside the modeling run's sources")
                 raw = read_bundle_source(path.parent, {"bundle_relative_path": identity_path.relative_to(path.parent).as_posix(),
                                                       "sha256": identity_source["sha256"]})
-                entry = json.loads(raw, object_pairs_hook=_unique_object, parse_constant=_reject_constant)
+                entry = json.loads(raw, object_pairs_hook=parse_unique_json_object, parse_constant=reject_json_constant)
                 sequence = (entry.get("sequence") or {}).get("value")
                 if (entry.get("primaryAccession") != accession or entry.get("inactiveReason")
                         or str(entry.get("entryType") or "").casefold() == "inactive"

@@ -41,7 +41,7 @@ def _available_cpus():
 def _snapshot(folder):
     project=Path(__file__).resolve().parent.parent
     hashes={}
-    for package in ('enzyme_discovery_agent','structural_modeling_agent','campaign_catalog','enzyme_design_agent'):
+    for package in ('enzyme_core','enzyme_discovery_agent','structural_modeling_agent','campaign_catalog','enzyme_design_agent'):
         source=project/package
         for directory,dirs,files in os.walk(source):
             if Path(directory).name == 'cofold' and (Path(directory)/'__init__.py').is_file():
