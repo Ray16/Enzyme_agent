@@ -72,6 +72,7 @@ class ToolkitTest(unittest.TestCase):
             "prepare_saturation_campaign",
             "summarize_saturation_campaign",
             "audit_design_contacts",
+            "declare_design_strategy",
         }
         self.assertTrue(expected.issubset(set(names)), f"missing: {expected - set(names)}")
 
@@ -391,6 +392,29 @@ class LoopTest(unittest.TestCase):
         self.assertEqual(out_handoff["kind"], "design_output_handoff")
         self.assertEqual(out_handoff["strategy"], "redesign")
         self.assertEqual(out_handoff["source_handoff"]["source_accession"], "SYNTH1")
+
+    def test_declare_design_strategy_persists_decision_and_sets_strategy(self):
+        turns = [
+            _Msg(tool_calls=[_Call("declare_design_strategy", {
+                "strategy": "generative",
+                "backend": "rfd4-proteina",
+                "rationale": "No holo scaffold with plausible attack geometry.",
+                "motif_or_mutable_spec": "Ser105 nucleophile + His224 base + Asp187 charge relay.",
+                "falsification_criteria": "Reject if attack distance > 3.5 A or motif RMSD > 1.0 A.",
+                "negative_controls": "Ser105Ala catalytic knockout.",
+            })]),
+            _Msg(content="Strategy declared; awaiting GPU window."),
+        ]
+        agent = self._agent(turns)
+        agent.run("design an esterase")
+        self.assertEqual("generative", agent.strategy)
+        ledger = json.loads((agent.run_dir / "agent_state" / "design_strategy.json").read_text())
+        self.assertEqual(ledger["current"]["backend"], "rfd4-proteina")
+        self.assertEqual(len(ledger["decisions"]), 1)
+        manifest = json.loads((agent.run_dir / "manifest.json").read_text())
+        self.assertEqual(manifest["strategy_decision"]["backend"], "rfd4-proteina")
+        out_handoff = json.loads((agent.run_dir / "design_output_handoff.json").read_text())
+        self.assertEqual(out_handoff["strategy_decision"]["revision"], 1)
 
 
 if __name__ == "__main__":

@@ -209,6 +209,7 @@ class EnzymeDesignAgent:
         self.designs = 0
         self._counted_jobs: set[str] = set()
         self._source_handoff: dict | None = None
+        self._strategy_decision: dict | None = None
         self._artifact_paths: list[str] = []
         self._log_lock = threading.Lock()
         self._state_lock = threading.Lock()
@@ -249,7 +250,15 @@ class EnzymeDesignAgent:
         result = json.loads(json.dumps(result, default=str))
 
         with self._state_lock:
-            if name in _STRATEGY_BY_TOOL and result.get("status") in ("success", "running"):
+            if name == "declare_design_strategy" and result.get("status") == "success":
+                decision_data = result.get("data") or {}
+                declared = decision_data.get("strategy")
+                if declared in {"generative", "redesign", "both"}:
+                    self.strategy = declared
+                    self._strategy_decision = decision_data
+                    self.log(f"  strategy declared: {declared} ({decision_data.get('backend', '')})")
+                    self._event("strategy_selected", strategy=declared, via=name)
+            elif name in _STRATEGY_BY_TOOL and result.get("status") in ("success", "running"):
                 picked = _STRATEGY_BY_TOOL[name]
                 if self.strategy == "undecided":
                     self.strategy = picked
@@ -464,11 +473,12 @@ class EnzymeDesignAgent:
             "designs": self.designs,
             "tools_used": self.tools_used,
             "source_handoff": self._source_handoff,
+            "strategy_decision": self._strategy_decision,
             "artifacts": list(self._artifact_paths),
             "tokens": usage.to_dict(),
         }
         _atomic_write_text(self.run_dir / "manifest.json", json.dumps(manifest, indent=2, default=str))
-        if self._source_handoff is not None or self.designs > 0:
+        if self._source_handoff is not None or self.designs > 0 or self._strategy_decision is not None:
             _atomic_write_text(
                 self.run_dir / "design_output_handoff.json",
                 json.dumps({
@@ -476,6 +486,7 @@ class EnzymeDesignAgent:
                     "agent": "enzyme_design_agent",
                     "status": status,
                     "strategy": self.strategy,
+                    "strategy_decision": self._strategy_decision,
                     "designs": self.designs,
                     "source_handoff": self._source_handoff,
                     "artifacts": list(self._artifact_paths),

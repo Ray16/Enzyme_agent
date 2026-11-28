@@ -8,9 +8,11 @@ and audit protein-donor / ligand-acceptor contacts on PDB or mmCIF structures
 from __future__ import annotations
 
 import csv
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 
+from enzyme_discovery_agent.state_store import atomic_write_json
 from enzyme_discovery_agent.tool_registry import tool
 
 from ..contact_analysis import (
@@ -340,5 +342,141 @@ def audit_design_contacts(
         "suggestions": [
             "Heavy-atom contacts are geometric compatibility checks, not hydrogen-bond energies.",
             "Inspect conditional contacts for unresolved His/Cys states or compressed geometries.",
+        ],
+    }
+
+
+@tool(
+    description=(
+        "Record an auditable enzyme-design strategy decision BEFORE launching GPU "
+        "generation or saturation campaigns. Captures the chosen strategy, backend, "
+        "scientific rationale, residue-by-residue motif or mutable-set specification, "
+        "negative controls, and falsification criteria to agent_state/design_strategy.json. "
+        "Revisions append to the decision log rather than overwriting prior choices."
+    ),
+    category="design",
+    parallel_safe=False,
+    injected_params=["run_dir"],
+    params={
+        "strategy": {
+            "type": "string",
+            "enum": ["generative", "redesign", "both"],
+            "description": "Chosen design strategy family.",
+        },
+        "backend": {
+            "type": "string",
+            "description": (
+                "Planned tool/backend (e.g. 'rfd4-proteina', 'alphaprotein-novo', "
+                "'disco', 'genzyme', 'saturation_redesign', or 'combined')."
+            ),
+        },
+        "rationale": {
+            "type": "string",
+            "description": (
+                "Why this strategy fits the target chemistry, available scaffold/handoff "
+                "evidence, and why alternative strategies were not chosen."
+            ),
+        },
+        "motif_or_mutable_spec": {
+            "type": "string",
+            "description": (
+                "Residue-by-residue catalytic motif roles (for generative) or pocket/"
+                "interface mutable-set definition and cutoff (for redesign)."
+            ),
+        },
+        "falsification_criteria": {
+            "type": "string",
+            "description": (
+                "Explicit geometric, refolding, or contact criteria that would reject "
+                "the resulting designs."
+            ),
+        },
+        "negative_controls": {
+            "type": "string",
+            "description": (
+                "Optional negative controls (e.g. catalytic knockouts, apo/native "
+                "controls, or decoy substrates)."
+            ),
+            "default": "",
+        },
+    },
+)
+def declare_design_strategy(
+    strategy: str,
+    backend: str,
+    rationale: str,
+    motif_or_mutable_spec: str,
+    falsification_criteria: str,
+    negative_controls: str = "",
+    run_dir: str = "",
+) -> dict:
+    """Persist a structured, versioned strategy decision record before compute."""
+    if strategy not in {"generative", "redesign", "both"}:
+        return {
+            "status": "error",
+            "summary": f"Invalid strategy {strategy!r}; expected 'generative', 'redesign', or 'both'.",
+            "data": None,
+            "suggestions": ["Choose one of 'generative', 'redesign', or 'both'."],
+        }
+    missing = [
+        name
+        for name, val in (
+            ("backend", backend),
+            ("rationale", rationale),
+            ("motif_or_mutable_spec", motif_or_mutable_spec),
+            ("falsification_criteria", falsification_criteria),
+        )
+        if not isinstance(val, str) or not val.strip()
+    ]
+    if missing:
+        return {
+            "status": "error",
+            "summary": f"declare_design_strategy requires non-empty fields: {', '.join(missing)}.",
+            "data": None,
+            "suggestions": ["State concrete scientific rationale, motif/mutable spec, and falsification criteria."],
+        }
+
+    entry = {
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "strategy": strategy,
+        "backend": backend.strip(),
+        "rationale": rationale.strip(),
+        "motif_or_mutable_spec": motif_or_mutable_spec.strip(),
+        "falsification_criteria": falsification_criteria.strip(),
+        "negative_controls": (negative_controls or "").strip(),
+    }
+
+    ledger_path: Path | None = None
+    revision = 1
+    if run_dir:
+        ledger_path = Path(run_dir) / "agent_state" / "design_strategy.json"
+        existing: list[dict] = []
+        if ledger_path.is_file():
+            try:
+                loaded = json.loads(ledger_path.read_text())
+                if isinstance(loaded, dict) and isinstance(loaded.get("decisions"), list):
+                    existing = loaded["decisions"]
+            except (OSError, json.JSONDecodeError):
+                existing = []
+        revision = len(existing) + 1
+        entry["revision"] = revision
+        existing.append(entry)
+        atomic_write_json(ledger_path, {"current": entry, "decisions": existing})
+    else:
+        entry["revision"] = revision
+
+    return {
+        "status": "success",
+        "summary": (
+            f"Recorded design strategy revision {revision}: strategy={strategy}, "
+            f"backend={entry['backend']}."
+        ),
+        "data": {
+            **entry,
+            "ledger_path": str(ledger_path) if ledger_path else None,
+        },
+        "suggestions": [
+            "Check backend readiness before launching GPU jobs.",
+            "Keep falsification criteria and negative controls intact when evaluating outputs.",
         ],
     }

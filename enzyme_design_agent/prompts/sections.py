@@ -95,9 +95,12 @@ Decide by asking, in order:
      the state that will be measured. If you can state neither the geometry nor
      the ligands, resolve the mechanism first; nothing is ready.
 
-Say which you chose and why before you call the tool. "Both" is a legitimate
-answer -- e.g. run motif-scaffolding and ligand-conditioned as two campaigns, or
-pair a generative campaign with a redesign -- but keep separate verdicts, not one
+Say which you chose and why before you call the tool, and record it with
+declare_design_strategy (strategy, backend, rationale, motif/mutable-set
+specification, negative controls, and falsification criteria) before launching
+GPU generation or saturation campaigns. "Both" is a legitimate answer -- e.g.
+run motif-scaffolding and ligand-conditioned as two campaigns, or pair a
+generative campaign with a redesign -- but keep separate verdicts, not one
 blended score.\
 """
 
