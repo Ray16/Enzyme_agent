@@ -339,14 +339,20 @@ class LoopTest(unittest.TestCase):
         msgs = [
             {"role": "system", "content": "sys"},
             {"role": "user", "content": "query"},
-            {"role": "assistant", "content": "a1"},
+            {
+                "role": "assistant",
+                "content": "a1",
+                "tool_calls": [{"id": "1", "function": {"name": "check_rfd4_design_readiness"}}],
+            },
             {"role": "tool", "tool_call_id": "1", "content": "x" * 400},
             {"role": "assistant", "content": "a2"},
             {"role": "tool", "tool_call_id": "2", "content": "y" * 200},
         ]
-        compacted = _build_design_context(msgs, "[STATE: iter=3]", max_chars=450)
+        compacted = _build_design_context(msgs, "[STATE: iter=3]", max_chars=500)
         self.assertEqual(compacted[:2], msgs[:2])
-        self.assertEqual(compacted[-1]["content"], "[STATE: iter=3]")
+        self.assertTrue(compacted[-1]["content"].startswith("[STATE: iter=3]"))
+        self.assertIn("compacted 1 earlier turn(s)", compacted[-1]["content"])
+        self.assertIn("check_rfd4_design_readiness", compacted[-1]["content"])
         # First assistant/tool group dropped cleanly; second group kept intact.
         self.assertEqual([m["role"] for m in compacted[2:-1]], ["assistant", "tool"])
         self.assertEqual(compacted[3]["tool_call_id"], "2")

@@ -85,6 +85,19 @@ def _build_design_context(
         start += 1
 
     kept = [m for g in groups[start:] for m in g]
+    if start > 0:
+        dropped_tools = list(dict.fromkeys(
+            (c.get("function") or {}).get("name")
+            for g in groups[:start]
+            for m in g
+            for c in (m.get("tool_calls") or [])
+            if isinstance(c, dict) and (c.get("function") or {}).get("name")
+        ))
+        note = f" [compacted {start} earlier turn(s)"
+        if dropped_tools:
+            note += f"; already ran: {', '.join(dropped_tools)}; full outputs in artifacts/design/"
+        note += "]"
+        state_msg = {"role": "user", "content": state_header + note}
     return [*prefix, *kept, state_msg]
 
 #: Tools whose execution pins the run's strategy. Readiness probes are
