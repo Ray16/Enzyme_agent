@@ -572,14 +572,28 @@ def build_model_context(messages: list[dict], run_dir: Path) -> list[dict]:
                 message["content"] = content[:limit] + "\n[Preview only; full evidence remains in the run artifacts.]"
     def size(items):
         return len(json.dumps(items, ensure_ascii=False, default=str))
-    while size(prefix + tail + [summary] + steering_context) > config.MODEL_CONTEXT_MAX_CHARS:
-        next_group = next((i for i, m in enumerate(tail) if i > 0 and m.get("role") == "assistant"), None)
+    fixed_size = size(prefix + [summary] + steering_context)
+    tail_sizes = [size(m) + 2 for m in tail]
+    tail_total = sum(tail_sizes)
+    start_idx = 0
+    while fixed_size + tail_total > config.MODEL_CONTEXT_MAX_CHARS:
+        next_group = next(
+            (i for i in range(start_idx + 1, len(tail)) if tail[i].get("role") == "assistant"),
+            None,
+        )
         if next_group is None:
             # Drop an oversized transaction as a whole, preserving tool pairing
             # and opaque provider signatures in any transactions retained.
-            tail = [tail[-1]] if tail and tail[-1].get("role") == "user" else []
+            if tail and tail[-1].get("role") == "user":
+                tail = [tail[-1]]
+            else:
+                tail = []
+            start_idx = 0
             break
-        tail = tail[next_group:]
+        tail_total -= sum(tail_sizes[start_idx:next_group])
+        start_idx = next_group
+    if start_idx:
+        tail = tail[start_idx:]
     if size(prefix + tail + [summary] + steering_context) > config.MODEL_CONTEXT_MAX_CHARS:
         # Keep the complete projection retrievable while selecting a bounded
         # working set by meaning. Recursively truncating large memory records

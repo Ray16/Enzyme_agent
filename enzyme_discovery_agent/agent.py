@@ -1283,10 +1283,11 @@ class EnzymeAgent:
                     "(steer_mode='explore') rather than re-mining the same neighbourhood."
                 )
 
+        turn_advisories: list[str] = []
         if reflection_msg:
-            messages.append({"role": "user", "content": f"{state_header}\n\n{reflection_msg}"})
+            turn_advisories.append(f"{state_header}\n\n{reflection_msg}")
         elif iteration > 1:
-            messages.append({"role": "user", "content": state_header})
+            turn_advisories.append(state_header)
 
         available_tools = self.tools
         if not config.ADAPTIVE_REASONING:
@@ -1295,26 +1296,27 @@ class EnzymeAgent:
         if self._consecutive_no_progress_turns >= 2 or forced_reflection:
             available_tools = [tool for tool in available_tools
                                if tool["function"]["name"] not in {"get_notebook", "update_notebook"}]
-            messages.append({"role": "user", "content": (
+            turn_advisories.append(
                 ("STRATEGY CHECK: automated evidence work must now yield to a substantive decision. "
                  if forced_reflection else "PROGRESS CHECK: recent turns added no new candidate, paper or evidence. ") +
                 "Notebook activity and completion notices do not advance discovery. "
                 "Take an evidence-gathering action in an unresolved family or candidate, "
                 "or explain that the remaining searches are exhausted."
-            )})
+            )
         # Source counts are a diagnostic, not a reason to hide a useful route.
         from enzyme_discovery_agent.models.event_log import retrieval_balance
         balance = retrieval_balance(self.run_dir)
         if balance['reports_crowding_out_records']:
             self._log_event('retrieval_balance_advisory', {'iteration': iteration, **balance})
-            messages.append({'role': 'user', 'content': (
+            turn_advisories.append(
                 f"RETRIEVAL BALANCE: {balance['report_searches']} recent literature searches and "
                 f"{balance['record_searches']} sequence-archive searches. Choose the next route "
                 "by the unresolved question: resolve retrieved identities or reaction/family "
                 "cross-references to sequences; read or follow citations when chemistry remains "
                 "unclear. A low-yield query needs relaxed constraints or another evidence axis. "
                 "Do not repeat completed searches without a changed scope. Keep complementary "
-                "unexplored reaction hypotheses visible. All evidence sources remain available.")})
+                "unexplored reaction hypotheses visible. All evidence sources remain available."
+            )
         # Early turns must establish chemistry and retrieve evidence.
         # Delaying optional notebook writes avoids provider-generated
         # section-only calls before there is any evidence to summarize.
@@ -1354,31 +1356,20 @@ class EnzymeAgent:
                                if tool['function']['name'] == 'plan_research_step' and not review_budget['conclusion_required']
                                or tool['function']['name'] != 'plan_research_step' and
                                review_action_allowed(self.run_dir, tool['function']['name'])]
-            messages.append({'role': 'user', 'content': (
-                'ADAPTIVE RESEARCH DECISION. Use plan_research_step with one available tool and valid arguments. '
-                'Cite evidence IDs from adaptive_reasoning or get_decision_context. Register a testable hypothesis, '
-                'a competing explanation, contrasting predicted observations, why this test distinguishes them, and a revision condition. '
-                'Interpret the previous action outcome, cite its evidence ID, set revises to its decision ID, and state retain, revise or suspend. '
-                'You may instead call interpret_research_outcome to record that interpretation separately before selecting another action. '
-                'A priority update supplies no new functional evidence. Explain any reinterpretation of existing observations, and choose a discriminating evidence action when more information is needed. '
-                'Native mismatch, retrieval failure and a weak structural proxy have different meanings; none alone establishes target inactivity. '
-                'assess_next_batch gathers a bounded native-evidence batch. set_family_focus can defer a reported family or annotation scope reversibly. '
-                'Check actual test coverage: an unsampled mechanism remains unresolved, not refuted. '
-                'Choose an evidence action rather than a narrative-only answer or a repeated completed query. '
-                'Deliberation is the expensive step and retrieval is the cheap one: having reasoned a mechanism '
-                'family in or out, spend the next actions retrieving its sequence-database members rather than '
-                'restating the reasoning. A family judged relevant and never searched is an untested family, and '
-                'a named protein without a retrieved sequence cannot be assessed or modelled.'
-            )})
+            # _adaptive_context() in context.py emits the authoritative, budget-aware
+            # ADAPTIVE RESEARCH DECISION directive directly in model_messages; avoid
+            # appending a duplicate ~1.2k-char copy to durable history every turn.
         if reconnaissance:
             available_tools = [tool for tool in self.tools if tool['function']['name'] in literature_bootstrap['available_tools']]
-            messages.append({'role': 'user', 'content': (
+            turn_advisories.append(
                 'INITIAL SOURCE RECONNAISSANCE: retrieve primary literature or a supplied primary source before the broad annotation survey. '
                 'Construct a discriminating query from the user target and reaction requirements. Prefer direct target/substrate evidence; '
                 'use a complementary source or reformulate if the first lookup fails or is empty. Names from model memory remain hypotheses '
                 'until retrieved. The next mechanism derivation receives the actual retrieved titles and abstracts. This reconnaissance '
                 'is bounded; unavailable sources will be recorded as degraded evidence, never biological absence.'
-            )})
+            )
+        if turn_advisories:
+            messages.append({"role": "user", "content": "\n\n".join(turn_advisories)})
         self._require_research_decision = adaptive_review
         self._decision_action_tools = {tool['function']['name'] for tool in available_tools}
         model_messages = build_model_context(messages, self.run_dir)
