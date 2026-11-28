@@ -2,6 +2,14 @@
 from pathlib import Path
 import json
 
+# Audited GAFF2 atom-type polarizabilities absent from stock Amber lj_1264_pol.dat
+# (needed for ATP/carboxylate substrates parameterized with gaff2).
+DEFAULT_GAFF2_POLARIZABILITY_OVERRIDES: dict[str, float] = {
+    "c5": 1.061,
+    "nv": 1.09,
+    "nz": 1.09,
+}
+
 
 def install_c4(prmtop, output, polarizabilities, *, water_model="TIP3P", overrides=None):
     import parmed as pmd

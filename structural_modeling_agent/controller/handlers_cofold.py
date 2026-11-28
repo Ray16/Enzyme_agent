@@ -295,7 +295,7 @@ def _h_validate_predictions(agent, args, acc, candidate, revision):
     if producer_path:
         producer_path = Path(producer_path).resolve()
         producer = json.loads(producer_path.read_text())
-        if producer.get("producer") == "bioemu2" or producer.get("purpose") in {"dynamics", "de_novo_design"}:
+        if producer.get("producer") == "bioemu2" or producer.get("purpose") in {"dynamics", "de_novo_design", "enzyme_design"}:
             raise ValueError("follow-up outputs cannot satisfy primary cofolding; use inspect_dynamics for BioEmu2")
         entries = producer.get("predictions", [])
         source_files = {

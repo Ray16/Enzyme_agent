@@ -328,7 +328,7 @@ def test_slim_default_tool_surface_and_auto_caching(tmp_path):
 
     reg = get_registry()
     assert len(reg.deprecated_names()) == 0
-    assert len(reg.names()) == 55
+    assert len(reg.names()) == 57
     assert "inspect_validation_contract" not in reg.names()
     assert "inspect_barrier_contract" not in reg.names()
 

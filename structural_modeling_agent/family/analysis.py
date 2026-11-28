@@ -188,9 +188,28 @@ def refresh(directory):
             plt.close(fig)
         from .paired_analysis import write_paired_analysis
         write_paired_analysis(summaries,labels,out)
-        export_family_report(directory, summaries)
+        report_path = export_family_report(directory, summaries)
+        synced = _sync_to_discovery_registry(directory.parent, report_path)
         atomic_write_json(status,{'discovery_run_id':directory.parent.name,'signature':signature,'completed_ensembles':len(summaries),'poses':len(poses),
+            'family_report':str(report_path),'discovery_registry_synced':synced,
             'metric':'sum(angle/distance) / sum(1/distance)','scope':'Step-specific structural geometry, not demonstrated activity; no cutoffs fitted.'})
+
+
+def _sync_to_discovery_registry(discovery_run: Path, report_path: Path) -> bool:
+    """Best-effort auto-import of ``family_modeling_report.json`` into Discovery's registry."""
+    has_registry = (
+        (discovery_run / "agent_state" / "candidate_registry.json").is_file()
+        or (discovery_run / "candidate_registry.json").is_file()
+    )
+    if not has_registry:
+        return False
+    try:
+        from enzyme_discovery_agent.import_structural_evidence import import_structural_evidence
+
+        import_structural_evidence(discovery_run, report_path)
+        return True
+    except Exception:
+        return False
 
 
 def export_family_report(directory: Path, summaries: list[dict]) -> Path:

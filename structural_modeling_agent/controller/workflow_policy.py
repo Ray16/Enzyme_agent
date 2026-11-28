@@ -3,12 +3,17 @@ from pathlib import Path
 
 from ..validation import file_digest, fingerprint, validate_pose_plan, _source_checks
 
+DESIGN_FOLLOWUP_PURPOSES = frozenset({"de_novo_design", "enzyme_design"})
+
 TOOL_PURPOSES = {
     "cofolding": {"role": "default assessment after discovery handoff", "tool": "configured cofold provider",
                   "question": "Can the declared molecular complex yield physically consistent substrate/cofactor poses?"},
     "dynamics": {"role": "optional investigation after cofold inspection", "tool": "bioemu2",
                  "question": "Could conformational variability explain an observation or test a mechanistic hypothesis?",
                  "limitation": "Equilibrium samples characterize predicted variability; they do not establish time-dependent rates."},
+    "enzyme_design": {"role": "optional strategy-open enzyme design or scaffold redesign", "tool": "enzyme_design_agent",
+                      "recipient": "enzyme_design_agent",
+                      "question": "Would pocket redesign or de novo generation address a diagnosed structural defect?"},
     "de_novo_design": {"role": "optional new-enzyme generation", "tool": "rfd4-proteina",
                        "recipient": "enzyme_design_agent", "question": "Would a new scaffold or enzyme design address an unmet catalytic requirement?"},
 }
@@ -64,8 +69,8 @@ def baseline_errors(revision):
 
 
 def validate_followup(plan, revision):
-    if not isinstance(plan, dict) or plan.get("purpose") not in {"dynamics", "de_novo_design"}:
-        raise ValueError("follow-up purpose must be dynamics or de_novo_design")
+    if not isinstance(plan, dict) or plan.get("purpose") not in {"dynamics", "de_novo_design", "enzyme_design"}:
+        raise ValueError("follow-up purpose must be dynamics, enzyme_design, or de_novo_design")
     errors = baseline_errors(revision)
     if errors:
         raise ValueError("cofolding is the default prerequisite: " + "; ".join(errors))

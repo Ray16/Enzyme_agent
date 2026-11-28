@@ -48,8 +48,16 @@ def _h_plan_followup(agent, args, acc, candidate, revision):
         allow_nan=False,
     )
     revision.setdefault("followups", {})[identity] = followup
-    if plan["purpose"] == "de_novo_design":
-        design_query = "De novo enzyme design requested using RFD4-Proteina. " + json.dumps(
+    if plan["purpose"] in {"de_novo_design", "enzyme_design"}:
+        requested_tool = plan.get("requested_tool")
+        if requested_tool is None and plan["purpose"] == "de_novo_design":
+            requested_tool = "rfd4-proteina"
+        prefix = (
+            "De novo enzyme design requested using RFD4-Proteina. "
+            if plan["purpose"] == "de_novo_design" and requested_tool == "rfd4-proteina"
+            else "Enzyme design requested from structural modeling diagnostics (choose between redesign and generative strategies). "
+        )
+        design_query = prefix + json.dumps(
             {
                 "target": agent.task.get("target"),
                 "scientific_question": plan,
@@ -74,10 +82,10 @@ def _h_plan_followup(agent, args, acc, candidate, revision):
         ]
         profile = candidate.get("catalytic_profile") or {}
         request = {
-            "kind": "de_novo_design_request",
-            "purpose": "de_novo_enzyme_design",
+            "kind": "de_novo_design_request" if plan["purpose"] == "de_novo_design" else "enzyme_design_request",
+            "purpose": "de_novo_enzyme_design" if plan["purpose"] == "de_novo_design" else "enzyme_design",
             "recipient": "enzyme_design_agent",
-            "requested_tool": "rfd4-proteina",
+            "requested_tool": requested_tool,
             "target": agent.task.get("target"),
             "source_accession": acc,
             "reference_model": revision["modeling_input"],
@@ -161,7 +169,7 @@ def _h_inspect_dynamics(agent, args, acc, candidate, revision):
 def _h_register_design_run(agent, args, acc, candidate, revision):
     followup = revision.get("followups", {}).get(args["followup_id"])
     destination = ((followup or {}).get("paths") or {}).get("design_runs_root")
-    if not followup or followup["plan"]["purpose"] != "de_novo_design" or not destination:
+    if not followup or followup["plan"]["purpose"] not in {"de_novo_design", "enzyme_design"} or not destination:
         raise ValueError("this follow-up has no recorded design output root")
     actual = Path(args["design_run_dir"]).expanduser().resolve(strict=True)
     expected = Path(destination)

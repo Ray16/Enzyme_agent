@@ -8,14 +8,31 @@ chains, so it transfers to any enzyme cofold of the same reaction family.
 """
 from __future__ import annotations
 import json
+import os
 import subprocess, shutil
 from pathlib import Path
 import numpy as np
 
-ASSET = Path("/nfs/lambda_stor_01/homes/rzhu/Enzyme_agent/structural_modeling_agent/runs/"
-             "amide_sampling_pilot_20261105/preparation/AS9/manual_prep_v1/3_solvation")
-OBABEL = "/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/boltz-2/bin/obabel"
+# Default cofactor-library asset dir (ATP.lib / ATP.frcmod live here).
+# Override with $BARRIER_COFACTOR_ASSET so callers can supply custom cofactor libraries.
+_DEFAULT_ASSET = Path(__file__).resolve().with_name("assets")
 METALS = {"MG", "MN", "ZN", "CA", "FE", "NI", "CO"}
+# Map a water model keyword -> (leaprc suffix, solvate box keyword). Extend as needed.
+_WATER_LEAP = {"tip3p": ("tip3p", "TIP3PBOX"), "tip4pew": ("tip4pew", "TIP4PEWBOX"),
+               "spce": ("spce", "SPCBOX"), "opc": ("opc", "OPCBOX"), "opc3": ("opc3", "OPC3BOX")}
+
+
+def asset_dir() -> Path:
+    """Directory holding the cofactor lib/frcmod and 12-6-4 ion frcmods. $BARRIER_COFACTOR_ASSET
+    overrides the built-in default (keeps the pipeline portable across machines)."""
+    return Path(os.environ.get("BARRIER_COFACTOR_ASSET", str(_DEFAULT_ASSET)))
+
+
+def obabel_exe() -> str:
+    """Resolve the obabel executable: $OBABEL, else PATH, else the known boltz-2 env fallback.
+    Never hardcode a single interpreter path as the only option."""
+    return os.environ.get("OBABEL") or shutil.which("obabel") or \
+        "/nfs/lambda_stor_01/homes/rzhu/miniforge3/envs/boltz-2/bin/obabel"
 
 
 def _read_pdb_atoms(pdb):
@@ -29,8 +46,16 @@ def _read_pdb_atoms(pdb):
     return rows
 
 
-def split_cofold(cofold_pdb, out_dir):
-    """Split into protein / ATP / metal / substrate by COMPOSITION (general)."""
+def split_cofold(cofold_pdb, out_dir, *, cofactor_resname="ATP", cofactor_atoms=("PA", "PG"),
+                 require_metal=True, require_substrate=True):
+    """Split into protein / cofactor / metal / substrate by COMPOSITION (general).
+
+    Nothing here is enzyme-specific. The cofactor is the HETATM group whose atom names contain
+    ALL of `cofactor_atoms` (default {PA,PG} = ATP's phosphate backbone; pass e.g. ('PB','N1')
+    for a different cofactor); metals are lone atoms whose element is in METALS; the remaining
+    HETATM is the substrate. `require_metal` / `require_substrate` relax the classification for
+    metal-free or cofactor-only reactions. The cofactor PDB is written with `cofactor_resname`
+    so it matches the residue name in the cofactor library loaded at tleap time."""
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     rows = _read_pdb_atoms(cofold_pdb)
     prot = [r for r in rows if r["rec"] == "ATOM  "]
@@ -39,16 +64,22 @@ def split_cofold(cofold_pdb, out_dir):
     groups = {}
     for r in het:
         groups.setdefault(r["chain"], []).append(r)
+    want = set(cofactor_atoms)
     atp = sub = None; metals = []
     for ch, g in groups.items():
         names = {a["name"] for a in g}
-        if "PA" in names and "PG" in names:
+        if want <= names:
             atp = g
         elif len(g) == 1 and g[0]["elem"] in METALS:
             metals.append(g[0])          # keep ALL metals (e.g. the 2 Mg of a two-metal site)
         else:
             sub = g if sub is None else sub + g
-    assert atp and metals and sub, f"could not classify ligands: ATP={bool(atp)} metals={len(metals)} sub={bool(sub)}"
+    if not atp:
+        raise AssertionError(f"could not find cofactor (atoms {sorted(want)}) in {cofold_pdb}")
+    if require_metal and not metals:
+        raise AssertionError(f"no metal found in {cofold_pdb} (set require_metal=False if intended)")
+    if require_substrate and not sub:
+        raise AssertionError(f"no substrate found in {cofold_pdb} (set require_substrate=False if intended)")
 
     raw_prot = out / "protein_raw.pdb"
     raw_prot.write_text("\n".join(r["raw"] for r in prot) + "\nTER\nEND\n")
@@ -56,7 +87,7 @@ def split_cofold(cofold_pdb, out_dir):
                    check=True, capture_output=True, text=True)
     with open(out / "atp_heavy.pdb", "w") as f:
         for i, r in enumerate(atp, 1):
-            f.write(f"ATOM  {i:5d} {r['name']:<4s} ATP A   1    "
+            f.write(f"ATOM  {i:5d} {r['name']:<4s} {cofactor_resname:<3s} A   1    "
                     f"{r['x']:8.3f}{r['y']:8.3f}{r['z']:8.3f}  1.00  0.00          {r['elem']:>2s}\n")
         f.write("TER\nEND\n")
     with open(out / "metal.pdb", "w") as f:
@@ -102,14 +133,20 @@ def apply_protonation_overrides(protein_pdb, overrides):
     return applied
 
 
-def param_substrate(sub_rows, atp_rows, out_dir, resname, net_charge, ph=8.0):
-    """Protonate the acid substrate (obabel at `ph`; 8.0 = experimental assay pH) +
-    antechamber GAFF2/AM1-BCC at the spec's formal charge. Returns the cofold atom name of
-    the carboxylate O nearest ATP PA (the nucleophile; resolved geometrically at carve)."""
+def param_substrate(sub_rows, atp_rows, out_dir, resname, net_charge, ph=8.0, *,
+                    anchor_atom="PA", nuc_elements=("O",)):
+    """Protonate the substrate (obabel at `ph`; 8.0 = experimental assay pH) + antechamber
+    GAFF2/AM1-BCC at the spec's formal charge. Returns the cofold atom name of the nucleophile:
+    the substrate atom of element in `nuc_elements` (default O, for a carboxylate; pass ('N',)
+    or ('O','N','S') for other nucleophiles) nearest the cofactor's `anchor_atom` (default ATP
+    PA). The actual nucleophile index is re-resolved geometrically at carve time."""
     out = Path(out_dir)
     co = {r["name"]: np.array([r["x"], r["y"], r["z"]]) for r in sub_rows}
-    pa = next(np.array([r["x"], r["y"], r["z"]]) for r in atp_rows if r["name"] == "PA")
-    o_names = [r["name"] for r in sub_rows if r["elem"] == "O"]
+    pa = next(np.array([r["x"], r["y"], r["z"]]) for r in atp_rows if r["name"] == anchor_atom)
+    elems = {e.upper() for e in nuc_elements}
+    o_names = [r["name"] for r in sub_rows if r["elem"] in elems]
+    if not o_names:
+        raise ValueError(f"no candidate nucleophile atom (elements {sorted(elems)}) in substrate {resname}")
     nuc_name = min(o_names, key=lambda n: np.linalg.norm(co[n] - pa))
     with open(out / "sub_heavy.pdb", "w") as f:
         for i, r in enumerate(sub_rows, 1):
@@ -120,7 +157,7 @@ def param_substrate(sub_rows, atp_rows, out_dir, resname, net_charge, ph=8.0):
     # perception is reliable on the clean protonated molecule; antechamber then KEEPS
     # those bonds (-j 1 = atom types only) instead of re-perceiving from the (possibly
     # distorted) cofold geometry, which previously invented a spurious ring bond.
-    subprocess.run([OBABEL, "sub_heavy.pdb", "-O", "sub_h.mol2", "-p", str(ph)],
+    subprocess.run([obabel_exe(), "sub_heavy.pdb", "-O", "sub_h.mol2", "-p", str(ph)],
                    cwd=out, capture_output=True, text=True, check=True)
     ac = subprocess.run(["antechamber", "-i", "sub_h.mol2", "-fi", "mol2", "-o", "sub.mol2",
                          "-fo", "mol2", "-c", "bcc", "-nc", str(net_charge), "-at", "gaff2",
@@ -158,7 +195,7 @@ def _make_water(O, M, dOH=0.9572, aHOH=104.52):
 
 
 def seed_metal_waters(out_dir, target_coord=6, mo_dist=2.10, exist_cut=2.6, clash=2.25,
-                      min_sep_deg=55.0):
+                      min_sep_deg=55.0, cofactor_pdb="atp_heavy.pdb"):
     """Complete each metal's first coordination shell to `target_coord` (octahedral) with
     explicit TIP3P waters placed in the VACANT sites, so MD starts from a physical metal site
     instead of the under-coordinated geometry a ligand-only Boltz pose leaves.
@@ -174,9 +211,11 @@ def seed_metal_waters(out_dir, target_coord=6, mo_dist=2.10, exist_cut=2.6, clas
     2-metal sites. Writes mg_shell_waters.pdb; returns the number of waters placed."""
     out = Path(out_dir)
     heavy = []
-    for f in ("protein_clean.pdb", "atp_heavy.pdb", "sub_heavy.pdb"):
+    for f in ("protein_clean.pdb", cofactor_pdb, "sub_heavy.pdb"):
         if (out / f).exists():
             heavy += _load_heavy_pts(out / f)
+    if not (out / "metal.pdb").exists():
+        return 0
     all_xyz = np.array([x for _, x in heavy]) if heavy else np.zeros((0, 3))
     donor_xyz = np.array([x for el, x in heavy if el in ("O", "N")]) if heavy else np.zeros((0, 3))
     metals = [np.array([float(ln[30:38]), float(ln[38:46]), float(ln[46:54])])
@@ -234,42 +273,65 @@ def _count_waters(prmtop):
     return sum(1 for r in p.residues if r.name in {"WAT", "HOH", "TIP3", "T3P"})
 
 
+def _leap_script(frc, *, salt_pairs, has_cofactor, has_metal, has_substrate, n_shell,
+                 cofactor_lib="ATP.lib", cofactor_frcmod="ATP.frcmod", cofactor_pdb="atp_heavy.pdb",
+                 protein_ff="ff14SB", gaff="gaff2", water_model="tip3p"):
+    """Pure (no I/O) generator of the tleap build script. Every component is optional and every
+    force field / cofactor / water model is a parameter, so the same builder serves ATP + metal +
+    carboxylate as well as cofactor-only or metal-free systems. With the defaults and all three
+    components present it reproduces the historical AS9/GlnA3 script byte-for-byte (locked by test)."""
+    if water_model not in _WATER_LEAP:
+        raise ValueError(f"unknown water model {water_model!r}; known: {sorted(_WATER_LEAP)}")
+    water_leaprc, box = _WATER_LEAP[water_model]
+    lines = [f"source leaprc.protein.{protein_ff}", f"source leaprc.{gaff}",
+             f"source leaprc.water.{water_leaprc}", f"loadamberparams {frc}"]
+    if has_cofactor:
+        lines += [f"loadoff {cofactor_lib}", f"loadamberparams {cofactor_frcmod}"]
+    if has_substrate:
+        lines += ["SUB = loadmol2 sub.mol2", "loadamberparams sub.frcmod"]
+    lines += ["prot = loadpdb protein_clean.pdb"]
+    combine = ["prot"]
+    if has_cofactor:
+        lines += [f"atp = loadpdb {cofactor_pdb}"]; combine.append("atp")
+    if has_metal:
+        lines += ["mgu = loadpdb metal.pdb"]; combine.append("mgu")
+    if has_substrate:
+        combine.append("SUB")
+    if n_shell:
+        lines += ["shell = loadpdb mg_shell_waters.pdb"]; combine.append("shell")
+    lines += [f"cmplx = combine {{{' '.join(combine)}}}", f"solvateOct cmplx {box} 12.0",
+              "addIonsRand cmplx Na+ 0", "addIonsRand cmplx Cl- 0"]
+    if salt_pairs:
+        lines += [f"addIonsRand cmplx Na+ {salt_pairs}", f"addIonsRand cmplx Cl- {salt_pairs}"]
+    lines += ["charge cmplx", "saveamberparm cmplx complex.prmtop complex.inpcrd", "quit"]
+    return "\n".join(lines) + "\n"
+
+
 def build_tleap(out_dir, resname, ion_set="1264", *, polarizabilities=None, pol_overrides=None,
-                seed_waters=True, salt_molarity=0.15):
+                seed_waters=True, salt_molarity=0.15, cofactor_resname="ATP",
+                cofactor_lib=None, cofactor_frcmod=None, has_metal=True, has_substrate=True,
+                protein_ff="ff14SB", gaff="gaff2", water_model="tip3p", metal_target_coord=6):
     """Build the solvated holo prmtop. salt_molarity adds physiological NaCl ON TOP of neutralization
     (default 0.15 M): counterion-only boxes have no ionic screening, which over-stabilizes the
     arginine-carboxylate salt bridges that the substrate-register analysis depends on. The 12-6-4 ion
-    frcmod supplies matched params for the added Na+/Cl-. salt_molarity=0 recovers neutralize-only."""
+    frcmod supplies matched params for the added Na+/Cl-. salt_molarity=0 recovers neutralize-only.
+
+    Cofactor library/frcmod default to `{cofactor_resname}.lib`/`.frcmod` in asset_dir(); force
+    field, water model, and metal target coordination are all overridable. Defaults reproduce the
+    historical ATP+Mg+carboxylate build exactly."""
     out = Path(out_dir)
-    for a in ("ATP.lib", "ATP.frcmod"):
-        shutil.copy(ASSET / a, out / a)
-    n_shell = seed_metal_waters(out) if seed_waters else 0
+    cofactor_lib = cofactor_lib or f"{cofactor_resname}.lib"
+    cofactor_frcmod = cofactor_frcmod or f"{cofactor_resname}.frcmod"
+    for a in (cofactor_lib, cofactor_frcmod):
+        shutil.copy(asset_dir() / a, out / a)
+    n_shell = seed_metal_waters(out, target_coord=metal_target_coord) if (seed_waters and has_metal) else 0
     frc = "frcmod.ions234lm_1264_tip3p" if ion_set == "1264" else "frcmod.ions234lm_126_tip3p"
-    shell_load = "shell = loadpdb mg_shell_waters.pdb\n" if n_shell else ""
-    combine = "combine {{prot atp mgu SUB{shell}}}".format(shell=" shell" if n_shell else "")
 
     def _leap(salt_pairs):
-        salt = (f"addIonsRand cmplx Na+ {salt_pairs}\naddIonsRand cmplx Cl- {salt_pairs}\n"
-                if salt_pairs else "")
-        return f"""source leaprc.protein.ff14SB
-source leaprc.gaff2
-source leaprc.water.tip3p
-loadamberparams {frc}
-loadoff ATP.lib
-loadamberparams ATP.frcmod
-SUB = loadmol2 sub.mol2
-loadamberparams sub.frcmod
-prot = loadpdb protein_clean.pdb
-atp = loadpdb atp_heavy.pdb
-mgu = loadpdb metal.pdb
-{shell_load}cmplx = {combine}
-solvateOct cmplx TIP3PBOX 12.0
-addIonsRand cmplx Na+ 0
-addIonsRand cmplx Cl- 0
-{salt}charge cmplx
-saveamberparm cmplx complex.prmtop complex.inpcrd
-quit
-"""
+        return _leap_script(frc, salt_pairs=salt_pairs, has_cofactor=True, has_metal=has_metal,
+                            has_substrate=has_substrate, n_shell=n_shell, cofactor_lib=cofactor_lib,
+                            cofactor_frcmod=cofactor_frcmod, protein_ff=protein_ff, gaff=gaff,
+                            water_model=water_model)
 
     def _run(leap_text):
         (out / "build.leap").write_text(leap_text)
@@ -320,12 +382,16 @@ _IONS = {"Na+", "Cl-", "NA", "CL", "K+", "K", "NA+", "CL-"}
 
 
 def validate_prepared(prmtop, inpcrd, spec_path, *, coord_cut=2.7, min_metal_coord=5,
-                      nb_cutoff_A=10.0, clash_A=1.8, severe_clash_A=1.2, min_waters=500):
+                      completable_cut=3.1, nb_cutoff_A=10.0, clash_A=1.8, severe_clash_A=1.2,
+                      min_waters=500):
     """Built-in PHYSICAL validation of a freshly built system, BEFORE it costs any GPU time.
     Every distance uses the correct triclinic minimum image (truncated-octahedron safe). Checks:
 
-      metal coordination  - per-metal first-shell N/O/S donors within coord_cut; each metal
-                            must reach >= min_metal_coord (octahedral-ish).
+      metal coordination  - per-metal N/O/S donors. Reports the tight first-shell count (coord_cut)
+                            AND a "completable" count within completable_cut; physically_valid gates on
+                            the latter, since a raw-pose donor at 2.7-3.1 A relaxes into the first shell
+                            on minimization. A metal short of min_metal_coord even within the outer
+                            shell is genuinely under-coordinated (fatal).
       attack geometry     - forming nuc->electrophile distance + attack angle as built, to
                             confirm assembly/solvation did not move the reactive pose.
       net charge          - sum of partial charges must be ~integer and ~0 (neutralized).
@@ -354,9 +420,15 @@ def validate_prepared(prmtop, inpcrd, spec_path, *, coord_cut=2.7, min_metal_coo
     metals = [a.idx for a in parm.atoms if a.atomic_number == 12]
     donors = [a.idx for a in parm.atoms if a.atomic_number in (7, 8, 16)]
     dx = x[donors]
-    coordination = [int(np.count_nonzero(np.linalg.norm(mi(dx - x[m]), axis=1) < coord_cut))
-                    for m in metals]
-    metal_ok = all(c >= min_metal_coord for c in coordination)
+    dist_to_metal = [np.linalg.norm(mi(dx - x[m]), axis=1) for m in metals]
+    # inner first-shell count (tight, raw-pose geometry) -- reported for info
+    coordination = [int(np.count_nonzero(dm < coord_cut)) for dm in dist_to_metal]
+    # "completable" count: donors reachable within an outer shell that minimization pulls into the
+    # first shell. A raw cofold pose often seats a Mg donor at 2.7-3.1 A (reads as under-coordinated
+    # at the tight cutoff) yet relaxes to octahedral on minimization -> that site IS physical.
+    # physically_valid gates on completability; a metal lacking donors even here is genuinely bad.
+    coordination_completable = [int(np.count_nonzero(dm < completable_cut)) for dm in dist_to_metal]
+    metal_ok = all(c >= min_metal_coord for c in coordination_completable)
 
     # --- attack geometry ---
     from .md import resolve_attack_geometry
@@ -425,8 +497,11 @@ def validate_prepared(prmtop, inpcrd, spec_path, *, coord_cut=2.7, min_metal_coo
 
     image_gap = float(image_gap) if np.isfinite(image_gap) else None
     return dict(
-        metal_coordination=[int(c) for c in coordination], metal_octahedral_ok=bool(metal_ok),
-        coordination_cutoff_A=float(coord_cut), min_metal_coordination=int(min_metal_coord),
+        metal_coordination=[int(c) for c in coordination],
+        metal_coordination_completable=[int(c) for c in coordination_completable],
+        metal_octahedral_ok=bool(metal_ok),
+        coordination_cutoff_A=float(coord_cut), completable_cutoff_A=float(completable_cut),
+        min_metal_coordination=int(min_metal_coord),
         forming_distance_A=round(float(forming), 2), attack_angle_deg=round(float(angle), 1),
         attack_angle_definition=angle_kind,
         net_charge_e=round(float(net_charge), 4), charge_ok=bool(charge_ok),

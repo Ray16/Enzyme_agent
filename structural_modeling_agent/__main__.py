@@ -25,6 +25,9 @@ def main():
         from .family.cofold import main as family_main
         family_main(sys.argv[2:])
         return 0
+    if sys.argv[1:2] in (['promote-cofold'], ['validate-design']):
+        from .family.promote import main as promote_main
+        return promote_main(sys.argv[1:])
     parser = argparse.ArgumentParser(description=__doc__,epilog='Shared family execution: python -m structural_modeling_agent family-cofold --help')
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--task", type=Path, help="standalone task or schema-3.0 discovery handoff (2.0 leads are unverified)")

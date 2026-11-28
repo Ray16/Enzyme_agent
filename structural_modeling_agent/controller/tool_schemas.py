@@ -154,7 +154,8 @@ def build_core_schemas():
             "plan": {
                 "type": "object",
                 "properties": {
-                    "purpose": {"type": "string", "enum": ["dynamics", "de_novo_design"]},
+                    "purpose": {"type": "string", "enum": ["dynamics", "enzyme_design", "de_novo_design"]},
+                    "requested_tool": _string("Optional advisory design backend hint; omit to let enzyme_design_agent choose strategy"),
                     **{
                         key: _string(description)
                         for key, description in {
@@ -198,7 +199,7 @@ def build_core_schemas():
             **acc,
             "plan": {
                 "type": "object",
-                "description": "Reviewed proxy plan (see get_structural_proxy_guidance); requires mechanism, reaction_step, assay_endpoint, context, and hypotheses",
+                "description": "Reviewed proxy plan; requires mechanism, reaction_step, assay_endpoint, context, and hypotheses",
                 "properties": {
                     "mechanism": _string("Exact mechanism matching selected hypothesis"),
                     "reaction_step": _string("Exact reaction step description"),
@@ -254,7 +255,7 @@ def build_core_schemas():
             "rationale": _string("Evidence-based reasons and unresolved issues"),
             "modeling_input_from": {"type": "string", "enum": ["candidate", "current"], "description": "Instead of repeating modeling_input, explicitly copy the supplied candidate proposal or current revision; neither bypasses validation"},
             "modeling_input_changes": {"type": "object", "description": "Optional JSON merge patch when using modeling_input_from; nested objects merge, arrays replace, null deletes a field"},
-            "scientific_reasoning": {"type": "object", "description": "Competing hypotheses and testable predictions per inspect_validation_contract"},
+            "scientific_reasoning": {"type": "object", "description": "Competing hypotheses and testable predictions per the scientific_reasoning contract in the system prompt"},
             "alternatives": {
                 "type": "array",
                 "minItems": 1,

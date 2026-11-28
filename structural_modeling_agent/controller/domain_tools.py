@@ -701,3 +701,72 @@ def register_domain_tools(registry, ToolSpec, stages_for: Callable[[str], frozen
             repeatable_reader=True,
         )
     )
+
+    def _h_promote_family_cofold(agent, args):
+        from ..family.promote import promote_family_cofold
+
+        family_dir = agent._authorized_evidence(args["family_dir"], allow_dir=True)
+        out_dir = agent.run_dir / "artifacts" / "family_promotion"
+        return promote_family_cofold(
+            family_dir,
+            top_k=args.get("top_k", 3),
+            step=args.get("step", 1),
+            arm=args.get("arm", "unrestrained"),
+            md_spec=args.get("md_spec"),
+            ph=args.get("ph", 8.0),
+            out_dir=out_dir,
+        )
+
+    registry.register(
+        ToolSpec(
+            name="promote_family_cofold",
+            schema=_schema(
+                "promote_family_cofold",
+                "Promote top-K completed family-cofold candidates to verified MD prep manifests (carrying cofactor assets, GAFF2 polarizability overrides, prep/MD interpreter split, and PROPKA audit policy) and strategy-open enzyme_design_agent handoffs",
+                {
+                    "family_dir": _string("Authorized family_cofold directory containing analysis/family_modeling_report.json"),
+                    "top_k": {"type": "integer", "minimum": 1, "description": "Number of top candidates by frozen weighted_attack_angle_deg"},
+                    "step": {"type": "integer", "minimum": 1, "description": "Reaction step index to promote (default 1)"},
+                    "arm": _string("Analysis arm (default 'unrestrained')"),
+                    "md_spec": _string("Optional ReactionSpec JSON path for MD preparation"),
+                    "ph": {"type": "number", "description": "Assay pH for protonation and PROPKA audit (default 8.0)"},
+                },
+                ("family_dir",),
+            ),
+            handler=_h_promote_family_cofold,
+            scope="pre_accession",
+            domain="followups",
+            stages=frozenset(),
+        )
+    )
+
+    def _h_build_design_validation_task(agent, args):
+        from ..family.promote import build_design_validation_task
+
+        design_run = agent._authorized_evidence(args["design_run_dir"], allow_dir=True)
+        out_path = agent.run_dir / "artifacts" / "design_validation_task.json"
+        return build_design_validation_task(
+            design_run,
+            target=agent.task.get("target") or {},
+            sequences=args.get("sequences"),
+            out_path=out_path,
+        )
+
+    registry.register(
+        ToolSpec(
+            name="build_design_validation_task",
+            schema=_schema(
+                "build_design_validation_task",
+                "Convert a completed enzyme_design_agent run (manifest.json + design_output_handoff.json) into a verified structural_modeling_agent validation task so designed sequences are evaluated under the same frozen cofold/geometry contract as natural enzymes",
+                {
+                    "design_run_dir": _string("Authorized enzyme_design_agent run directory"),
+                    "sequences": {"type": "object", "description": "Optional explicit {design_id: aa_sequence} mapping if artifacts omit sequences"},
+                },
+                ("design_run_dir",),
+            ),
+            handler=_h_build_design_validation_task,
+            scope="pre_accession",
+            domain="followups",
+            stages=frozenset(),
+        )
+    )

@@ -68,11 +68,12 @@ def cofold_dir(run_dir, state, accession, number):
 
 def followup_paths(run_dir, accession, number, purpose, identity):
     path = revision_dir(run_dir, accession, number) / "followups" / purpose / identity
+    is_design = purpose in {"de_novo_design", "enzyme_design"}
     return {"root": str(path), "request": str(path / "request.json"),
             "preparation_dir": str(path / "bioemu2") if purpose == "dynamics" else None,
             "results_dir": str(path / "bioemu2" / "results") if purpose == "dynamics" else None,
-            "design_runs_root": str(path / "design_runs") if purpose == "de_novo_design" else None,
-            "design_handoff": str(path / "design_request.json") if purpose == "de_novo_design" else None}
+            "design_runs_root": str(path / "design_runs") if is_design else None,
+            "design_handoff": str(path / "design_request.json") if is_design else None}
 
 
 def results_index(run_dir, state):
