@@ -12,12 +12,82 @@ from .controller.integrity import proxy_integrity
 from .scientific_reasoning import assess_reasoning, execution_reasoning_errors
 
 
+def _family_cofold_evidence(path: Path, report: dict) -> dict:
+    """Convert a ``family-cofold-1.0`` report into the unified schema-3.0 envelope."""
+    rows, seen = [], set()
+    for candidate in report.get("candidates", []):
+        accession = candidate.get("accession")
+        if not accession or accession in seen:
+            raise ValueError("family-cofold report requires unique candidate identifiers")
+        seen.add(accession)
+        errors: list[str] = []
+        geometry_metrics: dict[str, dict] = {}
+        steps = candidate.get("steps") or []
+        if not steps:
+            errors.append("no completed family-cofold step records")
+        for step_rec in steps:
+            result_path = step_rec.get("result_path")
+            expected_sha = step_rec.get("result_sha256")
+            try:
+                if not result_path or not expected_sha or file_digest(result_path) != expected_sha:
+                    errors.append(f"step {step_rec.get('step')}: result artifact missing or modified")
+            except OSError:
+                errors.append(f"step {step_rec.get('step')}: result artifact unavailable")
+            arm = step_rec.get("analysis_arm", "unrestrained")
+            key = f"step_{step_rec.get('step')}_{arm}"
+            geometry_metrics[key] = {
+                "step": step_rec.get("step"),
+                "analysis_arm": arm,
+                "weighted_attack_angle_deg": step_rec.get("weighted_attack_angle_deg"),
+                "harmonic_distance_A": step_rec.get("harmonic_distance_A"),
+                "near_attack_fraction": step_rec.get("near_attack_fraction"),
+                "holo_seating_status": step_rec.get("holo_seating_status"),
+                "identity_pass_poses": step_rec.get("identity_pass_poses"),
+                "numerical_profile": step_rec.get("numerical_profile"),
+            }
+        complete = bool(steps) and not errors
+        rows.append(
+            {
+                "accession": accession,
+                "family_id": candidate.get("family_id"),
+                "enzyme_name": candidate.get("enzyme_name"),
+                "status": "validated" if complete else "incomplete",
+                "execution_status": "complete" if complete else "incomplete",
+                "pose_qc_status": "pass" if complete else "incomplete",
+                "scientific_status": "family_protocol_record",
+                "review_errors": sorted(set(errors)),
+                "geometry_metrics": geometry_metrics,
+                "steps": steps,
+                "experimental_activity": "not_established_by_modeling",
+            }
+        )
+    return {
+        "schema_version": "3.0",
+        "kind": "modeling_validation",
+        "candidates": rows,
+        "family_feedback": {
+            "n_candidates": len(rows),
+            "n_with_catalytic_profile": 0,
+            "evolvability_counts": {},
+            "failure_mode_counts": {},
+        },
+        "target": report.get("target"),
+        "task_sha256": report.get("task_sha256"),
+        "decision_origin": report.get("decision_origin", "family_cofold"),
+        "source_discovery_run": report.get("source_discovery_run"),
+        "source_report": {"path": str(path), "sha256": file_digest(path)},
+        "note": "Raw family-cofold geometry evidence for review; discovery ranks and activity claims are not changed.",
+    }
+
+
 def modeling_evidence(report_path):
     """Recheck artifact identity and retain failed/incomplete ensembles verbatim."""
     path = Path(report_path).resolve()
     report = json.loads(path.read_text())
+    if report.get("schema_version") == "family-cofold-1.0":
+        return _family_cofold_evidence(path, report)
     if report.get("schema_version") != "modeling-agent-1.0":
-        raise ValueError("expected a modeling-agent-1.0 report")
+        raise ValueError("expected a modeling-agent-1.0 or family-cofold-1.0 report")
     rows, seen = [], set()
     for candidate in report.get("candidates", []):
         accession = candidate.get("accession")

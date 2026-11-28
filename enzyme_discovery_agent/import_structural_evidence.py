@@ -47,7 +47,7 @@ def structural_evidence_matrix(evidence: dict, target_profile: dict | None = Non
 def import_structural_evidence(run_dir: Path, manifest_path: Path) -> Path:
     """Attach evidence to matching candidates and write a non-scoring review matrix."""
     manifest = json.loads(manifest_path.read_text())
-    if manifest.get("schema_version") == "modeling-agent-1.0":
+    if manifest.get("schema_version") in ("modeling-agent-1.0", "family-cofold-1.0"):
         from structural_modeling_agent.evidence import modeling_evidence
         manifest = modeling_evidence(manifest_path)
     if manifest.get("schema_version") not in ("1.0", "2.0", "3.0"):

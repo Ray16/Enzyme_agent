@@ -188,8 +188,73 @@ def refresh(directory):
             plt.close(fig)
         from .paired_analysis import write_paired_analysis
         write_paired_analysis(summaries,labels,out)
+        export_family_report(directory, summaries)
         atomic_write_json(status,{'discovery_run_id':directory.parent.name,'signature':signature,'completed_ensembles':len(summaries),'poses':len(poses),
             'metric':'sum(angle/distance) / sum(1/distance)','scope':'Step-specific structural geometry, not demonstrated activity; no cutoffs fitted.'})
+
+
+def export_family_report(directory: Path, summaries: list[dict]) -> Path:
+    """Write a unified ``family-cofold-1.0`` report convertible to schema-3.0 evidence."""
+    directory = Path(directory).resolve()
+    out = directory / "analysis"
+    out.mkdir(parents=True, exist_ok=True)
+    by_accession: dict[str, dict] = {}
+    for row in summaries:
+        acc = row["accession"]
+        result_path = Path(row["result"]).resolve()
+        result_sha256 = (
+            hashlib.sha256(result_path.read_bytes()).hexdigest()
+            if result_path.is_file()
+            else None
+        )
+        entry = by_accession.setdefault(
+            acc,
+            {
+                "accession": acc,
+                "enzyme_name": row.get("enzyme_name"),
+                "family_id": row.get("family_id"),
+                "steps": [],
+            },
+        )
+        entry["steps"].append(
+            {
+                "step": row["step"],
+                "analysis_arm": row.get("analysis_arm", "unrestrained"),
+                "weighted_attack_angle_deg": row.get("weighted_attack_angle_deg"),
+                "harmonic_distance_A": row.get("harmonic_distance_A"),
+                "n_poses": row.get("n_poses"),
+                "near_attack_threshold_A": row.get("near_attack_threshold_A"),
+                "n_near_attack_poses": row.get("n_near_attack_poses"),
+                "near_attack_fraction": row.get("near_attack_fraction"),
+                "near_mode_weighted_angle_deg": row.get("near_mode_weighted_angle_deg"),
+                "near_mode_harmonic_distance_A": row.get("near_mode_harmonic_distance_A"),
+                "holo_seating_status": row.get("holo_seating_status"),
+                "cofactor_seated_fraction": row.get("cofactor_seated_fraction"),
+                "metal_coordinated_fraction": row.get("metal_coordinated_fraction"),
+                "identity_pass_poses": row.get("identity_pass_poses"),
+                "numerical_profile": row.get("numerical_profile"),
+                "result_path": str(result_path),
+                "result_sha256": result_sha256,
+            }
+        )
+    report_path = out / "family_modeling_report.json"
+    atomic_write_json(
+        report_path,
+        {
+            "schema_version": "family-cofold-1.0",
+            "kind": "family_cofold_report",
+            "source_discovery_run": str(directory.parent),
+            "discovery_run_id": directory.parent.name,
+            "decision_origin": "family_cofold",
+            "candidates": [by_accession[acc] for acc in sorted(by_accession)],
+            "note": (
+                "Step-specific family-cofold geometry observations for discovery review; "
+                "structural poses do not establish enzymatic activity."
+            ),
+        },
+        allow_nan=False,
+    )
+    return report_path
 
 
 if __name__=='__main__':
