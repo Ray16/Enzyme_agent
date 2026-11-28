@@ -302,6 +302,54 @@ class LoopTest(unittest.TestCase):
         agent.run("q", scaffold_path=str(self.pdb))
         self.assertEqual("undecided", agent.strategy)
 
+    def test_prompt_prefix_stays_cache_stable_across_turns(self):
+        """[STATE: ...] is appended only to the transient tail, never mutating history."""
+        seen_calls: list[list[dict]] = []
+        pocket = _Msg(tool_calls=[_Call("scan_design_pocket", {"structure_path": str(self.pdb)})])
+        turns = [pocket, pocket, _Msg(content="report")]
+        llm = _fake_llm(turns)
+        orig_side_effect = list(llm.call.side_effect)
+
+        def _capture(*, messages, tools, timeout):
+            seen_calls.append(json.loads(json.dumps(messages, default=str)))
+            return orig_side_effect[len(seen_calls) - 1]
+
+        llm.call.side_effect = _capture
+        with mock.patch("enzyme_design_agent.agent.LLMClient", return_value=llm):
+            agent = EnzymeDesignAgent(output_dir=self.out, query="q")
+        agent.run("q")
+
+        self.assertEqual(3, len(seen_calls))
+        # Every turn ends with exactly one [STATE: ...] header.
+        for call_msgs in seen_calls:
+            self.assertTrue(call_msgs[-1]["content"].startswith("[STATE: "))
+            self.assertEqual(
+                1,
+                sum(1 for m in call_msgs if str(m.get("content", "")).startswith("[STATE: ")),
+            )
+        # Turn 2's prefix (everything before turn 2's new assistant/tool turn) equals
+        # turn 1's non-state prefix byte-for-byte.
+        self.assertEqual(seen_calls[0][:-1], seen_calls[1][:len(seen_calls[0]) - 1])
+        self.assertEqual(seen_calls[1][:-1], seen_calls[2][:len(seen_calls[1]) - 1])
+
+    def test_build_design_context_compacts_whole_groups(self):
+        from enzyme_design_agent.agent import _build_design_context
+
+        msgs = [
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": "query"},
+            {"role": "assistant", "content": "a1"},
+            {"role": "tool", "tool_call_id": "1", "content": "x" * 400},
+            {"role": "assistant", "content": "a2"},
+            {"role": "tool", "tool_call_id": "2", "content": "y" * 200},
+        ]
+        compacted = _build_design_context(msgs, "[STATE: iter=3]", max_chars=450)
+        self.assertEqual(compacted[:2], msgs[:2])
+        self.assertEqual(compacted[-1]["content"], "[STATE: iter=3]")
+        # First assistant/tool group dropped cleanly; second group kept intact.
+        self.assertEqual([m["role"] for m in compacted[2:-1]], ["assistant", "tool"])
+        self.assertEqual(compacted[3]["tool_call_id"], "2")
+
 
 if __name__ == "__main__":
     unittest.main()

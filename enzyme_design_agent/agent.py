@@ -22,7 +22,6 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
-import os
 import threading
 import time
 from pathlib import Path
@@ -44,6 +43,48 @@ logger = logging.getLogger("enzyme_agent")
 #: Turns reserved at the end so the agent always gets to write its report
 #: rather than being cut off mid-campaign with nothing recorded.
 FINALIZATION_RESERVE = 3
+
+#: Default character allowance for the transient LLM context window.
+DESIGN_CONTEXT_MAX_CHARS = 64000
+
+
+def _build_design_context(
+    messages: list[dict],
+    state_header: str,
+    *,
+    max_chars: int = DESIGN_CONTEXT_MAX_CHARS,
+) -> list[dict]:
+    """Assemble a bounded, prompt-cache-friendly message list for one LLM turn.
+
+    Keeps the durable ``messages`` prefix immutable across turns (never
+    inserting/removing ``[STATE: ...]`` in the middle of history) and appends
+    the volatile state header only at the tail. When history exceeds
+    ``max_chars``, drops oldest whole assistant/tool groups without splitting
+    a tool call from its tool responses.
+    """
+    state_msg = {"role": "user", "content": state_header}
+    if len(messages) <= 2:
+        return [*messages, state_msg]
+
+    prefix = messages[:2]
+    groups: list[list[dict]] = []
+    for msg in messages[2:]:
+        if msg.get("role") == "assistant" or not groups:
+            groups.append([])
+        groups[-1].append(msg)
+
+    prefix_chars = len(json.dumps(prefix, default=str))
+    tail_chars = len(json.dumps(state_msg, default=str))
+    group_sizes = [len(json.dumps(g, default=str)) for g in groups]
+    total = prefix_chars + tail_chars + sum(group_sizes)
+
+    start = 0
+    while start < len(groups) - 1 and total > max_chars:
+        total -= group_sizes[start]
+        start += 1
+
+    kept = [m for g in groups[start:] for m in g]
+    return [*prefix, *kept, state_msg]
 
 #: Tools whose execution pins the run's strategy. Readiness probes are
 #: intentionally excluded so checking hardware availability does not commit a
@@ -246,19 +287,19 @@ class EnzymeDesignAgent:
                 messages.append({"role": "user", "content": FINALIZE_PROMPT})
                 finalizing = True
 
-            # Keep only the latest [STATE: ...] header in context to prevent
-            # unbounded context bloat across multi-turn campaigns.
-            messages[:] = [
-                m for m in messages
-                if not (m.get("role") == "user" and str(m.get("content", "")).startswith("[STATE: "))
-            ]
-            messages.append({"role": "user", "content": build_state_header(
-                iteration, self.max_iterations, self.strategy, self.designs,
-                self.tools_used)})
             if iteration > 1 and iteration % 6 == 0 and not finalizing:
                 messages.append({"role": "user", "content": REFLECTION_PROMPT})
 
-            response = self.llm.call(messages=messages, tools=self.tools,
+            state_header = build_state_header(
+                iteration, self.max_iterations, self.strategy, self.designs,
+                self.tools_used,
+            )
+            # Keep durable history append-only for provider prompt caching;
+            # attach the volatile [STATE: ...] header only at the tail of the
+            # transient request payload.
+            model_messages = _build_design_context(messages, state_header)
+
+            response = self.llm.call(messages=model_messages, tools=self.tools,
                                      timeout=self.llm_timeout)
             if response is None:
                 return self._finish(messages, usage, "LLM unavailable; no report produced.",
@@ -337,8 +378,14 @@ class EnzymeDesignAgent:
 
             _atomic_write_text(
                 self.run_dir / "agent_state" / "transcript.json",
-                json.dumps({"iteration": iteration, "messages": messages},
-                           indent=2, default=str),
+                json.dumps(
+                    {
+                        "iteration": iteration,
+                        "messages": [*messages, {"role": "user", "content": state_header}],
+                    },
+                    indent=2,
+                    default=str,
+                ),
             )
 
         return self._finish(messages, usage, "Max iterations reached.",

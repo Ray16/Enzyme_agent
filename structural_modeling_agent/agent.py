@@ -657,11 +657,12 @@ class ModelingAgent:
                         artifact = self._artifact(name, result)
                         self._record_inspection(name,arguments,result,artifact)
                         body = json.dumps(result, allow_nan=False)
-                        payload = {"artifact": artifact, "summary": body[:20000]}
+                        payload = {"artifact": artifact, "summary": body[:8000]}
                         self.messages.append({"role": "tool", "tool_call_id": call_id, "content": json.dumps(payload)})
                         self._event("tool_result", tool=name, artifact=artifact)
                         self.state["usage"] = usage.to_dict()
-                        self._save(compat=False)
+                        if len(calls) > 1:
+                            self._save(compat=False)
                         if (self.task.get('workflow_mode')=='production_cofold' and name=='render_inputs'
                                 and result.get('status')=='rendered'):
                             self.state.update(status='ready_for_native_execution')
