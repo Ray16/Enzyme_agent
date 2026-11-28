@@ -26,8 +26,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-import numpy as np
-
 from enzyme_discovery_agent import config
 from enzyme_discovery_agent.models.candidate_registry import (
     current_candidate_status,
@@ -124,6 +122,7 @@ def _run_embed_subprocess(run_dir: Path, items: list[dict], model: str):
             tail = (proc.stderr or "").strip()[-300:]
             return None, f"embed subprocess rc={proc.returncode}; skipped ({tail})"
         try:
+            import numpy as np
             vectors = np.load(out_npy)
             meta = json.loads(Path(out_meta).read_text())
         except Exception as exc:  # noqa: BLE001

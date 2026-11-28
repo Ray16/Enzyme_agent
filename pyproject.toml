@@ -45,13 +45,6 @@ scoring = [
     "torch-geometric",
     "drfp",
 ]
-# Semantic re-ranking (RRF fusion over embeddings). Previously an UNDECLARED
-# import that silently no-oped where missing; now an explicit optional extra.
-# numpy comes via pandas (a core dep); scikit-learn is no longer needed
-# (cosine is a dot product on normalized embeddings).
-rerank = [
-    "sentence-transformers>=2.2",
-]
 # Agent-invoked candidate ESM-embedding map (map_candidate_neighbors tool +
 # candidate_map_plot). The heavy ESM forward pass runs in a SEPARATE GPU
 # subprocess (tools/esm_embed_worker.py) via fair-esm -- loads ESM2 weights
@@ -94,8 +87,10 @@ packages = [
     "structural_modeling_agent",
     "structural_modeling_agent.barrier",
     "structural_modeling_agent.cofold",
+    "structural_modeling_agent.controller",
     "structural_modeling_agent.developability",
     "structural_modeling_agent.exploration",
+    "structural_modeling_agent.family",
     "structural_modeling_agent.loop",
     "structural_modeling_agent.mlmm",
     "structural_modeling_agent.modeling_reasoning",
@@ -125,7 +120,7 @@ enzyme_discovery_agent = [
     "campaign_inputs/*.json",
     "structural_proxy_catalog.json",
 ]
-structural_modeling_agent = ["validation_contract.json", "knowledge/*.json", "modeling_reasoning/knowledge/*.json", "developability/knowledge/*.json"]
+structural_modeling_agent = ["validation_contract.json", "knowledge/*.json", "modeling_reasoning/knowledge/*.json", "developability/knowledge/*.json", "skills/*.md"]
 "structural_modeling_agent.barrier" = ["specs/*.json", "backends/*.json", "QMMM_BARRIER_PROTOCOL.md", "README.md", "EE_SETUP_REVIEW.md", "REVIEW_20261111.md"]
 
 [project.scripts]

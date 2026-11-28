@@ -8,6 +8,7 @@ import socket
 import subprocess
 import sys
 
+from . import config
 from .production import live, owner, read, require_capacity
 from .state_store import atomic_write_json, state_lock
 
@@ -94,7 +95,7 @@ def attach(run_dir, *, discovery_owner=None, model=None, runtime_seconds=43200,
         from campaign_catalog.catalog import build
         build(pool)
         cache=Path(msa_cache) if msa_cache else run.parent/'.sequence_msa_cache'
-        settings={'project_root':str(project),'model':model or 'claude-code:claude-sonnet-5-5',
+        settings={'project_root':str(project),'model':model or config.DEFAULT_MODEL,
             'execution_mode':execution_mode,
             'cofold_pool':str(pool),'cofold_pool_target_id':run.name,'msa_cache':str(cache),
             'prediction_cache_pools':[str(path.parent.parent) for path in

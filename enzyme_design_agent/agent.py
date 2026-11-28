@@ -31,6 +31,7 @@ from enzyme_discovery_agent import config
 from enzyme_discovery_agent.capabilities import create_run_dir, init_capabilities
 from enzyme_discovery_agent.context import compact_for_llm
 from enzyme_discovery_agent.llm.client import LLMClient, TokenUsage
+from enzyme_discovery_agent.state_store import atomic_write_text as _atomic_write_text
 from enzyme_discovery_agent.tool_registry import execute_tool, get_tool_info
 
 from .bootstrap import design_tool_names, design_tool_schemas, register_design_tools
@@ -61,13 +62,6 @@ _STRATEGY_BY_TOOL = {
     "prepare_saturation_campaign": "redesign",
     "summarize_saturation_campaign": "redesign",
 }
-
-
-def _atomic_write_text(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
-    tmp.write_text(text)
-    tmp.replace(path)
 
 
 def _count_designs(name: str, result: dict, counted_jobs: set[str]) -> int:

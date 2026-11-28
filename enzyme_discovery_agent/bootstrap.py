@@ -37,10 +37,6 @@ _BUILTIN_TOOL_MODULES = (
     "enzyme_discovery_agent.tools.mechanism_extraction",
     "enzyme_discovery_agent.tools.embedding_map",
     "enzyme_discovery_agent.tools.esm_expansion",
-    "enzyme_design_agent.tools.alphaprotein_novo",
-    "enzyme_design_agent.tools.disco_design",
-    "enzyme_design_agent.tools.saturation_scan",
-    "enzyme_design_agent.tools.saturation_campaign",
     "enzyme_discovery_agent.models.notebook",
 )
 

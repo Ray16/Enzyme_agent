@@ -72,13 +72,12 @@ def require_capacity(cpus):
 
 
 def configure_discovery(settings):
-    from . import config, tool_registry
+    from . import config
     from .bootstrap import register_builtin_tools
     register_builtin_tools()
-    # Structural work has an independent process, allowance and turn ledger.
-    for name, info in list(tool_registry._TOOLS.items()):
-        if info['category'] in {'structure', 'design'} or name in {'map_candidate_neighbors', 'expand_candidates_esm'}:
-            del tool_registry._TOOLS[name]
+    # Structural and design work have independent processes, allowances, and tool
+    # registries; EnzymeAgent.__init__ excludes non-discovery categories and
+    # disabled candidate-map tools without mutating the process-global registry.
     config.ADAPTIVE_REASONING = True
     config.ENABLE_CANDIDATE_MAP = False
     config.ENABLE_MECHANISM_FAMILY_CACHE = False
