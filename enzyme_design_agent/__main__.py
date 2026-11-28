@@ -24,6 +24,10 @@ def main() -> None:
     p.add_argument("--scaffold", default=None,
                    help="Path to a holo structure, if one exists. Makes redesign "
                         "possible; does not decide the strategy.")
+    p.add_argument("--handoff", default=None,
+                   help="Path to a structured design_handoff.json from "
+                        "structural_modeling_agent (carries catalytic profile, "
+                        "soft-defect design targets, failure modes, and cofold evidence).")
     p.add_argument("--model", default=config.DEFAULT_MODEL)
     p.add_argument("--output-dir", default=None,
                    help="Defaults to <package>/runs.")
@@ -44,23 +48,26 @@ def main() -> None:
             print(name)
         return
 
-    if not args.query:
-        p.error("query is required")
+    if args.handoff and not Path(args.handoff).expanduser().is_file():
+        p.error(f"--handoff is not a file: {args.handoff}")
+    if not args.query and not args.handoff:
+        p.error("query or --handoff is required")
     if args.scaffold and not Path(args.scaffold).expanduser().is_file():
         p.error(f"--scaffold is not a file: {args.scaffold}")
 
+    query = args.query or f"Design enzyme from handoff {Path(args.handoff).name}"
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     agent = EnzymeDesignAgent(
         model=args.model,
         output_dir=args.output_dir or Path(__file__).parent / "runs",
         max_iterations=args.max_iterations,
         llm_timeout=args.llm_timeout,
-        query=args.query,
+        query=query,
         token_budget=args.token_budget,
         runtime_budget_seconds=args.runtime_budget_seconds,
     )
-    report = agent.run(query=args.query, motif_hint=args.motif,
-                       scaffold_path=args.scaffold)
+    report = agent.run(query=query, motif_hint=args.motif,
+                       scaffold_path=args.scaffold, handoff_path=args.handoff)
     log = logging.getLogger("enzyme_agent")
     log.info("\n%s\nDESIGN REPORT\n%s\n%s", "=" * 70, "=" * 70, report)
 

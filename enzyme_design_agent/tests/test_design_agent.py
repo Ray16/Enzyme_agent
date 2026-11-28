@@ -350,6 +350,48 @@ class LoopTest(unittest.TestCase):
         self.assertEqual([m["role"] for m in compacted[2:-1]], ["assistant", "tool"])
         self.assertEqual(compacted[3]["tool_call_id"], "2")
 
+    def test_structured_handoff_is_ingested_and_emits_output_handoff(self):
+        handoff_path = self.out / "design_handoff.json"
+        handoff_path.write_text(json.dumps({
+            "kind": "de_novo_design_request",
+            "purpose": "de_novo_enzyme_design",
+            "requested_tool": "rfd4-proteina",
+            "source_accession": "SYNTH1",
+            "target": {"name": "amide_ligation"},
+            "catalytic_profile_summary": {"evolvability_class": "soft_defect", "axes": {"preorganization": "poor"}},
+            "soft_defect_design_targets": ["RES42", "RES87"],
+            "failure_modes": ["loop_occlusion"],
+        }))
+        seen_first_user: list[str] = []
+        turns = [
+            _Msg(tool_calls=[_Call("scan_design_pocket", {"structure_path": str(self.pdb)})]),
+            _Msg(content="Handoff-informed design report."),
+        ]
+        llm = _fake_llm(turns)
+        orig = list(llm.call.side_effect)
+        idx = [0]
+
+        def _capture(*, messages, tools, timeout):
+            if idx[0] == 0:
+                seen_first_user.append(messages[1]["content"])
+            resp = orig[idx[0]]
+            idx[0] += 1
+            return resp
+
+        llm.call.side_effect = _capture
+        with mock.patch("enzyme_design_agent.agent.LLMClient", return_value=llm):
+            agent = EnzymeDesignAgent(output_dir=self.out, query="q")
+        agent.run("design for amide ligation", handoff_path=handoff_path)
+
+        self.assertIn("soft_defect_design_targets", seen_first_user[0])
+        self.assertIn("RES42", seen_first_user[0])
+        manifest = json.loads((agent.run_dir / "manifest.json").read_text())
+        self.assertEqual(manifest["source_handoff"]["source_accession"], "SYNTH1")
+        out_handoff = json.loads((agent.run_dir / "design_output_handoff.json").read_text())
+        self.assertEqual(out_handoff["kind"], "design_output_handoff")
+        self.assertEqual(out_handoff["strategy"], "redesign")
+        self.assertEqual(out_handoff["source_handoff"]["source_accession"], "SYNTH1")
+
 
 if __name__ == "__main__":
     unittest.main()

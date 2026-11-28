@@ -571,10 +571,12 @@ def _h_plan_followup(agent, args, acc, candidate, revision):
         })
         followup["design_agent_arguments"] = {
             "query": design_query,
+            "handoff": followup["paths"]["design_handoff"],
             "output_dir": followup["paths"]["design_runs_root"],
         }
         followup["review_command"] = [
             "python", "-m", "enzyme_design_agent", design_query,
+            "--handoff", followup["paths"]["design_handoff"],
             "--output-dir", followup["paths"]["design_runs_root"],
         ]
         profile = candidate.get("catalytic_profile") or {}
@@ -669,11 +671,19 @@ def _h_register_design_run(agent, args, acc, candidate, revision):
     data = json.loads(manifest.read_text())
     if data.get("agent") != "enzyme_design_agent" or not report.is_file():
         raise ValueError("design-agent manifest/report are missing or inconsistent")
+    output_handoff = actual / "design_output_handoff.json"
     registration = {
         "run_dir": str(actual),
         "agent_status": data.get("status"),
+        "strategy": data.get("strategy"),
+        "designs": data.get("designs"),
         "manifest": {"path": str(manifest), "sha256": file_digest(manifest)},
         "report": {"path": str(report), "sha256": file_digest(report)},
+        "output_handoff": (
+            {"path": str(output_handoff), "sha256": file_digest(output_handoff)}
+            if output_handoff.is_file()
+            else None
+        ),
         "generation_validation": "not_established_by_agent_report",
         "note": "This links result locations; generation, refolding and catalytic assessments retain their own separate evidence.",
     }

@@ -20,6 +20,7 @@ than forked, so both agents stay on one backend chain and one run layout.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+import hashlib
 import json
 import logging
 import threading
@@ -105,6 +106,48 @@ _STRATEGY_BY_TOOL = {
 }
 
 
+def _load_design_handoff(handoff_path: str | Path) -> tuple[dict, dict]:
+    """Load a structured structural-modeling design handoff JSON and its provenance."""
+    resolved = Path(handoff_path).expanduser().resolve(strict=True)
+    raw = resolved.read_bytes()
+    payload = json.loads(raw.decode("utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Design handoff must be a JSON object: {resolved}")
+    provenance = {
+        "path": str(resolved),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "kind": payload.get("kind"),
+        "source_accession": payload.get("source_accession"),
+        "source_task_sha256": payload.get("source_task_sha256"),
+    }
+    return payload, provenance
+
+
+def _format_handoff_context(handoff: dict) -> str:
+    """Render a compact, structured summary of a modeling-to-design handoff."""
+    summary = {
+        k: handoff.get(k)
+        for k in (
+            "kind",
+            "purpose",
+            "requested_tool",
+            "source_accession",
+            "target",
+            "catalytic_profile_summary",
+            "soft_defect_design_targets",
+            "failure_modes",
+            "question",
+            "cofold_evidence",
+        )
+        if handoff.get(k) is not None
+    }
+    return (
+        "Structured structural-modeling handoff (evidence and diagnostic targets; "
+        "verify before committing compute, and do not treat as proof of catalysis):\n"
+        + json.dumps(summary, indent=2, default=str)
+    )
+
+
 def _count_designs(name: str, result: dict, counted_jobs: set[str]) -> int:
     """Count newly produced designs/variants without double-counting polled jobs."""
     if result.get("status") != "success":
@@ -165,6 +208,8 @@ class EnzymeDesignAgent:
         self.tools_used: list[str] = []
         self.designs = 0
         self._counted_jobs: set[str] = set()
+        self._source_handoff: dict | None = None
+        self._artifact_paths: list[str] = []
         self._log_lock = threading.Lock()
         self._state_lock = threading.Lock()
         self._event_path = self.run_dir / "events.jsonl"
@@ -229,10 +274,12 @@ class EnzymeDesignAgent:
                 json.dumps({"tool_name": name, "args": args, "iteration": iteration,
                             "result": result}, indent=2, default=str),
             )
+            self._artifact_paths.append(str(dest.relative_to(self.run_dir)))
 
     # -- the loop ----------------------------------------------------------
     def run(self, query: str, motif_hint: str | None = None,
-            scaffold_path: str | None = None) -> str:
+            scaffold_path: str | None = None,
+            handoff_path: str | Path | None = None) -> str:
         """Design for ``query``; returns the final report text.
 
         Args:
@@ -242,15 +289,23 @@ class EnzymeDesignAgent:
             scaffold_path: optional holo structure. Supplying one makes
                 redesign *possible*; it does not make it the right choice, and
                 the agent is still expected to argue the strategy.
+            handoff_path: optional path to a structured ``design_handoff.json``
+                produced by ``structural_modeling_agent``.
         """
+        handoff_data: dict | None = None
+        if handoff_path is not None:
+            handoff_data, self._source_handoff = _load_design_handoff(handoff_path)
         self.log(f"query: {query}")
         self.log(f"run_dir: {self.run_dir}")
         self._event("run_start", query=query, model=self.model_name,
-                    tools=list(self.tool_names), scaffold=scaffold_path)
+                    tools=list(self.tool_names), scaffold=scaffold_path,
+                    source_handoff=self._source_handoff)
 
         system = build_system_prompt(available_tools=list(self.tool_names),
                                      capabilities=self.capabilities)
         user = [f"Target chemistry:\n{query}"]
+        if handoff_data is not None:
+            user.append(_format_handoff_context(handoff_data))
         if motif_hint:
             user.append(f"Notes on the catalytic motif (a starting point, to be "
                         f"justified or revised):\n{motif_hint}")
@@ -400,7 +455,7 @@ class EnzymeDesignAgent:
             self.run_dir / "token_usage.json",
             json.dumps(usage.to_dict(), indent=2, default=str),
         )
-        _atomic_write_text(self.run_dir / "manifest.json", json.dumps({
+        manifest = {
             "agent": "enzyme_design_agent",
             "status": status,
             "model": self.model_name,
@@ -408,8 +463,26 @@ class EnzymeDesignAgent:
             "iterations_used": iterations,
             "designs": self.designs,
             "tools_used": self.tools_used,
+            "source_handoff": self._source_handoff,
+            "artifacts": list(self._artifact_paths),
             "tokens": usage.to_dict(),
-        }, indent=2, default=str))
+        }
+        _atomic_write_text(self.run_dir / "manifest.json", json.dumps(manifest, indent=2, default=str))
+        if self._source_handoff is not None or self.designs > 0:
+            _atomic_write_text(
+                self.run_dir / "design_output_handoff.json",
+                json.dumps({
+                    "kind": "design_output_handoff",
+                    "agent": "enzyme_design_agent",
+                    "status": status,
+                    "strategy": self.strategy,
+                    "designs": self.designs,
+                    "source_handoff": self._source_handoff,
+                    "artifacts": list(self._artifact_paths),
+                    "report_path": "DESIGN_REPORT.md",
+                    "note": "Design agent outputs; refolding and catalytic validation remain separate.",
+                }, indent=2, default=str),
+            )
         self._event("run_complete", status=status, strategy=self.strategy,
                     iterations=iterations, designs=self.designs)
         self.log(f"done: status={status} strategy={self.strategy} "
