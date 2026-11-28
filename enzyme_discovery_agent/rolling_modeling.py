@@ -13,7 +13,12 @@ import sys
 from enzyme_core.state_store import atomic_write_json, state_lock
 
 from . import config
-from .production import live, owner, read, require_capacity
+from .production import (
+    current_process_owner,
+    is_process_owner_live as live,
+    read_json_file,
+    require_capacity,
+)
 
 THREADS = (
     "OMP_NUM_THREADS",
@@ -173,7 +178,7 @@ def attach(
     folder.mkdir(exist_ok=True)
 
     with state_lock(folder / "launch"):
-        previous = read(folder / "launch_manifest.json")
+        previous = read_json_file(folder / "launch_manifest.json")
         if previous and live(previous) is True:
             return previous
         if previous:
@@ -242,7 +247,7 @@ def attach(
         config_path = folder / "campaign_input.json"
         atomic_write_json(config_path, settings)
         atomic_write_json(folder / "campaign_state.json", {"run_dir": str(run)})
-        atomic_write_json(folder / "discovery_owner.json", discovery_owner or owner())
+        atomic_write_json(folder / "discovery_owner.json", discovery_owner or current_process_owner())
 
         hashes = _snapshot(folder)
         worker = folder / "worker.py"

@@ -9,9 +9,9 @@ it. Two strategies, and choosing between them is the agent's job:
   redesign    -- saturate the pocket of a scaffold that already binds, when one
                  exists in a pose worth believing
 
-Infrastructure (``config``, ``tool_registry``, ``llm_client``, run-dir
-conventions) is shared with ``enzyme_discovery_agent`` rather than forked, so a
-single run can reach both toolkits. See README.md.
+Core persistence and handoff contracts live in ``enzyme_core``; LLM client and
+tool-registry infrastructure are shared with ``enzyme_discovery_agent`` rather
+than forked. See README.md.
 """
 
 __all__ = ["EnzymeDesignAgent", "register_design_tools"]

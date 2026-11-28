@@ -13,21 +13,21 @@ import time
 from .state_store import atomic_write_json, file_sha256, read_json, state_lock
 
 
-def read(path, default=None):
+def read_json_file(path, default=None):
     return read_json(path, default)
 
 
-def checksum(path):
+def file_checksum(path):
     return file_sha256(path)
 
 
-def owner():
+def current_process_owner():
     return {'host': socket.gethostname(), 'pid': os.getpid(),
             'process_start_ticks': Path('/proc/self/stat').read_text().rsplit(')', 1)[1].split()[19],
             'cpu_affinity': sorted(os.sched_getaffinity(0))}
 
 
-def live(record):
+def is_process_owner_live(record):
     if not record:
         return False
     if record['host'] != socket.gethostname():
@@ -36,6 +36,13 @@ def live(record):
         return Path(f"/proc/{record['pid']}/stat").read_text().rsplit(')', 1)[1].split()[19] == record['process_start_ticks']
     except FileNotFoundError:
         return False
+
+
+# Backward-compatible aliases for legacy callers and tests.
+read = read_json_file
+checksum = file_checksum
+owner = current_process_owner
+live = is_process_owner_live
 
 
 def require_capacity(cpus):

@@ -100,7 +100,7 @@ def comparison_figure(rows,labels,step):
     return fig
 
 
-def refresh(directory):
+def refresh_family_analysis(directory):
     directory=Path(directory);out=directory/'analysis';out.mkdir(exist_ok=True)
     files=sorted(directory.glob('jobs/*/complete.json'))
     overrides=out/'display_names.json'
@@ -274,6 +274,10 @@ def export_family_report(directory: Path, summaries: list[dict]) -> Path:
         allow_nan=False,
     )
     return report_path
+
+
+# Backward-compatible alias for legacy callers.
+refresh = refresh_family_analysis
 
 
 if __name__=='__main__':
